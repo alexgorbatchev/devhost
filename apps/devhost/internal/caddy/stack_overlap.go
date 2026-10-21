@@ -7,8 +7,25 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"golang.org/x/sys/unix"
 )
+
+// ManifestOverlapError identifies the live stack that owns a requested input.
+type ManifestOverlapError struct {
+	ManifestPath string
+	Owner        StackOwner
+	StackName    string
+}
+
+func (e *ManifestOverlapError) Error() string {
+	return e.Message("devhost stop --manifest " + cliout.ShellPath(e.Owner.ManifestPath))
+}
+
+// Message formats the conflict with a stop command resolved by the CLI.
+func (e *ManifestOverlapError) Message(stopCommand string) string {
+	return fmt.Sprintf("devhost is already running with manifest %s (PID %d, stack %s, root %s); stop that stack with %s before starting this one", cliout.DisplayPath(e.ManifestPath), e.Owner.PID, e.StackName, cliout.DisplayPath(e.Owner.ManifestPath), stopCommand)
+}
 
 // The lock file stays in place: unlinking it could let concurrent openers lock
 // different inodes. Hold it only for record mutations, never service startup.
@@ -82,7 +99,7 @@ func checkManifestOverlap(dir string, candidate stackRecord) error {
 		}
 		for _, file := range candidate.ManifestFiles {
 			if slices.Contains(files, file) {
-				return fmt.Errorf("devhost is already running with manifest %s (PID %d, stack %s, root %s); stop that stack with devhost stop --manifest %q before starting this one", file, owner.OwnerPID, owner.StackName, owner.ManifestPath, owner.ManifestPath)
+				return &ManifestOverlapError{ManifestPath: file, StackName: owner.StackName, Owner: StackOwner{PID: owner.OwnerPID, ManifestPath: owner.ManifestPath}}
 			}
 		}
 	}

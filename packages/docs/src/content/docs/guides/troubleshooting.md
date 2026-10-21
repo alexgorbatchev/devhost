@@ -59,7 +59,7 @@ Each line is the PID of the stack's devhost process, one tab, and its manifest p
 
 ## Zombie cleanup messages
 
-An `already running` startup error means another live stack in the same state directory owns the root manifest or an included file. Use the `devhost stop --manifest` command in the error to stop that stack before starting this one. The same conflict rejects an include change during hot reload. `killZombies` leaves registered live stacks running.
+An `already running` startup error means another live stack in the same state directory owns the root manifest or an included file. The error uses the `devhost |` log prefix (`devhost:` in agent mode) and shortens home-directory paths to `~/`. Use its suggested stop command before starting this stack: it shows `devhost stop` when manifest discovery or `DEVHOST_MANIFEST` selects the owner, and includes `--manifest` otherwise. Explicit paths are shell-quoted while leaving `~/` expandable. The same conflict rejects an include change during hot reload. `killZombies` leaves registered live stacks running.
 
 With `killZombies = true` (the default), devhost attempts to kill an existing owner from the same manifest when reclaiming a hostname or fixed port. It prints `Stopping zombie PID ...` before the attempt and `Stopped zombie PID ...` only after confirming that the owner has exited. If the kill fails, exit cannot be verified, or the owner does not exit within five seconds, devhost reports an error and leaves that claim unreclaimed.
 

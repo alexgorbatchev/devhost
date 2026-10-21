@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-20 16:41
+last_modified: 2026-10-20 21:28
 status: current
 ---
 
@@ -159,15 +159,15 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Manifest
 
-| Feature                                                              | Documented in                                                                 | Shown in                                 |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
-| Port, bind host, hostname, and service variables passed to a service | `guides/environment-variables.md`                                             | `environment-variables` step-1 to step-4 |
-| Environment interpolation with `{{ env.NAME }}`                      | README, "Manifest Interpolation"                                              | No demo                                  |
-| Service references with `{{ services.<name>.<property> }}`           | README, "Late-Binding Service References"; `guides/service-references.md`     | `service-references` step-1 to step-4    |
-| Health checks with automatic ports                                   | `guides/service-references.md`, "Health checks with automatic ports"          | No demo                                  |
-| Manifest includes                                                    | README, "Manifest Includes"; `guides/manifest-includes.md`                    | `manifest-includes` step-1 to step-6     |
-| Running an included manifest on its own                              | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
-| Reject overlapping root and included manifests at startup and reload | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection" | No demo                                  |
+| Feature                                                                                                                                          | Documented in                                                                                              | Shown in                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Port, bind host, hostname, and service variables passed to a service                                                                             | `guides/environment-variables.md`                                                                          | `environment-variables` step-1 to step-4 |
+| Environment interpolation with `{{ env.NAME }}`                                                                                                  | README, "Manifest Interpolation"                                                                           | No demo                                  |
+| Service references with `{{ services.<name>.<property> }}`                                                                                       | README, "Late-Binding Service References"; `guides/service-references.md`                                  | `service-references` step-1 to step-4    |
+| Health checks with automatic ports                                                                                                               | `guides/service-references.md`, "Health checks with automatic ports"                                       | No demo                                  |
+| Manifest includes                                                                                                                                | README, "Manifest Includes"; `guides/manifest-includes.md`                                                 | `manifest-includes` step-1 to step-6     |
+| Running an included manifest on its own                                                                                                          | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection"                              | No demo                                  |
+| Reject overlapping root and included manifests at startup and reload; startup error prefix, home-path shortening, and context-aware stop command | `guides/manifest-includes.md`, "Sub-Manifest Solo Runs & Override Protection"; `guides/troubleshooting.md` | No demo                                  |
 
 ### Routing
 
