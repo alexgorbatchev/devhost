@@ -35,7 +35,7 @@ const (
 	resourcesWebsocketPath           = controlPathPrefix + "/ws/resources"
 	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
 	maximumRetainedLogEntries        = 512
-	healthPollInterval               = time.Second
+	defaultHealthPollInterval        = time.Second
 	websocketCloseFrameTimeout       = time.Second
 	websocketCloseReasonStopping     = "devhost is stopping"
 	websocketCloseReasonSessionEnded = "terminal session ended"
@@ -51,6 +51,7 @@ const (
 type FeatureToggles struct {
 	AnnotationEnabled       bool
 	AnnotationQueueEnabled  bool
+	ConfigEditorEnabled     bool
 	EditorEnabled           bool
 	ExternalToolbarsEnabled bool
 	MinimapEnabled          bool
@@ -85,6 +86,8 @@ type HealthResponse struct {
 	// StoppedServices lists the services left out by a run that named the ones to start.
 	StoppedServices []StoppedService     `json:"stoppedServices,omitempty"`
 	Repositories    []WorktreeRepository `json:"repositories,omitempty"`
+	// Configuration reports the reloads of each configuration source.
+	Configuration []ConfigurationStatus `json:"configuration,omitempty"`
 }
 
 type ServiceLogStream string
@@ -102,8 +105,12 @@ type ServiceLogEntry struct {
 }
 
 type StartControlServerOptions struct {
-	NativeBrowser              manifest.DevtoolsBrowserConfig
-	AllowsNativeBrowserURL     func(int, string) (bool, error)
+	NativeBrowser   manifest.DevtoolsBrowserConfig
+	OwnsDocumentURL func(int, string) (bool, error)
+	// ListConfigFiles names the files the config editor may change.
+	ListConfigFiles func() ([]ConfigFileRef, error)
+	// CheckConfigFile makes the checks a reload makes, with content in place of the file at path.
+	CheckConfigFile            func(string, []byte) error
 	AnnotationDefaultActionID  string
 	AnnotationActions          []manifest.ValidatedAnnotationAction
 	ComponentEditor            string
@@ -113,7 +120,10 @@ type StartControlServerOptions struct {
 	GetHealthResponse          func() (HealthResponse, error)
 	IdleTerminalSessionTimeout time.Duration
 	// WebsocketWriteTimeout bounds one write to a browser connection. Zero selects the default.
-	WebsocketWriteTimeout   time.Duration
+	WebsocketWriteTimeout time.Duration
+	// HealthPollInterval is how often open pages are sent health that changed without a push. Zero selects the
+	// default.
+	HealthPollInterval      time.Duration
 	ManifestPath            string
 	Position                string
 	ProjectRootPath         string
@@ -135,15 +145,20 @@ type StartControlServerOptions struct {
 
 type ControlServer struct {
 	// settings are what a hot reload changes; mu guards them with configJSON.
-	settings                   ControlSettings
-	nativeBrowserInstanceID    string
-	homeDirectoryPath          string
-	runtimeDirectoryPath       string
-	allowsNativeBrowserURL     func(int, string) (bool, error)
+	settings                ControlSettings
+	nativeBrowserInstanceID string
+	homeDirectoryPath       string
+	runtimeDirectoryPath    string
+	ownsDocumentURL         func(int, string) (bool, error)
+	listConfigFiles         func() ([]ConfigFileRef, error)
+	checkConfigFile         func(string, []byte) error
+	// configSaveMu makes the version check and the write of one save a unit.
+	configSaveMu               sync.Mutex
 	listener                   net.Listener
 	server                     *http.Server
 	idleTerminalSessionTimeout time.Duration
 	websocketWriteTimeout      time.Duration
+	healthPollInterval         time.Duration
 	restartService             func([]string) error
 	restartStack               func() error
 	startService               func([]string) error
@@ -216,6 +231,7 @@ type injectedConfig struct {
 	ResourcesEnabled          bool                       `json:"resourcesEnabled"`
 	AnnotationEnabled         bool                       `json:"annotationEnabled"`
 	AnnotationQueueEnabled    bool                       `json:"annotationQueueEnabled"`
+	ConfigEditorEnabled       bool                       `json:"configEditorEnabled"`
 	TerminalEnabled           bool                       `json:"terminalEnabled"`
 	RoutedServices            []RoutedServiceIdentity    `json:"routedServices"`
 	RestartServicesShortcut   string                     `json:"restartServicesShortcut"`
@@ -287,7 +303,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		nativeBrowserInstanceID:    instanceID,
 		homeDirectoryPath:          home,
 		runtimeDirectoryPath:       options.RuntimeDirectoryPath,
-		allowsNativeBrowserURL:     options.AllowsNativeBrowserURL,
+		ownsDocumentURL:            options.OwnsDocumentURL,
+		listConfigFiles:            options.ListConfigFiles,
+		checkConfigFile:            options.CheckConfigFile,
 		ctx:                        ctx,
 		cancel:                     cancel,
 		devSource:                  options.DevSource,
@@ -299,6 +317,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		healthClients:              map[*websocketClient]struct{}{},
 		idleTerminalSessionTimeout: options.IdleTerminalSessionTimeout,
 		websocketWriteTimeout:      options.WebsocketWriteTimeout,
+		healthPollInterval:         options.HealthPollInterval,
 		listener:                   listener,
 		logsClients:                map[*websocketClient]struct{}{},
 		nextLogEntryID:             1,
@@ -314,17 +333,17 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		startTerminalSession:       options.StartTerminalSession,
 		terminalSessions:           map[string]*terminalSessionState{},
 		tracker:                    NewActivityTracker(),
-		upgrader: websocket.Upgrader{
-			CheckOrigin: func(*http.Request) bool {
-				return true
-			},
-		},
+		// The zero upgrader refuses an Origin whose host differs from the request Host.
+		upgrader: websocket.Upgrader{},
 	}
 	if controlServer.idleTerminalSessionTimeout <= 0 {
 		controlServer.idleTerminalSessionTimeout = defaultIdleTerminalSessionPeriod
 	}
 	if controlServer.websocketWriteTimeout <= 0 {
 		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
+	}
+	if controlServer.healthPollInterval <= 0 {
+		controlServer.healthPollInterval = defaultHealthPollInterval
 	}
 	configJSON, err := controlServer.renderInjectedConfig(settings)
 	if err != nil {
@@ -441,13 +460,17 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(restartStackPath, controlServer.handleRestartStack)
 	mux.HandleFunc(startServicePath, controlServer.handleStartService)
 	mux.HandleFunc(worktreesPath, controlServer.handleWorktrees)
+	mux.HandleFunc("GET "+configFilesPath, controlServer.handleConfigFiles)
+	mux.HandleFunc("GET "+configSchemaPath, controlServer.handleConfigSchema)
+	mux.HandleFunc(configValidatePath, controlServer.handleConfigValidate)
+	mux.HandleFunc(configSavePath, controlServer.handleConfigSave)
 	mux.HandleFunc(healthWebsocketPath, controlServer.handleHealthWebsocket)
 	mux.HandleFunc(resourcesWebsocketPath, controlServer.handleResourcesWebsocket)
 	if settings.resourcesEnabled() {
 		controlServer.startResourceSampler(settings.ResourceIntervals)
 	}
 	mux.HandleFunc(logsWebsocketPath, controlServer.handleLogsWebsocket)
-	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(mux)}
+	controlServer.server = &http.Server{Handler: controlServer.trackerMiddleware(controlServer.guardControlRequests(mux))}
 
 	controlServer.serverWG.Add(2)
 	go func() {
@@ -458,12 +481,14 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}()
 	go func() {
 		defer controlServer.serverWG.Done()
-		ticker := time.NewTicker(healthPollInterval)
+		ticker := time.NewTicker(controlServer.healthPollInterval)
 		defer ticker.Stop()
 
-		for range ticker.C {
-			if controlServer.isClosed() {
+		for {
+			select {
+			case <-controlServer.ctx.Done():
 				return
+			case <-ticker.C:
 			}
 			if !controlServer.hasHealthSubscribers() {
 				continue

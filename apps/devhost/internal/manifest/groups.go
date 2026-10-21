@@ -23,8 +23,7 @@ func validateGroups(raw any, services map[string]ValidatedService, schemaIssues,
 		if _, exists := services[name]; exists {
 			*validationIssues = append(*validationIssues, path+" conflicts with a service name.")
 		}
-		// Use the qualified path so schema errors identify the group table.
-		members, ok := readOptionalStringArray(map[string]any{path: value[name]}, path, schemaIssues)
+		members, ok := readOptionalStringArray(value, "groups", name, schemaIssues)
 		if !ok {
 			continue
 		}

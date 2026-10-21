@@ -2,8 +2,45 @@ package services
 
 import (
 	"fmt"
+	"maps"
 	"os"
+	"slices"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
+
+type reloadPortResolver func(manifest.Manifest, ResolvedManifest, []string) (ResolvedManifest, error)
+
+// resolveReloadCandidate orders the services of next and resolves its ports against the running configuration: the
+// checks of a reload that change nothing. It returns the configuration the reload would run and its start order.
+func resolveReloadCandidate(next manifest.Manifest, current ResolvedManifest, requested []string, resolvePorts reloadPortResolver) (ResolvedManifest, []string, error) {
+	order, err := ResolveServiceOrder(next)
+	if err != nil {
+		return ResolvedManifest{}, nil, err
+	}
+	candidate, err := resolvePorts(next, current, requested)
+	if err != nil {
+		return ResolvedManifest{}, nil, err
+	}
+	// The stack is identified by the root manifest path, which a worktree switch
+	// keeps; its name is a label that follows the configuration.
+	candidate.ManifestPath = current.ManifestPath
+	candidate.ServiceOrder = orderedServiceNames(next)
+	return candidate, order, nil
+}
+
+// validateServiceWorkingDirectories rejects a configuration in which a managed service that is not stopped cannot
+// start in its working directory.
+func validateServiceWorkingDirectories(m ResolvedManifest, blocked map[string]string) error {
+	for _, name := range slices.Sorted(maps.Keys(m.Services)) {
+		if service := m.Services[name]; isManagedService(service) && blocked[name] == "" {
+			if err := validateServiceWorkingDirectory(service); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 func validateServiceWorkingDirectory(service ResolvedService) error {
 	if service.Cwd == "" {

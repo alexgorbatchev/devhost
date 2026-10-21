@@ -1,7 +1,11 @@
 import type { StoryContext } from "@storybook/react";
 import { useEffect, useState, type ComponentType, type JSX } from "react";
 
-import { factory_appStack, factory_designOverviewStack } from "../src/devtools/components/stories/fixtures";
+import {
+  factory_appStack,
+  factory_configEditorStack,
+  factory_designOverviewStack,
+} from "../src/devtools/components/stories/fixtures";
 import { installDevhostStackMock, type IDevhostStackMock, type IDevhostStoryStack } from "./installDevhostStackMock";
 import { installServiceRecoveryMock, type IServiceRecoveryMock } from "./installServiceRecoveryMock";
 
@@ -19,7 +23,7 @@ interface IServiceRecoveryDecoratorProps {
 
 /**
  * Runs a story against a mocked devhost control plane, selected by story `parameters`: `designOverview`,
- * `serviceRecovery`, `worktreeRecovery`, or the default App stack. The story renders once the mock is installed.
+ * `serviceRecovery`, `worktreeRecovery`, `configEditor`, or the default App stack. The story renders once the mock is installed.
  */
 export function withDevhostMock(Story: ComponentType, context: StoryContext): JSX.Element {
   if (context.parameters.worktreeRecovery === true) {
@@ -27,6 +31,9 @@ export function withDevhostMock(Story: ComponentType, context: StoryContext): JS
   }
   if (context.parameters.serviceRecovery === true) {
     return <ServiceRecoveryDecorator Story={Story} />;
+  }
+  if (context.parameters.configEditor === true) {
+    return <DevhostStackDecorator Story={Story} createStack={factory_configEditorStack} />;
   }
   if (context.parameters.designOverview === true) {
     return <DevhostStackDecorator Story={Story} createStack={factory_designOverviewStack} />;
