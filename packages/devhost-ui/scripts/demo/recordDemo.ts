@@ -1,3 +1,4 @@
+import { assertDemoFfmpeg } from "./assertDemoFfmpeg";
 import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import type { Subprocess } from "bun";
@@ -41,6 +42,7 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string, gui
   for (const executable of dependencies) {
     if (!Bun.which(executable)) throw new Error(`Missing recording dependency: ${executable}`);
   }
+  await assertDemoFfmpeg(runCommand, signal);
   if (isPromo) {
     // An unusable renderer stops the run here, before the capture and its Pi request.
     await preparePromoRenderer(runCommand, join(import.meta.dir, "promo"), join(repositoryPath, ".tmp/demos"), signal);
@@ -90,7 +92,8 @@ export async function recordDemo(signal: AbortSignal, selectedScene: string, gui
   };
   signal.addEventListener("abort", closeBrowser, { once: true });
   try {
-    // Relative paths keep Chromium's filesystem socket names within Linux's 108-byte limit in deep worktrees.
+    // Relative paths keep Chromium's filesystem socket names within the socket path limit (108 bytes on Linux, 104 on
+    // macOS) in deep worktrees.
     process.chdir(runtime.directoryPath);
     process.env.TMPDIR = ".tmp";
     await runCommand([

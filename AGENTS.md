@@ -22,7 +22,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check the docs package-only validations: `just docs check`
 - Run native React acceptance from the repository root on macOS or Linux x64: `just ui test-native-react` (it downloads the current Chrome for Testing and React Developer Tools; see `packages/devhost-ui/AGENTS.md` for its coverage)
 - Run standalone React Highlight Neovim plugin tests: `just devhost test-nvim`
-- Record the real scenes and render the promo on Linux: `just demo record` (or `just demo record annotations` for one captioned scene); follow `docs/internal/references/demo-recording.md` for prerequisites and refresh instructions.
+- Record the real scenes and render the promo on Linux or macOS (publish media recorded on Linux): `just demo record` (or `just demo record annotations` for one captioned scene); follow `docs/internal/references/demo-recording.md` for prerequisites and refresh instructions.
 - Render the promo again from an earlier recording's footage: `just demo promo` (or `just demo promo .tmp/demos/recording-AbC123`). Every promo render also writes the docs landing page's copy: `packages/docs/public/demos/promo.{mp4,webp,vtt}` and `packages/docs/src/promoDemo.html`; review before publishing and committing.
 - Regenerate the promo's ElevenLabs narration, its only sound: `just demo audio`. This needs `ELEVENLABS_API_KEY` and bills that account.
 - Run recording workflow unit tests: `just demo test` (also included in `just ui check`).

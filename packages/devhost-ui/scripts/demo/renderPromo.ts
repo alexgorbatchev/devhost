@@ -1,3 +1,4 @@
+import { assertDemoFfmpeg } from "./assertDemoFfmpeg";
 import assert from "node:assert/strict";
 import { cp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -120,6 +121,7 @@ if (import.meta.main) {
         ? await findPromoRecording(recordingsPath, [...new Set(requests.map((request) => request.slot.sourceId))])
         : // A relative path means what it meant where `just` was invoked, not in this recipe's directory.
           resolve(process.env.DEVHOST_DEMO_INVOCATION_DIRECTORY ?? process.cwd(), selected);
+    await assertDemoFfmpeg(runCommand, controller.signal);
     console.log(`Rendering the promo from ${directoryPath}`);
     const outputPath = await renderPromo({
       directoryPath,
