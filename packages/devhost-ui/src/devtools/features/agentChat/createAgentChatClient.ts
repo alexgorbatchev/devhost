@@ -1,7 +1,7 @@
 import { pristineFetch } from "../../shared/pristineFetch";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import { openReconnectingWebSocket, type IReconnectingWebSocket } from "../../shared/openReconnectingWebSocket";
-import type { ILocationHostProtocol } from "../../shared/types";
+import type { DevtoolsSettingsStore, ILocationHostProtocol } from "../../shared/types";
 import { readChatHarnesses, readChatServerFrame, readChatSession, readChatSessions } from "./readChatServerFrame";
 import { encodeChatCommand } from "./encodeChatCommand";
 import type { ChatCommand, IAgentChatClient, IAgentChatClientState, IChatSession, IChatSessionRequest } from "./types";
@@ -12,7 +12,12 @@ interface IPendingChatSend {
   timeout: ReturnType<typeof setTimeout>;
 }
 
-export function createAgentChatClient(pageURL: string, location: ILocationHostProtocol): IAgentChatClient {
+export function createAgentChatClient(
+  pageURL: string,
+  location: ILocationHostProtocol,
+  settingsStore: DevtoolsSettingsStore,
+): IAgentChatClient {
+  const saved = settingsStore.getState().chat;
   const lifetime = new AbortController();
   const listeners = new Set<VoidFunction>();
   const pendingSends = new Map<string, IPendingChatSend>();
@@ -24,9 +29,9 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
     harnesses: [],
     sessions: [],
     session: null,
-    selectedHarness: "codex",
-    selectedModel: "",
-    isCatalogLoading: false,
+    selectedHarness: saved.selectedHarness,
+    selectedModel: saved.selectedModel,
+    isCatalogLoading: true,
     catalogError: null,
     isConnecting: false,
     isConnected: false,
@@ -37,6 +42,15 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
   const publish = (patch: Partial<IAgentChatClientState>): void => {
     if (lifetime.signal.aborted) return;
     state = { ...state, ...patch };
+    const current = settingsStore.getState();
+    const sessionId = state.session?.id ?? current.chat.sessionId;
+    if (
+      state.selectedHarness !== current.chat.selectedHarness ||
+      state.selectedModel !== current.chat.selectedModel ||
+      sessionId !== current.chat.sessionId
+    ) {
+      current.updateChat({ selectedHarness: state.selectedHarness, selectedModel: state.selectedModel, sessionId });
+    }
     for (const listener of listeners) listener();
   };
   const errorText = (error: unknown): string => (error instanceof Error ? error.message : String(error));
@@ -67,7 +81,10 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
     cancelConnection = null;
   };
   const attach = (session: IChatSession): Promise<void> => {
+    if (lifetime.signal.aborted) return Promise.reject(new Error("Chat is no longer mounted."));
     detach();
+    const current = settingsStore.getState();
+    if (current.chat.sessionId !== session.id) current.updateChat({ sessionId: session.id, scroll: null });
     const ownGeneration = generation;
     publish({ session, events: [], pendingRequestIds: [], isConnecting: true, isConnected: false, sendError: null });
     return new Promise<void>((resolve, reject) => {
@@ -165,6 +182,7 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
     if (!state.isConnected || !stream?.send(encodeChatCommand(command)))
       throw new Error("The chat session is disconnected. Reconnect before sending.");
   };
+  let shouldRestoreSession = true;
   return {
     getSnapshot: () => state,
     subscribe: (listener) => {
@@ -179,6 +197,7 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
           request(`/__devhost__/chat/harnesses?${query}`),
           request(`/__devhost__/chat/sessions?${query}`),
         ]);
+        if (lifetime.signal.aborted) return;
         const harnesses = readChatHarnesses(catalog);
         const selected =
           harnesses.find((item) => item.id === state.selectedHarness && item.available) ??
@@ -187,8 +206,21 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
           harnesses,
           sessions: readChatSessions(sessions),
           selectedHarness: selected?.id ?? state.selectedHarness,
+          selectedModel:
+            selected?.id === state.selectedHarness && selected.models.some((model) => model.id === state.selectedModel)
+              ? state.selectedModel
+              : "",
           isCatalogLoading: false,
         });
+        if (shouldRestoreSession) {
+          shouldRestoreSession = false;
+          const savedSession = state.sessions.find((session) => session.id === saved.sessionId);
+          if (savedSession && savedSession.status !== "closed" && state.session === null && !state.isConnecting) {
+            await attach(savedSession);
+          } else if (state.session === null && !state.isConnecting) {
+            settingsStore.getState().updateChat({ sessionId: null, scroll: null });
+          }
+        }
       } catch (error) {
         publish({ isCatalogLoading: false, catalogError: errorText(error) });
       }
@@ -216,6 +248,7 @@ export function createAgentChatClient(pageURL: string, location: ILocationHostPr
         { method: "DELETE" },
       );
       detach();
+      settingsStore.getState().updateChat({ sessionId: null, scroll: null });
       publish({
         session: null,
         sessions: state.sessions.filter((item) => item.id !== session.id),

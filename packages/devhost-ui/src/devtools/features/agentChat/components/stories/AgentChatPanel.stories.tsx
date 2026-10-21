@@ -1,8 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { userEvent as nativeUserEvent } from "vitest/browser";
 import { AgentChatPanel } from "../AgentChatPanel";
-import { ChatPreparationScene, PageChatScene, installPageChatCatalog } from "./helpers";
+import {
+  ChatPreparationScene,
+  ChatReloadScene,
+  PageChatScene,
+  deliverChatReply,
+  isChatViewportAtBottom,
+  installChatReloadServer,
+  installPageChatCatalog,
+  readChatViewport,
+} from "./helpers";
 
 const meta: Meta<typeof AgentChatPanel> = {
   component: AgentChatPanel,
@@ -19,6 +28,76 @@ const meta: Meta<typeof AgentChatPanel> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const ReloadRestoresConversationView: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+    await canvas.findByRole("option", { name: "codex · saved-conversation" });
+    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(canvas.getByRole("button", { name: "Move Chat To Left" }));
+    const composer = await canvas.findByRole("textbox");
+    await userEvent.type(composer, "Keep this unsent review");
+    const viewport = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
+    await waitFor(() => expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight + 1000));
+    await nativeUserEvent.wheel(viewport, { delta: { y: -100000 } });
+    await waitFor(() => expect(viewport.scrollTop).toBe(0));
+    await nativeUserEvent.wheel(viewport, { delta: { y: 400 } });
+    await waitFor(() => expect(viewport.scrollTop).toBe(400));
+    const position = viewport.scrollTop;
+    await userEvent.click(canvas.getByRole("button", { name: "Collapse Chat" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    await expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    await expect(canvas.getByRole("button", { name: "Move Chat To Right" })).toBeVisible();
+    await expect(await canvas.findByRole("textbox")).toHaveValue("Keep this unsent review");
+    const restored = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
+    await waitFor(() => expect(restored.scrollTop).toBeCloseTo(position, 0));
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    await expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-expanded", "true");
+    await expect(await canvas.findByRole("textbox")).toHaveValue("Keep this unsent review");
+  },
+};
+
+export const RepliesFollowUntilReaderScrollsBack: Story = {
+  render: () => <ChatReloadScene />,
+  // The conversation starts empty, so the replies arriving live are what fill the view.
+  beforeEach: () => installChatReloadServer([]),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+    await canvas.findByRole("option", { name: "codex · saved-conversation" });
+    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+    await userEvent.keyboard("{Escape}");
+    const viewport = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
+    for (let sequence = 1; sequence <= 40; sequence += 1) {
+      deliverChatReply(sequence);
+      await canvas.findByText(`Live reply ${sequence}.`);
+      await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(true));
+    }
+    expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight * 2);
+    // A short step back, inside the space the composer's top margin filled while the conversation was short.
+    await nativeUserEvent.wheel(viewport, { delta: { y: -150 } });
+    await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(false));
+    // The reader keeps their place: what they were reading stays where it was on screen.
+    const reading = canvas.getByText("Live reply 38.");
+    const readingTop = reading.getBoundingClientRect().top;
+    deliverChatReply(41);
+    await canvas.findByText("Live reply 41.");
+    expect(reading.getBoundingClientRect().top).toBeCloseTo(readingTop, 0);
+    expect(isChatViewportAtBottom(viewport)).toBe(false);
+    await nativeUserEvent.wheel(viewport, { delta: { y: 100000 } });
+    await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(true));
+    deliverChatReply(42);
+    await canvas.findByText("Live reply 42.");
+    await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(true));
+  },
+};
 
 export const PreparingSendKeepsConversationTarget: Story = {
   render: () => <ChatPreparationScene />,

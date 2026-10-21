@@ -5,6 +5,7 @@ import { installMockWebSocket, type IInstalledMockWebSocket } from "../../../../
 import type { IMockWebSocketConnection } from "../../../../../test-support/createMockWebSocket";
 import { createAgentChatClient } from "../createAgentChatClient";
 import type { IAgentChatClient, IChatSession } from "../types";
+import { createDevtoolsSettingsStore } from "../../../shared/createDevtoolsSettingsStore";
 
 let sockets: IInstalledMockWebSocket;
 let client: IAgentChatClient;
@@ -12,7 +13,20 @@ const session: IChatSession = { id: "accepted-session", harness: "codex", projec
 
 beforeEach(() => {
   sockets = installMockWebSocket();
-  client = createAgentChatClient("https://app.localhost/page", window.location);
+  const storage = new Map<string, string>();
+  const settings = createDevtoolsSettingsStore(
+    { projectRootPath: "/project", pageURL: "https://app.localhost/page" },
+    () => ({
+      getItem: (key) => storage.get(key) ?? null,
+      setItem: (key, value) => {
+        storage.set(key, value);
+      },
+      removeItem: (key) => {
+        storage.delete(key);
+      },
+    }),
+  );
+  client = createAgentChatClient("https://app.localhost/page", window.location, settings);
 });
 afterEach(async () => {
   client.dispose();

@@ -1,6 +1,7 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Button } from "@alexgorbatchev/shadcn";
-import { lazy, Suspense, useState, type JSX, type ReactNode } from "react";
+import { lazy, Suspense, type JSX, type ReactNode } from "react";
+import { useStore } from "zustand";
 import { cn } from "../../../../lib/utils";
 import type { IAgentChatController } from "../types";
 import { ApprovalRequests } from "./ApprovalRequests";
@@ -12,12 +13,11 @@ import { TabShareActions } from "./TabShareActions";
 import { TabShareContext } from "../TabShareContext";
 import type { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
 import { AgentChatBody } from "../layouts/AgentChatBody";
+import { useChatScrollPosition } from "../hooks/useChatScrollPosition";
 
 const Thread = lazy(() =>
   import("@alexgorbatchev/shadcn/assistant-ui/native/thread").then((module) => ({ default: module.Thread })),
 );
-
-type ChatPanelSide = "left" | "right";
 
 interface IAgentChatPanelProps {
   chat: IAgentChatController;
@@ -28,7 +28,13 @@ interface IAgentChatPanelProps {
 }
 
 export function AgentChatPanel({ chat, isOpen, onClose, children, sharing }: IAgentChatPanelProps): JSX.Element {
-  const [side, setSide] = useState<ChatPanelSide>("right");
+  const side = useStore(chat.settingsStore, (state) => state.chat.side);
+  const viewportProps = useChatScrollPosition({
+    settingsStore: chat.settingsStore,
+    isOpen,
+    isReady: chat.isHistoryReady && !chat.isCatalogLoading && !chat.isConnecting,
+    sessionId: chat.session?.id,
+  });
   const harness = chat.harnesses.find((candidate) => candidate.id === chat.selectedHarness);
   const isBusy =
     chat.isPreparing ||
@@ -55,7 +61,7 @@ export function AgentChatPanel({ chat, isOpen, onClose, children, sharing }: IAg
           variant="ghost"
           aria-label={side === "right" ? "Move Chat To Left" : "Move Chat To Right"}
           title="Move Chat"
-          onClick={() => setSide(side === "right" ? "left" : "right")}
+          onClick={() => chat.settingsStore.getState().updateChat({ side: side === "right" ? "left" : "right" })}
         >
           <Icon glyph={ArrowLeftRightIcon} />
         </Button>
@@ -105,6 +111,7 @@ export function AgentChatPanel({ chat, isOpen, onClose, children, sharing }: IAg
           <Suspense fallback={<p role="status">Loading conversation…</p>}>
             <TabShareContext value={sharing}>
               <Thread
+                viewportProps={viewportProps}
                 autoFocus={false}
                 emptyComposerPosition="bottom"
                 components={{ Welcome: ChatWelcome, UserText: ChatUserText, ComposerActions: TabShareActions }}

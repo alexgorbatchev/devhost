@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 
 import { buildDevtoolsBundle } from "../../../../../apps/devhost/scripts/buildDevtoolsBundle";
 import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
+import type { Page } from "playwright";
+import type { IChatSnapshot } from "../features/agentChat/types";
 
 interface IBuiltDevtoolsHost {
   /** The environment for the browser a test opens this host in. Its home lives in the host's own directory. */
@@ -12,11 +14,13 @@ interface IBuiltDevtoolsHost {
   requests: string[];
   requestUrls: string[];
   requestHeaders: Headers[];
+  requestMethods: string[];
+  chatCommands: string[];
   setStackName: (name: string) => void;
   url: string;
 }
 
-export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
+export async function startBuiltDevtoolsHost(chat?: IChatSnapshot): Promise<IBuiltDevtoolsHost> {
   const temporaryRootPath: string = E2E_TEMPORARY_PATH;
   await mkdir(temporaryRootPath, { recursive: true });
   const directoryPath: string = await mkdtemp(resolve(temporaryRootPath, "browser-bundle-"));
@@ -30,6 +34,9 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
   const requests: string[] = [];
   const requestUrls: string[] = [];
   const requestHeaders: Headers[] = [];
+  const requestMethods: string[] = [];
+  const chatCommands: string[] = [];
+  let isChatClosed = false;
   let stackName: string = "bundle-browser-test";
   const server = Bun.serve<string>({
     hostname: "127.0.0.1",
@@ -39,6 +46,7 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
       requests.push(url.pathname);
       requestUrls.push(url.pathname + url.search);
       requestHeaders.push(request.headers);
+      requestMethods.push(request.method);
       if (url.pathname.startsWith("/__devhost__/ws/")) {
         return server.upgrade(request, { data: url.pathname }) ? undefined : new Response(null, { status: 400 });
       }
@@ -46,7 +54,8 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
         return Response.json(
           {
             stackName,
-            chatEnabled: false,
+            chatEnabled: chat !== undefined,
+            projectRootPath: chat?.session.projectRootPath,
             annotationEnabled: false,
             editorEnabled: false,
             externalToolbarsEnabled: false,
@@ -55,6 +64,23 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
           },
           { headers: { "Cache-Control": "no-store" } },
         );
+      }
+      if (url.pathname === "/__devhost__/chat/harnesses")
+        return Response.json({
+          harnesses: [
+            {
+              id: "codex",
+              label: "Codex",
+              available: true,
+              models: [{ id: "native-model", label: "Native model", description: "Installed model", metadata: {} }],
+            },
+          ],
+        });
+      if (url.pathname === "/__devhost__/chat/sessions")
+        return Response.json({ sessions: chat && !isChatClosed ? [chat.session] : [] });
+      if (url.pathname.startsWith("/__devhost__/chat/sessions/") && request.method === "DELETE") {
+        isChatClosed = true;
+        return new Response(null, { status: 204 });
       }
       if (
         url.pathname === "/__devhost__/inject.js" ||
@@ -75,15 +101,19 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
     },
     websocket: {
       open(socket): void {
-        socket.send(JSON.stringify({ services: [] }));
+        socket.send(JSON.stringify(socket.data === "/__devhost__/ws/chat" && chat ? chat : { services: [] }));
       },
-      message(): void {},
+      message(socket, message): void {
+        if (socket.data === "/__devhost__/ws/chat") chatCommands.push(String(message));
+      },
     },
   });
   return {
     requests,
     requestUrls,
     requestHeaders,
+    requestMethods,
+    chatCommands,
     url: server.url.toString(),
     setStackName: (name): void => {
       stackName = name;
@@ -94,4 +124,11 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
       await rm(directoryPath, { recursive: true, force: true });
     },
   };
+}
+
+export async function waitForChatScroll(page: Page, top: number): Promise<void> {
+  await page.waitForFunction((expected) => {
+    const root = document.querySelector("#devhost-devtools-host")?.shadowRoot;
+    return root?.querySelector('[data-slot="aui_thread-viewport"]')?.scrollTop === expected;
+  }, top);
 }

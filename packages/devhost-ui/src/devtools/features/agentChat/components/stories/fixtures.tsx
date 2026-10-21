@@ -1,4 +1,24 @@
-import type { IChatEvent, IChatPendingRequest } from "../../types";
+import type { IChatEvent, IChatPendingRequest, IChatSession } from "../../types";
+
+export const fixture_reloadSession: IChatSession = {
+  id: "saved-conversation",
+  harness: "codex",
+  projectRootPath: "storybook-workspace",
+  status: "idle",
+};
+export const fixture_reloadEvents: readonly IChatEvent[] = Array.from({ length: 30 }, (_, index) => ({
+  sequence: index + 1,
+  payload: {
+    method: "item/completed",
+    params: {
+      item: {
+        type: "agentMessage",
+        id: `replayed-${index}`,
+        text: `Reply ${index + 1}: ${"Conversation history for scroll restoration. ".repeat(8)}`,
+      },
+    },
+  },
+}));
 
 export const fixture_commandRequest: IChatPendingRequest = {
   requestId: 7,

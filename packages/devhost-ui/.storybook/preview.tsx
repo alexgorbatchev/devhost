@@ -19,6 +19,7 @@ import {
 } from "../src/devtools/shared/storybookTheme";
 import type { HealthResponse, ServiceLogSnapshotMessage } from "../src/devtools/shared/types";
 import { createMockWebSocket, type IMockWebSocketConnection } from "../test-support/createMockWebSocket";
+import { resetDevtoolsSettingsStorage } from "../test-support/resetDevtoolsSettingsStorage";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchPreconnect = typeof fetch.preconnect;
@@ -146,6 +147,7 @@ const preview: Preview = {
     layout: "fullscreen",
   },
   beforeEach() {
+    const restoreSettings = resetDevtoolsSettingsStorage();
     const originalFetch: unknown = Reflect.get(globalThis, "fetch");
     const originalWebSocket: unknown = Reflect.get(globalThis, "WebSocket");
 
@@ -155,6 +157,7 @@ const preview: Preview = {
     Reflect.set(globalThis, "WebSocket", createMockWebSocket(sendStorybookSnapshot));
 
     return (): void => {
+      restoreSettings();
       Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
       restoreGlobalValue("fetch", originalFetch);
       restoreGlobalValue("WebSocket", originalWebSocket);
