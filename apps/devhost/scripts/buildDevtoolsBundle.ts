@@ -158,4 +158,13 @@ function createInlineDevtoolsStylesheetPlugin(stylesheetText: string): BunPlugin
 
 if (import.meta.main) {
   await buildDevtoolsBundle({ isProduction: Bun.env.DEVHOST_DEVTOOLS_DEVELOPMENT !== "1" });
+  const statusBuild = await Bun.build({
+    entrypoints: [fileURLToPath(new URL("../internal/statuspage/status.css", import.meta.url))],
+    outdir: fileURLToPath(new URL("../internal/statuspage/dist/", import.meta.url)),
+    minify: true,
+    throw: false,
+  });
+  if (!statusBuild.success) {
+    throw new Error(`Failed to build status page stylesheet: ${statusBuild.logs.map(String).join("\n")}`);
+  }
 }

@@ -3,7 +3,12 @@ package statuspage
 
 import _ "embed"
 
-// CSS styles both the managed proxy's 404 page and service recovery documents.
+// CSS includes the shared design tokens, bundled by buildDevtoolsBundle.ts.
 //
-//go:embed status.css
+//go:embed dist/status.css
 var CSS string
+
+// ThemeScript follows the system preference before the document paints.
+//
+//go:embed theme.js
+var ThemeScript string

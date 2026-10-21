@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -192,8 +193,10 @@ func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T)
 	if response.Header.Get("content-type") != "text/html; charset=utf-8" {
 		t.Fatalf("content-type = %q", response.Header.Get("content-type"))
 	}
-	want := `<!doctype html><html><head><meta charset="utf-8"><title>Service unavailable · devhost</title></head><body data-devhost-recovery><p>Service unavailable. Use devhost to view logs and restart it.</p><script type="module" src="/__devhost__/inject.js"></script></body></html>`
-	if body := readResponseText(t, response); body != want {
-		t.Fatalf("recovery body = %q", body)
+	body := readResponseText(t, response)
+	for _, content := range []string{`<h1 class="devhost-status__title">Service unavailable</h1>`, `Use devhost to view logs and restart it.`, `<script type="module" src="/__devhost__/inject.js"></script>`, `<meta name="viewport"`, `data-devhost-recovery`} {
+		if !strings.Contains(body, content) {
+			t.Fatalf("recovery body missing %q", content)
+		}
 	}
 }
