@@ -35,7 +35,7 @@ func TestStartStackWarnsOnceAboutAnUntrustedLocalCA(t *testing.T) {
 	}()
 	ch := <-signals
 	warning := "[hello-stack] [WARN] " + caddy.UntrustedRootCertificateWarning + "\n"
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return strings.Contains(output.snapshot(), warning)
 	})
 	ch <- syscall.SIGTERM

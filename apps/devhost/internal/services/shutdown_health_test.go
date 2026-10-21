@@ -124,7 +124,7 @@ func TestStackShutdownDoesNotPublishServiceCrash(t *testing.T) {
 				}
 			})
 			control, server := <-controls, <-servers
-			waitForCondition(t, 5*time.Second, func() bool { return control.RestartService(nil) == nil })
+			waitForCondition(t, stackChangeTimeout, func() bool { return control.RestartService(nil) == nil })
 			health, err := control.GetHealthResponse()
 			if err != nil || len(health.Services) != 1 || !health.Services[0].Status {
 				t.Fatalf("initial health = %#v, %v", health, err)

@@ -67,7 +67,7 @@ func startRecoveryStack(t *testing.T, timeout int, missingExecutable, worktrees 
 	})
 	t.Cleanup(stop)
 	registrationPath := filepath.Join(paths.RegistrationsDirectoryPath, "recover.localhost_web_2f.json")
-	waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(registrationPath); return err == nil })
+	waitForCondition(t, stackChangeTimeout, func() bool { _, err := os.Stat(registrationPath); return err == nil })
 	route := readRestartRoute(t, registrationPath)
 	url := serverURL(route.DocumentInjectionPort, "/deep/link?value=1")
 	return url, gate, stop, &output
@@ -108,7 +108,7 @@ func readStartupRecoveryState(t *testing.T, url string) devtools.RecoveryState {
 
 func TestStartupRecoveryRetainsTimeoutAndRestartsWithoutToolbar(t *testing.T) {
 	url, gate, _, output := startRecoveryStack(t, 2000, false, false)
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		state := readStartupRecoveryState(t, url)
 		return state.CanRestart && strings.Contains(state.Message, "did not pass its health check within 2000ms")
 	})
@@ -166,7 +166,7 @@ func TestStartupPageWaitsForHealthBeforeServingApplication(t *testing.T) {
 	if err := os.WriteFile(gate, []byte("ready"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	waitForCondition(t, 5*time.Second, func() bool { return readStartupRecoveryPage(t, url) == "application /deep/link?value=1" })
+	waitForCondition(t, stackChangeTimeout, func() bool { return readStartupRecoveryPage(t, url) == "application /deep/link?value=1" })
 }
 
 func TestShutdownCancelsStartupHealthWait(t *testing.T) {
@@ -181,7 +181,7 @@ func testShutdownCancelsStartupHealthWait(t *testing.T, worktrees bool) {
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(page, "Starting web") {
 		t.Fatalf("startup page = %s", page)
 	}
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return strings.Contains(output.snapshot(), "waiting for serve gate")
 	})
 	stop()
@@ -201,7 +201,7 @@ func testShutdownCancelsStartupHealthWait(t *testing.T, worktrees bool) {
 
 func TestStartupLaunchErrorRetainsRoutesForRecovery(t *testing.T) {
 	url, gate, _, _ := startRecoveryStack(t, 2000, true, false)
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return strings.Contains(readStartupRecoveryPage(t, url), "missing-command")
 	})
 	if err := os.Symlink(os.Args[0], filepath.Join(filepath.Dir(gate), "missing-command")); err != nil {
@@ -217,7 +217,7 @@ func TestStartupLaunchErrorRetainsRoutesForRecovery(t *testing.T) {
 	request.Header.Set("X-Devhost-Recovery", "restart")
 	request.Header.Set("Origin", "http://"+request.Host)
 	// Startup completes after the launch error has been retained.
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return readStartupRecoveryState(t, url).CanRestart
 	})
 	response, err := http.DefaultClient.Do(request)

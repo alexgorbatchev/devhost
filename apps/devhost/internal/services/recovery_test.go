@@ -83,23 +83,23 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 				}
 			}()
 			options, port := <-controlOptions, <-controlPorts
-			waitForCondition(t, 5*time.Second, func() bool { _, err := os.Stat(pidPath); return err == nil })
+			waitForCondition(t, stackChangeTimeout, func() bool { _, err := os.Stat(pidPath); return err == nil })
 			firstPID, err := os.ReadFile(pidPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-			waitForCondition(t, 5*time.Second, func() bool {
+			waitForCondition(t, stackChangeTimeout, func() bool {
 				_, err := os.Stat(filepath.Join(paths.RoutesDirectoryPath, "recover.localhost.caddy"))
 				return err == nil
 			})
-			waitForCondition(t, 5*time.Second, func() bool {
+			waitForCondition(t, stackChangeTimeout, func() bool {
 				h, _ := options.GetHealthResponse()
 				return h.Services[0].Status && h.Services[1].Status
 			})
 			if err := os.WriteFile(triggerPath, nil, 0o600); err != nil {
 				t.Fatal(err)
 			}
-			waitForCondition(t, 5*time.Second, func() bool { h, _ := options.GetHealthResponse(); return h.Services[0].ExitCode != nil })
+			waitForCondition(t, stackChangeTimeout, func() bool { h, _ := options.GetHealthResponse(); return h.Services[0].ExitCode != nil })
 			select {
 			case err := <-done:
 				t.Fatalf("stack exited after service exit: %v", err)
@@ -175,7 +175,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 			if err := options.RestartService([]string{"web"}); err != nil {
 				t.Fatalf("restart exited service: %v", err)
 			}
-			waitForCondition(t, 5*time.Second, func() bool { pid, _ := os.ReadFile(pidPath); return string(pid) != string(firstPID) })
+			waitForCondition(t, stackChangeTimeout, func() bool { pid, _ := os.ReadFile(pidPath); return string(pid) != string(firstPID) })
 			h, err = options.GetHealthResponse()
 			if err != nil {
 				t.Fatal(err)
@@ -251,7 +251,7 @@ func startStackUntilServiceExit(t *testing.T, m *ResolvedManifest, order []strin
 	registerProcessSignals = func(ch chan<- os.Signal) { signals = ch }
 	unregisterProcessSignals = func(chan<- os.Signal) {}
 	options.LogWriter = &exitShutdownWriter{writer: options.LogWriter, signal: func() { signals <- syscall.SIGTERM }}
-	return StartStack(m, order, options)
+	return startTestStack(t, m, order, options)
 }
 
 type exitShutdownWriter struct {

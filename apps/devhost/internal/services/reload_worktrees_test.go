@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestManifestReloadPreservesSelectedCheckoutAndReconcilesMembership(t *testing.T) {
@@ -29,7 +28,7 @@ func TestManifestReloadPreservesSelectedCheckoutAndReconcilesMembership(t *testi
 	original := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "web.reload.localhost_web_2f.json"))
 	assertRestartResponse(t, serverURL(original.AppPort, "/cwd"), filepath.Join(linked, "web"))
 	write(service("web", "replacement", "web") + service("worker", "worker", "api"))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	health, err = f.control.GetHealthResponse()
 	if err != nil || health.Repositories[0].ID != id || health.Repositories[0].SelectedPath != linked || health.Repositories[0].RunningPath != linked || len(health.Repositories[0].ServiceNames) != 2 {
 		t.Fatalf("reload lost selection or membership: %#v, %v", health, err)
@@ -78,7 +77,7 @@ func TestManifestReloadTurnsWorktreesOnWithoutAnEarlierSelection(t *testing.T) {
 
 	f.header = strings.Replace(f.header, "enabled = false", "enabled = true", 1)
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	health, err := f.control.GetHealthResponse()
 	if err != nil || len(health.Repositories) != 1 || health.Repositories[0].SelectedPath != root || health.Repositories[0].RunningPath != root {
 		t.Fatalf("turning worktrees on moved the stack off its checkout: %#v, %v", health.Repositories, err)
@@ -113,7 +112,7 @@ func TestManifestReloadTurnsWorktreesOffOnAnotherCheckout(t *testing.T) {
 
 	f.header = strings.Replace(f.header, "enabled = true", "enabled = false", 1)
 	f.write(t, service(linked))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.count("worktree switched") == 2 })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("worktree switched") == 2 })
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
 	assertRestartResponse(t, serverURL(route.AppPort, "/cwd"), filepath.Join(root, "web"))
 	health, err = f.control.GetHealthResponse()
@@ -129,7 +128,7 @@ func TestManifestReloadAppliesKillZombies(t *testing.T) {
 	pid := reloadPID(t, route.AppPort)
 	f.header = "killZombies = false\n" + f.header
 	f.write(t, body)
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("changing killZombies restarted the service")
 	}
@@ -157,7 +156,7 @@ func TestManifestReloadSurvivesDeletedConfiguredCheckout(t *testing.T) {
 		t.Fatal(err)
 	}
 	write(service("web", "replacement", "web") + service("worker", "worker", "api"))
-	waitForCondition(t, 5*time.Second, func() bool {
+	waitForCondition(t, stackChangeTimeout, func() bool {
 		return f.logs.contains("configuration reloaded") || f.logs.contains("configuration reload rejected")
 	})
 	if !f.logs.contains("configuration reloaded") {

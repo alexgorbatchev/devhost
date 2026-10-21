@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestWorktreeSwitchLoadsTargetConfigurationAndWatchesIt(t *testing.T) {
@@ -50,7 +49,7 @@ func TestWorktreeSwitchLoadsTargetConfigurationAndWatchesIt(t *testing.T) {
 		t.Fatalf("retired route retained: %v", err)
 	}
 	write(strings.Replace(body, "\"new\"", "\"reloaded\"", 1))
-	waitForCondition(t, 5*time.Second, func() bool { return f.logs.contains("configuration reloaded") })
+	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	next = readRestartRoute(t, route)
 	assertRestartResponse(t, serverURL(next.AppPort, "/"), "reloaded")
 	write("\n[services.poc]\ncommand = [")
