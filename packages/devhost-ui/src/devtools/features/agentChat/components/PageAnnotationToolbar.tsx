@@ -28,7 +28,8 @@ export function PageAnnotationToolbar({
         role="toolbar"
         aria-label="Page Annotation Tools"
         data-devhost-capture-exclude=""
-        className="pointer-events-auto fixed top-2 left-1/2 z-(--devhost-z-dock) flex max-w-[calc(100vw-16px)] -translate-x-1/2 items-center gap-2 rounded-md border border-edge bg-card p-2 text-card-foreground shadow-frame [--ag-control-h:36px]"
+        data-devhost-annotation-controls=""
+        className="pointer-events-auto fixed top-2 left-1/2 z-(--devhost-z-annotation-controls) flex max-w-[calc(100vw-16px)] -translate-x-1/2 items-center gap-2 rounded-md border border-edge bg-card p-2 text-card-foreground shadow-frame [--ag-control-h:36px]"
       >
         <ToggleGroup
           value={active ? [active] : []}

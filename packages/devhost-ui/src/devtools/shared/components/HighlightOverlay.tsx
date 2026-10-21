@@ -44,6 +44,7 @@ export interface IHighlightOverlayItem {
 }
 
 interface IHighlightOverlayProps {
+  layer?: "overlay" | "annotation";
   appearance?: HighlightOverlayAppearance;
   badgeTestId?: string;
   highlightTestId?: string;
@@ -59,6 +60,7 @@ const labelHeight: number = 18;
 const labelGap: number = 6;
 
 export function HighlightOverlay({
+  layer = "overlay",
   appearance = "selected",
   badgeTestId = "HighlightOverlay--badge",
   highlightTestId = "HighlightOverlay--highlight",
@@ -194,7 +196,13 @@ export function HighlightOverlay({
   const overlayRootTestId: string | undefined = rootTestId === "HighlightOverlay" ? undefined : rootTestId;
   // `position: fixed` creates a stacking context, so the layer token lives on this element, not on its children.
   const overlay = (
-    <div data-testid={overlayRootTestId} className="pointer-events-none fixed inset-0 z-(--devhost-z-overlay)">
+    <div
+      data-testid={overlayRootTestId}
+      className={cn(
+        "pointer-events-none fixed inset-0",
+        layer === "annotation" ? "z-(--devhost-z-annotation)" : "z-(--devhost-z-overlay)",
+      )}
+    >
       {renderModels.map((highlight: IHighlightOverlayRenderModel) => {
         if (!highlight.isVisible) {
           return null;

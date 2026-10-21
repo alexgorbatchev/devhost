@@ -10,6 +10,7 @@ import {
   removeSelectionCursorStyle,
   resolveAnnotationSelectionCandidate,
 } from "../annotationComposerUtils";
+import { isAnnotationControlsEvent } from "../isAnnotationControlsEvent";
 import type { IAnnotationSelectionCandidate } from "../annotationSelectionPluginTypes";
 
 type AnnotationSelectionPlugin = ReturnType<typeof readActiveAnnotationSelectionPlugin>;
@@ -163,7 +164,7 @@ export function usePageSelection({
     }
 
     const handleMouseDown = (event: MouseEvent): void => {
-      if (isInteractionInsideDevtools(event.target)) {
+      if (isAnnotationControlsEvent(event)) {
         return;
       }
 
@@ -172,7 +173,7 @@ export function usePageSelection({
       event.stopImmediatePropagation();
     };
     const handleDocumentClick = async (event: MouseEvent): Promise<void> => {
-      if (isInteractionInsideDevtools(event.target)) {
+      if (isAnnotationControlsEvent(event)) {
         return;
       }
 

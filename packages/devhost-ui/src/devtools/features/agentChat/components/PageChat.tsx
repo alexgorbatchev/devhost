@@ -84,6 +84,8 @@ export function PageChat({
               mediaDevices: navigator.mediaDevices,
               signal: controller.signal,
               sharedStream: sharing.stream,
+              selectedTargets,
+              shapes,
             });
             setIsCapturing(true);
             stopSelection();

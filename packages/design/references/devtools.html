@@ -574,11 +574,13 @@
           /* Bottom to top: page highlights, annotation drafts and menus, the toolbar, edge-docked surfaces (the
              minimap), terminal windows. At most six significant digits: the production CSS minifier rounds numbers
              to six, which would collapse neighbouring layers. */
-          --dh-z-overlay: 2147440000;
-          --dh-z-popover: 2147450000;
-          --dh-z-dock: 2147460000;
-          --dh-z-edge: 2147470000;
-          --dh-z-modal: 2147480000;
+          --dh-z-overlay: 2147410000;
+          --dh-z-popover: 2147420000;
+          --dh-z-dock: 2147430000;
+          --dh-z-edge: 2147440000;
+          --dh-z-modal: 2147450000;
+          --dh-z-annotation: 2147460000;
+          --dh-z-annotation-controls: 2147470000;
           --dh-minimap-collapsed-width: 12px;
           --dh-duration-fade: 120ms;
           --dh-color-scheme: dark;
@@ -1439,7 +1441,7 @@
          * ================================================================ */
         .hl {
           position: fixed;
-          z-index: var(--dh-z-overlay);
+          z-index: var(--dh-z-annotation);
           pointer-events: none;
           border: 2px solid var(--dh-mark);
           border-radius: var(--dh-radius-sm);
@@ -1453,12 +1455,13 @@
           background: transparent;
         }
         .hl.react {
+          z-index: var(--dh-z-overlay);
           border-color: var(--dh-mark-alt);
           background: color-mix(in srgb, var(--dh-mark-alt) 10%, transparent);
         }
         .hl-badge {
           position: fixed;
-          z-index: var(--dh-z-overlay);
+          z-index: var(--dh-z-annotation);
           pointer-events: none;
           display: grid;
           place-items: center;
@@ -1476,7 +1479,7 @@
         }
         .hl-label {
           position: fixed;
-          z-index: var(--dh-z-overlay);
+          z-index: var(--dh-z-annotation);
           pointer-events: none;
           max-width: 420px;
           padding: 1px 5px;
@@ -1490,6 +1493,7 @@
           text-overflow: ellipsis;
         }
         .hl-label.react {
+          z-index: var(--dh-z-overlay);
           border-color: var(--dh-mark-alt);
         }
         .hl-label b {
@@ -1503,7 +1507,7 @@
           top: 8px;
           left: 50%;
           transform: translateX(-50%);
-          z-index: var(--dh-z-popover);
+          z-index: var(--dh-z-annotation-controls);
           display: flex;
           align-items: center;
           gap: var(--dh-space-4);

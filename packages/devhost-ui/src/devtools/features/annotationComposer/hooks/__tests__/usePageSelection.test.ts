@@ -300,7 +300,7 @@ describe("usePageSelection", () => {
     expect(hook.result.current.selectedTargets.map((target) => target.markerNumber)).toEqual([1, 2]);
   });
 
-  test("keeps selection clicks from the page but leaves devtools and ordinary clicks alone", async () => {
+  test("selects devtools controls without activating them, then restores ordinary clicks", async () => {
     const hook = renderSelectionDraft();
     const devtoolsButton: HTMLButtonElement = addDevtoolsButton({ height: 20, width: 60, x: 400, y: 300 });
     const hostListener = vi.fn<HostClickListener>();
@@ -324,9 +324,69 @@ describe("usePageSelection", () => {
     expect(hook.result.current.selectedTargets).toHaveLength(1);
 
     await click(devtoolsButton);
+    expect(devtoolsListener).toHaveBeenCalledTimes(0);
+    expect(document.activeElement).toBe(cancelButton);
+    expect(hook.result.current.selectedTargets).toHaveLength(2);
+    await releaseAlt();
+    await click(devtoolsButton);
     expect(devtoolsListener).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(devtoolsButton);
+  });
+
+  test("selects a control through the devtools shadow root while leaving annotation tools usable", async () => {
+    const button = addDevtoolsButton({ height: 20, width: 80, x: 400, y: 300 });
+    button.textContent = "Settings";
+    const host = button.parentElement;
+    assert(host);
+    const shadowRoot = host.attachShadow({ mode: "open" });
+    shadowRoot.append(button);
+    const tools = document.createElement("div");
+    tools.setAttribute("data-devhost-annotation-controls", "");
+    const stop = document.createElement("button");
+    stop.textContent = "Stop Selecting";
+    placeElement(stop, { height: 20, width: 100, x: 400, y: 350 });
+    tools.append(stop);
+    shadowRoot.append(tools);
+    const hook = renderSelectionDraft();
+    stop.addEventListener("click", () => hook.result.current.stopSelection());
+    const listener = vi.fn<HostClickListener>();
+    button.addEventListener("click", listener);
+    await holdAlt();
+    await pointAt(button);
+    expect(hook.result.current.hoveredLabel).toBe('button "Settings"');
+    await click(button);
     expect(hook.result.current.selectedTargets).toHaveLength(1);
+    expect(listener).toHaveBeenCalledTimes(0);
+    await click(stop);
+    expect(hook.result.current.isSelectionMode).toBe(false);
+    expect(hook.result.current.selectedTargets).toHaveLength(1);
+  });
+
+  test("uses the DOM selector for devhost controls even when a host plugin declines them", async () => {
+    const hook = renderSelectionDraft();
+    plugin.resolveCandidate.mockReturnValue(null);
+    const button = addDevtoolsButton({ height: 20, width: 80, x: 400, y: 300 });
+    button.textContent = "Settings";
+    await holdAlt();
+    await click(button);
+    expect(hook.result.current.selectedTargets.map((target) => target.candidate.label)).toEqual(['button "Settings"']);
+    expect(plugin.resolveCandidate).toHaveBeenCalledTimes(0);
+  });
+
+  test("selects a devhost panel background instead of page content behind it", async () => {
+    const hook = renderSelectionDraft();
+    const host = document.createElement("div");
+    host.setAttribute("data-devhost-devtools", "");
+    const panel = document.createElement("div");
+    panel.setAttribute("aria-label", "Devhost panel");
+    placeElement(panel, { height: 40, width: 100, x: 90, y: 40 });
+    host.append(panel);
+    document.body.append(host);
+    await holdAlt();
+    await click(panel);
+    expect(hook.result.current.selectedTargets.map((target) => target.candidate.label)).toEqual([
+      "div [Devhost panel]",
+    ]);
   });
 
   test("selects nothing when the plugin offers no candidate for a click", async () => {

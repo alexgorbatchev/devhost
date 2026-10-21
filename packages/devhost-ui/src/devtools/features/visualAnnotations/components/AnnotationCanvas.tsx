@@ -96,7 +96,7 @@ export function AnnotationCanvas({
       ref={canvasReference}
       aria-label="Annotation drawing canvas"
       className={cn(
-        "fixed inset-0 z-(--devhost-z-overlay) size-full overflow-visible text-mark",
+        "fixed inset-0 z-(--devhost-z-annotation) size-full overflow-visible text-mark",
         tool === null ? "pointer-events-none" : "pointer-events-auto touch-none cursor-crosshair",
       )}
       data-testid="AnnotationCanvas"

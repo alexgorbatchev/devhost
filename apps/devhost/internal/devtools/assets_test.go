@@ -11,7 +11,7 @@ import (
 // stylesheet: layers that collapse to one z-index fall back to DOM order, and a later-rendered surface such as the
 // minimap then paints over a terminal window.
 //
-// Bottom to top: page highlights, annotation drafts, the toolbar, the minimap, terminal windows.
+// Bottom to top: cursor highlights, menus, toolbar, minimap/chat, modals, annotations, annotation tools.
 func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 	t.Parallel()
 
@@ -21,7 +21,7 @@ func TestBundledDevtoolsLayersStackInOrder(t *testing.T) {
 	}
 	devtoolsScript := string(scriptBytes)
 
-	layersBottomToTop := []string{"overlay", "popover", "dock", "edge", "modal"}
+	layersBottomToTop := []string{"overlay", "popover", "dock", "edge", "modal", "annotation", "annotation-controls"}
 	previousLayer := ""
 	previousValue := int64(-1)
 	for _, layer := range layersBottomToTop {

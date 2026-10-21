@@ -39,7 +39,7 @@ Client-side navigation within the same project keeps the conversation, draft, an
 ## Select page context
 
 1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS).
-2. Click one or more page elements to add numbered markers. Releasing Alt ends selection mode without discarding the context.
+2. Click one or more page or devhost UI elements to add numbered markers. During selection, clicking a devhost control selects it without activating it. Releasing Alt ends selection mode without discarding the context.
 3. Write your request in the chat composer, referring to markers such as #1 and #2.
 4. Send the message. If you have not already shared the tab, choose the current tab in the browser's sharing picker.
 
@@ -47,9 +47,11 @@ Selecting elements opens chat. Escape leaves selection or drawing mode so the pa
 
 Selected element metadata includes its path, nearby text, accessibility information, bounds and computed styles. React development source locations and fetchable source maps are used when the host exposes them; source resolution remains best effort.
 
+Selection highlights and drawings render above the devhost toolbar and chat panel. The floating annotation toolbar stays clickable, so you can switch tools or turn selection off. Escape restores ordinary interactions with devhost controls. Native popovers and modal dialogs use their own browser top-layer entries and can cover the drawing canvas; separate inspector windows are outside the page canvas.
+
 ## Draw over the page
 
-Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page. Each completed drawing returns control to the page and appears in **Page context**. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
+Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page, including over the devhost toolbar or chat panel. Each completed drawing returns control to the page and appears in **Page context**. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
 
 ## Share one tab snapshot
 
@@ -60,6 +62,8 @@ Choose the current tab so the image matches the selected elements and drawings. 
 A share opened through **Share Tab** stays active for subsequent snapshots until you choose **Stop Sharing**, stop it in the browser, reload, or unmount the chat integration. Collapsing chat keeps that share active. Each message takes a fresh snapshot; it does not send continuous video. A share opened directly by sending a message stops after that snapshot, including on failure. Browser sharing permission is not persisted after the stream ends. Cancelling the picker retains the message draft and sends no context. Conversation, harness, and model controls stay locked while a send is being prepared or confirmed, so sharing cannot redirect it to another conversation. The complete encoded message, including PNG/JPEG attachments, must fit within 8 MiB; the selected client and model must accept the image input.
 
 The configured coding agent receives the message, selected metadata, page URL/title, drawing coordinates, and image. Review what is visible before sharing.
+
+Snapshots hide the floating annotation tools and instruction tip. Chat is hidden too unless a selected element or drawing overlaps it; an annotated chat panel stays visible in the image sent to the agent.
 
 ## Native permissions and questions
 
@@ -155,6 +159,7 @@ Selection semantics:
 - `matches()` defaults to `true` when omitted
 - `priority` defaults to `0` when omitted
 - the active selector is the highest-priority matching plugin
+- devhost UI selections use the built-in DOM selector, independently of host-page plugins; the annotation tools themselves remain controls
 - when priorities tie, the earlier-registered matching plugin stays active
 - returning `null` from `resolveCandidate(...)` means that event does not produce a candidate
 - `readRect()` controls the selection highlight box; return `null` when there is nothing to highlight
