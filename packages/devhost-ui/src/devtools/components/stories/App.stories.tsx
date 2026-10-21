@@ -143,6 +143,43 @@ export const App: Story = {
   },
 };
 
+/** With the config editor on, a rejected manifest reload shows in the readout, and Edit opens the editor. */
+export const ConfigEditor: Story = {
+  parameters: { configEditor: true },
+  render: () =>
+    renderDevtoolsInStoryShadowRoot(
+      <StoryContainer>
+        <DevtoolsApp />
+      </StoryContainer>,
+    ),
+  play: async ({ canvasElement }): Promise<void> => {
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const toolbar = await shadowCanvas.findByRole("toolbar", { name: "devhost" });
+    const configButton = await within(toolbar).findByRole("button", { name: "Config" });
+    const notice = await shadowCanvas.findByTestId("ConfigRejectionNotice--source");
+
+    await expect(configButton).toHaveAttribute("data-variant", "danger");
+    await expect(notice).toHaveTextContent(
+      "Manifest change not appliedFailed to parse /storybook-workspace/devhost.toml: toml: line 2: expected value",
+    );
+    await expect(shadowCanvas.queryByRole("dialog", { name: "Configuration" })).toBeNull();
+
+    await userEvent.click(within(notice).getByRole("button", { name: "Edit" }));
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Configuration" });
+
+    await waitFor(() => expect(dialog).toBeVisible());
+    await expect(within(dialog).getByRole("option", { name: "devhost.toml" })).toBeTruthy();
+    await expect(await within(dialog).findByRole("textbox", { name: "Configuration file" })).toHaveTextContent(
+      'name = "storybook-stack"',
+    );
+    await expect(configButton).toHaveAttribute("aria-expanded", "true");
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(shadowCanvas.queryByRole("dialog", { name: "Configuration" })).toBeNull());
+    await expect(configButton).toHaveAttribute("aria-expanded", "false");
+  },
+};
+
 export const ServiceCrashRecovery: Story = {
   parameters: { serviceRecovery: true },
   render: () => renderDevtoolsInStoryShadowRoot(<DevtoolsApp />),

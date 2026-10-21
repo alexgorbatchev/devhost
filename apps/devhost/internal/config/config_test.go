@@ -1,10 +1,14 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/BurntSushi/toml"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 )
@@ -117,5 +121,31 @@ func TestRead(t *testing.T) {
 				t.Fatalf("Read(...).Caddy = %#v, want %#v", got.Caddy, tc.want)
 			}
 		})
+	}
+}
+
+func TestParseChecksContentThatIsNotSaved(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "config.toml")
+
+	got, err := Parse(path, []byte("[caddy]\nhttpsPort = 8443\n"))
+	if err != nil || got.Caddy.HTTPSPort != 8443 {
+		t.Fatalf("Parse(...) = %#v, %v; want httpsPort 8443", got.Caddy, err)
+	}
+
+	_, err = Parse(path, []byte("[caddy]\nhttpsPort = 0\nport = 1\n"))
+	var validationError *ValidationError
+	if !errors.As(err, &validationError) {
+		t.Fatalf("Parse(...) error = %v, want a *ValidationError", err)
+	}
+	want := []string{"Unrecognized key: \"caddy.port\"", "caddy.httpsPort must be an integer between 1 and 65535."}
+	if !slices.Equal(validationError.Issues, want) {
+		t.Fatalf("issues = %q, want %q", validationError.Issues, want)
+	}
+
+	_, err = Parse(path, []byte("[caddy\n"))
+	var parseError toml.ParseError
+	if !errors.As(err, &parseError) || parseError.Position.Line != 2 {
+		t.Fatalf("Parse(...) error = %v, want a TOML parse error on line 2", err)
 	}
 }

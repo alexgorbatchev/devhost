@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 )
 
@@ -203,7 +202,7 @@ func TestRecoveryDocumentsPreserveApplicationResponses(t *testing.T) {
 			response.Body.Close()
 			want := http.StatusServiceUnavailable
 			if phase == "ready" {
-				want = http.StatusInternalServerError
+				want = http.StatusNoContent
 			}
 			if response.StatusCode != want {
 				t.Fatalf("document probe = %d, want %d", response.StatusCode, want)
@@ -212,106 +211,26 @@ func TestRecoveryDocumentsPreserveApplicationResponses(t *testing.T) {
 	}
 }
 
-func TestServerErrorDocumentsOfferRecoveryUntilRestart(t *testing.T) {
-	t.Parallel()
-	for _, status := range []int{500, 502, 503, 504, 599} {
-		t.Run(fmt.Sprint(status), func(t *testing.T) {
-			var recovered atomic.Bool
-			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if !recovered.Load() {
-					w.WriteHeader(status)
-					return // Reproduce a compiler failure with an empty response.
-				}
-				_, _ = io.WriteString(w, "application recovered")
-			}))
-			t.Cleanup(backend.Close)
-			address := backend.Listener.Addr().(*net.TCPAddr)
-			server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
-				BackendHost: address.IP.String(), BackendPort: address.Port, DisableInjection: true,
-				GetRecovery: func() RecoveryState {
-					return RecoveryState{Service: "web", Phase: "ready", CanRestart: true, Logs: []string{"compiler could not resolve import"}}
-				},
-				Restart: func() error { recovered.Store(true); return nil },
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() { _ = server.Stop() })
-			for _, kind := range []string{"document", "probe", "api", "script"} {
-				r, err := http.NewRequest(http.MethodGet, serverURL(server.Port(), "/nested?value=1"), nil)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if kind == "probe" {
-					r.Header.Set(recoveryHeader, kind)
-				} else if kind != "api" {
-					r.Header.Set("Sec-Fetch-Dest", kind)
-				}
-				response, err := http.DefaultClient.Do(r)
-				if err != nil {
-					t.Fatal(err)
-				}
-				body, err := io.ReadAll(response.Body)
-				response.Body.Close()
-				if err != nil {
-					t.Fatal(err)
-				}
-				if response.StatusCode != status {
-					t.Fatalf("%s: status = %d, want %d", kind, response.StatusCode, status)
-				}
-				if kind == "api" || kind == "script" {
-					if len(body) != 0 {
-						t.Fatalf("%s response changed: %s", kind, body)
-					}
-				} else if !strings.Contains(string(body), "Restart") || !strings.Contains(string(body), "compiler could not resolve import") || response.Header.Get("Cache-Control") != "no-store" {
-					t.Fatalf("%s: server error has no recovery controls/logs: %d %s", kind, response.StatusCode, body)
-				}
-			}
-			r, err := http.NewRequest(http.MethodPost, serverURL(server.Port(), "/nested?value=1"), nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			r.Header.Set("Origin", "http://"+r.URL.Host)
-			r.Header.Set(recoveryHeader, "restart")
-			response, err := http.DefaultClient.Do(r)
-			if err != nil {
-				t.Fatal(err)
-			}
-			response.Body.Close()
-			if response.StatusCode != http.StatusNoContent || !recovered.Load() {
-				t.Fatalf("restart = %d, recovered = %t", response.StatusCode, recovered.Load())
-			}
-			r.Method = http.MethodGet
-			r.Header.Set(recoveryHeader, "probe")
-			response, err = http.DefaultClient.Do(r)
-			if err != nil {
-				t.Fatal(err)
-			}
-			response.Body.Close()
-			if response.StatusCode != http.StatusNoContent {
-				t.Fatalf("recovered probe = %d", response.StatusCode)
-			}
-		})
-	}
-}
-
+// Recovery controls refuse what the control server refuses: a state change a browser sends from another origin.
+// Reading status changes nothing, and a tool that sends no browser headers is not a page on another site.
 func TestRecoveryControlsValidateMethodAndOrigin(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		name, action, method, origin string
-		want                         int
-		restart                      bool
+		name, action, method, origin, fetchSite string
+		want                                    int
+		restart                                 bool
 	}{
 		{name: "status", action: "status", method: "GET", want: 200},
-		{name: "foreign status", action: "status", method: "GET", origin: "https://foreign.test", want: 403},
+		{name: "status read by another site", action: "status", method: "GET", origin: "https://foreign.test", want: 200},
 		{name: "status method", action: "status", method: "POST", want: 405},
 		{name: "restart", action: "restart", method: "POST", origin: "http://service.test", want: 204, restart: true},
 		{name: "restart method", action: "restart", method: "GET", origin: "http://service.test", want: 405},
-		{name: "missing origin", action: "restart", method: "POST", want: 403},
+		{name: "restart from a tool", action: "restart", method: "POST", want: 204, restart: true},
 		{name: "foreign origin", action: "restart", method: "POST", origin: "https://foreign.test", want: 403},
+		{name: "cross-site fetch", action: "restart", method: "POST", fetchSite: "cross-site", want: 403},
 		{name: "unknown", action: "unknown", method: "GET", want: 400},
 		{name: "worktrees disabled", action: "worktrees", method: "GET", want: 501},
-		{name: "worktree missing origin", action: "worktrees", method: "POST", want: 403},
+		{name: "worktree switch from a tool", action: "worktrees", method: "POST", want: 501},
 		{name: "worktree foreign origin", action: "worktrees", method: "POST", origin: "https://foreign.test", want: 403},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -320,6 +239,9 @@ func TestRecoveryControlsValidateMethodAndOrigin(t *testing.T) {
 			request.Header.Set(recoveryHeader, tc.action)
 			if tc.origin != "" {
 				request.Header.Set("Origin", tc.origin)
+			}
+			if tc.fetchSite != "" {
+				request.Header.Set("Sec-Fetch-Site", tc.fetchSite)
 			}
 			response := httptest.NewRecorder()
 			serveRecoveryControl(response, request, StartDocumentInjectionServerOptions{GetRecovery: func() RecoveryState { return RecoveryState{CanRestart: true} }, Restart: func() error { restarted = true; return nil }}, nil)

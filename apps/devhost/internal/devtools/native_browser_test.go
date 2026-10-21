@@ -14,40 +14,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestNativeRequestOrigin(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name, host string
-		origins    []string
-		want       string
-	}{
-		{"HTTPS", "project.localhost:4443", []string{"https://project.localhost:4443"}, "https://project.localhost:4443"},
-		{"HTTP", "project.localhost:8080", []string{"http://project.localhost:8080"}, "http://project.localhost:8080"},
-		{"missing", "project.localhost", nil, ""},
-		{"opaque", "project.localhost", []string{"null"}, ""},
-		{"duplicate", "project.localhost", []string{"https://project.localhost", "https://project.localhost"}, ""},
-		{"other host", "project.localhost", []string{"https://other.localhost"}, ""},
-		{"other port", "project.localhost:4443", []string{"https://project.localhost"}, ""},
-		{"credentials", "project.localhost", []string{"https://user@project.localhost"}, ""},
-		{"path", "project.localhost", []string{"https://project.localhost/"}, ""},
-		{"query", "project.localhost", []string{"https://project.localhost?x=y"}, ""},
-		{"fragment", "project.localhost", []string{"https://project.localhost#x"}, ""},
-		{"empty fragment", "project.localhost", []string{"https://project.localhost#"}, ""},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, "http://"+tc.host+nativeBrowserWebsocketPath, nil)
-			r.Header["Origin"] = tc.origins
-			r.Header.Set("Forwarded", "proto=https;host=project.localhost")
-			r.Header.Set("X-Forwarded-Host", "project.localhost")
-			r.Header.Set("X-Forwarded-Proto", "https")
-			got, err := nativeRequestOrigin(r)
-			if got != tc.want || (err == nil) != (tc.want != "") {
-				t.Fatalf("origin = %q, %v; want %q", got, err, tc.want)
-			}
-		})
-	}
-}
-
 func startNativeBoundaryServer(t *testing.T) (*ControlServer, string, *atomic.Int64) {
 	t.Helper()
 	requests := new(atomic.Int64)
@@ -60,7 +26,7 @@ func startNativeBoundaryServer(t *testing.T) (*ControlServer, string, *atomic.In
 		NativeBrowser:     manifest.DevtoolsBrowserConfig{Endpoint: endpoint.URL},
 		FeatureToggles:    FeatureToggles{ExternalToolbarsEnabled: true},
 		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil },
-		AllowsNativeBrowserURL: func(port int, href string) (bool, error) {
+		OwnsDocumentURL: func(port int, href string) (bool, error) {
 			return href == serverURL(port, "/") || href == serverURL(port, "/owned"), nil
 		},
 	})
@@ -81,7 +47,6 @@ func TestNativeBrowserWebsocketRejectsOriginAndProtocolBeforeDiscovery(t *testin
 		name, origin string
 		protocols    []string
 	}{
-		{"missing origin", "", []string{nativeBrowserProtocol}},
 		{"foreign origin", "https://other.localhost", []string{nativeBrowserProtocol}},
 		{"missing protocol", "same", nil},
 		{"unknown protocol", "same", []string{"other"}},
@@ -111,6 +76,31 @@ func TestNativeBrowserWebsocketRejectsOriginAndProtocolBeforeDiscovery(t *testin
 				t.Fatalf("rejected handshake contacted browser %d times", requests.Load())
 			}
 		})
+	}
+}
+
+// A page always sends its Origin; a tool sends none and is bound to the request host instead, which its connect
+// message must name.
+func TestNativeBrowserWebsocketAcceptsAToolThatSendsNoOrigin(t *testing.T) {
+	s, origin, requests := startNativeBoundaryServer(t)
+	dialer := websocket.Dialer{Subprotocols: []string{nativeBrowserProtocol}, HandshakeTimeout: time.Second}
+	conn, _, err := dialer.Dial(websocketURL(s.Port(), nativeBrowserWebsocketPath), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close() /* handler closure may have already released it */ })
+	if err := conn.WriteJSON(nativebrowser.Request{ID: "connect_1", Command: "connect", Binding: nativebrowser.Binding{InstanceID: s.nativeBrowserInstanceID, DocumentID: "11111111111111111111111111111111", Href: origin + "/owned"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	var update nativebrowser.Update
+	if err := conn.ReadJSON(&update); err != nil {
+		t.Fatal(err)
+	}
+	if update.Type != "error" || update.ID != "connect_1" || requests.Load() != 1 {
+		t.Fatalf("update = %#v after %d discovery requests, want the discovery failure after one", update, requests.Load())
 	}
 }
 
