@@ -10,7 +10,7 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "@alexgorbatchev/shadcn";
-import { PlusIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
+import { RefreshCwIcon, SettingsIcon } from "lucide-react";
 import type { ChangeEvent, JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
 import type { IAgentChatController } from "../types";
@@ -95,17 +95,6 @@ export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element 
                 ))}
               </NativeSelect>
             </label>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => {
-                void chat.newSession();
-              }}
-            >
-              <Icon glyph={PlusIcon} />
-              New Conversation
-            </Button>
             <Button
               size="sm"
               variant="ghost"

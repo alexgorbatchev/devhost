@@ -6,7 +6,7 @@ import { PageChat } from "../PageChat";
 import { fixture_codexQuestion } from "../../questions/components/stories/fixtures";
 import { DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
 import { useRef, useState, type JSX, type ReactElement } from "react";
-import type { ChatRequestId, IChatEvent, IChatPendingRequest } from "../../types";
+import type { ChatRequestId, IChatEvent, IChatPendingRequest, IChatSession } from "../../types";
 import { ApprovalRequests } from "../ApprovalRequests";
 import { ChatApprovalRequest } from "../ChatApprovalRequest";
 import { ChatQuestionRequest } from "../../questions/components/ChatQuestionRequest";
@@ -23,6 +23,20 @@ import { App } from "../../../../components/App";
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
 import { createMockWebSocket, type IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
 import { fixture_reloadEvents, fixture_reloadSession } from "./fixtures";
+import { userEvent, within } from "storybook/test";
+import type { IAnnotationPoint } from "../../../visualAnnotations/types";
+import { cdp, userEvent as nativeUserEvent } from "vitest/browser";
+
+/** Opens the saved session through the same controls as a user. */
+export async function openSavedChatConversation(canvasElement: HTMLElement): Promise<void> {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+  await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+  await canvas.findByRole("option", { name: "codex · saved-conversation" });
+  await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+  await userEvent.keyboard("{Escape}");
+  await canvas.findByText("codex · idle");
+}
 
 export function readChatViewport(panel: HTMLElement): HTMLDivElement {
   const viewport = panel.querySelector<HTMLDivElement>('[data-slot="aui_thread-viewport"]');
@@ -51,6 +65,28 @@ export function deliverChatReply(sequence: number): void {
   });
 }
 
+/** Reports a new status for the saved conversation, as the server does when a turn starts or ends. */
+export function deliverChatStatus(status: IChatSession["status"]): void {
+  if (!liveChatConnection) throw new Error("The chat stream is not connected.");
+  liveChatConnection.send({
+    type: "state",
+    sessionId: fixture_reloadSession.id,
+    session: { ...fixture_reloadSession, status },
+    pendingRequestIds: [],
+  });
+}
+
+/** The commands the client has sent over the chat stream, oldest first. */
+export function readSentChatCommands(): unknown[] {
+  if (!liveChatConnection) throw new Error("The chat stream is not connected.");
+  return liveChatConnection.readSentFrames().map((frame) => JSON.parse(String(frame)));
+}
+
+/** The injected app inside a devtools shadow root, as `renderDevtools` mounts it on a page. */
+export function InjectedChatScene(): JSX.Element {
+  return renderDevtoolsInStoryShadowRoot(<App />);
+}
+
 export function ChatReloadScene(): JSX.Element {
   const [generation, setGeneration] = useState(0);
   return (
@@ -77,9 +113,17 @@ export function installChatReloadServer(events: readonly IChatEvent[] = fixture_
     editorEnabled: false,
     externalToolbarsEnabled: false,
   });
+  const sessions: IChatSession[] = [fixture_reloadSession];
   const fetch: FetchFunction = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
-    if (url.pathname === "/__devhost__/chat/sessions") return Response.json({ sessions: [fixture_reloadSession] });
+    if (url.pathname === "/__devhost__/chat/sessions") {
+      if (init?.method === "POST") {
+        const session: IChatSession = { ...fixture_reloadSession, id: `new-conversation-${sessions.length}` };
+        sessions.push(session);
+        return Response.json(session);
+      }
+      return Response.json({ sessions });
+    }
     return catalogFetch(input, init);
   };
   Reflect.set(globalThis, "fetch", fetch);
@@ -88,12 +132,14 @@ export function installChatReloadServer(events: readonly IChatEvent[] = fixture_
     "WebSocket",
     createMockWebSocket((connection) => {
       if (connection.url.pathname === "/__devhost__/ws/chat") {
+        const session = sessions.find((candidate) => candidate.id === connection.url.searchParams.get("sessionId"));
+        if (!session) throw new Error("The requested story chat session does not exist.");
         liveChatConnection = connection;
         connection.send({
           type: "snapshot",
-          sessionId: fixture_reloadSession.id,
-          session: fixture_reloadSession,
-          events,
+          sessionId: session.id,
+          session,
+          events: session.id === fixture_reloadSession.id ? events : [],
           pendingRequestIds: [],
         });
       } else connection.send({ services: [] });
@@ -218,6 +264,46 @@ export function PageChatScene(): JSX.Element {
       </DevtoolsTopLayer>
     </div>
   );
+}
+
+/** The page chat inside a devtools shadow root, as injected, beside host-page content it can annotate. */
+// The DevTools Protocol addresses the top-level page, while a story renders in nested frames: offsets and scales
+// a point in the story's viewport to the same point on that page.
+function readTopLevelPoint(point: IAnnotationPoint): IAnnotationPoint {
+  let x = point.x;
+  let y = point.y;
+  let frameWindow: Window = window;
+  while (frameWindow.frameElement) {
+    const frameBounds = frameWindow.frameElement.getBoundingClientRect();
+    const scale = frameBounds.width / frameWindow.innerWidth;
+    x = frameBounds.left + x * scale;
+    y = frameBounds.top + y * scale;
+    frameWindow = frameWindow.parent;
+  }
+  return { x, y };
+}
+
+type MouseEventPhase = "mousePressed" | "mouseMoved" | "mouseReleased";
+
+async function sendMouseEvent(type: MouseEventPhase, point: IAnnotationPoint): Promise<void> {
+  const { x, y } = readTopLevelPoint(point);
+  await cdp().send("Input.dispatchMouseEvent", {
+    type,
+    x,
+    y,
+    button: "left",
+    buttons: type === "mouseReleased" ? 0 : 1,
+    clickCount: 1,
+  });
+}
+
+/** Drags with the real mouse from `from` to `to`; `keys` are pressed while the button is still down. */
+export async function dragWithMouse(from: IAnnotationPoint, to: IAnnotationPoint, keys?: string): Promise<void> {
+  await sendMouseEvent("mouseMoved", from);
+  await sendMouseEvent("mousePressed", from);
+  await sendMouseEvent("mouseMoved", to);
+  if (keys) await nativeUserEvent.keyboard(keys);
+  await sendMouseEvent("mouseReleased", to);
 }
 
 export function ShadowPageChatScene(): JSX.Element {

@@ -5,13 +5,21 @@ import { AgentChatPanel } from "../AgentChatPanel";
 import {
   ChatPreparationScene,
   ChatReloadScene,
+  InjectedChatScene,
   PageChatScene,
   deliverChatReply,
+  deliverChatStatus,
   isChatViewportAtBottom,
   installChatReloadServer,
   installPageChatCatalog,
   readChatViewport,
+  readSentChatCommands,
 } from "./helpers";
+import {
+  devtoolsStoryShadowRootHostTestId,
+  readDevtoolsStoryShadowCanvas,
+  readShadowRoot,
+} from "../../../../shared/components/stories/helpers";
 
 const meta: Meta<typeof AgentChatPanel> = {
   component: AgentChatPanel,
@@ -28,6 +36,32 @@ const meta: Meta<typeof AgentChatPanel> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const EscapeInInjectedComposerInterruptsTurn: Story = {
+  render: () => <InjectedChatScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const shadowRoot = readShadowRoot(
+      canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+      "The story did not attach a devtools shadow root.",
+    );
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Chat" }));
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Chat Settings" }));
+    await shadowCanvas.findByRole("option", { name: "codex · saved-conversation" });
+    await userEvent.selectOptions(shadowCanvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+    await userEvent.keyboard("{Escape}");
+    await shadowCanvas.findByText("codex · idle");
+    deliverChatStatus("running");
+    await shadowCanvas.findByText("codex · running");
+    const composer = shadowCanvas.getByRole("textbox", { name: "Message input" });
+    await nativeUserEvent.click(composer);
+    expect(shadowRoot.activeElement).toBe(composer);
+    await nativeUserEvent.keyboard("{Escape}");
+    await waitFor(() => expect(readSentChatCommands()).toContainEqual({ type: "interrupt" }));
+  },
+};
 
 export const ReloadRestoresConversationView: Story = {
   render: () => <ChatReloadScene />,
@@ -113,11 +147,11 @@ export const PreparingSendKeepsConversationTarget: Story = {
     await expect(canvas.getByRole("combobox", { name: "Harness" })).toBeDisabled();
     await expect(canvas.getByRole("combobox", { name: "Model" })).toBeDisabled();
     await expect(canvas.getByRole("combobox", { name: "Conversation" })).toBeDisabled();
-    await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeDisabled();
+    await expect(within(canvas.getByRole("dialog")).queryByRole("button", { name: "New Conversation" })).toBeNull();
     await userEvent.keyboard("{Escape}");
+    await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeDisabled();
     await userEvent.click(canvas.getByRole("button", { name: "Cancel capture" }));
     await expect(composer).toHaveValue("Keep my target while sharing");
-    await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
     await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();
   },
 };

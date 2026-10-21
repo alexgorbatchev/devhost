@@ -79,6 +79,22 @@ export function addDevtoolsButton(rectangle: IViewportRectangle): HTMLButtonElem
   return button;
 }
 
+/**
+ * Adds a text field inside a devtools shadow root, built as `renderDevtools` builds it: events from the field leave
+ * the shadow root retargeted to a host marked as devtools.
+ */
+export function addDevtoolsTextarea(rectangle: IViewportRectangle): HTMLTextAreaElement {
+  const host: HTMLDivElement = document.createElement("div");
+  const textarea: HTMLTextAreaElement = document.createElement("textarea");
+
+  host.setAttribute(DEVTOOLS_ROOT_ATTRIBUTE_NAME, "");
+  placeElement(textarea, rectangle);
+  host.attachShadow({ mode: "open" }).append(textarea);
+  document.body.append(host);
+
+  return textarea;
+}
+
 export function waitForAnimationFrame(): Promise<void> {
   const frame = Promise.withResolvers<void>();
 

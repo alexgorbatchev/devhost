@@ -165,6 +165,7 @@
     },
   },
   "patchedDependencies": {
+    "@assistant-ui/react@0.15.30": "patches/@assistant-ui%2Freact@0.15.30.patch",
     "jotai-devtools@0.14.0": "patches/jotai-devtools@0.14.0.patch",
   },
   "packages": {

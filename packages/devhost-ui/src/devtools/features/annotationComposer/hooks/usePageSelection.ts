@@ -227,7 +227,13 @@ export function usePageSelection({
         return;
       }
 
-      if (isDisabled || isEventTargetEditingSurface(event.composedPath().at(0) ?? event.target)) {
+      // Alt belongs to the page's own fields while the user types there. Devhost's fields, such as the chat
+      // composer that receives focus after each selection, start the next selection like any other control.
+      const isTypingInPageField: boolean =
+        isEventTargetEditingSurface(event.composedPath().at(0) ?? event.target) &&
+        !isInteractionInsideDevtools(event.target);
+
+      if (isDisabled || isTypingInPageField) {
         return;
       }
 

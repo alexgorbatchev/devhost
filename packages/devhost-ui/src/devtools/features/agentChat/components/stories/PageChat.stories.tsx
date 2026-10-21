@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor, within } from "storybook/test";
 import { userEvent } from "vitest/browser";
-import { PageChatScene, ShadowPageChatScene, installPageChatCatalog } from "./helpers";
+import { PageChatScene, ShadowPageChatScene, dragWithMouse, installPageChatCatalog } from "./helpers";
 import {
   devtoolsStoryShadowRootHostTestId,
   readDevtoolsStoryShadowCanvas,
@@ -140,5 +140,85 @@ export const AnnotateDevhostUI: Story = {
     await userEvent.click(settings);
     const dialog = await shadowCanvas.findByRole("dialog", { name: "Chat Settings" });
     await waitFor(() => expect(dialog).toBeVisible());
+  },
+};
+
+export const OpeningChatFocusesComposer: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
+    await waitFor(() => expect(canvas.getByRole("textbox", { name: "Message input" })).toHaveFocus());
+  },
+};
+
+export const AnnotationsFocusComposer: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
+    const composer = await canvas.findByRole("textbox", { name: "Message input" });
+    await userEvent.click(canvas.getByRole("button", { name: "Arrow" }));
+    await expect(composer).not.toHaveFocus();
+    const surface = canvas.getByRole("img", { name: "Annotation drawing canvas" });
+    await userEvent.dragAndDrop(surface, surface, {
+      sourcePosition: { x: 80, y: 120 },
+      targetPosition: { x: 220, y: 220 },
+    });
+    await expect(canvas.getByRole("img", { name: "arrow annotation" })).toBeVisible();
+    await waitFor(() => expect(composer).toHaveFocus());
+    await userEvent.click(canvas.getByRole("button", { name: "Select Elements" }));
+    await expect(composer).not.toHaveFocus();
+    await userEvent.click(canvas.getByRole("button", { name: "Page counter: 0" }));
+    await expect(await canvas.findByRole("region", { name: "Page context" })).toHaveTextContent("#1");
+    await waitFor(() => expect(composer).toHaveFocus());
+  },
+};
+
+export const EscapeInInjectedComposerEndsSelection: Story = {
+  render: () => <ShadowPageChatScene />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const shadowRoot = readShadowRoot(
+      canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+      "The story did not attach a devtools shadow root.",
+    );
+    const select = await shadowCanvas.findByRole("button", { name: "Select Elements" });
+    await userEvent.click(select);
+    await userEvent.click(canvas.getByRole("button", { name: "Page counter: 0" }));
+    await expect(await shadowCanvas.findByRole("region", { name: "Page context" })).toHaveTextContent("#1");
+    const composer = shadowCanvas.getByRole("textbox", { name: "Message input" });
+    await waitFor(() => expect(shadowRoot.activeElement).toBe(composer));
+    await userEvent.keyboard("{Escape}");
+    await expect(select).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(canvas.getByRole("button", { name: "Page counter: 0" }));
+    await expect(canvas.getByRole("button", { name: "Page counter: 1" })).toBeVisible();
+  },
+};
+
+export const EscapeCancelsMoveWhileComposerHasFocus: Story = {
+  render: () => <ShadowPageChatScene />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const shadowRoot = readShadowRoot(
+      canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+      "The story did not attach a devtools shadow root.",
+    );
+    await userEvent.click(await shadowCanvas.findByRole("button", { name: "Arrow" }));
+    const surface = shadowCanvas.getByRole("img", { name: "Annotation drawing canvas" });
+    await userEvent.dragAndDrop(surface, surface, {
+      sourcePosition: { x: 80, y: 120 },
+      targetPosition: { x: 220, y: 220 },
+    });
+    const arrow = await shadowCanvas.findByRole("img", { name: "arrow annotation" });
+    const composer = shadowCanvas.getByRole("textbox", { name: "Message input" });
+    await waitFor(() => expect(shadowRoot.activeElement).toBe(composer));
+    const placed = arrow.getBoundingClientRect();
+    await dragWithMouse({ x: 150, y: 170 }, { x: 210, y: 240 }, "{Escape}");
+    const cancelled = arrow.getBoundingClientRect();
+    expect({ left: cancelled.left, top: cancelled.top }).toEqual({ left: placed.left, top: placed.top });
+    await dragWithMouse({ x: 150, y: 170 }, { x: 210, y: 240 });
+    await waitFor(() => expect(arrow.getBoundingClientRect().left).toBeCloseTo(placed.left + 60, 0));
+    expect(arrow.getBoundingClientRect().top).toBeCloseTo(placed.top + 70, 0);
   },
 };
