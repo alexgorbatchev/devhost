@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { expect, it } from "bun:test";
+import { beforeAll, expect, it } from "bun:test";
+import { assertDemoFfmpeg } from "../assertDemoFfmpeg";
 import { planGuideFilm } from "../planGuideFilm";
 import { publishGuideDemo } from "../publishGuideDemo";
 import { readMediaInfo } from "../readMediaInfo";
@@ -9,6 +10,11 @@ import { runCommand } from "../runCommand";
 import type { IGuideFilmPlan } from "../types";
 import { createColorFilm } from "./fixtures/createColorFilm";
 import { readPosterColor } from "./fixtures/readPosterColor";
+
+// These tests encode with the same FFmpeg the films use; a build that cannot fails here with the reason.
+beforeAll(async () => {
+  await assertDemoFfmpeg(runCommand);
+});
 
 function createPlan(stepSeconds: number[]): IGuideFilmPlan {
   return planGuideFilm(
