@@ -1,6 +1,6 @@
 # playground
 
-Bun + React workspace split into frontend and backend apps, used to exercise `devhost` routing and the overlay's supported TanStack Router and Query devtools, with the backend mounted under `/api/*` on the same host.
+Bun + React workspace split into frontend and backend apps, used to exercise `devhost` routing and every third-party inspector the overlay supports in a React app (TanStack Router, Query, the unified shell with Form, Table, and Pacer, React Hook Form, Jotai, and Redux Toolkit and Zustand through devhost's Redux inspector), with the backend mounted under `/api/*` on the same host.
 
 ## Commands
 
@@ -17,6 +17,7 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 - The frontend server serves the demo videos page at `/videos` (`frontend/src/videos.html`) and its media under `/demo-videos/`. `frontend/src/readDemoMedia.ts` lists every current demo once per request: the promo and each guide in `packages/docs/public/demos/`, compared with its pin in `packages/docs/demo-media.json`. Only when the promo is neither there nor pinned is it the latest promo render under `.tmp/demos/` (a run that holds `promo-footage.json`). A pinned video that is not on disk is listed by its GitHub release address, which the browser loads from GitHub. Only listed files on disk are served, because a run directory also holds logs, sessions, and configuration. `frontend/src/constants.ts` names the page for both its route and its link in the second navigation row. The recorder films this app at a 1280-pixel width: keep that row on one line so the filmed layout does not move.
 - `frontend/src/frontend.tsx` is the React browser entrypoint referenced by `frontend/src/index.html`.
 - Keep Router and Query floating devtools mounted so the overlay can detect their native launchers. The playground uses their production-capable exports to exercise the overlay in either server mode.
+- The `/inspectors` route mounts the other inspectors with the exact versions `packages/docs/src/content/docs/architecture/external-devtools.md` lists as tested; change a version only together with that page. Register stores with devhost only while the component is mounted: a registration replaces the one with the same id, so a late registration from an ended effect (React StrictMode runs effects twice) would replace the live one and remove it. Bun's development server compiles `import()` through its HMR runtime, which still loads devhost's `/__devhost__/redux.js` at run time.
 
 ## Local gotchas
 

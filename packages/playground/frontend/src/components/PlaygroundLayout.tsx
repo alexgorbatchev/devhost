@@ -13,12 +13,13 @@ export function PlaygroundLayout(): JSX.Element {
         <img src={reactLogo} alt="React Logo" className="logo react-logo" />
       </div>
       <h1>Devtools playground</h1>
-      <p>Use the Router and Query buttons in the devhost overlay to inspect this app.</p>
+      <p>Use the Router and Query buttons in the devhost overlay to inspect this app; the inspectors page adds the rest.</p>
       <nav className="playground-navigation" aria-label="Playground">
         <Link to="/" activeOptions={{ exact: true }}>
           API tester
         </Link>
         <Link to="/query">Query demo</Link>
+        <Link to="/inspectors">Inspectors</Link>
       </nav>
       {/* Documents outside the router: plain anchors load them as full pages. */}
       <nav className="playground-navigation" aria-label="Repository pages">
