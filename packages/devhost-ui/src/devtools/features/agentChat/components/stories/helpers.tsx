@@ -1,6 +1,7 @@
 import type { IChatQuestionSelection } from "../../questions/types";
 import { getChatQuestionAnswers } from "../../questions/getChatQuestionAnswers";
 import { DevtoolsTopLayer } from "../../../../shared/components/DevtoolsTopLayer";
+import { renderDevtoolsInStoryShadowRoot } from "../../../../shared/components/stories/helpers";
 import { PageChat } from "../PageChat";
 import { fixture_codexQuestion } from "../../questions/components/stories/fixtures";
 import { DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
@@ -215,6 +216,24 @@ export function PageChatScene(): JSX.Element {
       <DevtoolsTopLayer ref={rootReference}>
         <PageChat isOpen={isOpen} onOpenChange={setIsOpen} isSelectionEnabled rootReference={rootReference} />
       </DevtoolsTopLayer>
+    </div>
+  );
+}
+
+export function ShadowPageChatScene(): JSX.Element {
+  const rootReference = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(true);
+  const [count, setCount] = useState(0);
+  return (
+    <div>
+      <button type="button" onClick={() => setCount(count + 1)}>
+        Page counter: {count}
+      </button>
+      {renderDevtoolsInStoryShadowRoot(
+        <DevtoolsTopLayer ref={rootReference}>
+          <PageChat isOpen={isOpen} onOpenChange={setIsOpen} isSelectionEnabled rootReference={rootReference} />
+        </DevtoolsTopLayer>,
+      )}
     </div>
   );
 }
