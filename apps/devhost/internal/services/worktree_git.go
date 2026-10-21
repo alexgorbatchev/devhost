@@ -88,6 +88,14 @@ func listGitWorktrees(cwd string) ([]devtools.Worktree, error) {
 			entry.Reason = "Bare repositories cannot run services."
 		case "":
 			if entry.Path != "" {
+				// Git's main-worktree listing can name the common directory for
+				// submodules. Resolve its configured checkout through Git itself;
+				// linked and bare entries retain their own identities.
+				if entry.Path == cwd && entry.Reason == "" {
+					if repository, err := discoverGitRepository(cwd); err == nil && repository.commonDir == cwd {
+						entry.Path = repository.root
+					}
+				}
 				entries = append(entries, entry)
 				entry = devtools.Worktree{}
 			}

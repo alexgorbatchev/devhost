@@ -21,12 +21,16 @@ export function WorktreeStatusPanel(props: IWorktreeStatusPanelProps): JSX.Eleme
   const selected = props.repositories.find((repository) => repository.id === repositoryId) ?? props.repositories[0];
   const branches = readNonDefaultBranches(props.repositories);
   const label = branches.length === 0 ? "Worktrees" : `Worktrees, non-default branches: ${branches.join(", ")}`;
-  const currentCheckouts = props.repositories.map((repository) => {
+  const hasError = props.repositories.some(
+    (repository) =>
+      repository.error !== undefined ||
+      repository.blockedReason !== undefined ||
+      !repository.worktrees.some((entry) => entry.path === repository.selectedPath && entry.available),
+  );
+  const currentCheckouts = props.repositories.flatMap((repository) => {
     const checkout = repository.worktrees.find((entry) => entry.path === repository.selectedPath);
-    const branch =
-      checkout?.branch ||
-      (checkout?.detached === true ? `Detached ${checkout.head.slice(0, 7)}` : "Unavailable worktree");
-    return props.repositories.length === 1 ? branch : `${repository.name}: ${branch}`;
+    const branch = checkout?.branch || (checkout?.detached === true ? `Detached ${checkout.head.slice(0, 7)}` : "");
+    return branch === "" ? [] : [props.repositories.length === 1 ? branch : `${repository.name}: ${branch}`];
   });
   const close = (): void => {
     const popover = trigger.current?.popoverTargetElement;
@@ -40,13 +44,13 @@ export function WorktreeStatusPanel(props: IWorktreeStatusPanelProps): JSX.Eleme
       testId="WorktreeStatusPanel"
       panelLabel="Worktrees"
       panelWidth="lg"
-      triggerLabel={label}
+      triggerLabel={hasError ? `${label}, attention required` : label}
       title={branches.length > 0 ? label : `Worktrees: ${currentCheckouts.join(", ")}`}
       triggerReference={trigger}
       triggerContent={
         <>
-          <Icon glyph={GitBranchIcon} />
-          <span className="truncate">{currentCheckouts.join(", ")}</span>
+          <Icon glyph={GitBranchIcon} tone={hasError ? "destructive" : "current"} />
+          {currentCheckouts.length > 0 ? <span className="truncate">{currentCheckouts.join(", ")}</span> : null}
         </>
       }
       onOpenChange={(isOpen): void => {

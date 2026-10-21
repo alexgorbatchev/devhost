@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-20 16:28
+last_modified: 2026-10-20 16:41
 status: current
 ---
 
@@ -185,6 +185,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Log minimap with real-time service output                                                                                  | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4 |
 | Services panel with restart controls                                                                                       | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4 |
 | Worktree picker and worktree search                                                                                        | README, "Git Worktrees"; `guides/devtools.md`             | `devtools` overview-3               |
+| Submodule checkout discovery, external owning manifests, and red worktree error icon                                       | `guides/devtools.md`                                      | **No demo**                         |
 | Service status updates with unavailable checkouts                                                                          | `guides/devtools.md`                                      | **No demo**                         |
 | Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery                   | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                             |
 | Host resource usage                                                                                                        | `guides/devtools.md`, "Host resource usage"               | No demo                             |

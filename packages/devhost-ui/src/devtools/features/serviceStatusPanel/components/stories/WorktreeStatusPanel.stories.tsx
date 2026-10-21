@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, waitFor } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { WorktreeStatusPanel } from "../WorktreeStatusPanel";
 import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
 import {
@@ -35,6 +35,7 @@ export const DefaultBranch: Story = {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const trigger = await canvas.findByRole("button", { name: "Worktrees", exact: true });
     await expect(trigger.textContent).toBe("main");
+    await expect(getComputedStyle(within(trigger).getByTestId("Icon")).color).toBe(getComputedStyle(trigger).color);
     await expect(args.onRefreshWorktrees).not.toHaveBeenCalled();
     await userEvent.click(trigger);
     await waitFor(() => expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible());
@@ -90,12 +91,63 @@ export const MissingSelectedCheckout: Story = {
   args: { repositories: [{ ...factory_worktreeRepository(), selectedPath: "/worktrees/deleted", runningPath: "" }] },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
-    const trigger = await canvas.findByRole("button", { name: "Worktrees", exact: true });
-    await expect(trigger.textContent).toBe("Unavailable worktree");
+    const trigger = await canvas.findByRole("button", { name: "Worktrees, attention required", exact: true });
+    await expect(trigger.textContent).toBe("");
+    await expect(getComputedStyle(within(trigger).getByTestId("Icon")).color).not.toBe(getComputedStyle(trigger).color);
     await userEvent.click(trigger);
     const main = await canvas.findByRole("radio", { name: "main /projects/shop" });
     await waitFor(() => expect(main).toBeEnabled());
     await userEvent.click(main);
     await expect(canvas.getByRole("button", { name: "Switch and restart stack" })).toBeEnabled();
+  },
+};
+
+export const RepositoryError: Story = {
+  args: {
+    repositories: [
+      factory_worktreeRepository(),
+      { ...factory_worktreeRepository(), id: "other", name: "other", error: "Service failed to start." },
+    ],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const trigger = await canvas.findByRole("button", { name: "Worktrees, attention required", exact: true });
+    await expect(trigger.textContent).toBe("shop: main, other: main");
+    await expect(canvas.queryByText("Service failed to start.")).toBeNull();
+    await userEvent.click(trigger);
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible());
+    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Repository" }), "other");
+    await waitFor(() => expect(canvas.getByText("Service failed to start.")).toBeVisible());
+  },
+};
+
+export const UnavailableSelection: Story = {
+  args: { repositories: [{ ...factory_worktreeRepository(), selectedPath: "/worktrees/missing", runningPath: "" }] },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const trigger = await canvas.findByRole("button", {
+      name: "Worktrees, non-default branches: shop: feature/missing, attention required",
+      exact: true,
+    });
+    await expect(trigger.textContent).toBe("feature/missing");
+    await userEvent.click(trigger);
+    await waitFor(() => expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible());
+    await expect(await canvas.findByRole("radio", { name: "feature/missing /worktrees/missing" })).toBeDisabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Why feature/missing is unavailable" }));
+    await waitFor(() => expect(canvas.getByText("Checkout directory is missing.")).toBeVisible());
+  },
+};
+
+export const BlockedRepository: Story = {
+  args: {
+    repositories: [{ ...factory_worktreeRepository(), blockedReason: "Externally managed services cannot switch." }],
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const trigger = await canvas.findByRole("button", { name: "Worktrees, attention required", exact: true });
+    await expect(trigger.textContent).toBe("main");
+    await userEvent.click(trigger);
+    await waitFor(() => expect(canvas.getByText("Externally managed services cannot switch.")).toBeVisible());
+    await expect(canvas.getByRole("button", { name: "Switch and restart stack" })).toBeDisabled();
   },
 };

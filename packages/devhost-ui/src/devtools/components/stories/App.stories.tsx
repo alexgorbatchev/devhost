@@ -178,8 +178,11 @@ export const WorktreeRecovery: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const services = await canvas.findByRole("button", {
-      name: "Worktrees, non-default branches: shop: feature/cart",
+      name: "Worktrees, non-default branches: shop: feature/cart, attention required",
     });
+    await expect(getComputedStyle(within(services).getByTestId("Icon")).color).not.toBe(
+      getComputedStyle(services).color,
+    );
     await expect(canvas.getByRole("button", { name: "Services: 0 of 1 up" })).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await userEvent.click(services);
@@ -200,6 +203,8 @@ export const WorktreeRecovery: Story = {
     await expect(canvas.getByRole("button", { name: "Worktrees" })).toBeVisible();
     await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
     await expect(await canvas.findByRole("button", { name: "Worktrees" })).toHaveTextContent("main");
+    const recovered = canvas.getByRole("button", { name: "Worktrees" });
+    await expect(getComputedStyle(within(recovered).getByTestId("Icon")).color).toBe(getComputedStyle(recovered).color);
   },
 };
 
