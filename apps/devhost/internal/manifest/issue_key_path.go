@@ -10,7 +10,7 @@ import (
 const rootIssuePath = "manifest"
 
 var (
-	issueKeyPathPattern       = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_*-]+|\[\d+\])*)(?: |$)`)
+	issueKeyPathPattern       = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_*-]+)*)(?: |$)`)
 	unrecognizedIssueKeyRegex = regexp.MustCompile(` Unrecognized key: "([^"]+)"$`)
 )
 
@@ -24,7 +24,7 @@ func IssueKeyPath(issue string) string {
 	path := match[1]
 	if path == rootIssuePath {
 		path = ""
-	} else if root, _, _ := strings.Cut(strings.SplitN(path, "[", 2)[0], "."); !slices.Contains(tableKeys[""], root) {
+	} else if root, _, _ := strings.Cut(path, "."); !slices.Contains(tableKeys[""], root) {
 		return ""
 	}
 	if unknown := unrecognizedIssueKeyRegex.FindStringSubmatch(issue); unknown != nil {

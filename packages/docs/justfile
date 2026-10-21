@@ -1,9 +1,9 @@
 # Start local docs server with host 0.0.0.0
-dev: sync media
+run: sync media
     bun astro dev --host 0.0.0.0
 
-# Alias for dev
-start: dev
+# Start the local docs server
+start: run
 
 # Sync generated docs content from app README and examples
 sync:

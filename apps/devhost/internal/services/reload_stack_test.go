@@ -226,7 +226,7 @@ func TestManifestReloadRenamesTheRunningStack(t *testing.T) {
 	}
 }
 
-func TestManifestReloadRejectsInvalidEditsAndAppliesDevtoolsAndAnnotationEdits(t *testing.T) {
+func TestManifestReloadRejectsInvalidEditsAndAppliesDevtoolsEdits(t *testing.T) {
 	body := reloadServiceBody("web", "original", "reload.localhost")
 	f := startReloadStack(t, body)
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
@@ -236,15 +236,15 @@ func TestManifestReloadRejectsInvalidEditsAndAppliesDevtoolsAndAnnotationEdits(t
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("invalid edit restarted the service")
 	}
-	// Devtools and annotation settings apply without restarting services.
-	f.write(t, "\n[devtools.shortcuts]\nrestartServices = \"ctrl+r\"\n[devtools.minimap]\nenabled = false\n[annotation]\nagent = \"pi\"\n"+body)
+	// Devtools settings apply without restarting services.
+	f.write(t, "\n[devtools.shortcuts]\nrestartServices = \"ctrl+r\"\n[devtools.minimap]\nenabled = false\n[devtools.chat]\nenabled = false\n"+body)
 	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	if reloadPID(t, route.AppPort) != pid {
 		t.Fatal("a devtools edit restarted the service")
 	}
 	config := readInjectedConfig(t, f)
-	if string(config["restartServicesShortcut"]) != `"ctrl+r"` || string(config["minimapEnabled"]) != "false" || !strings.Contains(string(config["annotationActions"]), `"id":"agent"`) {
-		t.Fatalf("pages were not given the edited settings: %s, %s, %s", config["restartServicesShortcut"], config["minimapEnabled"], config["annotationActions"])
+	if string(config["restartServicesShortcut"]) != `"ctrl+r"` || string(config["minimapEnabled"]) != "false" || string(config["chatEnabled"]) != "false" {
+		t.Fatalf("pages were not given the edited settings: %s, %s, %s", config["restartServicesShortcut"], config["minimapEnabled"], config["chatEnabled"])
 	}
 	f.write(t, reloadServiceBody("web", "repaired", "reload.localhost"))
 	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })

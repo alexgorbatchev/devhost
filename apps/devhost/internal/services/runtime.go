@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -188,7 +189,7 @@ func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error
 				}
 			}
 		}
-		writeLogLine(r.options.LogWriter, r.manifest.Name, fmt.Sprintf("restarting service: %s", name))
+		cliout.Log(r.options.LogWriter, r.manifest.Name, fmt.Sprintf("restarting service: %s", name))
 		r.watcher.CancelTimer(name)
 		r.dirty.SetDirty(name, false)
 		if err := r.stop(name); err != nil {
@@ -354,7 +355,7 @@ func (r *stackRuntime) clearRestarting(name string) {
 }
 
 func (r *stackRuntime) logFailure(name string, err error) {
-	writeLogLine(r.options.LogWriter, r.manifest.Name, err.Error())
+	cliout.Log(r.options.LogWriter, r.manifest.Name, err.Error())
 	if r.control != nil {
 		r.control.PublishLogEntry(name, devtools.ServiceLogStreamStderr, err.Error())
 	}
@@ -393,7 +394,7 @@ func (r *stackRuntime) switchWorktreeLocked(ctx context.Context, id, path string
 		r.logFailure("devhost", fmt.Errorf("Worktree switch failed: %s: %w", transition, err))
 		return err
 	}
-	writeLogLine(r.options.LogWriter, r.manifest.Name, "Switching worktree: "+transition+". Restarting stack.")
+	cliout.Log(r.options.LogWriter, r.manifest.Name, "Switching worktree: "+transition+". Restarting stack.")
 	r.publish()
 	err = r.applyConfiguration(ctx, *next.configuration, configurationChange{worktreeSwitch: true, restartStack: true, message: "worktree switched: " + transition})
 	if err != nil {
@@ -437,7 +438,7 @@ func (r *stackRuntime) failWorktreeStartup(name string, err error) error {
 			if member != name {
 				continue
 			}
-			writeLogLine(r.options.LogWriter, r.manifest.Name, fmt.Sprintf("%v Stopping repository %s services (%s) because service %s failed to start.", err, repo.Name, strings.Join(r.orderedGroup(repo.ServiceNames), ", "), name))
+			cliout.Log(r.options.LogWriter, r.manifest.Name, fmt.Sprintf("%v Stopping repository %s services (%s) because service %s failed to start.", err, repo.Name, strings.Join(r.orderedGroup(repo.ServiceNames), ", "), name))
 			err = joinCleanupError(err, r.stopGroup(r.orderedGroup(repo.ServiceNames)))
 			r.manifestMu.Lock()
 			for _, name := range repo.ServiceNames {

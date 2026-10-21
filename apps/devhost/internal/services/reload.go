@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -88,13 +89,6 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	}
 	if err := r.checkReady(); err != nil {
 		return err
-	}
-	if next.Annotation.TempDir != nil {
-		dir, err := filepath.Abs(*next.Annotation.TempDir)
-		if err != nil {
-			return err
-		}
-		*next.Annotation.TempDir = dir
 	}
 	previousConfiguration := r.configured
 	if previousConfiguration == nil {
@@ -261,7 +255,7 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 		r.idle.set(resolveIdleTimeout(r.options.IdleTimeout, r.manifest.Devtools))
 	}
 	r.publish()
-	writeLogLine(r.options.LogWriter, r.manifest.Name, change.message)
+	cliout.Log(r.options.LogWriter, r.manifest.Name, change.message)
 	LogServiceURLs(*r.manifest, r.options.LogWriter)
 	logStoppedServices(*r.manifest, r.options.LogWriter)
 	return r.releaseClaimsExcept(collectClaimedHosts(r.manifest.Services), manifestFixedPortClaims(*r.manifest))

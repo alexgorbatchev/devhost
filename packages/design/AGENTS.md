@@ -16,11 +16,11 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 - `src/constants.ts` is the source of truth. `DESIGN_TOKENS` renders into `tokens.css` as `--dh-*` custom properties; `TERMINAL_PALETTES` feeds xterm, which takes literal colors.
 - `tokens.css` is generated and committed so CSS `@import` and the `file://` design references can load it without a build step. Never edit it by hand.
 - `tokens.css` sets dark values on `:root`, `:host`, and `::backdrop`, and light values wherever `data-theme="light"` is set (document root, wrapper element, or `:host([data-theme="light"])`). Consumers choose the scheme with `data-theme`, never by restating values.
-- Consumers: `packages/devhost-ui/src/devtools/shared/devtools.css` imports `tokens.css` and maps its shadcn-style names onto `--dh-*`; `packages/docs` registers `tokens.css` in Starlight `customCss` and derives Expressive Code palettes from `DESIGN_TOKENS`; `references/*.html` link `../tokens.css`.
+- Consumers: `packages/devhost-ui/src/devtools/shared/devtools.css` imports `tokens.css` and maps its shadcn-style names onto `--dh-*`; `packages/docs` registers `tokens.css` in Starlight `customCss` and derives Expressive Code palettes from `DESIGN_TOKENS`; `references/*.html` link `../tokens.css`. The Go app's `internal/statuspage/status.css` imports the same tokens; `just devhost build-devtools-bundle` bundles them for embedding in standalone status and file pages.
 - `references/devtools.html` and `references/docs.html` are the visual design references for the devtools UI and the docs site. Keep them in sync with the product when the design intentionally changes.
 - Product-specific sizing (devtools px type scale, docs rem type scale, layout metrics) stays in each consumer, not here.
 - `--dh-input-line` identifies form-control boundaries; `--dh-line` remains a decorative separator. Readable faint text meets 4.5:1 on all three neutral surfaces and the terminal background in both themes.
-- Contrast regressions measure rendered foregrounds, backgrounds, and opacity through the shared `test-support/readContrastRatio.ts` browser helper. Assert minimum ratios instead of exact colors or stylesheets.
+- Contrast regressions measure rendered foregrounds, backgrounds, and opacity through the shared `test-support/readContrastRatio.ts` browser helper. Assert minimum ratios instead of exact colors or stylesheets: test the effect a color must have, not its value. Text needs 4.5:1 against what is behind it; a filled surface that must stand out, such as an error notice, needs 3:1 against the surface it sits on.
 
 ## Boundaries
 

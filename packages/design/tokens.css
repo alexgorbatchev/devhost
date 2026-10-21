@@ -30,6 +30,8 @@
   --dh-danger: #ff6159;
   --dh-on-danger: #1f0000;
   --dh-danger-soft: rgb(255 97 89 / 0.16);
+  --dh-danger-strong: #d62828;
+  --dh-on-danger-strong: #ffffff;
   --dh-backdrop: rgb(4 5 7 / 0.7);
   --dh-term-bg: #0b0c0f;
 }
@@ -57,6 +59,8 @@
   --dh-danger: #cc1f1f;
   --dh-on-danger: #ffffff;
   --dh-danger-soft: rgb(204 31 31 / 0.1);
+  --dh-danger-strong: #cc1f1f;
+  --dh-on-danger-strong: #ffffff;
   --dh-backdrop: rgb(10 12 16 / 0.55);
   --dh-term-bg: #ffffff;
 }

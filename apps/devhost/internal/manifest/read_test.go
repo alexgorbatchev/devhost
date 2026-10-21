@@ -86,31 +86,17 @@ func TestReadManifestExplainsDuplicateTables(t *testing.T) {
 
 func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testing.T) {
 	t.Setenv("STACK_NAME", "storybook-stack")
-	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
+	t.Setenv("PUBLIC_HOST", "devhost-storybook.example.test")
 	t.Setenv("SERVICE_DIR", "frontend")
 	t.Setenv("TASK_NAME", "storybook")
 	t.Setenv("API_PREFIX", "api")
 	t.Setenv("HEALTH_HOST", "127.0.0.1")
 	t.Setenv("HEALTH_PORT", "4010")
-	t.Setenv("ACTION_LABEL", "Open Code")
 
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
 	manifestText := strings.Join([]string{
 		`name = "{{ env.STACK_NAME }}"`,
-		"",
-		"[annotation]",
-		`defaultAction = "open-code"`,
-		"",
-		"[[annotation.actions]]",
-		`id = "open-code"`,
-		`kind = "command"`,
-		`label = "{{ env.ACTION_LABEL }}"`,
-		`[annotation.actions.command]`,
-		`command = ["bun", "run", "{{ env.TASK_NAME }}"]`,
-		`cwd = "{{ env.SERVICE_DIR }}"`,
-		`[annotation.actions.command.env]`,
-		`TARGET_HOST = "https://{{ env.PUBLIC_HOST }}"`,
 		"",
 		"[services.web]",
 		`command = ["bun", "run", "{{ env.TASK_NAME }}"]`,
@@ -139,34 +125,6 @@ func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testin
 		t.Fatalf("raw manifest name = %#v, want %q", rawManifest.value["name"], "storybook-stack")
 	}
 
-	annotationValue, ok := rawManifest.value["annotation"].(map[string]any)
-	if !ok {
-		t.Fatalf("raw manifest annotation = %#v, want map", rawManifest.value["annotation"])
-	}
-	actionsValue, ok := annotationValue["actions"].([]map[string]any)
-	if !ok || len(actionsValue) != 1 {
-		t.Fatalf("raw manifest annotation actions = %#v, want one action", annotationValue["actions"])
-	}
-	action := actionsValue[0]
-	if action["label"] != "Open Code" {
-		t.Fatalf("annotation action label = %#v, want %q", action["label"], "Open Code")
-	}
-	commandValue, ok := action["command"].(map[string]any)
-	if !ok {
-		t.Fatalf("annotation action command = %#v, want map", action["command"])
-	}
-	command, ok := commandValue["command"].([]any)
-	if !ok || len(command) != 3 || command[2] != "storybook" {
-		t.Fatalf("annotation action command = %#v, want interpolated array", commandValue["command"])
-	}
-	if commandValue["cwd"] != "frontend" {
-		t.Fatalf("annotation action cwd = %#v, want %q", commandValue["cwd"], "frontend")
-	}
-	commandEnv, ok := commandValue["env"].(map[string]any)
-	if !ok || commandEnv["TARGET_HOST"] != "https://devhost-storybook-devbox.cvb.lol" {
-		t.Fatalf("annotation action env = %#v, want interpolated host", commandValue["env"])
-	}
-
 	servicesValue, ok := rawManifest.value["services"].(map[string]any)
 	if !ok {
 		t.Fatalf("raw manifest services = %#v, want map", rawManifest.value["services"])
@@ -178,8 +136,8 @@ func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testin
 	if webService["cwd"] != "frontend" {
 		t.Fatalf("service cwd = %#v, want %q", webService["cwd"], "frontend")
 	}
-	if webService["host"] != "devhost-storybook-devbox.cvb.lol" {
-		t.Fatalf("service host = %#v, want %q", webService["host"], "devhost-storybook-devbox.cvb.lol")
+	if webService["host"] != "devhost-storybook.example.test" {
+		t.Fatalf("service host = %#v, want %q", webService["host"], "devhost-storybook.example.test")
 	}
 	if webService["path"] != "/api/*" {
 		t.Fatalf("service path = %#v, want %q", webService["path"], "/api/*")
@@ -189,7 +147,7 @@ func TestReadManifestInterpolatesEnvironmentVariablesInAllStringFields(t *testin
 		t.Fatalf("service command = %#v, want interpolated array", webService["command"])
 	}
 	serviceEnv, ok := webService["env"].(map[string]any)
-	if !ok || serviceEnv["PUBLIC_URL"] != "https://devhost-storybook-devbox.cvb.lol" {
+	if !ok || serviceEnv["PUBLIC_URL"] != "https://devhost-storybook.example.test" {
 		t.Fatalf("service env = %#v, want interpolated URL", webService["env"])
 	}
 	healthValue, ok := webService["health"].(map[string]any)
@@ -224,7 +182,7 @@ func TestReadManifestRejectsUndefinedEnvironmentVariables(t *testing.T) {
 }
 
 func TestReadManifestPreservesUnsupportedInterpolationSequences(t *testing.T) {
-	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
+	t.Setenv("PUBLIC_HOST", "devhost-storybook.example.test")
 
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
@@ -258,12 +216,12 @@ func TestReadManifestPreservesUnsupportedInterpolationSequences(t *testing.T) {
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo $$ $1 $? $0 ${} $PUBLIC_HOST ${PUBLIC_HOST} {{}} {{ nope }} {{ env. }} {{ env.BROKEN-NAME }} devhost-storybook-devbox.cvb.lol"
+	want := "echo $$ $1 $? $0 ${} $PUBLIC_HOST ${PUBLIC_HOST} {{}} {{ nope }} {{ env. }} {{ env.BROKEN-NAME }} devhost-storybook.example.test"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}
-	if webService["host"] != "devhost-storybook-devbox.cvb.lol" {
-		t.Fatalf("service host = %#v, want %q", webService["host"], "devhost-storybook-devbox.cvb.lol")
+	if webService["host"] != "devhost-storybook.example.test" {
+		t.Fatalf("service host = %#v, want %q", webService["host"], "devhost-storybook.example.test")
 	}
 }
 
@@ -307,7 +265,7 @@ func TestReadManifestAllowsDefinedEmptyEnvironmentVariables(t *testing.T) {
 }
 
 func TestReadManifestContinuesAfterUnterminatedInterpolationSequence(t *testing.T) {
-	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
+	t.Setenv("PUBLIC_HOST", "devhost-storybook.example.test")
 
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
@@ -348,7 +306,7 @@ func TestReadManifestContinuesAfterUnterminatedInterpolationSequence(t *testing.
 }
 
 func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeLaterClosingBrace(t *testing.T) {
-	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
+	t.Setenv("PUBLIC_HOST", "devhost-storybook.example.test")
 
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
@@ -382,14 +340,14 @@ func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeLaterClos
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo {{ env.BROKEN still {{ env.PUBLIC_HOST } }} devhost-storybook-devbox.cvb.lol"
+	want := "echo {{ env.BROKEN still {{ env.PUBLIC_HOST } }} devhost-storybook.example.test"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}
 }
 
 func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeNestedPlaceholder(t *testing.T) {
-	t.Setenv("PUBLIC_HOST", "devhost-storybook-devbox.cvb.lol")
+	t.Setenv("PUBLIC_HOST", "devhost-storybook.example.test")
 
 	temporaryDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(temporaryDirectoryPath, "devhost.toml")
@@ -423,7 +381,7 @@ func TestReadManifestContinuesAfterMalformedInterpolationSequenceBeforeNestedPla
 		t.Fatalf("service command = %#v, want array", webService["command"])
 	}
 
-	want := "echo {{ env.BROKEN-{{ env.PUBLIC_HOST }} }} devhost-storybook-devbox.cvb.lol"
+	want := "echo {{ env.BROKEN-{{ env.PUBLIC_HOST }} }} devhost-storybook.example.test"
 	if commandValue[2] != want {
 		t.Fatalf("service command[2] = %#v, want %q", commandValue[2], want)
 	}

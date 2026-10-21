@@ -1,24 +1,45 @@
 package caddy
 
 import (
+	"errors"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
 
+const (
+	testInstallingTrustLog = "[devhost] managed caddy is installing its local CA into the system trust store so browsers accept devhost HTTPS certificates. This may ask for your password.\n"
+	testUntrustedLog       = "[devhost] [WARN] " + UntrustedRootCertificateWarning + "\n"
+	testStartedLog         = "[devhost] managed caddy started with <state>/caddy/Caddyfile\n"
+	testTrustNoise         = "2026/10/19 23:31:49.199\tINFO\tnot NSS security databases found\n2026/10/19 23:31:49.199\tINFO\tdefine JAVA_HOME environment variable to use the Java trust\n"
+)
+
 func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
-	t.Parallel()
+	t.Setenv("AGENT", "0")
 
 	configured := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22000", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}
 	running := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22009", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 8443}
+	startArguments := []string{"start", "--pidfile", "<state>/caddy/caddy.pid"}
+	trustOptions := ManagedCaddyCommandOptions{AdminAddress: "127.0.0.1:22000", Environment: []string{"SUDO_PROMPT=[caddy] Password: "}}
+	declinedTrust := CommandResult{Stderr: []byte(testTrustNoise + "sudo: a password is required\n")}
+	startOutput := CommandResult{
+		Success: true,
+		Stdout:  []byte("Successfully started Caddy (pid=1) - Caddy is running in the background\n"),
+		Stderr:  []byte(`{"level":"info","ts":1,"logger":"admin","msg":"admin endpoint started"}` + "\n" + `{"level":"warn","ts":1,"logger":"tls","msg":"storage is slow"}` + "\n"),
+	}
+
 	tests := []struct {
 		action               LifecycleAction
 		applied              *ManagedCaddyGlobalSettings
 		available            bool
+		canPrompt            bool
 		hasPidFile           bool
-		hasRootCert          bool
 		name                 string
-		runResult            CommandResult
+		quiet                bool
+		rootTrust            RootCertificateTrust
+		rootTrustErr         error
+		runResults           map[string]CommandResult
 		wantApplied          *ManagedCaddyGlobalSettings
 		wantCommandArguments [][]string
 		wantCommandOptions   []ManagedCaddyCommandOptions
@@ -29,61 +50,116 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 	}{
 		{
 			action:               LifecycleStart,
-			available:            false,
-			hasPidFile:           false,
-			hasRootCert:          false,
 			name:                 "starts managed caddy when admin api is unavailable",
-			runResult:            CommandResult{Success: true},
+			runResults:           map[string]CommandResult{"start": {Success: true}},
 			wantApplied:          &configured,
-			wantCommandArguments: [][]string{{"start", "--pidfile", "<state>/caddy/caddy.pid"}},
-			wantCommandOptions:   []ManagedCaddyCommandOptions{{InheritStdio: true}},
-			wantExitCode:         0,
-			wantLog:              "[devhost] managed caddy may prompt for your password on first start so it can install its local CA into the system trust store.\n[devhost] managed caddy started with <state>/caddy/Caddyfile\n",
+			wantCommandArguments: [][]string{startArguments},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
+			wantLog:              testStartedLog,
 		},
 		{
 			action:               LifecycleStart,
-			hasRootCert:          true,
+			name:                 "shows caddy warnings after start",
+			rootTrust:            RootCertificateTrusted,
+			runResults:           map[string]CommandResult{"start": startOutput},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{startArguments},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
+			wantLog:              "[caddy] WARN tls: storage is slow\n" + testStartedLog,
+		},
+		{
+			action:               LifecycleStart,
+			name:                 "keeps caddy output quiet after a stack starts caddy",
+			quiet:                true,
+			rootTrust:            RootCertificateTrusted,
+			runResults:           map[string]CommandResult{"start": startOutput},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{startArguments},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
+			wantLog:              testStartedLog,
+		},
+		{
+			action:               LifecycleStart,
+			canPrompt:            true,
+			name:                 "trusts the local CA once after start",
+			rootTrust:            RootCertificateUntrusted,
+			runResults:           map[string]CommandResult{"start": {Success: true}, "trust": {Success: true, Stderr: []byte(testTrustNoise)}},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{startArguments, {"trust"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}, trustOptions},
+			wantLog:              testStartedLog + testInstallingTrustLog + "[devhost] managed caddy local CA trusted.\n",
+		},
+		{
+			action:               LifecycleStart,
+			canPrompt:            true,
+			name:                 "warns when the local CA could not be trusted after start",
+			rootTrust:            RootCertificateUntrusted,
+			runResults:           map[string]CommandResult{"start": {Success: true}, "trust": declinedTrust},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{startArguments, {"trust"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}, trustOptions},
+			wantLog:              testStartedLog + testInstallingTrustLog + "[caddy] sudo: a password is required\n" + testUntrustedLog,
+		},
+		{
+			action:               LifecycleStart,
+			name:                 "warns instead of asking for a password without a terminal",
+			rootTrust:            RootCertificateUntrusted,
+			runResults:           map[string]CommandResult{"start": {Success: true}},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{startArguments},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
+			wantLog:              testStartedLog + testUntrustedLog,
+		},
+		{
+			action:               LifecycleStart,
+			canPrompt:            true,
+			name:                 "warns when the local CA cannot be read after start",
+			rootTrustErr:         errors.New("parse root.crt: malformed certificate"),
+			runResults:           map[string]CommandResult{"start": {Success: true}},
+			wantApplied:          &configured,
+			wantCommandArguments: [][]string{startArguments},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
+			wantLog:              testStartedLog + "[devhost] [WARN] managed caddy could not check whether its local CA is trusted: parse root.crt: malformed certificate\n",
+		},
+		{
+			action:               LifecycleStart,
 			name:                 "records nothing when caddy fails to start",
-			runResult:            CommandResult{Stderr: []byte("listen tcp :443: address already in use")},
-			wantCommandArguments: [][]string{{"start", "--pidfile", "<state>/caddy/caddy.pid"}},
-			wantCommandOptions:   []ManagedCaddyCommandOptions{{InheritStdio: true}},
-			wantError:            "Caddy start failed.\nlisten tcp :443: address already in use",
+			runResults:           map[string]CommandResult{"start": {Stderr: []byte("listen tcp :443: address already in use\n")}},
+			wantCommandArguments: [][]string{startArguments},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{}},
+			wantError:            "Caddy start failed. Check the Caddy logs in <state>/caddy.",
+			wantLog:              "[caddy] listen tcp :443: address already in use\n",
 		},
 		{
-			action:               LifecycleStop,
-			applied:              &running,
+			action:     LifecycleStart,
+			available:  true,
+			hasPidFile: true,
+			name:       "returns success when managed caddy is already running",
+			rootTrust:  RootCertificateTrusted,
+			wantLog:    "[devhost] managed caddy is already running with <state>/caddy/Caddyfile\n",
+		},
+		{
+			action:               LifecycleStart,
 			available:            true,
+			canPrompt:            true,
 			hasPidFile:           true,
-			name:                 "stops caddy through the admin address it runs",
-			runResult:            CommandResult{Success: true},
-			wantCommandArguments: [][]string{{"stop"}},
-			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: running.AdminAddress}},
-			wantLog:              "[devhost] managed caddy stopped.\n",
-			wantRemovedPidFile:   true,
+			name:                 "trusts the local CA of an already running caddy",
+			rootTrust:            RootCertificateUntrusted,
+			runResults:           map[string]CommandResult{"trust": {Success: true}},
+			wantCommandArguments: [][]string{{"trust"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{trustOptions},
+			wantLog:              "[devhost] managed caddy is already running with <state>/caddy/Caddyfile\n" + testInstallingTrustLog + "[devhost] managed caddy local CA trusted.\n",
 		},
 		{
-			action:       LifecycleStart,
-			available:    true,
-			hasPidFile:   true,
-			hasRootCert:  true,
-			name:         "returns success when managed caddy is already running",
-			wantExitCode: 0,
-			wantLog:      "[devhost] managed caddy is already running with <state>/caddy/Caddyfile\n",
-		},
-		{
-			action:      LifecycleStart,
-			available:   true,
-			hasPidFile:  false,
-			hasRootCert: true,
-			name:        "rejects foreign running caddy",
-			wantError:   foreignManagedCaddyError,
+			action:    LifecycleStart,
+			available: true,
+			name:      "rejects foreign running caddy",
+			wantError: foreignManagedCaddyError,
 		},
 		{
 			action:             LifecycleStop,
-			available:          false,
 			hasPidFile:         true,
 			name:               "removes stale pid file",
-			wantExitCode:       0,
 			wantLog:            "[devhost] managed caddy is not running. Removed the stale pid file.\n",
 			wantRemovedPidFile: true,
 		},
@@ -92,54 +168,87 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			available:            true,
 			hasPidFile:           true,
 			name:                 "stops managed caddy",
-			runResult:            CommandResult{Success: true},
+			runResults:           map[string]CommandResult{"stop": {Success: true}},
 			wantCommandArguments: [][]string{{"stop"}},
 			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: "127.0.0.1:22000"}},
-			wantExitCode:         0,
 			wantLog:              "[devhost] managed caddy stopped.\n",
 			wantRemovedPidFile:   true,
 		},
 		{
-			action:     LifecycleStop,
-			available:  true,
-			hasPidFile: false,
-			name:       "rejects foreign caddy on stop",
-			wantError:  foreignManagedCaddyError,
+			action:               LifecycleStop,
+			applied:              &running,
+			available:            true,
+			hasPidFile:           true,
+			name:                 "stops caddy through the admin address it runs",
+			runResults:           map[string]CommandResult{"stop": {Success: true}},
+			wantCommandArguments: [][]string{{"stop"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: running.AdminAddress}},
+			wantLog:              "[devhost] managed caddy stopped.\n",
+			wantRemovedPidFile:   true,
+		},
+		{
+			action:    LifecycleStop,
+			available: true,
+			name:      "rejects foreign caddy on stop",
+			wantError: foreignManagedCaddyError,
 		},
 		{
 			action:     LifecycleTrust,
-			available:  false,
 			hasPidFile: true,
 			name:       "requires running managed caddy before trust",
 			wantError:  "Managed Caddy is not running. Run 'devhost caddy start' first.",
-			wantLog:    "[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.\n",
+		},
+		{
+			action:    LifecycleTrust,
+			available: true,
+			name:      "rejects foreign caddy on trust",
+			wantError: foreignManagedCaddyError,
 		},
 		{
 			action:     LifecycleTrust,
 			available:  true,
-			hasPidFile: false,
-			name:       "rejects foreign caddy on trust",
-			wantError:  foreignManagedCaddyError,
-			wantLog:    "[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.\n",
+			hasPidFile: true,
+			name:       "reports an already trusted local ca",
+			rootTrust:  RootCertificateTrusted,
+			wantLog:    "[devhost] managed caddy local CA is already trusted.\n",
 		},
 		{
 			action:               LifecycleTrust,
 			available:            true,
 			hasPidFile:           true,
 			name:                 "trusts managed caddy local ca",
-			runResult:            CommandResult{Success: true},
+			rootTrust:            RootCertificateUntrusted,
+			runResults:           map[string]CommandResult{"trust": {Success: true, Stderr: []byte(testTrustNoise)}},
 			wantCommandArguments: [][]string{{"trust"}},
-			wantCommandOptions:   []ManagedCaddyCommandOptions{{AdminAddress: "127.0.0.1:22000", InheritStdio: true}},
-			wantExitCode:         0,
-			wantLog:              "[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.\n[devhost] managed caddy local CA trusted.\n",
+			wantCommandOptions:   []ManagedCaddyCommandOptions{trustOptions},
+			wantLog:              testInstallingTrustLog + "[devhost] managed caddy local CA trusted.\n",
+		},
+		{
+			action:               LifecycleTrust,
+			available:            true,
+			hasPidFile:           true,
+			name:                 "leaves a missing local ca to caddy",
+			runResults:           map[string]CommandResult{"trust": {Success: true}},
+			wantCommandArguments: [][]string{{"trust"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{trustOptions},
+			wantLog:              testInstallingTrustLog + "[devhost] managed caddy local CA trusted.\n",
+		},
+		{
+			action:               LifecycleTrust,
+			available:            true,
+			hasPidFile:           true,
+			name:                 "reports a failed trust installation",
+			rootTrust:            RootCertificateUntrusted,
+			runResults:           map[string]CommandResult{"trust": declinedTrust},
+			wantCommandArguments: [][]string{{"trust"}},
+			wantCommandOptions:   []ManagedCaddyCommandOptions{trustOptions},
+			wantError:            "Caddy trust failed. Check the Caddy diagnostics above.",
+			wantLog:              testInstallingTrustLog + "[caddy] sudo: a password is required\n",
 		},
 	}
 
-	for _, tt := range tests {
-		tc := tt
+	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			stateDirectoryPath := t.TempDir()
 			paths := CreateManagedCaddyPaths(stateDirectoryPath)
 			if err := EnsureManagedCaddyConfig(paths, configured, "linux"); err != nil {
@@ -151,11 +260,13 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 				}
 			}
 			for index := range tc.wantCommandArguments {
+				tc.wantCommandArguments[index] = slices.Clone(tc.wantCommandArguments[index])
 				for argument := range tc.wantCommandArguments[index] {
 					tc.wantCommandArguments[index][argument] = strings.ReplaceAll(tc.wantCommandArguments[index][argument], "<state>", stateDirectoryPath)
 				}
 			}
 			tc.wantLog = strings.ReplaceAll(tc.wantLog, "<state>", stateDirectoryPath)
+			tc.wantError = strings.ReplaceAll(tc.wantError, "<state>", stateDirectoryPath)
 			var logOutput strings.Builder
 			var callOrder []string
 			var gotArguments [][]string
@@ -163,6 +274,9 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			removedPidFile := false
 
 			exitCode, err := RunManagedCaddyLifecycleCommand(tc.action, &logOutput, paths, configured, ManagedCaddyLifecycleDependencies{
+				CanPromptForPassword: func() bool {
+					return tc.canPrompt
+				},
 				EnsureManagedCaddyConfig: func() error {
 					callOrder = append(callOrder, "ensure")
 					return nil
@@ -170,11 +284,12 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 				HasManagedPidFile: func() bool {
 					return tc.hasPidFile
 				},
-				HasManagedRootCert: func() bool {
-					return tc.hasRootCert
-				},
 				IsManagedCaddyAvailable: func() bool {
 					return tc.available
+				},
+				Quiet: tc.quiet,
+				ReadRootCertificateTrust: func() (RootCertificateTrust, error) {
+					return tc.rootTrust, tc.rootTrustErr
 				},
 				RemoveManagedPidFile: func() error {
 					removedPidFile = true
@@ -184,7 +299,7 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 					callOrder = append(callOrder, "command")
 					gotArguments = append(gotArguments, append([]string{}, arguments...))
 					gotOptions = append(gotOptions, options)
-					return tc.runResult
+					return tc.runResults[arguments[0]]
 				},
 				RuntimeOS: "linux",
 			})
@@ -232,14 +347,23 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 	}
 }
 
-func TestCreateManagedCaddyStartErrorMessage(t *testing.T) {
+func TestManagedCaddyStartFailure(t *testing.T) {
 	t.Parallel()
 
 	result := CommandResult{Stderr: []byte("listen tcp 127.0.0.1:443: bind: permission denied\n"), Success: false}
-	if got := CreateManagedCaddyStartErrorMessage(result, "darwin"); got != "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nmacOS allows rootless binds on :443 only with wildcard listeners, not loopback-specific ones." {
-		t.Fatalf("CreateManagedCaddyStartErrorMessage(...) = %q", got)
+	for _, tc := range []struct{ os, hint string }{{"darwin", "Use wildcard listeners"}, {"linux", "devhost caddy privileged-ports"}} {
+		failure, handled := managedCaddyStartFailure(result, tc.os, "/state/caddy")
+		if !handled || !strings.Contains(failure.Hint, tc.hint) || strings.Contains(failure.Error(), "listen tcp") {
+			t.Fatalf("managedCaddyStartFailure(%s) = %+v, handled %v", tc.os, failure, handled)
+		}
 	}
-	if got := CreateManagedCaddyStartErrorMessage(result, "linux"); got != "Caddy start failed.\nlisten tcp 127.0.0.1:443: bind: permission denied\nOpening HTTPS on :443 requires privileged-port setup on this platform. Run 'devhost caddy privileged-ports' to configure the managed Caddy binary." {
-		t.Fatalf("CreateManagedCaddyStartErrorMessage(...) = %q", got)
+}
+
+func TestManagedCaddyStartFailurePreservesUnknownFailures(t *testing.T) {
+	t.Parallel()
+	result := CommandResult{Stderr: []byte("listen tcp 127.0.0.1:4433: bind: permission denied\n")}
+	failure, handled := managedCaddyStartFailure(result, "linux", "/state/caddy")
+	if handled || strings.Contains(failure.Hint, "privileged-ports") {
+		t.Fatalf("non-privileged port misclassified: %+v", failure)
 	}
 }

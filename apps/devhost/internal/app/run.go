@@ -34,9 +34,10 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		} else if !filepath.IsAbs(directory) {
 			directory = filepath.Join(cwd, directory)
 		}
-		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"serve-" + arguments.Domain, "serve"})
+		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"serve-" + arguments.Domain, "serve", "devhost", "caddy"})
 		code, err := services.StartServe(directory, arguments.Domain, arguments.Port, services.StartStackOptions{
 			Environment: readEnvironment(), LogWriter: serviceStdout, ServiceStdoutWriter: serviceStdout, ServiceStderrWriter: serviceStderr,
+			CaddyOutputWriters: caddy.RouteCommandOutputWriters{StdoutWriter: serviceStdout, StderrWriter: serviceStderr, Quiet: true},
 		})
 		if err != nil {
 			return fail(stderr, err)
@@ -50,7 +51,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, err)
 		}
 
-		if err := services.StopStack(manifestPath, readEnvironment(), stdout, stderr); err != nil {
+		logStdout, logStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
+		if err := services.StopStack(manifestPath, readEnvironment(), logStdout, logStderr); err != nil {
 			return fail(stderr, err)
 		}
 
@@ -103,10 +105,6 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, validateError)
 		}
 
-		if err := resolveAnnotationTempDir(validatedManifest.Annotation, cwd); err != nil {
-			return fail(stderr, err)
-		}
-
 		if err := services.ValidateRequestedServices(validatedManifest, arguments.Services); err != nil {
 			return fail(stderr, &cliout.Failure{Err: err, Hint: "Run \"devhost service list\" to print the service names."})
 		}
@@ -134,7 +132,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			idleTimeout = parsed
 		}
 
-		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name)}, serviceOrder...)
+		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name), "devhost", "caddy"}, serviceOrder...)
 		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, logNames)
 		startOptions := services.StartStackOptions{
 			Configuration:       &validatedManifest,
@@ -143,17 +141,12 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			ServiceStdoutWriter: serviceStdout,
 			ServiceStderrWriter: serviceStderr,
 			IdleTimeout:         idleTimeout,
-		}
-		if arguments.Debug {
-			startOptions.CaddyOutputWriters = caddy.RouteCommandOutputWriters{
-				StdoutWriter: stdout,
-				StderrWriter: stderr,
-			}
+			CaddyOutputWriters:  caddy.RouteCommandOutputWriters{StdoutWriter: serviceStdout, StderrWriter: serviceStderr, Quiet: !arguments.Debug},
 		}
 
 		exitCode, startError := services.StartStack(&resolvedManifest, serviceOrder, startOptions)
 		if startError != nil {
-			return fail(stderr, startError)
+			return failStart(stderr, serviceStderr, cwd, startError)
 		}
 
 		return exitCode
@@ -170,13 +163,14 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		return exitCode
 	case cli.KindCaddyLifecycle:
+		_, caddyStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost", "caddy"})
 		paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(readEnvironment())
 		if err != nil {
 			return fail(stderr, err)
 		}
 
 		if arguments.Action == cli.CaddyDownload {
-			if err := caddy.DownloadCaddy(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); err != nil {
+			if err := caddy.DownloadCaddy(caddyStderr, runtime.GOOS, runtime.GOARCH, paths, caddy.DownloadDependencies{}); err != nil {
 				return fail(stderr, err)
 			}
 
@@ -184,7 +178,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		if arguments.Action == cli.CaddyPrivilegedPorts {
-			exitCode, err := caddy.ConfigureManagedCaddyPrivilegedPorts(stderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
+			exitCode, err := caddy.ConfigureManagedCaddyPrivilegedPorts(caddyStderr, runtime.GOOS, runtime.GOARCH, paths, caddy.PrivilegedPortsDependencies{})
 			if err != nil {
 				return fail(stderr, err)
 			}
@@ -203,7 +197,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		exitCode, err := caddy.RunManagedCaddyLifecycleCommand(
 			caddy.LifecycleAction(arguments.Action),
-			stderr,
+			caddyStderr,
 			paths,
 			shared.Caddy,
 			caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS},
@@ -214,7 +208,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 
 		return exitCode
 	case cli.KindCaddyTrustRemote:
-		exitCode, err := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, stderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
+		_, caddyStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
+		exitCode, err := caddy.TrustManagedCaddyRemoteCertificate(arguments.SSHTarget, caddyStderr, runtime.GOOS, caddy.TrustRemoteDependencies{})
 		if err != nil {
 			return fail(stderr, err)
 		}
@@ -247,7 +242,7 @@ func writeServiceNames(stdout io.Writer, value manifest.Manifest, startableOnly 
 	sort.Strings(names)
 
 	for _, name := range names {
-		if _, err := fmt.Fprintln(stdout, name); err != nil {
+		if err := cliout.WriteData(stdout, []byte(name+"\n")); err != nil {
 			return fmt.Errorf("writing service names: %w", err)
 		}
 	}
@@ -261,7 +256,7 @@ func writeServiceNames(stdout io.Writer, value manifest.Manifest, startableOnly 
 // stays one field when it holds spaces.
 func writeRunningStacks(stdout io.Writer, stacks []caddy.StackOwner) error {
 	for _, stack := range stacks {
-		if _, err := fmt.Fprintf(stdout, "%d\t%s\n", stack.PID, stack.ManifestPath); err != nil {
+		if err := cliout.WriteData(stdout, []byte(fmt.Sprintf("%d\t%s\n", stack.PID, stack.ManifestPath))); err != nil {
 			return fmt.Errorf("writing running stacks: %w", err)
 		}
 	}
@@ -309,23 +304,6 @@ func describeManifestReadError(manifestPath string, err error) error {
 		Summary: "manifest file not found: " + absoluteManifestPath,
 		Hint:    "Check the path given with --manifest or DEVHOST_MANIFEST.",
 	}
-}
-
-func resolveAnnotationTempDir(annotation manifest.ValidatedAnnotation, cwd string) error {
-	if annotation.TempDir == nil {
-		return nil
-	}
-	dir := *annotation.TempDir
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(cwd, dir)
-	}
-	resolved, err := filepath.Abs(dir)
-	if err != nil {
-		return fmt.Errorf("resolve annotation.tempDir: %w", err)
-	}
-	// Actions share this pointer so every file handoff uses the startup location.
-	*annotation.TempDir = resolved
-	return nil
 }
 
 func readEnvironment() map[string]string {

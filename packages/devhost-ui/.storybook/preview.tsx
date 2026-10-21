@@ -8,17 +8,7 @@ import {
   HEALTH_WEBSOCKET_PATH,
   LOGS_WEBSOCKET_PATH,
   RESTART_STACK_PATH,
-  TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME,
-  TERMINAL_SESSION_START_PATH,
-  TERMINAL_SESSION_WEBSOCKET_PATH,
-  XTERM_STYLESHEET_PATH,
 } from "../src/devtools/shared/constants";
-import type {
-  IListTerminalSessionsResponse,
-  IStartTerminalSessionResponse,
-  ITerminalSessionExitMessage,
-  ITerminalSessionSnapshotMessage,
-} from "../src/devtools/features/terminalSessions/types";
 import type { DevtoolsColorScheme } from "../src/devtools/shared";
 import type { IInjectedDevtoolsConfig } from "../src/devtools/shared/readInjectedDevtoolsConfig";
 import { registerDevtoolsFonts } from "../src/devtools/shared/registerDevtoolsFonts";
@@ -29,9 +19,9 @@ import {
 } from "../src/devtools/shared/storybookTheme";
 import type { HealthResponse, ServiceLogSnapshotMessage } from "../src/devtools/shared/types";
 import { createMockWebSocket, type IMockWebSocketConnection } from "../test-support/createMockWebSocket";
+import { resetDevtoolsSettingsStorage } from "../test-support/resetDevtoolsSettingsStorage";
 
 type FetchRequestInput = Parameters<typeof fetch>[0];
-type FetchRequestInit = Parameters<typeof fetch>[1];
 type FetchPreconnect = typeof fetch.preconnect;
 
 const storybookAsyncUtilTimeoutMs: number = 5000;
@@ -39,10 +29,8 @@ const storybookAsyncUtilTimeoutMs: number = 5000;
 const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   nativeBrowserConfigured: false,
   nativeBrowserInstanceId: "",
-  annotationActions: [],
-  annotationDefaultActionId: "",
   annotationEnabled: false,
-  annotationQueueEnabled: false,
+  chatEnabled: false,
   componentEditor: "vscode",
   configEditorEnabled: false,
   homeDirectoryPath: "/home/alex",
@@ -55,7 +43,6 @@ const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   routedServices: [],
   stackName: "storybook-stack",
   statusEnabled: true,
-  terminalEnabled: true,
 };
 
 function sendStorybookSnapshot(connection: IMockWebSocketConnection): void {
@@ -75,27 +62,6 @@ function sendStorybookSnapshot(connection: IMockWebSocketConnection): void {
     connection.send(logs);
     return;
   }
-
-  if (connection.url.pathname === TERMINAL_SESSION_WEBSOCKET_PATH) {
-    const sessionId: string | null = connection.url.searchParams.get(TERMINAL_SESSION_ID_QUERY_PARAMETER_NAME);
-    const terminal: ITerminalSessionSnapshotMessage = {
-      data:
-        sessionId === "session-contrast"
-          ? "\u001b[30mX\u001b[0m \u001b[92mG\u001b[0m \u001b[93mY\u001b[0m \u001b[96mC\u001b[0m \u001b[97mW\u001b[0m"
-          : "$ echo ready\r\nready\r\n",
-      type: "snapshot",
-    };
-
-    connection.send(terminal);
-
-    if (sessionId === "session-finished") {
-      const exit: ITerminalSessionExitMessage = { exitCode: 0, signalCode: null, type: "exit" };
-
-      queueMicrotask((): void => {
-        connection.send(exit);
-      });
-    }
-  }
 }
 
 function createStorybookFetch(): typeof fetch {
@@ -110,23 +76,10 @@ function createStorybookFetch(): typeof fetch {
   };
 
   const storybookFetch: typeof fetch = Object.assign(
-    async (input: FetchRequestInput, init?: FetchRequestInit): Promise<Response> => {
+    async (input: FetchRequestInput): Promise<Response> => {
       const requestUrl: URL = readRequestUrl(input);
 
       if (requestUrl.pathname === RESTART_STACK_PATH) return new Response(null, { status: 204 });
-
-      // As on the control server: POST starts a session, GET lists the running ones. None runs by default.
-      if (requestUrl.pathname === TERMINAL_SESSION_START_PATH) {
-        if (readRequestMethod(input, init) === "POST") {
-          const startedSession: IStartTerminalSessionResponse = { sessionId: "storybook-session" };
-
-          return Response.json(startedSession);
-        }
-
-        const sessionList: IListTerminalSessionsResponse = { sessions: [] };
-
-        return Response.json(sessionList);
-      }
 
       return new Response("Not found", { status: 404 });
     },
@@ -136,14 +89,6 @@ function createStorybookFetch(): typeof fetch {
   );
 
   return storybookFetch;
-}
-
-function readRequestMethod(input: FetchRequestInput, init?: FetchRequestInit): string {
-  if (init?.method !== undefined) {
-    return init.method;
-  }
-
-  return input instanceof Request ? input.method : "GET";
 }
 
 function readRequestUrl(input: FetchRequestInput): URL {
@@ -203,6 +148,7 @@ const preview: Preview = {
     layout: "fullscreen",
   },
   beforeEach() {
+    const restoreSettings = resetDevtoolsSettingsStorage();
     const originalFetch: unknown = Reflect.get(globalThis, "fetch");
     const originalWebSocket: unknown = Reflect.get(globalThis, "WebSocket");
 
@@ -212,13 +158,10 @@ const preview: Preview = {
     Reflect.set(globalThis, "WebSocket", createMockWebSocket(sendStorybookSnapshot));
 
     return (): void => {
+      restoreSettings();
       Reflect.deleteProperty(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
       restoreGlobalValue("fetch", originalFetch);
       restoreGlobalValue("WebSocket", originalWebSocket);
-
-      document.querySelectorAll(`link[href="${XTERM_STYLESHEET_PATH}"]`).forEach((element: Element): void => {
-        element.remove();
-      });
     };
   },
 };

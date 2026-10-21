@@ -17,11 +17,7 @@ func TestValidationIssuesNameTheFullPathOfTheSetting(t *testing.T) {
 	}{
 		{"a root setting", `killZombies = "yes"`, "killZombies must be a boolean."},
 		{"worktrees", "[worktrees]\nenabled = \"yes\"", "worktrees.enabled must be a boolean."},
-		{"annotation", "[annotation]\nagent = \"pi\"\ntempDir = \"\"", "annotation.tempDir Expected a non-empty string."},
-		{"an action without an ID", "[[annotation.actions]]\nkind = \"command\"", "annotation.actions[0].id Expected a non-empty string."},
-		{"an annotation action", "[[annotation.actions]]\nid = \"lint\"\nkind = \"command\"\nlabel = 1", "annotation.actions.lint.label Expected a non-empty string."},
-		{"an annotation command", "[[annotation.actions]]\nid = \"lint\"\nkind = \"command\"\nlabel = \"Lint\"\n[annotation.actions.command]\ncommand = [\"bun\"]\ncwd = 1", "annotation.actions.lint.command.cwd must be a string."},
-		{"an annotation agent", "[[annotation.actions]]\nid = \"fix\"\nkind = \"agent\"\n[annotation.actions.agent]\nadapter = 1", "annotation.actions.fix.agent.adapter must be a string."},
+		{"the chat toggle", "[devtools.chat]\nenabled = \"yes\"", "devtools.chat.enabled must be a boolean."},
 		{"a devtools table", "[devtools.status]\nenabled = 1", "devtools.status.enabled must be a boolean."},
 		{"the editor", "[devtools.editor]\nide = 3", "devtools.editor.ide must be a string."},
 		{"shortcuts", "[devtools.shortcuts]\nrestartServices = 1", "devtools.shortcuts.restartServices must be a string."},

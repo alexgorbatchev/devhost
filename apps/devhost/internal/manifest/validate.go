@@ -19,7 +19,6 @@ import (
 const (
 	defaultDevtoolsEditor         = "vscode"
 	defaultDevtoolsStatusPosition = "bottom-right"
-	defaultAnnotationActionID     = "agent"
 	defaultServiceBindHost        = "127.0.0.1"
 )
 
@@ -51,7 +50,6 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 		killZombies = true
 	}
 
-	validatedAnnotation := validateAnnotation(manifestValue["annotation"], manifestDirectoryPath, &schemaIssues, &validationIssues)
 	validatedDevtools := validateDevtools(manifestValue["devtools"], &schemaIssues)
 	validatedWorktrees := validateWorktrees(manifestValue["worktrees"], &schemaIssues)
 	validatedServices, primaryService := validateServices(
@@ -73,8 +71,8 @@ func ValidateManifest(manifestPath string, rawManifest RawManifest) (Manifest, e
 	}
 
 	return Manifest{
-		Inputs:                rawManifest.Inputs,
-		Annotation:            validatedAnnotation,
+		Inputs: rawManifest.Inputs,
+
 		Devtools:              validatedDevtools,
 		Worktrees:             validatedWorktrees,
 		ManifestDirectoryPath: manifestDirectoryPath,
@@ -104,261 +102,12 @@ func validateWorktrees(raw any, issues *[]string) WorktreesConfig {
 	return config
 }
 
-func validateAnnotation(rawValue any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotation {
-	if rawValue == nil {
-		return ValidatedAnnotation{}
-	}
-
-	value, ok := readMap(rawValue, "annotation", schemaIssues)
-	if !ok {
-		return ValidatedAnnotation{}
-	}
-	allowKeys(value, "annotation", "annotation", schemaIssues)
-	var tempDir *string
-	if configured, ok := readOptionalNonEmptyString(value, "annotation", "tempDir", schemaIssues); ok {
-		tempDir = &configured
-	}
-	if _, hasAgent := value["agent"]; hasAgent {
-		return validateAnnotationAgent(value, tempDir, schemaIssues)
-	}
-	configuredDefaultActionID, hasConfiguredDefaultActionID := readOptionalNonEmptyString(value, "annotation", "defaultAction", schemaIssues)
-
-	rawActions, ok := value["actions"]
-	if !ok {
-		*schemaIssues = append(*schemaIssues, "annotation.actions must contain at least one action.")
-		return ValidatedAnnotation{}
-	}
-	actionsValue, ok := rawActions.([]map[string]any)
-	if !ok {
-		if anyArray, arrayOK := rawActions.([]any); arrayOK {
-			actionsValue = make([]map[string]any, 0, len(anyArray))
-			for _, rawAction := range anyArray {
-				actionValue, actionOK := readMap(rawAction, "annotation.actions", schemaIssues)
-				if actionOK {
-					actionsValue = append(actionsValue, actionValue)
-				}
-			}
-		} else {
-			*schemaIssues = append(*schemaIssues, "annotation.actions must be an array of tables.")
-			return ValidatedAnnotation{}
-		}
-	}
-	if len(actionsValue) == 0 {
-		*schemaIssues = append(*schemaIssues, "annotation.actions must contain at least one action.")
-		return ValidatedAnnotation{}
-	}
-
-	seenIDs := map[string]struct{}{}
-	actions := make([]ValidatedAnnotationAction, 0, len(actionsValue))
-	for index, actionValue := range actionsValue {
-		action := validateAnnotationAction(index, actionValue, manifestDirectoryPath, schemaIssues, validationIssues)
-		action.TempDir = tempDir
-		if action.ID == "" {
-			continue
-		}
-		if _, ok := seenIDs[action.ID]; ok {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions id must be unique: %s", action.ID))
-			continue
-		}
-		seenIDs[action.ID] = struct{}{}
-		actions = append(actions, action)
-	}
-
-	defaultActionID := ""
-	if len(actions) > 0 {
-		defaultActionID = actions[0].ID
-	}
-	if hasConfiguredDefaultActionID {
-		defaultActionID = configuredDefaultActionID
-		if _, ok := seenIDs[configuredDefaultActionID]; !ok {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.defaultAction must reference an annotation action id: %s", configuredDefaultActionID))
-		}
-	}
-
-	return ValidatedAnnotation{Actions: actions, DefaultActionID: defaultActionID, TempDir: tempDir}
-}
-
-func validateAnnotationAgent(value map[string]any, tempDir *string, issues *[]string) ValidatedAnnotation {
-	for _, key := range []string{"actions", "defaultAction"} {
-		if _, exists := value[key]; exists {
-			*issues = append(*issues, "annotation.agent cannot be combined with annotation."+key+".")
-		}
-	}
-	adapter, ok := readOptionalNonEmptyString(value, "annotation", "agent", issues)
-	if !ok {
-		return ValidatedAnnotation{}
-	}
-	label, ok := agentAdapterLabel(adapter)
-	if !ok {
-		*issues = append(*issues, "annotation.agent must be one of "+choices.Format(agentAdapterNames())+".")
-		return ValidatedAnnotation{}
-	}
-	return ValidatedAnnotation{
-		Actions: []ValidatedAnnotationAction{{
-			ID: defaultAnnotationActionID, Kind: "agent", Label: label,
-			Agent: ValidatedAgent{Kind: adapter}, TempDir: tempDir,
-		}},
-		DefaultActionID: defaultAnnotationActionID,
-		TempDir:         tempDir,
-	}
-}
-
-func validateAnnotationAction(index int, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {
-	allowKeys(value, "annotation.actions.*", "annotation.actions", schemaIssues)
-
-	// Without an ID, an action can only be named by its place in the list.
-	actionID, hasID := readRequiredNonEmptyString(value, fmt.Sprintf("annotation.actions[%d]", index), "id", schemaIssues)
-	if !hasID {
-		return ValidatedAnnotationAction{}
-	}
-	if !serviceNamePattern.MatchString(actionID) {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.id must match ^[a-z][a-z0-9-]*$.", actionID))
-		return ValidatedAnnotationAction{}
-	}
-
-	actionPath := "annotation.actions." + actionID
-	actionKind, hasKind := readRequiredNonEmptyString(value, actionPath, "kind", schemaIssues)
-	if !hasKind {
-		return ValidatedAnnotationAction{}
-	}
-
-	actionLabel, hasLabel := readOptionalNonEmptyString(value, actionPath, "label", schemaIssues)
-
-	switch actionKind {
-	case "agent":
-		return validateAgentAnnotationAction(actionID, actionLabel, value, manifestDirectoryPath, schemaIssues, validationIssues)
-	case "command":
-		// A command has no name to fall back on, unlike a built-in agent adapter.
-		if !hasLabel {
-			appendMissingLabelIssue(actionID, value, schemaIssues)
-			return ValidatedAnnotationAction{ID: actionID, Kind: actionKind}
-		}
-		return validateCommandAnnotationAction(actionID, actionLabel, value, manifestDirectoryPath, schemaIssues, validationIssues)
-	default:
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.kind must be one of %s.", actionID, choices.Format(annotationActionKinds)))
-		return ValidatedAnnotationAction{}
-	}
-}
-
-func validateAgentAnnotationAction(actionID string, actionLabel string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {
-	if _, hasCommand := value["command"]; hasCommand {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s agent actions must omit command.", actionID))
-		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "agent"}
-	}
-	agentValue, ok := readMap(value["agent"], "annotation.actions."+actionID+".agent", schemaIssues)
-	if !ok {
-		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "agent"}
-	}
-	allowKeys(agentValue, "annotation.actions.*.agent", "annotation.actions."+actionID+".agent", schemaIssues)
-	agent := validateAgentActionFields("annotation.actions."+actionID+".agent", agentValue, manifestDirectoryPath, schemaIssues, validationIssues)
-	if agent.Kind == "" {
-		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "agent"}
-	}
-	if actionLabel == "" {
-		adapterLabel, isAdapter := agentAdapterLabel(agent.Kind)
-		if !isAdapter {
-			// A custom agent has no built-in name to fall back on.
-			appendMissingLabelIssue(actionID, value, schemaIssues)
-			return ValidatedAnnotationAction{ID: actionID, Kind: "agent"}
-		}
-		actionLabel = adapterLabel
-	}
-	return ValidatedAnnotationAction{Agent: agent, Label: actionLabel, ID: actionID, Kind: "agent"}
-}
-
-func validateCommandAnnotationAction(actionID string, actionLabel string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAnnotationAction {
-	if _, hasAgent := value["agent"]; hasAgent {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s command actions must omit agent.", actionID))
-		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "command"}
-	}
-	commandValue, ok := readMap(value["command"], "annotation.actions."+actionID+".command", schemaIssues)
-	if !ok {
-		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "command"}
-	}
-	allowKeys(commandValue, "annotation.actions.*.command", "annotation.actions."+actionID+".command", schemaIssues)
-	command, hasCommand := readOptionalCommand(commandValue, "annotation.actions."+actionID+".command", "command", schemaIssues)
-	if !hasCommand {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.command must define command.", actionID))
-		return ValidatedAnnotationAction{Label: actionLabel, ID: actionID, Kind: "command"}
-	}
-	cwd := "."
-	if valueCwd, ok := readOptionalString(commandValue, "annotation.actions."+actionID+".command", "cwd", schemaIssues); ok {
-		cwd = valueCwd
-	}
-	env := map[string]string{}
-	if envValue, ok := readOptionalStringMap(commandValue, "annotation.actions."+actionID+".command", "env", schemaIssues); ok {
-		env = envValue
-	}
-	return ValidatedAnnotationAction{
-		Command: command,
-		Cwd:     resolveConstrainedPath("annotation.actions."+actionID+".cwd", cwd, manifestDirectoryPath, validationIssues),
-		Label:   actionLabel,
-		Env:     env,
-		ID:      actionID,
-		Kind:    "command",
-	}
-}
-
-func appendMissingLabelIssue(actionID string, value map[string]any, schemaIssues *[]string) {
-	if _, isPresent := value["label"]; isPresent {
-		return
-	}
-	*schemaIssues = append(*schemaIssues, fmt.Sprintf("annotation.actions.%s.label Expected a non-empty string.", actionID))
-}
-
-func validateAgentActionFields(path string, value map[string]any, manifestDirectoryPath string, schemaIssues *[]string, validationIssues *[]string) ValidatedAgent {
-
-	adapterValue, hasAdapter := readOptionalString(value, path, "adapter", schemaIssues)
-	argsValue, hasArgs := readOptionalStringArrayAllowEmpty(value, path, "args", schemaIssues)
-	commandValue, hasCommand := readOptionalStringArray(value, path, "command", schemaIssues)
-	cwdValue, hasCwd := readOptionalString(value, path, "cwd", schemaIssues)
-	envValue, hasEnv := readOptionalStringMap(value, path, "env", schemaIssues)
-
-	if hasAdapter {
-		if hasCommand || hasCwd || hasEnv {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define either adapter or custom command fields, not both.", path))
-			return ValidatedAgent{}
-		}
-		if _, isAdapter := agentAdapterLabel(adapterValue); !isAdapter {
-			*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.adapter must be one of %s.", path, choices.Format(agentAdapterNames())))
-			return ValidatedAgent{}
-		}
-		return ValidatedAgent{Args: argsValue, Kind: adapterValue}
-	}
-
-	if hasArgs {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s.args is only supported when adapter is configured.", path))
-		return ValidatedAgent{}
-	}
-
-	if !hasCommand {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must define adapter or command.", path))
-		return ValidatedAgent{}
-	}
-
-	cwd := "."
-	if hasCwd {
-		cwd = cwdValue
-	}
-
-	resolvedCwd := resolveConstrainedPath(path+".cwd", cwd, manifestDirectoryPath, validationIssues)
-	validatedEnv := map[string]string{}
-	if hasEnv {
-		validatedEnv = envValue
-	}
-
-	return ValidatedAgent{
-		Command: commandValue,
-		Cwd:     resolvedCwd,
-		Env:     validatedEnv,
-		Kind:    "configured",
-	}
-}
-
 // DefaultDevtools supplies the toolbar defaults for manifest and file sessions.
 func DefaultDevtools() DevtoolsConfig {
 	var schemaIssues []string
 	return DevtoolsConfig{
+		Chat:             DevtoolsToggleConfig{Enabled: true},
+		Annotations:      DevtoolsToggleConfig{Enabled: true},
 		Browser:          DevtoolsBrowserConfig{ReactExtensionID: defaultReactExtensionID},
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
@@ -400,6 +149,8 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 
 	allowKeys(value, "devtools", "devtools", schemaIssues)
 
+	readDevtoolsToggle(value, "chat", &result.Chat.Enabled, schemaIssues)
+	readDevtoolsToggle(value, "annotations", &result.Annotations.Enabled, schemaIssues)
 	result.Browser = validateNativeBrowser(value["browser"], schemaIssues)
 	result.Resources = validateDevtoolsResources(value["resources"], schemaIssues)
 
@@ -557,7 +308,7 @@ func validateService(
 			resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, p))
 			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
 			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
-				fmt.Fprintln(os.Stderr, cliout.Warning(fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath)))
+				cliout.WriteWarning(os.Stderr, fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath))
 			}
 			watch = append(watch, p)
 		}
@@ -998,21 +749,6 @@ func readOptionalBool(value map[string]any, table string, key string, schemaIssu
 	return boolValue, true
 }
 
-func readOptionalPort(value map[string]any, key string, path string, schemaIssues *[]string) (int, bool) {
-	rawValue, ok := value[key]
-	if !ok {
-		return 0, false
-	}
-
-	portValue, ok := readPortNumber(rawValue)
-	if !ok || portValue < 1 || portValue > 65535 {
-		*schemaIssues = append(*schemaIssues, fmt.Sprintf("%s must be an integer between 1 and 65535.", path))
-		return 0, false
-	}
-
-	return portValue, true
-}
-
 func readServiceHosts(value map[string]any, table string, schemaIssues *[]string) ([]string, bool) {
 	if host, ok := value["host"].(string); ok {
 		return []string{host}, true
@@ -1022,10 +758,6 @@ func readServiceHosts(value map[string]any, table string, schemaIssues *[]string
 
 func readOptionalStringArray(value map[string]any, table string, key string, schemaIssues *[]string) ([]string, bool) {
 	return parseOptionalStringArray(value, table, key, schemaIssues, false)
-}
-
-func readOptionalStringArrayAllowEmpty(value map[string]any, table string, key string, schemaIssues *[]string) ([]string, bool) {
-	return parseOptionalStringArray(value, table, key, schemaIssues, true)
 }
 
 func parseOptionalStringArray(value map[string]any, table string, key string, schemaIssues *[]string, allowEmpty bool) ([]string, bool) {

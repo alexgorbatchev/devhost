@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -95,18 +96,16 @@ func (wm *WatchManager) IsWatchingPath(serviceName string, path string) bool {
 }
 
 func (wm *WatchManager) writeLog(message string) {
+	label := ""
+	if wm.label != nil {
+		label = wm.label()
+	}
 	if wm.logWriter == nil {
-		_, _ = fmt.Fprintln(os.Stderr, message)
+		stdout, _ := cliout.ServiceOutputWriters(os.Stderr, os.Stderr, []string{label})
+		cliout.Log(stdout, label, message)
 		return
 	}
-	trimmedLabel := ""
-	if wm.label != nil {
-		trimmedLabel = strings.TrimSpace(wm.label())
-	}
-	if trimmedLabel == "" {
-		trimmedLabel = "devhost"
-	}
-	_, _ = fmt.Fprintf(wm.logWriter, "[%s] %s\n", trimmedLabel, message)
+	cliout.Log(wm.logWriter, label, message)
 }
 
 var excludedDirectories = map[string]bool{
@@ -153,7 +152,7 @@ var limitWarningLogged sync.Once
 
 func (wm *WatchManager) logLimitWarning() {
 	limitWarningLogged.Do(func() {
-		wm.writeLog("WARNING: File watching limit reached (no space left on device or too many open files).")
+		wm.writeLog(cliout.Warning("File watching limit reached (no space left on device or too many open files)."))
 		wm.writeLog("To increase watch limits, run: `sudo sysctl -w fs.inotify.max_user_watches=524288`")
 	})
 }
@@ -198,7 +197,7 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, b
 		absPath = filepath.Clean(absPath)
 		info, err := os.Stat(absPath)
 		if err != nil {
-			wm.writeLog(fmt.Sprintf("WARNING: watch path %q for service %s does not exist", absPath, serviceName))
+			wm.writeLog(cliout.Warning(fmt.Sprintf("watch path %q for service %s does not exist", absPath, serviceName)))
 			continue
 		}
 

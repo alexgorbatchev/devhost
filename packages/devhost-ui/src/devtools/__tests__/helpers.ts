@@ -3,8 +3,9 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { buildDevtoolsBundle } from "../../../../../apps/devhost/scripts/buildDevtoolsBundle";
-import type { IStartEditorTerminalSessionRequest } from "../features/terminalSessions/types";
 import { createOwnedBrowserEnvironment } from "../../../../../test-support/createOwnedBrowserEnvironment";
+import type { Page } from "playwright";
+import type { IChatSnapshot } from "../features/agentChat/types";
 
 interface IBuiltDevtoolsHost {
   /** The environment for the browser a test opens this host in. Its home lives in the host's own directory. */
@@ -13,15 +14,13 @@ interface IBuiltDevtoolsHost {
   requests: string[];
   requestUrls: string[];
   requestHeaders: Headers[];
-  delayTerminalRuntime: () => void;
-  releaseTerminalRuntime: () => void;
-  failTerminalRuntime: () => void;
-  restoreTerminal: () => void;
+  requestMethods: string[];
+  chatCommands: string[];
   setStackName: (name: string) => void;
   url: string;
 }
 
-export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
+export async function startBuiltDevtoolsHost(chat?: IChatSnapshot): Promise<IBuiltDevtoolsHost> {
   const temporaryRootPath: string = E2E_TEMPORARY_PATH;
   await mkdir(temporaryRootPath, { recursive: true });
   const directoryPath: string = await mkdtemp(resolve(temporaryRootPath, "browser-bundle-"));
@@ -35,18 +34,10 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
   const requests: string[] = [];
   const requestUrls: string[] = [];
   const requestHeaders: Headers[] = [];
+  const requestMethods: string[] = [];
+  const chatCommands: string[] = [];
+  let isChatClosed = false;
   let stackName: string = "bundle-browser-test";
-  let shouldRestoreTerminal: boolean = false;
-  let shouldDelayTerminalRuntime: boolean = false;
-  let shouldFailTerminalRuntime: boolean = false;
-  const runtimeGate = Promise.withResolvers<void>();
-  const terminalRequest: IStartEditorTerminalSessionRequest = {
-    componentName: "Widget",
-    kind: "editor",
-    launcher: "neovim",
-    source: { fileName: "src/Widget.tsx", lineNumber: 1 },
-    sourceLabel: "src/Widget.tsx:1",
-  };
   const server = Bun.serve<string>({
     hostname: "127.0.0.1",
     port: 0,
@@ -55,10 +46,7 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
       requests.push(url.pathname);
       requestUrls.push(url.pathname + url.search);
       requestHeaders.push(request.headers);
-      if (url.pathname.startsWith("/__devhost__/assets/xterm-")) {
-        if (shouldDelayTerminalRuntime) await runtimeGate.promise;
-        if (shouldFailTerminalRuntime) return new Response(null, { status: 503 });
-      }
+      requestMethods.push(request.method);
       if (url.pathname.startsWith("/__devhost__/ws/")) {
         return server.upgrade(request, { data: url.pathname }) ? undefined : new Response(null, { status: 400 });
       }
@@ -66,25 +54,36 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
         return Response.json(
           {
             stackName,
-            terminalEnabled: true,
+            chatEnabled: chat !== undefined,
+            projectRootPath: chat?.session.projectRootPath,
             annotationEnabled: false,
-            annotationQueueEnabled: false,
             editorEnabled: false,
             externalToolbarsEnabled: false,
             minimapEnabled: false,
-            statusEnabled: false,
+            statusEnabled: true,
           },
           { headers: { "Cache-Control": "no-store" } },
         );
       }
-      if (url.pathname === "/__devhost__/terminal-sessions") {
+      if (url.pathname === "/__devhost__/chat/harnesses")
         return Response.json({
-          sessions: shouldRestoreTerminal ? [{ request: terminalRequest, sessionId: "restored-session" }] : [],
+          harnesses: [
+            {
+              id: "codex",
+              label: "Codex",
+              available: true,
+              models: [{ id: "native-model", label: "Native model", description: "Installed model", metadata: {} }],
+            },
+          ],
         });
+      if (url.pathname === "/__devhost__/chat/sessions")
+        return Response.json({ sessions: chat && !isChatClosed ? [chat.session] : [] });
+      if (url.pathname.startsWith("/__devhost__/chat/sessions/") && request.method === "DELETE") {
+        isChatClosed = true;
+        return new Response(null, { status: 204 });
       }
       if (
         url.pathname === "/__devhost__/inject.js" ||
-        url.pathname === "/__devhost__/xterm.css" ||
         /^\/__devhost__\/assets\/[^/]+\.(js|woff2)$/.test(url.pathname)
       ) {
         const name: string =
@@ -102,42 +101,34 @@ export async function startBuiltDevtoolsHost(): Promise<IBuiltDevtoolsHost> {
     },
     websocket: {
       open(socket): void {
-        socket.send(
-          JSON.stringify(
-            socket.data.endsWith("/terminal")
-              ? { type: "snapshot", data: "lazy terminal ready\r\n" }
-              : { services: [] },
-          ),
-        );
+        socket.send(JSON.stringify(socket.data === "/__devhost__/ws/chat" && chat ? chat : { services: [] }));
       },
-      message(): void {},
+      message(socket, message): void {
+        if (socket.data === "/__devhost__/ws/chat") chatCommands.push(String(message));
+      },
     },
   });
   return {
     requests,
     requestUrls,
     requestHeaders,
+    requestMethods,
+    chatCommands,
     url: server.url.toString(),
     setStackName: (name): void => {
       stackName = name;
     },
-    restoreTerminal: (): void => {
-      shouldRestoreTerminal = true;
-    },
-    delayTerminalRuntime: (): void => {
-      shouldDelayTerminalRuntime = true;
-    },
-    releaseTerminalRuntime: (): void => {
-      runtimeGate.resolve();
-    },
-    failTerminalRuntime: (): void => {
-      shouldFailTerminalRuntime = true;
-    },
     browserEnvironment,
     close: async (): Promise<void> => {
-      runtimeGate.resolve();
       await server.stop(true);
       await rm(directoryPath, { recursive: true, force: true });
     },
   };
+}
+
+export async function waitForChatScroll(page: Page, top: number): Promise<void> {
+  await page.waitForFunction((expected) => {
+    const root = document.querySelector("#devhost-devtools-host")?.shadowRoot;
+    return root?.querySelector('[data-slot="aui_thread-viewport"]')?.scrollTop === expected;
+  }, top);
 }

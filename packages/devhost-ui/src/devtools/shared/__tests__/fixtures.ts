@@ -1,4 +1,33 @@
 import type { IWorktreeRepository } from "../types";
+import type { StateStorage } from "zustand/middleware";
+
+export function factory_settingsStorage(): StateStorage {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      values.set(key, value);
+    },
+    removeItem: (key) => {
+      values.delete(key);
+    },
+  };
+}
+
+export function factory_deniedSettingsStorage(): StateStorage {
+  throw new DOMException("The browser denied storage access.", "SecurityError");
+}
+
+export function factory_fullSettingsStorage(): StateStorage {
+  const storage = factory_settingsStorage();
+  storage.setItem("setting", "previous");
+  return {
+    ...storage,
+    setItem: () => {
+      throw new DOMException("Storage quota exceeded.", "QuotaExceededError");
+    },
+  };
+}
 
 /** A repository configured at `/projects/shop` with two more checkouts under `/worktrees`. */
 export function factory_worktreeRepository(): IWorktreeRepository {

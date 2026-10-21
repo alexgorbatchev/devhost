@@ -50,12 +50,6 @@ describe("responsive toolbar", () => {
       await settleToolbar(() => userEvent.click(canvas.getByRole("button", { name: "Worktrees" })));
       await waitFor(() => expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible());
       await settleToolbar(() => userEvent.keyboard("{Escape}"));
-      await settleToolbar(() => userEvent.click(canvas.getByRole("button", { name: /^All terminal sessions/ })));
-      await waitFor(() => expect(canvas.getByRole("region", { name: "Terminal sessions" })).toBeVisible());
-      expect(within(canvas.getByRole("region", { name: "Terminal sessions" })).getAllByRole("listitem")).toHaveLength(
-        16,
-      );
-      await settleToolbar(() => userEvent.keyboard("{Escape}"));
       await settleToolbar(() => userEvent.click(canvas.getByRole("button", { name: "Collapse devhost toolbar" })));
       expect(toolbar.getBoundingClientRect().height).toBe(26);
       await settleToolbar(() => userEvent.click(canvas.getByRole("button", { name: "Expand devhost toolbar" })));

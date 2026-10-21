@@ -7,33 +7,11 @@ enabled = true
 [devtools.editor]
 enabled = false
 
-[annotation]
-defaultAction = "fix"
-tempDir = "{{ env.DEVHOST_DEMO_RUNTIME }}/.tmp/annotations"
+[devtools.chat]
+enabled = true
 
-[[annotation.actions]]
-id = "fix"
-label = "Pi"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "pi"
-args = [
-  "--no-skills",
-  "--no-context-files",
-  "--no-prompt-templates",
-  "--no-approve",
-  "--tools",
-  "read,edit",
-  "--thinking",
-  "low",
-  "--session-dir",
-  "{{ env.DEVHOST_DEMO_RUNTIME }}/.tmp/pi-sessions",
-  "--append-system-prompt",
-  "{{ env.DEVHOST_DEMO_RUNTIME }}/pi-demo-instructions.md",
-  "-e",
-  "{{ env.DEVHOST_DEMO_RUNTIME }}/pi-demo-guard.js",
-]
+[devtools.annotations]
+enabled = true
 
 [services.api]
 command = ["bun", "run", "src/index.ts"]

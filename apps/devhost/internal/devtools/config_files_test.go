@@ -60,8 +60,7 @@ func startConfigEditorServer(t *testing.T, enabled bool, check func(string, []by
 			}
 			return check(path, content)
 		},
-		ProjectRootPath:    directory,
-		StateDirectoryPath: t.TempDir(),
+		ProjectRootPath: directory,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -338,11 +337,9 @@ func TestConfigIssuesLocateEachProblem(t *testing.T) {
 		{"manifest settings", &manifest.ValidationError{Heading: "Manifest schema is invalid", Issues: []string{
 			`manifest Unrecognized key: "extra"`,
 			`services.api.port must be an integer between 1 and 65535 or "auto".`,
-			`annotation.actions[0].id Expected a non-empty string.`,
 		}}, []configIssue{
 			{Message: `manifest Unrecognized key: "extra"`, KeyPath: "extra"},
 			{Message: `services.api.port must be an integer between 1 and 65535 or "auto".`, KeyPath: "services.api.port"},
-			{Message: `annotation.actions[0].id Expected a non-empty string.`, KeyPath: "annotation.actions[0].id"},
 		}},
 		{"config settings", &config.ValidationError{Path: "config.toml", Issues: []string{`Unrecognized key: "caddy.port"`, "caddy.httpsPort must be an integer between 1 and 65535."}}, []configIssue{
 			{Message: `Unrecognized key: "caddy.port"`, KeyPath: "caddy.port"},

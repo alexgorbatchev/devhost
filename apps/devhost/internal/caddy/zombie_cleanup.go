@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/procid"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -55,7 +56,7 @@ func (c *ZombieCleanup) kill(pid int, startIdentity, claim string, logs io.Write
 
 func stopZombie(owner zombieOwner, claim string, logs io.Writer) error {
 	if logs != nil {
-		_, _ = fmt.Fprintf(logs, "[devhost] Stopping zombie PID %d claiming %s...\n", owner.pid, claim)
+		cliout.Log(logs, "devhost", fmt.Sprintf("Stopping zombie PID %d claiming %s...", owner.pid, claim))
 	}
 	if err := routeMutationKillProcess(owner.pid); err != nil && !errors.Is(err, os.ErrProcessDone) && !errors.Is(err, syscall.ESRCH) {
 		return fmt.Errorf("stop zombie PID %d claiming %s: %w", owner.pid, claim, err)
@@ -66,7 +67,7 @@ func stopZombie(owner zombieOwner, claim string, logs io.Writer) error {
 		return fmt.Errorf("confirm exit of zombie PID %d claiming %s: %w", owner.pid, claim, err)
 	}
 	if logs != nil {
-		_, _ = fmt.Fprintf(logs, "[devhost] Stopped zombie PID %d claiming %s.\n", owner.pid, claim)
+		cliout.Log(logs, "devhost", fmt.Sprintf("Stopped zombie PID %d claiming %s.", owner.pid, claim))
 	}
 	return nil
 }

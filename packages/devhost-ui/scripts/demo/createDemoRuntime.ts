@@ -2,9 +2,7 @@ import { mkdir, mkdtemp } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { IDemoRuntime } from "./types";
 import { createDemoPlayground } from "./createDemoPlayground";
-import { createPiDemoFiles } from "./createPiDemoFiles";
 import { createDemoWorktrees } from "./createDemoWorktrees";
-import { resolveDevhostConfigDirectory } from "./resolveDevhostConfigDirectory";
 
 export async function createDemoRuntime(repositoryPath: string, host: string): Promise<IDemoRuntime> {
   if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+localhost$/.test(host)) {
@@ -27,10 +25,6 @@ export async function createDemoRuntime(repositoryPath: string, host: string): P
     DEVHOST_DEMO_EDIT_FILE: join(directoryPath, "playground/frontend/src/components/PlaygroundLayout.tsx"),
     DEVHOST_DEMO_HOST: host,
     DEVHOST_DEMO_ADMIN: adminAddress,
-    XDG_DATA_HOME: join(directoryPath, "data"),
-    XDG_CONFIG_HOME: join(directoryPath, "config"),
-    // The recording shares the user's managed Caddy, so it applies the user's shared Caddy settings.
-    DEVHOST_CONFIG_DIR: resolveDevhostConfigDirectory(process.env),
     TMPDIR: ".tmp",
     PATH: `${join(directoryPath, "bin")}:${process.env.PATH ?? ""}`,
     VHS_PUBLISH: "false",
@@ -48,6 +42,5 @@ export async function createDemoRuntime(repositoryPath: string, host: string): P
   };
   await createDemoPlayground(runtime);
   await createDemoWorktrees(runtime);
-  await createPiDemoFiles(runtime);
   return runtime;
 }

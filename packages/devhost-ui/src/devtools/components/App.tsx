@@ -1,12 +1,14 @@
 import type { JSX } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useStore } from "zustand";
+import { createDevtoolsSettingsStore } from "../shared/createDevtoolsSettingsStore";
+import { PageChat } from "../features/agentChat/components/PageChat";
+
+import { Button } from "../shared";
 
 import { cn } from "../../lib/utils";
 
 import type { ServiceHealth } from "../shared/types";
-import type { IAnnotationAction } from "../shared/devtoolsConfig";
-import { AnnotationComposer } from "../features/annotationComposer";
-import { AnnotationQueuePanel, useAnnotationQueues } from "../features/annotationQueue";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "../features/componentSourceNavigation";
 import {
   ConfigEditorButton,
@@ -16,7 +18,6 @@ import {
 } from "../features/configEditor";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features/externalDevtoolsPanel";
 import { LogMinimap, useServiceLogs } from "../features/minimap";
-import { TerminalSessionChips, TerminalSessionHost, useTerminalSessions } from "../features/terminalSessions";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ResourceUsagePanel, useResourceUsage } from "../features/resourceUsage";
 import {
@@ -35,12 +36,7 @@ import { isEventTargetEditingSurface } from "../shared/isEventTargetEditingSurfa
 import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
 import { DevtoolsTopLayer } from "../shared/components/DevtoolsTopLayer";
 import { useRetainedValue } from "../shared/hooks/useRetainedValue";
-import {
-  ColorSchemeProvider,
-  resolveRoutedServiceKeyForUrl,
-  useDevtoolsColorScheme,
-  useResolvedColorScheme,
-} from "../shared";
+import { ColorSchemeProvider, resolveRoutedServiceKeyForUrl, useResolvedColorScheme } from "../shared";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../shared/constants";
 import { selectRestartServiceNames } from "../shared/selectRestartServiceNames";
 
@@ -56,11 +52,9 @@ export function App(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const {
-    annotationActions,
-    annotationDefaultActionId,
     nativeBrowserConfigured,
     annotationEnabled,
-    annotationQueueEnabled,
+    chatEnabled,
     componentEditor,
     configEditorEnabled,
     editorEnabled,
@@ -73,7 +67,6 @@ function AppContent(): JSX.Element {
     routedServices,
     stackName,
     statusEnabled,
-    terminalEnabled,
     restartServicesShortcut,
     primaryService,
   } = readInjectedDevtoolsConfig();
@@ -81,7 +74,6 @@ function AppContent(): JSX.Element {
   const isNativeBrowserEnabled: boolean = externalToolbarsEnabled && nativeBrowserConfigured;
   const nativeBrowser = useNativeBrowserConnection(isNativeBrowserEnabled);
   const nativeBrowserStatusId: string = useId();
-  const colorScheme = useDevtoolsColorScheme();
   const [isConfigEditorOpen, setIsConfigEditorOpen] = useState<boolean>(false);
   const configEditorClient = useMemo(() => createConfigEditorClient(pristineFetch), []);
   const {
@@ -101,30 +93,28 @@ function AppContent(): JSX.Element {
   );
   const projectRootPath =
     services.find((service) => service.name === currentRoutedServiceKey)?.projectRootPath ?? configuredProjectRootPath;
-  const {
-    errorMessage: annotationQueueErrorMessage,
-    isEntryMutationPending,
-    isQueueResumePending,
-    queues: annotationQueues,
-    removeEntry,
-    resumeQueue,
-    saveEntry,
-  } = useAnnotationQueues(annotationQueueEnabled);
   const { launchers: externalDevtoolsLaunchers, toggleLauncher } =
     useExternalDevtoolsLaunchers(externalToolbarsEnabled);
-  const {
-    expandSession,
-    minimizeSession,
-    registerStartedSession,
-    terminalSessions,
-    removeSession,
-    startComponentSourceSession,
-    submitAnnotation,
-    updateSessionStatus,
-  } = useTerminalSessions(colorScheme, terminalEnabled);
   const resourceUsage = useResourceUsage(resourcesEnabled);
   const [isMinimapHovered, setIsMinimapHovered] = useState<boolean>(false);
-  const [selectedAnnotationActionId, setSelectedAnnotationActionId] = useState<string>(annotationDefaultActionId);
+  const settingsStore = useMemo(
+    () =>
+      createDevtoolsSettingsStore(
+        {
+          projectRootPath,
+          pageURL: window.location.href,
+        },
+        () => window.localStorage,
+      ),
+    [projectRootPath],
+  );
+  const isChatOpen = useStore(settingsStore, (state) => state.chat.isOpen);
+  const setIsChatOpen = useCallback(
+    (isOpen: boolean): void => {
+      settingsStore.getState().updateChat({ isOpen });
+    },
+    [settingsStore],
+  );
   const exitedServices = services.filter(
     (service) =>
       service.managed &&
@@ -144,7 +134,6 @@ function AppContent(): JSX.Element {
   const { componentMenu, openComponentSource } = useComponentSourceNavigation({
     componentEditor,
     projectRootPath,
-    startComponentSourceSession,
     worktreeRepository: currentRepository,
     enabled: editorEnabled && currentRepository?.switching !== true && currentRepository?.error === undefined,
   });
@@ -180,61 +169,25 @@ function AppContent(): JSX.Element {
   }, [restartServicesShortcut, services, primaryService, setErrorMessage]);
   const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
-  const shouldRenderToolbar: boolean =
-    statusEnabled || annotationQueueEnabled || externalToolbarsEnabled || terminalEnabled || configEditorEnabled;
+  const shouldRenderToolbar: boolean = statusEnabled || externalToolbarsEnabled || chatEnabled || configEditorEnabled;
   const isConfigurationRejected: boolean = configuration.some((status) => status.error !== undefined);
   const openConfigEditor = useCallback((): void => {
     setIsConfigEditorOpen(true);
   }, []);
   const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
-  const selectedAnnotationAction: IAnnotationAction | null = annotationEnabled
-    ? resolveSelectedAnnotationAction(annotationActions, selectedAnnotationActionId)
-    : null;
-  const activeAgentSessionId: string | undefined = findActiveAgentSessionId(
-    selectedAnnotationAction,
-    terminalSessions,
-    routedServices,
-    currentRoutedServiceKey,
-  );
-  const handleResumeQueue = useCallback(
-    async (queueId: string): Promise<string | null> => {
-      const resumedQueue = annotationQueues.find((queue) => queue.queueId === queueId);
-      const activeEntry = resumedQueue?.entries[0];
-      const sessionId = await resumeQueue(queueId, colorScheme);
-      const activeAction = annotationActions.find((action: IAnnotationAction): boolean => {
-        return action.id === activeEntry?.actionId;
-      });
-
-      if (sessionId !== null && activeEntry !== undefined && activeAction !== undefined) {
-        registerStartedSession({
-          label: activeAction.label,
-          request: {
-            actionId: activeAction.id,
-            annotation: activeEntry.annotation,
-            colorScheme,
-            kind: "agent",
-          },
-          sessionId,
-        });
-      }
-
-      return sessionId;
-    },
-    [annotationActions, annotationQueues, colorScheme, registerStartedSession, resumeQueue],
-  );
   return (
     <DevtoolsTopLayer
       ref={appRootReference}
       nativeBrowserBinding={isNativeBrowserEnabled ? nativeBrowser.view.binding : null}
     >
-      {annotationEnabled ? (
-        <AnnotationComposer
-          activeAgentSessionId={activeAgentSessionId}
-          annotationActions={annotationActions}
-          selectedActionId={selectedAnnotationAction?.id ?? ""}
-          onSubmit={submitAnnotation}
-          onSelectedActionIdChange={setSelectedAnnotationActionId}
-          stackName={stackName}
+      {chatEnabled ? (
+        <PageChat
+          key={projectRootPath}
+          settingsStore={settingsStore}
+          isOpen={isChatOpen}
+          onOpenChange={setIsChatOpen}
+          isSelectionEnabled={annotationEnabled}
+          rootReference={appRootReference}
         />
       ) : null}
       {displayedComponentMenu !== null ? (
@@ -298,17 +251,6 @@ function AppContent(): JSX.Element {
             onRefreshWorktrees={refreshWorktrees}
             onSwitchWorktree={switchWorktree}
           />
-          {annotationQueueEnabled ? (
-            <AnnotationQueuePanel
-              errorMessage={annotationQueueErrorMessage}
-              isEntryMutationPending={isEntryMutationPending}
-              isQueueResumePending={isQueueResumePending}
-              onRemoveEntry={removeEntry}
-              onResumeQueue={handleResumeQueue}
-              onSaveEntry={saveEntry}
-              queues={annotationQueues}
-            />
-          ) : null}
           {resourcesEnabled ? <ResourceUsagePanel usage={resourceUsage} /> : null}
           {configEditorEnabled ? (
             <ConfigEditorButton
@@ -329,24 +271,12 @@ function AppContent(): JSX.Element {
           {shouldRenderExternalDevtoolsPanel ? (
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
           ) : null}
-          {terminalEnabled ? (
-            <TerminalSessionChips
-              sessions={terminalSessions}
-              onExpandSession={expandSession}
-              onMinimizeSession={minimizeSession}
-              onRemoveSession={removeSession}
-            />
+          {chatEnabled ? (
+            <Button aria-expanded={isChatOpen} onClick={() => setIsChatOpen(!isChatOpen)}>
+              Chat
+            </Button>
           ) : null}
         </DevtoolsToolbar>
-      ) : null}
-      {terminalEnabled ? (
-        <TerminalSessionHost
-          isMinimapVisible={shouldRenderMinimap}
-          sessions={terminalSessions}
-          onMinimizeSession={minimizeSession}
-          onRemoveSession={removeSession}
-          onSessionStatusChange={updateSessionStatus}
-        />
       ) : null}
       {configEditorEnabled ? (
         <ConfigEditorPanel
@@ -407,44 +337,6 @@ function readStackHealthState(errorMessage: string | null, services: ServiceHeal
   }
 
   return services.some((service: ServiceHealth): boolean => service.dirty === true) ? "changed" : "healthy";
-}
-
-function resolveSelectedAnnotationAction(
-  annotationActions: IAnnotationAction[],
-  selectedAnnotationActionId: string,
-): IAnnotationAction | null {
-  return (
-    annotationActions.find((action: IAnnotationAction): boolean => action.id === selectedAnnotationActionId) ??
-    annotationActions.at(0) ??
-    null
-  );
-}
-
-function findActiveAgentSessionId(
-  selectedAnnotationAction: IAnnotationAction | null,
-  terminalSessions: ReturnType<typeof useTerminalSessions>["terminalSessions"],
-  routedServices: ReturnType<typeof readInjectedDevtoolsConfig>["routedServices"],
-  currentRoutedServiceKey: string | null,
-): string | undefined {
-  if (selectedAnnotationAction === null) {
-    return undefined;
-  }
-
-  if (selectedAnnotationAction.kind !== "agent" || !selectedAnnotationAction.queueEnabled) {
-    return undefined;
-  }
-
-  return terminalSessions.find((session) => {
-    if (session.kind !== "agent" || session.actionId !== selectedAnnotationAction.id) {
-      return false;
-    }
-
-    if (currentRoutedServiceKey === null) {
-      return true;
-    }
-
-    return resolveRoutedServiceKeyForUrl(routedServices, session.annotation.url) === currentRoutedServiceKey;
-  })?.sessionId;
 }
 
 function parseAndMatchShortcut(shortcut: string, event: KeyboardEvent): boolean {

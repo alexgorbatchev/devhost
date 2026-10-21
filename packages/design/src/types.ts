@@ -22,6 +22,8 @@ export interface ISchemePalette {
   danger: string;
   onDanger: string;
   dangerSoft: string;
+  dangerStrong: string;
+  onDangerStrong: string;
   backdrop: string;
   termBg: string;
 }

@@ -17,7 +17,6 @@ type Inputs struct {
 
 type Manifest struct {
 	Inputs                Inputs
-	Annotation            ValidatedAnnotation
 	Devtools              DevtoolsConfig
 	Worktrees             WorktreesConfig
 	ManifestDirectoryPath string
@@ -34,30 +33,14 @@ type WorktreesConfig struct {
 	Enabled bool
 }
 
-type ValidatedAnnotation struct {
-	TempDir         *string
-	Actions         []ValidatedAnnotationAction
-	DefaultActionID string
-}
-
-type ValidatedAnnotationAction struct {
-	// TempDir is inherited from the stack's annotation configuration.
-	TempDir *string
-	Agent   ValidatedAgent
-	Command []string
-	Cwd     string
-	Env     map[string]string
-	ID      string
-	Kind    string
-	Label   string
-}
-
 type DevtoolsBrowserConfig struct {
 	Endpoint         string
 	ReactExtensionID string
 }
 
 type DevtoolsConfig struct {
+	Chat             DevtoolsToggleConfig
+	Annotations      DevtoolsToggleConfig
 	Browser          DevtoolsBrowserConfig
 	ConfigEditor     DevtoolsToggleConfig
 	Editor           DevtoolsEditorConfig
@@ -104,14 +87,6 @@ type DevtoolsResourceConfig struct {
 type DevtoolsStatusConfig struct {
 	Enabled  bool
 	Position string
-}
-
-type ValidatedAgent struct {
-	Args    []string
-	Command []string
-	Cwd     string
-	Env     map[string]string
-	Kind    string
 }
 
 type ValidatedService struct {

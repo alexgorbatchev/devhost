@@ -21,42 +21,36 @@ import (
 )
 
 const (
-	controlPathPrefix                = "/__devhost__"
-	injectedScriptPath               = controlPathPrefix + "/inject.js"
-	terminalSessionsPath             = controlPathPrefix + "/terminal-sessions"
-	terminalWebsocketPath            = controlPathPrefix + "/ws/terminal"
-	reactHighlightCursorPath         = controlPathPrefix + "/react-highlight/cursor"
-	reactHighlightWebsocketPath      = controlPathPrefix + "/ws/react-highlight"
-	xtermStylesheetPath              = controlPathPrefix + "/xterm.css"
-	restartServicePath               = controlPathPrefix + "/restart-service"
-	restartStackPath                 = controlPathPrefix + "/restart-stack"
-	startServicePath                 = controlPathPrefix + "/start-service"
-	healthWebsocketPath              = controlPathPrefix + "/ws/health"
-	resourcesWebsocketPath           = controlPathPrefix + "/ws/resources"
-	logsWebsocketPath                = controlPathPrefix + "/ws/logs"
-	maximumRetainedLogEntries        = 512
-	defaultHealthPollInterval        = time.Second
-	websocketCloseFrameTimeout       = time.Second
-	websocketCloseReasonStopping     = "devhost is stopping"
-	websocketCloseReasonSessionEnded = "terminal session ended"
+	controlPathPrefix            = "/__devhost__"
+	injectedScriptPath           = controlPathPrefix + "/inject.js"
+	reactHighlightCursorPath     = controlPathPrefix + "/react-highlight/cursor"
+	reactHighlightWebsocketPath  = controlPathPrefix + "/ws/react-highlight"
+	restartServicePath           = controlPathPrefix + "/restart-service"
+	restartStackPath             = controlPathPrefix + "/restart-stack"
+	startServicePath             = controlPathPrefix + "/start-service"
+	healthWebsocketPath          = controlPathPrefix + "/ws/health"
+	resourcesWebsocketPath       = controlPathPrefix + "/ws/resources"
+	logsWebsocketPath            = controlPathPrefix + "/ws/logs"
+	maximumRetainedLogEntries    = 512
+	defaultHealthPollInterval    = time.Second
+	websocketCloseFrameTimeout   = time.Second
+	websocketCloseReasonStopping = "devhost is stopping"
 	// A page that reads nothing for this long while its connection is full, such as one paused in a debugger, is
 	// dropped.
 	defaultWebsocketWriteTimeout     = 10 * time.Second
-	defaultIdleTerminalSessionPeriod = 10 * time.Second
 	applicationJavascriptContentType = "application/javascript; charset=utf-8"
 	textCSSContentType               = "text/css; charset=utf-8"
 	cacheControlNoStore              = "no-store"
 )
 
 type FeatureToggles struct {
+	ChatEnabled             bool
 	AnnotationEnabled       bool
-	AnnotationQueueEnabled  bool
 	ConfigEditorEnabled     bool
 	EditorEnabled           bool
 	ExternalToolbarsEnabled bool
 	MinimapEnabled          bool
 	StatusEnabled           bool
-	TerminalEnabled         bool
 }
 
 type RoutedServiceIdentity struct {
@@ -110,21 +104,17 @@ type StartControlServerOptions struct {
 	// ListConfigFiles names the files the config editor may change.
 	ListConfigFiles func() ([]ConfigFileRef, error)
 	// CheckConfigFile makes the checks a reload makes, with content in place of the file at path.
-	CheckConfigFile            func(string, []byte) error
-	AnnotationDefaultActionID  string
-	AnnotationActions          []manifest.ValidatedAnnotationAction
-	ComponentEditor            string
-	DevSource                  *DevSourceCheckout
-	OnLog                      func(string)
-	FeatureToggles             FeatureToggles
-	GetHealthResponse          func() (HealthResponse, error)
-	IdleTerminalSessionTimeout time.Duration
+	CheckConfigFile   func(string, []byte) error
+	ComponentEditor   string
+	DevSource         *DevSourceCheckout
+	OnLog             func(string)
+	FeatureToggles    FeatureToggles
+	GetHealthResponse func() (HealthResponse, error)
 	// WebsocketWriteTimeout bounds one write to a browser connection. Zero selects the default.
 	WebsocketWriteTimeout time.Duration
 	// HealthPollInterval is how often open pages are sent health that changed without a push. Zero selects the
 	// default.
 	HealthPollInterval      time.Duration
-	ManifestPath            string
 	Position                string
 	ProjectRootPath         string
 	PrimaryService          string
@@ -137,40 +127,33 @@ type StartControlServerOptions struct {
 	GetToolContext          func(string) (ToolContext, error)
 	RestartServicesShortcut string
 	RoutedServices          []RoutedServiceIdentity
-	StateDirectoryPath      string
-	RuntimeDirectoryPath    string
-	StartTerminalSession    terminalSessionStarter
 	StackName               string
 }
 
 type ControlServer struct {
 	// settings are what a hot reload changes; mu guards them with configJSON.
 	settings                ControlSettings
+	chat                    *chatStore
 	nativeBrowserInstanceID string
 	homeDirectoryPath       string
-	runtimeDirectoryPath    string
 	ownsDocumentURL         func(int, string) (bool, error)
 	listConfigFiles         func() ([]ConfigFileRef, error)
 	checkConfigFile         func(string, []byte) error
 	// configSaveMu makes the version check and the write of one save a unit.
-	configSaveMu               sync.Mutex
-	listener                   net.Listener
-	server                     *http.Server
-	idleTerminalSessionTimeout time.Duration
-	websocketWriteTimeout      time.Duration
-	healthPollInterval         time.Duration
-	restartService             func([]string) error
-	restartStack               func() error
-	startService               func([]string) error
-	switchWorktree             func(string, string) error
-	refreshWorktrees           func() error
-	getToolContext             func(string) (ToolContext, error)
-	getHealth                  func() (HealthResponse, error)
-	projectRootPath            string
-	startTerminalSession       terminalSessionStarter
-	annotationQueueStore       *annotationQueueStore
-	neovimShellIntegration     *neovimPluginShellIntegrationFiles
-	tracker                    *ActivityTracker
+	configSaveMu          sync.Mutex
+	listener              net.Listener
+	server                *http.Server
+	websocketWriteTimeout time.Duration
+	healthPollInterval    time.Duration
+	restartService        func([]string) error
+	restartStack          func() error
+	startService          func([]string) error
+	switchWorktree        func(string, string) error
+	refreshWorktrees      func() error
+	getToolContext        func(string) (ToolContext, error)
+	getHealth             func() (HealthResponse, error)
+	projectRootPath       string
+	tracker               *ActivityTracker
 
 	devSource  *DevSourceCheckout
 	onLog      func(string)
@@ -195,9 +178,6 @@ type ControlServer struct {
 	resourceClients        map[*websocketClient]struct{}
 	nextLogEntryID         int
 	retainedLogEntries     []ServiceLogEntry
-	terminalSessionOrder   []string
-	terminalSessions       map[string]*terminalSessionState
-	annotationQueueClients map[*websocketClient]struct{}
 	healthClients          map[*websocketClient]struct{}
 	logsClients            map[*websocketClient]struct{}
 	reactHighlightClients  map[*websocketClient]struct{}
@@ -215,34 +195,24 @@ type websocketClient struct {
 }
 
 type injectedConfig struct {
-	NativeBrowserConfigured   bool                       `json:"nativeBrowserConfigured"`
-	NativeBrowserInstanceID   string                     `json:"nativeBrowserInstanceId"`
-	AnnotationDefaultActionID string                     `json:"annotationDefaultActionId"`
-	AnnotationActions         []injectedAnnotationAction `json:"annotationActions"`
-	ComponentEditor           string                     `json:"componentEditor"`
-	HomeDirectoryPath         string                     `json:"homeDirectoryPath"`
-	Position                  string                     `json:"position"`
-	ProjectRootPath           string                     `json:"projectRootPath"`
-	StackName                 string                     `json:"stackName"`
-	EditorEnabled             bool                       `json:"editorEnabled"`
-	ExternalToolbarsEnabled   bool                       `json:"externalToolbarsEnabled"`
-	MinimapEnabled            bool                       `json:"minimapEnabled"`
-	StatusEnabled             bool                       `json:"statusEnabled"`
-	ResourcesEnabled          bool                       `json:"resourcesEnabled"`
-	AnnotationEnabled         bool                       `json:"annotationEnabled"`
-	AnnotationQueueEnabled    bool                       `json:"annotationQueueEnabled"`
-	ConfigEditorEnabled       bool                       `json:"configEditorEnabled"`
-	TerminalEnabled           bool                       `json:"terminalEnabled"`
-	RoutedServices            []RoutedServiceIdentity    `json:"routedServices"`
-	RestartServicesShortcut   string                     `json:"restartServicesShortcut"`
-	PrimaryService            string                     `json:"primaryService"`
-}
-
-type injectedAnnotationAction struct {
-	ID           string `json:"id"`
-	Label        string `json:"label"`
-	Kind         string `json:"kind"`
-	QueueEnabled bool   `json:"queueEnabled"`
+	ComponentEditor         string                  `json:"componentEditor"`
+	ChatEnabled             bool                    `json:"chatEnabled"`
+	ConfigEditorEnabled     bool                    `json:"configEditorEnabled"`
+	NativeBrowserConfigured bool                    `json:"nativeBrowserConfigured"`
+	NativeBrowserInstanceID string                  `json:"nativeBrowserInstanceId"`
+	HomeDirectoryPath       string                  `json:"homeDirectoryPath"`
+	Position                string                  `json:"position"`
+	ProjectRootPath         string                  `json:"projectRootPath"`
+	StackName               string                  `json:"stackName"`
+	EditorEnabled           bool                    `json:"editorEnabled"`
+	ExternalToolbarsEnabled bool                    `json:"externalToolbarsEnabled"`
+	MinimapEnabled          bool                    `json:"minimapEnabled"`
+	StatusEnabled           bool                    `json:"statusEnabled"`
+	ResourcesEnabled        bool                    `json:"resourcesEnabled"`
+	AnnotationEnabled       bool                    `json:"annotationEnabled"`
+	RoutedServices          []RoutedServiceIdentity `json:"routedServices"`
+	RestartServicesShortcut string                  `json:"restartServicesShortcut"`
+	PrimaryService          string                  `json:"primaryService"`
 }
 
 type restartServiceRequest struct {
@@ -299,45 +269,37 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
-		settings:                   settings,
-		nativeBrowserInstanceID:    instanceID,
-		homeDirectoryPath:          home,
-		runtimeDirectoryPath:       options.RuntimeDirectoryPath,
-		ownsDocumentURL:            options.OwnsDocumentURL,
-		listConfigFiles:            options.ListConfigFiles,
-		checkConfigFile:            options.CheckConfigFile,
-		ctx:                        ctx,
-		cancel:                     cancel,
-		devSource:                  options.DevSource,
-		onLog:                      options.OnLog,
-		resourceReaders:            options.ResourceUsage.Readers,
-		onResourceFailure:          options.ResourceUsage.OnFailure,
-		annotationQueueClients:     map[*websocketClient]struct{}{},
-		getHealth:                  options.GetHealthResponse,
-		healthClients:              map[*websocketClient]struct{}{},
-		idleTerminalSessionTimeout: options.IdleTerminalSessionTimeout,
-		websocketWriteTimeout:      options.WebsocketWriteTimeout,
-		healthPollInterval:         options.HealthPollInterval,
-		listener:                   listener,
-		logsClients:                map[*websocketClient]struct{}{},
-		nextLogEntryID:             1,
-		projectRootPath:            options.ProjectRootPath,
-		reactHighlightClients:      map[*websocketClient]struct{}{},
-		resourceClients:            map[*websocketClient]struct{}{},
-		restartService:             options.RestartService,
-		restartStack:               options.RestartStack,
-		startService:               options.StartService,
-		switchWorktree:             options.SwitchWorktree,
-		refreshWorktrees:           options.RefreshWorktrees,
-		getToolContext:             options.GetToolContext,
-		startTerminalSession:       options.StartTerminalSession,
-		terminalSessions:           map[string]*terminalSessionState{},
-		tracker:                    NewActivityTracker(),
+		settings:                settings,
+		nativeBrowserInstanceID: instanceID,
+		homeDirectoryPath:       home,
+		ownsDocumentURL:         options.OwnsDocumentURL,
+		listConfigFiles:         options.ListConfigFiles,
+		checkConfigFile:         options.CheckConfigFile,
+		ctx:                     ctx,
+		cancel:                  cancel,
+		devSource:               options.DevSource,
+		onLog:                   options.OnLog,
+		resourceReaders:         options.ResourceUsage.Readers,
+		onResourceFailure:       options.ResourceUsage.OnFailure,
+		getHealth:               options.GetHealthResponse,
+		healthClients:           map[*websocketClient]struct{}{},
+		websocketWriteTimeout:   options.WebsocketWriteTimeout,
+		healthPollInterval:      options.HealthPollInterval,
+		listener:                listener,
+		logsClients:             map[*websocketClient]struct{}{},
+		nextLogEntryID:          1,
+		projectRootPath:         options.ProjectRootPath,
+		reactHighlightClients:   map[*websocketClient]struct{}{},
+		resourceClients:         map[*websocketClient]struct{}{},
+		restartService:          options.RestartService,
+		restartStack:            options.RestartStack,
+		startService:            options.StartService,
+		switchWorktree:          options.SwitchWorktree,
+		refreshWorktrees:        options.RefreshWorktrees,
+		getToolContext:          options.GetToolContext,
+		tracker:                 NewActivityTracker(),
 		// The zero upgrader refuses an Origin whose host differs from the request Host.
 		upgrader: websocket.Upgrader{},
-	}
-	if controlServer.idleTerminalSessionTimeout <= 0 {
-		controlServer.idleTerminalSessionTimeout = defaultIdleTerminalSessionPeriod
 	}
 	if controlServer.websocketWriteTimeout <= 0 {
 		controlServer.websocketWriteTimeout = defaultWebsocketWriteTimeout
@@ -351,107 +313,21 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		return nil, err
 	}
 	controlServer.configJSON = configJSON
-	if err := controlServer.updateNeovimShellIntegration(ControlSettings{}, settings); err != nil {
-		_ = listener.Close()
-		return nil, err
-	}
-	// The store exists whether or not queues are on, so turning them on in a
-	// reload finds their saved state.
-	controlServer.annotationQueueStore = newAnnotationQueueStore(annotationQueueStoreOptions{
-		manifestPath: options.ManifestPath,
-		onQueuesChanged: func(queues []annotationQueueSnapshot) {
-			controlServer.publishAnnotationQueues(queues)
-		},
-		readLiveAgentSession: func(sessionID string) *liveAgentSessionSnapshot {
-			controlServer.mu.Lock()
-			defer controlServer.mu.Unlock()
-
-			session := controlServer.terminalSessions[sessionID]
-			if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.Annotation == nil {
-				return nil
-			}
-
-			return &liveAgentSessionSnapshot{
-				actionID:    session.request.ActionID,
-				agentStatus: session.agentStatus,
-				annotation:  *session.request.Annotation,
-				colorScheme: session.request.ColorScheme,
-				sessionID:   sessionID,
-			}
-		},
-		routedServices:     options.RoutedServices,
-		stateDirectoryPath: options.StateDirectoryPath,
-		startAgentSession: func(actionID string, annotation annotationSubmitDetail, colorScheme agentColorScheme) (string, error) {
-			return controlServer.createTerminalSession(terminalSessionRequest{ActionID: actionID, Annotation: &annotation, ColorScheme: colorScheme, Kind: terminalSessionRequestKindAgent})
-		},
-		writeAnnotationToSession: func(actionID string, sessionID string, annotation annotationSubmitDetail) error {
-			settings := controlServer.currentSettings()
-			action, ok := findAnnotationAction(settings.AnnotationActions, actionID)
-			if !ok || action.Kind != terminalSessionRequestKindAgent {
-				return fmt.Errorf("Annotation action %s is not available.", actionID)
-			}
-			toolContext, err := controlServer.toolContext(terminalSessionRequest{Annotation: &annotation})
-			if err != nil {
-				return err
-			}
-			controlServer.mu.Lock()
-			session := controlServer.terminalSessions[sessionID]
-			if session == nil || session.closed || session.exited != nil || session.request.Kind != terminalSessionRequestKindAgent || session.request.ActionID != actionID {
-				controlServer.mu.Unlock()
-				return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
-			}
-			if session.projectRootPath != toolContext.ProjectRootPath {
-				controlServer.mu.Unlock()
-				return fmt.Errorf("Agent session belongs to the previous checkout; resume the queue to start a session in the selected worktree.")
-			}
-			session.request.Annotation = &annotation
-			write := session.write
-			controlServer.mu.Unlock()
-
-			// The agent is already running with its adapter support files, so the handoff needs only the annotation.
-			sessionFiles, err := createAnnotationSessionFiles(agentSessionDirectoryPrefix, annotationSessionFilesOptions{
-				action:          action,
-				annotation:      annotation,
-				projectRootPath: toolContext.ProjectRootPath,
-				stackName:       settings.StackName,
-			})
-			if err != nil {
-				return err
-			}
-			controlServer.mu.Lock()
-			activeSession := controlServer.terminalSessions[sessionID]
-			if activeSession == nil || activeSession.closed {
-				controlServer.mu.Unlock()
-				sessionFiles.cleanup()
-				return fmt.Errorf("Agent terminal session %s is not available.", sessionID)
-			}
-			activeSession.cleanup = chainCleanup(activeSession.cleanup, sessionFiles.cleanup)
-			controlServer.mu.Unlock()
-			// The carriage return submits the instruction to the running agent.
-			write(createAnnotationPromptInstruction(sessionFiles.promptFilePath) + "\r")
-			return nil
-		},
-	})
-	if settings.FeatureToggles.AnnotationQueueEnabled {
-		if err := controlServer.annotationQueueStore.resumePersistedQueues(); err != nil {
-			_ = listener.Close()
-			return nil, err
-		}
-	}
-
 	mux := http.NewServeMux()
+	if controlServer.devSource != nil {
+		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
+	}
+	controlServer.chat = newChatStore(controlServer.ctx)
+	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
+	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
+	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))
+	mux.HandleFunc(chatWebsocketPath, controlServer.whileChatEnabled(controlServer.handleChatWebsocket))
 	mux.HandleFunc(nativeBrowserWebsocketPath, controlServer.handleNativeBrowserWebsocket)
 	mux.HandleFunc(injectedScriptPath, controlServer.handleInjectedScript)
 	mux.HandleFunc(injectedConfigPath, controlServer.handleInjectedConfig)
 	mux.HandleFunc(devtoolsAssetsPath, controlServer.handleDevtoolsAsset)
-	mux.HandleFunc(terminalSessionsPath, controlServer.handleTerminalSessions)
-	mux.HandleFunc(annotationQueuesPath, controlServer.handleAnnotationQueues)
-	mux.HandleFunc(annotationQueuesPath+"/", controlServer.handleAnnotationQueues)
 	mux.HandleFunc(reactHighlightCursorPath, controlServer.handleReactHighlightCursor)
-	mux.HandleFunc(terminalWebsocketPath, controlServer.handleTerminalWebsocket)
-	mux.HandleFunc(annotationQueuesWebsocketPath, controlServer.handleAnnotationQueueWebsocket)
 	mux.HandleFunc(reactHighlightWebsocketPath, controlServer.handleReactHighlightWebsocket)
-	mux.HandleFunc(xtermStylesheetPath, controlServer.handleXtermStylesheet)
 	mux.HandleFunc("GET "+reduxMonitorPath, controlServer.handleReduxMonitor)
 	mux.HandleFunc("GET "+reduxRegistrationScriptPath, controlServer.handleReduxRegistrationScript)
 	mux.HandleFunc("GET "+reduxMonitorScriptPath, controlServer.handleReduxMonitorScript)
@@ -479,51 +355,29 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 			return
 		}
 	}()
-	go func() {
-		defer controlServer.serverWG.Done()
-		ticker := time.NewTicker(controlServer.healthPollInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-controlServer.ctx.Done():
-				return
-			case <-ticker.C:
-			}
-			if !controlServer.hasHealthSubscribers() {
-				continue
-			}
-			_ = controlServer.PublishHealthResponse()
-		}
-	}()
+	go controlServer.pollHealth()
 
 	return controlServer, nil
 }
-func normalizeAnnotationDefaultActionID(actionID string, actions []manifest.ValidatedAnnotationAction) string {
-	for _, action := range actions {
-		if action.ID == actionID {
-			return actionID
+
+func (s *ControlServer) pollHealth() {
+	defer s.serverWG.Done()
+	ticker := time.NewTicker(s.healthPollInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-ticker.C:
+			if s.isClosed() {
+				return
+			}
+			if s.hasHealthSubscribers() {
+				_ = s.PublishHealthResponse()
+			}
 		}
 	}
-	if len(actions) > 0 {
-		return actions[0].ID
-	}
-	return ""
 }
-
-func createInjectedAnnotationActions(actions []manifest.ValidatedAnnotationAction) []injectedAnnotationAction {
-	result := make([]injectedAnnotationAction, 0, len(actions))
-	for _, action := range actions {
-		result = append(result, injectedAnnotationAction{
-			ID:           action.ID,
-			Label:        action.Label,
-			Kind:         action.Kind,
-			QueueEnabled: action.Kind == terminalSessionRequestKindAgent,
-		})
-	}
-	return result
-}
-
 func (s *ControlServer) Port() int {
 	return s.listener.Addr().(*net.TCPAddr).Port
 }
@@ -629,25 +483,15 @@ func (s *ControlServer) Stop() error {
 	}
 	healthClients := snapshotClients(s.healthClients)
 	logsClients := snapshotClients(s.logsClients)
-	annotationQueueClients := snapshotClients(s.annotationQueueClients)
 	reactHighlightClients := snapshotClients(s.reactHighlightClients)
 	resourceClients := snapshotClients(s.resourceClients)
 	resourceSampler := s.resourceSampler
-	terminalSessionIDs := append([]string{}, s.terminalSessionOrder...)
-	neovimShellIntegration := s.neovimShellIntegration
 	s.healthClients = map[*websocketClient]struct{}{}
 	s.logsClients = map[*websocketClient]struct{}{}
-	s.annotationQueueClients = map[*websocketClient]struct{}{}
 	s.reactHighlightClients = map[*websocketClient]struct{}{}
 	s.resourceClients = map[*websocketClient]struct{}{}
-	s.neovimShellIntegration = nil
 	s.mu.Unlock()
-	_ = s.annotationQueueStore.prepareForShutdown()
-
-	for _, sessionID := range terminalSessionIDs {
-		s.closeTerminalSession(sessionID)
-	}
-	for _, client := range slices.Concat(healthClients, logsClients, annotationQueueClients, reactHighlightClients, resourceClients) {
+	for _, client := range slices.Concat(healthClients, logsClients, reactHighlightClients, resourceClients) {
 		client.closeWith(websocket.CloseGoingAway, websocketCloseReasonStopping)
 	}
 	if resourceSampler != nil {
@@ -656,12 +500,12 @@ func (s *ControlServer) Stop() error {
 	}
 
 	shutdownContext, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	if s.chat != nil {
+		s.chat.close()
+	}
 	defer cancel()
 	shutdownError := s.server.Shutdown(shutdownContext)
 	s.serverWG.Wait()
-	if neovimShellIntegration != nil {
-		neovimShellIntegration.cleanup()
-	}
 	return shutdownError
 }
 
@@ -1066,17 +910,4 @@ func snapshotClients(clients map[*websocketClient]struct{}) []*websocketClient {
 	}
 
 	return result
-}
-
-func chainCleanup(current func(), next func()) func() {
-	if current == nil {
-		return next
-	}
-	if next == nil {
-		return current
-	}
-	return func() {
-		current()
-		next()
-	}
 }

@@ -1,11 +1,27 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@alexgorbatchev/shadcn/theme.css";
+@import "@alexgorbatchev/shadcn/assistant-ui.css";
+@import "@alexgorbatchev/shadcn/assistant-ui/markdown.css";
+
 /* Shared devhost color, radius, and marker tokens (`--dh-*`), the single source for devtools and docs. */
 @import "@alexgorbatchev/devhost-design/tokens.css";
+
+[data-devhost-capturing] [data-devhost-capture-exclude] {
+  visibility: hidden;
+}
+
+/* Native chat bubbles retain the shared palette while separating user messages from the thread. */
+.aui-user-message-content {
+  background: color-mix(in srgb, var(--foreground) 14%, var(--secondary));
+  color: var(--foreground);
+  border: 1px solid var(--input);
+}
 
 @custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";
+@source "../../../node_modules/@alexgorbatchev/shadcn/dist";
 
 /*
  * Visual design reference: packages/design/references/devtools.html
@@ -47,6 +63,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-strong: var(--destructive-strong);
+  --color-destructive-strong-foreground: var(--destructive-strong-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -130,6 +148,8 @@
 
   --background: var(--dh-surface);
   --foreground: var(--dh-fg);
+  --frame-edge: var(--edge);
+  --frame-halo: var(--halo);
   --card: var(--dh-surface);
   --card-foreground: var(--dh-fg);
   --popover: var(--dh-surface);
@@ -145,6 +165,8 @@
   --accent-foreground: var(--dh-fg);
   --destructive: var(--dh-danger);
   --destructive-foreground: var(--dh-on-danger);
+  --destructive-strong: var(--dh-danger-strong);
+  --destructive-strong-foreground: var(--dh-on-danger-strong);
   --success: var(--dh-ok);
   --success-foreground: var(--dh-on-ok);
   --warning: var(--dh-warn);

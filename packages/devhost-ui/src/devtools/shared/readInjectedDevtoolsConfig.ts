@@ -1,10 +1,8 @@
 import {
   defaultDevtoolsComponentEditor,
   readDevtoolsComponentEditorValue,
-  type AnnotationActionKind,
   type DevtoolsComponentEditor,
   type DevtoolsPosition,
-  type IAnnotationAction,
 } from "./devtoolsConfig";
 import {
   DEFAULT_RESTART_SERVICES_SHORTCUT,
@@ -16,8 +14,6 @@ import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./route
 export interface IInjectedDevtoolsConfig {
   nativeBrowserConfigured: boolean;
   nativeBrowserInstanceId: string;
-  annotationActions: IAnnotationAction[];
-  annotationDefaultActionId: string;
   componentEditor: DevtoolsComponentEditor;
   homeDirectoryPath: string;
   position: DevtoolsPosition;
@@ -25,14 +21,13 @@ export interface IInjectedDevtoolsConfig {
   routedServices: IRoutedServiceIdentity[];
   stackName: string;
   annotationEnabled: boolean;
-  annotationQueueEnabled: boolean;
+  chatEnabled: boolean;
   configEditorEnabled: boolean;
   editorEnabled: boolean;
   externalToolbarsEnabled: boolean;
   minimapEnabled: boolean;
   resourcesEnabled: boolean;
   statusEnabled: boolean;
-  terminalEnabled: boolean;
   restartServicesShortcut?: string;
   primaryService?: string;
 }
@@ -40,8 +35,6 @@ export interface IInjectedDevtoolsConfig {
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   nativeBrowserConfigured: false,
   nativeBrowserInstanceId: "",
-  annotationActions: [],
-  annotationDefaultActionId: "",
   componentEditor: defaultDevtoolsComponentEditor,
   homeDirectoryPath: "",
   position: "bottom-right",
@@ -49,14 +42,13 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   routedServices: [],
   stackName: DEVHOST_SERVICE_NAME,
   annotationEnabled: false,
-  annotationQueueEnabled: false,
+  chatEnabled: false,
   configEditorEnabled: false,
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,
   resourcesEnabled: false,
   statusEnabled: true,
-  terminalEnabled: true,
   restartServicesShortcut: DEFAULT_RESTART_SERVICES_SHORTCUT,
   primaryService: "",
 };
@@ -87,24 +79,14 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
 
 function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsConfig {
   const nativeBrowserInstanceId: unknown = Reflect.get(injectedConfig, "nativeBrowserInstanceId");
-  const annotationActions: IAnnotationAction[] = readAnnotationActionsValue(injectedConfig);
-  const annotationDefaultActionId: string = readAnnotationDefaultActionIdValue(injectedConfig, annotationActions);
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const homeDirectoryPath: unknown = Reflect.get(injectedConfig, "homeDirectoryPath");
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
   const stackName: string = readStackNameValue(injectedConfig);
-  const annotationEnabled: boolean = readBooleanValue(
-    injectedConfig,
-    "annotationEnabled",
-    annotationActions.length > 0,
-  );
-  const annotationQueueEnabled: boolean = readBooleanValue(
-    injectedConfig,
-    "annotationQueueEnabled",
-    annotationActions.some((action: IAnnotationAction): boolean => action.kind === "agent" && action.queueEnabled),
-  );
+  const chatEnabled: boolean = readBooleanValue(injectedConfig, "chatEnabled", false);
+  const annotationEnabled: boolean = readBooleanValue(injectedConfig, "annotationEnabled", false);
   const configEditorEnabled: boolean = readBooleanValue(injectedConfig, "configEditorEnabled", false);
   const editorEnabled: boolean = readBooleanValue(injectedConfig, "editorEnabled", true);
   const externalToolbarsEnabled: boolean = readBooleanValue(injectedConfig, "externalToolbarsEnabled", true);
@@ -115,7 +97,6 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     defaultInjectedDevtoolsConfig.resourcesEnabled,
   );
   const statusEnabled: boolean = readBooleanValue(injectedConfig, "statusEnabled", true);
-  const terminalEnabled: boolean = readBooleanValue(injectedConfig, "terminalEnabled", true);
   const restartServicesShortcut: string = readRestartServicesShortcutValue(injectedConfig);
   const primaryService: string = readPrimaryServiceValue(injectedConfig);
 
@@ -125,10 +106,8 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
       typeof nativeBrowserInstanceId === "string" && /^[a-f0-9]{32}$/.test(nativeBrowserInstanceId)
         ? nativeBrowserInstanceId
         : "",
-    annotationActions,
     annotationEnabled,
-    annotationDefaultActionId,
-    annotationQueueEnabled,
+    chatEnabled,
     componentEditor,
     configEditorEnabled,
     homeDirectoryPath: typeof homeDirectoryPath === "string" ? homeDirectoryPath : "",
@@ -141,72 +120,9 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     minimapEnabled,
     resourcesEnabled,
     statusEnabled,
-    terminalEnabled,
     restartServicesShortcut,
     primaryService,
   };
-}
-
-function readAnnotationActionsValue(injectedConfig: object): IAnnotationAction[] {
-  const annotationActions: unknown = Reflect.get(injectedConfig, "annotationActions");
-
-  if (!Array.isArray(annotationActions)) {
-    return defaultInjectedDevtoolsConfig.annotationActions;
-  }
-
-  const uniqueActionIds = new Set<string>();
-  const parsedActions: IAnnotationAction[] = annotationActions.flatMap((action: unknown): IAnnotationAction[] => {
-    if (typeof action !== "object" || action === null) {
-      return [];
-    }
-
-    const id: unknown = Reflect.get(action, "id");
-    const kind: unknown = Reflect.get(action, "kind");
-    const label: unknown = Reflect.get(action, "label");
-    const queueEnabled: unknown = Reflect.get(action, "queueEnabled");
-
-    if (
-      typeof id !== "string" ||
-      id.length === 0 ||
-      uniqueActionIds.has(id) ||
-      !isAnnotationActionKind(kind) ||
-      typeof label !== "string" ||
-      label.trim().length === 0 ||
-      typeof queueEnabled !== "boolean"
-    ) {
-      return [];
-    }
-
-    uniqueActionIds.add(id);
-
-    return [
-      {
-        id,
-        kind,
-        label,
-        queueEnabled,
-      },
-    ];
-  });
-
-  return parsedActions;
-}
-
-function readAnnotationDefaultActionIdValue(injectedConfig: object, annotationActions: IAnnotationAction[]): string {
-  const annotationDefaultActionId: unknown = Reflect.get(injectedConfig, "annotationDefaultActionId");
-
-  if (
-    typeof annotationDefaultActionId === "string" &&
-    annotationActions.some((action: IAnnotationAction): boolean => action.id === annotationDefaultActionId)
-  ) {
-    return annotationDefaultActionId;
-  }
-
-  return annotationActions[0]?.id ?? defaultInjectedDevtoolsConfig.annotationDefaultActionId;
-}
-
-function isAnnotationActionKind(value: unknown): value is AnnotationActionKind {
-  return value === "agent" || value === "command";
 }
 
 function readComponentEditorValue(injectedConfig: object): DevtoolsComponentEditor {

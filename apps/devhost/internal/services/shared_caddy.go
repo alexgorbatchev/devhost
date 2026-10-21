@@ -5,6 +5,7 @@ import (
 	"runtime"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -12,7 +13,7 @@ import (
 // ensureManagedCaddyRunning checks that the shared Caddy answers on the admin
 // address it runs. A manifest-free serve session starts it with settings; a
 // stack leaves starting it to devhost caddy start.
-func ensureManagedCaddyRunning(paths caddy.Paths, settings caddy.ManagedCaddyGlobalSettings, options StartStackOptions) error {
+func ensureManagedCaddyRunning(paths caddy.Paths, settings caddy.ManagedCaddyGlobalSettings, options StartStackOptions, label string) error {
 	running, recorded, err := caddy.ReadAppliedManagedCaddySettings(paths)
 	if err != nil {
 		return err
@@ -21,10 +22,18 @@ func ensureManagedCaddyRunning(paths caddy.Paths, settings caddy.ManagedCaddyGlo
 		running = settings
 	}
 	err = caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(running.AdminAddress), caddy.AdminAvailabilityDependencies{})
-	if err == nil || !options.serveSession {
+	if err == nil {
+		// A stack joining a running Caddy cannot install its local CA; it says so once.
+		if warning := caddy.RootCertificateTrustWarning(paths.RootCertificatePath); warning != "" {
+			cliout.Log(options.LogWriter, label, cliout.Warning(warning))
+		}
+		return nil
+	}
+	if !options.serveSession {
 		return err
 	}
-	if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, settings, caddy.ManagedCaddyLifecycleDependencies{RuntimeOS: runtime.GOOS}); err != nil {
+	// Starting Caddy also installs its local CA when the system does not trust it.
+	if _, err := caddy.RunManagedCaddyLifecycleCommand(caddy.LifecycleStart, options.LogWriter, paths, settings, caddy.ManagedCaddyLifecycleDependencies{Quiet: options.CaddyOutputWriters.Quiet, RuntimeOS: runtime.GOOS}); err != nil {
 		return err
 	}
 
@@ -69,7 +78,7 @@ func (r *stackRuntime) applySharedConfig(path string, w *manifestWatcher) error 
 		return nil
 	}
 	r.publish()
-	writeLogLine(r.options.LogWriter, r.manifest.Name, "Applied the shared Caddy settings from "+path+".")
+	cliout.Log(r.options.LogWriter, r.manifest.Name, "Applied the shared Caddy settings from "+path+".")
 	LogServiceURLs(*r.manifest, r.options.LogWriter)
 	return nil
 }

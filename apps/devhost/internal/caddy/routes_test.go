@@ -842,10 +842,10 @@ func TestActivateRouteSuccessfulReloadOutput(t *testing.T) {
 			t.Fatalf("ActivateRoute(...) unexpected error = %v", err)
 		}
 
-		if stdout.String() != "noisy stdout\n" {
+		if stdout.String() != "[caddy] noisy stdout\n" {
 			t.Fatalf("ActivateRoute(...) stdout = %q, want caddy stdout", stdout.String())
 		}
-		if stderr.String() != "noisy stderr\n" {
+		if stderr.String() != "[caddy] noisy stderr\n" {
 			t.Fatalf("ActivateRoute(...) stderr = %q, want caddy stderr", stderr.String())
 		}
 	})

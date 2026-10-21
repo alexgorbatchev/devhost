@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -15,45 +14,9 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
-
-func TestResolveAnnotationTempDir(t *testing.T) {
-	for _, relative := range []bool{true, false} {
-		t.Run(fmt.Sprintf("relative=%t", relative), func(t *testing.T) {
-			cwd := t.TempDir()
-			dir := "custom/annotations"
-			want := filepath.Join(cwd, dir)
-			if !relative {
-				dir = filepath.Join(t.TempDir(), "annotations")
-				want = dir
-			}
-			annotation := manifest.ValidatedAnnotation{TempDir: &dir, Actions: []manifest.ValidatedAnnotationAction{{TempDir: &dir}}}
-			if err := resolveAnnotationTempDir(annotation, cwd); err != nil {
-				t.Fatal(err)
-			}
-			if *annotation.Actions[0].TempDir != want {
-				t.Fatalf("resolved action tempDir = %q, want %q", *annotation.Actions[0].TempDir, want)
-			}
-			if err := os.MkdirAll(*annotation.Actions[0].TempDir, 0o700); err != nil {
-				t.Fatal(err)
-			}
-			path, err := os.MkdirTemp(*annotation.Actions[0].TempDir, "session-")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if filepath.Dir(path) != want {
-				t.Fatalf("session directory = %q", path)
-			}
-		})
-	}
-	annotation := manifest.ValidatedAnnotation{}
-	if err := resolveAnnotationTempDir(annotation, t.TempDir()); err != nil || annotation.TempDir != nil {
-		t.Fatalf("omitted tempDir = %v, error = %v", annotation.TempDir, err)
-	}
-}
 
 func TestRunHelpShortCircuitsInvalidArguments(t *testing.T) {
 	t.Setenv("AGENT", "0")
@@ -209,67 +172,67 @@ func TestRunReportsFailuresForTheReader(t *testing.T) {
 			name:    "a person mistypes a command",
 			agent:   "0",
 			rawArgs: []string{"star"},
-			wantStderr: "[ERROR] unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n" +
-				"[INFO] Run \"devhost --help\" for usage.\n",
+			wantStderr: "devhost | [ERROR] unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n" +
+				"devhost | [INFO] Run \"devhost --help\" for usage.\n",
 		},
 		{
 			name:       "an agent mistypes a command",
 			agent:      "1",
 			rawArgs:    []string{"star"},
-			wantStderr: "ERR: unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n",
+			wantStderr: "devhost: ERR: unknown command \"star\" for \"devhost\"; did you mean \"stack\" or \"start\" or \"stop\"?\n",
 		},
 		{
 			name:    "a person names a manifest that does not exist",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", missingManifestPath},
-			wantStderr: "[ERROR] manifest file not found: " + missingManifestPath + "\n" +
-				"[INFO] Check the path given with --manifest or DEVHOST_MANIFEST.\n",
+			wantStderr: "devhost | [ERROR] manifest file not found: " + missingManifestPath + "\n" +
+				"devhost | [INFO] Check the path given with --manifest or DEVHOST_MANIFEST.\n",
 		},
 		{
 			name:    "an agent names a manifest that does not exist",
 			agent:   "1",
 			rawArgs: []string{"start", "--manifest", missingManifestPath},
-			wantStderr: "ERR: read manifest " + missingManifestPath + ": open " + missingManifestPath +
+			wantStderr: "devhost: ERR: read manifest " + missingManifestPath + ": open " + missingManifestPath +
 				": no such file or directory\n",
 		},
 		{
 			name:    "a person runs outside a project",
 			agent:   "0",
 			rawArgs: []string{"stop"},
-			wantStderr: "[ERROR] Could not find devhost.toml from " + projectPath + " upward.\n" +
-				"[INFO] Run devhost from your project folder, or pass --manifest <path>.\n",
+			wantStderr: "devhost | [ERROR] Could not find devhost.toml from " + projectPath + " upward.\n" +
+				"devhost | [INFO] Run devhost from your project folder, or pass --manifest <path>.\n",
 		},
 		{
 			name:       "an agent runs outside a project",
 			agent:      "1",
 			rawArgs:    []string{"stop"},
-			wantStderr: "ERR: Could not find devhost.toml from " + projectPath + " upward.\n",
+			wantStderr: "devhost: ERR: Could not find devhost.toml from " + projectPath + " upward.\n",
 		},
 		{
 			name:    "a person names a service the manifest does not define",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", manifestPath, "wroker"},
-			wantStderr: "[ERROR] unknown service: \"wroker\"; the manifest defines: worker\n" +
-				"[INFO] Run \"devhost service list\" to print the service names.\n",
+			wantStderr: "devhost | [ERROR] unknown service: \"wroker\"; the manifest defines: worker\n" +
+				"devhost | [INFO] Run \"devhost service list\" to print the service names.\n",
 		},
 		{
 			name:       "an agent names a service the manifest does not define",
 			agent:      "1",
 			rawArgs:    []string{"start", "--manifest", manifestPath, "wroker"},
-			wantStderr: "ERR: unknown service: \"wroker\"; the manifest defines: worker\n",
+			wantStderr: "devhost: ERR: unknown service: \"wroker\"; the manifest defines: worker\n",
 		},
 		{
 			name:    "a person gives an idle timeout that is not a duration",
 			agent:   "0",
 			rawArgs: []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},
-			wantStderr: "[ERROR] the idle timeout \"soon\" is not a duration\n" +
-				"[INFO] Set --idle-timeout or DEVHOST_IDLE_TIMEOUT to a value such as 30s or 1m.\n",
+			wantStderr: "devhost | [ERROR] the idle timeout \"soon\" is not a duration\n" +
+				"devhost | [INFO] Set --idle-timeout or DEVHOST_IDLE_TIMEOUT to a value such as 30s or 1m.\n",
 		},
 		{
 			name:       "an agent gives an idle timeout that is not a duration",
 			agent:      "1",
 			rawArgs:    []string{"start", "--manifest", manifestPath, "--idle-timeout", "soon"},
-			wantStderr: "ERR: invalid idle-timeout: time: invalid duration \"soon\"\n",
+			wantStderr: "devhost: ERR: invalid idle-timeout: time: invalid duration \"soon\"\n",
 		},
 	}
 
@@ -511,6 +474,7 @@ func TestRunTrustRemoteRejectsUnsupportedPlatform(t *testing.T) {
 }
 
 func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
+	t.Setenv("AGENT", "0")
 	if runtime.GOOS != "linux" {
 		t.Skip("linux-specific privileged-ports behavior")
 	}
@@ -544,7 +508,7 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "[devhost] managed caddy low-port binding enabled for "+managedCaddyPath) {
+	if !strings.Contains(stderr.String(), "devhost | managed caddy low-port binding enabled for "+managedCaddyPath) {
 		t.Fatalf("Run(...) stderr = %q, want privileged-port success log", stderr.String())
 	}
 
@@ -558,6 +522,7 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 }
 
 func TestRunCaddyStartUsesSharedConfigSettings(t *testing.T) {
+	t.Setenv("AGENT", "0")
 	for _, tc := range []struct {
 		name          string
 		globalOptions []string
@@ -566,7 +531,7 @@ func TestRunCaddyStartUsesSharedConfigSettings(t *testing.T) {
 	}{
 		{
 			name:        "defaults",
-			want:        []string{"https:// {"},
+			want:        []string{"https:// {", "default_bind 0.0.0.0 [::]"},
 			wantMissing: []string{"http:// {"},
 		},
 		{
@@ -608,7 +573,7 @@ func TestRunCaddyStartUsesSharedConfigSettings(t *testing.T) {
 			if stdout.String() != "" {
 				t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 			}
-			if !strings.Contains(stderr.String(), "[devhost] managed caddy started with ") {
+			if !strings.Contains(stderr.String(), "devhost | managed caddy started with ") {
 				t.Fatalf("Run(...) stderr = %q, want managed caddy start log", stderr.String())
 			}
 
@@ -643,6 +608,7 @@ func TestRunCaddyStartUsesSharedConfigSettings(t *testing.T) {
 }
 
 func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
+	t.Setenv("AGENT", "0")
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
@@ -656,7 +622,7 @@ func TestRunCaddyStopWithoutRunningProcess(t *testing.T) {
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "[devhost] managed caddy is not running.\n") {
+	if !strings.Contains(stderr.String(), "devhost | managed caddy is not running.\n") {
 		t.Fatalf("Run(...) stderr = %q, want managed caddy stop idle log", stderr.String())
 	}
 }
@@ -678,8 +644,7 @@ func TestRunCaddyTrustRequiresRunningManagedCaddy(t *testing.T) {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
 	}
 	wantStderr := strings.Join([]string{
-		"[devhost] managed caddy trust may prompt for your password because installing a root CA into the system trust store is privileged.",
-		"[ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
+		"devhost | [ERROR] Managed Caddy is not running. Run 'devhost caddy start' first.",
 		"",
 	}, "\n")
 	if stderr.String() != wantStderr {

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -202,10 +203,93 @@ func TestRecoveryDocumentsPreserveApplicationResponses(t *testing.T) {
 			response.Body.Close()
 			want := http.StatusServiceUnavailable
 			if phase == "ready" {
-				want = http.StatusNoContent
+				want = http.StatusInternalServerError
 			}
 			if response.StatusCode != want {
 				t.Fatalf("document probe = %d, want %d", response.StatusCode, want)
+			}
+		})
+	}
+}
+
+func TestServerErrorDocumentsOfferRecoveryUntilRestart(t *testing.T) {
+	t.Parallel()
+	for _, status := range []int{500, 502, 503, 504, 599} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			var recovered atomic.Bool
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if !recovered.Load() {
+					w.WriteHeader(status)
+					return // Reproduce a compiler failure with an empty response.
+				}
+				_, _ = io.WriteString(w, "application recovered")
+			}))
+			t.Cleanup(backend.Close)
+			address := backend.Listener.Addr().(*net.TCPAddr)
+			server, err := StartDocumentInjectionServer(StartDocumentInjectionServerOptions{
+				BackendHost: address.IP.String(), BackendPort: address.Port,
+				GetRecovery: func() RecoveryState {
+					return RecoveryState{Service: "web", Phase: "ready", CanRestart: true, Logs: []string{"compiler could not resolve import"}}
+				},
+				Restart: func() error { recovered.Store(true); return nil },
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = server.Stop() })
+			for _, kind := range []string{"document", "probe", "api", "script"} {
+				r, err := http.NewRequest(http.MethodGet, serverURL(server.Port(), "/nested?value=1"), nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if kind == "probe" {
+					r.Header.Set(recoveryHeader, kind)
+				} else if kind != "api" {
+					r.Header.Set("Sec-Fetch-Dest", kind)
+				}
+				response, err := http.DefaultClient.Do(r)
+				if err != nil {
+					t.Fatal(err)
+				}
+				body, err := io.ReadAll(response.Body)
+				response.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if response.StatusCode != status {
+					t.Fatalf("%s: status = %d, want %d", kind, response.StatusCode, status)
+				}
+				if kind == "api" || kind == "script" {
+					if len(body) != 0 {
+						t.Fatalf("%s response changed: %s", kind, body)
+					}
+				} else if !strings.Contains(string(body), "Restart") || !strings.Contains(string(body), "compiler could not resolve import") || response.Header.Get("Cache-Control") != "no-store" {
+					t.Fatalf("%s: server error has no recovery controls/logs: %d %s", kind, response.StatusCode, body)
+				}
+			}
+			r, err := http.NewRequest(http.MethodPost, serverURL(server.Port(), "/nested?value=1"), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r.Header.Set("Origin", "http://"+r.URL.Host)
+			r.Header.Set(recoveryHeader, "restart")
+			response, err := http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response.Body.Close()
+			if response.StatusCode != http.StatusNoContent || !recovered.Load() {
+				t.Fatalf("restart = %d, recovered = %t", response.StatusCode, recovered.Load())
+			}
+			r.Method = http.MethodGet
+			r.Header.Set(recoveryHeader, "probe")
+			response, err = http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response.Body.Close()
+			if response.StatusCode != http.StatusNoContent {
+				t.Fatalf("recovered probe = %d", response.StatusCode)
 			}
 		})
 	}

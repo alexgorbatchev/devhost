@@ -19,11 +19,10 @@ func startRequestGuardServer(t *testing.T) *ControlServer {
 		OwnsDocumentURL: func(port int, href string) (bool, error) {
 			return href == "https://"+guardTestRoutedHost+"/", nil
 		},
-		RestartService:     func([]string) error { return nil },
-		RestartStack:       func() error { return nil },
-		StartService:       func([]string) error { return nil },
-		ProjectRootPath:    t.TempDir(),
-		StateDirectoryPath: t.TempDir(),
+		RestartService:  func([]string) error { return nil },
+		RestartStack:    func() error { return nil },
+		StartService:    func([]string) error { return nil },
+		ProjectRootPath: t.TempDir(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -93,9 +92,8 @@ func TestEveryStateChangingControlRouteRejectsOtherSites(t *testing.T) {
 		{http.MethodPost, restartStackPath, ""},
 		{http.MethodPost, startServicePath, `{"serviceNames":["api"]}`},
 		{http.MethodPost, worktreesPath, `{"repositoryId":"root","path":"/tmp"}`},
-		{http.MethodPost, terminalSessionsPath, `{"kind":"editor"}`},
-		{http.MethodPost, annotationQueuesPath, `{}`},
-		{http.MethodDelete, annotationQueuesPath + "/queue/entry", ""},
+		{http.MethodPost, chatSessionsPath, `{"harness":"codex"}`},
+		{http.MethodDelete, chatSessionsPath + "/session", ""},
 		{http.MethodPost, reactHighlightCursorPath, `{"locator":null}`},
 	} {
 		t.Run(tc.method+" "+tc.path, func(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -27,6 +28,9 @@ type worktreeGroup struct {
 	repository     gitRepository
 	offsets        map[string]string
 	manifestOffset string
+	// Owning stack manifests can live outside a service repository. Retain each
+	// known checkout's manifest when rebuilding groups after a switch.
+	configurationPaths map[string]string
 }
 
 type savedWorktree struct {
@@ -43,6 +47,10 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 		return nil, nil
 	}
 	worktreeStateDir, err := worktreeStateDirectory(m.ManifestPath, stateDir)
+	if err != nil {
+		return nil, err
+	}
+	manifestPath, err := filepath.Abs(m.ManifestPath)
 	if err != nil {
 		return nil, err
 	}
@@ -65,24 +73,27 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 		}
 		g := w.group(worktreeKey(repo.commonDir))
 		if g == nil {
-			offset, inside := pathWithin(repo.root, m.ManifestPath)
+			configurationPath := manifestPath
 			if m.configuration != nil {
-				offset, inside = pathWithin(repo.root, m.configuration.ManifestPath)
+				configurationPath = m.configuration.ManifestPath
 			}
+			offset, inside := pathWithin(repo.root, configurationPath)
 			if !inside {
 				offset = filepath.Base(m.ManifestPath)
 			}
-			g = &worktreeGroup{repository: repo, manifestOffset: offset, offsets: map[string]string{}, view: devtools.WorktreeRepository{
+			g = &worktreeGroup{repository: repo, manifestOffset: offset, configurationPaths: map[string]string{}, offsets: map[string]string{}, view: devtools.WorktreeRepository{
 				ID: worktreeKey(repo.commonDir), Name: filepath.Base(repo.root), ConfiguredPath: repo.root, SelectedPath: repo.root,
 			}}
 			if previous != nil {
-				for _, old := range previous.snapshot() {
-					if old.ID == g.view.ID {
-						g.view.ConfiguredPath = old.ConfiguredPath
-						g.view.Name = old.Name
-					}
+				previous.mu.RLock()
+				if old := previous.group(g.view.ID); old != nil {
+					g.view.ConfiguredPath = old.view.ConfiguredPath
+					g.view.Name = old.view.Name
+					maps.Copy(g.configurationPaths, old.configurationPaths)
 				}
+				previous.mu.RUnlock()
 			}
+			g.configurationPaths[repo.root] = configurationPath
 			w.groups = append(w.groups, g)
 		}
 		if repo.root != g.repository.root {
@@ -377,7 +388,7 @@ func (w *stackWorktrees) projectRoot(configured, name string) string {
 }
 
 func (w *stackWorktrees) toolContext(m ResolvedManifest, name string) (devtools.ToolContext, error) {
-	result := devtools.ToolContext{ProjectRootPath: m.ManifestDirectoryPath, AnnotationActions: append([]manifest.ValidatedAnnotationAction{}, m.Annotation.Actions...)}
+	result := devtools.ToolContext{ProjectRootPath: m.ManifestDirectoryPath}
 	if w == nil {
 		return result, nil
 	}
@@ -411,11 +422,6 @@ func (w *stackWorktrees) toolContext(m ResolvedManifest, name string) (devtools.
 			result.ProjectRootPath = filepath.Join(selected, rel)
 		} else {
 			result.ProjectRootPath = selected
-		}
-		for i := range result.AnnotationActions {
-			action := &result.AnnotationActions[i]
-			action.Cwd = result.ResolvePath(action.Cwd)
-			action.Agent.Cwd = result.ResolvePath(action.Agent.Cwd)
 		}
 		break
 	}

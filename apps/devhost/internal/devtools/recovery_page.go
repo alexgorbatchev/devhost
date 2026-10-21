@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
@@ -34,8 +35,9 @@ var recoveryTemplate = template.Must(template.New("recovery").Parse(recoveryDocu
 
 type recoveryPageData struct {
 	RecoveryState
-	Status int
-	Styles template.CSS
+	Status      int
+	Styles      template.CSS
+	ThemeScript template.JS
 }
 
 func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoveryState, status int, injectToolbar bool) {
@@ -61,7 +63,7 @@ func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoverySta
 func renderRecoveryDocument(state RecoveryState, status int, injectToolbar bool) (string, error) {
 	var body bytes.Buffer
 	// The trusted stylesheet is embedded at build time; service data remains escaped.
-	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS)}
+	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS), ThemeScript: template.JS(statuspage.ThemeScript)}
 	if err := recoveryTemplate.Execute(&body, page); err != nil {
 		return "", err
 	}
@@ -122,4 +124,8 @@ func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartD
 	default:
 		http.Error(w, "Unknown recovery action", http.StatusBadRequest)
 	}
+}
+
+func renderUnavailableDocument() string {
+	return fmt.Sprintf(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Service unavailable · devhost</title><script>%s</script><style>%s</style></head><body data-devhost-recovery><main class="devhost-status"><p class="devhost-status__brand">devhost / connection</p><p class="devhost-status__code">502</p><h1 class="devhost-status__title">Service unavailable</h1><p class="devhost-status__body">Use devhost to view logs and restart it.</p></main></body></html>`, statuspage.ThemeScript, statuspage.CSS)
 }

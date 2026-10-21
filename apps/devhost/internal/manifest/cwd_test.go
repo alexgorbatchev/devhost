@@ -32,21 +32,13 @@ func TestValidateManifestResolvesWorkingDirectories(t *testing.T) {
 				"services": map[string]any{"web": map[string]any{
 					"command": []any{"web"}, "cwd": tt.cwd, "port": int64(3000),
 				}},
-				"annotation": map[string]any{"actions": []any{
-					map[string]any{"id": "run", "label": "Run", "kind": "command", "command": map[string]any{
-						"command": []any{"tool"}, "cwd": tt.cwd,
-					}},
-					map[string]any{"id": "ask", "label": "Agent", "kind": "agent", "agent": map[string]any{
-						"command": []any{"agent"}, "cwd": tt.cwd,
-					}},
-				}},
 			}}
 			got, err := ValidateManifest(filepath.Join(root, "devhost.toml"), raw)
 			if tt.outside {
 				if err == nil {
 					t.Fatal("expected outside working directories to be rejected")
 				}
-				for _, field := range []string{"services.web.cwd", "annotation.actions.run.cwd", "annotation.actions.ask.agent.cwd"} {
+				for _, field := range []string{"services.web.cwd"} {
 					if !strings.Contains(err.Error(), field+" must stay within "+root) {
 						t.Errorf("error %q does not identify outside path for %s", err, field)
 					}
@@ -56,7 +48,7 @@ func TestValidateManifestResolvesWorkingDirectories(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, cwd := range []string{got.Services["web"].Cwd, got.Annotation.Actions[0].Cwd, got.Annotation.Actions[1].Agent.Cwd} {
+			for _, cwd := range []string{got.Services["web"].Cwd} {
 				if cwd != tt.want {
 					t.Errorf("resolved cwd = %q, want %q", cwd, tt.want)
 				}

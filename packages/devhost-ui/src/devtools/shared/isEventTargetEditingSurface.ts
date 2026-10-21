@@ -10,6 +10,6 @@ export function isEventTargetEditingSurface(target: EventTarget | null): boolean
   return (
     target.matches("input, textarea, select") ||
     (target instanceof HTMLElement && target.isContentEditable) ||
-    target.closest(".xterm, [contenteditable]") !== null
+    target.closest("[contenteditable]") !== null
   );
 }
