@@ -1,3 +1,5 @@
+import type { StoreApi } from "zustand/vanilla";
+
 export type DemoVideoKind = "promo" | "guide";
 
 // `local`: a render in a run directory, listed for the promo while the docs media do not include it.
@@ -27,4 +29,25 @@ export interface IDemoMedia {
   videos: IDemoVideo[];
   // URL path of each listed video, poster and captions file on disk, mapped to the file it is read from.
   files: Map<string, string>;
+}
+
+export interface IZustandCounterState {
+  count: number;
+  increment: () => void;
+}
+
+export interface IZustandCounterSnapshot {
+  count: number;
+}
+
+// The registration functions devhost serves at /__devhost__/redux.js, as the playground calls them.
+export interface IDevhostReduxModule {
+  registerReduxDevtoolsStore: (options: { id: string; name: string; store: unknown }) => () => void;
+  registerZustandDevtoolsStore: (options: {
+    id: string;
+    name: string;
+    store: StoreApi<IZustandCounterState>;
+    snapshot: (state: IZustandCounterState) => IZustandCounterSnapshot;
+    restore: (snapshot: unknown) => Partial<IZustandCounterState>;
+  }) => () => void;
 }
