@@ -50,6 +50,8 @@ Run the Go tests:
 just devhost test
 ```
 
+The recipe runs `go test -count=1 ./...`: the suite exercises live processes, ports, and kernel state, so each invocation runs the tests afresh. Retain this flag. On Linux, process containment polls `/proc`; caching its millions of filesystem observations creates a large input log that Go must validate on later runs. The flag disables test-result caching while retaining the build cache.
+
 Build a standalone executable for the current platform:
 
 ```bash
