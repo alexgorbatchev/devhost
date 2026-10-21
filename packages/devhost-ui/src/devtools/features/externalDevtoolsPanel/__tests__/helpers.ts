@@ -8,6 +8,7 @@ import type { Page } from "playwright";
 import { chromium } from "playwright";
 import type { BrowserContext } from "playwright";
 import tailwindPlugin from "bun-plugin-tailwind";
+import { z } from "zod";
 
 import { createOwnedBrowserEnvironment } from "../../../../../../../test-support/createOwnedBrowserEnvironment";
 
@@ -59,8 +60,36 @@ export interface ITanStackShellFixture {
 
 const repositoryRoot = resolve(import.meta.dir, "../../../../../../..");
 
+// Every devframe package must be the release devhost-ui depends on: a newer one, which the Vite devtools allow, imports
+// exports that release lacks.
+const DEVFRAME_PACKAGE_NAMES = [
+  "devframe",
+  "@devframes/agentic",
+  "@devframes/hub",
+  "@devframes/hub-ui",
+  "@devframes/json-render",
+  "@devframes/json-render-ui",
+  "@devframes/plugin-inspect",
+  "@devframes/plugin-inspect--assets",
+  "@devframes/plugin-messages",
+  "@devframes/plugin-messages--assets",
+  "@devframes/plugin-terminals",
+  "@devframes/plugin-terminals--assets",
+  "@devframes/service-open",
+  "@devframes/vite",
+];
+const devhostUiManifestSchema = z.object({ dependencies: z.object({ devframe: z.string() }) });
+
+async function readDevframeVersion(): Promise<string> {
+  const manifest = devhostUiManifestSchema.parse(
+    await Bun.file(resolve(repositoryRoot, "packages/devhost-ui/package.json")).json(),
+  );
+  return manifest.dependencies.devframe;
+}
+
 export async function startNativeVueHost(options: INativeVueHostOptions = {}): Promise<INativeVueHost> {
   const dependenciesPath = resolve(E2E_TEMPORARY_PATH, "vue-native-host");
+  const devframeVersion = await readDevframeVersion();
   await mkdir(dependenciesPath, { recursive: true });
   await Bun.write(
     resolve(dependenciesPath, "package.json"),
@@ -74,10 +103,11 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
         "vite-plugin-vue-devtools": "9.0.0-beta.1",
         "@vitejs/devtools": "0.7.6",
         "@vitejs/devtools-kit": "0.7.6",
-        "@devframes/hub": "1.2.2",
-        "@devframes/hub-ui": "1.2.2",
-        devframe: "1.2.2",
+        "@devframes/hub": devframeVersion,
+        "@devframes/hub-ui": devframeVersion,
+        devframe: devframeVersion,
       },
+      overrides: Object.fromEntries(DEVFRAME_PACKAGE_NAMES.map((name) => [name, devframeVersion])),
     }),
   );
   const install = Bun.spawn(["bun", "install"], {
