@@ -19,8 +19,13 @@ interface IUseConfigEditorResult {
   selectedFile: IConfigFile | null;
   /** The schema of the selected file, or null until it is loaded. */
   selectedSchema: IConfigSchema | null;
-  /** The text of the selected file, with its unsaved changes. */
+  /** The text of the selected file, with its unsaved changes, as of this render. */
   content: string;
+  /**
+   * The text of the selected file now, including changes the page has not rendered yet. The editor reports typing
+   * ahead of the page, so whatever puts text into the editor reads this rather than a rendered `content`.
+   */
+  readContent: () => string;
   /** The files with unsaved changes. */
   changedPaths: string[];
   outcome: ConfigSaveOutcome;
@@ -54,7 +59,7 @@ export function useConfigEditor(
   const [outcome, setOutcome] = useState<ConfigSaveOutcome>(idleOutcome);
   const selectedFile: IConfigFile | null =
     files.find((file: IConfigFile): boolean => file.path === selectedPath) ?? files.at(0) ?? null;
-  const content: string = selectedFile === null ? "" : (drafts[selectedFile.path] ?? selectedFile.content);
+  const content: string = readFileContent(selectedFile, drafts);
   const changedPaths: string[] = files
     .filter((file: IConfigFile): boolean => drafts[file.path] !== undefined && drafts[file.path] !== file.content)
     .map((file: IConfigFile): string => file.path);
@@ -120,6 +125,10 @@ export function useConfigEditor(
   const select = useCallback((path: string): void => {
     setSelectedPath(path);
     setOutcome(idleOutcome);
+  }, []);
+
+  const readContent = useCallback((): string => {
+    return readFileContent(selectedFileReference.current, draftsReference.current);
   }, []);
 
   const change = useCallback(
@@ -215,12 +224,17 @@ export function useConfigEditor(
     loadDiskVersion,
     loadError,
     outcome,
+    readContent,
     revert,
     save,
     select,
     selectedFile,
     selectedSchema: schema === null || selectedFile === null ? null : selectSchema(schema, selectedFile),
   };
+}
+
+function readFileContent(file: IConfigFile | null, drafts: Record<string, string>): string {
+  return file === null ? "" : (drafts[file.path] ?? file.content);
 }
 
 // A file with unsaved changes keeps the version it was opened at, which the changes are based on.

@@ -81,8 +81,10 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
     };
   }, [hasFile]);
 
+  // A render can trail the editor: typing reaches the editor first and the page a task later. Reading the content as
+  // of now keeps an earlier render from putting back text the editor has already moved past.
   useEffect(() => {
-    viewReference.current?.setContent(editor.content);
+    viewReference.current?.setContent(editorReference.current.readContent());
   }, [editor.content]);
 
   useEffect(() => {
