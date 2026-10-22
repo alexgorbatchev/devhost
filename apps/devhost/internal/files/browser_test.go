@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,9 +18,12 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 	// Use the browser installed by the repository's normal install workflow.
 	command := exec.Command("bun", "-e", `import { chromium } from "playwright"; import { readContrastRatio } from "../../test-support/readContrastRatio"; console.log(JSON.stringify({path: chromium.executablePath(), contrast: readContrastRatio.toString()}))`)
 	command.Dir = "../../../../packages/devhost-ui"
-	output, err := command.CombinedOutput()
+	// Bun can print notices to stderr, so only stdout holds the JSON.
+	var stderr strings.Builder
+	command.Stderr = &stderr
+	output, err := command.Output()
 	if err != nil {
-		t.Fatalf("locate repository Chromium: %v: %s", err, output)
+		t.Fatalf("locate repository Chromium: %v: %s", err, stderr.String())
 	}
 	var tools struct{ Path, Contrast string }
 	if err := json.Unmarshal(output, &tools); err != nil {
