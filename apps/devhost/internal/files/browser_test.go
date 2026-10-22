@@ -2,46 +2,19 @@ package files
 
 import (
 	"context"
-	"encoding/json"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/browsertest"
 	"github.com/chromedp/chromedp"
 )
 
 func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
-	// Use the browser installed by the repository's normal install workflow.
-	command := exec.Command("bun", "-e", `import { chromium } from "playwright"; import { readContrastRatio } from "../../test-support/readContrastRatio"; console.log(JSON.stringify({path: chromium.executablePath(), contrast: readContrastRatio.toString()}))`)
-	command.Dir = "../../../../packages/devhost-ui"
-	// Bun can print notices to stderr, so only stdout holds the JSON.
-	var stderr strings.Builder
-	command.Stderr = &stderr
-	output, err := command.Output()
-	if err != nil {
-		t.Fatalf("locate repository Chromium: %v: %s", err, stderr.String())
-	}
-	var tools struct{ Path, Contrast string }
-	if err := json.Unmarshal(output, &tools); err != nil {
-		t.Fatal(err)
-	}
-	runRoot := filepath.Join(os.TempDir(), "devhost-e2e")
-	if err := os.MkdirAll(runRoot, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	runDir, err := os.MkdirTemp(runRoot, "files-browser-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := os.RemoveAll(runDir); err != nil {
-			t.Error(err)
-		}
-	})
+	chromium := browsertest.Locate(t)
+	runDir := browsertest.RunDirectory(t, "files-browser")
 	dir := filepath.Join(runDir, "content")
 	if err := os.Mkdir(dir, 0o700); err != nil {
 		t.Fatal(err)
@@ -64,8 +37,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 	t.Cleanup(server.Close)
 	visit := func(restarted bool) {
 		t.Helper()
-		opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(tools.Path), chromedp.UserDataDir(filepath.Join(runDir, "profile")), chromedp.NoSandbox)
-		allocator, stop := chromedp.NewExecAllocator(context.Background(), opts...)
+		allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(filepath.Join(runDir, "profile"))...)
 		defer stop()
 		browser, closeBrowser := chromedp.NewContext(allocator)
 		defer closeBrowser()
@@ -94,7 +66,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 				t.Fatalf("source view is incorrect: %v %v", ok, err)
 			}
 			for _, selector := range []string{"#source", "#toggle-source", "header span"} {
-				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+tools.Contrast+`)(document.querySelector('`+selector+`'))`))
+				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+chromium.Contrast+`)(document.querySelector('`+selector+`'))`))
 				if err != nil || ratio < 4.5 {
 					t.Errorf("%s contrast=%v, err=%v; want at least 4.5", selector, ratio, err)
 				}

@@ -7,27 +7,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/browsertest"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
 )
 
 func TestRecoveryDesignInBrowser(t *testing.T) {
-	command := exec.Command("bun", "-e", `import { chromium } from "playwright"; import { readContrastRatio } from "../../test-support/readContrastRatio"; console.log(JSON.stringify({path: chromium.executablePath(), contrast: readContrastRatio.toString()}))`)
-	command.Dir = "../../../../packages/devhost-ui"
-	output, err := command.Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var tools struct{ Path, Contrast string }
-	if err := json.Unmarshal(output, &tools); err != nil {
-		t.Fatal(err)
-	}
+	chromium := browsertest.Locate(t)
 	tokens, err := os.ReadFile("../../../../packages/design/tokens.css")
 	if err != nil {
 		t.Fatal(err)
@@ -36,20 +27,8 @@ func TestRecoveryDesignInBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runRoot := filepath.Join(os.TempDir(), "devhost-e2e")
-	if err := os.MkdirAll(runRoot, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	runDir, err := os.MkdirTemp(runRoot, "recovery-design-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := os.RemoveAll(runDir); err != nil {
-			t.Error(err)
-		}
-	})
-	allocator, stop := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(tools.Path), chromedp.UserDataDir(filepath.Join(runDir, "profile")), chromedp.NoSandbox)...)
+	runDir := browsertest.RunDirectory(t, "recovery-design")
+	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(filepath.Join(runDir, "profile"))...)
 	defer stop()
 	browser, closeBrowser := chromedp.NewContext(allocator)
 	defer closeBrowser()
@@ -92,7 +71,7 @@ func TestRecoveryDesignInBrowser(t *testing.T) {
 				t.Errorf("page does not follow the shared %s design palette: %v", theme, err)
 			}
 			for _, selector := range []string{"#title", "#message", "#logs", "summary", "legend"} {
-				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+tools.Contrast+`)(document.querySelector('`+selector+`'))`))
+				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+chromium.Contrast+`)(document.querySelector('`+selector+`'))`))
 				if err != nil || ratio < 4.5 {
 					t.Errorf("%s contrast=%v, err=%v; want at least 4.5", selector, ratio, err)
 				}
