@@ -128,6 +128,8 @@ type StartControlServerOptions struct {
 	RestartServicesShortcut string
 	RoutedServices          []RoutedServiceIdentity
 	StackName               string
+	// chatCommand starts the native chat harnesses; nil starts the installed CLIs. Tests supply a stand-in.
+	chatCommand chatCommandFactory
 }
 
 type ControlServer struct {
@@ -318,7 +320,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	if controlServer.devSource != nil {
 		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
 	}
-	controlServer.chat = newChatStore(controlServer.ctx)
+	controlServer.chat = newChatStore(controlServer.ctx, options.chatCommand)
 	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
 	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
 	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))

@@ -63,7 +63,7 @@ func TestChatInstalledClaudeUserReplay(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	store := newChatStore(ctx)
+	store := newChatStore(ctx, exec.CommandContext)
 	defer store.close()
 	cwd, err := os.Getwd()
 	if err != nil {

@@ -13,9 +13,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func startChatTargetServer(t *testing.T, devSourceRootPath string) *ControlServer {
+func startChatTargetServer(t *testing.T, devSourceRootPath string, command chatCommandFactory) *ControlServer {
 	t.Helper()
 	options := StartControlServerOptions{
+		chatCommand:       command,
 		FeatureToggles:    FeatureToggles{ChatEnabled: true},
 		ProjectRootPath:   t.TempDir(),
 		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil },
@@ -31,7 +32,6 @@ func startChatTargetServer(t *testing.T, devSourceRootPath string) *ControlServe
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.chat.command = refuseChatHarness(t)
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
@@ -46,8 +46,7 @@ func chatTargetQuery(pageURL, target string) string {
 
 func TestChatDevhostTargetRunsInTheDevSourceCheckout(t *testing.T) {
 	devhostRoot := writeDevSourceCheckout(t, "")
-	s := startChatTargetServer(t, devhostRoot)
-	s.chat.command = chatTestStore(t).command
+	s := startChatTargetServer(t, devhostRoot, chatHelperCommand(t))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	projectSession, err := s.chat.start(ctx, chatSessionRequest{Harness: chatCodex}, s.projectRootPath)
@@ -127,7 +126,7 @@ func TestChatTargetIsValidatedBeforeStartingClients(t *testing.T) {
 			if tc.hasDevSource {
 				devSourceRootPath = writeDevSourceCheckout(t, "")
 			}
-			s := startChatTargetServer(t, devSourceRootPath)
+			s := startChatTargetServer(t, devSourceRootPath, refuseChatHarness(t))
 			base := fmt.Sprintf("http://127.0.0.1:%d", s.Port())
 			for _, path := range []string{chatHarnessesPath, chatSessionsPath} {
 				response := mustGet(t, base+path+chatTargetQuery(pageURL, tc.target))
@@ -152,7 +151,7 @@ func TestInjectedConfigNamesTheDevhostSourceCheckout(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			s := startChatTargetServer(t, tc.devSourceRootPath)
+			s := startChatTargetServer(t, tc.devSourceRootPath, refuseChatHarness(t))
 			var config injectedConfig
 			if err := json.Unmarshal([]byte(getControlServerText(t, s, injectedConfigPath)), &config); err != nil {
 				t.Fatal(err)

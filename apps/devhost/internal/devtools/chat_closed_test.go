@@ -65,8 +65,7 @@ func listChatTestSessions(t *testing.T, base string) []chatSessionInfo {
 // Closing a conversation stops its native process but keeps the conversation, so a page can still list and
 // resume it.
 func TestChatCloseKeepsTheConversation(t *testing.T) {
-	s := startChatControlServer(t)
-	s.chat.command = chatTestStore(t).command
+	s := startChatControlServer(t, chatHelperCommand(t))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	session, err := s.chat.start(ctx, chatSessionRequest{Harness: chatCodex}, s.projectRootPath)
@@ -92,8 +91,7 @@ func TestChatCloseKeepsTheConversation(t *testing.T) {
 // Resuming a closed conversation continues it in a new session, which replaces the closed record: the list keeps one
 // record for the conversation, and it carries the native session ID from the start.
 func TestChatResumeReplacesTheClosedConversation(t *testing.T) {
-	s := startChatControlServer(t)
-	s.chat.command = chatTestStore(t).command
+	s := startChatControlServer(t, chatHelperCommand(t))
 	base := fmt.Sprintf("http://127.0.0.1:%d", s.Port())
 	query := chatTargetQuery(chatClosedTestPageURL, chatTargetProject)
 	started := startChatTestSession(t, base, chatCodex, "")

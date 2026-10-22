@@ -34,8 +34,12 @@ type chatSession struct {
 	clients         map[*websocketClient]struct{}
 }
 
-func newChatStore(ctx context.Context) *chatStore {
-	return &chatStore{ctx: ctx, command: exec.CommandContext, sessions: map[string]*chatSession{}}
+// newChatStore starts native harnesses through command, or through the installed CLIs when command is nil.
+func newChatStore(ctx context.Context, command chatCommandFactory) *chatStore {
+	if command == nil {
+		command = exec.CommandContext
+	}
+	return &chatStore{ctx: ctx, command: command, sessions: map[string]*chatSession{}}
 }
 
 // HasActiveChatSessions keeps an in-flight native turn alive after its page disconnects.
