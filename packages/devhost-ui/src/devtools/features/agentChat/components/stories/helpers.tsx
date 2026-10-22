@@ -128,6 +128,12 @@ export function installChatReloadServer(events: readonly IChatEvent[] = fixture_
   const sessions: IChatSession[] = [fixture_reloadSession];
   const fetch: FetchFunction = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    const closing = sessions.findIndex((session) => url.pathname === `/__devhost__/chat/sessions/${session.id}/close`);
+    if (closing !== -1 && init?.method === "POST") {
+      const closed: IChatSession = { ...sessions[closing], status: "closed" };
+      sessions.splice(closing, 1, closed);
+      return Response.json(closed);
+    }
     if (url.pathname === "/__devhost__/chat/sessions") {
       if (init?.method === "POST") {
         const session: IChatSession = { ...fixture_reloadSession, id: `new-conversation-${sessions.length}` };

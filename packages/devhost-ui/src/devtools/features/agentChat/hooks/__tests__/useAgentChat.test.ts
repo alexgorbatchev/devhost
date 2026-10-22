@@ -483,13 +483,20 @@ test("catalog errors are visible and a later refresh recovers native model metad
   expect(hook.result.current.selectedHarness).toBe("claude-code");
   expect(hook.result.current.harnesses[0]?.error).toBe("Authentication required");
 });
-test("a closed session resumes its native ID through a new provider process", async () => {
+test("a closed session resumes its native ID through a new provider process that replaces it", async () => {
+  const closed: IChatSession = { ...session, status: "closed", nativeSessionId: "native-history" };
+  mockFetch.fetch.mockReset();
+  mockFetch.fetch.mockResolvedValueOnce(
+    Response.json({ harnesses: [{ id: "codex", label: "Codex", available: true, models: [] }] }),
+  );
+  mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions: [closed] }));
   const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
+  expect(hook.result.current.sessions).toEqual([closed]);
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ ...session, id: "resumed-session" }));
   let resumed: Promise<void> | undefined;
   await act(async () => {
-    resumed = hook.result.current.resumeSession({ ...session, status: "closed", nativeSessionId: "native-history" });
+    resumed = hook.result.current.resumeSession(closed);
   });
   await waitFor(() => expect(sockets.connections).toHaveLength(1));
   expect(JSON.parse(String(mockFetch.fetch.mock.calls[2]?.[1]?.body))).toMatchObject({
@@ -507,6 +514,8 @@ test("a closed session resumes its native ID through a new provider process", as
     await resumed;
   });
   expect(hook.result.current.session?.id).toBe("resumed-session");
+  // The new session continues the closed conversation, which the server no longer lists either.
+  expect(hook.result.current.sessions.map((item) => item.id)).toEqual(["resumed-session"]);
 });
 test("failed close retains the current session and reports the failure through the controller", async () => {
   const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
@@ -619,17 +628,19 @@ test.each(["project", "devhost"] as const)(
       connection?.send({ type: "snapshot", sessionId: session.id, session, events: [], pendingRequestIds: [] });
       await resumed;
     });
-    mockFetch.fetch.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    mockFetch.fetch.mockResolvedValueOnce(Response.json({ ...session, status: "closed" }));
     await act(async () => {
       hook.result.current.settingsStore.getState().updateChat({ scroll: { top: 400, left: 0, isAtBottom: false } });
       await hook.result.current.closeSession();
     });
     const closeURL = new URL(String(mockFetch.fetch.mock.calls[2]?.[0]), window.location.href);
-    expect(closeURL.pathname).toBe("/__devhost__/chat/sessions/chat-one");
+    expect(closeURL.pathname).toBe("/__devhost__/chat/sessions/chat-one/close");
     expect(closeURL.searchParams.get("pageURL")).toBe(pageURL);
     expect(closeURL.searchParams.get("chatTarget")).toBe(target);
-    expect(mockFetch.fetch.mock.calls[2]?.[1]?.method).toBe("DELETE");
+    expect(mockFetch.fetch.mock.calls[2]?.[1]?.method).toBe("POST");
     expect(hook.result.current.session).toBeNull();
+    // Closing ends the conversation's process; the conversation itself stays available to resume.
+    expect(hook.result.current.sessions).toEqual([{ ...session, status: "closed" }]);
     expect(hook.result.current.settingsStore.getState().chat.sessionId).toBeNull();
     expect(hook.result.current.settingsStore.getState().chat.scroll).toBeNull();
     mockFetch.fetch.mockResolvedValueOnce(Response.json(session));

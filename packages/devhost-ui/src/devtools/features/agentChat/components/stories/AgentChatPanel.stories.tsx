@@ -14,6 +14,7 @@ import {
   installChatReloadServer,
   installChatTargetServer,
   installPageChatCatalog,
+  openSavedChatConversation,
   readChatViewport,
   readOfferedConversations,
   readSentChatCommands,
@@ -322,5 +323,22 @@ export const MobileControlsRemainReachable: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Collapse Chat" }));
     await userEvent.click(canvas.getByRole("button", { name: "Page counter: 0" }));
     await expect(canvas.getByRole("button", { name: "Page counter: 1" })).toBeVisible();
+  },
+};
+
+export const CloseKeepsConversationToResume: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Close Conversation" }));
+    await canvas.findByText("Chat with your configured coding agent.");
+    expect(canvas.queryByRole("button", { name: "Close Conversation" })).toBeNull();
+    // Closing stops the conversation; it stays offered so it can be resumed later.
+    expect(await readOfferedConversations(canvasElement)).toEqual([
+      "New conversation",
+      "codex · saved-conversation · closed",
+    ]);
   },
 };

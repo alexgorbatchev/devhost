@@ -78,10 +78,12 @@ export async function startBuiltDevtoolsHost(chat?: IChatSnapshot): Promise<IBui
           ],
         });
       if (url.pathname === "/__devhost__/chat/sessions")
-        return Response.json({ sessions: chat && !isChatClosed ? [chat.session] : [] });
-      if (url.pathname.startsWith("/__devhost__/chat/sessions/") && request.method === "DELETE") {
+        return Response.json({
+          sessions: chat ? [isChatClosed ? { ...chat.session, status: "closed" } : chat.session] : [],
+        });
+      if (chat && url.pathname === `/__devhost__/chat/sessions/${chat.session.id}/close` && request.method === "POST") {
         isChatClosed = true;
-        return new Response(null, { status: 204 });
+        return Response.json({ ...chat.session, status: "closed" });
       }
       if (
         url.pathname === "/__devhost__/inject.js" ||

@@ -119,7 +119,9 @@ func TestChatRoutesValidateRequestsBeforeStartingClients(t *testing.T) {
 		{"missing mutation origin", http.MethodPost, "/__devhost__/chat/sessions", "", `{"harness":"codex"}`, http.StatusForbidden},
 		{"unknown harness", http.MethodPost, "/__devhost__/chat/sessions", base, `{"harness":"unknown"}`, http.StatusBadRequest},
 		{"browser executable override", http.MethodPost, "/__devhost__/chat/sessions", base, `{"harness":"codex","executable":"/bin/sh"}`, http.StatusBadRequest},
-		{"missing session", http.MethodDelete, "/__devhost__/chat/sessions/missing?chatTarget=project", base, "", http.StatusNotFound},
+		{"close missing session", http.MethodPost, "/__devhost__/chat/sessions/missing/close?chatTarget=project", base, "", http.StatusNotFound},
+		{"close with another method", http.MethodDelete, "/__devhost__/chat/sessions/missing/close?chatTarget=project", base, "", http.StatusMethodNotAllowed},
+		{"delete is not a session route", http.MethodDelete, "/__devhost__/chat/sessions/missing?chatTarget=project", base, "", http.StatusNotFound},
 		{"missing websocket session", http.MethodGet, "/__devhost__/ws/chat", base, "", http.StatusBadRequest},
 	}
 	for _, tt := range tests {
