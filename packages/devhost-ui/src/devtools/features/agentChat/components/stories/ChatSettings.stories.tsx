@@ -1,7 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { ChatSettings } from "../ChatSettings";
-import { PageChatScene, ShadowPageChatScene, installPageChatCatalog } from "./helpers";
+import {
+  PageChatScene,
+  ShadowPageChatScene,
+  chooseChatSetting,
+  installPageChatCatalog,
+  installUnavailableHarnessCatalog,
+} from "./helpers";
 import { readDevtoolsStoryShadowCanvas } from "../../../../shared/components/stories/helpers";
 import { userEvent as nativeUserEvent } from "vitest/browser";
 const meta: Meta<typeof ChatSettings> = {
@@ -21,10 +27,16 @@ export const Default: Story = {
     const dialog = await canvas.findByRole("dialog", { name: "Chat Settings" });
     await waitFor(() => expect(dialog).toBeVisible());
     const model = within(dialog).getByRole("combobox", { name: "Model" });
-    await within(dialog).findByRole("option", { name: "Discovered Codex model" });
-    await userEvent.selectOptions(model, "codex-discovered");
-    expect(model).toHaveValue("codex-discovered");
+    await waitFor(() => expect(model).toHaveTextContent("Configured default"));
+    await chooseChatSetting(canvas, "Model", "Discovered Codex model");
+    expect(model).toHaveTextContent("Discovered Codex model");
     expect(model.getBoundingClientRect().height).toBeGreaterThanOrEqual(28);
+    // The trigger spans the dialog's field column instead of shrinking to its label.
+    expect(model.getBoundingClientRect().width).toBe(
+      within(dialog).getByRole("combobox", { name: "Harness" }).getBoundingClientRect().width,
+    );
+    await chooseChatSetting(canvas, "Model", "Configured default");
+    expect(model).toHaveTextContent("Configured default");
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(canvas.getByRole("button", { name: "Chat Settings" })).toHaveFocus());
   },
@@ -43,15 +55,21 @@ export const InjectedSettingsReceivePointerInput: Story = {
     const rectangle = model.getBoundingClientRect();
     await waitFor(() =>
       expect(
-        (root as ShadowRoot).elementFromPoint(
-          rectangle.left + rectangle.width / 2,
-          rectangle.top + rectangle.height / 2,
+        model.contains(
+          (root as ShadowRoot).elementFromPoint(
+            rectangle.left + rectangle.width / 2,
+            rectangle.top + rectangle.height / 2,
+          ),
         ),
-      ).toBe(model),
+      ).toBe(true),
     );
-    await within(dialog).findByRole("option", { name: "Discovered Codex model" });
-    await nativeUserEvent.selectOptions(model, "codex-discovered");
-    expect(model).toHaveValue("codex-discovered");
+    await waitFor(() => expect(model).toBeEnabled());
+    await nativeUserEvent.click(model);
+    // The list renders in the devtools shadow root, where the page's pointer input reaches it.
+    const option = await shadowCanvas.findByRole("option", { name: "Discovered Codex model" });
+    expect(option.getRootNode()).toBe(root);
+    await nativeUserEvent.click(option);
+    await waitFor(() => expect(model).toHaveTextContent("Discovered Codex model"));
     expect(counter).toHaveTextContent("Page counter: 0");
     await nativeUserEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     await waitFor(() => expect(shadowCanvas.queryByRole("dialog", { name: "Chat Settings" })).toBeNull());
@@ -64,5 +82,26 @@ export const InjectedSettingsReceivePointerInput: Story = {
     expect(counter).toHaveTextContent("Page counter: 0");
     await nativeUserEvent.click(counter);
     expect(canvas.getByRole("button", { name: "Page counter: 1" })).toBeVisible();
+  },
+};
+
+export const UnavailableHarnessIsOfferedDisabled: Story = {
+  beforeEach: installUnavailableHarnessCatalog,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+    const harness = await canvas.findByRole("combobox", { name: "Harness" });
+    await waitFor(() => expect(harness).toHaveTextContent("Codex"));
+    await userEvent.click(harness);
+    const listbox = await canvas.findByRole("listbox");
+    expect(within(listbox).getByRole("option", { name: "Codex" })).not.toHaveAttribute("aria-disabled", "true");
+    expect(within(listbox).getByRole("option", { name: "Claude Code (unavailable)" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
+    expect(harness).toHaveTextContent("Codex");
   },
 };

@@ -6,6 +6,7 @@ import {
   ChatPreparationScene,
   ChatReloadScene,
   InjectedChatScene,
+  chooseChatSetting,
   PageChatScene,
   deliverChatReply,
   deliverChatStatus,
@@ -51,8 +52,7 @@ export const EscapeInInjectedComposerInterruptsTurn: Story = {
     );
     await userEvent.click(await shadowCanvas.findByRole("button", { name: "Chat" }));
     await userEvent.click(shadowCanvas.getByRole("button", { name: "Chat Settings" }));
-    await shadowCanvas.findByRole("option", { name: "codex · saved-conversation" });
-    await userEvent.selectOptions(shadowCanvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+    await chooseChatSetting(shadowCanvas, "Conversation", "codex · saved-conversation");
     await userEvent.keyboard("{Escape}");
     await shadowCanvas.findByText("codex · idle");
     deliverChatStatus("running");
@@ -105,8 +105,7 @@ export const ReloadRestoresConversationView: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-    await canvas.findByRole("option", { name: "codex · saved-conversation" });
-    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+    await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
     await userEvent.keyboard("{Escape}");
     await userEvent.click(canvas.getByRole("button", { name: "Move Chat To Left" }));
     const composer = await canvas.findByRole("textbox");
@@ -140,8 +139,7 @@ export const RepliesFollowUntilReaderScrollsBack: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-    await canvas.findByRole("option", { name: "codex · saved-conversation" });
-    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+    await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
     await userEvent.keyboard("{Escape}");
     const viewport = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
     for (let sequence = 1; sequence <= 40; sequence += 1) {
@@ -173,7 +171,7 @@ export const PreparingSendKeepsConversationTarget: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-    await canvas.findByRole("option", { name: "Discovered Codex model" });
+    await waitFor(() => expect(canvas.getByRole("combobox", { name: "Harness" })).toHaveTextContent("Codex"));
     await userEvent.keyboard("{Escape}");
     const composer = await canvas.findByRole("textbox");
     await userEvent.type(composer, "Keep my target while sharing");
@@ -196,15 +194,20 @@ export const DiscoveredHarnessAndModel: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-    await canvas.findByRole("option", { name: "Discovered Codex model" });
-    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Model" }), "codex-discovered");
-    await expect(canvas.getByRole("combobox", { name: "Model" })).toHaveValue("codex-discovered");
-    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Harness" }), "claude-code");
-    await canvas.findByRole("option", { name: "Discovered Claude model" });
-    await expect(canvas.queryByRole("option", { name: "Discovered Codex model" })).not.toBeInTheDocument();
-    await expect(canvas.getByRole("combobox", { name: "Model" })).toHaveValue("");
-    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Model" }), "claude-discovered");
-    await expect(canvas.getByRole("combobox", { name: "Model" })).toHaveValue("claude-discovered");
+    const model = canvas.getByRole("combobox", { name: "Model" });
+    await waitFor(() => expect(canvas.getByRole("combobox", { name: "Harness" })).toHaveTextContent("Codex"));
+    await chooseChatSetting(canvas, "Model", "Discovered Codex model");
+    await expect(model).toHaveTextContent("Discovered Codex model");
+    await chooseChatSetting(canvas, "Harness", "Claude Code");
+    // Another harness offers its own models and starts from its configured default.
+    await expect(model).toHaveTextContent("Configured default");
+    await userEvent.click(model);
+    const models = within(await canvas.findByRole("listbox"))
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    await expect(models).toEqual(["Configured default", "Discovered Claude model"]);
+    await userEvent.click(canvas.getByRole("option", { name: "Discovered Claude model" }));
+    await expect(model).toHaveTextContent("Discovered Claude model");
   },
 };
 
@@ -257,10 +260,9 @@ export const ClientNavigationPreservesChat: Story = {
     try {
       await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
       await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-      await canvas.findByRole("option", { name: "Discovered Codex model" });
-      await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Harness" }), "claude-code");
-      await canvas.findByRole("option", { name: "Discovered Claude model" });
-      await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Model" }), "claude-discovered");
+      await waitFor(() => expect(canvas.getByRole("combobox", { name: "Harness" })).toHaveTextContent("Codex"));
+      await chooseChatSetting(canvas, "Harness", "Claude Code");
+      await chooseChatSetting(canvas, "Model", "Discovered Claude model");
       await userEvent.keyboard("{Escape}");
       await userEvent.type(await canvas.findByRole("textbox"), "Keep my page review");
       const nextURL = new URL(originalURL);
@@ -270,8 +272,8 @@ export const ClientNavigationPreservesChat: Story = {
       await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
       await expect(canvas.getByRole("textbox")).toHaveValue("Keep my page review");
       await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-      await expect(canvas.getByRole("combobox", { name: "Harness" })).toHaveValue("claude-code");
-      await expect(canvas.getByRole("combobox", { name: "Model" })).toHaveValue("claude-discovered");
+      await expect(canvas.getByRole("combobox", { name: "Harness" })).toHaveTextContent("Claude Code");
+      await expect(canvas.getByRole("combobox", { name: "Model" })).toHaveTextContent("Discovered Claude model");
       await userEvent.keyboard("{Escape}");
       await expect(canvas.getByRole("textbox")).toHaveValue("Keep my page review");
     } finally {
