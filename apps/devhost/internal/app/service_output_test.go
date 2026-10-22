@@ -4,8 +4,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 )
 
 func TestRunServiceOutputModes(t *testing.T) {
@@ -16,9 +14,10 @@ func TestRunServiceOutputModes(t *testing.T) {
 		t.Run(tc.agent, func(t *testing.T) {
 			t.Setenv("AGENT", tc.agent)
 			t.Setenv("COLUMNS", "40")
-			t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
+			state := t.TempDir()
+			t.Setenv("DEVHOST_STATE_DIR", state)
 			directory := t.TempDir()
-			useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
+			useSharedCaddy(t, state)
 			path := writeDevtoolsDisabledProcessManifest(t, directory)
 			manifest, err := os.ReadFile(path)
 			if err != nil {

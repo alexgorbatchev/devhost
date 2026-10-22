@@ -23,7 +23,7 @@ func startRecoveryStack(t *testing.T, timeout int, missingExecutable, worktrees 
 	t.Helper()
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	caddytest.WriteExecutable(t, paths.ExecutablePath)
 	root := t.TempDir()
 	if worktrees {
 		root, _ = createWorktreeRepository(t)

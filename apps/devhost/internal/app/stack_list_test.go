@@ -9,8 +9,6 @@ import (
 	"strings"
 	"syscall"
 	"testing"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 )
 
 // startListedStack starts a stack in another process, the way a second terminal
@@ -24,7 +22,7 @@ func startListedStack(t *testing.T, stateDirectoryPath string) (*exec.Cmd, strin
 	manifestDirectoryPath := t.TempDir()
 	startTracePath := filepath.Join(t.TempDir(), "started.txt")
 	stopTracePath := filepath.Join(t.TempDir(), "stopped.txt")
-	useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
+	useSharedCaddy(t, stateDirectoryPath)
 	manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, startTracePath, stopTracePath)
 
 	command := exec.Command(os.Args[0], "-test.run=TestRunSignalProcessHelper", "--")

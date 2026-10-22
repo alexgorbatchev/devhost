@@ -51,7 +51,7 @@ func TestStackRoutesNameTheAccessLogAfterTheStackIdentity(t *testing.T) {
 func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	caddytest.WriteExecutable(t, paths.ExecutablePath)
 	if err := caddy.EnsureManagedCaddyConfig(paths, testCaddySettings(admin), runtime.GOOS); err != nil {
 		t.Fatal(err)
 	}

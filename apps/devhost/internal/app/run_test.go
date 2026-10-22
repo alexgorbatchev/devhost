@@ -265,10 +265,9 @@ func TestRunExplicitManifestBypassesUpwardDiscovery(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress := caddytest.StartAdminServer(t)
+	useSharedCaddy(t, stateDirectoryPath)
 
 	manifestDirectoryPath := t.TempDir()
-	useSharedCaddyAdmin(t, adminAddress)
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 
 	cwd := filepath.Join(t.TempDir(), "nested", "workspace")
@@ -297,10 +296,9 @@ func TestRunManifestFromEnvironmentBypassesUpwardDiscovery(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress := caddytest.StartAdminServer(t)
+	useSharedCaddy(t, stateDirectoryPath)
 
 	manifestDirectoryPath := t.TempDir()
-	useSharedCaddyAdmin(t, adminAddress)
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 	t.Setenv("DEVHOST_MANIFEST", manifestPath)
 
@@ -330,10 +328,9 @@ func TestRunManifestModeStartsStackWhenDevtoolsDisabled(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress := caddytest.StartAdminServer(t)
+	useSharedCaddy(t, stateDirectoryPath)
 
 	manifestDirectoryPath := t.TempDir()
-	useSharedCaddyAdmin(t, adminAddress)
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 
 	var stdout strings.Builder
@@ -356,10 +353,9 @@ func TestRunManifestModeStartsStackWithoutExplicitManifestPath(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress := caddytest.StartAdminServer(t)
+	useSharedCaddy(t, stateDirectoryPath)
 
 	manifestDirectoryPath := t.TempDir()
-	useSharedCaddyAdmin(t, adminAddress)
 	_ = writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 
 	var stdout strings.Builder
@@ -381,8 +377,7 @@ func TestRunManifestModeReportsExistingSameManifestFixedPortClaim(t *testing.T) 
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
-	adminAddress := caddytest.StartAdminServer(t)
-	useSharedCaddyAdmin(t, adminAddress)
+	adminAddress := useSharedCaddy(t, stateDirectoryPath)
 
 	manifestDirectoryPath := t.TempDir()
 	manifestPath := filepath.Join(manifestDirectoryPath, "devhost.toml")
@@ -482,12 +477,7 @@ func TestRunCaddyPrivilegedPortsUsesLifecyclePath(t *testing.T) {
 	stateDirectoryPath := t.TempDir()
 	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 	managedCaddyPath := filepath.Join(stateDirectoryPath, "caddy", "caddy")
-	if err := os.MkdirAll(filepath.Dir(managedCaddyPath), 0o755); err != nil {
-		t.Fatalf("MkdirAll(...) error = %v", err)
-	}
-	if err := os.WriteFile(managedCaddyPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-		t.Fatalf("WriteFile(...) error = %v", err)
-	}
+	caddytest.WriteExecutable(t, managedCaddyPath)
 
 	binDirectoryPath := t.TempDir()
 	argumentsPath := filepath.Join(t.TempDir(), "sudo-args.txt")
@@ -671,12 +661,11 @@ func TestRunPreservesSignalExitCodes(t *testing.T) {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
 			stateDirectoryPath := t.TempDir()
-			adminAddress := caddytest.StartAdminServer(t)
+			useSharedCaddy(t, stateDirectoryPath)
 
 			manifestDirectoryPath := t.TempDir()
 			startTracePath := filepath.Join(t.TempDir(), "signal-start.txt")
 			stopTracePath := filepath.Join(t.TempDir(), "signal-stop.txt")
-			useSharedCaddyAdmin(t, adminAddress)
 			manifestPath := writeSignalProcessManifest(t, manifestDirectoryPath, startTracePath, stopTracePath)
 
 			command := exec.Command(os.Args[0], "-test.run=TestRunSignalProcessHelper", "--")
@@ -757,6 +746,18 @@ func useSharedConfig(t *testing.T, caddyLines ...string) {
 func useSharedCaddyAdmin(t *testing.T, adminAddress string) {
 	t.Helper()
 	useSharedConfig(t, `adminAddress = "`+adminAddress+`"`)
+}
+
+// useSharedCaddy points devhost at a running shared Caddy that accepts every
+// change: an admin endpoint the test serves and the managed Caddy executable in
+// stateDirectoryPath, which devhost runs instead of any Caddy on PATH. It returns
+// the admin address.
+func useSharedCaddy(t *testing.T, stateDirectoryPath string) string {
+	t.Helper()
+	caddytest.WriteExecutable(t, caddy.CreateManagedCaddyPaths(stateDirectoryPath).ExecutablePath)
+	adminAddress := caddytest.StartAdminServer(t)
+	useSharedCaddyAdmin(t, adminAddress)
+	return adminAddress
 }
 
 func writeSignalProcessManifest(

@@ -20,7 +20,7 @@ func TestStartStackWarnsOnceAboutAnUntrustedLocalCA(t *testing.T) {
 	unregisterProcessSignals = func(chan<- os.Signal) {}
 
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	caddytest.WriteExecutable(t, paths.ExecutablePath)
 	caddytest.WriteUntrustedRootCertificate(t, paths.RootCertificatePath)
 	m := newResolvedManifest(t.TempDir(), caddytest.StartAdminServer(t))
 	m.Services["web"] = ResolvedService{

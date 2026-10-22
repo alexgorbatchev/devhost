@@ -130,7 +130,7 @@ func TestStartStackMultipleHosts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 			admin := caddytest.StartAdminServer(t)
-			writeFakeCaddyExecutable(t, paths.ExecutablePath)
+			caddytest.WriteExecutable(t, paths.ExecutablePath)
 			if tc.failSecondRoute {
 				marker := filepath.Join(paths.StateDirectoryPath, "reload-failed")
 				aliasRoute := filepath.Join(paths.RoutesDirectoryPath, "alias.localhost.caddy")
@@ -276,7 +276,7 @@ func readHostRegistrations(t *testing.T, paths caddy.Paths) []hostRegistration {
 func TestStartStackAliasClaimConflictReleasesOwnClaims(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	caddytest.WriteExecutable(t, paths.ExecutablePath)
 	if err := caddy.EnsureManagedCaddyConfig(paths, testCaddySettings(admin), runtime.GOOS); err != nil {
 		t.Fatal(err)
 	}

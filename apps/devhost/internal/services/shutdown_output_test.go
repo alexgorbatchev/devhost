@@ -61,7 +61,7 @@ func TestShutdownAnnouncementDoesNotWaitForStartup(t *testing.T) {
 			}
 
 			paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-			writeFakeCaddyExecutable(t, paths.ExecutablePath)
+			caddytest.WriteExecutable(t, paths.ExecutablePath)
 			m := newResolvedManifest(t.TempDir(), caddytest.StartAdminServer(t))
 			m.Devtools.Status.Enabled = true
 			m.Services["web"] = ResolvedService{
@@ -135,7 +135,7 @@ func TestPlaygroundStackShutdownOutput(t *testing.T) {
 			unregisterProcessSignals = func(chan<- os.Signal) {}
 
 			paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-			writeFakeCaddyExecutable(t, paths.ExecutablePath)
+			caddytest.WriteExecutable(t, paths.ExecutablePath)
 			m := newResolvedManifest(t.TempDir(), caddytest.StartAdminServer(t))
 			ports := nettest.ReservePorts(t, 2)
 			order := []string{"playground-backend", "playground-frontend"}

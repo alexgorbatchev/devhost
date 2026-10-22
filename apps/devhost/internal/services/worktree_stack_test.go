@@ -30,7 +30,7 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	state := t.TempDir()
 	trace := filepath.Join(state, "trace")
 	paths := caddy.CreateManagedCaddyPaths(state)
-	writeFakeCaddyExecutable(t, paths.ExecutablePath)
+	caddytest.WriteExecutable(t, paths.ExecutablePath)
 	for name, service := range m.Services {
 		port := nettest.ReservePort(t)
 		service.Command = []string{os.Args[0], "-test.run=TestWorktreeServiceHelperProcess", "--"}

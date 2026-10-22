@@ -28,7 +28,7 @@ func TestStartStackKeepsExitedServicesRestartable(t *testing.T) {
 			statePath := t.TempDir()
 			paths := caddy.CreateManagedCaddyPaths(statePath)
 			admin := caddytest.StartAdminServer(t)
-			writeFakeCaddyExecutable(t, paths.ExecutablePath)
+			caddytest.WriteExecutable(t, paths.ExecutablePath)
 
 			originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
 			defer func() {
