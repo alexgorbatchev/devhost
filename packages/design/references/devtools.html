@@ -456,14 +456,20 @@
       <p>
         Chat design: the page-top annotation toolbar uses 40px controls for Select Elements, Arrow, Line, Box, and Undo
         Drawing. Drawings move by dragging their strokes; context rows have individual remove actions. Selection
-        instructions follow the pointer. Chat Settings opens the harness, model, and conversation dialog. New
-        Conversation (+) sits beside Share Tab and Send Message in the composer. Sent context starts collapsed and
-        clears from the page after submission. User bubbles use a foreground-tinted secondary fill, foreground text, and
-        an input-color border. The composer keeps compact bottom spacing when typing or clearing a draft; empty
-        suggestions reserve no space. The interactive reference for these surfaces is the PageChat, AgentChatBody, and
-        ChatUserText Storybook stories. Their annotation layer stays above native popovers and modal dialogs, with chat
-        and tools in the active popup's interaction scope so sending does not close the target. The annotation-draft and
-        queue simulation below depicts the retired workflow.
+        instructions follow the pointer. Chat Settings opens the harness, model, and conversation dialog; each is a
+        styled select menu, and a closed conversation stays listed, marked closed, until it is resumed. The worktree
+        Repository and configuration File pickers below are styled select menus in the product as well: their lists
+        render inside the toolbar panel and beside the editor window, so choosing keeps the panel open and Escape in an
+        open list closes only the list (WorktreeStatusPanel and ConfigEditorPanel stories). New Conversation (+) sits
+        beside Share Tab and Send Message in the composer. Sent context starts collapsed and clears from the page after
+        submission. User bubbles use a foreground-tinted secondary fill, foreground text, and an input-color border. The
+        composer keeps compact bottom spacing when typing or clearing a draft; empty suggestions reserve no space. The
+        interactive reference for these surfaces is the PageChat, AgentChatBody, and ChatUserText Storybook stories.
+        Their annotation layers stay above native popovers and modal dialogs, with chat and tools in the active popup's
+        interaction scope so sending does not close the target. Page highlights and drawings paint beneath the toolbar,
+        panels, and chat, which keep working during selection; with the devhost chat directory they paint above them,
+        and devhost controls become selectable. The annotation-draft and queue simulation below depicts the retired
+        workflow.
       </p>
       <p>
         Hold <b>Alt</b> and click page elements to annotate. <b>Alt + right-click</b> opens component source.
