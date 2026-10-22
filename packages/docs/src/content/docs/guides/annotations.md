@@ -16,7 +16,7 @@ sidebar:
 The published film demonstrates the terminal-based annotation workflow. Browser chat, drawing tools, and tab sharing are described below and have no current demo film.
 :::
 
-Open **Chat** in the injected toolbar to talk to an installed coding agent while working on your page. The chat panel can move to either side of the viewport or collapse while its conversation continues. The message composer stays at the bottom of the panel, including before your first message.
+Open **Chat** in the injected toolbar to talk to an installed coding agent while working on your page. The chat panel can move to either side of the viewport or collapse while its conversation continues. The message composer stays at the bottom of the panel with compact spacing, including before your first message. Typing or clearing a single-line draft keeps it in place.
 
 ## Connect an installed CLI
 

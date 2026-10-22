@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-21 16:48
+last_modified: 2026-10-21 19:40
 status: current
 ---
 
@@ -211,7 +211,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Native turn interruption, conversation replay, explicit approvals and questions                                                                         | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |
 | Development builds switch chat between the project and the devhost checkout, and serve the devtools UI from that checkout                               | `guides/annotations.md`, "Chat about devhost itself"; `architecture/chat.md` | **No demo** |
 | Restore chat visibility, side, conversation, text draft, harness/model and scroll after navigation and reload; New Conversation beside Share Tab        | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |
-| Composer stays at the panel bottom; settings dialog; collapsed sent context and contrasting user bubbles                                                | `guides/annotations.md`                                                      | **No demo** |
+| Composer at panel bottom, compact and stable on typing/clearing; settings dialog; collapsed sent context and contrasting user bubbles                   | `guides/annotations.md`                                                      | **No demo** |
 | Composer focus on open and new page context; replies followed only at the bottom; devtools keys kept from host shortcuts; Escape in composer interrupts | `guides/annotations.md`; `guides/devtools.md`; `architecture/chat.md`        | **No demo** |
 | Select page and devhost UI elements with source metadata; host-page selection plugins                                                                   | `guides/annotations.md`, "Select page context"                               | **No demo** |
 | Drawing and selection above page/devhost native popovers and modal dialogs; send while the target stays open; retain annotated surfaces in snapshots    | `guides/annotations.md`, "Draw over the page"                                | **No demo** |
