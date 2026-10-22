@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor, within } from "storybook/test";
+import { assert } from "vitest";
 import { userEvent } from "vitest/browser";
-import { PageChatScene, ShadowPageChatScene, dragWithMouse, installPageChatCatalog } from "./helpers";
+import {
+  PageChatScene,
+  ShadowPageChatScene,
+  dragWithMouse,
+  installPageChatCatalog,
+  readModalAnnotationCanvas,
+} from "./helpers";
 import {
   devtoolsStoryShadowRootHostTestId,
+  expectDevtoolsSurfaceAbove,
   readDevtoolsStoryShadowCanvas,
   readShadowRoot,
 } from "../../../../shared/components/stories/helpers";
@@ -108,8 +116,9 @@ export const DrawAndUndo: Story = {
   },
 };
 
+/** Chatting in the devhost checkout makes devhost's own UI the subject: it is selectable and drawn over. */
 export const AnnotateDevhostUI: Story = {
-  render: () => <ShadowPageChatScene />,
+  render: () => <ShadowPageChatScene target="devhost" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
@@ -143,8 +152,70 @@ export const AnnotateDevhostUI: Story = {
   },
 };
 
-export const AnnotateNativePopover: Story = {
+/** Chatting in the project keeps devhost's UI working above the page's selections and drawings. */
+export const ProjectAnnotationsStayBelowDevhostUI: Story = {
   render: () => <ShadowPageChatScene hasNativeLayers />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const shadowCanvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const shadowRoot = readShadowRoot(
+      canvas.getByTestId(devtoolsStoryShadowRootHostTestId),
+      "The story did not attach a devtools shadow root.",
+    );
+    const tools = shadowCanvas.getByRole("toolbar", { name: "Page Annotation Tools" });
+    const chat = shadowCanvas.getByRole("complementary", { name: "Agent chat" });
+    const dock = shadowCanvas.getByRole("button", { name: "Native panel" });
+    // The chat panel covers the dock on the right.
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Move Chat To Left" }));
+    await userEvent.click(within(tools).getByRole("button", { name: "Select Elements" }));
+    // Devhost controls keep working during selection instead of becoming context.
+    await userEvent.click(shadowCanvas.getByRole("button", { name: "Chat Settings" }));
+    const dialog = await shadowCanvas.findByRole("dialog", { name: "Chat Settings" });
+    expect(shadowCanvas.queryByRole("region", { name: "Page context" })).toBeNull();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(shadowCanvas.queryByRole("dialog", { name: "Chat Settings" })).toBeNull());
+    await userEvent.click(canvas.getByRole("button", { name: "Page counter: 0" }));
+    await expect(await shadowCanvas.findByRole("region", { name: "Page context" })).toHaveTextContent("#1");
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(within(tools).getByRole("button", { name: "Box" }));
+    const surface = shadowCanvas.getByRole("img", { name: "Annotation drawing canvas" });
+    const panel = chat.getBoundingClientRect();
+    const toolbar = dock.getBoundingClientRect();
+    // The chat panel receives the pointer where it covers the drawing surface.
+    expect(chat.contains(shadowRoot.elementFromPoint(panel.left + 30, panel.top + 60))).toBe(true);
+    await dragWithMouse({ x: panel.right + 120, y: panel.top + 200 }, { x: panel.right - 60, y: panel.top + 260 });
+    await userEvent.click(within(tools).getByRole("button", { name: "Box" }));
+    await dragWithMouse({ x: toolbar.left - 80, y: toolbar.top - 60 }, { x: toolbar.right - 2, y: toolbar.bottom - 2 });
+    const [panelBox, dockBox] = within(surface).getAllByRole("img", { name: "box annotation" });
+    assert(panelBox && dockBox);
+    await waitFor(() => {
+      expectDevtoolsSurfaceAbove(shadowRoot, chat, panelBox);
+      expectDevtoolsSurfaceAbove(shadowRoot, dock, dockBox);
+    });
+    // A host popover opened later: the drawings follow it into the top layer, and chat re-enters above them.
+    const hostPopover = document.createElement("div");
+    hostPopover.popover = "manual";
+    hostPopover.textContent = "Host popover";
+    document.body.append(hostPopover);
+    try {
+      hostPopover.showPopover();
+      const overlap = panelBox.getBoundingClientRect();
+      await waitFor(() => {
+        const chatTree = chat.getRootNode();
+        const drawingTree = panelBox.getRootNode();
+        assert(chatTree instanceof ShadowRoot && drawingTree instanceof ShadowRoot);
+        expect(hostPopover.contains(drawingTree.host)).toBe(true);
+        expect(document.elementFromPoint(overlap.left + 10, overlap.top + 30)).toBe(chatTree.host);
+      });
+    } finally {
+      hostPopover.remove();
+    }
+  },
+};
+
+/** A devhost toolbar panel is a native popover: the devhost target annotates it without dismissing it. */
+export const AnnotateNativePopover: Story = {
+  render: () => <ShadowPageChatScene hasNativeLayers target="devhost" />,
   play: async ({ canvasElement }) => {
     const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
     const tools = canvas.getByRole("toolbar", { name: "Page Annotation Tools" });
@@ -179,7 +250,6 @@ export const AnnotateNativeModal: Story = {
     const canvas = within(canvasElement);
     const devtools = await readDevtoolsStoryShadowCanvas(canvasElement);
     const tools = devtools.getByRole("toolbar", { name: "Page Annotation Tools" });
-    const surface = devtools.getByRole("img", { name: "Annotation drawing canvas" });
     const panel = devtools.getByRole("complementary", { name: "Agent chat" });
     await userEvent.click(canvas.getByRole("button", { name: "Open host modal" }));
     const modal = canvas.getByRole("dialog", { name: "Host modal" });
@@ -189,6 +259,8 @@ export const AnnotateNativeModal: Story = {
     // The annotation tools must receive real pointer input outside the active modal's visible rectangle.
     expect(document.elementFromPoint(toolBounds.left + 4, toolBounds.top + 4)).not.toBe(modal);
     await userEvent.click(within(tools).getByRole("button", { name: "Box" }));
+    // The drawing surface shows once there is something to draw, inside the modal it annotates.
+    const surface = await waitFor(() => readModalAnnotationCanvas(modal));
     const tree = surface.getRootNode() as ShadowRoot;
     expect(tree).toBeInstanceOf(ShadowRoot);
     expect(tree.elementFromPoint(bounds.left + 4, bounds.top + 4)).toBe(surface);

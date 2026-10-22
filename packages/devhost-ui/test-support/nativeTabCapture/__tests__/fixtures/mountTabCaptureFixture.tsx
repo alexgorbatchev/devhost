@@ -11,5 +11,7 @@ registerDevtoolsFonts(document.fonts);
 const mount = document.createElement("div");
 shadowRoot.append(mount);
 const root = createRoot(mount);
-root.render(<TabCaptureScene />);
+// The acceptance run chooses the chat target through the page URL: `?target=devhost` annotates devhost UI.
+const target = new URLSearchParams(location.search).get("target") === "devhost" ? "devhost" : "project";
+root.render(<TabCaptureScene target={target} />);
 Reflect.set(window, "unmountTabCaptureFixture", () => root.unmount());

@@ -16,6 +16,7 @@ import { ChatQuestionField } from "../../questions/components/ChatQuestionField"
 import { readChatApproval } from "../../readChatApproval";
 import { readChatQuestions } from "../../readChatQuestions";
 import type { FetchFunction } from "../../../../shared/pristineFetch";
+import type { ChatTarget } from "../../../../shared/types";
 import { useAgentChat } from "../../hooks/useAgentChat";
 import { AgentChatPanel } from "../AgentChatPanel";
 import { AssistantRuntimeProvider, useExternalStoreRuntime, type ThreadMessageLike } from "@assistant-ui/react";
@@ -37,6 +38,16 @@ export async function openSavedChatConversation(canvasElement: HTMLElement): Pro
   await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
   await userEvent.keyboard("{Escape}");
   await canvas.findByText("codex · idle");
+}
+
+/** The page annotations' drawing canvas, which follows an open host modal into an annotation host inside it. */
+export function readModalAnnotationCanvas(modal: HTMLElement): HTMLElement {
+  for (const host of modal.querySelectorAll("[data-devhost-annotation-host]")) {
+    const layer = host.shadowRoot?.querySelector<HTMLElement>("[data-devhost-annotation-layer]");
+    const canvas = layer ? within(layer).queryByRole("img", { name: "Annotation drawing canvas" }) : null;
+    if (canvas !== null) return canvas;
+  }
+  throw new Error("The host modal holds no annotation drawing canvas.");
 }
 
 /** Opens the Chat Settings select named `setting` and clicks its `option`, as a user does. */
@@ -385,9 +396,13 @@ export async function dragWithMouse(from: IAnnotationPoint, to: IAnnotationPoint
 
 interface IShadowPageChatSceneProps {
   hasNativeLayers?: boolean;
+  target?: ChatTarget;
 }
 
-export function ShadowPageChatScene({ hasNativeLayers = false }: IShadowPageChatSceneProps): JSX.Element {
+export function ShadowPageChatScene({
+  hasNativeLayers = false,
+  target = "project",
+}: IShadowPageChatSceneProps): JSX.Element {
   const rootReference = useRef<HTMLDivElement | null>(null);
   const dialogReference = useRef<HTMLDialogElement | null>(null);
   const [isOpen, setIsOpen] = useState(true);
@@ -435,7 +450,7 @@ export function ShadowPageChatScene({ hasNativeLayers = false }: IShadowPageChat
             </DevtoolsToolbar>
           ) : null}
           <PageChat
-            target="project"
+            target={target}
             isOpen={isOpen}
             onOpenChange={setIsOpen}
             isSelectionEnabled

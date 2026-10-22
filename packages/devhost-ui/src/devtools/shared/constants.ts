@@ -13,6 +13,9 @@ export const DEVTOOLS_ROOT_ID: string = "devhost-devtools-root";
 export const DEVTOOLS_ROOT_ATTRIBUTE_NAME: string = "data-devhost-devtools";
 // Matches elements the browser renders in its top layer: open popovers and modal dialogs.
 export const TOP_LAYER_ELEMENT_SELECTOR: string = ":popover-open, :modal";
+// AnnotationTopLayer roots. The attribute's value is the layer's placement relative to DevtoolsTopLayer.
+export const ANNOTATION_LAYER_SELECTOR: string = "[data-devhost-annotation-layer]";
+export const BELOW_DEVTOOLS_ANNOTATION_LAYER_SELECTOR: string = '[data-devhost-annotation-layer="below-devtools"]';
 export const DEVTOOLS_FONT_FAMILY: string = "devhost JetBrains Mono";
 export const maximumRetainedLogEntries: number = 512;
 export const DEFAULT_RESTART_SERVICES_SHORTCUT: string = "alt+ctrl+r";

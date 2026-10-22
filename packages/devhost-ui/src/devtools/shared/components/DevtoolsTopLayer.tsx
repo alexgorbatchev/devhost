@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type JSX, type ReactNode, type RefObject } from "react";
 
-import { DEVTOOLS_ROOT_ID, TOP_LAYER_ELEMENT_SELECTOR } from "../constants";
+import { ANNOTATION_LAYER_SELECTOR, DEVTOOLS_ROOT_ID, TOP_LAYER_ELEMENT_SELECTOR } from "../constants";
 import type { INativeBrowserBinding } from "../nativeBrowser/types";
 import { promoteDevtoolsTopLayer } from "../promoteDevtoolsTopLayer";
 
@@ -45,9 +45,12 @@ export function DevtoolsTopLayer({ children, nativeBrowserBinding, ref }: IDevto
         promoteDevtoolsTopLayer(topLayerElement);
       }
     };
-    // Promotion waits while a devtools popover or dialog is open, so retry once one of them closes.
+    // Promotion waits while a devtools popover or dialog is open, so retry once one of them closes. Annotation
+    // layers order themselves around the root; promoting it on their own re-entry would never settle.
     const handleOwnTopLayerChange = (event: Event): void => {
-      if (event.target !== topLayerElement) {
+      const target: EventTarget | null = event.target;
+
+      if (target !== topLayerElement && !(target instanceof Element && target.matches(ANNOTATION_LAYER_SELECTOR))) {
         promoteDevtoolsTopLayer(topLayerElement);
       }
     };

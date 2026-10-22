@@ -6,6 +6,7 @@ import { installPageChatCatalog } from "../../../../src/devtools/features/agentC
 const meta: Meta<typeof TabCaptureScene> = {
   component: TabCaptureScene,
   title: "@alexgorbatchev/devhost-ui/test-support/nativeTabCapture/components/TabCaptureScene",
+  args: { target: "project" },
   beforeEach: installPageChatCatalog,
 };
 export default meta;

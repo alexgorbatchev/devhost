@@ -1,19 +1,29 @@
-import { TOP_LAYER_ELEMENT_SELECTOR } from "./constants";
+import { ANNOTATION_LAYER_SELECTOR, DEVTOOLS_ROOT_ATTRIBUTE_NAME, TOP_LAYER_ELEMENT_SELECTOR } from "./constants";
 import { installDevtoolsStyles } from "./devtoolsStyles";
-import { promoteDevtoolsTopLayer } from "./promoteDevtoolsTopLayer";
+import {
+  promoteAnnotationTopLayer,
+  restackAboveAnnotationTopLayer,
+  type IAnnotationTopLayerOrder,
+} from "./promoteAnnotationTopLayer";
 
-interface IAnnotationTopLayerOptions {
-  home: HTMLElement;
+interface IAnnotationTopLayerOptions extends Omit<IAnnotationTopLayerOrder, "cover"> {
   host: HTMLElement;
-  layer: HTMLElement;
   mount: HTMLElement;
+  readCover: () => HTMLElement | null;
 }
 
 type AnnotationTree = Document | ShadowRoot;
 type AnnotationSubtree = Element | AnnotationTree;
 
 /** Keeps only the owned annotation mount in the active modal/popover's interaction scope. */
-export function observeAnnotationTopLayer({ home, host, layer, mount }: IAnnotationTopLayerOptions): VoidFunction {
+export function observeAnnotationTopLayer({
+  home,
+  host,
+  layer,
+  mount,
+  placement,
+  readCover,
+}: IAnnotationTopLayerOptions): VoidFunction {
   const document = home.ownerDocument;
   const roots = new Map<AnnotationTree, MutationObserver>();
   const opened: HTMLElement[] = [];
@@ -21,11 +31,17 @@ export function observeAnnotationTopLayer({ home, host, layer, mount }: IAnnotat
   let isScheduled = false;
   let shouldPromote = true;
 
+  const isDevtoolsOwned = (element: Element): boolean =>
+    element === home || element.closest(`[${DEVTOOLS_ROOT_ATTRIBUTE_NAME}]`) !== null;
+  // The mount follows the modal or popover the user is annotating. Another annotation layer never is one, and a
+  // layer below the devtools surfaces annotates the host page only.
   const isTarget = (element: Element): element is HTMLElement =>
     element instanceof HTMLElement &&
     element !== home &&
     element !== layer &&
     !layer.contains(element) &&
+    !element.matches(ANNOTATION_LAYER_SELECTOR) &&
+    !(placement === "below-devtools" && isDevtoolsOwned(element)) &&
     element.matches(TOP_LAYER_ELEMENT_SELECTOR);
 
   const synchronize = (): void => {
@@ -87,8 +103,11 @@ export function observeAnnotationTopLayer({ home, host, layer, mount }: IAnnotat
         installDevtoolsStyles(shadow);
       }
     }
-    if (!layer.matches(":popover-open")) layer.showPopover();
-    else if (shouldPromote) promoteDevtoolsTopLayer(layer);
+    const order: IAnnotationTopLayerOrder = { home, layer, placement, cover: readCover() };
+    if (!layer.matches(":popover-open")) {
+      layer.showPopover();
+      restackAboveAnnotationTopLayer(order);
+    } else if (shouldPromote) promoteAnnotationTopLayer(order);
     shouldPromote = false;
   };
 
@@ -101,6 +120,9 @@ export function observeAnnotationTopLayer({ home, host, layer, mount }: IAnnotat
   const handleToggle = (event: Event): void => {
     const target = event.target;
     if (!(target instanceof HTMLElement) || target === layer || layer.contains(target)) return;
+    // A layer below the devtools surfaces follows host top-layer elements only: it re-enters the devtools root and
+    // chat after itself, and their own re-entry must not send it back above them.
+    if (placement === "below-devtools" && isDevtoolsOwned(target)) return;
     shouldPromote = true;
     if (target.matches(TOP_LAYER_ELEMENT_SELECTOR)) {
       const index = opened.indexOf(target);
