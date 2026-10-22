@@ -23,6 +23,15 @@
   border: 1px solid var(--input);
 }
 
+/* An empty native suggestions row must not reserve a flex gap below the composer. */
+.aui-thread-welcome-suggestions:empty {
+  display: none;
+}
+
+.aui-thread-viewport-footer {
+  padding-bottom: calc(var(--spacing) * 2);
+}
+
 @custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";
