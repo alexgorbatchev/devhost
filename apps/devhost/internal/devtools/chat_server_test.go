@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -22,12 +23,22 @@ func startChatControlServer(t *testing.T) *ControlServer {
 	if err != nil {
 		t.Fatal(err)
 	}
+	s.chat.command = refuseChatHarness(t)
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
 	return s
+}
+
+// refuseChatHarness stands in for every native harness a test does not provide, so no test runs the machine's codex
+// or claude: a start fails, and the test with it. A test that needs a harness installs chatTestStore's command.
+func refuseChatHarness(t *testing.T) chatCommandFactory {
+	return func(_ context.Context, name string, args ...string) *exec.Cmd {
+		t.Errorf("started native %s %v, which the test does not provide", name, args)
+		return &exec.Cmd{Err: fmt.Errorf("native %s is not provided by the test", name)}
+	}
 }
 
 func TestChatWebsocketReplayPendingResponsesAndShutdown(t *testing.T) {

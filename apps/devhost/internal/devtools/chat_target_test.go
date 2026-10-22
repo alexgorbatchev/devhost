@@ -31,6 +31,7 @@ func startChatTargetServer(t *testing.T, devSourceRootPath string) *ControlServe
 	if err != nil {
 		t.Fatal(err)
 	}
+	s.chat.command = refuseChatHarness(t)
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
