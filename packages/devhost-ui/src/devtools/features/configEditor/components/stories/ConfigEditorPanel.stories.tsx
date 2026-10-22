@@ -1,3 +1,4 @@
+import { EditorView } from "@codemirror/view";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useMemo, useState, type ComponentProps, type JSX } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
@@ -149,6 +150,44 @@ export const EditsAFile: Story = {
     await waitFor(() => expect(editor).not.toHaveTextContent("# note"));
     await expect(within(fileSelect).getByRole("option", { name: "devhost.toml" })).toBeTruthy();
     await expect(saveButton).toBeDisabled();
+  },
+};
+
+// The editor reports typed text through the input it observes, outside any browser event, so the panel renders that
+// text a task later and runs its effects later still. Text typed in between survives the panel catching up, and the
+// cursor stays after it.
+export const KeepsTextTypedWhileThePageCatchesUp: Story = {
+  play: async ({ canvasElement }): Promise<void> => {
+    const { dialog, editor } = await openPanel(within(canvasElement));
+    const editorView: EditorView | null = EditorView.findFromDOM(editor);
+
+    if (editorView === null) {
+      throw new Error("The configuration editor has no CodeMirror view.");
+    }
+
+    const append = (text: string): void => {
+      const end: number = editorView.state.doc.length;
+      editorView.dispatch({ changes: { from: end, insert: text }, selection: { anchor: end + text.length } });
+    };
+    const saveButton: HTMLElement = within(dialog).getByRole("button", { name: "Save" });
+    // Save turns on in the render of the first edit, before that render's effects run.
+    const firstEditRender = new MutationObserver((): void => {
+      if (!saveButton.hasAttribute("disabled")) {
+        firstEditRender.disconnect();
+        append("b");
+      }
+    });
+
+    firstEditRender.observe(saveButton, { attributeFilter: ["disabled"] });
+    append("a");
+    await waitFor(() => expect(editorView.state.doc.toString()).toBe(`${fixture_manifestFile.content}ab`));
+    // Every render and effect the two edits started has run once the page goes idle.
+    await new Promise<void>((resolve) => {
+      requestIdleCallback(() => resolve());
+    });
+
+    await expect(editorView.state.doc.toString()).toBe(`${fixture_manifestFile.content}ab`);
+    await expect(editorView.state.selection.main.head).toBe(editorView.state.doc.length);
   },
 };
 
