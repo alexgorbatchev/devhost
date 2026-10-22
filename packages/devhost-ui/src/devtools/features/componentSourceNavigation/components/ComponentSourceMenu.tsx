@@ -100,7 +100,7 @@ export function ComponentSourceMenu({
                   })}
                 </span>
                 {/* Truncates from the left so the file name and line stay visible for long paths. */}
-                <span className="truncate text-sm text-muted-foreground [direction:rtl]" title={item.sourceLabel}>
+                <span className="truncate text-xs text-muted-foreground [direction:rtl]" title={item.sourceLabel}>
                   {item.sourceLabel}
                 </span>
               </button>

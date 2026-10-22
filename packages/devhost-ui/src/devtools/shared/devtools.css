@@ -44,17 +44,16 @@
  * spacing or type would shrink or grow with whatever page devhost is injected into.
  */
 @theme inline {
-  --font-mono: "devhost JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  --font-sans: var(--font-mono);
-  --font-heading: var(--font-mono);
+  --font-mono: var(--ag-font);
+  --font-sans: var(--ag-font);
+  --font-heading: var(--ag-font);
 
   --spacing: 4px;
 
-  --text-sm: 11px;
+  /* Sizes come from the library scale (`text-xs`, `text-sm`, `text-base`, `text-lg`), which follows the density
+     tokens declared on `:host` below; the devtools layout keeps its compact line heights. */
+  --text-xs--line-height: 1.35;
   --text-sm--line-height: 1.35;
-  --text-md: 12px;
-  --text-md--line-height: 1.35;
-  --text-lg: 13px;
   --text-lg--line-height: 1.4;
 
   --radius-sm: var(--dh-radius-sm);
@@ -195,6 +194,37 @@
   --drop-shadow: var(--dh-shadow);
   --backdrop: var(--dh-backdrop);
   --terminal: var(--dh-term-bg);
+
+  /* The rest of the @alexgorbatchev/shadcn token contract. The library declares these on `:root`, which never matches
+     inside the shadow root, so without them library components would inherit whatever the host page defines. Sizes
+     use the library's compact density; a `DensityProvider` subtree replaces them through its `[data-density]` rule. */
+  --ag-font: "devhost JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --ag-text-xs: 11px;
+  --ag-control-text: 12px;
+  --ag-text: 12px;
+  --ag-heading: 13px;
+  --ag-leading: 1.35;
+  --ag-control-h: 20px;
+  --ag-control-x: 6px;
+  --ag-control-gap: 4px;
+  --ag-tag-h: 16px;
+  --ag-tag-x: 4px;
+  --ag-panel-padding: 8px;
+  --ag-panel-padding-sm: 6px;
+  --ag-field-gap: 8px;
+  --ag-shadow: var(--dh-shadow);
+  --radius: var(--dh-radius-md);
+  --faint-foreground: var(--dh-fg-faint);
+  --destructive-soft: var(--dh-danger-soft);
+  --terminal-background: var(--dh-term-bg);
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 :host([data-theme="light"]),
@@ -317,9 +347,9 @@
   [data-devhost-story-theme] {
     color-scheme: var(--devhost-color-scheme);
     color: var(--foreground);
-    font-family: var(--font-mono);
-    font-size: var(--text-md);
-    line-height: var(--text-md--line-height);
+    font-family: var(--ag-font);
+    font-size: var(--ag-text);
+    line-height: var(--ag-leading);
     font-variant-ligatures: none;
     -webkit-font-smoothing: antialiased;
   }

@@ -99,7 +99,7 @@ export function InlineNotice({
           {children}
           {copyState.kind === "error" ? (
             <span
-              className="mt-0.5 block text-sm font-normal opacity-90"
+              className="mt-0.5 block text-xs font-normal opacity-90"
               data-testid="InlineNotice--copy-error"
               role="status"
             >

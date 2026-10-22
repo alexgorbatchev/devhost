@@ -228,7 +228,7 @@ export function HighlightOverlay({
               <div
                 className={[
                   "pointer-events-none fixed grid h-4.5 min-w-4.5 place-items-center rounded-full",
-                  "bg-mark px-1 text-sm font-bold text-mark-foreground shadow-mark-badge",
+                  "bg-mark px-1 text-xs font-bold text-mark-foreground shadow-mark-badge",
                 ].join(" ")}
                 data-testid={badgeTestId}
                 style={{
@@ -243,7 +243,7 @@ export function HighlightOverlay({
               <div
                 className={[
                   "pointer-events-none fixed h-4.5 max-w-105 truncate rounded-sm border",
-                  "border-mark bg-mark-halo-outer px-1.5 text-sm/4 text-mark-halo-inner",
+                  "border-mark bg-mark-halo-outer px-1.5 text-xs/4 text-mark-halo-inner",
                 ].join(" ")}
                 data-testid={labelTestId}
                 style={{

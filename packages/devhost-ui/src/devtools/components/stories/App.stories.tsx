@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
-import type { JSX } from "react";
+import { Button as LibraryButton } from "@alexgorbatchev/shadcn";
+import { useState, type JSX } from "react";
+import { createPortal } from "react-dom";
 
+import { Button as DevtoolsButton } from "../../../components/ui/Button";
+import { readContrastRatio } from "../../../../../../test-support/readContrastRatio";
 import { App as DevtoolsApp } from "../App";
 import { DEVTOOLS_HOST_ID, installDevtoolsStyles } from "../../shared";
 import { DEVTOOLS_ROOT_ATTRIBUTE_NAME } from "../../shared/constants";
@@ -284,6 +288,28 @@ export const ShadowRootWithoutDocumentStyles: Story = {
   },
 };
 
+/**
+ * Library components read sizing, font and palette tokens that the library declares on `:root`, which never matches
+ * inside a shadow root. The host page in this frame declares its own values for those tokens, as a page built with the
+ * same library would. Library controls must still match devtools controls and keep readable disabled text.
+ */
+export const LibraryControlsIgnoreHostTokens: Story = {
+  render: () => <LibraryControlsWithoutDocumentStylesStory />,
+  play: async ({ canvasElement }): Promise<void> => {
+    const controls: HTMLElement = await waitFor(() => readIsolatedLibraryControls(canvasElement));
+    const libraryButton: HTMLElement = within(controls).getByRole("button", { name: "Library" });
+    const devtoolsButton: HTMLElement = within(controls).getByRole("button", { name: "Devtools" });
+    const disabledButton: HTMLElement = within(controls).getByRole("button", { name: "Disabled" });
+    const frameWindow: Window = readOwnerWindow(controls);
+
+    await expect(libraryButton.getBoundingClientRect().height).toBe(devtoolsButton.getBoundingClientRect().height);
+    await expect(frameWindow.getComputedStyle(libraryButton).fontSize).toBe(
+      frameWindow.getComputedStyle(devtoolsButton).fontSize,
+    );
+    await expect(readContrastRatio(disabledButton)).toBeGreaterThanOrEqual(4.5);
+  },
+};
+
 export const InjectedMount: Story = {
   beforeEach: setupInjectedDevtoolsStory,
   render: (_args, context) => <InjectedMountScene devtools={readInjectedDevtoolsStory(context)} />,
@@ -444,6 +470,76 @@ function ShadowRootWithoutDocumentStylesStory(): JSX.Element {
       onLoad={mountIsolatedShadowRoot}
     />
   );
+}
+
+// A host page built with the same library declares its tokens on `:root`; they inherit into any shadow tree.
+const libraryTokenHostDocument: string = [
+  "<!doctype html><style>:root {",
+  "--ag-control-h: 64px; --ag-control-x: 32px; --ag-control-text: 30px; --ag-text-xs: 30px; --ag-text: 30px;",
+  "--ag-font: serif; --faint-foreground: transparent; font-size: 30px;",
+  "}</style><body></body>",
+].join(" ");
+
+const isolatedLibraryControlsTestId: string = "LibraryControlsIgnoreHostTokens--controls";
+
+function LibraryControlsWithoutDocumentStylesStory(): JSX.Element {
+  const [mountElement, setMountElement] = useState<HTMLDivElement | null>(null);
+
+  // Mounts on `load`: an srcDoc iframe starts on a temporary about:blank document that is replaced once it loads.
+  const mountIsolatedShadowRoot = (event: React.SyntheticEvent<HTMLIFrameElement>): void => {
+    const frameDocument: Document | null = event.currentTarget.contentDocument;
+
+    if (frameDocument === null) {
+      return;
+    }
+
+    const hostElement: HTMLDivElement = frameDocument.createElement("div");
+    const shadowRoot: ShadowRoot = hostElement.attachShadow({ mode: "open" });
+    const nextMountElement: HTMLDivElement = frameDocument.createElement("div");
+
+    // Devtools controls always sit on a devtools surface; the frame's own page is white.
+    nextMountElement.className = "flex gap-2 bg-card p-2";
+    nextMountElement.setAttribute("data-testid", isolatedLibraryControlsTestId);
+    shadowRoot.append(nextMountElement);
+    frameDocument.body.append(hostElement);
+    installDevtoolsStyles(shadowRoot);
+    setMountElement(nextMountElement);
+  };
+
+  return (
+    <>
+      <iframe srcDoc={libraryTokenHostDocument} title="isolated library controls" onLoad={mountIsolatedShadowRoot} />
+      {mountElement === null
+        ? null
+        : createPortal(
+            <>
+              <LibraryButton variant="outline">Library</LibraryButton>
+              <DevtoolsButton>Devtools</DevtoolsButton>
+              <LibraryButton variant="outline" disabled>
+                Disabled
+              </LibraryButton>
+            </>,
+            mountElement,
+          )}
+    </>
+  );
+}
+
+/** Reads the controls rendered into the isolated frame's shadow root. Throws until they have rendered. */
+function readIsolatedLibraryControls(canvasElement: HTMLElement): HTMLElement {
+  const frameElement: HTMLIFrameElement | null = canvasElement.querySelector(
+    "iframe[title='isolated library controls']",
+  );
+  const controls: HTMLElement | null =
+    frameElement?.contentDocument?.body
+      .querySelector("div")
+      ?.shadowRoot?.querySelector<HTMLElement>(`[data-testid='${isolatedLibraryControlsTestId}']`) ?? null;
+
+  if (controls === null || controls.childElementCount === 0) {
+    throw new Error("The isolated library controls have not rendered.");
+  }
+
+  return controls;
 }
 
 /** Reads the toolbar that `renderDevtools` mounted in the document. Throws until it has rendered. */

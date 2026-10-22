@@ -175,7 +175,7 @@ export function LogMinimap(props: ILogMinimapProps): JSX.Element | null {
       ) : null}
       {props.isHovered && previewLayout !== null && hoveredRowIndex !== null && previewRows.length > 0 ? (
         <div
-          className="pointer-events-none absolute right-[calc(100%+7px)] z-(--devhost-z-overlay) w-[calc(100vw-100%-13px)] overflow-hidden rounded-md border border-edge bg-card py-1 text-md text-card-foreground shadow-frame"
+          className="pointer-events-none absolute right-[calc(100%+7px)] z-(--devhost-z-overlay) w-[calc(100vw-100%-13px)] overflow-hidden rounded-md border border-edge bg-card py-1 text-sm text-card-foreground shadow-frame"
           data-testid="LogMinimap--preview"
           style={{ top: previewLayout.top }}
         >

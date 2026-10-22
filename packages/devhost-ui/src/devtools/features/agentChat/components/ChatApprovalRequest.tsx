@@ -36,24 +36,24 @@ export function ChatApprovalRequest({
   return (
     <section data-testid="ChatApprovalRequest" aria-label={approval.title} className="flex min-w-0 flex-col gap-2">
       <details open>
-        <summary className="cursor-pointer text-sm font-medium">Native request details</summary>
-        <pre className="max-h-64 overflow-auto rounded-sm border border-border bg-secondary p-2 text-sm whitespace-pre-wrap break-words">
+        <summary className="cursor-pointer text-xs font-medium">Native request details</summary>
+        <pre className="max-h-64 overflow-auto rounded-sm border border-border bg-secondary p-2 text-xs whitespace-pre-wrap break-words">
           {JSON.stringify(approval.details, null, 2)}
         </pre>
       </details>
       {changes.map((change) => (
         <figure key={change.path} className="flex min-w-0 flex-col gap-1">
-          <figcaption className="text-sm font-medium">{change.path}</figcaption>
+          <figcaption className="text-xs font-medium">{change.path}</figcaption>
           <pre
             aria-label={`Proposed diff for ${change.path}`}
-            className="max-h-64 overflow-auto rounded-sm border border-border bg-secondary p-2 text-sm whitespace-pre-wrap"
+            className="max-h-64 overflow-auto rounded-sm border border-border bg-secondary p-2 text-xs whitespace-pre-wrap"
           >
             {change.diff}
           </pre>
         </figure>
       ))}
       {request.method === "item/fileChange/requestApproval" && !changes.length ? (
-        <p className="text-sm text-muted-foreground">The harness has not supplied a file diff for this request.</p>
+        <p className="text-xs text-muted-foreground">The harness has not supplied a file diff for this request.</p>
       ) : null}
       <ApprovalCard
         allowOnceLabel="Allow Once"
@@ -71,7 +71,7 @@ export function ChatApprovalRequest({
         statusLabel={isSent ? "Decision sent; waiting for the harness." : undefined}
       />
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-xs text-destructive">
           {error}
         </p>
       ) : null}
