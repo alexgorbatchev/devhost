@@ -73,7 +73,7 @@ export async function startBuiltDevtoolsHost(chat?: IChatSnapshot): Promise<IBui
               id: "codex",
               label: "Codex",
               available: true,
-              models: [{ id: "native-model", label: "Native model", description: "Installed model", metadata: {} }],
+              models: [{ id: "native-model", label: "Native model", description: "Installed model" }],
             },
           ],
         });

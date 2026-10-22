@@ -16,10 +16,9 @@ const (
 )
 
 type chatModel struct {
-	ID          string          `json:"id"`
-	Label       string          `json:"label"`
-	Description string          `json:"description"`
-	Metadata    json.RawMessage `json:"metadata"`
+	ID          string `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
 }
 
 type chatHarness struct {

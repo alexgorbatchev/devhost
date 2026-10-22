@@ -203,8 +203,8 @@ func TestChatNativeModelDiscovery(t *testing.T) {
 			if len(result.Models) != count {
 				t.Fatalf("models=%+v", result.Models)
 			}
-			if !strings.Contains(string(result.Models[0].Metadata), "Native") {
-				t.Fatal("native model metadata was lost")
+			if model := result.Models[0]; !strings.HasPrefix(model.Label, "Native") || model.Description != "native description" {
+				t.Fatalf("model=%+v, want the native catalog's label and description", model)
 			}
 		})
 	}
