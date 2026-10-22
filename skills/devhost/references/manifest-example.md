@@ -1,6 +1,6 @@
 # Full Manifest Example
 
-Below is a complete, production-grade `devhost.toml` manifest illustrating every available feature, configuration table, environment placeholder, routing schema, health check type, and annotation action in detail.
+Below is a complete, production-grade `devhost.toml` manifest illustrating every available feature, configuration table, environment placeholder, routing schema, and health check type in detail.
 
 ```toml
 # Service changes and include-file additions/removals reload while devhost runs.
@@ -31,6 +31,20 @@ app = ["web"]
 # Repositories containing managed = false services cannot switch.
 # Missing checkouts and failed group launches remain stopped for explicit recovery.
 
+[devtools]
+# `idleTimeout` sets the automatic idle shutdown duration (disabled by default).
+# Routed traffic, open devtools connections, and in-flight chat turns count as activity.
+idleTimeout = "1h"
+
+[devtools.chat]
+# `enabled` controls browser chat through the installed Codex or Claude Code CLI (default: true).
+# Each CLI keeps its own sign-in and configuration; conversations run in the selected checkout.
+enabled = true
+
+[devtools.annotations]
+# `enabled` controls the page context selector (default: true). Sending selected context also requires chat.
+enabled = true
+
 [devtools.configEditor]
 # `enabled` shows the toolbar's Config button, which edits this manifest, its includes, and config.toml (default: false).
 # Saves pass the checks a reload makes, then hot reload. Only a browser on this machine can save.
@@ -39,7 +53,7 @@ enabled = false
 [devtools.editor]
 # `enabled` controls whether Alt + right-click component-source navigation is enabled (default: true).
 enabled = true
-# `ide` selects which editor target devhost opens ("vscode", "vscode-insiders", "cursor", "webstorm", "neovim").
+# `ide` selects which editor target devhost opens ("vscode", "vscode-insiders", "cursor", "webstorm").
 ide = "vscode"
 
 [devtools.externalToolbars]
@@ -103,43 +117,6 @@ position = "bottom-right"
 # `restartServices` defines a global keyboard shortcut to trigger restarts in the browser (default: "alt+ctrl+r").
 restartServices = "alt+ctrl+r"
 
-# `idleTimeout` sets the automatic idle shutdown duration (disabled by default).
-idleTimeout = "1h"
-
-# Annotation actions configuration
-# For one built-in agent, replace the annotation configuration below with:
-# [annotation]
-# agent = "codex" # pi, claude-code, opencode, or codex
-# Optional tempDir applies; actions and defaultAction require the detailed form instead.
-[annotation]
-defaultAction = "fix"
-# Optional; omit to use the system temp directory ($TMPDIR on Unix, otherwise /tmp).
-# Relative to devhost's startup cwd, independent of the manifest and action cwd.
-# Missing parents are created; each session uses a private subdirectory cleaned up separately.
-# tempDir = ".tmp/annotations"
-
-[[annotation.actions]]
-id = "fix"
-kind = "agent"
-
-[annotation.actions.agent]
-adapter = "claude-code"
-# Built-in adapters ("pi", "claude-code", "opencode", "codex") support an optional `args` string array:
-args = ["--thinking", "high"]
-
-[[annotation.actions]]
-id = "jira"
-label = "Create Jira Ticket"
-kind = "command"
-
-[annotation.actions.command]
-command = ["bun", "./scripts/mock-jira-ticket.ts"]
-cwd = "."
-
-[annotation.actions.command.env]
-JIRA_BASE_URL = "https://example.atlassian.net"
-JIRA_PROJECT_KEY = "WEB"
-
 # -----------------------------------------------------------------------------
 # services
 # -----------------------------------------------------------------------------
@@ -160,7 +137,7 @@ injectPort = true
 # `bindHost` sets the socket interface the child process should bind to (default: "127.0.0.1").
 bindHost = "127.0.0.1"
 # `host` accepts one hostname or a non-empty array of unique hostnames.
-# All domains share the service process, port, path, and annotation queues.
+# All domains share the service process, port, and path.
 # The first supplies DEVHOST_HOST, services.<name>.host references, and the devtools link.
 host = "hello.local.test"
 # host = ["hello.local.test", "alias.local.test"]

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-21 14:22
+last_modified: 2026-10-21 19:42
 status: current
 ---
 
@@ -70,13 +70,13 @@ Worktree support is enabled by default. When configuring repository services or 
 4. Load the selected checkout's manifest and includes. Configured checkouts without a local manifest use their owning stack's manifest, including one outside their repository. An existing checkout-local manifest takes precedence. For new target checkouts, locate it at the same repository-relative path, or at the checkout root under the original filename when the original manifest is outside the repository. Expect the entire managed stack to restart using that configuration's services, commands, environments, directories, and routes. Preserve the ownership path, the original root manifest path; the stack takes the target manifest's name and its other settings.
 5. Explain that one active stack selection is saved per original manifest path and restored before services start on the next run. Invalid targets leave the current stack running; launch or routing failures attempt restoration of the prior stack and selection. Read restoration errors and recover stopped services explicitly. Expect later edits to reload from the selected manifest and includes.
 6. Refresh the checkout picker to discover newly created or deleted worktrees. A missing running checkout stops its repository services and blocks new tools there until an available checkout is selected. Use the standalone recovery page when the toolbar is disabled. A successful switch reloads the current browser URL; when the target lacks that app route, use the proxy's 404 list of available routes.
-7. Report blocked switches for repositories containing externally owned services. Existing terminal sessions retain their launch directories; resume a paused queue to launch an agent in the selected checkout.
+7. Report blocked switches for repositories containing externally owned services. Existing chat sessions keep their original directories; start a new conversation to have the agent work in the selected checkout.
 
 ## 5. Managed Caddy Startup
 
 Start the shared proxy with `devhost caddy start` before launching stacks, and stop it manually with `devhost caddy stop` after its stacks stop.
 
-Set the proxy's listeners in the devhost config file, which every stack on the machine shares: `config.toml` in `$DEVHOST_CONFIG_DIR`, else in `$XDG_CONFIG_HOME/devhost`, else in `~/.config/devhost`. Its `[caddy]` table takes `adminAddress` (default `"127.0.0.1:20197"`), `bindHost` (`"127.0.0.1"`, `"0.0.0.0"`, `"::1"`, or `"::"`; default `"127.0.0.1"`), `http` (default `false`), `httpPort` (default `80`), and `httpsPort` (default `443`). A missing file uses the defaults; unknown keys, out-of-range ports, and an empty admin address are rejected. A manifest `[caddy]` table is rejected with an error naming the config file.
+Set the proxy's listeners in the devhost config file, which every stack on the machine shares: `config.toml` in `$DEVHOST_CONFIG_DIR`, else in `$XDG_CONFIG_HOME/devhost`, else in `~/.config/devhost`. Its `[caddy]` table takes `adminAddress` (default `"127.0.0.1:20197"`), `bindHost` (`"127.0.0.1"`, `"0.0.0.0"`, `"::1"`, or `"::"`; default `"0.0.0.0"`), `http` (default `false`), `httpPort` (default `80`), and `httpsPort` (default `443`). A missing file uses the defaults; unknown keys, out-of-range ports, and an empty admin address are rejected. A manifest `[caddy]` table is rejected with an error naming the config file.
 
 `devhost caddy start` starts the proxy with the config file's settings, and each stack applies them when it starts. Every running stack watches the file: saving it moves the proxy with one reload sent to the admin address it runs, so `adminAddress` changes like any port, and each stack prints its service URLs again. Services, routes, and sessions keep running. An invalid file, or settings Caddy rejects, prints `shared Caddy settings rejected` with the reason and leaves the proxy on the settings it runs; check for that line before reporting a change applied.
 
@@ -84,7 +84,7 @@ The proxy keeps its settings when the last route is removed. `devhost caddy stop
 
 ## 6. Configuration Hot Reload
 
-For manual recovery, restart an individual service to reuse its assigned port. If an automatic port is occupied, choose **Restart Stack** in Services or the recovery overlay. This relaunches all managed services using the last accepted manifest, refreshes automatic ports and their injected references, and retains fixed ports, selected checkouts, control listeners, and terminal sessions. External processes keep running. Check the response and retained logs for launch, routing, or restoration failures before claiming recovery, then retry the action after addressing the failure. A fixed-port conflict requires freeing the port or changing its manifest setting.
+For manual recovery, restart an individual service to reuse its assigned port. If an automatic port is occupied, choose **Restart Stack** in Services or the recovery overlay. This relaunches all managed services using the last accepted manifest, refreshes automatic ports and their injected references, and retains fixed ports, selected checkouts, control listeners, and chat sessions. External processes keep running. Check the response and retained logs for launch, routing, or restoration failures before claiming recovery, then retry the action after addressing the failure. A fixed-port conflict requires freeing the port or changing its manifest setting.
 
 Save service changes to the active checkout's manifest or an included manifest while devhost is running. Files added or deleted under an `includes` glob also change the stack. Wait for `configuration reloaded`; invalid or conflicting edits print `configuration reload rejected` and leave the running stack unchanged.
 
@@ -92,7 +92,7 @@ Define app-owned selections under `[groups]` in included manifests, such as `app
 
 Every setting reloads: `name`, `killZombies`, devtools settings, including chat and page selection, and `[worktrees].enabled` apply without restarting devhost or its services. Running chat sessions keep running when chat is turned off, and reappear when it is turned back on. Turning worktrees on keeps the running checkout and forgets a selection an earlier run saved; turning them off while another checkout runs switches back to the root checkout, whose manifest then applies. Changing `devtools.idleTimeout` takes effect unless `--idle-timeout` is set.
 
-Expect affected services, their dependents, and affected repository groups to restart in dependency order after stopping in reverse order. Compatible automatic ports and saved checkout selections are retained. Changing ports exported through `DEVHOST_PORT_*` can restart otherwise unchanged services. Existing terminal sessions and control connections remain available.
+Expect affected services, their dependents, and affected repository groups to restart in dependency order after stopping in reverse order. Compatible automatic ports and saved checkout selections are retained. Changing ports exported through `DEVHOST_PORT_*` can restart otherwise unchanged services. Existing chat sessions and control connections remain available.
 
 Read launch, routing, and restoration errors when a reload fails. Devhost attempts to restore the previous services and routes. Recover stopped services explicitly if restoration also fails; repair the manifest and save again to retry the desired configuration. Use the selected checkout's manifest and includes after switching.
 
