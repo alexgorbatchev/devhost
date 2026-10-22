@@ -26,12 +26,23 @@ import (
 type reloadLogs struct {
 	mu   sync.Mutex
 	text strings.Builder
+	// onWrite sees each write while the writer still blocks, which is the state a reader of that line meets.
+	onWrite func(string)
 }
 
 func (l *reloadLogs) Write(data []byte) (int, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if l.onWrite != nil {
+		l.onWrite(string(data))
+	}
 	return l.text.Write(data)
+}
+
+func (l *reloadLogs) observe(onWrite func(string)) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.onWrite = onWrite
 }
 func (l *reloadLogs) contains(text string) bool {
 	l.mu.Lock()

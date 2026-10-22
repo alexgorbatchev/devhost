@@ -60,17 +60,25 @@ func TestStartStackRejectsOverlappingManifestInputs(t *testing.T) {
 
 func registeredManifestFiles(t *testing.T, paths caddy.Paths) []string {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(paths.StacksDirectoryPath, strconv.Itoa(os.Getpid())+".json"))
+	files, err := readRegisteredManifestFiles(paths)
 	if err != nil {
 		t.Fatal(err)
+	}
+	return files
+}
+
+func readRegisteredManifestFiles(paths caddy.Paths) ([]string, error) {
+	data, err := os.ReadFile(filepath.Join(paths.StacksDirectoryPath, strconv.Itoa(os.Getpid())+".json"))
+	if err != nil {
+		return nil, err
 	}
 	var record struct {
 		ManifestFiles []string `json:"manifestFiles"`
 	}
 	if err := json.Unmarshal(data, &record); err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
-	return record.ManifestFiles
+	return record.ManifestFiles, nil
 }
 
 func TestManifestReloadReservesAcceptedIncludes(t *testing.T) {
@@ -99,11 +107,24 @@ func TestManifestReloadReservesAcceptedIncludes(t *testing.T) {
 	}
 	route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "reload.localhost_web_2f.json"))
 	assertRestartResponse(t, serverURL(route.DocumentInjectionPort, "/"), "original")
+	// The reload is announced only once it is complete, so a reader that acts on the line already finds the
+	// removed includes released.
+	var announced []string
+	var announcedErr error
+	f.logs.observe(func(text string) {
+		if strings.Contains(text, "configuration reloaded") {
+			announced, announcedErr = readRegisteredManifestFiles(f.paths)
+		}
+	})
 	f.header = header
 	f.write(t, body)
 	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.count("configuration reloaded") == 2 })
-	if files := registeredManifestFiles(t, f.paths); slices.Contains(files, child) || slices.Contains(files, added) {
-		t.Fatalf("removed includes remain reserved: %v", files)
+	f.logs.observe(nil)
+	if announcedErr != nil {
+		t.Fatal(announcedErr)
+	}
+	if slices.Contains(announced, child) || slices.Contains(announced, added) {
+		t.Fatalf("removed includes still reserved when the reload was announced: %v", announced)
 	}
 }
 

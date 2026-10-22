@@ -101,9 +101,11 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err != nil {
 		return err
 	}
+	isReservationFinished := false
 	defer func() {
-		// Retiring old claims can fail after the new configuration is accepted.
-		// Keep its inputs reserved even when that final cleanup reports an error.
+		if isReservationFinished {
+			return
+		}
 		accepted := returnedError == nil || r.configured == &next
 		returnedError = errors.Join(returnedError, finishReservation(accepted))
 	}()
@@ -255,10 +257,16 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 		r.idle.set(resolveIdleTimeout(r.options.IdleTimeout, r.manifest.Devtools))
 	}
 	r.publish()
+	// Retiring old claims can fail after the new configuration is accepted. Its inputs stay reserved either way.
+	cleanupErr := r.releaseClaimsExcept(collectClaimedHosts(r.manifest.Services), manifestFixedPortClaims(*r.manifest))
+	isReservationFinished = true
+	cleanupErr = errors.Join(cleanupErr, finishReservation(true))
+	// Announce the change only once it is complete, so whoever acts on the line finds the retired hosts, ports,
+	// and manifest inputs released.
 	cliout.Log(r.options.LogWriter, r.manifest.Name, change.message)
 	LogServiceURLs(*r.manifest, r.options.LogWriter)
 	logStoppedServices(*r.manifest, r.options.LogWriter)
-	return r.releaseClaimsExcept(collectClaimedHosts(r.manifest.Services), manifestFixedPortClaims(*r.manifest))
+	return cleanupErr
 }
 
 func (r *stackRuntime) installReload(m ResolvedManifest, worktrees *stackWorktrees, order []string, blocked map[string]string) {
