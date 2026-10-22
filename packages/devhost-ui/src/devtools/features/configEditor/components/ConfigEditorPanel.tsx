@@ -55,7 +55,7 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
 
       viewReference.current = createConfigEditorView({
         check: (content: string) => editorReference.current.check(content),
-        content: editorReference.current.content,
+        content: editorReference.current.readContent(),
         label: "Configuration file",
         onChange: (content: string): void => {
           editorReference.current.change(content);
@@ -81,11 +81,11 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
     };
   }, [hasFile]);
 
-  // A render can trail the editor: typing reaches the editor first and the page a task later. Reading the content as
-  // of now keeps an earlier render from putting back text the editor has already moved past.
+  // The editor holds the text being typed, so it takes the text only when something else replaced it. A render can
+  // trail the editor by a task, so the text is read as of now rather than as rendered.
   useEffect(() => {
     viewReference.current?.setContent(editorReference.current.readContent());
-  }, [editor.content]);
+  }, [editor.textReplacements]);
 
   useEffect(() => {
     // The lint panel lists why devhost refused the save.
