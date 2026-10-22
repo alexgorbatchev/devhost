@@ -452,19 +452,32 @@ func TestRunPrintRootCertificateWritesRawCertificate(t *testing.T) {
 	}
 }
 
-func TestRunTrustRemoteRejectsUnsupportedPlatform(t *testing.T) {
-	t.Parallel()
+// The remote trust itself is tested in internal/caddy with its commands
+// injected. Here the only command devhost can find is an ssh that cannot reach
+// the host, so the test never contacts a machine or runs sudo: macOS stops at
+// the certificate fetch, and other platforms are rejected before it.
+func TestRunTrustRemoteReportsItsFailure(t *testing.T) {
+	t.Setenv("AGENT", "0")
+	binDirectoryPath := t.TempDir()
+	t.Setenv("PATH", binDirectoryPath)
+	writeExecutable(t, filepath.Join(binDirectoryPath, "ssh"), strings.Join([]string{
+		"#!/bin/sh",
+		"echo 'ssh: Could not resolve hostname devbox' >&2",
+		"exit 255",
+	}, "\n"))
 
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	exitCode := Run([]string{"caddy", "trust-remote", "devbox"}, "/tmp", &stdout, &stderr)
+	exitCode := Run([]string{"caddy", "trust-remote", "devbox"}, t.TempDir(), &stdout, &stderr)
 	if exitCode != 1 {
 		t.Fatalf("Run(...) exit code = %d, want 1", exitCode)
 	}
-
 	if stdout.String() != "" {
 		t.Fatalf("Run(...) stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "devhost | [ERROR] ") {
+		t.Fatalf("Run(...) stderr = %q, want a reported failure", stderr.String())
 	}
 }
 
