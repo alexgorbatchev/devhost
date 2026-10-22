@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { chromium, type Browser } from "playwright";
 import { fixture_runningChatSnapshot, fixture_savedChatSnapshot } from "./fixtures";
-import { startBuiltDevtoolsHost, waitForChatScroll } from "./helpers";
+import { chooseChatSetting, startBuiltDevtoolsHost, waitForChatScroll } from "./helpers";
 
 test("client navigation and reload keep the open chat and its selected conversation", async () => {
   const host = await startBuiltDevtoolsHost(fixture_savedChatSnapshot);
@@ -13,8 +13,7 @@ test("client navigation and reload keep the open chat and its selected conversat
     await page.goto(host.url);
     await page.getByRole("button", { name: "Chat", exact: true }).click();
     await page.getByRole("button", { name: "Chat Settings" }).click();
-    await page.getByRole("option", { name: "codex · saved-conversation" }).waitFor({ state: "attached" });
-    await page.getByRole("combobox", { name: "Conversation" }).selectOption("saved-conversation");
+    await chooseChatSetting(page, "Conversation", "codex · saved-conversation");
     await page.keyboard.press("Escape");
     await page.getByText("codex · idle", { exact: true }).waitFor();
     await page.getByRole("textbox").fill("Continue this conversation after navigation");
@@ -27,7 +26,10 @@ test("client navigation and reload keep the open chat and its selected conversat
     await page.getByText("codex · idle", { exact: true }).waitFor();
     expect(await page.getByRole("textbox").inputValue()).toBe("Continue this conversation after navigation");
     await page.getByRole("button", { name: "Chat Settings" }).click();
-    expect(await page.getByRole("combobox", { name: "Conversation" }).inputValue()).toBe("saved-conversation");
+    await page
+      .getByRole("combobox", { name: "Conversation" })
+      .getByText("codex · saved-conversation", { exact: true })
+      .waitFor();
     expect(host.chatCommands).toEqual([]);
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Send Message" }).click();
@@ -58,9 +60,8 @@ test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
       await page.goto(host.url);
       await page.getByRole("button", { name: "Chat", exact: true }).click();
       await page.getByRole("button", { name: "Chat Settings" }).click();
-      await page.getByRole("option", { name: "codex · saved-conversation" }).waitFor({ state: "attached" });
-      await page.getByRole("combobox", { name: "Model" }).selectOption("native-model");
-      await page.getByRole("combobox", { name: "Conversation" }).selectOption("saved-conversation");
+      await chooseChatSetting(page, "Model", "Native model");
+      await chooseChatSetting(page, "Conversation", "codex · saved-conversation");
       await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Move Chat To Left" }).click();
       await page.getByRole("textbox").fill("Keep this unsent review after reload");
@@ -81,9 +82,11 @@ test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
       expect(await page.getByRole("textbox").inputValue()).toBe("Keep this unsent review after reload");
       await waitForChatScroll(page, 400);
       await page.getByRole("button", { name: "Chat Settings" }).click();
-      await page.getByRole("option", { name: "codex · saved-conversation" }).waitFor({ state: "attached" });
-      expect(await page.getByRole("combobox", { name: "Conversation" }).inputValue()).toBe("saved-conversation");
-      expect(await page.getByRole("combobox", { name: "Model" }).inputValue()).toBe("native-model");
+      await page
+        .getByRole("combobox", { name: "Conversation" })
+        .getByText("codex · saved-conversation", { exact: true })
+        .waitFor();
+      await page.getByRole("combobox", { name: "Model" }).getByText("Native model", { exact: true }).waitFor();
       await page.keyboard.press("Escape");
       await page.reload();
       await chat.waitFor();

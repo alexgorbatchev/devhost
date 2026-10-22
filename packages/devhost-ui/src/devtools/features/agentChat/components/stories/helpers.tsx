@@ -34,10 +34,20 @@ export async function openSavedChatConversation(canvasElement: HTMLElement): Pro
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
   await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-  await canvas.findByRole("option", { name: "codex · saved-conversation" });
-  await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Conversation" }), "saved-conversation");
+  await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
   await userEvent.keyboard("{Escape}");
   await canvas.findByText("codex · idle");
+}
+
+/** Opens the Chat Settings select named `setting` and clicks its `option`, as a user does. */
+export async function chooseChatSetting(
+  canvas: ReturnType<typeof within>,
+  setting: string,
+  option: string,
+): Promise<void> {
+  await userEvent.click(canvas.getByRole("combobox", { name: setting }));
+  await userEvent.click(await canvas.findByRole("option", { name: option }));
+  await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
 }
 
 export function readChatViewport(panel: HTMLElement): HTMLDivElement {
@@ -189,11 +199,17 @@ export function installChatTargetServer(): VoidFunction {
 export async function readOfferedConversations(canvasElement: HTMLElement): Promise<string[]> {
   const canvas = within(canvasElement);
   await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
-  const conversation = await canvas.findByRole("combobox", { name: "Conversation" });
-  await waitFor(() => expect(within(conversation).getAllByRole("option").length).toBeGreaterThan(1));
-  const labels = within(conversation)
+  const dialog = await canvas.findByRole("dialog", { name: "Chat Settings" });
+  await waitFor(() => expect(dialog).toBeVisible());
+  await userEvent.click(within(dialog).getByRole("combobox", { name: "Conversation" }));
+  const listbox = await canvas.findByRole("listbox");
+  await waitFor(() => expect(within(listbox).getAllByRole("option").length).toBeGreaterThan(1));
+  const labels = within(listbox)
     .getAllByRole("option")
     .map((option) => option.textContent ?? "");
+  // The first Escape closes the list, the second the dialog.
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
   await userEvent.keyboard("{Escape}");
   return labels;
 }
@@ -423,6 +439,25 @@ export function ShadowPageChatScene({ hasNativeLayers = false }: IShadowPageChat
       )}
     </div>
   );
+}
+
+/** Serves a catalog whose Claude Code harness discovery found but cannot start. */
+export function installUnavailableHarnessCatalog(): VoidFunction {
+  const restoreCatalog = installPageChatCatalog();
+  const catalogFetch = globalThis.fetch;
+  const fetch: FetchFunction = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (url.pathname === "/__devhost__/chat/harnesses")
+      return Response.json({
+        harnesses: [
+          { id: "codex", label: "Codex", available: true, models: [] },
+          { id: "claude-code", label: "Claude Code", available: false, models: [], error: "claude was not found" },
+        ],
+      });
+    return catalogFetch(input, init);
+  };
+  Reflect.set(globalThis, "fetch", fetch);
+  return restoreCatalog;
 }
 
 export function installPageChatCatalog(): VoidFunction {

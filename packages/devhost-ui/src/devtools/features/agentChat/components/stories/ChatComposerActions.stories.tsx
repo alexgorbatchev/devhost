@@ -1,7 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { ChatComposerActions } from "../ChatComposerActions";
-import { ChatReloadScene, deliverChatStatus, installChatReloadServer, openSavedChatConversation } from "./helpers";
+import {
+  ChatReloadScene,
+  chooseChatSetting,
+  deliverChatStatus,
+  installChatReloadServer,
+  openSavedChatConversation,
+} from "./helpers";
 
 const meta: Meta<typeof ChatComposerActions> = {
   component: ChatComposerActions,
@@ -28,10 +34,10 @@ export const NewConversationStaysSelectedAfterReload: Story = {
     await expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
     const conversation = canvas.getByRole("combobox", { name: "Conversation" });
-    expect(conversation).toHaveValue("new-conversation-1");
+    expect(conversation).toHaveTextContent("codex · new-conversation-1");
     expect(within(canvas.getByRole("dialog")).queryByRole("button", { name: "New Conversation" })).toBeNull();
     // Starting a new conversation leaves the previous one available for explicit selection.
-    await userEvent.selectOptions(conversation, "saved-conversation");
+    await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
     await userEvent.keyboard("{Escape}");
     await canvas.findByText("codex · idle");
     await waitFor(() => expect(canvas.queryByText("Chat with your configured coding agent.")).toBeNull());

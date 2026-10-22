@@ -154,3 +154,10 @@ export async function waitForChatScroll(page: Page, top: number): Promise<void> 
     return root?.querySelector('[data-slot="aui_thread-viewport"]')?.scrollTop === expected;
   }, top);
 }
+
+/** Opens the Chat Settings select named `setting` and clicks its `option`, as a user does. */
+export async function chooseChatSetting(page: Page, setting: string, option: string): Promise<void> {
+  await page.getByRole("combobox", { name: setting }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+  await page.getByRole("listbox").waitFor({ state: "detached" });
+}

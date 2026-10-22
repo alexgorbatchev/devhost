@@ -7,20 +7,51 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  NativeSelect,
-  NativeSelectOption,
+  Field,
+  FieldGroup,
+  FieldLabel,
+  PortalProvider,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@alexgorbatchev/shadcn";
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
-import type { ChangeEvent, JSX } from "react";
+import { useId, type JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
-import type { IAgentChatController } from "../types";
+import type { IAgentChatController, IChatSession } from "../types";
 
 interface IChatSettingsProps {
   chat: IAgentChatController;
   isBusy: boolean;
 }
+
+interface IChatSettingItem {
+  value: string | null;
+  label: string;
+  isDisabled?: boolean;
+}
+
 export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element {
+  const harnessId = useId();
+  const modelId = useId();
+  const conversationId = useId();
   const harness = chat.harnesses.find((candidate) => candidate.id === chat.selectedHarness);
+  const harnessItems: IChatSettingItem[] = chat.harnesses.map((candidate) => ({
+    value: candidate.id,
+    label: candidate.available ? candidate.label : `${candidate.label} (unavailable)`,
+    isDisabled: !candidate.available,
+  }));
+  // A null value is the native default: the harness picks its configured model.
+  const modelItems: IChatSettingItem[] = [
+    { value: null, label: "Configured default" },
+    ...(harness?.models.map((model) => ({ value: model.id, label: model.label })) ?? []),
+  ];
+  const conversationItems: IChatSettingItem[] = [
+    { value: null, label: "New conversation" },
+    ...chat.sessions.map((session) => ({ value: session.id, label: formatConversationLabel(session) })),
+  ];
   return (
     <Dialog>
       <DialogTrigger
@@ -31,84 +62,106 @@ export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element 
         }
       />
       <DialogContent>
-        <DensityProvider density="comfortable">
-          <DialogHeader>
-            <DialogTitle>Chat Settings</DialogTitle>
-            <DialogDescription>Choose Your Harness, Model, And Conversation.</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3">
-            <label className="min-w-0">
-              Harness
-              <NativeSelect
-                density="comfortable"
-                aria-label="Harness"
-                value={chat.selectedHarness}
-                disabled={isBusy || chat.isCatalogLoading}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                  const chosen = chat.harnesses.find((candidate) => candidate.id === event.currentTarget.value);
-                  if (chosen) chat.setSelectedHarness(chosen.id);
+        {/*
+          The selects' lists portal into the dialog's own portal node, which the modal dialog counts as inside it.
+          Chat's portal container would place them beside the dialog, which hides a list that is already mounted
+          when the dialog opens from assistive technology and pointer input.
+        */}
+        <PortalProvider container={undefined}>
+          <DensityProvider density="comfortable">
+            <DialogHeader>
+              <DialogTitle>Chat Settings</DialogTitle>
+              <DialogDescription>Choose Your Harness, Model, And Conversation.</DialogDescription>
+            </DialogHeader>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor={harnessId}>Harness</FieldLabel>
+                <Select
+                  items={harnessItems}
+                  value={chat.selectedHarness}
+                  disabled={isBusy || chat.isCatalogLoading}
+                  onValueChange={(value) => {
+                    const chosen = chat.harnesses.find((candidate) => candidate.id === value);
+                    if (chosen) chat.setSelectedHarness(chosen.id);
+                  }}
+                >
+                  <SelectTrigger id={harnessId}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {harnessItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value} disabled={item.isDisabled}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={modelId}>Model</FieldLabel>
+                <Select
+                  items={modelItems}
+                  value={chat.selectedModel || null}
+                  disabled={isBusy || chat.isCatalogLoading || !harness?.available}
+                  onValueChange={(value) => chat.setSelectedModel(value ?? "")}
+                >
+                  <SelectTrigger id={modelId}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelItems.map((item) => (
+                      <SelectItem key={item.value ?? ""} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={conversationId}>Conversation</FieldLabel>
+                <Select
+                  items={conversationItems}
+                  value={chat.session?.id ?? null}
+                  disabled={isBusy}
+                  onValueChange={(value) => {
+                    const session = chat.sessions.find((candidate) => candidate.id === value);
+                    if (session) void chat.resumeSession(session);
+                    else void chat.newSession();
+                  }}
+                >
+                  <SelectTrigger id={conversationId}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {conversationItems.map((item) => (
+                      <SelectItem key={item.value ?? ""} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={chat.isPreparing || chat.isCatalogLoading}
+                onClick={() => {
+                  void chat.refreshCatalog();
                 }}
               >
-                {chat.harnesses.map((candidate) => (
-                  <NativeSelectOption key={candidate.id} value={candidate.id} disabled={!candidate.available}>
-                    {candidate.label}
-                    {candidate.available ? "" : " (unavailable)"}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </label>
-            <label className="min-w-0">
-              Model
-              <NativeSelect
-                density="comfortable"
-                aria-label="Model"
-                value={chat.selectedModel}
-                disabled={isBusy || chat.isCatalogLoading || !harness?.available}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => chat.setSelectedModel(event.currentTarget.value)}
-              >
-                <NativeSelectOption value="">Configured default</NativeSelectOption>
-                {harness?.models.map((model) => (
-                  <NativeSelectOption key={model.id} value={model.id}>
-                    {model.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </label>
-            <label className="col-span-2">
-              Conversation
-              <NativeSelect
-                density="comfortable"
-                aria-label="Conversation"
-                value={chat.session?.id ?? ""}
-                disabled={isBusy}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                  const session = chat.sessions.find((candidate) => candidate.id === event.currentTarget.value);
-                  if (session) void chat.resumeSession(session);
-                  else void chat.newSession();
-                }}
-              >
-                <NativeSelectOption value="">New conversation</NativeSelectOption>
-                {chat.sessions.map((session) => (
-                  <NativeSelectOption key={session.id} value={session.id}>
-                    {session.harness} · {session.id}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </label>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={chat.isPreparing || chat.isCatalogLoading}
-              onClick={() => {
-                void chat.refreshCatalog();
-              }}
-            >
-              <Icon glyph={RefreshCwIcon} />
-              Refresh Harnesses
-            </Button>
-          </div>
-        </DensityProvider>
+                <Icon glyph={RefreshCwIcon} />
+                Refresh Harnesses
+              </Button>
+            </FieldGroup>
+          </DensityProvider>
+        </PortalProvider>
       </DialogContent>
     </Dialog>
   );
+}
+
+// A closed conversation stays listed: choosing it resumes the native session in a new process.
+function formatConversationLabel(session: IChatSession): string {
+  const label = `${session.harness} · ${session.id}`;
+  return session.status === "closed" ? `${label} · closed` : label;
 }

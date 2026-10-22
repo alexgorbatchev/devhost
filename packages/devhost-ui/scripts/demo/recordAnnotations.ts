@@ -28,8 +28,14 @@ export async function recordAnnotations(
   await chat.waitFor();
   await clickWithIndicator(page, chat.getByRole("button", { name: "Chat Settings", exact: true }));
   const settings = page.getByRole("dialog", { name: "Chat Settings", exact: true });
-  await settings.getByRole("combobox", { name: "Harness", exact: true }).selectOption("codex");
-  await settings.getByRole("combobox", { name: "Model", exact: true }).selectOption("");
+  for (const [setting, option] of [
+    ["Harness", "Codex"],
+    ["Model", "Configured default"],
+  ]) {
+    await clickWithIndicator(page, settings.getByRole("combobox", { name: setting, exact: true }));
+    await clickWithIndicator(page, page.getByRole("option", { name: option, exact: true }));
+    await page.getByRole("listbox").waitFor({ state: "detached" });
+  }
   await page.keyboard.press("Escape");
   const sourcePath = runtime.env.DEVHOST_DEMO_EDIT_FILE;
   assert(sourcePath);
