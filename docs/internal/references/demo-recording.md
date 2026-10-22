@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-21 11:25
+last_modified: 2026-10-21 16:18
 status: current
 ---
 
@@ -209,7 +209,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Composer stays at the panel bottom; settings dialog; collapsed sent context and contrasting user bubbles                                                | `guides/annotations.md`                                               | **No demo** |
 | Composer focus on open and new page context; replies followed only at the bottom; devtools keys kept from host shortcuts; Escape in composer interrupts | `guides/annotations.md`; `guides/devtools.md`; `architecture/chat.md` | **No demo** |
 | Select page and devhost UI elements with source metadata; host-page selection plugins                                                                   | `guides/annotations.md`, "Select page context"                        | **No demo** |
-| Drawing tools above devhost UI; move arrows, lines and boxes; retain annotated chat in snapshots; remove context                                        | `guides/annotations.md`, "Draw over the page"                         | **No demo** |
+| Drawing and selection above page/devhost native popovers and modal dialogs; send while the target stays open; retain annotated surfaces in snapshots    | `guides/annotations.md`, "Draw over the page"                         | **No demo** |
 | Share Tab beside Send; reuse an active share for snapshots; clear context after confirmed submission                                                    | `guides/annotations.md`, "Share one tab snapshot"                     | **No demo** |
 | Source-locator highlights through the retained instance control API                                                                                     | `guides/react-highlight.md`                                           | **No demo** |
 

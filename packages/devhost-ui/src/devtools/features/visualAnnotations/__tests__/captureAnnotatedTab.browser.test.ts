@@ -2,6 +2,38 @@ import { expect, test, vi } from "vitest";
 import { captureAnnotatedTab } from "../captureAnnotatedTab";
 import { createChatCaptureFixture, createSharedTabFixture } from "./helpers";
 import { createDomAnnotationSelectionCandidateForElement } from "../../annotationComposer/createDomAnnotationSelectionCandidateForElement";
+import { placeElement } from "../../../../../test-support/hostPageUtils";
+
+test("retains an annotated native popover outside the bounds of its hidden devtools ancestor", async () => {
+  const fixture = createChatCaptureFixture();
+  const popover = document.createElement("section");
+  popover.popover = "auto";
+  placeElement(popover, { x: 400, y: 20, width: 200, height: 60 });
+  const button = document.createElement("button");
+  button.textContent = "Native popover target";
+  placeElement(button, { x: 420, y: 30, width: 160, height: 30 });
+  popover.append(button);
+  fixture.chat.append(popover);
+  popover.showPopover();
+  const capture = captureAnnotatedTab({
+    ...fixture,
+    selectedTargets: [
+      { markerNumber: 1, candidate: createDomAnnotationSelectionCandidateForElement({ element: button }) },
+    ],
+  });
+  try {
+    await fixture.sampling;
+    fixture.observer.disconnect();
+    expect(getComputedStyle(fixture.chat).visibility).toBe("hidden");
+    expect(getComputedStyle(button).visibility).toBe("visible");
+    expect(popover.matches(":popover-open")).toBe(true);
+    await capture;
+    expect(getComputedStyle(button).visibility).toBe("visible");
+  } finally {
+    await capture;
+    popover.hidePopover();
+  }
+});
 
 test("keeps annotated chat visible while sampling and still hides annotation tools", async () => {
   const fixture = createChatCaptureFixture();

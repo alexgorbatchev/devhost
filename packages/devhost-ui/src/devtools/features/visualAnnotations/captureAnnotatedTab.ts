@@ -5,6 +5,7 @@ import type { IRectSnapshot } from "../annotationComposer/types";
 
 interface IAnnotatedTabCaptureOptions extends Omit<ITabCaptureOptions, "prepare"> {
   root: HTMLElement;
+  annotationRoot?: HTMLElement | null;
   selectedTargets?: readonly ISelectedAnnotationTarget[];
   shapes?: readonly IAnnotationShape[];
 }
@@ -13,11 +14,21 @@ const annotationStrokePadding: number = 3;
 
 export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions): Promise<ITabSnapshot> {
   const includedSurfaces: Element[] = [];
+  const roots = new Set([options.root, ...(options.annotationRoot ? [options.annotationRoot] : [])]);
   try {
     const bounds = readAnnotationBounds(options);
-    for (const surface of options.root.querySelectorAll(
-      "[data-devhost-capture-exclude]:not([data-devhost-annotation-controls]):not([data-devhost-capture-include])",
-    )) {
+    const surfaces = new Set(
+      Array.from(roots).flatMap((root) =>
+        Array.from(root.querySelectorAll("[data-devhost-capture-exclude], :popover-open, :modal, [role=dialog]")),
+      ),
+    );
+    for (const surface of surfaces) {
+      if (
+        surface === options.annotationRoot ||
+        surface.closest("[data-devhost-annotation-controls]") !== null ||
+        surface.hasAttribute("data-devhost-capture-include")
+      )
+        continue;
       const rectangle = surface.getBoundingClientRect();
       if (bounds.some((annotation) => intersects(annotation, rectangle))) includedSurfaces.push(surface);
     }
@@ -25,7 +36,7 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
       ...options,
       prepare: async () => {
         for (const surface of includedSurfaces) surface.setAttribute("data-devhost-capture-include", "");
-        options.root.setAttribute("data-devhost-capturing", "");
+        for (const root of roots) root.setAttribute("data-devhost-capturing", "");
         const timeout = AbortSignal.timeout(10_000);
         const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
         await waitForPaint(signal);
@@ -33,7 +44,7 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
       },
     });
   } finally {
-    options.root.removeAttribute("data-devhost-capturing");
+    for (const root of roots) root.removeAttribute("data-devhost-capturing");
     for (const surface of includedSurfaces) surface.removeAttribute("data-devhost-capture-include");
   }
 }

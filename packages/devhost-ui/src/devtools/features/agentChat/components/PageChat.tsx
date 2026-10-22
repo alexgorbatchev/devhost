@@ -19,6 +19,7 @@ import { PageAnnotationToolbar } from "./PageAnnotationToolbar";
 import { PageContextList } from "./PageContextList";
 import { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
 import type { DevtoolsSettingsStore } from "../../../shared/types";
+import { AnnotationTopLayer } from "../../../shared/components/AnnotationTopLayer";
 
 interface IPageChatProps {
   settingsStore?: DevtoolsSettingsStore;
@@ -38,6 +39,7 @@ export function PageChat({
   const sharing = useTabShare();
   // Portals inherit from this interactive surface rather than the passive full-viewport devtools root.
   const portalReference = useRef<HTMLDivElement | null>(null);
+  const annotationReference = useRef<HTMLDivElement | null>(null);
   const [sessionPageURL] = useState(() => window.location.href);
   const plugin = useSyncExternalStore(subscribeToAnnotationSelectionPlugins, readActiveAnnotationSelectionPlugin);
   const [tool, setTool] = useState<AnnotationShapeKind | null>(null);
@@ -49,13 +51,15 @@ export function PageChat({
     isDisabled: !isSelectionEnabled || tool !== null || isCapturing,
   });
   const { selectedTargets, stopSelection, clearSelection, removeSelection, isSelectionMode } = selection;
-  useEffect(() => () => captureReference.current?.abort(), []);
+  useEffect(() => () => captureReference.current?.abort(), [sharing.stream]);
   useEffect(() => {
     if (selectedTargets.length > 0) onOpenChange(true);
   }, [onOpenChange, selectedTargets.length]);
   useEffect(() => {
     const stop = (event: KeyboardEvent): void => {
       if (event.key === "Escape" && (tool !== null || isSelectionMode)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         setTool(null);
         stopSelection();
       }
@@ -88,6 +92,7 @@ export function PageChat({
               sharedStream: sharing.stream,
               selectedTargets,
               shapes,
+              annotationRoot: annotationReference.current,
             });
             setIsCapturing(true);
             stopSelection();
@@ -118,58 +123,63 @@ export function PageChat({
   const composerInputReference = useChatComposerFocus({ isOpen, contextCount: selectedTargets.length + shapes.length });
   return (
     <PortalProvider container={portalReference}>
-      <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
       <DensityProvider density="compact">
-        <AnnotationSelectionHint
-          isVisible={isSelectionMode || tool !== null}
-          text={tool ? `Drag To Draw A ${tool}. Esc To Cancel.` : "Click Elements To Add Context. Esc To Finish."}
-        />
-        <AnnotationSelectionOverlay {...selection} />
-        <AnnotationCanvas
-          shapes={shapes}
-          tool={tool}
-          isDisabled={isContextDisabled || isSelectionMode}
-          onMove={(moved) => setShapes((current) => current.map((shape) => (shape.id === moved.id ? moved : shape)))}
-          onDraw={(shape) => {
-            setShapes((current) => [...current, shape]);
-            setTool(null);
-            onOpenChange(true);
-          }}
-        />
-        {isSelectionEnabled && (isOpen || isSelectionMode || tool !== null) ? (
-          <PageAnnotationToolbar
+        <AnnotationTopLayer
+          ref={annotationReference}
+          isVisible={isOpen || isSelectionMode || tool !== null || selectedTargets.length > 0 || shapes.length > 0}
+        >
+          <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
+          <AnnotationSelectionHint
+            isVisible={isSelectionMode || tool !== null}
+            text={tool ? `Drag To Draw A ${tool}. Esc To Cancel.` : "Click Elements To Add Context. Esc To Finish."}
+          />
+          <AnnotationSelectionOverlay {...selection} />
+          <AnnotationCanvas
+            shapes={shapes}
             tool={tool}
-            isSelecting={isSelectionMode}
-            isDisabled={isContextDisabled}
-            canUndo={shapes.length > 0}
-            onUndo={() => setShapes((current) => current.slice(0, -1))}
-            onToolChange={(next) => {
-              setTool(next === "select" ? null : next);
-              if (next === "select") selection.startSelection();
-              else stopSelection();
+            isDisabled={isContextDisabled || isSelectionMode}
+            onMove={(moved) => setShapes((current) => current.map((shape) => (shape.id === moved.id ? moved : shape)))}
+            onDraw={(shape) => {
+              setShapes((current) => [...current, shape]);
+              setTool(null);
+              onOpenChange(true);
             }}
           />
-        ) : null}
-        <AgentChatPanel
-          sharing={sharing}
-          chat={chat}
-          composerInputRef={composerInputReference}
-          isOpen={isOpen}
-          onClose={() => {
-            stopSelection();
-            setTool(null);
-            onOpenChange(false);
-          }}
-        >
-          <PageContextList
-            targets={selectedTargets}
-            shapes={shapes}
-            isDisabled={isContextDisabled}
-            onRemoveTarget={selection.removeSelection}
-            onRemoveShape={(id) => setShapes((current) => current.filter((shape) => shape.id !== id))}
-            onClear={clearContext}
-          />
-        </AgentChatPanel>
+          {isSelectionEnabled && (isOpen || isSelectionMode || tool !== null) ? (
+            <PageAnnotationToolbar
+              tool={tool}
+              isSelecting={isSelectionMode}
+              isDisabled={isContextDisabled}
+              canUndo={shapes.length > 0}
+              onUndo={() => setShapes((current) => current.slice(0, -1))}
+              onToolChange={(next) => {
+                setTool(next === "select" ? null : next);
+                if (next === "select") selection.startSelection();
+                else stopSelection();
+              }}
+            />
+          ) : null}
+          <AgentChatPanel
+            sharing={sharing}
+            chat={chat}
+            composerInputRef={composerInputReference}
+            isOpen={isOpen}
+            onClose={() => {
+              stopSelection();
+              setTool(null);
+              onOpenChange(false);
+            }}
+          >
+            <PageContextList
+              targets={selectedTargets}
+              shapes={shapes}
+              isDisabled={isContextDisabled}
+              onRemoveTarget={selection.removeSelection}
+              onRemoveShape={(id) => setShapes((current) => current.filter((shape) => shape.id !== id))}
+              onClear={clearContext}
+            />
+          </AgentChatPanel>
+        </AnnotationTopLayer>
       </DensityProvider>
     </PortalProvider>
   );

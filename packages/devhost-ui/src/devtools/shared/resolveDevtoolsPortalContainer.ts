@@ -3,11 +3,12 @@ import { DEVTOOLS_ROOT_ID } from "./constants";
 type DevtoolsTree = Document | ShadowRoot;
 
 /**
- * Finds the devtools root (`DevtoolsTopLayer`) in the tree `anchorElement` is rendered in: the devtools shadow root
- * in production. Portaling anywhere else would leak devtools markup into the host page, so a missing root is an
- * error.
+ * Uses the enclosing annotation layer when present; otherwise finds DevtoolsTopLayer in the anchor's tree.
+ * Both stay in an isolated devtools tree, including when the annotation mount follows a host modal or popover.
  */
 export function resolveDevtoolsPortalContainer(anchorElement: HTMLElement): HTMLElement {
+  const annotationLayer = anchorElement.closest<HTMLElement>("[data-devhost-annotation-layer]");
+  if (annotationLayer !== null) return annotationLayer;
   const rootNode: Node = anchorElement.getRootNode();
   const tree: DevtoolsTree = rootNode instanceof ShadowRoot ? rootNode : anchorElement.ownerDocument;
   const devtoolsRoot: HTMLElement | null = tree.getElementById(DEVTOOLS_ROOT_ID);

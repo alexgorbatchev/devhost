@@ -143,6 +143,76 @@ export const AnnotateDevhostUI: Story = {
   },
 };
 
+export const AnnotateNativePopover: Story = {
+  render: () => <ShadowPageChatScene hasNativeLayers />,
+  play: async ({ canvasElement }) => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const tools = canvas.getByRole("toolbar", { name: "Page Annotation Tools" });
+    await userEvent.click(canvas.getByRole("button", { name: "Move Chat To Left" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Native panel" }));
+    const panel = await canvas.findByRole("region", { name: "Native panel" });
+    await waitFor(() => expect(panel).toBeVisible());
+    const bounds = panel.getBoundingClientRect();
+    await userEvent.click(within(tools).getByRole("button", { name: "Box" }));
+    expect(panel.matches(":popover-open")).toBe(true);
+    await dragWithMouse({ x: bounds.left + 8, y: bounds.top + 8 }, { x: bounds.right - 8, y: bounds.bottom - 8 });
+    await expect(canvas.getByRole("img", { name: "box annotation" })).toBeVisible();
+    expect(panel.matches(":popover-open")).toBe(true);
+    expect(panel.getBoundingClientRect().toJSON()).toEqual(bounds.toJSON());
+    await userEvent.click(within(tools).getByRole("button", { name: "Select Elements" }));
+    await userEvent.click(within(panel).getByRole("button", { name: "Panel counter: 0" }));
+    await expect(canvas.getByRole("region", { name: "Page context" })).toHaveTextContent("#1");
+    await userEvent.keyboard("{Escape}");
+    expect(panel.matches(":popover-open")).toBe(true);
+    await userEvent.click(within(tools).getByRole("button", { name: "Undo Drawing" }));
+    await userEvent.click(within(panel).getByRole("button", { name: "Panel counter: 0" }));
+    await expect(within(panel).getByRole("button", { name: "Panel counter: 1" })).toBeVisible();
+    await expect(canvas.queryByRole("img", { name: "box annotation" })).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(panel.matches(":popover-open")).toBe(false));
+  },
+};
+
+export const AnnotateNativeModal: Story = {
+  render: () => <ShadowPageChatScene hasNativeLayers />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const devtools = await readDevtoolsStoryShadowCanvas(canvasElement);
+    const tools = devtools.getByRole("toolbar", { name: "Page Annotation Tools" });
+    const surface = devtools.getByRole("img", { name: "Annotation drawing canvas" });
+    const panel = devtools.getByRole("complementary", { name: "Agent chat" });
+    await userEvent.click(canvas.getByRole("button", { name: "Open host modal" }));
+    const modal = canvas.getByRole("dialog", { name: "Host modal" });
+    await waitFor(() => expect(modal.matches(":modal")).toBe(true));
+    const bounds = modal.getBoundingClientRect();
+    const toolBounds = tools.getBoundingClientRect();
+    // The annotation tools must receive real pointer input outside the active modal's visible rectangle.
+    expect(document.elementFromPoint(toolBounds.left + 4, toolBounds.top + 4)).not.toBe(modal);
+    await userEvent.click(within(tools).getByRole("button", { name: "Box" }));
+    const tree = surface.getRootNode() as ShadowRoot;
+    expect(tree).toBeInstanceOf(ShadowRoot);
+    expect(tree.elementFromPoint(bounds.left + 4, bounds.top + 4)).toBe(surface);
+    await dragWithMouse({ x: bounds.left + 4, y: bounds.top + 4 }, { x: bounds.right - 4, y: bounds.bottom - 4 });
+    await expect(within(surface).getByRole("img", { name: "box annotation" })).toBeVisible();
+    await userEvent.click(within(tools).getByRole("button", { name: "Select Elements" }));
+    await userEvent.click(within(modal).getByRole("button", { name: "Modal counter: 0" }));
+    await expect(within(panel).getByRole("region", { name: "Page context" })).toHaveTextContent("#1");
+    const composer = within(panel).getByRole("textbox", { name: "Message input" });
+    await userEvent.keyboard("{Escape}");
+    expect(modal.matches(":modal")).toBe(true);
+    expect(modal.getBoundingClientRect().toJSON()).toEqual(bounds.toJSON());
+    await userEvent.fill(composer, "Review this modal.");
+    await expect(composer).toHaveValue("Review this modal.");
+    await userEvent.click(within(modal).getByRole("button", { name: "Modal counter: 0" }));
+    await expect(within(modal).getByRole("button", { name: "Modal counter: 1" })).toBeVisible();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(modal.matches(":modal")).toBe(false));
+    await waitFor(() => expect(devtools.getByRole("toolbar", { name: "Page Annotation Tools" })).toBe(tools));
+    await userEvent.click(within(tools).getByRole("button", { name: "Undo Drawing" }));
+    await expect(devtools.queryByRole("img", { name: "box annotation" })).toBeNull();
+  },
+};
+
 export const OpeningChatFocusesComposer: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

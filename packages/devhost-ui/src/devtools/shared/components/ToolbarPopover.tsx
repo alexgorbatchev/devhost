@@ -1,7 +1,6 @@
 import { useId, useState, type JSX, type ReactNode, type Ref, type ToggleEvent } from "react";
 
 import { cn } from "../../../lib/utils";
-import { toolbarPopoverIdContext } from "../toolbarPopoverIdContext";
 
 type ToolbarPopoverTriggerAppearance = "button" | "segment";
 type ToolbarPopoverTriggerTone = "alert" | "default";
@@ -99,9 +98,7 @@ export function ToolbarPopover({
           {headerEndEnhancer}
         </header>
         {notice}
-        <toolbarPopoverIdContext.Provider value={panelId}>
-          <div className="min-h-0 overflow-auto">{children}</div>
-        </toolbarPopoverIdContext.Provider>
+        <div className="min-h-0 overflow-auto">{children}</div>
       </section>
     </span>
   );

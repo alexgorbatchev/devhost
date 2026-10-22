@@ -11,17 +11,38 @@ export async function readSharedTabFrame(
   const video = document.createElement("video");
   video.muted = true;
   video.playsInline = true;
-  video.srcObject = stream;
   const timeout = AbortSignal.timeout(captureFrameTimeoutMs);
   const lifecycle = new AbortController();
   const cancellation = AbortSignal.any([lifecycle.signal, timeout, ...(signal ? [signal] : [])]);
+  let readerTrack: MediaStreamTrack | null = null;
   try {
-    await waitForFrame(video, stream, cancellation);
+    const sourceTrack = stream.getVideoTracks()[0];
+    if (sourceTrack === undefined) throw new Error("Tab sharing ended before the screenshot was captured.");
+    readerTrack = sourceTrack.clone();
+    const readerStream = new MediaStream([readerTrack]);
+    const constraints = readerTrack.getConstraints();
+    const frameRate: ConstrainDoubleRange =
+      typeof constraints.frameRate === "object" ? constraints.frameRate : { ideal: constraints.frameRate };
+    // A static display may stop delivering frames. Constrain only this reader's clone so there is always a fresh
+    // frame after snapshot preparation, without changing or stopping an explicitly opened share.
+    await readerTrack.applyConstraints({
+      ...constraints,
+      frameRate: { ...frameRate, min: Math.max(1, frameRate.min ?? 0) },
+    });
+    cancellation.throwIfAborted();
+    video.srcObject = readerStream;
+    await waitForFrame(video, readerStream, cancellation);
     if (prepare) {
       // Start playback before changing the page, then consume the frame produced by that change.
       await prepare();
       cancellation.throwIfAborted();
-      await waitForFrame(video, stream, cancellation, performance.now());
+      // Reattach the video sink after preparation to request a fresh source frame, even for a static tab.
+      // Keep the shared tracks running; only this snapshot reader is restarted.
+      const minimumFrameTime = performance.now();
+      video.pause();
+      video.srcObject = null;
+      video.srcObject = readerStream;
+      await waitForFrame(video, readerStream, cancellation, minimumFrameTime);
     }
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
@@ -36,6 +57,7 @@ export async function readSharedTabFrame(
     lifecycle.abort();
     video.pause();
     video.srcObject = null;
+    readerTrack?.stop();
   }
 }
 
