@@ -44,9 +44,7 @@ func connectChatAckTest(t *testing.T, s *ControlServer, session *chatSession) *w
 
 func startChatAckTest(t *testing.T) (*ControlServer, *chatSession, *websocket.Conn) {
 	t.Helper()
-	s := startChatControlServer(t)
-	fixture := chatTestStore(t)
-	s.chat.command = fixture.command
+	s := startChatControlServer(t, chatHelperCommand(t))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	session, err := s.chat.start(ctx, chatSessionRequest{Harness: chatCodex}, s.projectRootPath)

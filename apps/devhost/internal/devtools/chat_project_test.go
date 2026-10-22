@@ -14,9 +14,7 @@ import (
 )
 
 func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
-	s := startChatControlServer(t)
-	fixture := chatTestStore(t)
-	s.chat.command = fixture.command
+	s := startChatControlServer(t, chatHelperCommand(t))
 	firstRoot, secondRoot := s.projectRootPath, t.TempDir()
 	var current atomic.Value
 	current.Store(firstRoot)

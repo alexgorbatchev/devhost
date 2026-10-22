@@ -13,9 +13,12 @@ import (
 	"time"
 )
 
-func startChatControlServer(t *testing.T) *ControlServer {
+// startChatControlServer starts a chat-enabled server whose native harnesses command starts: chatHelperCommand(t) for
+// a test that runs sessions, refuseChatHarness(t) for one that must start none.
+func startChatControlServer(t *testing.T, command chatCommandFactory) *ControlServer {
 	t.Helper()
 	s, err := StartControlServer(StartControlServerOptions{
+		chatCommand:       command,
 		FeatureToggles:    FeatureToggles{ChatEnabled: true},
 		ProjectRootPath:   t.TempDir(),
 		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil },
@@ -23,7 +26,6 @@ func startChatControlServer(t *testing.T) *ControlServer {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.chat.command = refuseChatHarness(t)
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
@@ -33,7 +35,7 @@ func startChatControlServer(t *testing.T) *ControlServer {
 }
 
 // refuseChatHarness stands in for every native harness a test does not provide, so no test runs the machine's codex
-// or claude: a start fails, and the test with it. A test that needs a harness installs chatTestStore's command.
+// or claude: a start fails, and the test with it. A test that needs a harness passes chatHelperCommand(t).
 func refuseChatHarness(t *testing.T) chatCommandFactory {
 	return func(_ context.Context, name string, args ...string) *exec.Cmd {
 		t.Errorf("started native %s %v, which the test does not provide", name, args)
@@ -42,9 +44,7 @@ func refuseChatHarness(t *testing.T) chatCommandFactory {
 }
 
 func TestChatWebsocketReplayPendingResponsesAndShutdown(t *testing.T) {
-	s := startChatControlServer(t)
-	fixture := chatTestStore(t)
-	s.chat.command = fixture.command
+	s := startChatControlServer(t, chatHelperCommand(t))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	session, err := s.chat.start(ctx, chatSessionRequest{Harness: chatCodex}, s.projectRootPath)
@@ -119,7 +119,7 @@ func TestChatWebsocketReplayPendingResponsesAndShutdown(t *testing.T) {
 
 func TestChatRoutesValidateRequestsBeforeStartingClients(t *testing.T) {
 	t.Parallel()
-	s := startChatControlServer(t)
+	s := startChatControlServer(t, refuseChatHarness(t))
 	base := fmt.Sprintf("http://127.0.0.1:%d", s.Port())
 	tests := []struct {
 		name, method, path, origin, body string
@@ -176,7 +176,7 @@ func TestChatSessionSocketRequiresAPageOrigin(t *testing.T) {
 }
 
 func TestChatReplacesObsoleteTerminalRoutes(t *testing.T) {
-	s := startChatControlServer(t)
+	s := startChatControlServer(t, refuseChatHarness(t))
 	for _, path := range []string{"/terminal-sessions", "/ws/terminal", "/xterm.css", "/annotation-queues", "/ws/annotation-queues"} {
 		response := mustGet(t, serverURL(s.Port(), controlPathPrefix+path))
 		body := readResponseText(t, response)

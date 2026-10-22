@@ -159,15 +159,14 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 	}
 }
 
-func chatTestStore(t *testing.T) *chatStore {
+// chatHelperCommand starts TestChatHarnessHelperProcess in place of every native harness.
+func chatHelperCommand(t *testing.T) chatCommandFactory {
 	t.Helper()
-	ctx, cancel := context.WithCancel(context.Background())
-	store := newChatStore(ctx)
 	executable, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.command = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+	return func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		t.Logf("starting native %s %v", name, args)
 		cmd := exec.CommandContext(ctx, executable, "-test.run=^TestChatHarnessHelperProcess$")
 		cmd.Env = append(os.Environ(), "DEVHOST_CHAT_HELPER=1")
@@ -176,6 +175,12 @@ func chatTestStore(t *testing.T) *chatStore {
 		}
 		return cmd
 	}
+}
+
+func chatTestStore(t *testing.T) *chatStore {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	store := newChatStore(ctx, chatHelperCommand(t))
 	t.Cleanup(func() { cancel(); store.close() })
 	return store
 }
@@ -211,7 +216,7 @@ func TestChatInstalledDiscovery(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	store := newChatStore(ctx)
+	store := newChatStore(ctx, exec.CommandContext)
 	defer store.close()
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -303,7 +308,7 @@ func TestChatInstalledSessionStartup(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	store := newChatStore(ctx)
+	store := newChatStore(ctx, exec.CommandContext)
 	defer store.close()
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -340,7 +345,7 @@ func TestChatInstalledConversation(t *testing.T) {
 		t.Run(harness, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 			defer cancel()
-			store := newChatStore(ctx)
+			store := newChatStore(ctx, exec.CommandContext)
 			defer store.close()
 			session, err := store.start(ctx, chatSessionRequest{Harness: harness}, cwd)
 			if err != nil {
