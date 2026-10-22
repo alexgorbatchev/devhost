@@ -6,7 +6,7 @@ devhost — Local HTTPS and multi-service routing for real development domains
 
 ## Meta description
 
-Run one app or a full local stack behind real hostnames with managed Caddy, health-gated routing, built-in browser devtools, and source-aware annotations.
+Run one app or a full local stack behind real hostnames with managed Caddy, health-gated routing, built-in browser devtools, and in-page chat with your coding agent.
 
 ---
 
@@ -33,7 +33,7 @@ Read the docs
 - Run one service or a full stack from `devhost.toml`
 - Managed local HTTPS with Caddy lifecycle commands
 - Routes go live only after health checks pass
-- Built-in logs, service status, annotations, and terminal sessions in the browser
+- Built-in logs, service status, and coding-agent chat in the browser
 
 ---
 
@@ -105,25 +105,23 @@ The overlay includes:
 - live service health status
 - streamed service logs
 - a log minimap for fast scanning
-- browser-connected terminal sessions
+- a chat panel connected to your coding agent
 
-### 8. Annotate the UI and turn feedback into action
+### 8. Point at the UI and turn feedback into action
 
-Hold `Alt`, select one or more elements on the page, write a comment, and send that annotated context into an agent session.
+Hold `Alt` or choose **Select Elements**, mark one or more elements on the page or draw over it, write your request in the chat composer, and send it to your coding agent.
 
-The submitted context includes page metadata, element details, marker references, selected text, computed styles, and available source-location data. That makes UI feedback much more actionable than a screenshot and a vague bug report.
+The message carries the page URL and title, element details, marker references, drawings, computed styles, available source-location data, and a snapshot of the shared tab. That makes UI feedback much more actionable than a screenshot and a vague bug report.
 
-### 9. Jump from the page to Neovim
+### 9. Jump from the page to your editor
 
 For React development builds, `devhost` can capture component source metadata and, when source maps are available, symbolicate generated locations back to original files.
 
-From there, the authoritative shipped Go runtime currently supports component-source navigation through the Neovim path.
+From there, Alt + right-click opens the component source in VS Code, VS Code Insiders, Cursor, or WebStorm through the editor's URL handler.
 
-### 10. Embedded terminal workflows for debugging and editing
+### 10. Chat with your coding agent without leaving the page
 
-Need to inspect an agent session or open Neovim without leaving the browser workflow?
-
-`devhost` supports browser-connected terminal sessions, including editor-backed flows and agent-backed flows, so feedback, code context, and action stay in one loop.
+Open **Chat** in the injected toolbar to talk to the Codex CLI or Claude Code you already have installed and signed in. Conversations run in your project checkout and survive page reloads, and native tool approvals always wait for your explicit answer, so feedback, code context, and action stay in one loop.
 
 ### 11. Clean startup, clean shutdown
 
@@ -135,7 +133,7 @@ That matters. Local tooling that leaves processes or stale routes behind is not 
 
 `devhost` is not a black box SaaS and not a hosted control plane.
 
-It is an open source utility you can run locally, inspect directly, and adapt to your own development workflow. If your team wants to wire in a custom agent command, editor behavior, or stack convention, the tool is built for that kind of ownership.
+It is an open source utility you can run locally, inspect directly, and adapt to your own development workflow. If your team wants to adapt editor behavior or a stack convention, the tool is built for that kind of ownership.
 
 ---
 
@@ -152,7 +150,7 @@ From manifest to working local domain in one flow
 3. `devhost` validates config, resolves ports, and reserves routed hosts.
 4. Services start in dependency order.
 5. Each route is activated only after its health check passes.
-6. Open your local domain over HTTPS and use the injected devtools to inspect health, logs, source locations, and terminal sessions.
+6. Open your local domain over HTTPS and use the injected devtools to inspect health, logs, and source locations, and to chat with your coding agent.
 
 ---
 
@@ -224,7 +222,7 @@ No. Your chosen hostnames still need to resolve to your machine. `devhost` manag
 
 ### Can I use it with my editor and agent workflow?
 
-Yes. `devhost` supports agent-backed annotation sessions and Neovim-backed component-source navigation in the authoritative shipped runtime, including the default Pi workflow or a custom configured agent command.
+Yes. `devhost` opens component sources in VS Code, VS Code Insiders, Cursor, or WebStorm, and its browser chat runs your installed Codex CLI or Claude Code with the page context you select.
 
 ---
 

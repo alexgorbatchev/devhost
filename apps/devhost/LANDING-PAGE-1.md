@@ -17,7 +17,7 @@ Stop developing on `localhost:3000`. `devhost` automatically manages a rootless 
 
 ### Intelligent Stack Orchestration
 
-Define your entire local ecosystem in a simple `devhost.toml` manifest, backed by strict Zod schema validation. `devhost` takes care of the rest:
+Define your entire local ecosystem in a simple `devhost.toml` manifest, backed by strict schema validation. `devhost` takes care of the rest:
 
 - **Dependency Ordering:** Starts services in the correct sequence via `dependsOn`.
 - **Health Gates:** Waits for HTTP, TCP, or process health checks before enabling routes, eliminating startup race conditions.
@@ -28,20 +28,20 @@ Define your entire local ecosystem in a simple `devhost.toml` manifest, backed b
 `devhost` intelligently splits traffic to inject a lightweight Devtools UI into your HTML document requests (`Sec-Fetch-Dest: document`).
 
 - **Shadow DOM Encapsulated:** The devtools UI mounts entirely inside a Shadow DOM to guarantee **zero CSS conflicts** with your host application.
-- **Real-Time Data Streams:** A built-in high-performance WebSocket control server streams live service health status, memory-capped service logs, and terminal sessions directly to the browser UI without polluting the host app's network layer.
+- **Real-Time Data Streams:** A built-in high-performance WebSocket control server streams live service health status, memory-capped service logs, and chat conversations directly to the browser UI without polluting the host app's network layer.
 
-### Deep In-Browser AI Annotation
+### In-Browser Chat with Page Context
 
-Spot a bug or want to request a change? Hold `Alt` (`Option` on macOS) to enter annotation mode:
+Spot a bug or want to request a change? Open **Chat** in the injected toolbar to talk to the Codex CLI or Claude Code already installed and signed in on your machine, then hold `Alt` (`Option` on macOS) to point at the page:
 
-1. Click elements to place numbered markers.
-2. Draft a comment directly in the browser overlay.
-3. Instantly launch an interactive **Pi Agent Session** seeded with your draft.
-   Behind the scenes, `devhost` captures comprehensive payload metadata: computed CSS, bounding boxes, accessibility tree state, nearby text context, and React component fiber source maps.
+1. Click elements to place numbered markers, or draw arrows, lines, and boxes over the page.
+2. Write your request in the chat composer, referring to the markers.
+3. Send it, and the agent receives a snapshot of the shared tab with your markings.
+   Behind the scenes, `devhost` attaches the page URL and title, computed CSS, bounding boxes, accessibility information, nearby text, drawing coordinates, and React source locations when available.
 
-### Neovim Terminal Sessions
+### Jump to Source in Your Editor
 
-The authoritative shipped runtime currently supports in-browser component-source jumps only through the Neovim path. Set your editor to `neovim` and `devhost` embeds a fully-featured, truecolor `xterm.js` emulator in the browser overlay, mapping native process streams over WebSockets directly into your Neovim session.
+Alt + right-click a React component in a development build to open its source in VS Code, VS Code Insiders, Cursor, or WebStorm through the editor's URL handler. `devhost` symbolicates generated locations back to original files when source maps are available.
 
 ### Smart Environment Injection
 
