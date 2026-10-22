@@ -89,14 +89,18 @@ export function expectDevtoolsSurfaceOnTop(shadowRoot: ShadowRoot, surface: HTML
   }
 }
 
+/** An element whose paint order hit testing can observe: HTML surfaces and SVG drawings. */
+type PaintedSurface = HTMLElement | SVGElement;
+
 /**
  * Asserts that the browser paints `upperSurface` above `lowerSurface` where the two overlap. Passive overlays are
- * excluded from native hit testing, so both surfaces opt in only while they are checked.
+ * excluded from native hit testing, so both surfaces opt in only while they are checked. `all` also makes an unfilled
+ * SVG shape hit-testable inside its outline; HTML elements treat it as `auto`.
  */
 export function expectDevtoolsSurfaceAbove(
   shadowRoot: ShadowRoot,
-  upperSurface: HTMLElement,
-  lowerSurface: HTMLElement,
+  upperSurface: PaintedSurface,
+  lowerSurface: PaintedSurface,
 ): void {
   const upperRectangle: DOMRect = upperSurface.getBoundingClientRect();
   const lowerRectangle: DOMRect = lowerSurface.getBoundingClientRect();
@@ -109,8 +113,8 @@ export function expectDevtoolsSurfaceAbove(
   expect(right).toBeGreaterThan(left);
   expect(bottom).toBeGreaterThan(top);
 
-  upperSurface.style.pointerEvents = "auto";
-  lowerSurface.style.pointerEvents = "auto";
+  upperSurface.style.pointerEvents = "all";
+  lowerSurface.style.pointerEvents = "all";
   try {
     expect(upperSurface.contains(shadowRoot.elementFromPoint((left + right) / 2, (top + bottom) / 2))).toBe(true);
   } finally {

@@ -593,8 +593,9 @@
           --dh-row-h: 24px;
           --dh-bar-h: 26px;
           /* Bottom to top: page highlights, annotation drafts and menus, the toolbar, edge-docked surfaces (the
-             minimap), terminal windows. At most six significant digits: the production CSS minifier rounds numbers
-             to six, which would collapse neighbouring layers. */
+             minimap), terminal windows. Chatting in the devhost checkout moves page highlights to --dh-z-annotation,
+             above every devhost surface, because devhost's UI is then what they mark. At most six significant
+             digits: the production CSS minifier rounds numbers to six, which would collapse neighbouring layers. */
           --dh-z-overlay: 2147410000;
           --dh-z-popover: 2147420000;
           --dh-z-dock: 2147430000;
@@ -1462,7 +1463,7 @@
          * ================================================================ */
         .hl {
           position: fixed;
-          z-index: var(--dh-z-annotation);
+          z-index: var(--dh-z-overlay);
           pointer-events: none;
           border: 2px solid var(--dh-mark);
           border-radius: var(--dh-radius-sm);
@@ -1482,7 +1483,7 @@
         }
         .hl-badge {
           position: fixed;
-          z-index: var(--dh-z-annotation);
+          z-index: var(--dh-z-overlay);
           pointer-events: none;
           display: grid;
           place-items: center;
@@ -1500,7 +1501,7 @@
         }
         .hl-label {
           position: fixed;
-          z-index: var(--dh-z-annotation);
+          z-index: var(--dh-z-overlay);
           pointer-events: none;
           max-width: 420px;
           padding: 1px 5px;

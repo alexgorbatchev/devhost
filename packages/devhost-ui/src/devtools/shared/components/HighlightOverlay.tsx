@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "react";
+import { useContext, useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "../../../lib/utils";
+import { AnnotationTopLayerContext } from "../AnnotationTopLayerContext";
 import { promoteDevtoolsTopLayer } from "../promoteDevtoolsTopLayer";
 import { resolveDevtoolsPortalContainer } from "../resolveDevtoolsPortalContainer";
 
@@ -69,6 +70,7 @@ export function HighlightOverlay({
   rootTestId = "HighlightOverlay",
 }: IHighlightOverlayProps): JSX.Element {
   const portalAnchorReference = useRef<HTMLSpanElement | null>(null);
+  const promoteAnnotationLayer = useContext(AnnotationTopLayerContext);
   const scheduledFrameReference = useRef<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [, setLayoutVersion] = useState<number>(0);
@@ -190,8 +192,10 @@ export function HighlightOverlay({
 
     // Highlights mark host content, which can sit in host top-layer elements that emit no observable toggle event
     // (popovers inside host shadow roots). Showing highlights therefore re-enters the top layer.
-    promoteDevtoolsTopLayer(portalTarget);
-  }, [hasVisibleHighlights, portalTarget]);
+    // An annotation layer keeps its place relative to the devtools root as it re-enters.
+    if (promoteAnnotationLayer === null) promoteDevtoolsTopLayer(portalTarget);
+    else promoteAnnotationLayer();
+  }, [hasVisibleHighlights, portalTarget, promoteAnnotationLayer]);
 
   const overlayRootTestId: string | undefined = rootTestId === "HighlightOverlay" ? undefined : rootTestId;
   // `position: fixed` creates a stacking context, so the layer token lives on this element, not on its children.

@@ -13,6 +13,9 @@ export interface IChatScrollPosition {
 /** The directory chat agents run in: the page's project, or the devhost source checkout. */
 export type ChatTarget = "project" | "devhost";
 
+/** Where an AnnotationTopLayer paints relative to the ordinary devtools surfaces in DevtoolsTopLayer. */
+export type AnnotationLayerPlacement = "above-devtools" | "below-devtools";
+
 export interface IChatViewSettings {
   isOpen: boolean;
   target: ChatTarget;

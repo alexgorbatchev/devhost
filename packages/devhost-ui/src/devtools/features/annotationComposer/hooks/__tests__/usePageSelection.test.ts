@@ -36,6 +36,7 @@ let cancelButton: HTMLButtonElement;
 function selectionDraftParams(overrides: Partial<SelectionDraftParams> = {}): SelectionDraftParams {
   return {
     annotationSelectionPlugin: plugin,
+    canSelectDevtools: true,
     isDisabled: false,
     ...overrides,
   };
@@ -389,6 +390,24 @@ describe("usePageSelection", () => {
     await click(button);
     expect(hook.result.current.selectedTargets.map((target) => target.candidate.label)).toEqual(['button "Settings"']);
     expect(plugin.resolveCandidate).toHaveBeenCalledTimes(0);
+  });
+
+  test("leaves devtools controls working and unselected while devhost UI is not annotated", async () => {
+    const hook = renderSelectionDraft({ canSelectDevtools: false });
+    const devtoolsButton = addDevtoolsButton({ height: 20, width: 80, x: 400, y: 300 });
+    devtoolsButton.textContent = "Settings";
+    const devtoolsListener = vi.fn<HostClickListener>();
+    devtoolsButton.addEventListener("click", devtoolsListener);
+    await holdAlt();
+    await pointAt(devtoolsButton);
+    expect(hook.result.current.hoveredLabel).toBeNull();
+    await click(devtoolsButton);
+    expect(devtoolsListener).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(devtoolsButton);
+    expect(hook.result.current.selectedTargets).toEqual([]);
+    expect(plugin.resolveCandidate).toHaveBeenCalledTimes(0);
+    await click(saveButton);
+    expect(hook.result.current.selectedTargets.map((target) => target.candidate.label)).toEqual(['button "Save"']);
   });
 
   test("selects a devhost panel background instead of page content behind it", async () => {

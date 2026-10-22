@@ -46,6 +46,10 @@ export function PageChat({
   // Portals inherit from this interactive surface rather than the passive full-viewport devtools root.
   const portalReference = useRef<HTMLDivElement | null>(null);
   const annotationReference = useRef<HTMLDivElement | null>(null);
+  const marksReference = useRef<HTMLDivElement | null>(null);
+  // Chatting in the devhost checkout makes devhost's own UI the subject: its surfaces become selectable and
+  // drawings cover them. Otherwise the page is the subject, and devhost's UI stays usable above its annotations.
+  const isAnnotatingDevhost: boolean = target === "devhost";
   const [sessionPageURL] = useState(() => window.location.href);
   const plugin = useSyncExternalStore(subscribeToAnnotationSelectionPlugins, readActiveAnnotationSelectionPlugin);
   const [tool, setTool] = useState<AnnotationShapeKind | null>(null);
@@ -54,6 +58,7 @@ export function PageChat({
   const captureReference = useRef<AbortController | null>(null);
   const selection = usePageSelection({
     annotationSelectionPlugin: plugin,
+    canSelectDevtools: isAnnotatingDevhost,
     isDisabled: !isSelectionEnabled || tool !== null || isCapturing,
   });
   const { selectedTargets, stopSelection, clearSelection, removeSelection, isSelectionMode } = selection;
@@ -99,6 +104,7 @@ export function PageChat({
               selectedTargets,
               shapes,
               annotationRoot: annotationReference.current,
+              shouldKeepAnnotatedSurfaces: isAnnotatingDevhost,
             });
             setIsCapturing(true);
             stopSelection();
@@ -112,7 +118,7 @@ export function PageChat({
           }
         },
       }),
-    [rootReference, selectedTargets, stopSelection, shapes, sharing.stream],
+    [isAnnotatingDevhost, rootReference, selectedTargets, stopSelection, shapes, sharing.stream],
   );
   const clearContext = useCallback((): void => {
     clearSelection();
@@ -127,30 +133,43 @@ export function PageChat({
   const chat = useAgentChat({ pageURL: sessionPageURL, target, beforeSend, onSent: clearSentContext, settingsStore });
   const isContextDisabled = isCapturing || chat.isPreparing;
   const composerInputReference = useChatComposerFocus({ isOpen, contextCount: selectedTargets.length + shapes.length });
+  const hasPageMarks: boolean = isSelectionMode || tool !== null || selectedTargets.length > 0 || shapes.length > 0;
+  const marks = (
+    <>
+      <AnnotationSelectionOverlay {...selection} />
+      <AnnotationCanvas
+        shapes={shapes}
+        tool={tool}
+        isDisabled={isContextDisabled || isSelectionMode}
+        onMove={(moved) => setShapes((current) => current.map((shape) => (shape.id === moved.id ? moved : shape)))}
+        onDraw={(shape) => {
+          setShapes((current) => [...current, shape]);
+          setTool(null);
+          onOpenChange(true);
+        }}
+      />
+    </>
+  );
   return (
     <PortalProvider container={portalReference}>
       <DensityProvider density="compact">
-        <AnnotationTopLayer
-          ref={annotationReference}
-          isVisible={isOpen || isSelectionMode || tool !== null || selectedTargets.length > 0 || shapes.length > 0}
-        >
+        {isAnnotatingDevhost ? null : (
+          <AnnotationTopLayer
+            ref={marksReference}
+            isVisible={hasPageMarks}
+            placement="below-devtools"
+            coverReference={annotationReference}
+          >
+            {marks}
+          </AnnotationTopLayer>
+        )}
+        <AnnotationTopLayer ref={annotationReference} isVisible={isOpen || hasPageMarks}>
           <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
           <AnnotationSelectionHint
             isVisible={isSelectionMode || tool !== null}
             text={tool ? `Drag To Draw A ${tool}. Esc To Cancel.` : "Click Elements To Add Context. Esc To Finish."}
           />
-          <AnnotationSelectionOverlay {...selection} />
-          <AnnotationCanvas
-            shapes={shapes}
-            tool={tool}
-            isDisabled={isContextDisabled || isSelectionMode}
-            onMove={(moved) => setShapes((current) => current.map((shape) => (shape.id === moved.id ? moved : shape)))}
-            onDraw={(shape) => {
-              setShapes((current) => [...current, shape]);
-              setTool(null);
-              onOpenChange(true);
-            }}
-          />
+          {isAnnotatingDevhost ? marks : null}
           {isSelectionEnabled && (isOpen || isSelectionMode || tool !== null) ? (
             <PageAnnotationToolbar
               tool={tool}

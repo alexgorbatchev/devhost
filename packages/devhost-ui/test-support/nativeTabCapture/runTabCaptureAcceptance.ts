@@ -52,7 +52,10 @@ export async function runTabCaptureAcceptance(
             original.call(this);
           };
         });
-        await page.goto(String(fixture.server.url));
+        // Annotating chat itself is what the devhost chat target is for.
+        const pageURL = new URL(fixture.server.url);
+        if (options.isChatAnnotated) pageURL.searchParams.set("target", "devhost");
+        await page.goto(String(pageURL));
         if (options.isSharingAheadOfTime) {
           await page.getByRole("button", { name: "Share Tab", exact: true }).click();
           await page.getByRole("button", { name: "Stop Sharing", exact: true }).waitFor();
@@ -124,11 +127,15 @@ export async function runTabCaptureAcceptance(
               context.fillRect(0, 0, 1, 1);
               return pixel(0, 0);
             };
-            const root =
-              document.querySelector("[data-devhost-annotation-host]")?.shadowRoot ??
-              document.getElementById("devhost-devtools-host")?.shadowRoot;
-            const annotation = root?.querySelector('[data-testid="AnnotationCanvas"]');
-            const chat = root?.querySelector('[data-testid="AgentChatPanel"]');
+            // Annotation layers follow an open host modal or popover into hosts of their own.
+            const trees = [
+              document.getElementById("devhost-devtools-host")?.shadowRoot,
+              ...Array.from(document.querySelectorAll("[data-devhost-annotation-host]"), (host) => host.shadowRoot),
+            ];
+            const find = (selector: string): Element | undefined =>
+              trees.map((tree) => tree?.querySelector(selector) ?? undefined).find((element) => element !== undefined);
+            const annotation = find('[data-testid="AnnotationCanvas"]');
+            const chat = find('[data-testid="AgentChatPanel"]');
             const host = document.getElementById("host-target");
             const layer = document.querySelector("#capture-modal:modal, #capture-popover:popover-open");
             if (!annotation || !host || !chat) throw new Error("Actual annotation, chat and host must remain mounted.");

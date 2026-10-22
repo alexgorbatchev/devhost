@@ -6,6 +6,8 @@ import type { IRectSnapshot } from "../annotationComposer/types";
 interface IAnnotatedTabCaptureOptions extends Omit<ITabCaptureOptions, "prepare"> {
   root: HTMLElement;
   annotationRoot?: HTMLElement | null;
+  /** Devhost surfaces the annotations touch stay in the snapshot, because devhost UI is what they annotate. */
+  shouldKeepAnnotatedSurfaces: boolean;
   selectedTargets?: readonly ISelectedAnnotationTarget[];
   shapes?: readonly IAnnotationShape[];
 }
@@ -16,7 +18,7 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
   const includedSurfaces: Element[] = [];
   const roots = new Set([options.root, ...(options.annotationRoot ? [options.annotationRoot] : [])]);
   try {
-    const bounds = readAnnotationBounds(options);
+    const bounds = options.shouldKeepAnnotatedSurfaces ? readAnnotationBounds(options) : [];
     const surfaces = new Set(
       Array.from(roots).flatMap((root) =>
         Array.from(root.querySelectorAll("[data-devhost-capture-exclude], :popover-open, :modal, [role=dialog]")),

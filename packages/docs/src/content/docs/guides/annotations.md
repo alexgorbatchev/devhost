@@ -40,12 +40,14 @@ Client-side navigation within the same project keeps the conversation, draft, an
 
 A development build of devhost knows its own source checkout: `just dev-bootstrap` and the source shim behind `just run`, `just cli`, and `just run-ai` record it at build time. Release builds do not. With a source checkout, the chat header shows a **Chat Directory** switch with **Project** and **devhost**. Choose **devhost** when the problem is in devhost rather than in your app: new conversations then run the agent in the devhost checkout, and the conversation list shows only conversations started there. Choose **Project** to return to your app's conversation, which is restored as you left it. The choice is remembered for each project and origin.
 
+The directory also decides what you annotate. With **devhost**, devhost's own UI is the subject: you can select its toolbar, panels, and chat as context, and selections and drawings paint over them. With **Project**, the page is the subject: devhost's toolbar, panels, and chat stay above selections and drawings and keep working while you select. Switching the directory clears the current selections and drawings.
+
 The same build serves the devtools UI from that checkout and rebuilds it when its sources change, so after an agent edits the UI, reloading the page shows the change. Go changes need the binary rebuilt and devhost restarted: rerun `just dev-bootstrap`, or restart the source stack, which rebuilds on start. Stopping devhost also ends its chat sessions, so restart it after the agent's turn has finished. If the recorded checkout has moved or been deleted, devhost prints a warning at startup, serves the UI built into the binary, and hides the switch.
 
 ## Select page context
 
 1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS). Alt works while you type in the chat composer, but not while you type in one of the page's own fields.
-2. Click one or more page or devhost UI elements to add numbered markers. During selection, clicking a devhost control selects it without activating it. Releasing Alt ends selection mode without discarding the context.
+2. Click one or more page elements to add numbered markers. Devhost controls keep working during selection. With the **devhost** chat directory, devhost UI elements are selectable too, and clicking a devhost control selects it without activating it. Releasing Alt ends selection mode without discarding the context.
 3. Write your request in the chat composer, referring to markers such as #1 and #2.
 4. Send the message. If you have not already shared the tab, choose the current tab in the browser's sharing picker.
 
@@ -53,11 +55,11 @@ Selecting elements opens chat and places the cursor in the composer, so you can 
 
 Selected element metadata includes its path, nearby text, accessibility information, bounds and computed styles. React development source locations and fetchable source maps are used when the host exposes them; source resolution remains best effort.
 
-Selection highlights, drawings, and the floating annotation tools render above page content and devhost UI, including open Popover API panels and modal `<dialog>` elements. Tools and chat stay usable while a modal is open, so you can annotate it and send the snapshot without closing it. Annotation controls stay inside the active popup's interaction scope without moving or reopening the target itself. Escape ends selection or drawing without dismissing that popup; another Escape follows its normal close behavior. Separate inspector windows and browser-controlled dialogs, such as `window.alert()`, are outside the page canvas.
+Selection highlights and drawings render above page content, including the page's open Popover API panels and modal `<dialog>` elements. They stay beneath devhost's toolbar, panels, and chat, unless the **devhost** chat directory makes devhost's UI the subject; then they render above it too. The floating annotation tools always render on top. Tools and chat stay usable while a modal is open, so you can annotate it and send the snapshot without closing it. Annotation controls stay inside the active popup's interaction scope without moving or reopening the target itself. Escape ends selection or drawing without dismissing that popup; another Escape follows its normal close behavior. Separate inspector windows and browser-controlled dialogs, such as `window.alert()`, are outside the page canvas.
 
 ## Draw over the page
 
-Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page, including over the devhost toolbar or chat panel. Each completed drawing ends drawing mode, appears in **Page context**, and places the cursor in the composer. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
+Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page. With the **devhost** chat directory you can also draw over the devhost toolbar and chat panel; otherwise they stay above your drawings and receive the pointer. Each completed drawing ends drawing mode, appears in **Page context**, and places the cursor in the composer. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.
 
 ## Share one tab snapshot
 
@@ -69,7 +71,7 @@ A share opened through **Share Tab** stays active for subsequent snapshots until
 
 The configured coding agent receives the message, selected metadata, page URL/title, drawing coordinates, and image. Review what is visible before sharing.
 
-Snapshots hide the floating annotation tools and instruction tip. Chat is hidden too unless a selected element or drawing overlaps it; an annotated chat panel stays visible in the image sent to the agent.
+Snapshots hide the floating annotation tools and instruction tip. Chat and the other devhost surfaces are hidden too. With the **devhost** chat directory, a devhost surface that a selected element or drawing overlaps stays visible in the image sent to the agent.
 
 ## Native permissions and questions
 
@@ -165,7 +167,7 @@ Selection semantics:
 - `matches()` defaults to `true` when omitted
 - `priority` defaults to `0` when omitted
 - the active selector is the highest-priority matching plugin
-- devhost UI selections use the built-in DOM selector, independently of host-page plugins; the annotation tools themselves remain controls
+- devhost UI is selectable only with the **devhost** chat directory, and then uses the built-in DOM selector, independently of host-page plugins; the annotation tools themselves remain controls
 - when priorities tie, the earlier-registered matching plugin stays active
 - returning `null` from `resolveCandidate(...)` means that event does not produce a candidate
 - `readRect()` controls the selection highlight box; return `null` when there is nothing to highlight

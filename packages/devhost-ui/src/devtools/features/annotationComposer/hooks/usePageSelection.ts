@@ -17,6 +17,8 @@ type AnnotationSelectionPlugin = ReturnType<typeof readActiveAnnotationSelection
 
 interface IUsePageSelectionParams {
   annotationSelectionPlugin: AnnotationSelectionPlugin;
+  /** Devhost surfaces become selectable context; otherwise they keep working as controls during selection. */
+  canSelectDevtools: boolean;
   isDisabled: boolean;
 }
 
@@ -34,6 +36,7 @@ interface IUsePageSelectionResult {
 
 export function usePageSelection({
   annotationSelectionPlugin,
+  canSelectDevtools,
   isDisabled,
 }: IUsePageSelectionParams): IUsePageSelectionResult {
   const [hoveredCandidate, setHoveredCandidate] = useState<IAnnotationSelectionCandidate | null>(null);
@@ -128,11 +131,9 @@ export function usePageSelection({
       const resolutionSequence: number = ++selectionResolutionSequenceReference.current;
 
       const updateHoveredCandidate = async (): Promise<void> => {
-        const nextCandidate: IAnnotationSelectionCandidate | null = await resolveAnnotationSelectionCandidate(
-          annotationSelectionPlugin,
-          event,
-          "hover",
-        );
+        const nextCandidate: IAnnotationSelectionCandidate | null = isSelectionPassThrough(event, canSelectDevtools)
+          ? null
+          : await resolveAnnotationSelectionCandidate(annotationSelectionPlugin, event, "hover");
 
         if (selectionResolutionSequenceReference.current !== resolutionSequence) {
           return;
@@ -156,7 +157,7 @@ export function usePageSelection({
       selectionResolutionSequenceReference.current += 1;
       hoveredCandidateReference.current = null;
     };
-  }, [annotationSelectionPlugin, isSelectionMode]);
+  }, [annotationSelectionPlugin, canSelectDevtools, isSelectionMode]);
 
   useEffect(() => {
     if (!isSelectionMode) {
@@ -164,7 +165,7 @@ export function usePageSelection({
     }
 
     const handleMouseDown = (event: MouseEvent): void => {
-      if (isAnnotationControlsEvent(event)) {
+      if (isSelectionPassThrough(event, canSelectDevtools)) {
         return;
       }
 
@@ -173,7 +174,7 @@ export function usePageSelection({
       event.stopImmediatePropagation();
     };
     const handleDocumentClick = async (event: MouseEvent): Promise<void> => {
-      if (isAnnotationControlsEvent(event)) {
+      if (isSelectionPassThrough(event, canSelectDevtools)) {
         return;
       }
 
@@ -219,7 +220,7 @@ export function usePageSelection({
       document.removeEventListener("click", handleDocumentClick, true);
       selectionRevisionReference.current += 1;
     };
-  }, [annotationSelectionPlugin, isSelectionMode]);
+  }, [annotationSelectionPlugin, canSelectDevtools, isSelectionMode]);
 
   useEffect(() => {
     const handleAltKeyDown = (event: KeyboardEvent): void => {
@@ -317,4 +318,12 @@ export function usePageSelection({
     stopSelection,
     selectedTargets,
   };
+}
+
+// Pointer input that selection leaves to its target: the annotation tools, and devhost surfaces unless they are
+// annotated themselves.
+function isSelectionPassThrough(event: MouseEvent, canSelectDevtools: boolean): boolean {
+  return (
+    isAnnotationControlsEvent(event) || (!canSelectDevtools && event.composedPath().some(isInteractionInsideDevtools))
+  );
 }

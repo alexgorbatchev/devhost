@@ -1,4 +1,4 @@
-import { DEVTOOLS_ROOT_ID } from "./constants";
+import { ANNOTATION_LAYER_SELECTOR, DEVTOOLS_ROOT_ID } from "./constants";
 
 type DevtoolsTree = Document | ShadowRoot;
 
@@ -7,7 +7,7 @@ type DevtoolsTree = Document | ShadowRoot;
  * Both stay in an isolated devtools tree, including when the annotation mount follows a host modal or popover.
  */
 export function resolveDevtoolsPortalContainer(anchorElement: HTMLElement): HTMLElement {
-  const annotationLayer = anchorElement.closest<HTMLElement>("[data-devhost-annotation-layer]");
+  const annotationLayer = anchorElement.closest<HTMLElement>(ANNOTATION_LAYER_SELECTOR);
   if (annotationLayer !== null) return annotationLayer;
   const rootNode: Node = anchorElement.getRootNode();
   const tree: DevtoolsTree = rootNode instanceof ShadowRoot ? rootNode : anchorElement.ownerDocument;

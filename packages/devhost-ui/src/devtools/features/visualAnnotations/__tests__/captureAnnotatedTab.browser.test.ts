@@ -17,6 +17,7 @@ test("retains an annotated native popover outside the bounds of its hidden devto
   popover.showPopover();
   const capture = captureAnnotatedTab({
     ...fixture,
+    shouldKeepAnnotatedSurfaces: true,
     selectedTargets: [
       { markerNumber: 1, candidate: createDomAnnotationSelectionCandidateForElement({ element: button }) },
     ],
@@ -41,6 +42,7 @@ test("keeps annotated chat visible while sampling and still hides annotation too
   const capture = captureAnnotatedTab({
     ...fixture,
     root,
+    shouldKeepAnnotatedSurfaces: true,
     shapes: [{ id: "box", kind: "box", start: { x: 130, y: 130 }, end: { x: 230, y: 230 } }],
   });
   await fixture.sampling;
@@ -53,6 +55,24 @@ test("keeps annotated chat visible while sampling and still hides annotation too
   expect(root.querySelector("[data-devhost-capture-include]")).toBeNull();
 });
 
+test("hides devhost surfaces under annotations when devhost UI is not annotated", async () => {
+  const fixture = createChatCaptureFixture();
+  const { root, chat, tools } = fixture;
+  const capture = captureAnnotatedTab({
+    ...fixture,
+    root,
+    shouldKeepAnnotatedSurfaces: false,
+    shapes: [{ id: "box", kind: "box", start: { x: 130, y: 130 }, end: { x: 230, y: 230 } }],
+  });
+  await fixture.sampling;
+  fixture.observer.disconnect();
+  expect(getComputedStyle(chat).visibility).toBe("hidden");
+  expect(getComputedStyle(tools).visibility).toBe("hidden");
+  await capture;
+  expect(getComputedStyle(chat).visibility).toBe("visible");
+  expect(root.querySelector("[data-devhost-capture-include]")).toBeNull();
+});
+
 test("opens the tab picker immediately, hides chrome while sampling and restores it", async () => {
   const fixture = createSharedTabFixture();
   const root = document.createElement("div");
@@ -61,7 +81,7 @@ test("opens the tab picker immediately, hides chrome while sampling and restores
   const hidden = Promise.withResolvers<void>();
   const observer = new MutationObserver(() => hidden.resolve());
   observer.observe(root, { attributes: true, attributeFilter: ["data-devhost-capturing"] });
-  const capture = captureAnnotatedTab({ ...fixture, root });
+  const capture = captureAnnotatedTab({ ...fixture, root, shouldKeepAnnotatedSurfaces: true });
   expect(picker).toHaveBeenCalledOnce();
   await hidden.promise;
   observer.disconnect();
@@ -80,6 +100,7 @@ test("keeps a selected chat control visible during capture and restores visibili
   const capture = captureAnnotatedTab({
     ...fixture,
     root,
+    shouldKeepAnnotatedSurfaces: true,
     signal: controller.signal,
     selectedTargets: [
       { markerNumber: 1, candidate: createDomAnnotationSelectionCandidateForElement({ element: button }) },
@@ -100,7 +121,12 @@ test("aborting before the next paint releases capture and restores chrome", asyn
   const fixture = createSharedTabFixture();
   const root = document.createElement("div");
   const controller = new AbortController();
-  const capture = captureAnnotatedTab({ ...fixture, root, signal: controller.signal });
+  const capture = captureAnnotatedTab({
+    ...fixture,
+    root,
+    shouldKeepAnnotatedSurfaces: true,
+    signal: controller.signal,
+  });
   await Promise.resolve();
   controller.abort(new Error("Chat unmounted"));
   await expect(capture).rejects.toThrow("Chat unmounted");

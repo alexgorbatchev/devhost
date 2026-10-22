@@ -81,7 +81,8 @@ export const ReactHighlightsAboveHostShadowPopover: Story = {
   },
 };
 
-export const SelectionHighlightsAboveDevtoolsSurfaces: Story = {
+/** Chatting in the project, page selection highlights paint under the toolbar and the chat panel. */
+export const SelectionHighlightsBelowDevtoolsSurfaces: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
     await verifySelectionLayering(canvasElement);
@@ -96,8 +97,8 @@ export const SurfacesStackInOrder: Story = {
   },
 };
 
-/** While Alt-selection is active, devtools controls become context instead of activating. */
-export const DevtoolsBecomeSelectionContext: Story = {
+/** Chatting in the project, devtools controls keep activating during Alt-selection instead of becoming context. */
+export const DevtoolsStayClickableDuringSelection: Story = {
   render: () => <SelectionLayeringScene />,
   play: async ({ canvasElement }): Promise<void> => {
     await verifyDevtoolsClickDuringSelection(canvasElement);
