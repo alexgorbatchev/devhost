@@ -10,8 +10,12 @@ export interface IChatScrollPosition {
   isAtBottom: boolean;
 }
 
+/** The directory chat agents run in: the page's project, or the devhost source checkout. */
+export type ChatTarget = "project" | "devhost";
+
 export interface IChatViewSettings {
   isOpen: boolean;
+  target: ChatTarget;
   side: "left" | "right";
   selectedHarness: "codex" | "claude-code";
   selectedModel: string;

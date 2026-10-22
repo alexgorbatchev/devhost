@@ -58,7 +58,7 @@ func TestChatRoutesFollowTheToggle(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = server.Stop() })
 	readSessionsStatus := func() int {
-		response, err := http.Get(serverURL(server.Port(), chatSessionsPath))
+		response, err := http.Get(serverURL(server.Port(), chatSessionsPath+chatTargetQuery("", chatTargetProject)))
 		if err != nil {
 			t.Fatal(err)
 		}

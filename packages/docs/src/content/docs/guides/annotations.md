@@ -36,6 +36,12 @@ If browser storage is unavailable or full, chat continues working but cannot sav
 
 Client-side navigation within the same project keeps the conversation, draft, and selected harness and model. Switching to a different project resets the browser panel's project-specific state. Context sent with a message uses the current page URL.
 
+## Chat about devhost itself
+
+A development build of devhost knows its own source checkout: `just dev-bootstrap` and the source shim behind `just run`, `just cli`, and `just run-ai` record it at build time. Release builds do not. With a source checkout, the chat header shows a **Chat Directory** switch with **Project** and **devhost**. Choose **devhost** when the problem is in devhost rather than in your app: new conversations then run the agent in the devhost checkout, and the conversation list shows only conversations started there. Choose **Project** to return to your app's conversation, which is restored as you left it. The choice is remembered for each project and origin.
+
+The same build serves the devtools UI from that checkout and rebuilds it when its sources change, so after an agent edits the UI, reloading the page shows the change. Go changes need the binary rebuilt and devhost restarted: rerun `just dev-bootstrap`, or restart the source stack, which rebuilds on start. Stopping devhost also ends its chat sessions, so restart it after the agent's turn has finished. If the recorded checkout has moved or been deleted, devhost prints a warning at startup, serves the UI built into the binary, and hides the switch.
+
 ## Select page context
 
 1. Choose **Select Elements** in the floating toolbar at the top of the page, or hold Alt (Option on macOS). Alt works while you type in the chat composer, but not while you type in one of the page's own fields.

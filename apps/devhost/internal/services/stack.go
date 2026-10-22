@@ -22,6 +22,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devbuild"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
@@ -386,9 +387,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	// The control server runs for the stack's whole life, whatever the devtools
 	// settings, so a reload that turns them on or off keeps its sessions.
 	{
-		devSource, err := loadDevSourceCheckout(environment, manifest.ManifestDirectoryPath)
+		devSource, devSourceWarning, err := loadDevSourceCheckout(environment, manifest.ManifestDirectoryPath, devbuild.SourceDirectory())
 		if err != nil {
 			return 0, joinCleanupError(err, cleanupError)
+		}
+		if devSourceWarning != "" {
+			cliout.Log(options.LogWriter, manifest.Name, cliout.Warning(devSourceWarning))
 		}
 		if devSource != nil {
 			cliout.Log(options.LogWriter, manifest.Name, fmt.Sprintf("Rebuilding devtools assets on demand from source checkout: %s", devSource.RootPath()))

@@ -8,7 +8,7 @@ import { Button } from "../shared";
 
 import { cn } from "../../lib/utils";
 
-import type { ServiceHealth } from "../shared/types";
+import type { ChatTarget, ServiceHealth } from "../shared/types";
 import { ComponentSourceMenu, useComponentSourceNavigation } from "../features/componentSourceNavigation";
 import {
   ConfigEditorButton,
@@ -57,6 +57,7 @@ function AppContent(): JSX.Element {
     chatEnabled,
     componentEditor,
     configEditorEnabled,
+    devhostSourceRootPath,
     editorEnabled,
     externalToolbarsEnabled,
     homeDirectoryPath,
@@ -112,6 +113,31 @@ function AppContent(): JSX.Element {
   const setIsChatOpen = useCallback(
     (isOpen: boolean): void => {
       settingsStore.getState().updateChat({ isOpen });
+    },
+    [settingsStore],
+  );
+  const savedChatTarget = useStore(settingsStore, (state) => state.chat.target);
+  const isDevhostChatAvailable: boolean = devhostSourceRootPath !== "";
+  const chatTarget: ChatTarget = isDevhostChatAvailable ? savedChatTarget : "project";
+  const chatRootPath: string = chatTarget === "devhost" ? devhostSourceRootPath : projectRootPath;
+  // Conversations belong to the directory the agents run in. When that is the project root, the page's own store
+  // holds them: a second store with the same scope would overwrite its persisted state.
+  const chatSettingsStore = useMemo(
+    () =>
+      chatRootPath === projectRootPath
+        ? settingsStore
+        : createDevtoolsSettingsStore(
+            {
+              projectRootPath: chatRootPath,
+              pageURL: window.location.href,
+            },
+            () => window.localStorage,
+          ),
+    [chatRootPath, projectRootPath, settingsStore],
+  );
+  const setChatTarget = useCallback(
+    (target: ChatTarget): void => {
+      settingsStore.getState().updateChat({ target });
     },
     [settingsStore],
   );
@@ -182,8 +208,10 @@ function AppContent(): JSX.Element {
     >
       {chatEnabled ? (
         <PageChat
-          key={projectRootPath}
-          settingsStore={settingsStore}
+          key={`${chatTarget}:${chatRootPath}`}
+          settingsStore={chatSettingsStore}
+          target={chatTarget}
+          onTargetChange={isDevhostChatAvailable ? setChatTarget : undefined}
           isOpen={isChatOpen}
           onOpenChange={setIsChatOpen}
           isSelectionEnabled={annotationEnabled}

@@ -18,6 +18,8 @@ export interface IInjectedDevtoolsConfig {
   homeDirectoryPath: string;
   position: DevtoolsPosition;
   projectRootPath: string;
+  /** The devhost checkout chat can target instead of the project, or "" when devhost serves no source checkout. */
+  devhostSourceRootPath: string;
   routedServices: IRoutedServiceIdentity[];
   stackName: string;
   annotationEnabled: boolean;
@@ -39,6 +41,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   homeDirectoryPath: "",
   position: "bottom-right",
   projectRootPath: "",
+  devhostSourceRootPath: "",
   routedServices: [],
   stackName: DEVHOST_SERVICE_NAME,
   annotationEnabled: false,
@@ -81,6 +84,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
   const nativeBrowserInstanceId: unknown = Reflect.get(injectedConfig, "nativeBrowserInstanceId");
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const homeDirectoryPath: unknown = Reflect.get(injectedConfig, "homeDirectoryPath");
+  const devhostSourceRootPath: unknown = Reflect.get(injectedConfig, "devhostSourceRootPath");
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
@@ -113,6 +117,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     homeDirectoryPath: typeof homeDirectoryPath === "string" ? homeDirectoryPath : "",
     position,
     projectRootPath,
+    devhostSourceRootPath: typeof devhostSourceRootPath === "string" ? devhostSourceRootPath : "",
     routedServices,
     stackName,
     editorEnabled,

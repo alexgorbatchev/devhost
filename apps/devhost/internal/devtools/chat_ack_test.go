@@ -23,7 +23,7 @@ type chatAckTestMessage struct {
 func connectChatAckTest(t *testing.T, s *ControlServer, session *chatSession) *websocket.Conn {
 	t.Helper()
 	base := fmt.Sprintf("http://127.0.0.1:%d", s.Port())
-	url := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + "?sessionId=" + session.snapshot().ID
+	url := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + chatTargetQuery("", chatTargetProject) + "&sessionId=" + session.snapshot().ID
 	conn, _, err := websocket.DefaultDialer.Dial(url, http.Header{"Origin": []string{base}})
 	if err != nil {
 		t.Fatal(err)

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -34,7 +33,7 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 	}
 	base := fmt.Sprintf("http://127.0.0.1:%d", s.Port())
 	pageURL := "https://shop.localhost/page"
-	query := "?pageURL=" + url.QueryEscape(pageURL)
+	query := chatTargetQuery(pageURL, chatTargetProject)
 	t.Run("lists only selected project", func(t *testing.T) {
 		for _, item := range []struct{ root, id string }{{firstRoot, first.snapshot().ID}, {secondRoot, second.snapshot().ID}} {
 			current.Store(item.root)
@@ -52,7 +51,7 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 	})
 	current.Store(firstRoot)
 	t.Run("rejects cross project websocket", func(t *testing.T) {
-		address := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + "?sessionId=" + second.snapshot().ID + "&pageURL=" + url.QueryEscape(pageURL)
+		address := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + query + "&sessionId=" + second.snapshot().ID
 		conn, response, err := websocket.DefaultDialer.Dial(address, http.Header{"Origin": []string{base}})
 		if conn != nil {
 			defer conn.Close()
@@ -80,7 +79,7 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 		}
 	})
 	t.Run("rejects known native history from another project", func(t *testing.T) {
-		body, err := json.Marshal(chatSessionRequest{Harness: chatCodex, PageURL: pageURL, ResumeID: second.snapshot().NativeSessionID})
+		body, err := json.Marshal(chatSessionRequest{Harness: chatCodex, PageURL: pageURL, Target: chatTargetProject, ResumeID: second.snapshot().NativeSessionID})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -101,7 +100,7 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 	})
 	t.Run("rechecks project after a checkout switch on an attached socket", func(t *testing.T) {
 		current.Store(secondRoot)
-		address := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + "?sessionId=" + second.snapshot().ID + "&pageURL=" + url.QueryEscape(pageURL)
+		address := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + query + "&sessionId=" + second.snapshot().ID
 		conn, _, err := websocket.DefaultDialer.Dial(address, http.Header{"Origin": []string{base}})
 		if err != nil {
 			t.Fatal(err)

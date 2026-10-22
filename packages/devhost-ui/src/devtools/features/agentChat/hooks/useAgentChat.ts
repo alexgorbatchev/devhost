@@ -15,29 +15,29 @@ type ChatAction = () => Promise<void>;
 
 export function useAgentChat({
   pageURL,
+  target,
   beforeSend,
   onSent,
   settingsStore: providedSettings,
 }: IAgentChatOptions): IAgentChatController {
-  const settingsStore = useMemo(
-    () =>
-      providedSettings ??
-      createDevtoolsSettingsStore(
-        {
-          pageURL,
-          projectRootPath: readInjectedDevtoolsConfig().projectRootPath,
-        },
-        () => window.localStorage,
-      ),
-    [pageURL, providedSettings],
-  );
+  const settingsStore = useMemo(() => {
+    if (providedSettings) return providedSettings;
+    const config = readInjectedDevtoolsConfig();
+    return createDevtoolsSettingsStore(
+      {
+        pageURL,
+        projectRootPath: target === "devhost" ? config.devhostSourceRootPath : config.projectRootPath,
+      },
+      () => window.localStorage,
+    );
+  }, [pageURL, providedSettings, target]);
   const lifetime = useMemo(
     () => ({
-      client: createAgentChatClient(pageURL, window.location, settingsStore),
+      client: createAgentChatClient(pageURL, target, window.location, settingsStore),
       generation: 0,
       composerText: settingsStore.getState().chat.draft,
     }),
-    [pageURL, settingsStore],
+    [pageURL, settingsStore, target],
   );
   const client = lifetime.client;
   const state = useSyncExternalStore(client.subscribe, client.getSnapshot);

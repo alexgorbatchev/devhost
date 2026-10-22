@@ -6,6 +6,12 @@ export const fixture_reloadSession: IChatSession = {
   projectRootPath: "storybook-workspace",
   status: "idle",
 };
+export const fixture_devhostSession: IChatSession = {
+  id: "devhost-conversation",
+  harness: "codex",
+  projectRootPath: "/src/devhost",
+  status: "idle",
+};
 export const fixture_reloadEvents: readonly IChatEvent[] = Array.from({ length: 30 }, (_, index) => ({
   sequence: index + 1,
   payload: {

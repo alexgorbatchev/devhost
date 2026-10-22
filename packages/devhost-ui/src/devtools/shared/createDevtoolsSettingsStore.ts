@@ -12,6 +12,7 @@ import type {
 
 const chatSchema = z.object({
   isOpen: z.boolean().default(false),
+  target: z.enum(["project", "devhost"]).default("project"),
   side: z.enum(["left", "right"]).default("right"),
   selectedHarness: z.enum(["codex", "claude-code"]).default("codex"),
   selectedModel: z.string().default(""),

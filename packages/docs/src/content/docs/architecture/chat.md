@@ -6,9 +6,14 @@ The injected chat uses installed Codex and Claude Code clients. Codex runs its n
 
 ## Discovery and checkout ownership
 
-`GET /__devhost__/chat/harnesses?pageURL=<page-url>` asks each installed client for its native model catalog without sending an inference request. Each harness reports `id`, `label`, `available`, `models`, and an optional error. A model exposes its selectable `id`, label, description, and complete native row as `metadata`. Discovery does not prove the account is signed in for inference.
+`GET /__devhost__/chat/harnesses?pageURL=<page-url>&chatTarget=<target>` asks each installed client for its native model catalog without sending an inference request. Each harness reports `id`, `label`, `available`, `models`, and an optional error. A model exposes its selectable `id`, label, description, and complete native row as `metadata`. Discovery does not prove the account is signed in for inference.
 
-The page URL resolves a routed service and its selected checkout on the server. Browsers cannot choose an executable, command flags, environment, or arbitrary working directory. Omitting a model preserves the client's configured default.
+Every chat request names a chat target, and the server maps it to the working directory:
+
+- `project`: the page URL resolves a routed service and its selected checkout.
+- `devhost`: the devhost source checkout that the stack serves its devtools from. Development builds from `just dev-bootstrap` or the source shim name their own checkout; `DEVHOST_DEV_SOURCE_DIR` overrides it. Without a source checkout the target is rejected with `400 Bad Request`, and `/__devhost__/config.json` reports an empty `devhostSourceRootPath`.
+
+A missing or unknown target is rejected with `400 Bad Request`. Browsers cannot choose an executable, command flags, environment, or arbitrary working directory. Omitting a model preserves the client's configured default.
 
 ## Native sessions
 
@@ -17,21 +22,22 @@ The page URL resolves a routed service and its selected checkout on the server. 
 ```json
 {
   "harness": "codex",
-  "pageURL": "https://app.localhost/"
+  "pageURL": "https://app.localhost/",
+  "target": "project"
 }
 ```
 
-Optional `model` selects an advertised model; optional `resumeId` asks the native client to resume its own conversation ID. Codex uses its native thread start/resume operations. Claude Code receives its native resume argument. A resumed conversation still resolves its checkout from the supplied routed page.
+Optional `model` selects an advertised model; optional `resumeId` asks the native client to resume its own conversation ID. Codex uses its native thread start/resume operations. Claude Code receives its native resume argument. A resumed conversation still resolves its checkout from the supplied routed page and target.
 
 The response contains `id`, `harness`, `projectRootPath`, `status`, an optional `nativeSessionId`, and an optional error. Native identity can arrive later, particularly before Claude Code's first turn. Status is `starting`, `idle`, `running`, `requires_action`, `closed`, or `error`.
 
-`GET /__devhost__/chat/sessions?pageURL=<page-url>` returns only the records belonging to that page's resolved project. `DELETE /__devhost__/chat/sessions/<id>?pageURL=<page-url>` terminates and joins a session in that same project. Cross-project attachment and deletion return 404, and resuming a native ID already associated with another project is rejected. Interrupting a turn is a separate operation and leaves its session available.
+`GET /__devhost__/chat/sessions?pageURL=<page-url>&chatTarget=<target>` returns only the records belonging to the directory that page and target resolve to. `DELETE /__devhost__/chat/sessions/<id>?pageURL=<page-url>&chatTarget=<target>` terminates and joins a session in that same directory. Cross-project attachment and deletion return 404, and resuming a native ID already associated with another project is rejected. Interrupting a turn is a separate operation and leaves its session available.
 
 Sessions and retained events are owned by the running stack. Reloading or closing a browser does not end an in-flight turn. New sessions follow a newly selected checkout; existing sessions retain the directory they started in. Stack shutdown stops and joins its processes. Browser replay is in memory and does not constitute a durable prompt queue across stack restarts; native clients own their own saved conversation history.
 
 ## Browser view persistence
 
-The injected UI uses the shared Zustand settings store with `persist` and `createJSONStorage`. Local storage keys start with `devhost:settings:` and include the resolved project directory and page origin. Paths, query parameters, and fragments share settings so client-side navigation followed by reload retains the active conversation. Different project directories and origins remain isolated. The versioned payload contains chat visibility, panel side, selected harness and model, active devhost session ID, text draft, and conversation scroll position. Zod validates saved settings; invalid data and unknown versions reset to defaults. Storage access and quota failures leave the in-memory UI usable.
+The injected UI uses the shared Zustand settings store with `persist` and `createJSONStorage`. Local storage keys start with `devhost:settings:` and include the resolved project directory and page origin. Paths, query parameters, and fragments share settings so client-side navigation followed by reload retains the active conversation. Different project directories and origins remain isolated. The versioned payload contains chat visibility, chat target, panel side, selected harness and model, active devhost session ID, text draft, and conversation scroll position. The page's project store keeps chat visibility and the chat target. Conversation state (panel side, harness, model, session, draft, and scroll position) belongs to the target's directory, so the devhost target keeps its conversation under the devhost checkout's key and switching back restores the project's conversation. Zod validates saved settings; invalid data and unknown versions reset to defaults. Storage access and quota failures leave the in-memory UI usable.
 
 On reload, the client lists the routed project's sessions and attaches the saved ID only if that record still exists and is not closed. It obtains messages and pending request IDs from the authoritative WebSocket snapshot, then restores the scroll position once the panel is visible. A position at the bottom follows the end of the replay and then each new reply; a position above the bottom stays in place as replies arrive. Closing a conversation clears its saved ID and scroll position. Stored harness/model preferences are reconciled with discovery; a missing model returns to the configured default.
 
@@ -39,7 +45,7 @@ Draft text remains saved until send acknowledgement, and reloading never submits
 
 ## Event replay and commands
 
-Connect to `/__devhost__/ws/chat?sessionId=<id>&pageURL=<page-url>` on the routed origin. Supply the same routed page URL for discovery, listing, attachment, and closure. The server checks the resolved project before attachment and again before every command, so an old socket cannot send into the previous checkout after a project switch. Chat mutations and WebSocket attachments require a matching `Origin` header.
+Connect to `/__devhost__/ws/chat?sessionId=<id>&pageURL=<page-url>&chatTarget=<target>` on the routed origin. Supply the same routed page URL and target for discovery, listing, attachment, and closure. The server checks the resolved project before attachment and again before every command, so an old socket cannot send into the previous checkout after a project switch. Chat mutations and WebSocket attachments require a matching `Origin` header.
 
 The first frame is a `snapshot` with the current session, retained `events`, and `pendingRequestIds`. Each event has an increasing `sequence` and an unchanged native `payload`. Live `event` frames continue that sequence. `state` frames publish session metadata and authoritative pending request IDs.
 
