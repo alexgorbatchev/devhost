@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-21 19:40
+last_modified: 2026-10-22 15:30
 status: current
 ---
 
@@ -14,7 +14,7 @@ The recording workflow runs on Linux and macOS. Record the media the docs site p
 
 Install the repository dependencies with `bun install`. Recording uses the existing pinned Playwright dependency and Chromium installed by `just ui install-browser`. Also provide Git, `just`, Caddy, [VHS](https://github.com/charmbracelet/vhs), `ttyd`, Bash, `ln`, and FFmpeg/ffprobe on PATH. FFmpeg must support H.264 (`libx264`), WebP posters (`libwebp`), AAC, and subtitles (`libass`); every recording and render command, and the publication tests, check this first and name what is missing. Homebrew's regular `ffmpeg` formula, which other formulas install as a dependency, has neither `libwebp` nor `libass`: on macOS use `ffmpeg-full` and put `$(brew --prefix ffmpeg-full)/bin` ahead of other FFmpeg installs on PATH. Install the DejaVu fonts and Noto Color Emoji to render captions and the playground's terminal emoji; verify with `fc-match 'DejaVu Sans Mono'` and `fc-match 'Noto Color Emoji'`. On macOS, install them with Homebrew's `font-dejavu` and `font-noto-color-emoji` casks; Homebrew's `fontconfig` provides `fc-match`. A custom [Fontconfig configuration](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html) can be supplied through `FONTCONFIG_FILE` when fonts are kept in the checkout.
 
-`just demo test` also requires Xvfb on Linux. The headed-window regression owns an automatically allocated display with TCP disabled and verifies the native 1280 × 720 content area and 2560 × 1440 capture. The recorder uses Chromium's `Browser.setContentsSize` command so browser decorations do not shrink the captured viewport. This test records only its fixture; it does not run an agent or record a demo film.
+`just demo test` also requires Xvfb on Linux. The headed-window regression owns an automatically allocated display with TCP disabled, launches Chromium there with `--disable-gpu`, and verifies the native 1280 × 720 content area and 2560 × 1440 capture. The recorder uses Chromium's `Browser.setContentsSize` command so browser decorations do not shrink the captured viewport. Xvfb has no GPU: Chromium's first GPU process fails to start there, and on a cold CI runner a screenshot taken before its software replacement starts fails. This test records only its fixture; it does not run an agent or record a demo film.
 
 VHS may download its own Chromium on the first run. Where that Chromium reports "No usable sandbox", explicitly opt into VHS's sandbox override:
 
