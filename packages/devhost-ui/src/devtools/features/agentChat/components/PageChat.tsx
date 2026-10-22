@@ -15,14 +15,18 @@ import { preparePageChatSend } from "../preparePageChatSend";
 import { useAgentChat } from "../hooks/useAgentChat";
 import { useChatComposerFocus } from "../hooks/useChatComposerFocus";
 import { AgentChatPanel } from "./AgentChatPanel";
+import { ChatTargetToggle } from "./ChatTargetToggle";
 import { PageAnnotationToolbar } from "./PageAnnotationToolbar";
 import { PageContextList } from "./PageContextList";
 import { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
-import type { DevtoolsSettingsStore } from "../../../shared/types";
+import type { ChatTarget, DevtoolsSettingsStore } from "../../../shared/types";
 import { AnnotationTopLayer } from "../../../shared/components/AnnotationTopLayer";
 
 interface IPageChatProps {
   settingsStore?: DevtoolsSettingsStore;
+  target: ChatTarget;
+  /** Offers the devhost target beside the project; absent when devhost serves no source checkout. */
+  onTargetChange?: (target: ChatTarget) => void;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   isSelectionEnabled: boolean;
@@ -35,6 +39,8 @@ export function PageChat({
   isSelectionEnabled,
   rootReference,
   settingsStore,
+  target,
+  onTargetChange,
 }: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
   // Portals inherit from this interactive surface rather than the passive full-viewport devtools root.
@@ -118,7 +124,7 @@ export function PageChat({
     const sentIds = new Set(shapes.map((shape) => shape.id));
     setShapes((current) => current.filter((shape) => !sentIds.has(shape.id)));
   }, [selectedTargets, removeSelection, shapes]);
-  const chat = useAgentChat({ pageURL: sessionPageURL, beforeSend, onSent: clearSentContext, settingsStore });
+  const chat = useAgentChat({ pageURL: sessionPageURL, target, beforeSend, onSent: clearSentContext, settingsStore });
   const isContextDisabled = isCapturing || chat.isPreparing;
   const composerInputReference = useChatComposerFocus({ isOpen, contextCount: selectedTargets.length + shapes.length });
   return (
@@ -163,6 +169,11 @@ export function PageChat({
             sharing={sharing}
             chat={chat}
             composerInputRef={composerInputReference}
+            headerControls={
+              onTargetChange ? (
+                <ChatTargetToggle target={target} isDisabled={chat.isPreparing} onTargetChange={onTargetChange} />
+              ) : null
+            }
             isOpen={isOpen}
             onClose={() => {
               stopSelection();

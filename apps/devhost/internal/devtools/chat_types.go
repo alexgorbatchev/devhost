@@ -9,6 +9,8 @@ const (
 	chatMessageLimit  = 8 * 1024 * 1024
 	chatCodex         = "codex"
 	chatClaude        = "claude-code"
+	chatTargetProject = "project"
+	chatTargetDevhost = "devhost"
 )
 
 type chatModel struct {
@@ -38,6 +40,7 @@ type chatSessionInfo struct {
 type chatSessionRequest struct {
 	Harness  string `json:"harness"`
 	PageURL  string `json:"pageURL"`
+	Target   string `json:"target"`
 	Model    string `json:"model,omitempty"`
 	ResumeID string `json:"resumeId,omitempty"`
 }

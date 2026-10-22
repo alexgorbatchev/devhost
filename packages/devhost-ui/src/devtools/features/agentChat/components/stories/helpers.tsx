@@ -24,8 +24,8 @@ import { ChatUserText } from "../ChatUserText";
 import { App } from "../../../../components/App";
 import { DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME } from "../../../../shared/constants";
 import { createMockWebSocket, type IMockWebSocketConnection } from "../../../../../../test-support/createMockWebSocket";
-import { fixture_reloadEvents, fixture_reloadSession } from "./fixtures";
-import { userEvent, within } from "storybook/test";
+import { fixture_devhostSession, fixture_reloadEvents, fixture_reloadSession } from "./fixtures";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { IAnnotationPoint } from "../../../visualAnnotations/types";
 import { cdp, userEvent as nativeUserEvent } from "vitest/browser";
 
@@ -155,6 +155,49 @@ export function installChatReloadServer(events: readonly IChatEvent[] = fixture_
   };
 }
 
+/** Serves one conversation per chat target, as a devhost that serves its own source checkout does. */
+export function installChatTargetServer(): VoidFunction {
+  const restoreCatalog = installPageChatCatalog();
+  const catalogFetch = globalThis.fetch;
+  const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
+  Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+    projectRootPath: fixture_reloadSession.projectRootPath,
+    devhostSourceRootPath: fixture_devhostSession.projectRootPath,
+    chatEnabled: true,
+    statusEnabled: false,
+    minimapEnabled: false,
+    editorEnabled: false,
+    externalToolbarsEnabled: false,
+  });
+  const fetch: FetchFunction = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (url.pathname === "/__devhost__/chat/sessions") {
+      const target = url.searchParams.get("chatTarget");
+      if (target !== "project" && target !== "devhost") return new Response("unknown chat target", { status: 400 });
+      return Response.json({ sessions: [target === "devhost" ? fixture_devhostSession : fixture_reloadSession] });
+    }
+    return catalogFetch(input, init);
+  };
+  Reflect.set(globalThis, "fetch", fetch);
+  return () => {
+    restoreCatalog();
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, originalConfig);
+  };
+}
+
+/** The conversations the Chat Settings dialog offers, by their option labels. */
+export async function readOfferedConversations(canvasElement: HTMLElement): Promise<string[]> {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+  const conversation = await canvas.findByRole("combobox", { name: "Conversation" });
+  await waitFor(() => expect(within(conversation).getAllByRole("option").length).toBeGreaterThan(1));
+  const labels = within(conversation)
+    .getAllByRole("option")
+    .map((option) => option.textContent ?? "");
+  await userEvent.keyboard("{Escape}");
+  return labels;
+}
+
 export function UserMessageScene(): JSX.Element {
   const [messages] = useState<ThreadMessageLike[]>([
     {
@@ -184,7 +227,11 @@ export function ChatPreparationScene(): JSX.Element {
   const root = useRef<HTMLDivElement | null>(null);
   const [preparation] = useState(() => Promise.withResolvers<null>());
   const [isOpen, setIsOpen] = useState(true);
-  const chat = useAgentChat({ pageURL: window.location.href, beforeSend: () => preparation.promise });
+  const chat = useAgentChat({
+    target: "project",
+    pageURL: window.location.href,
+    beforeSend: () => preparation.promise,
+  });
   return (
     <DevtoolsTopLayer ref={root}>
       <PortalProvider container={root}>
@@ -262,7 +309,13 @@ export function PageChatScene(): JSX.Element {
         Open chat
       </button>
       <DevtoolsTopLayer ref={rootReference}>
-        <PageChat isOpen={isOpen} onOpenChange={setIsOpen} isSelectionEnabled rootReference={rootReference} />
+        <PageChat
+          target="project"
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          isSelectionEnabled
+          rootReference={rootReference}
+        />
       </DevtoolsTopLayer>
     </div>
   );
@@ -359,7 +412,13 @@ export function ShadowPageChatScene({ hasNativeLayers = false }: IShadowPageChat
               </ToolbarPopover>
             </DevtoolsToolbar>
           ) : null}
-          <PageChat isOpen={isOpen} onOpenChange={setIsOpen} isSelectionEnabled rootReference={rootReference} />
+          <PageChat
+            target="project"
+            isOpen={isOpen}
+            onOpenChange={setIsOpen}
+            isSelectionEnabled
+            rootReference={rootReference}
+          />
         </DevtoolsTopLayer>,
       )}
     </div>

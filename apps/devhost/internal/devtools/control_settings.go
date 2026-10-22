@@ -85,6 +85,9 @@ func (s *ControlServer) renderInjectedConfig(settings ControlSettings) ([]byte, 
 		RestartServicesShortcut: settings.RestartServicesShortcut,
 		PrimaryService:          settings.PrimaryService,
 	}
+	if s.devSource != nil {
+		config.DevhostSourceRootPath = s.devSource.RootPath()
+	}
 	encoded, err := json.Marshal(config)
 	if err != nil {
 		return nil, fmt.Errorf("encode devtools config: %w", err)

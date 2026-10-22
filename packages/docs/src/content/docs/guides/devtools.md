@@ -194,26 +194,28 @@ Instance configuration is kept out of `inject.js`, lazy JavaScript chunks and fo
 
 All paths below are relative to the routed app's origin. Requests with JSON bodies use `Content-Type: application/json`.
 
-| Endpoint                                         | Methods       | Purpose                                                    |
-| ------------------------------------------------ | ------------- | ---------------------------------------------------------- |
-| `/__devhost__/chat/harnesses?pageURL=<page-url>` | `GET`         | Discover installed native clients and model catalogs       |
-| `/__devhost__/chat/sessions`                     | `GET`, `POST` | List sessions or start/resume a native conversation        |
-| `/__devhost__/chat/sessions/<id>`                | `DELETE`      | End the owned native process                               |
-| `/__devhost__/restart-service`                   | `POST`        | Restart managed services                                   |
-| `/__devhost__/restart-stack`                     | `POST`        | Restart all managed services with fresh automatic ports    |
-| `/__devhost__/worktrees`                         | `GET`, `POST` | Refresh worktree state or switch the selected checkout     |
-| `/__devhost__/react-highlight/cursor`            | `POST`        | Publish an editor cursor update                            |
-| `/__devhost__/config/files`                      | `GET`         | List the files the config editor can change, with contents |
-| `/__devhost__/config/schema`                     | `GET`         | Describe the settings each kind of file accepts            |
-| `/__devhost__/config/validate`                   | `POST`        | Check unsaved content with the checks a reload makes       |
-| `/__devhost__/config/save`                       | `POST`        | Write checked content over the version it was edited from  |
+| Endpoint                              | Methods       | Purpose                                                    |
+| ------------------------------------- | ------------- | ---------------------------------------------------------- |
+| `/__devhost__/chat/harnesses`         | `GET`         | Discover installed native clients and model catalogs       |
+| `/__devhost__/chat/sessions`          | `GET`, `POST` | List sessions or start/resume a native conversation        |
+| `/__devhost__/chat/sessions/<id>`     | `DELETE`      | End the owned native process                               |
+| `/__devhost__/restart-service`        | `POST`        | Restart managed services                                   |
+| `/__devhost__/restart-stack`          | `POST`        | Restart all managed services with fresh automatic ports    |
+| `/__devhost__/worktrees`              | `GET`, `POST` | Refresh worktree state or switch the selected checkout     |
+| `/__devhost__/react-highlight/cursor` | `POST`        | Publish an editor cursor update                            |
+| `/__devhost__/config/files`           | `GET`         | List the files the config editor can change, with contents |
+| `/__devhost__/config/schema`          | `GET`         | Describe the settings each kind of file accepts            |
+| `/__devhost__/config/validate`        | `POST`        | Check unsaved content with the checks a reload makes       |
+| `/__devhost__/config/save`            | `POST`        | Write checked content over the version it was edited from  |
+
+Chat `GET` and `DELETE` requests take `pageURL` and `chatTarget` (`project` or `devhost`) query parameters; `POST` carries them as `pageURL` and `target`.
 
 Handlers still validate methods, payloads, enabled features, and session state. Malformed requests can produce `400 Bad Request`, unsupported methods produce `405 Method Not Allowed`, and unavailable controls can produce `501 Not Implemented`. The config routes answer `404 Not Found` while the config editor is off. A save answers `403 Forbidden` for a file the editor does not list or a client on another machine, `409 Conflict` with the file on disk when it changed since the editor read it, and `422 Unprocessable Entity` with the issues when the content fails the checks.
 
 ### WebSocket connections
 
 ```text
-/__devhost__/ws/chat?sessionId=<session-id>
+/__devhost__/ws/chat?sessionId=<session-id>&pageURL=<page-url>&chatTarget=<target>
 /__devhost__/ws/react-highlight
 /__devhost__/ws/health
 /__devhost__/ws/logs

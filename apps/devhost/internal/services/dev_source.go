@@ -29,18 +29,30 @@ func resolveDevSourceDirectory(environment map[string]string, manifestDirectoryP
 	return filepath.Join(manifestDirectoryPath, sourceDirectoryPath)
 }
 
-// loadDevSourceCheckout returns nil when the variable is unset, and an error
-// naming the variable when it points somewhere that is not a devhost checkout.
-func loadDevSourceCheckout(environment map[string]string, manifestDirectoryPath string) (*devtools.DevSourceCheckout, error) {
+// loadDevSourceCheckout prefers the variable, then the checkout a development
+// build names (builtInDirectoryPath), and returns nil when neither is set. A
+// variable that is not a devhost checkout is an error naming it. A built-in
+// checkout that has moved or been deleted only warns: the binary keeps serving
+// its embedded assets, because it runs every project's stack, not only devhost's.
+func loadDevSourceCheckout(environment map[string]string, manifestDirectoryPath string, builtInDirectoryPath string) (*devtools.DevSourceCheckout, string, error) {
 	sourceDirectoryPath := resolveDevSourceDirectory(environment, manifestDirectoryPath)
-	if sourceDirectoryPath == "" {
-		return nil, nil
+	if sourceDirectoryPath != "" {
+		checkout, err := devtools.NewDevSourceCheckout(sourceDirectoryPath)
+		if err != nil {
+			return nil, "", fmt.Errorf("%s: %w", devSourceDirectoryEnvironmentVariable, err)
+		}
+
+		return checkout, "", nil
 	}
 
-	checkout, err := devtools.NewDevSourceCheckout(sourceDirectoryPath)
+	if builtInDirectoryPath == "" {
+		return nil, "", nil
+	}
+
+	checkout, err := devtools.NewDevSourceCheckout(builtInDirectoryPath)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", devSourceDirectoryEnvironmentVariable, err)
+		return nil, fmt.Sprintf("This development build serves its embedded devtools assets: %v", err), nil
 	}
 
-	return checkout, nil
+	return checkout, "", nil
 }

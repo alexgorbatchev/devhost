@@ -43,15 +43,25 @@ func TestLoadDevSourceCheckout(t *testing.T) {
 	writeDevSourceFile(t, filepath.Join(validCheckoutPath, "packages", "devhost-ui", "src", "devtools", "main.ts"))
 	writeDevSourceFile(t, filepath.Join(validCheckoutPath, "apps", "devhost", "justfile"))
 
+	otherCheckoutPath := t.TempDir()
+	writeDevSourceFile(t, filepath.Join(otherCheckoutPath, "packages", "devhost-ui", "src", "devtools", "main.ts"))
+	writeDevSourceFile(t, filepath.Join(otherCheckoutPath, "apps", "devhost", "justfile"))
+	missingCheckoutPath := filepath.Join(t.TempDir(), "not-devhost")
+
 	tests := []struct {
 		name         string
 		value        string
-		wantCheckout bool
+		builtIn      string
+		wantCheckout string
+		wantWarning  string
 		wantError    string
 	}{
 		{name: "disabled when unset", value: ""},
-		{name: "loads a devhost checkout", value: validCheckoutPath, wantCheckout: true},
-		{name: "rejects a path that is not a devhost checkout", value: filepath.Join(t.TempDir(), "not-devhost"), wantError: devSourceDirectoryEnvironmentVariable},
+		{name: "loads a devhost checkout", value: validCheckoutPath, wantCheckout: validCheckoutPath},
+		{name: "rejects a path that is not a devhost checkout", value: missingCheckoutPath, wantError: devSourceDirectoryEnvironmentVariable},
+		{name: "loads the checkout a development build names", builtIn: validCheckoutPath, wantCheckout: validCheckoutPath},
+		{name: "prefers the variable over the development build", value: otherCheckoutPath, builtIn: validCheckoutPath, wantCheckout: otherCheckoutPath},
+		{name: "warns and serves embedded assets when the built-in checkout is gone", builtIn: missingCheckoutPath, wantWarning: missingCheckoutPath},
 	}
 
 	for _, tt := range tests {
@@ -60,7 +70,7 @@ func TestLoadDevSourceCheckout(t *testing.T) {
 			t.Parallel()
 
 			environment := map[string]string{devSourceDirectoryEnvironmentVariable: tc.value}
-			checkout, err := loadDevSourceCheckout(environment, t.TempDir())
+			checkout, warning, err := loadDevSourceCheckout(environment, t.TempDir(), tc.builtIn)
 
 			if tc.wantError != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantError) {
@@ -70,11 +80,19 @@ func TestLoadDevSourceCheckout(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Fatalf("loadDevSourceCheckout(%q) unexpected error = %v", tc.value, err)
+				t.Fatalf("loadDevSourceCheckout(%q, built-in %q) unexpected error = %v", tc.value, tc.builtIn, err)
 			}
 
-			if (checkout != nil) != tc.wantCheckout {
-				t.Fatalf("loadDevSourceCheckout(%q) checkout = %+v, want present = %t", tc.value, checkout, tc.wantCheckout)
+			gotCheckout := ""
+			if checkout != nil {
+				gotCheckout = checkout.RootPath()
+			}
+			if gotCheckout != tc.wantCheckout {
+				t.Fatalf("loadDevSourceCheckout(%q, built-in %q) checkout = %q, want %q", tc.value, tc.builtIn, gotCheckout, tc.wantCheckout)
+			}
+
+			if (warning == "") != (tc.wantWarning == "") || !strings.Contains(warning, tc.wantWarning) {
+				t.Fatalf("loadDevSourceCheckout(%q, built-in %q) warning = %q, want one naming %q", tc.value, tc.builtIn, warning, tc.wantWarning)
 			}
 		})
 	}

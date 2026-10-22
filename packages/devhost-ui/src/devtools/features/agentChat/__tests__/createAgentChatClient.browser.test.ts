@@ -26,7 +26,7 @@ beforeEach(() => {
       },
     }),
   );
-  client = createAgentChatClient("https://app.localhost/page", window.location, settings);
+  client = createAgentChatClient("https://app.localhost/page", "project", window.location, settings);
 });
 afterEach(async () => {
   client.dispose();

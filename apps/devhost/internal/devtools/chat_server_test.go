@@ -45,7 +45,7 @@ func TestChatWebsocketReplayPendingResponsesAndShutdown(t *testing.T) {
 	}
 	waitChatState(t, session, "requires_action")
 	base := fmt.Sprintf("http://127.0.0.1:%d", s.Port())
-	url := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + "?sessionId=" + session.snapshot().ID
+	url := "ws" + strings.TrimPrefix(base, "http") + chatWebsocketPath + chatTargetQuery("", chatTargetProject) + "&sessionId=" + session.snapshot().ID
 	connect := func() *websocket.Conn {
 		t.Helper()
 		conn, _, err := websocket.DefaultDialer.Dial(url, http.Header{"Origin": []string{base}})
@@ -114,12 +114,12 @@ func TestChatRoutesValidateRequestsBeforeStartingClients(t *testing.T) {
 		name, method, path, origin, body string
 		status                           int
 	}{
-		{"list sessions", http.MethodGet, "/__devhost__/chat/sessions", "", "", http.StatusOK},
+		{"list sessions", http.MethodGet, "/__devhost__/chat/sessions?chatTarget=project", "", "", http.StatusOK},
 		{"foreign origin", http.MethodPost, "/__devhost__/chat/sessions", "https://example.com", `{"harness":"codex"}`, http.StatusForbidden},
 		{"missing mutation origin", http.MethodPost, "/__devhost__/chat/sessions", "", `{"harness":"codex"}`, http.StatusForbidden},
 		{"unknown harness", http.MethodPost, "/__devhost__/chat/sessions", base, `{"harness":"unknown"}`, http.StatusBadRequest},
 		{"browser executable override", http.MethodPost, "/__devhost__/chat/sessions", base, `{"harness":"codex","executable":"/bin/sh"}`, http.StatusBadRequest},
-		{"missing session", http.MethodDelete, "/__devhost__/chat/sessions/missing", base, "", http.StatusNotFound},
+		{"missing session", http.MethodDelete, "/__devhost__/chat/sessions/missing?chatTarget=project", base, "", http.StatusNotFound},
 		{"missing websocket session", http.MethodGet, "/__devhost__/ws/chat", base, "", http.StatusBadRequest},
 	}
 	for _, tt := range tests {

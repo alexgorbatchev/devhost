@@ -1,5 +1,8 @@
 build-version := `bun -e 'const metadata = await Bun.file("./metadata.json").json(); console.log(metadata.version)'`
 build-version-variable := "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion"
+# Development builds set this to the checkout root; release builds leave it empty.
+build-source-directory := ""
+build-source-directory-variable := "github.com/alexgorbatchev/devhost/apps/devhost/internal/devbuild.sourceDirectory"
 
 # Build embedded devtools bundle
 build-devtools-bundle:
@@ -12,7 +15,7 @@ setup:
 # Compile devhost executable for the current platform
 compile: build-devtools-bundle
     mkdir -p ./bin
-    go build -trimpath -ldflags "-X {{ build-version-variable }}={{ build-version }}" -o ./bin/devhost ./cmd/devhost
+    go build -trimpath -ldflags "-X '{{ build-version-variable }}={{ build-version }}' -X '{{ build-source-directory-variable }}={{ build-source-directory }}'" -o ./bin/devhost ./cmd/devhost
 
 # Run devhost from source in the calling directory
 [no-cd]

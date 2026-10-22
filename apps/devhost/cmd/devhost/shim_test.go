@@ -12,8 +12,13 @@ import (
 // shimPath is where the shim sits in the app directory, and so in a fixture.
 var shimPath = filepath.Join("scripts", "runFromSource.sh")
 
+// devbuildPath is the package whose variable the shim stamps, copied into a
+// fixture so the stamp is checked against the real declaration.
+var devbuildPath = filepath.Join("internal", "devbuild", "devbuild.go")
+
 // shimFixtureProgram stands in for devhost: it reports the file it embeds, the
-// directory it runs in, and the arguments it received.
+// source checkout it was built from, the directory it runs in, and the
+// arguments it received.
 const shimFixtureProgram = `package main
 
 import (
@@ -21,6 +26,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devbuild"
 )
 
 //go:embed asset.txt
@@ -34,10 +41,22 @@ func main() {
 	}
 
 	fmt.Printf("asset=%s\n", strings.TrimSpace(asset))
+	fmt.Printf("source=%s\n", devbuild.SourceDirectory())
 	fmt.Printf("cwd=%s\n", cwd)
 	fmt.Printf("args=%s\n", strings.Join(os.Args[1:], " "))
 }
 `
+
+func TestShimBuildNamesItsSourceCheckout(t *testing.T) {
+	t.Parallel()
+
+	appPath := createShimFixture(t)
+	repositoryPath := physicalPath(t, filepath.Join(appPath, "..", ".."))
+
+	if got := physicalPath(t, shimOutputValue(t, runShim(t, appPath, t.TempDir()), "source")); got != repositoryPath {
+		t.Fatalf("the shim build names source checkout %q, want the repository root %q", got, repositoryPath)
+	}
+}
 
 func TestShimRebuildsWhenAnEmbeddedFileChanges(t *testing.T) {
 	t.Parallel()
@@ -105,7 +124,8 @@ func TestShimRunsInTheCallingDirectory(t *testing.T) {
 }
 
 // createShimFixture lays out a checkout the shim can build: the real shim beside
-// a module whose command embeds a file.
+// a module whose command embeds a file, at apps/devhost inside a repository
+// root. It returns the app directory.
 func createShimFixture(t *testing.T) string {
 	t.Helper()
 
@@ -114,9 +134,15 @@ func createShimFixture(t *testing.T) string {
 		t.Fatalf("read the shim: %v", err)
 	}
 
-	checkoutPath := t.TempDir()
+	devbuild, err := os.ReadFile(filepath.Join("..", "..", devbuildPath))
+	if err != nil {
+		t.Fatalf("read the devbuild package: %v", err)
+	}
+
+	checkoutPath := filepath.Join(t.TempDir(), "apps", "devhost")
 	writeShimFixtureFile(t, filepath.Join(checkoutPath, shimPath), string(shim), 0o755)
-	writeShimFixtureFile(t, filepath.Join(checkoutPath, "go.mod"), "module shimfixture\n\ngo 1.26\n", 0o644)
+	writeShimFixtureFile(t, filepath.Join(checkoutPath, devbuildPath), string(devbuild), 0o644)
+	writeShimFixtureFile(t, filepath.Join(checkoutPath, "go.mod"), "module github.com/alexgorbatchev/devhost/apps/devhost\n\ngo 1.26\n", 0o644)
 	writeShimFixtureFile(t, filepath.Join(checkoutPath, "cmd", "devhost", "main.go"), shimFixtureProgram, 0o644)
 	writeShimFixtureFile(t, filepath.Join(checkoutPath, "cmd", "devhost", "asset.txt"), "first\n", 0o644)
 

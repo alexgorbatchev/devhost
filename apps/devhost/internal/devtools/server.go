@@ -203,6 +203,7 @@ type injectedConfig struct {
 	HomeDirectoryPath       string                  `json:"homeDirectoryPath"`
 	Position                string                  `json:"position"`
 	ProjectRootPath         string                  `json:"projectRootPath"`
+	DevhostSourceRootPath   string                  `json:"devhostSourceRootPath"`
 	StackName               string                  `json:"stackName"`
 	EditorEnabled           bool                    `json:"editorEnabled"`
 	ExternalToolbarsEnabled bool                    `json:"externalToolbarsEnabled"`

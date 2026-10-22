@@ -178,11 +178,11 @@ See [Devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/) for ho
 
 If you are modifying the injected browser devtools UI (`packages/devhost-ui/`) and want to test your changes instantly without manually rebuilding the Go app or restarting the service stack, you can use the built-in on-demand asset dev loop:
 
-1. Set `DEVHOST_DEV_SOURCE_DIR` to the root of your devhost checkout. A relative path resolves against the manifest directory, so `DEVHOST_DEV_SOURCE_DIR=.` works for the repo-root `devhost.toml`; `just run` sets it for you.
+1. Run a development build: `just dev-bootstrap` and the source shim behind `just run` and `just cli` record their checkout and use it. To point any other build at a checkout, set `DEVHOST_DEV_SOURCE_DIR` to its root; a relative path resolves against the manifest directory, and the variable overrides the recorded checkout.
 2. On every browser page refresh, `devhost` checks whether any file under `packages/devhost-ui/src/devtools/` in that checkout is newer than `apps/devhost/internal/devtools/dist/devtools.js`.
 3. If so, it runs `just --justfile <checkout>/apps/devhost/justfile build-devtools-bundle`, one build at a time, and serves the fresh development bundle without caching once the build finishes. Content-hashed chunks from earlier page loads remain available for active tabs.
 4. If the build fails, or finishes without writing `devtools.js`, the page shows a `DEVHOST COMPILATION ERROR` banner with the details, and the next reload tries again.
-5. If `DEVHOST_DEV_SOURCE_DIR` does not point at a devhost checkout, `devhost start` exits with an error naming the variable and the missing path.
+5. If `DEVHOST_DEV_SOURCE_DIR` does not point at a devhost checkout, `devhost start` exits with an error naming the variable and the missing path. If a development build's recorded checkout has moved or been deleted, `devhost start` warns and serves the UI built into the binary.
 
 ## AI devhost skill
 

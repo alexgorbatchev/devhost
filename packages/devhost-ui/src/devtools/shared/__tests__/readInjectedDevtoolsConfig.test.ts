@@ -45,6 +45,14 @@ describe("readInjectedDevtoolsConfig", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { configEditorEnabled: "yes" });
     expect(readInjectedDevtoolsConfig().configEditorEnabled).toBe(false);
   });
+  test.each([
+    { devhostSourceRootPath: "/src/devhost", want: "/src/devhost" },
+    { devhostSourceRootPath: 7, want: "" },
+    { want: "" },
+  ])("reads the devhost checkout chat can target: %j", ({ want, ...config }) => {
+    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, config);
+    expect(readInjectedDevtoolsConfig().devhostSourceRootPath).toBe(want);
+  });
   test("reads external editor, checkout, home and routed service metadata", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       componentEditor: "cursor",

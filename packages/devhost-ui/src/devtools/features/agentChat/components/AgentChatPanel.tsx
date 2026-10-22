@@ -23,6 +23,7 @@ const Thread = lazy(() =>
 interface IAgentChatPanelProps {
   chat: IAgentChatController;
   composerInputRef?: Ref<HTMLTextAreaElement>;
+  headerControls?: ReactNode;
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
@@ -32,6 +33,7 @@ interface IAgentChatPanelProps {
 export function AgentChatPanel({
   chat,
   composerInputRef,
+  headerControls,
   isOpen,
   onClose,
   children,
@@ -64,6 +66,7 @@ export function AgentChatPanel({
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-border p-2">
         <h2 className="flex-1 font-semibold">Agent Chat</h2>
+        {headerControls}
         <ChatSettings chat={chat} isBusy={isBusy} />
         <Button
           size="icon-sm"

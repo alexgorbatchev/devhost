@@ -11,8 +11,10 @@ import {
   deliverChatStatus,
   isChatViewportAtBottom,
   installChatReloadServer,
+  installChatTargetServer,
   installPageChatCatalog,
   readChatViewport,
+  readOfferedConversations,
   readSentChatCommands,
 } from "./helpers";
 import {
@@ -60,6 +62,39 @@ export const EscapeInInjectedComposerInterruptsTurn: Story = {
     expect(shadowRoot.activeElement).toBe(composer);
     await nativeUserEvent.keyboard("{Escape}");
     await waitFor(() => expect(readSentChatCommands()).toContainEqual({ type: "interrupt" }));
+  },
+};
+
+export const DirectoryToggleSwitchesToDevhostCheckout: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatTargetServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    const directory = within(canvas.getByRole("group", { name: "Chat Directory" }));
+    expect(directory.getByRole("button", { name: "Project" })).toHaveAttribute("aria-pressed", "true");
+    expect(await readOfferedConversations(canvasElement)).toEqual(["New conversation", "codex · saved-conversation"]);
+
+    await userEvent.click(directory.getByRole("button", { name: "devhost" }));
+    expect(await readOfferedConversations(canvasElement)).toEqual(["New conversation", "codex · devhost-conversation"]);
+
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    const reloaded = within(await canvas.findByRole("group", { name: "Chat Directory" }));
+    expect(reloaded.getByRole("button", { name: "devhost" })).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(reloaded.getByRole("button", { name: "Project" }));
+    expect(await readOfferedConversations(canvasElement)).toEqual(["New conversation", "codex · saved-conversation"]);
+  },
+};
+
+export const DirectoryToggleNeedsDevhostCheckout: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    await canvas.findByRole("complementary", { name: "Agent chat" });
+    expect(canvas.queryByRole("group", { name: "Chat Directory" })).toBeNull();
   },
 };
 

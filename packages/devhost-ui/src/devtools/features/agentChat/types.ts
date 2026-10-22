@@ -1,5 +1,5 @@
 import type { AssistantRuntime, ThreadMessageLike } from "@assistant-ui/react";
-import type { DevtoolsSettingsStore } from "../../shared/types";
+import type { ChatTarget, DevtoolsSettingsStore } from "../../shared/types";
 
 export type ChatHarnessId = "codex" | "claude-code";
 export type ChatSessionStatus = "starting" | "idle" | "running" | "requires_action" | "closed" | "error";
@@ -28,6 +28,7 @@ export interface IChatSession {
 export interface IChatSessionRequest {
   harness: ChatHarnessId;
   pageURL: string;
+  target: ChatTarget;
   model?: string;
   resumeId?: string;
 }
@@ -89,6 +90,7 @@ export interface IChatProjection {
 }
 export interface IAgentChatOptions {
   pageURL: string;
+  target: ChatTarget;
   settingsStore?: DevtoolsSettingsStore;
   beforeSend?: ChatBeforeSend;
   onSent?: () => void;

@@ -41,7 +41,7 @@ beforeEach(() => {
 
 test("a fresh chat runtime restores the draft and model without sending them", async () => {
   const pageURL = "https://app.localhost/reload";
-  const first = renderHook(() => useAgentChat({ pageURL }));
+  const first = renderHook(() => useAgentChat({ target: "project", pageURL }));
   await waitFor(() => expect(first.result.current.isCatalogLoading).toBe(false));
   await act(async () => {
     first.result.current.setSelectedModel("native-model");
@@ -62,7 +62,7 @@ test("a fresh chat runtime restores the draft and model without sending them", a
     }),
   );
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions: [] }));
-  const reloaded = renderHook(() => useAgentChat({ pageURL }));
+  const reloaded = renderHook(() => useAgentChat({ target: "project", pageURL }));
   expect(reloaded.result.current.runtime.thread.composer.getState().text).toBe("Review this after reload");
   expect(reloaded.result.current.selectedModel).toBe("native-model");
   await waitFor(() => expect(reloaded.result.current.isCatalogLoading).toBe(false));
@@ -74,7 +74,7 @@ test.each([{ sessions: [] }, { sessions: [{ ...session, status: "closed", native
   "reload drops a missing or closed saved session without restarting a native process: %j",
   async ({ sessions }) => {
     const pageURL = "https://app.localhost/stale-session";
-    const first = renderHook(() => useAgentChat({ pageURL }));
+    const first = renderHook(() => useAgentChat({ target: "project", pageURL }));
     await waitFor(() => expect(first.result.current.isCatalogLoading).toBe(false));
     await act(async () => {
       first.result.current.settingsStore
@@ -87,7 +87,7 @@ test.each([{ sessions: [] }, { sessions: [{ ...session, status: "closed", native
       Response.json({ harnesses: [{ id: "codex", label: "Codex", available: true, models: [] }] }),
     );
     mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions }));
-    const reloaded = renderHook(() => useAgentChat({ pageURL }));
+    const reloaded = renderHook(() => useAgentChat({ target: "project", pageURL }));
     await waitFor(() => expect(reloaded.result.current.isCatalogLoading).toBe(false));
     expect(reloaded.result.current.settingsStore.getState().chat.sessionId).toBeNull();
     expect(reloaded.result.current.settingsStore.getState().chat.scroll).toBeNull();
@@ -98,7 +98,7 @@ test.each([{ sessions: [] }, { sessions: [{ ...session, status: "closed", native
 );
 
 test("a catalog refresh replaces an unavailable model preference with the configured default", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/retired-model" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/retired-model" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   await act(async () => {
     hook.result.current.setSelectedModel("retired-model");
@@ -119,7 +119,7 @@ test("a disposed catalog request cannot erase settings saved by a later page", a
   mockFetch.fetch.mockReset();
   mockFetch.fetch.mockReturnValueOnce(catalog.promise);
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions: [] }));
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/disposed" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/disposed" }));
   const settings = hook.result.current.settingsStore;
   hook.unmount();
   await Promise.resolve();
@@ -134,7 +134,7 @@ test("a disposed catalog request cannot erase settings saved by a later page", a
 
 test("reload reattaches the saved session and receives history without replaying commands", async () => {
   const pageURL = "https://app.localhost/restore-session";
-  const first = renderHook(() => useAgentChat({ pageURL }));
+  const first = renderHook(() => useAgentChat({ target: "project", pageURL }));
   await waitFor(() => expect(first.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -151,7 +151,7 @@ test("reload reattaches the saved session and receives history without replaying
     Response.json({ harnesses: [{ id: "codex", label: "Codex", available: true, models: [] }] }),
   );
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions: [session] }));
-  const reloaded = renderHook(() => useAgentChat({ pageURL }));
+  const reloaded = renderHook(() => useAgentChat({ target: "project", pageURL }));
   await waitFor(() => expect(sockets.connections).toHaveLength(2));
   await act(async () => {
     sockets.connections[1]?.send({
@@ -188,7 +188,7 @@ afterEach(async () => {
 
 test("server rejection restores the native composer draft using the matching command ID", async () => {
   const onSent = vi.fn();
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page", onSent }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page", onSent }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   mockFetch.fetch.mockResolvedValueOnce(Response.json(session));
   await act(async () => {
@@ -226,6 +226,7 @@ test("server rejection restores the native composer draft using the matching com
 test("oversized UTF-8 context preserves the draft before creating a session", async () => {
   const hook = renderHook(() =>
     useAgentChat({
+      target: "project",
       pageURL: "https://app.localhost/page",
       beforeSend: () => ({ text: "界".repeat(3 * 1024 * 1024) }),
     }),
@@ -246,6 +247,7 @@ test("native composer invokes capture before session HTTP, sends prepared contex
   const onSent = vi.fn();
   const hook = renderHook(() =>
     useAgentChat({
+      target: "project",
       pageURL: "https://app.localhost/page",
       onSent,
       beforeSend: (text) => {
@@ -310,7 +312,9 @@ test("native composer invokes capture before session HTTP, sends prepared contex
 });
 
 test("cancelled native capture retains composer draft without creating a session", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page", beforeSend: () => null }));
+  const hook = renderHook(() =>
+    useAgentChat({ target: "project", pageURL: "https://app.localhost/page", beforeSend: () => null }),
+  );
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   await act(async () => {
     hook.result.current.runtime.thread.composer.setText("Keep my draft");
@@ -323,7 +327,7 @@ test("cancelled native capture retains composer draft without creating a session
 });
 
 test("snapshot pending IDs gate exact native responses and ignore stale session traffic", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -364,7 +368,7 @@ test("snapshot pending IDs gate exact native responses and ignore stale session 
   expect(() => hook.result.current.respond(4, { decision: "accept" })).toThrow("no longer pending");
 });
 test("choosing another harness starts its own session before sending", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -398,7 +402,7 @@ test("choosing another harness starts its own session before sending", async () 
   expect(JSON.parse(String(mockFetch.fetch.mock.calls[2]?.[1]?.body))).toMatchObject({ harness: "claude-code" });
 });
 test("failed session creation reports the backend error and returns the native draft", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   mockFetch.fetch.mockResolvedValueOnce(new Response("Codex is unavailable", { status: 502 }));
   await act(async () => {
@@ -410,7 +414,7 @@ test("failed session creation reports the backend error and returns the native d
   expect(sockets.connections).toHaveLength(0);
 });
 test("reconnection adopts the authoritative snapshot and stops reconnecting after unmount", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -462,7 +466,7 @@ test("catalog errors are visible and a later refresh recovers native model metad
   mockFetch.fetch.mockReset();
   mockFetch.fetch.mockResolvedValueOnce(new Response("Project unavailable", { status: 404 }));
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions: [] }));
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.catalogError).toBe("Project unavailable"));
   mockFetch.fetch.mockResolvedValueOnce(
     Response.json({
@@ -480,7 +484,7 @@ test("catalog errors are visible and a later refresh recovers native model metad
   expect(hook.result.current.harnesses[0]?.error).toBe("Authentication required");
 });
 test("a closed session resumes its native ID through a new provider process", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ ...session, id: "resumed-session" }));
   let resumed: Promise<void> | undefined;
@@ -505,7 +509,7 @@ test("a closed session resumes its native ID through a new provider process", as
   expect(hook.result.current.session?.id).toBe("resumed-session");
 });
 test("failed close retains the current session and reports the failure through the controller", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -525,7 +529,7 @@ test("failed close retains the current session and reports the failure through t
   expect(sockets.connections[0]?.readClientClosure()).toBeNull();
 });
 test("failed resume reports the native connection error without an unhandled rejection", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -541,7 +545,7 @@ test("failed resume reports the native connection error without an unhandled rej
 });
 
 test("an acknowledged model choice can reset to the configured default in the same native session", async () => {
-  const hook = renderHook(() => useAgentChat({ pageURL: "https://app.localhost/page" }));
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/page" }));
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
   let resumed: Promise<void> | undefined;
   await act(async () => {
@@ -589,35 +593,50 @@ test("an acknowledged model choice can reset to the configured default in the sa
   expect(mockFetch.fetch).toHaveBeenCalledTimes(2);
 });
 
-test("catalog, native attachment and close carry the routed page's project context", async () => {
-  const pageURL = "https://app.localhost/project/page?filter=active";
-  const hook = renderHook(() => useAgentChat({ pageURL }));
-  await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
-  const listURL = new URL(String(mockFetch.fetch.mock.calls[1]?.[0]), window.location.href);
-  expect(listURL.pathname).toBe("/__devhost__/chat/sessions");
-  expect(listURL.searchParams.get("pageURL")).toBe(pageURL);
-  let resumed: Promise<void> | undefined;
-  await act(async () => {
-    resumed = hook.result.current.resumeSession(session);
-  });
-  await waitFor(() => expect(sockets.connections).toHaveLength(1));
-  const connection = sockets.connections[0];
-  expect(connection?.url.searchParams.get("pageURL")).toBe(pageURL);
-  expect(connection?.url.searchParams.get("sessionId")).toBe(session.id);
-  await act(async () => {
-    connection?.send({ type: "snapshot", sessionId: session.id, session, events: [], pendingRequestIds: [] });
-    await resumed;
-  });
-  mockFetch.fetch.mockResolvedValueOnce(new Response(null, { status: 204 }));
-  await act(async () => {
-    hook.result.current.settingsStore.getState().updateChat({ scroll: { top: 400, left: 0, isAtBottom: false } });
-    await hook.result.current.closeSession();
-  });
-  const closeURL = new URL(String(mockFetch.fetch.mock.calls[2]?.[0]), window.location.href);
-  expect(closeURL.pathname).toBe("/__devhost__/chat/sessions/chat-one");
-  expect(closeURL.searchParams.get("pageURL")).toBe(pageURL);
-  expect(mockFetch.fetch.mock.calls[2]?.[1]?.method).toBe("DELETE");
-  expect(hook.result.current.session).toBeNull();
-  expect(hook.result.current.settingsStore.getState().chat.sessionId).toBeNull();
-  expect(hook.result.current.settingsStore.getState().chat.scroll).toBeNull();
-});
+test.each(["project", "devhost"] as const)(
+  "catalog, sessions, native attachment and close carry the page and the %s chat target",
+  async (target) => {
+    const pageURL = "https://app.localhost/project/page?filter=active";
+    const hook = renderHook(() => useAgentChat({ target, pageURL }));
+    await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
+    const catalogURL = new URL(String(mockFetch.fetch.mock.calls[0]?.[0]), window.location.href);
+    expect(catalogURL.pathname).toBe("/__devhost__/chat/harnesses");
+    expect(catalogURL.searchParams.get("chatTarget")).toBe(target);
+    const listURL = new URL(String(mockFetch.fetch.mock.calls[1]?.[0]), window.location.href);
+    expect(listURL.pathname).toBe("/__devhost__/chat/sessions");
+    expect(listURL.searchParams.get("pageURL")).toBe(pageURL);
+    expect(listURL.searchParams.get("chatTarget")).toBe(target);
+    let resumed: Promise<void> | undefined;
+    await act(async () => {
+      resumed = hook.result.current.resumeSession(session);
+    });
+    await waitFor(() => expect(sockets.connections).toHaveLength(1));
+    const connection = sockets.connections[0];
+    expect(connection?.url.searchParams.get("pageURL")).toBe(pageURL);
+    expect(connection?.url.searchParams.get("chatTarget")).toBe(target);
+    expect(connection?.url.searchParams.get("sessionId")).toBe(session.id);
+    await act(async () => {
+      connection?.send({ type: "snapshot", sessionId: session.id, session, events: [], pendingRequestIds: [] });
+      await resumed;
+    });
+    mockFetch.fetch.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await act(async () => {
+      hook.result.current.settingsStore.getState().updateChat({ scroll: { top: 400, left: 0, isAtBottom: false } });
+      await hook.result.current.closeSession();
+    });
+    const closeURL = new URL(String(mockFetch.fetch.mock.calls[2]?.[0]), window.location.href);
+    expect(closeURL.pathname).toBe("/__devhost__/chat/sessions/chat-one");
+    expect(closeURL.searchParams.get("pageURL")).toBe(pageURL);
+    expect(closeURL.searchParams.get("chatTarget")).toBe(target);
+    expect(mockFetch.fetch.mock.calls[2]?.[1]?.method).toBe("DELETE");
+    expect(hook.result.current.session).toBeNull();
+    expect(hook.result.current.settingsStore.getState().chat.sessionId).toBeNull();
+    expect(hook.result.current.settingsStore.getState().chat.scroll).toBeNull();
+    mockFetch.fetch.mockResolvedValueOnce(Response.json(session));
+    await act(async () => {
+      void hook.result.current.newSession();
+    });
+    await waitFor(() => expect(mockFetch.fetch.mock.calls[3]?.[1]?.method).toBe("POST"));
+    expect(JSON.parse(String(mockFetch.fetch.mock.calls[3]?.[1]?.body))).toMatchObject({ pageURL, target });
+  },
+);

@@ -1,7 +1,7 @@
 import { pristineFetch } from "../../shared/pristineFetch";
 import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocketUrl";
 import { openReconnectingWebSocket, type IReconnectingWebSocket } from "../../shared/openReconnectingWebSocket";
-import type { DevtoolsSettingsStore, ILocationHostProtocol } from "../../shared/types";
+import type { ChatTarget, DevtoolsSettingsStore, ILocationHostProtocol } from "../../shared/types";
 import { readChatHarnesses, readChatServerFrame, readChatSession, readChatSessions } from "./readChatServerFrame";
 import { encodeChatCommand } from "./encodeChatCommand";
 import type { ChatCommand, IAgentChatClient, IAgentChatClientState, IChatSession, IChatSessionRequest } from "./types";
@@ -14,10 +14,12 @@ interface IPendingChatSend {
 
 export function createAgentChatClient(
   pageURL: string,
+  target: ChatTarget,
   location: ILocationHostProtocol,
   settingsStore: DevtoolsSettingsStore,
 ): IAgentChatClient {
   const saved = settingsStore.getState().chat;
+  const scopeQuery = (): URLSearchParams => new URLSearchParams({ pageURL, chatTarget: target });
   const lifetime = new AbortController();
   const listeners = new Set<VoidFunction>();
   const pendingSends = new Map<string, IPendingChatSend>();
@@ -89,7 +91,8 @@ export function createAgentChatClient(
     publish({ session, events: [], pendingRequestIds: [], isConnecting: true, isConnected: false, sendError: null });
     return new Promise<void>((resolve, reject) => {
       cancelConnection = () => reject(new Error("The chat connection was replaced."));
-      const query = new URLSearchParams({ sessionId: session.id, pageURL });
+      const query = scopeQuery();
+      query.set("sessionId", session.id);
       stream = openReconnectingWebSocket(createDevtoolsWebSocketUrl(`/__devhost__/ws/chat?${query}`, location), {
         onMessage(event): void {
           if (ownGeneration !== generation) return;
@@ -156,6 +159,7 @@ export function createAgentChatClient(
       const sessionRequest: IChatSessionRequest = {
         harness,
         pageURL,
+        target,
         ...(model ? { model } : {}),
         ...(resume ? { resumeId: resume.nativeSessionId } : {}),
       };
@@ -192,7 +196,7 @@ export function createAgentChatClient(
     async refreshCatalog(): Promise<void> {
       publish({ isCatalogLoading: true, catalogError: null });
       try {
-        const query = new URLSearchParams({ pageURL });
+        const query = scopeQuery();
         const [catalog, sessions] = await Promise.all([
           request(`/__devhost__/chat/harnesses?${query}`),
           request(`/__devhost__/chat/sessions?${query}`),
@@ -243,10 +247,9 @@ export function createAgentChatClient(
     async closeSession(): Promise<void> {
       const session = state.session;
       if (!session) return;
-      await request(
-        `/__devhost__/chat/sessions/${encodeURIComponent(session.id)}?${new URLSearchParams({ pageURL })}`,
-        { method: "DELETE" },
-      );
+      await request(`/__devhost__/chat/sessions/${encodeURIComponent(session.id)}?${scopeQuery()}`, {
+        method: "DELETE",
+      });
       detach();
       settingsStore.getState().updateChat({ sessionId: null, scroll: null });
       publish({

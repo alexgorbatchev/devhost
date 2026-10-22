@@ -5,6 +5,7 @@ set -euo pipefail
 script_path="${BASH_SOURCE[0]}"
 script_directory_path="$(cd "$(dirname "$script_path")" && pwd)"
 package_root_path="$(cd "$script_directory_path/.." && pwd)"
+repository_root_path="$(cd "$package_root_path/../.." && pwd)"
 # Apart from bin/devhost, which `just devhost compile` writes with a version stamp
 # this build does not carry: sharing one path would make each build replace the other.
 source_binary_path="$package_root_path/bin/source/devhost"
@@ -13,6 +14,9 @@ source_binary_path="$package_root_path/bin/source/devhost"
 # source, an embedded file, or the module files, and keeps a current binary.
 # -C changes directory for the build alone, so devhost starts in the directory this
 # script was called from and relative paths in its arguments keep their meaning.
-go build -C "$package_root_path" -o "$source_binary_path" ./cmd/devhost
+# The stamped checkout makes devhost serve its UI from this source and lets chat target it.
+go build -C "$package_root_path" \
+  -ldflags "-X 'github.com/alexgorbatchev/devhost/apps/devhost/internal/devbuild.sourceDirectory=$repository_root_path'" \
+  -o "$source_binary_path" ./cmd/devhost
 
 exec "$source_binary_path" "$@"

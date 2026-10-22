@@ -42,19 +42,24 @@ func chatJSON(w http.ResponseWriter, value any) {
 	}
 }
 
+func (s *ControlServer) chatQueryRoot(r *http.Request) (string, error) {
+	query := r.URL.Query()
+	return s.chatRoot(query.Get("pageURL"), query.Get("chatTarget"))
+}
+
 func (s *ControlServer) handleChatHarnesses(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", 405)
 		return
 	}
-	tool, err := s.toolContext(r.URL.Query().Get("pageURL"))
+	root, err := s.chatQueryRoot(r)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
 	ctx, cancel := chatCallContext(r.Context())
 	defer cancel()
-	results := []chatHarness{s.chat.discover(ctx, chatCodex, tool.ProjectRootPath), s.chat.discover(ctx, chatClaude, tool.ProjectRootPath)}
+	results := []chatHarness{s.chat.discover(ctx, chatCodex, root), s.chat.discover(ctx, chatClaude, root)}
 	chatJSON(w, map[string]any{"harnesses": results})
 }
 
@@ -64,12 +69,12 @@ func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Reques
 	}
 	id := strings.TrimPrefix(r.URL.Path, chatSessionsPath+"/")
 	if r.Method == http.MethodDelete && id != r.URL.Path {
-		tool, err := s.toolContext(r.URL.Query().Get("pageURL"))
+		root, err := s.chatQueryRoot(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		session := s.chatSessionInProject(id, tool.ProjectRootPath)
+		session := s.chatSessionInProject(id, root)
 		if session == nil {
 			http.NotFound(w, r)
 			return
@@ -84,7 +89,7 @@ func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Reques
 	}
 	switch r.Method {
 	case http.MethodGet:
-		tool, err := s.toolContext(r.URL.Query().Get("pageURL"))
+		root, err := s.chatQueryRoot(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -93,7 +98,7 @@ func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Reques
 		sessions := make([]chatSessionInfo, 0, len(s.chat.sessions))
 		for _, session := range s.chat.sessions {
 			info := session.snapshot()
-			if info.ProjectRootPath == tool.ProjectRootPath {
+			if info.ProjectRootPath == root {
 				sessions = append(sessions, info)
 			}
 		}
@@ -116,18 +121,18 @@ func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Reques
 			http.Error(w, "unknown harness", 400)
 			return
 		}
-		tool, err := s.toolContext(request.PageURL)
+		root, err := s.chatRoot(request.PageURL, request.Target)
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 			return
 		}
-		if !s.chatResumeMatchesProject(request.ResumeID, request.Harness, tool.ProjectRootPath) {
+		if !s.chatResumeMatchesProject(request.ResumeID, request.Harness, root) {
 			http.Error(w, "Native session belongs to a different project.", http.StatusForbidden)
 			return
 		}
 		ctx, cancel := chatCallContext(r.Context())
 		defer cancel()
-		session, err := s.chat.start(ctx, request, tool.ProjectRootPath)
+		session, err := s.chat.start(ctx, request, root)
 		if err != nil {
 			http.Error(w, err.Error(), 502)
 			return
@@ -160,12 +165,12 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "missing sessionId", 400)
 		return
 	}
-	tool, err := s.toolContext(r.URL.Query().Get("pageURL"))
+	root, err := s.chatQueryRoot(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	session := s.chatSessionInProject(id, tool.ProjectRootPath)
+	session := s.chatSessionInProject(id, root)
 	if session == nil {
 		http.NotFound(w, r)
 		return
@@ -218,7 +223,7 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 			}
 		}
 		if commandErr == nil {
-			commandErr = s.chatCommandProjectError(session, r.URL.Query().Get("pageURL"))
+			commandErr = s.chatCommandProjectError(session, r.URL.Query().Get("pageURL"), r.URL.Query().Get("chatTarget"))
 		}
 		if commandErr == nil {
 			ctx, cancel := chatCallContext(s.ctx)
