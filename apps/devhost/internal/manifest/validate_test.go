@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -148,6 +149,33 @@ func TestValidateManifestAcceptsKillZombies(t *testing.T) {
 
 	if manifest.KillZombies {
 		t.Fatalf("manifest.KillZombies = %t, want false", manifest.KillZombies)
+	}
+}
+
+// The devhost skill hands agents a full manifest to copy from, so it must be one devhost accepts.
+func TestValidateManifestAcceptsTheSkillManifestExample(t *testing.T) {
+	t.Parallel()
+
+	document, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "skills", "devhost", "references", "manifest-example.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, block, found := strings.Cut(string(document), "```toml\n")
+	block, _, closed := strings.Cut(block, "\n```")
+	if !found || !closed {
+		t.Fatal("manifest-example.md has no closed ```toml block")
+	}
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+	if err := os.WriteFile(manifestPath, []byte(block+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	rawManifest, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("ReadManifest(...) unexpected error = %v", err)
+	}
+	if _, err := ValidateManifest(manifestPath, rawManifest); err != nil {
+		t.Fatalf("ValidateManifest(...) unexpected error = %v", err)
 	}
 }
 

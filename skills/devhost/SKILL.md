@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-21 14:21
+  last_modified: 2026-10-21 19:42
   status: current
 ---
 
@@ -107,11 +107,9 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Naming & Casing Conventions (Mandatory)
 
-- **camelCase Rule**: All manifest properties and tables across the entire TOML file **must** use standard `camelCase` naming conventions (e.g., `idleTimeout`, `killZombies`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, etc.). devhost rejects a key written in kebab-case, snake_case, or mixed casing.
+- **camelCase Rule**: All manifest properties and tables across the entire TOML file **must** use standard `camelCase` naming conventions (e.g., `idleTimeout`, `killZombies`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `configEditor`, `injectPort`, `dependsOn`, `primary`, etc.). devhost rejects a key written in kebab-case, snake_case, or mixed casing.
 - **Service Names**: Service keys inside `[services.<name>]` must match the regex `^[a-z][a-z0-9-]*$`.
-- **Service groups**: Define `[groups]` in each app's included manifest, with entries such as `app = ["app-frontend"]`, then run `devhost start app` from the root. Groups merge alongside services and annotation actions. Group names match service naming rules, are unique across included manifests, and are distinct from service names. Members form a non-empty array of service names from the complete merged manifest. Nested groups and unknown members are rejected. `devhost service list` prints individual services only. Selected groups use their current membership on reload; deleting a selected group removes its selection, retaining other requested selections and `alwaysStart` services. Stack restarts retain the requested group names. See [Setup](references/setup.md#6-configuration-hot-reload) for reload behavior.
-- **Annotation agent selection**: Set `[annotation].agent = "codex"` in the root manifest to select one built-in agent; accepted strings are `pi`, `claude-code`, `opencode`, and `codex`. This creates one default action with ID `agent` and the adapter's display name. Optional `tempDir` applies. Combining `agent` with `actions` or `defaultAction` is rejected. Use detailed actions for multiple choices, custom commands, or extra flags. Restart devhost to apply annotation changes.
-- **Annotation Action IDs**: Action ids under `[[annotation.actions]]` must match the regex `^[a-z][a-z0-9-]*$` and must be unique.
+- **Service groups**: Define `[groups]` in each app's included manifest, with entries such as `app = ["app-frontend"]`, then run `devhost start app` from the root. Groups merge alongside services. Group names match service naming rules, are unique across included manifests, and are distinct from service names. Members form a non-empty array of service names from the complete merged manifest. Nested groups and unknown members are rejected. `devhost service list` prints individual services only. Selected groups use their current membership on reload; deleting a selected group removes its selection, retaining other requested selections and `alwaysStart` services. Stack restarts retain the requested group names. See [Setup](references/setup.md#6-configuration-hot-reload) for reload behavior.
 
 ### Top-Level Configurations
 
@@ -121,7 +119,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **killZombies Option**: Optional boolean (default `true`) at the top level of `devhost.toml`. When `true`, devhost automatically finds, terminates, and reclaims zombie processes claiming the same ports or hosts from the same manifest path. Each startup or reload claim pass attempts a kill at most once per process identity across route registrations, hostname claims, and fixed-port claims. `Stopping zombie PID ...` precedes the attempt; `Stopped zombie PID ...` confirms exit, with at most one message pair per identity. A failed kill, failed exit check, or five-second exit timeout reports an error and leaves the affected claim unreclaimed; each claim is checked separately. Set `killZombies = false` to disable automatic recovery and report a standard collision error instead.
 
-- **Annotation temporary files**: Set `[annotation].tempDir` in the root manifest to a non-empty path for all annotation actions. Resolve relative paths against devhost's startup working directory, independently of the manifest location and action `cwd`. Omit the key to use the system temp directory. See the [Agent Adapters guide](references/agent-adapters.md) for file lifecycle details.
+- **Browser chat and page context**: `[devtools.chat].enabled` (default `true`) turns on the chat panel, which runs the installed Codex or Claude Code CLI with its own sign-in, settings, and environment in the page's checkout. `[devtools.annotations].enabled` (default `true`) turns on the page context selector: selected elements, drawings, and a shared-tab snapshot sent with a chat message, so sending context also needs chat. Both reload without a restart; turning chat off leaves running conversations running. Devhost rejects a manifest with an `[annotation]` table: agents run through chat, not through manifest actions. See [Browser Chat and Page Context](https://alexgorbatchev.github.io/devhost/guides/annotations/).
 
 - **Host resource readouts**: Omit `[devtools.resources]` to show host CPU, memory, and disk usage (percent used) in the toolbar, with CPU and memory read every `2s` and disk every `1m`. Set `[devtools.resources].enabled = false` to turn all three off. Set `[devtools.resources].pollInterval` to a duration string of at least `250ms` (for example `"5s"`) to read all three at one rate. Give `[devtools.resources.cpu]`, `[devtools.resources.memory]`, or `[devtools.resources.disk]` its own `enabled` or `pollInterval` to hide one readout or override the shared rate for it. Disk counts fixed local filesystems; on Linux, USB-attached and removable drives are left out, and on macOS the startup disk is reported. Saved changes to these keys apply without restarting devhost.
 
@@ -156,7 +154,6 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - **Routed Services (`host` specified)**:
   - Set `host` to a hostname string or a non-empty array of unique hostname strings to route every domain to the same process, port, and path.
   - Put the primary hostname first: `DEVHOST_HOST`, `{{ services.<name>.host }}`, and the devtools service link use that value. Ensure every hostname resolves to the machine running devhost.
-  - Treat all domains of one service as a single annotation queue bucket per annotation action.
   - Must define a companion `port` configuration.
   - A health check on a routed service is `health.tcp` or `health.http`. `health.process` (the process-based health check) belongs to services without a `host`.
   - Set `proxyLocalOrigin = true` only for servers requiring a local Host/Origin, such as Bun HTML/HMR. Omit it or set `false` otherwise. It requires `host`, translates Host to the assigned backend address and matching public HTTP/HTTPS Origin to the local HTTP origin, preserves absent Origin and public X-Forwarded-Host, and rejects foreign, opaque, or duplicate origins with 403. Verify documents, assets, and HMR after enabling it. Leave it off for a service that takes cross-origin API requests, which it would answer with 403.
@@ -176,7 +173,7 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 - **Bind Host Constraints**: `bindHost` can only be one of the following: `127.0.0.1` (default), `0.0.0.0`, `::1`, `::`. Match the application's actual listener to this address and the assigned port; the app owns its listener configuration. A failed repository restart shows the failing member's error on every member's recovery page and remains retryable. Follow the [Vite integration guide](references/vite-storybook-integration.md#2-vite-loopback-bind-host-mismatch-bindhost) for listener verification and recovery.
 - **Command Syntax**: `command` is best written as a string array to preserve argument boundaries exactly.
-- **Working Directories**: Use an absolute `cwd` for any directory, including outside the manifest directory, in services and custom annotation actions. Resolve relative `cwd` values against the manifest directory and keep them within it. Write an absolute `cwd` exactly as it is.
+- **Working Directories**: Use an absolute `cwd` for any directory, including outside the manifest directory. Resolve relative `cwd` values against the manifest directory and keep them within it. Write an absolute `cwd` exactly as it is.
 - **Service References**: Use `{{ services.<name>.port }}`, `host`, `bindHost`, or `url` in command arguments, environment values, and `health.http`. `host` supplies the first public routing hostname (falling back to the bind host), so it can address Caddy. `bindHost` is the listening address. `url` builds a direct HTTP base URL from the assigned port and a connectable loopback address, maps wildcards to loopback, brackets IPv6, and includes neither a trailing slash nor a public routing path. Append the required path. It requires a service port. A reference resolves stopped service addresses too; use `dependsOn` to start a required service.
 - **Environment Interpolation**: String values support standard environment interpolation using `{{ env.NAME }}` placeholders. Placeholder names must start with a letter/underscore and only contain alphanumeric characters or underscores. Referencing an undefined valid placeholder is a manifest load error.
 
@@ -195,8 +192,7 @@ Published guides include a video at the top. Read the guide prose for operationa
 - [Troubleshooting](https://alexgorbatchev.github.io/devhost/guides/troubleshooting/)
 - [Devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/)
 - [React Highlight](https://alexgorbatchev.github.io/devhost/guides/react-highlight/)
-- [Annotations](https://alexgorbatchev.github.io/devhost/guides/annotations/)
+- [Browser Chat and Page Context](https://alexgorbatchev.github.io/devhost/guides/annotations/)
 
 - **Full Manifest Example**: To read or copy a comprehensive, production-ready configuration illustrating every available feature and key, refer to the [Full Manifest Example](references/manifest-example.md).
 - **Vite & Storybook**: For modern frontend setups involving dynamic ports, IPv6 loopback bindings, or host verification security, refer to the [Vite & Storybook Manifest Integration guide](references/vite-storybook-integration.md).
-- **Annotation Actions & Agents**: Before configuring any `[annotation]` or action adapters (Pi, Claude Code, OpenCode, or Codex), refer to the [Agent Adapters guide](references/agent-adapters.md), including Codex hook trust requirements for queues.

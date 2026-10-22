@@ -5,7 +5,7 @@ devhost runs a project's local services behind shared HTTPS hostnames and inject
 ## Language
 
 **Stack**:
-One running devhost instance for one project: its services, routes, devtools, and annotation sessions, identified by the path of its root manifest file. Its `name` is a label that can change while it runs.
+One running devhost instance for one project: its services, routes, devtools, and chat sessions, identified by the path of its root manifest file. Its `name` is a label that can change while it runs.
 _Avoid_: instance, project, app
 
 **Manifest**:
@@ -17,7 +17,7 @@ One TOML file that contributes to a manifest: the root file or one of its includ
 _Avoid_: config file, toml
 
 **Hot reload**:
-Applying a saved manifest to the running stack without stopping it, so services, routes, and annotation sessions that the change does not affect keep running. Every manifest setting is applied this way; none requires restarting the stack.
+Applying a saved manifest to the running stack without stopping it, so services, routes, and chat sessions that the change does not affect keep running. Every manifest setting is applied this way; none requires restarting the stack.
 _Avoid_: live reload, refresh, restart
 
 **Accepted manifest**:
