@@ -53,7 +53,7 @@ describe("useConfigEditor", () => {
 
     expect(result.current.files).toEqual([manifestFile, configFile]);
     expect(result.current.selectedFile).toEqual(manifestFile);
-    expect(result.current.content).toBe('name = "shop"\n');
+    expect(result.current.readContent()).toBe('name = "shop"\n');
     expect(result.current.selectedSchema).toEqual(schema.manifest);
     expect(result.current.loadError).toBeNull();
 
@@ -80,13 +80,13 @@ describe("useConfigEditor", () => {
 
     act(() => result.current.change('name = "mine"\n'));
     act(() => result.current.select(configFile.path));
-    expect(result.current.content).toBe("");
+    expect(result.current.readContent()).toBe("");
     act(() => result.current.select(manifestFile.path));
-    expect(result.current.content).toBe('name = "mine"\n');
+    expect(result.current.readContent()).toBe('name = "mine"\n');
     expect(result.current.changedPaths).toEqual([manifestFile.path]);
 
     act(() => result.current.revert());
-    expect(result.current.content).toBe('name = "shop"\n');
+    expect(result.current.readContent()).toBe('name = "shop"\n');
     expect(result.current.changedPaths).toEqual([]);
   });
 
@@ -147,6 +147,41 @@ describe("useConfigEditor", () => {
     expect(result.current.outcome).toEqual({ kind: "rejected", message: "Failed to parse devhost.toml" });
   });
 
+  // The editor holds the text being typed, so the hook marks only the replacements that come from elsewhere.
+  test("counts the text replacements that do not come from typing", async () => {
+    const client = createClient();
+    const diskFile: IConfigFile = { ...manifestFile, content: 'name = "theirs"\n', version: "v3" };
+
+    client.save.mockResolvedValueOnce({ file: diskFile, kind: "conflict" });
+
+    const hook = await openEditor(client);
+    const replacementsAfterLoad: number = hook.result.current.textReplacements;
+    const expectReplacements = (count: number): void => {
+      expect(hook.result.current.textReplacements).toBe(replacementsAfterLoad + count);
+    };
+
+    expect(replacementsAfterLoad).toBeGreaterThan(0);
+    act(() => hook.result.current.change('name = "mine"\n'));
+    expectReplacements(0);
+    act(() => hook.result.current.select(configFile.path));
+    expectReplacements(1);
+    act(() => hook.result.current.select(manifestFile.path));
+    expectReplacements(2);
+    act(() => hook.result.current.revert());
+    expectReplacements(3);
+
+    act(() => hook.result.current.change('name = "mine"\n'));
+    await act(async () => hook.result.current.save());
+    expectReplacements(3);
+    act(() => hook.result.current.loadDiskVersion());
+    expectReplacements(4);
+
+    hook.rerender({ configuration: [], isOpen: false });
+    hook.rerender({ configuration: [], isOpen: true });
+    await act(async (): Promise<void> => {});
+    expectReplacements(5);
+  });
+
   test("offers the file on disk after a save that conflicts with it", async () => {
     const client = createClient();
     const diskFile: IConfigFile = { ...manifestFile, content: 'name = "theirs"\n', version: "v3" };
@@ -160,7 +195,7 @@ describe("useConfigEditor", () => {
     expect(result.current.outcome).toEqual({ file: diskFile, kind: "conflict" });
 
     act(() => result.current.loadDiskVersion());
-    expect(result.current.content).toBe('name = "theirs"\n');
+    expect(result.current.readContent()).toBe('name = "theirs"\n');
     expect(result.current.selectedFile?.version).toBe("v3");
     expect(result.current.outcome).toEqual({ kind: "idle" });
   });
@@ -177,7 +212,7 @@ describe("useConfigEditor", () => {
     await act(async (): Promise<void> => {});
 
     expect(hook.result.current.files).toEqual([manifestFile, configOnDisk]);
-    expect(hook.result.current.content).toBe('name = "mine"\n');
+    expect(hook.result.current.readContent()).toBe('name = "mine"\n');
   });
 
   test("checks content as the selected file and places the issues", async () => {

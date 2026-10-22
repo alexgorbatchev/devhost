@@ -19,13 +19,16 @@ interface IUseConfigEditorResult {
   selectedFile: IConfigFile | null;
   /** The schema of the selected file, or null until it is loaded. */
   selectedSchema: IConfigSchema | null;
-  /** The text of the selected file, with its unsaved changes, as of this render. */
-  content: string;
   /**
-   * The text of the selected file now, including changes the page has not rendered yet. The editor reports typing
-   * ahead of the page, so whatever puts text into the editor reads this rather than a rendered `content`.
+   * The text of the selected file, with its unsaved changes, as of now: the editor reports typing ahead of the page,
+   * so this includes changes the page has not rendered yet.
    */
   readContent: () => string;
+  /**
+   * Counts the times the selected file's text was replaced by anything but typing in the editor: loading the files,
+   * selecting a file, reverting, or loading the version on disk. The editor takes the text again only when it changes.
+   */
+  textReplacements: number;
   /** The files with unsaved changes. */
   changedPaths: string[];
   outcome: ConfigSaveOutcome;
@@ -57,9 +60,9 @@ export function useConfigEditor(
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [outcome, setOutcome] = useState<ConfigSaveOutcome>(idleOutcome);
+  const [textReplacements, setTextReplacements] = useState<number>(0);
   const selectedFile: IConfigFile | null =
     files.find((file: IConfigFile): boolean => file.path === selectedPath) ?? files.at(0) ?? null;
-  const content: string = readFileContent(selectedFile, drafts);
   const changedPaths: string[] = files
     .filter((file: IConfigFile): boolean => drafts[file.path] !== undefined && drafts[file.path] !== file.content)
     .map((file: IConfigFile): string => file.path);
@@ -75,6 +78,10 @@ export function useConfigEditor(
   const replaceDrafts = useCallback((nextDrafts: Record<string, string>): void => {
     draftsReference.current = nextDrafts;
     setDrafts(nextDrafts);
+  }, []);
+
+  const countTextReplacement = useCallback((): void => {
+    setTextReplacements((count: number): number => count + 1);
   }, []);
 
   useEffect(() => {
@@ -99,12 +106,13 @@ export function useConfigEditor(
       setFiles((currentFiles: IConfigFile[]): IConfigFile[] => {
         return keepChangedFiles(fileList.files, currentFiles, draftsReference.current);
       });
+      countTextReplacement();
     });
 
     return () => {
       isCurrent = false;
     };
-  }, [client, isOpen]);
+  }, [client, countTextReplacement, isOpen]);
 
   useEffect(() => {
     if (outcome.kind !== "applying") {
@@ -122,10 +130,14 @@ export function useConfigEditor(
     setOutcome(status.error === undefined ? { kind: "applied" } : { kind: "rejected", message: status.error });
   }, [configuration, outcome]);
 
-  const select = useCallback((path: string): void => {
-    setSelectedPath(path);
-    setOutcome(idleOutcome);
-  }, []);
+  const select = useCallback(
+    (path: string): void => {
+      setSelectedPath(path);
+      setOutcome(idleOutcome);
+      countTextReplacement();
+    },
+    [countTextReplacement],
+  );
 
   const readContent = useCallback((): string => {
     return readFileContent(selectedFileReference.current, draftsReference.current);
@@ -147,8 +159,9 @@ export function useConfigEditor(
 
     if (file !== null) {
       replaceDrafts(withoutKey(draftsReference.current, file.path));
+      countTextReplacement();
     }
-  }, [replaceDrafts]);
+  }, [countTextReplacement, replaceDrafts]);
 
   const save = useCallback(async (): Promise<void> => {
     const file: IConfigFile | null = selectedFileReference.current;
@@ -196,7 +209,8 @@ export function useConfigEditor(
     );
     replaceDrafts(withoutKey(draftsReference.current, diskFile.path));
     setOutcome(idleOutcome);
-  }, [outcome, replaceDrafts]);
+    countTextReplacement();
+  }, [countTextReplacement, outcome, replaceDrafts]);
 
   const check = useCallback(
     async (checkedContent: string): Promise<IConfigDiagnostic[]> => {
@@ -219,7 +233,6 @@ export function useConfigEditor(
     change,
     changedPaths,
     check,
-    content,
     files,
     loadDiskVersion,
     loadError,
@@ -230,6 +243,7 @@ export function useConfigEditor(
     select,
     selectedFile,
     selectedSchema: schema === null || selectedFile === null ? null : selectSchema(schema, selectedFile),
+    textReplacements,
   };
 }
 
