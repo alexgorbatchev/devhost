@@ -1,5 +1,5 @@
 import type { Server } from "bun";
-import type { IStartingStackState } from "../../types";
+import type { IStartingStackState } from "../helpers";
 
 // Answers the way devhost does while a stack starts: a browser navigation gets devhost's own startup page until the
 // service passes its health check, and every other request already reaches the app.

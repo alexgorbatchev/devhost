@@ -21,7 +21,7 @@ test("malformed envelopes are rejected before entering the native runtime", () =
     readChatServerFrame({ type: "event", sessionId: "session", sequence: Number.MAX_SAFE_INTEGER + 1, payload: {} }),
   ).toThrow();
 });
-test("catalog validation retains opaque native model capabilities", () => {
+test("catalog validation keeps the model fields chat offers and drops native capabilities", () => {
   expect(
     readChatHarnesses({
       harnesses: [
@@ -40,5 +40,12 @@ test("catalog validation retains opaque native model capabilities", () => {
         },
       ],
     }),
-  ).toMatchObject([{ models: [{ metadata: { supportsEffort: true, supportedEffortLevels: ["low", "high"] } }] }]);
+  ).toEqual([
+    {
+      id: "claude-code",
+      label: "Claude Code",
+      available: true,
+      models: [{ id: "model", label: "Model", description: "Native" }],
+    },
+  ]);
 });

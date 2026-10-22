@@ -8,7 +8,6 @@ export interface IChatModel {
   id: string;
   label: string;
   description: string;
-  metadata: unknown;
 }
 export interface IChatHarness {
   id: ChatHarnessId;
