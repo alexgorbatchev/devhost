@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-03 12:00
-last_modified: 2026-10-19 16:20
+last_modified: 2026-10-22 12:03
 status: current
 ---
 
@@ -66,7 +66,7 @@ This design defines an automatic idle-timeout shutdown feature for individual, i
 - **Atomic Concurrency (No Go Data Races):** Recording and checking activity timestamps across multiple concurrent goroutines (HTTP handers, WebSocket handlers, and the background monitor ticker) must use thread-safe atomic operations to prevent corrupted timestamp reads and memory panics.
 - **No Inode Loss on Caddy Reloads:** Caddy reloads/restarts recreate or truncate log files. To prevent losing track of files (as occurs when `fsnotify` remains bound to deleted/orphaned file inodes), the daemon must use a periodic polling loop (`os.Stat` checking `FileInfo.ModTime()`) to monitor file activity.
 - **Windows Portability (Sharing Violations):** On Windows, Caddy's open write handles prevent `devhost` from truncating or modifying log files on startup. The daemon must never attempt to write to or truncate Caddy's active log files; it must only read their metadata (`ModTime`) without locking.
-- **Interactive Terminal Protection:** The daemon must never shut down if there is an active interactive terminal session (`ControlServer.terminalSessions`), even if no HTTP requests are arriving.
+- **Chat Turn Protection:** The daemon must never shut down while a chat session is starting, running a turn, or waiting for an answer to a native request (`ControlServer.HasActiveChatSessions`), even if no HTTP requests are arriving.
 
 ---
 
@@ -84,8 +84,8 @@ This design defines an automatic idle-timeout shutdown feature for individual, i
   }
   ```
 - Use the tracker as a middleware to log requests to the devtools ControlServer, and call `IncrementActive()` / `DecrementActive()` on WebSocket connection lifecycles.
-- In `stack.go`, launch a background polling goroutine checking the isolated `<caddy-paths>/logs/stack-<manifest path hash>_access.log` file's `ModTime` using `os.Stat` every 2 seconds. If the `ModTime` is newer than `lastActivity`, trigger `tracker.RecordActivity()`, resetting the idle timer.
-- Run a background ticker in `stack.go` bound to the stack context. Every 5 seconds, query `tracker.IsIdle()`. If idle, and no active terminal sessions remain, trigger a clean stack shutdown.
+- In `apps/devhost/internal/services/idle_timeout.go`, an `idleWatch` started by the stack and changed by a reload runs a polling goroutine checking the isolated `<caddy-paths>/logs/stack-<manifest path hash>_access.log` file's `ModTime` using `os.Stat` every 2 seconds. If the `ModTime` is newer than `lastActivity`, trigger `tracker.RecordActivity()`, resetting the idle timer.
+- The same `idleWatch` runs a ticker. Every 5 seconds, it queries `tracker.IsIdle()`. If idle, and no chat session is active, it signals the stack loop in `stack.go`, which shuts the stack down cleanly. Both intervals shrink for timeouts shorter than them.
 
 ---
 
@@ -218,11 +218,13 @@ type DevtoolsConfig struct {
   - Instantiates `ActivityTracker` and attaches tracker middleware.
 - `apps/devhost/internal/caddy/routes.go`
   - Configures Caddy site blocks to write stack-isolated access logs to `<caddy-paths>/logs/stack-<manifest path hash>_access.log`.
-- `apps/devhost/internal/services/stack.go`
+- `apps/devhost/internal/services/idle_timeout.go` (new)
   - Resolves `idleTimeout` priority: CLI flag > environment variable > manifest config (`manifest.Devtools.IdleTimeout`).
   - On startup, truncates/clears `<caddy-paths>/logs/stack-<manifest path hash>_access.log`.
   - Spawns an `os.Stat` polling loop on `<caddy-paths>/logs/stack-<manifest path hash>_access.log` to call `RecordActivity()` upon write.
-  - Periodically checks tracker and triggers shutdown on timeout.
+  - Periodically checks the tracker and active chat sessions, and reports an expired timeout.
+- `apps/devhost/internal/services/stack.go`
+  - Starts the idle watch, changes it on reload, and shuts the stack down when the timeout expires.
 - `apps/devhost/internal/app/run.go`
   - Parses `--idle-timeout` into `time.Duration` and passes it to the start stack options. Fallback to manifest value if empty.
 
@@ -235,7 +237,7 @@ type DevtoolsConfig struct {
 1. **HTTP Requests (Control Server):** Middleware calls `RecordActivity()` on any incoming request to the ControlServer.
 2. **WebSocket Connections:** WS handler calls `IncrementActive()` on connect, and `DecrementActive()` on close.
 3. **Application API & WS Traffic:** Any traffic routed by Caddy to the stack's backend services is logged to `<caddy-paths>/logs/stack-<manifest path hash>_access.log`. The `os.Stat` poller detects the modification time change and immediately triggers `RecordActivity()`, resetting the idle timer.
-4. **Idle Checking:** Every 5 seconds, `stack.go` checks `tracker.IsIdle()` and `!ControlServer.HasActiveTerminalSessions()`. If idle, it initiates a clean, graceful stack teardown.
+4. **Idle Checking:** Every 5 seconds, the `idleWatch` in `idle_timeout.go` checks `tracker.IsIdle()` and `!ControlServer.HasActiveChatSessions()`. If idle, the stack loop in `stack.go` initiates a clean, graceful stack teardown.
 5. **Console Logging:** On startup, if an idle timeout is active, `devhost` prints `[stack-name] Idle timeout enabled: <duration> (will automatically shut down when inactive)`. Upon shutdown, it logs `[stack-name] Idle timeout of <duration> reached. Automatically shutting down the stack...` before stopping child processes.
 
 ---
@@ -258,8 +260,8 @@ No new HTTP endpoints are added.
 1. **CLI & Manifest Parsing:** Implement `--idle-timeout` parsing in `parse.go`/`parse_test.go` and `devtools.idleTimeout` parsing in `validate.go`/`validate_test.go`.
 2. **Activity Tracker:** Implement `tracker.go` and `tracker_test.go`.
 3. **Caddy Logging:** Enable stack-isolated proxy logging inside `routes.go`.
-4. **Log File Poller:** In `stack.go`, initialize `os.Stat` polling on the log path, resolving priority: CLI > env > manifest config.
-5. **Stack Ticker:** Add background monitor ticker in `stack.go`.
+4. **Log File Poller:** In `idle_timeout.go`, initialize `os.Stat` polling on the log path, resolving priority: CLI > env > manifest config.
+5. **Idle Ticker:** Add the background monitor ticker to `idleWatch` in `idle_timeout.go`, and shut the stack down from `stack.go` when it fires.
 6. **E2E verification:** Run playground with a short timeout (e.g., `10s`), verify it terminates automatically when inactive and stays alive on direct API traffic.
 
 ---
