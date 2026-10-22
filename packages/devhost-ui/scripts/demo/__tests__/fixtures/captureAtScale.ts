@@ -44,8 +44,8 @@ try {
     env.DISPLAY = `:${display}`;
     env.DEVHOST_DEMO_INTERACTIVE = "1";
   }
-  // The test that runs this script gives it a working directory of its own.
-  browser = await launchDemoBrowser(env, captureScale);
+  // The test that runs this script gives it a working directory of its own. The Xvfb display has no GPU.
+  browser = await launchDemoBrowser(env, captureScale, displayServer === undefined);
   const page = await createDemoPage(browser, runtime, captureScale);
   const clips = await recordBrowserScene(
     page,
