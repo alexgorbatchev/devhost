@@ -33,7 +33,7 @@ const configEditorTheme: Extension = EditorView.theme({
   "&": {
     backgroundColor: "var(--background)",
     color: "var(--foreground)",
-    fontSize: "var(--text-md)",
+    fontSize: "var(--ag-text)",
     height: "100%",
   },
   "&.cm-focused": { outline: "none" },

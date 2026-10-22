@@ -10,7 +10,7 @@ export function Kbd({ className, tone = "muted", ...props }: IKbdProps) {
       data-slot="kbd"
       data-testid="Kbd"
       className={cn(
-        "pointer-events-none inline-flex h-3.5 w-fit shrink-0 items-center justify-center rounded-sm border border-current px-[3px] font-mono text-sm leading-none font-normal whitespace-nowrap select-none",
+        "pointer-events-none inline-flex h-3.5 w-fit shrink-0 items-center justify-center rounded-sm border border-current px-[3px] font-mono text-xs leading-none font-normal whitespace-nowrap select-none",
         tone === "muted" ? "text-muted-foreground" : "opacity-85",
         className,
       )}

@@ -20,7 +20,7 @@ export function AnnotationMarkerList(props: IAnnotationMarkerListProps): JSX.Ele
       {props.items.map((item: IAnnotationMarkerListItem) => {
         return (
           <li key={item.markerNumber} className="flex min-w-0 items-center gap-1.5">
-            <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-mark px-[3px] text-sm font-bold text-mark-foreground">
+            <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-mark px-[3px] text-xs font-bold text-mark-foreground">
               {item.markerNumber}
             </span>
             <span className="min-w-0 truncate" title={item.label}>

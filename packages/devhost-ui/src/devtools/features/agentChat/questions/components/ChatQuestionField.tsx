@@ -47,10 +47,10 @@ export function ChatQuestionField({ question, value, onChange, disabled }: IChat
         <label htmlFor={prefix + "-" + index} className="text-base">
           {option.label}
         </label>
-        <p id={prefix + "-description-" + index} className="text-sm text-muted-foreground">
+        <p id={prefix + "-description-" + index} className="text-xs text-muted-foreground">
           {option.description}
         </p>
-        {option.preview ? <pre className="overflow-auto whitespace-pre-wrap text-sm">{option.preview}</pre> : null}
+        {option.preview ? <pre className="overflow-auto whitespace-pre-wrap text-xs">{option.preview}</pre> : null}
       </div>
     </div>
   ));
@@ -60,7 +60,7 @@ export function ChatQuestionField({ question, value, onChange, disabled }: IChat
       data-testid="ChatQuestionField"
       className="flex min-w-0 flex-col gap-2 rounded-sm border border-border p-2"
     >
-      <legend className="px-1 text-sm font-medium">{question.header}</legend>
+      <legend className="px-1 text-xs font-medium">{question.header}</legend>
       <p id={prefix + "-prompt"} className="text-base">
         {question.prompt}
       </p>
@@ -101,7 +101,7 @@ export function ChatQuestionField({ question, value, onChange, disabled }: IChat
       ) : null}
       {!question.options.length || value.isOther ? (
         <div className="flex flex-col gap-1">
-          <label htmlFor={prefix + "-input"} className="text-sm">
+          <label htmlFor={prefix + "-input"} className="text-xs">
             {question.options.length ? "Other answer" : "Answer"}
           </label>
           <Input

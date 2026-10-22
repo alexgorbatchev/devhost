@@ -55,10 +55,10 @@ export function ApprovalRequests({
             className="flex min-w-0 flex-col gap-2 rounded-sm border border-border p-2"
           >
             <p className="text-base font-medium">This native request needs an unsupported interaction.</p>
-            <p className="text-sm text-muted-foreground">{request.method}</p>
+            <p className="text-xs text-muted-foreground">{request.method}</p>
             <details>
-              <summary className="cursor-pointer text-sm">Native request details</summary>
-              <pre className="max-h-64 overflow-auto text-sm whitespace-pre-wrap break-words">
+              <summary className="cursor-pointer text-xs">Native request details</summary>
+              <pre className="max-h-64 overflow-auto text-xs whitespace-pre-wrap break-words">
                 {JSON.stringify(request.payload, null, 2)}
               </pre>
             </details>

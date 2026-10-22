@@ -5,7 +5,7 @@ import { cn } from "../../lib/utils";
 
 // Errors are a solid strip rather than tinted text so they read on any theme and any host background. They take the
 // strong danger fill with light text: an error message must call for attention, unlike a short danger label.
-const alertVariants = cva("flex w-full items-center gap-1.5 px-2 py-1 text-left text-md", {
+const alertVariants = cva("flex w-full items-center gap-1.5 px-2 py-1 text-left text-sm", {
   variants: {
     variant: {
       default: "border-y border-border bg-secondary text-foreground",

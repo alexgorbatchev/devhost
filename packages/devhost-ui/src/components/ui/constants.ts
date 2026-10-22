@@ -7,7 +7,7 @@ type BadgeVariant = "default" | "destructive" | "primary" | "success" | "warning
 
 // Hover styles are scoped with `enabled:` so the disabled treatment (dashed, hollow, faint) always wins.
 const buttonBaseClassName: string = [
-  "inline-flex h-5 shrink-0 items-center justify-center gap-1 rounded-sm border text-md whitespace-nowrap select-none",
+  "inline-flex h-5 shrink-0 items-center justify-center gap-1 rounded-sm border text-sm whitespace-nowrap select-none",
   "aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:font-semibold aria-pressed:text-primary-foreground",
   "enabled:aria-pressed:hover:border-primary enabled:aria-pressed:hover:bg-primary-foreground enabled:aria-pressed:hover:text-primary",
   "disabled:cursor-not-allowed disabled:border-dashed disabled:border-border disabled:bg-transparent",
@@ -60,7 +60,7 @@ const badgeVariantClassNames: Record<BadgeVariant, string> = {
 };
 
 export const badgeVariants = cva(
-  "inline-flex h-4 w-fit shrink-0 items-center gap-1 rounded-sm border px-1 text-sm whitespace-nowrap",
+  "inline-flex h-4 w-fit shrink-0 items-center gap-1 rounded-sm border px-1 text-xs whitespace-nowrap",
   {
     defaultVariants: {
       variant: "default",

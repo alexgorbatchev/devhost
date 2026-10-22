@@ -60,12 +60,12 @@ export function ChatQuestionRequest({
         />
       ))}
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-xs text-destructive">
           {error}
         </p>
       ) : null}
       {isSent ? (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className="text-xs text-muted-foreground">
           Answers sent; waiting for the harness.
         </p>
       ) : null}

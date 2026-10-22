@@ -84,7 +84,7 @@ export function DropdownMenuItem({ inset, variant = "default", ...props }: Dropd
     >
       <div
         className={cn(
-          "group/dropdown-menu-item relative flex h-6 cursor-default items-center gap-1.5 px-2 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint data-inset:pl-6 data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive data-[variant=destructive]:data-highlighted:text-destructive-foreground",
+          "group/dropdown-menu-item relative flex h-6 cursor-default items-center gap-1.5 px-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint data-inset:pl-6 data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive data-[variant=destructive]:data-highlighted:text-destructive-foreground",
         )}
       >
         {props.children}
@@ -104,7 +104,7 @@ export function DropdownMenuCheckboxItem({ children, checked, inset, ...props }:
     >
       <div
         className={cn(
-          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint",
+          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint",
         )}
       >
         <DropdownMenuItemIndicatorSlot slot="dropdown-menu-checkbox-item-indicator">
@@ -145,7 +145,7 @@ export function DropdownMenuRadioItem({ children, inset, ...props }: DropdownMen
     <DropdownMenuPrimitive.RadioItem data-slot="dropdown-menu-radio-item" data-inset={inset} asChild {...props}>
       <div
         className={cn(
-          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint",
+          "relative flex h-6 cursor-default items-center gap-1.5 pr-2 pl-6 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint",
         )}
       >
         <DropdownMenuItemIndicatorSlot slot="dropdown-menu-radio-item-indicator">
@@ -162,7 +162,7 @@ export function DropdownMenuRadioItem({ children, inset, ...props }: DropdownMen
 export function DropdownMenuLabel({ inset, ...props }: DropdownMenuLabelProps) {
   return (
     <DropdownMenuPrimitive.Label data-slot="dropdown-menu-label" data-inset={inset} asChild {...props}>
-      <div className="px-2 py-0.5 text-sm text-muted-foreground data-inset:pl-6">{props.children}</div>
+      <div className="px-2 py-0.5 text-xs text-muted-foreground data-inset:pl-6">{props.children}</div>
     </DropdownMenuPrimitive.Label>
   );
 }
@@ -180,7 +180,7 @@ export function DropdownMenuShortcut({ ...props }: DropdownMenuShortcutProps) {
     <span
       data-slot="dropdown-menu-shortcut"
       data-testid="DropdownMenuShortcut"
-      className="ml-auto text-sm text-muted-foreground"
+      className="ml-auto text-xs text-muted-foreground"
       {...props}
     />
   );
@@ -195,7 +195,7 @@ export function DropdownMenuSubTrigger({ inset, children, ...props }: DropdownMe
     <DropdownMenuPrimitive.SubTrigger data-slot="dropdown-menu-sub-trigger" data-inset={inset} asChild {...props}>
       <div
         className={cn(
-          "relative flex h-6 cursor-default items-center gap-1.5 px-2 text-md outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint data-inset:pl-6 data-open:bg-accent",
+          "relative flex h-6 cursor-default items-center gap-1.5 px-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint data-inset:pl-6 data-open:bg-accent",
         )}
       >
         <span className="flex min-w-0 flex-1 items-center gap-1.5">{children}</span>
