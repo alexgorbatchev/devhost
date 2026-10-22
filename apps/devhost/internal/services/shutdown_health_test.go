@@ -94,7 +94,7 @@ func TestStackShutdownDoesNotPublishServiceCrash(t *testing.T) {
 				return server, err
 			}
 			paths := caddy.CreateManagedCaddyPaths(t.TempDir())
-			writeFakeCaddyExecutable(t, paths.ExecutablePath)
+			caddytest.WriteExecutable(t, paths.ExecutablePath)
 			m := newResolvedManifest(t.TempDir(), caddytest.StartAdminServer(t))
 			m.Devtools.Status.Enabled = true
 			m.Services["web"] = ResolvedService{

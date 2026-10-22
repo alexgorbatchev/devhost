@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
@@ -166,7 +167,7 @@ func TestStackRestartFailureRemainsRetryableWithAcceptedManifest(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			writeFakeCaddyExecutable(t, f.paths.ExecutablePath)
+			caddytest.WriteExecutable(t, f.paths.ExecutablePath)
 			if err := f.control.RestartStack(); err != nil {
 				t.Fatal(err)
 			}

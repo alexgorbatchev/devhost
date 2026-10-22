@@ -1,4 +1,4 @@
-// Package caddytest stands in for a managed Caddy's admin endpoint in tests.
+// Package caddytest stands in for a managed Caddy's admin endpoint and executable in tests.
 package caddytest
 
 import (
@@ -31,6 +31,20 @@ func StartAdminServer(t testing.TB) string {
 	}))
 	t.Cleanup(server.Close)
 	return server.Listener.Addr().String()
+}
+
+// WriteExecutable writes a Caddy executable to path that succeeds at every command, as a running Caddy that accepts
+// every configuration does. devhost runs the managed executable before any Caddy on PATH, so a test that writes it to
+// the managed path never runs the machine's Caddy.
+func WriteExecutable(t testing.TB, path string) {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // WriteUntrustedRootCertificate writes a freshly generated root CA certificate to path, where Caddy keeps its local CA.

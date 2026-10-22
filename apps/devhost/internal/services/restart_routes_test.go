@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/gorilla/websocket"
 )
@@ -69,7 +70,7 @@ func TestStackRestartRefreshesRoutesAfterAutoPortCollision(t *testing.T) {
 					t.Fatalf("failed update changed alias: %#v", alias)
 				}
 				waitForRestartLog(t, logs, "reload rejected")
-				writeFakeCaddyExecutable(t, paths.ExecutablePath)
+				caddytest.WriteExecutable(t, paths.ExecutablePath)
 				if err := os.WriteFile(collisionPath, nil, 0o600); err != nil {
 					t.Fatal(err)
 				}

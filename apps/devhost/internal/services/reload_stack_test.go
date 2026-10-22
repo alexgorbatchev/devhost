@@ -102,7 +102,7 @@ func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool,
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFakeCaddyExecutable(t, f.paths.ExecutablePath)
+	caddytest.WriteExecutable(t, f.paths.ExecutablePath)
 	originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
 	t.Cleanup(func() {
 		startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals = originalStart, originalRegister, originalUnregister
@@ -135,7 +135,7 @@ func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool,
 	}
 	f.signalStop = sync.OnceFunc(func() { ch <- syscall.SIGTERM })
 	f.stop = sync.OnceFunc(func() {
-		writeFakeCaddyExecutable(t, f.paths.ExecutablePath)
+		caddytest.WriteExecutable(t, f.paths.ExecutablePath)
 		f.signalStop()
 		select {
 		case err := <-done:
@@ -346,7 +346,7 @@ func TestManifestReloadRestoresRoutesAfterCaddyRejectsReplacement(t *testing.T) 
 	if _, err := os.Stat(filepath.Join(f.paths.RegistrationsDirectoryPath, "new.localhost_web_2f.json")); !os.IsNotExist(err) {
 		t.Fatalf("failed alias remained: %v", err)
 	}
-	writeFakeCaddyExecutable(t, f.paths.ExecutablePath)
+	caddytest.WriteExecutable(t, f.paths.ExecutablePath)
 	f.write(t, reloadServiceBody("web", "recovered", "new.localhost"))
 	waitForCondition(t, stackChangeTimeout, func() bool { return f.logs.contains("configuration reloaded") })
 	assertRestartResponse(t, serverURL(original.DocumentInjectionPort, "/"), "recovered")

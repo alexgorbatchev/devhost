@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 )
 
 func writeServiceListManifest(t *testing.T) string {
@@ -119,10 +117,11 @@ func TestRunStartsOnlyTheNamedServices(t *testing.T) {
 func testRunStartsSelection(t *testing.T, name string) {
 	t.Helper()
 	t.Setenv("AGENT", "1")
-	t.Setenv("DEVHOST_STATE_DIR", t.TempDir())
+	stateDirectoryPath := t.TempDir()
+	t.Setenv("DEVHOST_STATE_DIR", stateDirectoryPath)
 
 	manifestDirectoryPath := t.TempDir()
-	useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
+	useSharedCaddy(t, stateDirectoryPath)
 	manifestPath := writeDevtoolsDisabledProcessManifest(t, manifestDirectoryPath)
 	tracePath := filepath.Join(manifestDirectoryPath, "idle-started")
 	idleService := strings.Join([]string{
