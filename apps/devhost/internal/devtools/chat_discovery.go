@@ -69,7 +69,7 @@ func (s *chatStore) discover(ctx context.Context, harness, cwd string) chatHarne
 			result.Error = "native model has no selectable ID"
 			return result
 		}
-		result.Models = append(result.Models, chatModel{ID: id, Label: model.DisplayName, Description: model.Description, Metadata: raw})
+		result.Models = append(result.Models, chatModel{ID: id, Label: model.DisplayName, Description: model.Description})
 	}
 	result.Available = true
 	return result
