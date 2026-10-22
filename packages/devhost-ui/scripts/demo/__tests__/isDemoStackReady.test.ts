@@ -1,6 +1,6 @@
 import { afterAll, expect, it } from "bun:test";
 import { isDemoStackReady } from "../isDemoStackReady";
-import type { IStartingStackState } from "../types";
+import type { IStartingStackState } from "./helpers";
 import { serveStartingStack } from "./fixtures/serveStartingStack";
 
 const state: IStartingStackState = { isApiUp: true, isPageHealthy: false };

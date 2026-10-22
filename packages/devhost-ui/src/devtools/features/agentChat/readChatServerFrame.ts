@@ -43,7 +43,7 @@ const harnessSchema = z.object({
   id: z.enum(["codex", "claude-code"]),
   label: z.string(),
   available: z.boolean(),
-  models: z.array(z.object({ id: z.string(), label: z.string(), description: z.string(), metadata: z.unknown() })),
+  models: z.array(z.object({ id: z.string(), label: z.string(), description: z.string() })),
   error: z.string().optional(),
 });
 

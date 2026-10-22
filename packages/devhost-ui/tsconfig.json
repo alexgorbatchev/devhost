@@ -25,6 +25,7 @@
     "./.storybook/**/*.tsx",
     "./scripts/**/*.ts",
     "./scripts/**/*.tsx",
-    "./test-support/**/*.ts"
+    "./test-support/**/*.ts",
+    "./test-support/**/*.tsx"
   ]
 }

@@ -257,7 +257,6 @@ test("native composer invokes capture before session HTTP, sends prepared contex
     }),
   );
   await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
-  expect(hook.result.current.harnesses[0]?.models[0]?.metadata).toEqual({ supportedReasoningEfforts: ["high"] });
   mockFetch.fetch.mockImplementationOnce(async () => {
     sequence.push("session-http");
     return Response.json(session);
@@ -462,7 +461,7 @@ test("reconnection adopts the authoritative snapshot and stops reconnecting afte
   });
   expect(sockets.connections).toHaveLength(2);
 });
-test("catalog errors are visible and a later refresh recovers native model metadata", async () => {
+test("catalog errors are visible and a later refresh recovers the harness catalog", async () => {
   mockFetch.fetch.mockReset();
   mockFetch.fetch.mockResolvedValueOnce(new Response("Project unavailable", { status: 404 }));
   mockFetch.fetch.mockResolvedValueOnce(Response.json({ sessions: [] }));

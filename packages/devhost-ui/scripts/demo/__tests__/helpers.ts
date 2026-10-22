@@ -8,6 +8,12 @@ import { createDemoRuntime } from "../createDemoRuntime";
 import { recordBrowserScene } from "../recordBrowserScene";
 import type { IDemoRuntime } from "../types";
 
+// What a stand-in for a starting devhost stack answers with.
+export interface IStartingStackState {
+  isApiUp: boolean;
+  isPageHealthy: boolean;
+}
+
 let documentRequests = 0;
 const server = Bun.serve({
   hostname: "127.0.0.1",
