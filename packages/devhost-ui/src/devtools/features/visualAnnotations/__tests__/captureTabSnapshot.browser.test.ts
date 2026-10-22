@@ -7,11 +7,13 @@ describe("captureTabSnapshot", () => {
   test("reuses an active share without opening a picker or stopping its track", async () => {
     const fixture = createSharedTabFixture();
     const picker = vi.spyOn(fixture.mediaDevices, "getDisplayMedia");
+    const constraints = fixture.track.getConstraints();
     try {
       const snapshot = await captureTabSnapshot({ ...fixture, sharedStream: fixture.stream });
       expect(snapshot.width).toBe(64);
       expect(picker).not.toHaveBeenCalled();
       expect(fixture.stream.active).toBe(true);
+      expect(fixture.track.getConstraints()).toEqual(constraints);
     } finally {
       fixture.track.stop();
     }

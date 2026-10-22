@@ -57,6 +57,9 @@ export async function runTabCaptureAcceptance(
           await page.getByRole("button", { name: "Share Tab", exact: true }).click();
           await page.getByRole("button", { name: "Stop Sharing", exact: true }).waitFor();
         }
+        if (options.topLayer) {
+          await page.getByRole("button", { name: `Open capture ${options.topLayer}`, exact: true }).click();
+        }
         await page.getByRole("button", { name: "Box", exact: true }).click();
         await page.mouse.move(180, 230);
         await page.mouse.down();
@@ -121,10 +124,13 @@ export async function runTabCaptureAcceptance(
               context.fillRect(0, 0, 1, 1);
               return pixel(0, 0);
             };
-            const root = document.getElementById("devhost-devtools-host")?.shadowRoot;
+            const root =
+              document.querySelector("[data-devhost-annotation-host]")?.shadowRoot ??
+              document.getElementById("devhost-devtools-host")?.shadowRoot;
             const annotation = root?.querySelector('[data-testid="AnnotationCanvas"]');
             const chat = root?.querySelector('[data-testid="AgentChatPanel"]');
             const host = document.getElementById("host-target");
+            const layer = document.querySelector("#capture-modal:modal, #capture-popover:popover-open");
             if (!annotation || !host || !chat) throw new Error("Actual annotation, chat and host must remain mounted.");
             return {
               width: source.width,
@@ -137,6 +143,9 @@ export async function runTabCaptureAcceptance(
               expectedHost: color(getComputedStyle(host).backgroundColor),
               expectedPage: color(getComputedStyle(document.body).backgroundColor),
               expectedPanel: color(getComputedStyle(chat).backgroundColor),
+              layer: pixel(60, 260),
+              expectedLayer: color(getComputedStyle(layer ?? document.body).backgroundColor),
+              tools: pixel(640, 28),
             };
           },
           { dataURL, panel, dock },
@@ -146,7 +155,7 @@ export async function runTabCaptureAcceptance(
             const stopped: MediaStreamTrack[] = Reflect.get(window, "nativeCaptureStoppedTracks");
             return stopped.length;
           });
-          assert.equal(stoppedTrackCount, 0);
+          assert.equal(stoppedTrackCount, 1);
           await page.getByRole("button", { name: "Stop Sharing", exact: true }).click();
         }
         const tracks = await page.evaluate((): ITabCaptureTrackProof[] => {
@@ -166,12 +175,25 @@ export async function runTabCaptureAcceptance(
           [image.host, image.expectedHost],
           [image.panel, options.isChatAnnotated ? image.expectedPanel : image.expectedPage],
           [image.dock, image.expectedPage],
+          [image.layer, image.expectedLayer],
+          [image.tools, image.expectedPage],
         ]) {
           assert(actual && expected);
           for (const index of [0, 1, 2])
             assert(Math.abs((actual[index] ?? -255) - (expected[index] ?? 255)) < 40, JSON.stringify(image));
         }
-        assert.deepEqual(tracks, [{ state: "ended", surface: "browser", kind: "video" }]);
+        assert.deepEqual(tracks, [
+          { state: "ended", surface: "browser", kind: "video" },
+          { state: "ended", surface: "browser", kind: "video" },
+        ]);
+        if (options.topLayer) {
+          assert.equal(
+            await page
+              .locator(`#capture-${options.topLayer}`)
+              .evaluate((element) => element.matches(":modal, :popover-open")),
+            true,
+          );
+        }
         assert.equal(
           await page.getByTestId("AgentChatPanel").evaluate((element) => getComputedStyle(element).visibility),
           "visible",

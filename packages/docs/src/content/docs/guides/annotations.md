@@ -47,7 +47,7 @@ Selecting elements opens chat and places the cursor in the composer, so you can 
 
 Selected element metadata includes its path, nearby text, accessibility information, bounds and computed styles. React development source locations and fetchable source maps are used when the host exposes them; source resolution remains best effort.
 
-Selection highlights and drawings render above the devhost toolbar and chat panel. The floating annotation toolbar stays clickable, so you can switch tools or turn selection off. Escape restores ordinary interactions with devhost controls. Native popovers and modal dialogs use their own browser top-layer entries and can cover the drawing canvas; separate inspector windows are outside the page canvas.
+Selection highlights, drawings, and the floating annotation tools render above page content and devhost UI, including open Popover API panels and modal `<dialog>` elements. Tools and chat stay usable while a modal is open, so you can annotate it and send the snapshot without closing it. Annotation controls stay inside the active popup's interaction scope without moving or reopening the target itself. Escape ends selection or drawing without dismissing that popup; another Escape follows its normal close behavior. Separate inspector windows and browser-controlled dialogs, such as `window.alert()`, are outside the page canvas.
 
 ## Draw over the page
 

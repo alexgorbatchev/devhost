@@ -11,6 +11,11 @@
   visibility: hidden;
 }
 
+/* A native popup can extend beyond its excluded toolbar ancestor; retain the annotated popup itself. */
+[data-devhost-capturing] [data-devhost-capture-include] {
+  visibility: visible;
+}
+
 /* Native chat bubbles retain the shared palette while separating user messages from the thread. */
 .aui-user-message-content {
   background: color-mix(in srgb, var(--foreground) 14%, var(--secondary));

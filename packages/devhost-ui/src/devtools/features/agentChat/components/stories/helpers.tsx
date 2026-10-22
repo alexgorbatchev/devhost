@@ -1,6 +1,8 @@
 import type { IChatQuestionSelection } from "../../questions/types";
 import { getChatQuestionAnswers } from "../../questions/getChatQuestionAnswers";
 import { DevtoolsTopLayer } from "../../../../shared/components/DevtoolsTopLayer";
+import { ToolbarPopover } from "../../../../shared/components/ToolbarPopover";
+import { DevtoolsToolbar } from "../../../../shared/components/DevtoolsToolbar";
 import { renderDevtoolsInStoryShadowRoot } from "../../../../shared/components/stories/helpers";
 import { PageChat } from "../PageChat";
 import { fixture_codexQuestion } from "../../questions/components/stories/fixtures";
@@ -306,8 +308,13 @@ export async function dragWithMouse(from: IAnnotationPoint, to: IAnnotationPoint
   await sendMouseEvent("mouseReleased", to);
 }
 
-export function ShadowPageChatScene(): JSX.Element {
+interface IShadowPageChatSceneProps {
+  hasNativeLayers?: boolean;
+}
+
+export function ShadowPageChatScene({ hasNativeLayers = false }: IShadowPageChatSceneProps): JSX.Element {
   const rootReference = useRef<HTMLDivElement | null>(null);
+  const dialogReference = useRef<HTMLDialogElement | null>(null);
   const [isOpen, setIsOpen] = useState(true);
   const [count, setCount] = useState(0);
   return (
@@ -315,8 +322,43 @@ export function ShadowPageChatScene(): JSX.Element {
       <button type="button" onClick={() => setCount(count + 1)}>
         Page counter: {count}
       </button>
+      {hasNativeLayers ? (
+        <>
+          <button type="button" onClick={() => dialogReference.current?.showModal()}>
+            Open host modal
+          </button>
+          <dialog ref={dialogReference} aria-label="Host modal">
+            <button type="button" onClick={() => setCount(count + 1)}>
+              Modal counter: {count}
+            </button>
+            <button type="button" onClick={() => dialogReference.current?.close()}>
+              Close host modal
+            </button>
+          </dialog>
+        </>
+      ) : null}
       {renderDevtoolsInStoryShadowRoot(
         <DevtoolsTopLayer ref={rootReference}>
+          {hasNativeLayers ? (
+            <DevtoolsToolbar
+              collapsedIndicator={null}
+              isMinimapVisible={false}
+              position="bottom-right"
+              stackName="native-layers"
+            >
+              <ToolbarPopover
+                panelLabel="Native panel"
+                panelWidth="sm"
+                testId="NativePanel"
+                triggerLabel="Native panel"
+                triggerContent="Native panel"
+              >
+                <button type="button" onClick={() => setCount(count + 1)}>
+                  Panel counter: {count}
+                </button>
+              </ToolbarPopover>
+            </DevtoolsToolbar>
+          ) : null}
           <PageChat isOpen={isOpen} onOpenChange={setIsOpen} isSelectionEnabled rootReference={rootReference} />
         </DevtoolsTopLayer>,
       )}

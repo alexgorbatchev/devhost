@@ -16,3 +16,16 @@ test.each([false, true])(
 test("hides unannotated devhost UI when capturing a tab that was already shared", async () => {
   console.log(JSON.stringify(await runTabCaptureAcceptance({ isSharingAheadOfTime: true })));
 }, 60_000);
+
+test.each([
+  ["modal", false],
+  ["modal", true],
+  ["popover", false],
+  ["popover", true],
+] as const)(
+  "sends drawings over an open native %s without dismissing it (already shared: %s)",
+  async (topLayer, isSharingAheadOfTime) => {
+    console.log(JSON.stringify(await runTabCaptureAcceptance({ topLayer, isSharingAheadOfTime })));
+  },
+  60_000,
+);

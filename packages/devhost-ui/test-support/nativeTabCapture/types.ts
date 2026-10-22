@@ -1,5 +1,6 @@
 import type { Server } from "bun";
 export interface ITabCaptureAcceptanceOptions {
+  topLayer?: "modal" | "popover";
   isChatAnnotated?: boolean;
   isSharingAheadOfTime?: boolean;
 }
@@ -19,6 +20,9 @@ export interface ITabCapturePixelProof {
   expectedHost: number[];
   expectedPage: number[];
   expectedPanel: number[];
+  layer: number[];
+  expectedLayer: number[];
+  tools: number[];
 }
 export interface ITabCaptureTrackProof {
   state: MediaStreamTrackState;

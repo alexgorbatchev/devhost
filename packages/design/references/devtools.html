@@ -460,7 +460,9 @@
         Conversation (+) sits beside Share Tab and Send Message in the composer. Sent context starts collapsed and
         clears from the page after submission. User bubbles use a foreground-tinted secondary fill, foreground text, and
         an input-color border. The interactive reference for these surfaces is the PageChat and ChatUserText Storybook
-        stories; the annotation-draft and queue simulation below depicts the retired workflow.
+        stories. Their annotation layer stays above native popovers and modal dialogs, with chat and tools in the active
+        popup's interaction scope so sending does not close the target. The annotation-draft and queue simulation below
+        depicts the retired workflow.
       </p>
       <p>
         Hold <b>Alt</b> and click page elements to annotate. <b>Alt + right-click</b> opens component source.

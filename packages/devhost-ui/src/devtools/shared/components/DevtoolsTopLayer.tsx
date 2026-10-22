@@ -13,10 +13,10 @@ interface IDevtoolsTopLayerProps {
 }
 
 /**
- * The root of every devtools surface. A manual popover renders it in the browser's top layer, above every host
+ * The root of ordinary devtools surfaces. A manual popover renders it in the browser's top layer, above every host
  * stacking context, without dismissing host popovers or intercepting pointer events. The top layer ignores z-index
- * between its elements, so all devtools surfaces share this one element and the `--devhost-z-*` tokens order them
- * inside its stacking context.
+ * between its elements, so the `--devhost-z-*` tokens order ordinary surfaces inside this stacking context.
+ * AnnotationTopLayer gives chat and annotation tools a separate entry above native popovers and modal dialogs.
  *
  * Host popovers and modal dialogs opened later enter the top layer above the root, so it re-enters after each one.
  */
