@@ -56,12 +56,11 @@ var signalExitCodes = map[syscall.Signal]int{
 
 type StartStackOptions struct {
 	// File sessions own their backend and report unexpected listener failures.
-	runtimeErrors        <-chan error
-	runtimeDirectoryPath string
-	serveSession         bool
-	Configuration        *manifest.Manifest
-	CaddyOutputWriters   caddy.RouteCommandOutputWriters
-	CaddyPaths           caddy.Paths
+	runtimeErrors      <-chan error
+	serveSession       bool
+	Configuration      *manifest.Manifest
+	CaddyOutputWriters caddy.RouteCommandOutputWriters
+	CaddyPaths         caddy.Paths
 	// ConfigPath names the devhost config file the stack applies and watches;
 	// empty resolves it from Environment.
 	ConfigPath          string

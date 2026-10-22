@@ -35,13 +35,7 @@ func StartServe(directory, domain string, port int, options StartStackOptions) (
 	if err := os.MkdirAll(paths.StateDirectoryPath, 0o700); err != nil {
 		return 0, fmt.Errorf("create serve session state directory: %w", err)
 	}
-	runtimeDir, err := os.MkdirTemp(paths.StateDirectoryPath, "serve-")
-	if err != nil {
-		return 0, fmt.Errorf("create serve session runtime directory: %w", err)
-	}
-	defer func() { err = errors.Join(err, os.RemoveAll(runtimeDir)) }()
 	options.CaddyPaths = paths
-	options.runtimeDirectoryPath = runtimeDir
 	if port == 0 {
 		var closeServer func() error
 		port, options.runtimeErrors, closeServer, err = startFileServer(directory)
