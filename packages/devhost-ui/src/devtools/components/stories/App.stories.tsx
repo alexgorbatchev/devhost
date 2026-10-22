@@ -173,7 +173,9 @@ export const ConfigEditor: Story = {
     const dialog = await shadowCanvas.findByRole("dialog", { name: "Configuration" });
 
     await waitFor(() => expect(dialog).toBeVisible());
-    await expect(within(dialog).getByRole("option", { name: "devhost.toml" })).toBeTruthy();
+    await expect(
+      within(within(dialog).getByRole("combobox", { name: "File" })).getByText("devhost.toml", { exact: true }),
+    ).toBeVisible();
     await expect(await within(dialog).findByRole("textbox", { name: "Configuration file" })).toHaveTextContent(
       'name = "storybook-stack"',
     );
