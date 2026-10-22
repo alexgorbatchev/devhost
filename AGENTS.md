@@ -32,7 +32,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Download the pinned guide videos a checkout lacks: `just docs media` (`just docs run`, `test`, and `build` run it first).
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
 - Start the root devhost stack locally: `just run`
-- Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires a source checkout: `DEVHOST_DEV_SOURCE_DIR`, which `just run` sets, or the checkout a development build records.
+- Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires a source checkout: the one a development build records, which `just run` uses, or `DEVHOST_DEV_SOURCE_DIR`.
 - Start the dedicated Chrome for Testing with React Developer Tools that native React DevTools attaches to: `just dev-browser` (or `just dev-browser <port>`); set `DEVHOST_BROWSER_ENDPOINT` in `.envrc.local` to its endpoint, such as `http://127.0.0.1:9222`, and restart `just run`
 - Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure `DEVHOST_RECOVERY` through `.envrc` / `.envrc.local`.
 - Start the docs site locally: `just docs` (or `just docs run`)
