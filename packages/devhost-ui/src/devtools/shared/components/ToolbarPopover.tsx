@@ -1,4 +1,5 @@
-import { useId, useState, type JSX, type ReactNode, type Ref, type ToggleEvent } from "react";
+import { PortalProvider } from "@alexgorbatchev/shadcn";
+import { useId, useRef, useState, type JSX, type ReactNode, type Ref, type ToggleEvent } from "react";
 
 import { cn } from "../../../lib/utils";
 
@@ -52,6 +53,9 @@ export function ToolbarPopover({
 }: IToolbarPopoverProps): JSX.Element {
   const panelId: string = useId();
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  // Library popups opened from the panel, such as a select list, render inside it: a click there is inside the
+  // native popover, so it does not light-dismiss the panel.
+  const portalReference = useRef<HTMLDivElement | null>(null);
 
   return (
     <span className="contents" data-testid="ToolbarPopover">
@@ -93,12 +97,15 @@ export function ToolbarPopover({
           onOpenChange?.(event.newState === "open");
         }}
       >
-        <header className="flex h-6 shrink-0 items-center gap-1.5 border-b border-border pr-1 pl-2 font-bold">
-          <span className="min-w-0 flex-1 truncate">{panelLabel}</span>
-          {headerEndEnhancer}
-        </header>
-        {notice}
-        <div className="min-h-0 overflow-auto">{children}</div>
+        <PortalProvider container={portalReference}>
+          <header className="flex h-6 shrink-0 items-center gap-1.5 border-b border-border pr-1 pl-2 font-bold">
+            <span className="min-w-0 flex-1 truncate">{panelLabel}</span>
+            {headerEndEnhancer}
+          </header>
+          {notice}
+          <div className="min-h-0 overflow-auto">{children}</div>
+        </PortalProvider>
+        <div ref={portalReference} />
       </section>
     </span>
   );

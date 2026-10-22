@@ -625,10 +625,13 @@ export const NonDefaultBranchAmongRepositories: Story = {
     await expect(canvas.getByRole("button", { name: /^Worktrees/ })).toHaveTextContent("main");
     await expect(trigger.textContent).toBe("api: main, shop: main");
     const selector = canvas.getByRole("combobox", { name: "Repository" });
-    await expect(selector).toHaveValue("api");
+    await expect(selector).toHaveTextContent("api");
     await waitFor(() => expect(canvas.getByRole("group", { name: "Choose a checkout for api" })).toBeVisible());
-    await userEvent.selectOptions(selector, "shop");
+    // The list renders inside the panel, so choosing from it keeps the panel open.
+    await userEvent.click(selector);
+    await userEvent.click(await canvas.findByRole("option", { name: "shop" }));
     await waitFor(() => expect(canvas.getByRole("group", { name: "Choose a checkout for shop" })).toBeVisible());
+    await expect(selector).toHaveTextContent("shop");
   },
 };
 

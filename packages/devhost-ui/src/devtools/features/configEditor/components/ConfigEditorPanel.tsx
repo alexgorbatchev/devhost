@@ -1,3 +1,4 @@
+import { PortalProvider, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@alexgorbatchev/shadcn";
 import type { JSX, KeyboardEvent } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { FileCogIcon, SaveIcon, Undo2Icon, XIcon } from "lucide-react";
@@ -27,6 +28,8 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
   const editor = useConfigEditor(props.client, props.isOpen, props.configuration);
   const titleId: string = useId();
   const editorContainerReference = useRef<HTMLDivElement | null>(null);
+  // The file list renders beside the window, on the same layer: Escape in the open list then closes only the list.
+  const portalReference = useRef<HTMLDivElement | null>(null);
   const viewReference = useRef<IConfigEditorView | null>(null);
   const editorReference = useRef(editor);
   const [viewError, setViewError] = useState<string | null>(null);
@@ -100,6 +103,11 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
     }
   }, [props.isOpen]);
 
+  const fileItems = editor.files.map((file: IConfigFile) => ({
+    value: file.path,
+    label: `${formatConfigFilePath(file.path, props.projectRootPath, props.homeDirectoryPath)}${editor.changedPaths.includes(file.path) ? " (unsaved)" : ""}`,
+  }));
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
     // The TOML editor handles Escape first, as when it closes its completions.
     if (event.key === "Escape" && !event.defaultPrevented) {
@@ -133,23 +141,28 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
           <strong className="shrink-0" id={titleId}>
             Configuration
           </strong>
-          <select
-            aria-label="File"
-            className="h-5 min-w-0 flex-1 rounded-sm border border-input bg-background px-1 text-foreground disabled:opacity-60"
-            data-testid="ConfigEditorPanel--file"
-            disabled={editor.files.length === 0}
-            value={selectedFile?.path ?? ""}
-            onChange={(event): void => {
-              editor.select(event.target.value);
-            }}
-          >
-            {editor.files.map((file: IConfigFile) => (
-              <option key={file.path} value={file.path}>
-                {formatConfigFilePath(file.path, props.projectRootPath, props.homeDirectoryPath)}
-                {editor.changedPaths.includes(file.path) ? " (unsaved)" : ""}
-              </option>
-            ))}
-          </select>
+          <PortalProvider container={portalReference}>
+            <Select
+              items={fileItems}
+              value={selectedFile?.path ?? null}
+              disabled={editor.files.length === 0}
+              onValueChange={(path): void => {
+                if (path !== null) editor.select(path);
+              }}
+            >
+              <SelectTrigger aria-label="File" data-testid="ConfigEditorPanel--file" size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {fileItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </PortalProvider>
+          <span className="min-w-0 flex-1" />
           <Button
             disabled={!isChanged || isSaving}
             startEnhancer={<Icon glyph={Undo2Icon} />}
@@ -193,6 +206,7 @@ export function ConfigEditorPanel(props: IConfigEditorPanelProps): JSX.Element {
           data-testid="ConfigEditorPanel--editor"
         />
       </section>
+      <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
     </div>
   );
 }

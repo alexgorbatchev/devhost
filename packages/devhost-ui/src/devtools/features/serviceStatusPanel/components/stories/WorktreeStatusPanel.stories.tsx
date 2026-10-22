@@ -116,8 +116,15 @@ export const RepositoryError: Story = {
     await expect(canvas.queryByText("Service failed to start.")).toBeNull();
     await userEvent.click(trigger);
     await waitFor(() => expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible());
-    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "Repository" }), "other");
+    await userEvent.click(canvas.getByRole("combobox", { name: "Repository" }));
+    await userEvent.click(await canvas.findByRole("option", { name: "other" }));
     await waitFor(() => expect(canvas.getByText("Service failed to start.")).toBeVisible());
+    // Escape in the open list closes the list and leaves the panel open.
+    await userEvent.click(canvas.getByRole("combobox", { name: "Repository" }));
+    await canvas.findByRole("listbox");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
+    await expect(canvas.getByRole("region", { name: "Worktrees" })).toBeVisible();
   },
 };
 

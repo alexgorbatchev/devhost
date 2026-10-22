@@ -1,3 +1,4 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@alexgorbatchev/shadcn";
 import { useRef, useState, type JSX } from "react";
 import { GitBranchIcon } from "lucide-react";
 
@@ -58,18 +59,24 @@ export function WorktreeStatusPanel(props: IWorktreeStatusPanelProps): JSX.Eleme
       }}
       headerEndEnhancer={
         props.repositories.length > 1 ? (
-          <select
-            aria-label="Repository"
-            className="min-w-0 rounded-sm border border-input bg-background text-foreground"
+          <Select
+            items={props.repositories.map((repository) => ({ value: repository.id, label: repository.name }))}
             value={selected.id}
-            onChange={(event): void => setRepositoryId(event.currentTarget.value)}
+            onValueChange={(value): void => {
+              if (value !== null) setRepositoryId(value);
+            }}
           >
-            {props.repositories.map((repository) => (
-              <option key={repository.id} value={repository.id}>
-                {repository.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-label="Repository" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {props.repositories.map((repository) => (
+                <SelectItem key={repository.id} value={repository.id}>
+                  {repository.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : undefined
       }
     >

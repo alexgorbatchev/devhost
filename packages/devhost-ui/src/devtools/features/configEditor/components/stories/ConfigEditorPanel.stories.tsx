@@ -104,6 +104,28 @@ async function openPanel(canvas: ReturnType<typeof within>) {
   return { dialog, editor };
 }
 
+// The file list renders beside the window, so its options are found on the page. Escape closes only the list.
+async function readConfigFileOptions(canvas: ReturnType<typeof within>, fileSelect: HTMLElement): Promise<string[]> {
+  await userEvent.click(fileSelect);
+  const listbox: HTMLElement = await canvas.findByRole("listbox");
+  const labels: string[] = within(listbox)
+    .getAllByRole("option")
+    .map((option) => option.textContent ?? "");
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
+  return labels;
+}
+
+async function chooseConfigFile(
+  canvas: ReturnType<typeof within>,
+  fileSelect: HTMLElement,
+  label: string,
+): Promise<void> {
+  await userEvent.click(fileSelect);
+  await userEvent.click(await canvas.findByRole("option", { name: label }));
+  await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
+}
+
 // Types at the start of the file. A synthetic click carries no coordinates, so the editor places its cursor at the
 // position nearest the viewport origin: the start of the text. In user-event keys, "[[" types "[".
 async function typeAtStart(editor: HTMLElement, keys: string): Promise<void> {
@@ -122,33 +144,33 @@ async function waitForCompletionsToClose(dialog: HTMLElement): Promise<void> {
 
 export const EditsAFile: Story = {
   play: async ({ canvasElement }): Promise<void> => {
-    const { dialog, editor } = await openPanel(within(canvasElement));
+    const canvas = within(canvasElement);
+    const { dialog, editor } = await openPanel(canvas);
     const fileSelect: HTMLElement = within(dialog).getByRole("combobox", { name: "File" });
     const saveButton: HTMLElement = within(dialog).getByRole("button", { name: "Save" });
 
-    await expect(
-      within(fileSelect)
-        .getAllByRole("option")
-        .map((option) => option.textContent),
-    ).toEqual(["devhost.toml", "packages/api/devhost.toml", "~/.config/devhost/config.toml"]);
+    await expect(await readConfigFileOptions(canvas, fileSelect)).toEqual([
+      "devhost.toml",
+      "packages/api/devhost.toml",
+      "~/.config/devhost/config.toml",
+    ]);
+    await expect(dialog).toBeVisible();
     await expect(saveButton).toBeDisabled();
 
     await typeAtStart(editor, "# note{Enter}");
-    await waitFor(() =>
-      expect(within(fileSelect).getByRole("option", { name: "devhost.toml (unsaved)" })).toBeTruthy(),
-    );
+    await waitFor(() => expect(within(fileSelect).getByText("devhost.toml (unsaved)", { exact: true })).toBeVisible());
     await expect(saveButton).toBeEnabled();
 
     // Another file shows its own text, and the change stays with the first file.
-    await userEvent.selectOptions(fileSelect, fixture_includeFile.path);
+    await chooseConfigFile(canvas, fileSelect, "packages/api/devhost.toml");
     await waitFor(() => expect(editor).toHaveTextContent("port = 4000"));
     await expect(saveButton).toBeDisabled();
-    await userEvent.selectOptions(fileSelect, fixture_manifestFile.path);
+    await chooseConfigFile(canvas, fileSelect, "devhost.toml (unsaved)");
     await waitFor(() => expect(editor).toHaveTextContent("# note"));
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Revert" }));
     await waitFor(() => expect(editor).not.toHaveTextContent("# note"));
-    await expect(within(fileSelect).getByRole("option", { name: "devhost.toml" })).toBeTruthy();
+    await expect(within(fileSelect).getByText("devhost.toml", { exact: true })).toBeVisible();
     await expect(saveButton).toBeDisabled();
   },
 };
@@ -226,9 +248,10 @@ export const CompletesSettings: Story = {
 
 export const ShowsIssuesWhileTyping: Story = {
   play: async ({ canvasElement }): Promise<void> => {
-    const { dialog, editor } = await openPanel(within(canvasElement));
+    const canvas = within(canvasElement);
+    const { dialog, editor } = await openPanel(canvas);
 
-    await userEvent.selectOptions(within(dialog).getByRole("combobox", { name: "File" }), fixture_includeFile.path);
+    await chooseConfigFile(canvas, within(dialog).getByRole("combobox", { name: "File" }), "packages/api/devhost.toml");
     await waitFor(() => expect(editor).toHaveTextContent("port = 4000"));
     await typeAtStart(editor, "port = 0{Enter}");
 
@@ -257,7 +280,9 @@ export const SavesAndApplies: Story = {
       `# saved\n${fixture_manifestFile.content}`,
       fixture_manifestFile.version,
     );
-    await expect(within(dialog).getByRole("option", { name: "devhost.toml" })).toBeTruthy();
+    await expect(
+      within(within(dialog).getByRole("combobox", { name: "File" })).getByText("devhost.toml", { exact: true }),
+    ).toBeVisible();
     await expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
   },
 };
@@ -319,7 +344,11 @@ export const RefusesInvalidContent: Story = {
     await expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "devhost refused the saveThe file was not written. The issues are listed below the editor.",
     );
-    await expect(within(dialog).getByRole("option", { name: "devhost.toml (unsaved)" })).toBeTruthy();
+    await expect(
+      within(within(dialog).getByRole("combobox", { name: "File" })).getByText("devhost.toml (unsaved)", {
+        exact: true,
+      }),
+    ).toBeVisible();
   },
 };
 
@@ -345,14 +374,20 @@ export const ClosesWithoutLosingChanges: Story = {
   play: async ({ args, canvasElement }): Promise<void> => {
     const { dialog, editor } = await openPanel(within(canvasElement));
 
+    const fileSelect: HTMLElement = within(dialog).getByRole("combobox", { name: "File" });
     await typeAtStart(editor, "# kept{Enter}");
-    // Escape right after typing cancels the editor's pending completions; from the rest of the window it closes it.
-    await userEvent.click(within(dialog).getByRole("combobox", { name: "File" }));
+    // Escape right after typing cancels the editor's pending completions, and in the open file list it closes only
+    // the list; from the rest of the window it closes the window.
+    await userEvent.click(fileSelect);
+    await within(canvasElement).findByRole("listbox");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(within(canvasElement).queryByRole("listbox")).toBeNull());
+    await expect(args.onClose).toHaveBeenCalledTimes(0);
     await userEvent.keyboard("{Escape}");
     await expect(args.onClose).toHaveBeenCalledTimes(1);
     await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     await expect(args.onClose).toHaveBeenCalledTimes(2);
-    await expect(within(dialog).getByRole("option", { name: "devhost.toml (unsaved)" })).toBeTruthy();
+    await expect(within(fileSelect).getByText("devhost.toml (unsaved)", { exact: true })).toBeVisible();
   },
 };
 
