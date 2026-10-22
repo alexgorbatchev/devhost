@@ -5,12 +5,14 @@ import "encoding/json"
 const (
 	chatHarnessesPath = controlPathPrefix + "/chat/harnesses"
 	chatSessionsPath  = controlPathPrefix + "/chat/sessions"
-	chatWebsocketPath = controlPathPrefix + "/ws/chat"
-	chatMessageLimit  = 8 * 1024 * 1024
-	chatCodex         = "codex"
-	chatClaude        = "claude-code"
-	chatTargetProject = "project"
-	chatTargetDevhost = "devhost"
+	// chatSessionCloseSuffix follows a session ID: POST /chat/sessions/{id}/close.
+	chatSessionCloseSuffix = "/close"
+	chatWebsocketPath      = controlPathPrefix + "/ws/chat"
+	chatMessageLimit       = 8 * 1024 * 1024
+	chatCodex              = "codex"
+	chatClaude             = "claude-code"
+	chatTargetProject      = "project"
+	chatTargetDevhost      = "devhost"
 )
 
 type chatModel struct {

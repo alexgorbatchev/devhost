@@ -63,8 +63,8 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 			t.Fatalf("cross-project attach response=%v error=%v", response, err)
 		}
 	})
-	t.Run("rejects cross project deletion", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodDelete, base+chatSessionsPath+"/"+second.snapshot().ID+query, nil)
+	t.Run("rejects cross project close", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodPost, base+chatSessionsPath+"/"+second.snapshot().ID+chatSessionCloseSuffix+query, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +75,7 @@ func TestChatSessionsStayWithinResolvedProject(t *testing.T) {
 		}
 		defer response.Body.Close()
 		if response.StatusCode != http.StatusNotFound || second.snapshot().Status == "closed" {
-			t.Fatalf("cross-project delete status=%d session=%+v", response.StatusCode, second.snapshot())
+			t.Fatalf("cross-project close status=%d session=%+v", response.StatusCode, second.snapshot())
 		}
 	})
 	t.Run("rejects known native history from another project", func(t *testing.T) {

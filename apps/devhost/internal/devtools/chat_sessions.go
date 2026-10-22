@@ -87,7 +87,8 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 	if _, err := rand.Read(id); err != nil {
 		return nil, fmt.Errorf("create chat session ID: %w", err)
 	}
-	session := &chatSession{info: chatSessionInfo{ID: hex.EncodeToString(id), Harness: request.Harness, ProjectRootPath: cwd, Status: "starting"}, pending: map[string]json.RawMessage{}, clients: map[*websocketClient]struct{}{}}
+	// A resumed session continues the native conversation it names, so it carries that ID before the client reports it.
+	session := &chatSession{info: chatSessionInfo{ID: hex.EncodeToString(id), Harness: request.Harness, ProjectRootPath: cwd, NativeSessionID: request.ResumeID, Status: "starting"}, pending: map[string]json.RawMessage{}, clients: map[*websocketClient]struct{}{}}
 	session.model = request.Model
 	args := []string{"app-server"}
 	if request.Harness == chatClaude {
@@ -150,7 +151,11 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 		process.close()
 		return nil, fmt.Errorf("chat server is stopping")
 	}
-	s.sessions[session.snapshot().ID] = session
+	info := session.snapshot()
+	if request.ResumeID != "" {
+		s.dropClosedLocked(info.Harness, info.ProjectRootPath, request.ResumeID)
+	}
+	s.sessions[info.ID] = session
 	s.mu.Unlock()
 	s.wg.Add(1)
 	go func() {
@@ -165,6 +170,17 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 		session.mu.Unlock()
 	}()
 	return session, nil
+}
+
+// dropClosedLocked removes the closed records of a native conversation that a new session has resumed: the new
+// session continues it, so a page lists the conversation once. Sessions still running are kept.
+func (s *chatStore) dropClosedLocked(harness, root, nativeID string) {
+	for id, session := range s.sessions {
+		info := session.snapshot()
+		if info.Status == "closed" && info.Harness == harness && info.ProjectRootPath == root && info.NativeSessionID == nativeID {
+			delete(s.sessions, id)
+		}
+	}
 }
 
 func initializeChat(ctx context.Context, p *chatProcess) (json.RawMessage, error) {

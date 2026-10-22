@@ -67,8 +67,12 @@ func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Reques
 	if !requireChatPage(w, r) {
 		return
 	}
-	id := strings.TrimPrefix(r.URL.Path, chatSessionsPath+"/")
-	if r.Method == http.MethodDelete && id != r.URL.Path {
+	// Closing stops the native process and keeps the conversation listed, so a page can still resume it.
+	if id, isClose := strings.CutSuffix(strings.TrimPrefix(r.URL.Path, chatSessionsPath+"/"), chatSessionCloseSuffix); isClose && id != "" && !strings.Contains(id, "/") {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		root, err := s.chatQueryRoot(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -80,7 +84,7 @@ func (s *ControlServer) handleChatSessions(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		session.close()
-		w.WriteHeader(http.StatusNoContent)
+		chatJSON(w, session.snapshot())
 		return
 	}
 	if r.URL.Path != chatSessionsPath {

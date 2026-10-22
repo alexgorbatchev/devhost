@@ -194,19 +194,19 @@ Instance configuration is kept out of `inject.js`, lazy JavaScript chunks and fo
 
 All paths below are relative to the routed app's origin. Requests with JSON bodies use `Content-Type: application/json`.
 
-| Endpoint                              | Methods       | Purpose                                                    |
-| ------------------------------------- | ------------- | ---------------------------------------------------------- |
-| `/__devhost__/chat/harnesses`         | `GET`         | Discover installed native clients and model catalogs       |
-| `/__devhost__/chat/sessions`          | `GET`, `POST` | List sessions or start/resume a native conversation        |
-| `/__devhost__/chat/sessions/<id>`     | `DELETE`      | End the owned native process                               |
-| `/__devhost__/restart-service`        | `POST`        | Restart managed services                                   |
-| `/__devhost__/restart-stack`          | `POST`        | Restart all managed services with fresh automatic ports    |
-| `/__devhost__/worktrees`              | `GET`, `POST` | Refresh worktree state or switch the selected checkout     |
-| `/__devhost__/react-highlight/cursor` | `POST`        | Publish an editor cursor update                            |
-| `/__devhost__/config/files`           | `GET`         | List the files the config editor can change, with contents |
-| `/__devhost__/config/schema`          | `GET`         | Describe the settings each kind of file accepts            |
-| `/__devhost__/config/validate`        | `POST`        | Check unsaved content with the checks a reload makes       |
-| `/__devhost__/config/save`            | `POST`        | Write checked content over the version it was edited from  |
+| Endpoint                                | Methods       | Purpose                                                                     |
+| --------------------------------------- | ------------- | --------------------------------------------------------------------------- |
+| `/__devhost__/chat/harnesses`           | `GET`         | Discover installed native clients and model catalogs                        |
+| `/__devhost__/chat/sessions`            | `GET`, `POST` | List sessions or start/resume a native conversation                         |
+| `/__devhost__/chat/sessions/<id>/close` | `POST`        | End the owned native process; the closed session stays listed until resumed |
+| `/__devhost__/restart-service`          | `POST`        | Restart managed services                                                    |
+| `/__devhost__/restart-stack`            | `POST`        | Restart all managed services with fresh automatic ports                     |
+| `/__devhost__/worktrees`                | `GET`, `POST` | Refresh worktree state or switch the selected checkout                      |
+| `/__devhost__/react-highlight/cursor`   | `POST`        | Publish an editor cursor update                                             |
+| `/__devhost__/config/files`             | `GET`         | List the files the config editor can change, with contents                  |
+| `/__devhost__/config/schema`            | `GET`         | Describe the settings each kind of file accepts                             |
+| `/__devhost__/config/validate`          | `POST`        | Check unsaved content with the checks a reload makes                        |
+| `/__devhost__/config/save`              | `POST`        | Write checked content over the version it was edited from                   |
 
 Chat `GET` and `DELETE` requests take `pageURL` and `chatTarget` (`project` or `devhost`) query parameters; `POST` carries them as `pageURL` and `target`.
 

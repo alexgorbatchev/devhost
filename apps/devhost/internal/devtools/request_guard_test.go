@@ -93,7 +93,7 @@ func TestEveryStateChangingControlRouteRejectsOtherSites(t *testing.T) {
 		{http.MethodPost, startServicePath, `{"serviceNames":["api"]}`},
 		{http.MethodPost, worktreesPath, `{"repositoryId":"root","path":"/tmp"}`},
 		{http.MethodPost, chatSessionsPath, `{"harness":"codex"}`},
-		{http.MethodDelete, chatSessionsPath + "/session", ""},
+		{http.MethodPost, chatSessionsPath + "/session" + chatSessionCloseSuffix, ""},
 		{http.MethodPost, reactHighlightCursorPath, `{"locator":null}`},
 	} {
 		t.Run(tc.method+" "+tc.path, func(t *testing.T) {

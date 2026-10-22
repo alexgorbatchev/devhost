@@ -170,7 +170,10 @@ export function createAgentChatClient(
           body: JSON.stringify(sessionRequest),
         }),
       );
-      publish({ sessions: [...state.sessions.filter((item) => item.id !== session.id), session] });
+      // A resumed session continues the closed conversation it resumed, which the server no longer lists.
+      publish({
+        sessions: [...state.sessions.filter((item) => item.id !== session.id && item.id !== resume?.id), session],
+      });
       await attach(session);
     })()
       .catch((error: unknown): never => {
@@ -247,14 +250,17 @@ export function createAgentChatClient(
     async closeSession(): Promise<void> {
       const session = state.session;
       if (!session) return;
-      await request(`/__devhost__/chat/sessions/${encodeURIComponent(session.id)}?${scopeQuery()}`, {
-        method: "DELETE",
-      });
+      // Closing stops the native process; the closed conversation stays listed so it can be resumed.
+      const closed = readChatSession(
+        await request(`/__devhost__/chat/sessions/${encodeURIComponent(session.id)}/close?${scopeQuery()}`, {
+          method: "POST",
+        }),
+      );
       detach();
       settingsStore.getState().updateChat({ sessionId: null, scroll: null });
       publish({
         session: null,
-        sessions: state.sessions.filter((item) => item.id !== session.id),
+        sessions: [...state.sessions.filter((item) => item.id !== closed.id), closed],
         events: [],
         pendingRequestIds: [],
         isConnected: false,
