@@ -23,6 +23,6 @@ Each example uses the same renderer as the real page and retains its HTTP status
 
 Change your browser's light or dark preference to inspect both themes; an open preview follows preference changes. Resize the browser for narrow-screen layouts. The file examples live under `demos/pages/files/` and reflect edits on reload. After editing Go templates or the shared status stylesheet, restart `just run` to rebuild the embedded pages.
 
-`just run` enables the gallery through `DEVHOST_DEV_SOURCE_DIR=.`. Development builds from `just dev-bootstrap` or the source shim enable it through the checkout they record, and any other stack can set `DEVHOST_DEV_SOURCE_DIR` to the devhost checkout path. The gallery returns 404 when no source checkout is configured. It uses the existing stack's domains and control listener, so separate projects can run their own galleries concurrently.
+Development builds, including the source shim behind `just run` and builds from `just dev-bootstrap`, enable the gallery through the checkout they record. Any other stack can set `DEVHOST_DEV_SOURCE_DIR` to the devhost checkout path. The gallery returns 404 when no source checkout is configured. It uses the existing stack's domains and control listener, so separate projects can run their own galleries concurrently.
 
 For real startup timeout and restart behavior, use `just devhost demo-recovery`; see [Startup and recovery pages](../../guides/stack-lifecycle/#startup-and-recovery-pages).

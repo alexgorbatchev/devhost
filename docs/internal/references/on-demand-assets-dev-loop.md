@@ -39,4 +39,4 @@ There are no filesystem watchers or automatic browser reloads. Refresh the page 
 - `internal/devtools/chat_target_test.go` covers the `devhost` chat target and `devhostSourceRootPath`.
 - Run `just check` for the repository gates or `just devhost test` for Go tests.
 
-For a manual check, run root `just run`, edit a UI source file, and refresh the routed page. The root development stack sets `DEVHOST_DEV_SOURCE_DIR=.`, which names the same checkout the source shim records.
+For a manual check, run root `just run`, edit a UI source file, and refresh the routed page. The root development stack runs through the source shim, which records this checkout.
