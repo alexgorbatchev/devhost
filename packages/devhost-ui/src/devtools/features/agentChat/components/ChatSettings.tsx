@@ -10,7 +10,6 @@ import {
   Field,
   FieldGroup,
   FieldLabel,
-  PortalProvider,
   Select,
   SelectContent,
   SelectItem,
@@ -62,99 +61,92 @@ export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element 
         }
       />
       <DialogContent>
-        {/*
-          The selects' lists portal into the dialog's own portal node, which the modal dialog counts as inside it.
-          Chat's portal container would place them beside the dialog, which hides a list that is already mounted
-          when the dialog opens from assistive technology and pointer input.
-        */}
-        <PortalProvider container={undefined}>
-          <DensityProvider density="comfortable">
-            <DialogHeader>
-              <DialogTitle>Chat Settings</DialogTitle>
-              <DialogDescription>Choose Your Harness, Model, And Conversation.</DialogDescription>
-            </DialogHeader>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor={harnessId}>Harness</FieldLabel>
-                <Select
-                  items={harnessItems}
-                  value={chat.selectedHarness}
-                  disabled={isBusy || chat.isCatalogLoading}
-                  onValueChange={(value) => {
-                    const chosen = chat.harnesses.find((candidate) => candidate.id === value);
-                    if (chosen) chat.setSelectedHarness(chosen.id);
-                  }}
-                >
-                  <SelectTrigger id={harnessId}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {harnessItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value} disabled={item.isDisabled}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={modelId}>Model</FieldLabel>
-                <Select
-                  items={modelItems}
-                  value={chat.selectedModel || null}
-                  disabled={isBusy || chat.isCatalogLoading || !harness?.available}
-                  onValueChange={(value) => chat.setSelectedModel(value ?? "")}
-                >
-                  <SelectTrigger id={modelId}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modelItems.map((item) => (
-                      <SelectItem key={item.value ?? ""} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={conversationId}>Conversation</FieldLabel>
-                <Select
-                  items={conversationItems}
-                  value={chat.session?.id ?? null}
-                  disabled={isBusy}
-                  onValueChange={(value) => {
-                    const session = chat.sessions.find((candidate) => candidate.id === value);
-                    if (session) void chat.resumeSession(session);
-                    else void chat.newSession();
-                  }}
-                >
-                  <SelectTrigger id={conversationId}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {conversationItems.map((item) => (
-                      <SelectItem key={item.value ?? ""} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={chat.isPreparing || chat.isCatalogLoading}
-                onClick={() => {
-                  void chat.refreshCatalog();
+        <DensityProvider density="comfortable">
+          <DialogHeader>
+            <DialogTitle>Chat Settings</DialogTitle>
+            <DialogDescription>Choose Your Harness, Model, And Conversation.</DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor={harnessId}>Harness</FieldLabel>
+              <Select
+                items={harnessItems}
+                value={chat.selectedHarness}
+                disabled={isBusy || chat.isCatalogLoading}
+                onValueChange={(value) => {
+                  const chosen = chat.harnesses.find((candidate) => candidate.id === value);
+                  if (chosen) chat.setSelectedHarness(chosen.id);
                 }}
               >
-                <Icon glyph={RefreshCwIcon} />
-                Refresh Harnesses
-              </Button>
-            </FieldGroup>
-          </DensityProvider>
-        </PortalProvider>
+                <SelectTrigger id={harnessId}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {harnessItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value} disabled={item.isDisabled}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={modelId}>Model</FieldLabel>
+              <Select
+                items={modelItems}
+                value={chat.selectedModel || null}
+                disabled={isBusy || chat.isCatalogLoading || !harness?.available}
+                onValueChange={(value) => chat.setSelectedModel(value ?? "")}
+              >
+                <SelectTrigger id={modelId}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelItems.map((item) => (
+                    <SelectItem key={item.value ?? ""} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={conversationId}>Conversation</FieldLabel>
+              <Select
+                items={conversationItems}
+                value={chat.session?.id ?? null}
+                disabled={isBusy}
+                onValueChange={(value) => {
+                  const session = chat.sessions.find((candidate) => candidate.id === value);
+                  if (session) void chat.resumeSession(session);
+                  else void chat.newSession();
+                }}
+              >
+                <SelectTrigger id={conversationId}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {conversationItems.map((item) => (
+                    <SelectItem key={item.value ?? ""} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={chat.isPreparing || chat.isCatalogLoading}
+              onClick={() => {
+                void chat.refreshCatalog();
+              }}
+            >
+              <Icon glyph={RefreshCwIcon} />
+              Refresh Harnesses
+            </Button>
+          </FieldGroup>
+        </DensityProvider>
       </DialogContent>
     </Dialog>
   );
