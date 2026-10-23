@@ -4,12 +4,15 @@ export interface ITabSnapshot {
   height: number;
 }
 
+export type CaptureFrameCheck = () => boolean;
+
 export interface ITabCaptureOptions {
   document: Document;
   mediaDevices: Pick<MediaDevices, "getDisplayMedia">;
   signal?: AbortSignal;
   sharedStream?: MediaStream;
-  prepare?: () => Promise<void>;
+  /** Return the viewport rectangles whose visible pixels must change before accepting a prepared frame. */
+  prepare?: () => Promise<readonly DOMRectReadOnly[] | void>;
 }
 
 export interface ITabDisplayMediaOptions extends DisplayMediaStreamOptions {

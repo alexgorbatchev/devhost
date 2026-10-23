@@ -93,6 +93,21 @@ test("opens the tab picker immediately, hides chrome while sampling and restores
   root.remove();
 });
 
+test("does not wait for pixels from an already transparent devhost surface", async () => {
+  const fixture = createSharedTabFixture();
+  const root = document.createElement("div");
+  const surface = document.createElement("aside");
+  surface.setAttribute("data-devhost-capture-exclude", "");
+  surface.style.opacity = "0";
+  placeElement(surface, { x: 100, y: 100, width: 100, height: 100 });
+  root.append(surface);
+  document.body.append(root);
+  const snapshot = await captureAnnotatedTab({ ...fixture, root, shouldKeepAnnotatedSurfaces: false });
+  expect(snapshot.width).toBe(64);
+  expect(fixture.track.readyState).toBe("ended");
+  expect(root.hasAttribute("data-devhost-capturing")).toBe(false);
+});
+
 test("keeps a selected chat control visible during capture and restores visibility after cancellation", async () => {
   const fixture = createChatCaptureFixture();
   const { root, chat, button } = fixture;

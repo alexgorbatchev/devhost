@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-22 15:30
+last_modified: 2026-10-23 12:48
 status: current
 ---
 
@@ -215,7 +215,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Composer focus on open and new page context; replies followed only at the bottom; devtools keys kept from host shortcuts; Escape in composer interrupts                                                                | `guides/annotations.md`; `guides/devtools.md`; `architecture/chat.md`        | **No demo** |
 | Select page elements with source metadata, and devhost UI elements with the devhost chat directory; host-page selection plugins                                                                                        | `guides/annotations.md`, "Select page context"                               | **No demo** |
 | Drawing and selection above page native popovers and modal dialogs, beneath devhost UI unless the devhost chat directory is selected; send while the target stays open; retain annotated devhost surfaces in snapshots | `guides/annotations.md`, "Draw over the page"                                | **No demo** |
-| Share Tab beside Send; reuse an active share for snapshots; clear context after confirmed submission                                                                                                                   | `guides/annotations.md`, "Share one tab snapshot"                            | **No demo** |
+| Share Tab beside Send; reuse an active share; wait for pixel changes in hidden devhost surfaces before accepting snapshots; retain context on capture failure and clear after confirmed submission                     | `guides/annotations.md`, "Share one tab snapshot"                            | **No demo** |
 | Source-locator highlights through the retained instance control API                                                                                                                                                    | `guides/react-highlight.md`                                                  | **No demo** |
 
 ### CLI

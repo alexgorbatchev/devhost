@@ -32,7 +32,11 @@ export function createChatCaptureFixture(): IChatCaptureFixture {
   root.append(chat, tools);
   shadow.append(root);
   const sampling = Promise.withResolvers<void>();
-  const observer = new MutationObserver(() => sampling.resolve());
+  const observer = new MutationObserver(() => {
+    fixture.context.fillStyle = "lime";
+    fixture.context.fillRect(0, 0, fixture.canvas.width, fixture.canvas.height);
+    sampling.resolve();
+  });
   observer.observe(root, { attributes: true, attributeFilter: ["data-devhost-capturing"] });
   return { ...fixture, root, chat, button, tools, sampling: sampling.promise, observer };
 }
@@ -57,5 +61,5 @@ export function createSharedTabFixture() {
     requestAnimationFrame(paintFrame);
   };
   requestAnimationFrame(paintFrame);
-  return { document, mediaDevices: { getDisplayMedia: async () => stream }, stream, track };
+  return { document, mediaDevices: { getDisplayMedia: async () => stream }, stream, track, canvas, context };
 }

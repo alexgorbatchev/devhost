@@ -37,12 +37,22 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
     return await captureTabSnapshot({
       ...options,
       prepare: async () => {
+        const hiddenRegions = Array.from(surfaces)
+          .filter(
+            (surface) =>
+              surface.hasAttribute("data-devhost-capture-exclude") &&
+              !includedSurfaces.includes(surface) &&
+              !surface.hasAttribute("data-devhost-capture-include") &&
+              surface.checkVisibility({ visibilityProperty: true, opacityProperty: true, contentVisibilityAuto: true }),
+          )
+          .map((surface) => surface.getBoundingClientRect());
         for (const surface of includedSurfaces) surface.setAttribute("data-devhost-capture-include", "");
         for (const root of roots) root.setAttribute("data-devhost-capturing", "");
         const timeout = AbortSignal.timeout(10_000);
         const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
         await waitForPaint(signal);
         await waitForPaint(signal);
+        return hiddenRegions;
       },
     });
   } finally {
