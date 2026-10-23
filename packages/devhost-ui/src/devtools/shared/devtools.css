@@ -16,6 +16,11 @@
   visibility: visible;
 }
 
+/* Portaled tooltips are outside their trigger's excluded panel and can still be fading out during capture. */
+[data-devhost-capturing] :is([role="tooltip"], [data-slot="tooltip-content"]) {
+  visibility: hidden;
+}
+
 /* Native chat bubbles retain the shared palette while separating user messages from the thread. */
 .aui-user-message-content {
   background: color-mix(in srgb, var(--foreground) 14%, var(--secondary));

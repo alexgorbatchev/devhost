@@ -4,6 +4,32 @@ import { createChatCaptureFixture, createSharedTabFixture } from "./helpers";
 import { createDomAnnotationSelectionCandidateForElement } from "../../annotationComposer/createDomAnnotationSelectionCandidateForElement";
 import { placeElement } from "../../../../../test-support/hostPageUtils";
 
+test.each([
+  ["role", "tooltip"],
+  ["data-slot", "tooltip-content"],
+])("hides a portaled %s tooltip even when annotated chat stays visible, then restores it", async (attribute, value) => {
+  const fixture = createChatCaptureFixture();
+  const tooltip = document.createElement("div");
+  tooltip.setAttribute(attribute, value);
+  tooltip.textContent = "Send Message";
+  placeElement(tooltip, { x: 140, y: 150, width: 120, height: 30 });
+  fixture.root.append(tooltip);
+  const capture = captureAnnotatedTab({
+    ...fixture,
+    shouldKeepAnnotatedSurfaces: true,
+    shapes: [{ id: "box", kind: "box", start: { x: 130, y: 130 }, end: { x: 280, y: 230 } }],
+  });
+  try {
+    await fixture.sampling;
+    fixture.observer.disconnect();
+    expect(getComputedStyle(fixture.chat).visibility).toBe("visible");
+    expect(getComputedStyle(tooltip).visibility).toBe("hidden");
+  } finally {
+    await capture;
+  }
+  expect(getComputedStyle(tooltip).visibility).toBe("visible");
+});
+
 test("retains an annotated native popover outside the bounds of its hidden devtools ancestor", async () => {
   const fixture = createChatCaptureFixture();
   const popover = document.createElement("section");

@@ -81,6 +81,11 @@ export async function runTabCaptureAcceptance(
           await page.keyboard.press("Escape");
         }
         await page.getByRole("textbox").fill("Review this annotated page.");
+        await page.getByRole("button", { name: "Send Message", exact: true }).hover();
+        const tooltip = page.locator('[data-slot="tooltip-content"]').filter({ hasText: "Send Message" });
+        await tooltip.waitFor({ timeout: 3_000 });
+        const tooltipBounds = await tooltip.boundingBox();
+        assert(tooltipBounds);
         await page.getByRole("button", { name: "Send Message", exact: true }).click();
         const command = await Promise.race([
           fixture.sentCommand,
@@ -110,7 +115,7 @@ export async function runTabCaptureAcceptance(
         assert(typeof attachment.dataURL === "string");
         const dataURL = attachment.dataURL;
         const image = await page.evaluate(
-          async ({ dataURL, panel, dock }) => {
+          async ({ dataURL, panel, dock, tooltipBounds }) => {
             const source = new Image();
             source.src = dataURL;
             await source.decode();
@@ -153,9 +158,15 @@ export async function runTabCaptureAcceptance(
               layer: pixel(60, 260),
               expectedLayer: color(getComputedStyle(layer ?? document.body).backgroundColor),
               tools: pixel(640, 28),
+              tooltip: pixel(tooltipBounds.x + tooltipBounds.width / 2, tooltipBounds.y + tooltipBounds.height / 2),
+              isTooltipOverPanel:
+                tooltipBounds.x + tooltipBounds.width / 2 >= panel.x &&
+                tooltipBounds.x + tooltipBounds.width / 2 <= panel.x + panel.width &&
+                tooltipBounds.y + tooltipBounds.height / 2 >= panel.y &&
+                tooltipBounds.y + tooltipBounds.height / 2 <= panel.y + panel.height,
             };
           },
-          { dataURL, panel, dock },
+          { dataURL, panel, dock, tooltipBounds },
         );
         if (options.isSharingAheadOfTime) {
           const stoppedTrackCount = await page.evaluate(() => {
@@ -184,6 +195,10 @@ export async function runTabCaptureAcceptance(
           [image.dock, image.expectedPage],
           [image.layer, image.expectedLayer],
           [image.tools, image.expectedPage],
+          [
+            image.tooltip,
+            options.isChatAnnotated && image.isTooltipOverPanel ? image.expectedPanel : image.expectedPage,
+          ],
         ]) {
           assert(actual && expected);
           for (const index of [0, 1, 2])

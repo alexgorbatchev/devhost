@@ -23,6 +23,8 @@ export interface ITabCapturePixelProof {
   layer: number[];
   expectedLayer: number[];
   tools: number[];
+  tooltip: number[];
+  isTooltipOverPanel: boolean;
 }
 export interface ITabCaptureTrackProof {
   state: MediaStreamTrackState;
