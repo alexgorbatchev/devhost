@@ -14,6 +14,7 @@ export default mergeConfig(
     plugins: [nativeBrowserTransport()],
     optimizeDeps: {
       include: [
+        "@alexgorbatchev/shadcn",
         "@codemirror/autocomplete",
         "@codemirror/commands",
         "@codemirror/language",
