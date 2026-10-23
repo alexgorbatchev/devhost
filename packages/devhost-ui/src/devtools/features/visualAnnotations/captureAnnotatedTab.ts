@@ -13,6 +13,7 @@ interface IAnnotatedTabCaptureOptions extends Omit<ITabCaptureOptions, "prepare"
 }
 
 const annotationStrokePadding: number = 3;
+const tooltipSelector: string = '[role=tooltip], [data-slot="tooltip-content"]';
 
 export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions): Promise<ITabSnapshot> {
   const includedSurfaces: Element[] = [];
@@ -21,12 +22,17 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
     const bounds = options.shouldKeepAnnotatedSurfaces ? readAnnotationBounds(options) : [];
     const surfaces = new Set(
       Array.from(roots).flatMap((root) =>
-        Array.from(root.querySelectorAll("[data-devhost-capture-exclude], :popover-open, :modal, [role=dialog]")),
+        Array.from(
+          root.querySelectorAll(
+            `[data-devhost-capture-exclude], :popover-open, :modal, [role=dialog], ${tooltipSelector}`,
+          ),
+        ),
       ),
     );
     for (const surface of surfaces) {
       if (
         surface === options.annotationRoot ||
+        surface.matches(tooltipSelector) ||
         surface.closest("[data-devhost-annotation-controls]") !== null ||
         surface.hasAttribute("data-devhost-capture-include")
       )
@@ -40,7 +46,7 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
         const hiddenRegions = Array.from(surfaces)
           .filter(
             (surface) =>
-              surface.hasAttribute("data-devhost-capture-exclude") &&
+              surface.matches(`[data-devhost-capture-exclude], ${tooltipSelector}`) &&
               !includedSurfaces.includes(surface) &&
               !surface.hasAttribute("data-devhost-capture-include") &&
               surface.checkVisibility({ visibilityProperty: true, opacityProperty: true, contentVisibilityAuto: true }),

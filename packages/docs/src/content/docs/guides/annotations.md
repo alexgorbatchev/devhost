@@ -71,7 +71,7 @@ A share opened through **Share Tab** stays active for subsequent snapshots until
 
 The configured coding agent receives the message, selected metadata, page URL/title, drawing coordinates, and image. Review what is visible before sharing.
 
-Snapshots hide the floating annotation tools and instruction tip. Chat and the other devhost surfaces are hidden too. With the **devhost** chat directory, a devhost surface that a selected element or drawing overlaps stays visible in the image sent to the agent.
+Snapshots hide the floating annotation tools, instruction tip, and devhost tooltips, including tooltips still fading out after a click. Tooltips stay hidden even when an annotation overlaps them. Chat and the other devhost surfaces are hidden too. With the **devhost** chat directory, a devhost surface that a selected element or drawing overlaps stays visible in the image sent to the agent.
 
 Before accepting the snapshot, devhost waits for the image to visibly change where each hidden surface was shown. Animation elsewhere on the page does not satisfy this check. If capture cannot confirm those changes within ten seconds, or the tab changes capture size during preparation, the send fails and retains your draft and context so you can retry. An already active share remains available.
 
