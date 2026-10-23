@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
@@ -24,6 +25,7 @@ type stackWorktrees struct {
 }
 
 type worktreeGroup struct {
+	paths          caddy.Paths
 	view           devtools.WorktreeRepository
 	repository     gitRepository
 	offsets        map[string]string
@@ -81,7 +83,7 @@ func buildStackWorktrees(m ResolvedManifest, stateDir string, previous *stackWor
 			if !inside {
 				offset = filepath.Base(m.ManifestPath)
 			}
-			g = &worktreeGroup{repository: repo, manifestOffset: offset, configurationPaths: map[string]string{}, offsets: map[string]string{}, view: devtools.WorktreeRepository{
+			g = &worktreeGroup{paths: caddy.CreateManagedCaddyPaths(stateDir), repository: repo, manifestOffset: offset, configurationPaths: map[string]string{}, offsets: map[string]string{}, view: devtools.WorktreeRepository{
 				ID: worktreeKey(repo.commonDir), Name: filepath.Base(repo.root), ConfiguredPath: repo.root, SelectedPath: repo.root,
 			}}
 			if previous != nil {
@@ -226,6 +228,17 @@ func (g *worktreeGroup) refresh() error {
 			continue
 		}
 		entry.Directories = directories
+		owners, err := g.occupants(entry.Path)
+		if err != nil {
+			return err
+		}
+		for _, owner := range owners {
+			entry.Owners = append(entry.Owners, devtools.WorktreeOwner{ID: owner.ID, Name: owner.Name, PID: owner.PID, ManifestPath: owner.ManifestPath, URLs: owner.URLs})
+		}
+		if len(entry.Owners) > 0 {
+			entry.Reason = "In use by another stack. Open it to view, or stop it before switching."
+			continue
+		}
 		entry.Available = true
 	}
 	if !foundSelected {

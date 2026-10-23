@@ -168,7 +168,7 @@ func parseStackRecordOwner(recordText []byte) (recordedOwner, error) {
 		return recordedOwner{}, err
 	}
 
-	return recordedOwner{StackOwner: StackOwner{ManifestPath: record.ManifestPath, PID: record.OwnerPID}, startIdentity: record.OwnerStartIdentity}, nil
+	return recordedOwner{StackOwner: StackOwner{ManifestPath: record.ManifestPath, PID: record.OwnerPID}, startIdentity: record.OwnerStartIdentity, name: record.StackName}, nil
 }
 
 // getStackRecordPath returns where this process keeps its record. A process

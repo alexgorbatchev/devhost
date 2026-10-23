@@ -52,13 +52,20 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		logStdout, logStderr := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
-		if err := services.StopStack(manifestPath, readEnvironment(), logStdout, logStderr); err != nil {
+		options := services.StopStackOptions{ManifestPath: manifestPath, Worktrees: arguments.Worktrees}
+		if err := services.StopStack(options, readEnvironment(), logStdout, logStderr); err != nil {
 			return fail(stderr, err)
 		}
 
 		return 0
-	case cli.KindStackList:
-		stacks, err := services.ListRunningStacks(readEnvironment())
+	case cli.KindStackList, cli.KindStackFind:
+		var stacks []caddy.StackOwner
+		var err error
+		if arguments.Kind == cli.KindStackFind {
+			stacks, err = services.FindRunningStacks(arguments.Query, readEnvironment())
+		} else {
+			stacks, err = services.ListRunningStacks(readEnvironment())
+		}
 		if err != nil {
 			return fail(stderr, err)
 		}

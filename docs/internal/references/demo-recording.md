@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-23 13:13
+last_modified: 2026-10-23 13:28
 status: current
 ---
 
@@ -143,6 +143,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 | Feature                                                                                   | Documented in                                                                                                             | Shown in                                         |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Find running stacks by URL or partial name; stop every worktree of one repository         | `guides/stack-lifecycle.md`                                                                                               | **No demo**                                      |
 | Serve files or a port without a manifest; shared-design listings and Markdown source view | `reference/files.md`                                                                                                      | No demo                                          |
 | Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                        | `guides/managed-caddy.md`, "Managed Caddy defaults"; `guides/shared-managed-caddy-settings.md`                            | No demo                                          |
 | Prefixed, screened Caddy diagnostics and actionable startup failures                      | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `guides/stack-lifecycle.md`                          | No demo                                          |
@@ -189,7 +190,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Log minimap with real-time service output                                                                                                       | `guides/devtools.md`                                      | `devtools` overview-1; promo line-4                                   |
 | Services panel with restart controls                                                                                                            | `guides/devtools.md`                                      | `devtools` overview-2; promo line-4; toolbar reload icon: **No demo** |
 | Worktree picker and worktree search                                                                                                             | `guides/devtools.md`                                      | `devtools` overview-3                                                 |
-| Submodule checkout discovery, external owning manifests, and red worktree error icon                                                            | `guides/devtools.md`                                      | **No demo**                                                           |
+| Submodule checkout discovery, external owning manifests, red worktree error icon, and occupied checkout Open/Stop stack actions                 | `guides/devtools.md`                                      | **No demo**                                                           |
 | Service status updates with unavailable checkouts                                                                                               | `guides/devtools.md`                                      | **No demo**                                                           |
 | Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery and cancels health polling immediately | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                                                               |
 | Host resource usage                                                                                                                             | `guides/devtools.md`, "Host resource usage"               | No demo                                                               |

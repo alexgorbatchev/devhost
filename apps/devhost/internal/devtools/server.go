@@ -124,6 +124,7 @@ type StartControlServerOptions struct {
 	StartService            func([]string) error
 	SwitchWorktree          func(string, string) error
 	RefreshWorktrees        func() error
+	StopWorktreeOwner       func(context.Context, string, string, string) error
 	GetToolContext          func(string) (ToolContext, error)
 	RestartServicesShortcut string
 	RoutedServices          []RoutedServiceIdentity
@@ -152,6 +153,7 @@ type ControlServer struct {
 	startService          func([]string) error
 	switchWorktree        func(string, string) error
 	refreshWorktrees      func() error
+	stopWorktreeOwner     func(context.Context, string, string, string) error
 	getToolContext        func(string) (ToolContext, error)
 	getHealth             func() (HealthResponse, error)
 	projectRootPath       string
@@ -299,6 +301,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		startService:            options.StartService,
 		switchWorktree:          options.SwitchWorktree,
 		refreshWorktrees:        options.RefreshWorktrees,
+		stopWorktreeOwner:       options.StopWorktreeOwner,
 		getToolContext:          options.GetToolContext,
 		tracker:                 NewActivityTracker(),
 		// The zero upgrader refuses an Origin whose host differs from the request Host.

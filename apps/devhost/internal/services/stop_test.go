@@ -37,7 +37,7 @@ func TestStopStackWithoutAnyStack(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	if err := StopStack(manifestPath, environment, &stdout, &stderr); err != nil {
+	if err := StopStack(StopStackOptions{ManifestPath: manifestPath}, environment, &stdout, &stderr); err != nil {
 		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
@@ -65,7 +65,7 @@ func TestStopStackStopsTheStackOfTheManifest(t *testing.T) {
 	var stdout strings.Builder
 	var stderr strings.Builder
 
-	if err := stopStack(manifestPath, environment, unreachableGracePeriod, &stdout, &stderr); err != nil {
+	if err := stopStack(StopStackOptions{ManifestPath: manifestPath}, environment, unreachableGracePeriod, &stdout, &stderr); err != nil {
 		t.Fatalf("stopStack() unexpected error = %v", err)
 	}
 
@@ -103,7 +103,7 @@ func TestStopStackKillsAStackThatIgnoresTheRequest(t *testing.T) {
 	var stderr strings.Builder
 
 	// The test waits for the grace period to run out, so it is a short one.
-	if err := stopStack(manifestPath, environment, 200*time.Millisecond, &stdout, &stderr); err != nil {
+	if err := stopStack(StopStackOptions{ManifestPath: manifestPath}, environment, 200*time.Millisecond, &stdout, &stderr); err != nil {
 		t.Fatalf("stopStack() unexpected error = %v", err)
 	}
 
@@ -136,7 +136,7 @@ func TestStopStackPointsAtTheOtherRunningStacks(t *testing.T) {
 
 	var stdout strings.Builder
 
-	if err := StopStack(manifestPath, environment, &stdout, &strings.Builder{}); err != nil {
+	if err := StopStack(StopStackOptions{ManifestPath: manifestPath}, environment, &stdout, &strings.Builder{}); err != nil {
 		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
@@ -158,7 +158,7 @@ func TestStopStackIgnoresTheRecordsOfACrashedStack(t *testing.T) {
 
 	var stdout strings.Builder
 
-	if err := StopStack(manifestPath, environment, &stdout, &strings.Builder{}); err != nil {
+	if err := StopStack(StopStackOptions{ManifestPath: manifestPath}, environment, &stdout, &strings.Builder{}); err != nil {
 		t.Fatalf("StopStack() unexpected error = %v", err)
 	}
 
@@ -178,7 +178,7 @@ func TestStopStackResolvesARelativeManifestPath(t *testing.T) {
 
 	t.Chdir(projectPath)
 
-	if err := stopStack("./devhost.toml", environment, unreachableGracePeriod, &strings.Builder{}, &strings.Builder{}); err != nil {
+	if err := stopStack(StopStackOptions{ManifestPath: "./devhost.toml"}, environment, unreachableGracePeriod, &strings.Builder{}, &strings.Builder{}); err != nil {
 		t.Fatalf("stopStack() unexpected error = %v", err)
 	}
 
@@ -199,7 +199,7 @@ func TestStopStackReportsAnUnreadableRecord(t *testing.T) {
 		t.Fatalf("write damaged record: %v", err)
 	}
 
-	err := StopStack(manifestPath, environment, &strings.Builder{}, &strings.Builder{})
+	err := StopStack(StopStackOptions{ManifestPath: manifestPath}, environment, &strings.Builder{}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), damagedRecordPath) {
 		t.Fatalf("StopStack() error = %v, want it to name %s", err, damagedRecordPath)
 	}

@@ -23,3 +23,11 @@ func ListRunningStacks(environment map[string]string) ([]caddy.StackOwner, error
 
 	return owners, nil
 }
+
+func FindRunningStacks(query string, environment map[string]string) ([]caddy.StackOwner, error) {
+	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(environment)
+	if err != nil {
+		return nil, fmt.Errorf("resolve caddy paths from environment: %w", err)
+	}
+	return caddy.FindLiveStackOwners(paths, query)
+}

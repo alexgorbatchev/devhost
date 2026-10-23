@@ -27,6 +27,10 @@ type StackOwner struct {
 // that has exited are skipped, as are registrations that predate manifests and
 // name none.
 func ReadLiveStackOwners(paths Paths) ([]StackOwner, error) {
+	return readLiveStackOwners(paths, nil)
+}
+
+func readLiveStackOwners(paths Paths, matches func(recordedOwner) bool) ([]StackOwner, error) {
 	sources := []struct {
 		directoryPath string
 		parse         func(recordText []byte) (recordedOwner, error)
@@ -45,6 +49,9 @@ func ReadLiveStackOwners(paths Paths) ([]StackOwner, error) {
 		}
 
 		for _, owner := range recorded {
+			if matches != nil && !matches(owner) {
+				continue
+			}
 			if owner.ManifestPath == "" || owner.PID <= 0 || !routeMutationIsOwnerAlive(owner.PID, owner.startIdentity) {
 				continue
 			}
@@ -65,6 +72,8 @@ func ReadLiveStackOwners(paths Paths) ([]StackOwner, error) {
 type recordedOwner struct {
 	StackOwner
 	startIdentity string
+	name          string
+	host          string
 }
 
 // readRecordedOwners reads the owner of every record in directoryPath. A
@@ -113,7 +122,7 @@ func parseHostClaimOwner(recordText []byte) (recordedOwner, error) {
 		return recordedOwner{}, err
 	}
 
-	return recordedOwner{StackOwner: StackOwner{ManifestPath: claim.ManifestPath, PID: claim.OwnerPID}, startIdentity: claim.OwnerStartIdentity}, nil
+	return recordedOwner{StackOwner: StackOwner{ManifestPath: claim.ManifestPath, PID: claim.OwnerPID}, startIdentity: claim.OwnerStartIdentity, host: claim.Host}, nil
 }
 
 func parseFixedPortClaimOwner(recordText []byte) (recordedOwner, error) {
@@ -131,7 +140,7 @@ func parseRouteRegistrationOwner(recordText []byte) (recordedOwner, error) {
 		return recordedOwner{}, err
 	}
 
-	return recordedOwner{StackOwner: StackOwner{ManifestPath: record.ManifestPath, PID: record.OwnerPID}, startIdentity: record.OwnerStartIdentity}, nil
+	return recordedOwner{StackOwner: StackOwner{ManifestPath: record.ManifestPath, PID: record.OwnerPID}, startIdentity: record.OwnerStartIdentity, host: record.Host}, nil
 }
 
 // readOwnStartIdentity returns the start identity this process writes into its

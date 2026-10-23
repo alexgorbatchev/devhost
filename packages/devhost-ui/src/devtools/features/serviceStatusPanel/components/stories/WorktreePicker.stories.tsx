@@ -15,7 +15,9 @@ import {
   factory_homeWorktreeRepository,
   factory_longPathWorktreeRepository,
   factory_worktreeRepository,
+  factory_occupiedWorktreeRepository,
 } from "./fixtures";
+import { installMockFetch } from "../../../../../../test-support/installMockFetch";
 import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 
 const meta: Meta<typeof WorktreePicker> = {
@@ -47,6 +49,62 @@ const meta: Meta<typeof WorktreePicker> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const OccupiedCheckout: Story = {
+  args: { repository: factory_occupiedWorktreeRepository() },
+  play: async ({ args, canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
+    await waitFor(() => expect(canvas.getByRole("searchbox", { name: "Find worktree" })).toBeEnabled());
+    await expect(canvas.getByRole("radio", { name: "feature/cart /worktrees/cart" })).toBeDisabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Why feature/cart is unavailable" }));
+    const region = await canvas.findByRole("region", { name: "feature/cart · Unavailable" });
+    await waitFor(() => expect(region).toBeVisible());
+    const details = within(region);
+    await expect(details.getByText("cart-storybook · PID 1234")).toBeVisible();
+    const link = details.getByRole("link", { name: "Open stack · https://cart.localhost/" });
+    await expect(link).toHaveAttribute("href", "https://cart.localhost/");
+    await expect(link).toHaveAttribute("target", "_blank");
+    const transport = installMockFetch();
+    transport.fetch.mockResolvedValue(Response.json({ success: true }));
+    try {
+      await userEvent.click(details.getByRole("button", { name: "Stop stack" }));
+      await waitFor(() => expect(args.onRefresh).toHaveBeenCalledTimes(2));
+      await expect(transport.fetch).toHaveBeenCalledWith("/__devhost__/worktrees", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ repositoryId: "shop", path: "/worktrees/cart", stopOwnerId: "owner-instance" }),
+      });
+      await expect(args.onSwitch).not.toHaveBeenCalled();
+      await expect(args.onClose).not.toHaveBeenCalled();
+    } finally {
+      transport.restore();
+    }
+  },
+};
+
+export const OccupiedCheckoutWithoutRoutes: Story = {
+  args: { repository: factory_occupiedWorktreeRepository([]) },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Worktrees" }));
+    await waitFor(() => expect(canvas.getByRole("searchbox", { name: "Find worktree" })).toBeEnabled());
+    await userEvent.click(canvas.getByRole("button", { name: "Why feature/cart is unavailable" }));
+    const region = await canvas.findByRole("region", { name: "feature/cart · Unavailable" });
+    await waitFor(() => expect(region).toBeVisible());
+    await expect(within(region).getByText("This stack has no routed page.")).toBeVisible();
+    await expect(within(region).queryByRole("link")).toBeNull();
+    const transport = installMockFetch();
+    transport.fetch.mockResolvedValue(new Response("Stack ownership changed; refresh worktrees", { status: 409 }));
+    try {
+      await userEvent.click(within(region).getByRole("button", { name: "Stop stack" }));
+      await waitFor(() => expect(canvas.getByText("Stack ownership changed; refresh worktrees")).toBeVisible());
+      await expect(within(region).getByRole("button", { name: "Stop stack" })).toBeEnabled();
+    } finally {
+      transport.restore();
+    }
+  },
+};
 
 export const UnavailableCheckout: Story = {
   globals: { devhostTheme: "dark" },

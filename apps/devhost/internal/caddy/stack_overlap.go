@@ -82,34 +82,58 @@ func canonicalManifestFiles(files []string) ([]string, error) {
 }
 
 func checkManifestOverlap(dir string, candidate stackRecord) error {
-	entries, err := os.ReadDir(dir)
+	owners, err := overlappingStacks(dir, candidate.ManifestFiles, candidate.OwnerPID)
 	if err != nil {
-		return fmt.Errorf("read stack records: %w", err)
+		return err
+	}
+	for _, owner := range owners {
+		return &ManifestOverlapError{ManifestPath: owner.file, StackName: owner.record.StackName, Owner: StackOwner{PID: owner.record.OwnerPID, ManifestPath: owner.record.ManifestPath}}
+	}
+	return nil
+}
+
+type overlappingStack struct {
+	file   string
+	record stackRecord
+}
+
+func overlappingStacks(dir string, requested []string, ownPID int) ([]overlappingStack, error) {
+	var result []overlappingStack
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return result, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read stack records: %w", err)
 	}
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 		if err != nil {
-			return fmt.Errorf("read stack record: %w", err)
+			return nil, fmt.Errorf("read stack record: %w", err)
 		}
 		owner, err := parseStackRecord(data)
 		if err != nil {
-			return fmt.Errorf("read stack record %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("read stack record %s: %w", entry.Name(), err)
 		}
-		if owner.OwnerPID == candidate.OwnerPID || !routeMutationIsOwnerAlive(owner.OwnerPID, owner.OwnerStartIdentity) {
+		if owner.OwnerPID == ownPID || !routeMutationIsOwnerAlive(owner.OwnerPID, owner.OwnerStartIdentity) {
 			continue
 		}
 		files, err := canonicalManifestFiles(append([]string{owner.ManifestPath}, owner.ManifestFiles...))
 		if err != nil {
-			return err
+			return nil, err
 		}
-		for _, file := range candidate.ManifestFiles {
+		for _, file := range requested {
 			if slices.Contains(files, file) {
-				return &ManifestOverlapError{ManifestPath: file, StackName: owner.StackName, Owner: StackOwner{PID: owner.OwnerPID, ManifestPath: owner.ManifestPath}}
+				result = append(result, overlappingStack{file: file, record: owner})
+				break
 			}
 		}
 	}
-	return nil
+	return result, nil
 }

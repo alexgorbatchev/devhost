@@ -115,7 +115,7 @@
         </div>
         {{range .Repositories}}
         <form data-repository="{{.ID}}" data-selected-path="{{.SelectedPath}}">
-          <fieldset {{if or .Switching .BlockedReason}}disabled{{end}}>
+          <fieldset disabled>
             <legend>{{.Name}}</legend>
             <label
               >Checkout
@@ -136,7 +136,31 @@
             <button class="devhost-recovery__restart" type="submit">Switch worktree</button>
           </fieldset>
         </form>
-        {{end}}
+        {{$repository := .ID}} {{range .Worktrees}} {{$path := .Path}} {{range .Owners}}
+        <div class="devhost-status__body">
+          <p><strong>In use by {{.Name}} · PID {{.PID}}</strong><br />{{$path}}<br />{{.ManifestPath}}</p>
+          {{range .URLs}}
+          <p>
+            <a class="devhost-status__link" href="{{.}}" target="_blank" rel="noopener noreferrer"
+              ><span class="devhost-status__route">Open stack · {{.}}</span></a
+            >
+          </p>
+          {{else}}
+          <p>This stack has no routed page.</p>
+          {{end}}
+          <p>Stop all services in this stack to free the checkout.</p>
+          <button
+            class="devhost-recovery__restart"
+            type="button"
+            disabled
+            data-stop-owner="{{.ID}}"
+            data-repository="{{$repository}}"
+            data-path="{{$path}}"
+          >
+            Stop stack
+          </button>
+        </div>
+        {{end}} {{end}} {{end}}
       </section>
       {{end}}
       <details class="devhost-recovery__logs" open>
@@ -157,6 +181,39 @@
       const error = document.getElementById("error");
       let restarting = false;
       let switching = false;
+      let worktreesLoaded = !document.getElementById("worktrees");
+      async function loadWorktrees() {
+        const response = await fetch(location.href, {
+          cache: "no-store",
+          headers: { "X-Devhost-Recovery": "worktrees" },
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const health = await response.json();
+        const forms = Array.from(document.querySelectorAll("form[data-repository]"));
+        const changed =
+          forms.length !== (health.repositories || []).length ||
+          (health.repositories || []).some((repository) => {
+            const form = forms.find((candidate) => candidate.dataset.repository === repository.id);
+            if (!form) return true;
+            const options = Array.from(form.querySelectorAll("option"));
+            const renderedOwners = Array.from(document.querySelectorAll("button[data-stop-owner]"))
+              .filter((button) => button.dataset.repository === repository.id)
+              .map((button) => button.dataset.stopOwner);
+            const owners = repository.worktrees.flatMap((entry) => (entry.owners || []).map((owner) => owner.id));
+            return (
+              options.length !== repository.worktrees.length ||
+              repository.worktrees.some(
+                (entry, index) => options[index].value !== entry.path || options[index].disabled === entry.available,
+              ) ||
+              JSON.stringify(renderedOwners) !== JSON.stringify(owners)
+            );
+          });
+        if (changed) {
+          location.replace(location.href);
+          return;
+        }
+        worktreesLoaded = true;
+      }
       async function readStatus() {
         try {
           const response = await fetch(location.href, {
@@ -165,12 +222,17 @@
           });
           if (!response.ok) throw new Error("Devhost is unavailable. Waiting to reconnect…");
           const state = await response.json();
+          if (!worktreesLoaded && !switching) await loadWorktrees();
+          document.querySelectorAll("button[data-stop-owner]").forEach((button) => {
+            button.disabled = switching || restarting || !worktreesLoaded;
+          });
           for (const repository of state.repositories || []) {
             const form = Array.from(document.querySelectorAll("form[data-repository]")).find(
               (candidate) => candidate.dataset.repository === repository.id,
             );
             if (!form) continue;
-            form.querySelector("fieldset").disabled = switching || repository.switching || !!repository.blockedReason;
+            form.querySelector("fieldset").disabled =
+              switching || !worktreesLoaded || repository.switching || !!repository.blockedReason;
             if (form.dataset.selectedPath !== repository.selectedPath) {
               form.querySelector("select").value = repository.selectedPath;
               form.dataset.selectedPath = repository.selectedPath;
@@ -261,6 +323,35 @@
           error.textContent = failure.message;
           document.getElementById("refresh-worktrees").disabled = false;
         }
+      });
+      document.querySelectorAll("button[data-stop-owner]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (switching || restarting) return;
+          switching = true;
+          button.disabled = true;
+          button.textContent = "Stopping stack…";
+          error.textContent = "";
+          try {
+            const response = await fetch(location.href, {
+              method: "POST",
+              cache: "no-store",
+              headers: { "X-Devhost-Recovery": "worktrees", "Content-Type": "application/json" },
+              body: JSON.stringify({
+                repositoryId: button.dataset.repository,
+                path: button.dataset.path,
+                stopOwnerId: button.dataset.stopOwner,
+              }),
+            });
+            if (!response.ok) throw new Error(await response.text());
+            location.replace(location.href);
+          } catch (failure) {
+            error.textContent = failure.message;
+            button.disabled = false;
+            button.textContent = "Stop stack";
+          } finally {
+            switching = false;
+          }
+        });
       });
       readStatus();
     </script>

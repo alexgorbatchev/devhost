@@ -430,6 +430,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			RestartStack:            func() error { return state.restartStack(lifecycleCtx) },
 			SwitchWorktree:          switchWorktree,
 			RefreshWorktrees:        state.refreshWorktrees,
+			StopWorktreeOwner:       state.stopWorktreeOwner,
 			ListConfigFiles:         state.configFiles,
 			CheckConfigFile:         state.checkConfigFile,
 			GetToolContext:          state.toolContext,

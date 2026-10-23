@@ -77,6 +77,7 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 			Env: []cobrahelptree.EnvSpec{manifestEnvironmentSpec},
 			Quickstart: []cobrahelptree.QuickstartItem{
 				{Command: "devhost stop", Comment: "stop the stack of this folder"},
+				{Command: "devhost stop --worktrees", Comment: "stop this repository's worktree stacks"},
 				{Command: stopPickedStackCommand, Comment: "pick one"},
 			},
 		},
@@ -85,6 +86,13 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 				{Command: "devhost stack list", Comment: "PID, tab, manifest per line"},
 				{Command: "devhost stack list | cut -f2", Comment: "manifests only"},
 				{Command: stopPickedStackCommand, Comment: "pick one to stop"},
+			},
+		},
+		"devhost stack find": {
+			Args: []cobrahelptree.ArgSpec{{Name: "<query>", Description: "URL, hostname, stack name, or partial name to find"}},
+			Quickstart: []cobrahelptree.QuickstartItem{
+				{Command: "devhost stack find https://app.localhost", Comment: "find the hostname's stacks"},
+				{Command: "devhost stack find app", Comment: "print all partial matches"},
 			},
 		},
 		caddyCommandPath + " " + trustRemoteCommandName: {

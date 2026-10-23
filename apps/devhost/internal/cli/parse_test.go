@@ -20,6 +20,8 @@ func TestParseCommandLineArguments(t *testing.T) {
 		wantError   string
 		comparePath bool
 	}{
+		{name: "stops repository worktrees", rawArgs: []string{"stop", "--worktrees", "-m", manifestPath}, want: CommandLineArguments{Kind: KindStop, Worktrees: true, ManifestPath: &manifestPath}, comparePath: true},
+		{name: "finds stacks", rawArgs: []string{"stack", "find", "https://engine.localhost/path"}, want: CommandLineArguments{Kind: KindStackFind, Query: "https://engine.localhost/path"}},
 		{
 			name:    "parses stop command",
 			rawArgs: []string{"stop"},
@@ -340,7 +342,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, err)
 			}
 
-			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || !slices.Equal(got.Services, tc.want.Services) {
+			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || got.Worktrees != tc.want.Worktrees || got.Query != tc.want.Query || !slices.Equal(got.Services, tc.want.Services) {
 				t.Fatalf("ParseCommandLineArguments(%q) = %#v, want %#v", tc.rawArgs, got, tc.want)
 			}
 

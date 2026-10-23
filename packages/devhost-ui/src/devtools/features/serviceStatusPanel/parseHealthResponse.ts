@@ -2,6 +2,7 @@ import type {
   HealthResponse,
   IConfigurationStatus,
   IWorktree,
+  IWorktreeOwner,
   IWorktreeDirectory,
   ServiceHealth,
   IStoppedService,
@@ -83,13 +84,29 @@ function isRepository(value: unknown): value is IWorktreeRepository {
 function isWorktree(value: unknown): value is IWorktree {
   if (typeof value !== "object" || value === null) return false;
   const directories: unknown = Reflect.get(value, "directories");
+  const owners: unknown = Reflect.get(value, "owners");
   return (
     ["path", "branch", "head"].every((key) => typeof Reflect.get(value, key) === "string") &&
     typeof Reflect.get(value, "available") === "boolean" &&
     typeof Reflect.get(value, "detached") === "boolean" &&
     optional(value, "reason", "string") &&
+    (owners === undefined || (Array.isArray(owners) && owners.every(isWorktreeOwner))) &&
     Array.isArray(directories) &&
     directories.every(isDirectory)
+  );
+}
+
+function isWorktreeOwner(value: unknown): value is IWorktreeOwner {
+  if (typeof value !== "object" || value === null) return false;
+  const urls: unknown = Reflect.get(value, "urls");
+  const pid: unknown = Reflect.get(value, "pid");
+  return (
+    ["id", "name", "manifestPath"].every((key) => typeof Reflect.get(value, key) === "string") &&
+    typeof pid === "number" &&
+    Number.isInteger(pid) &&
+    pid > 0 &&
+    Array.isArray(urls) &&
+    urls.every((url: unknown) => typeof url === "string" && /^https?:\/\//.test(url))
   );
 }
 
