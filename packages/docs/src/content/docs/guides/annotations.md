@@ -73,6 +73,8 @@ The configured coding agent receives the message, selected metadata, page URL/ti
 
 Snapshots hide the floating annotation tools and instruction tip. Chat and the other devhost surfaces are hidden too. With the **devhost** chat directory, a devhost surface that a selected element or drawing overlaps stays visible in the image sent to the agent.
 
+Before accepting the snapshot, devhost waits for the image to visibly change where each hidden surface was shown. Animation elsewhere on the page does not satisfy this check. If capture cannot confirm those changes within ten seconds, or the tab changes capture size during preparation, the send fails and retains your draft and context so you can retry. An already active share remains available.
+
 ## Native permissions and questions
 
 Native tool approval and user-input requests require an explicit answer. Devhost forwards the native request details and never approves them automatically. A resolved or cancelled request cannot be answered again. If a native prompt is unsupported by the browser controls, its preserved details remain available; no response is fabricated.

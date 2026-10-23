@@ -1,4 +1,5 @@
-import type { ITabCaptureOptions, ITabSnapshot } from "./types";
+import type { CaptureFrameCheck, ITabCaptureOptions, ITabSnapshot } from "./types";
+import { createChangedRegionCheck } from "./createChangedRegionCheck";
 
 const captureFrameTimeoutMs: number = 10_000;
 
@@ -32,26 +33,40 @@ export async function readSharedTabFrame(
     cancellation.throwIfAborted();
     video.srcObject = readerStream;
     await waitForFrame(video, readerStream, cancellation);
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null || canvas.width === 0 || canvas.height === 0) {
+      throw new Error("The shared tab did not produce a usable image.");
+    }
+    context.drawImage(video, 0, 0);
     if (prepare) {
       // Start playback before changing the page, then consume the frame produced by that change.
-      await prepare();
+      const before = context.getImageData(0, 0, canvas.width, canvas.height);
+      const regions = await prepare();
       cancellation.throwIfAborted();
+      const hasChanged = createChangedRegionCheck(
+        context,
+        before,
+        regions ?? [],
+        document.defaultView?.innerWidth ?? canvas.width,
+        document.defaultView?.innerHeight ?? canvas.height,
+      );
       // Reattach the video sink after preparation to request a fresh source frame, even for a static tab.
       // Keep the shared tracks running; only this snapshot reader is restarted.
       const minimumFrameTime = performance.now();
       video.pause();
       video.srcObject = null;
       video.srcObject = readerStream;
-      await waitForFrame(video, readerStream, cancellation, minimumFrameTime);
+      await waitForFrame(video, readerStream, cancellation, minimumFrameTime, () => {
+        if (video.videoWidth !== canvas.width || video.videoHeight !== canvas.height) {
+          throw new Error("The shared tab changed size while the screenshot was being captured. Try again.");
+        }
+        context.drawImage(video, 0, 0);
+        return hasChanged();
+      });
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext("2d");
-    if (context === null || canvas.width === 0 || canvas.height === 0) {
-      throw new Error("The shared tab did not produce a usable image.");
-    }
-    context.drawImage(video, 0, 0);
     return { dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height };
   } finally {
     lifecycle.abort();
@@ -66,6 +81,7 @@ function waitForFrame(
   stream: MediaStream,
   signal: AbortSignal,
   minimumFrameTime: number = 0,
+  accept?: CaptureFrameCheck,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let frameId: number = 0;
@@ -97,6 +113,15 @@ function waitForFrame(
         (metadata.captureTime !== undefined && metadata.captureTime < minimumFrameTime)
       ) {
         frameId = video.requestVideoFrameCallback(onFrame);
+        return;
+      }
+      try {
+        if (accept && !accept()) {
+          frameId = video.requestVideoFrameCallback(onFrame);
+          return;
+        }
+      } catch (error) {
+        fail(error);
         return;
       }
       cleanup();
