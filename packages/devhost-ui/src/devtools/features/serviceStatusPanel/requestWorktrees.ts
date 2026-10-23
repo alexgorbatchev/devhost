@@ -11,6 +11,7 @@ interface IWorktreeRequestResult {
 interface IWorktreeSelection {
   repositoryId: string;
   path: string;
+  stopOwnerId?: string;
 }
 
 export async function requestWorktrees(

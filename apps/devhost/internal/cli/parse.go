@@ -29,6 +29,7 @@ const (
 	KindStop               Kind = "stop"
 	KindServiceList        Kind = "service-list"
 	KindStackList          Kind = "stack-list"
+	KindStackFind          Kind = "stack-find"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
@@ -82,6 +83,8 @@ type CommandLineArguments struct {
 	Services []string
 	// Startable limits devhost service list to the services that start only when named.
 	Startable bool
+	Worktrees bool
+	Query     string
 }
 
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
@@ -189,6 +192,15 @@ type serviceListOptions struct {
 	Startable bool `descr:"List only the services that start when named." name:"startable"`
 }
 
+type stopOptions struct {
+	ManifestOptions
+	Worktrees bool `descr:"Stop stacks in every worktree of this Git repository." name:"worktrees"`
+}
+
+type stackFindOptions struct {
+	Query string `descr:"URL, hostname, stack name, or partial name to find." positional:"true"`
+}
+
 // ManifestOptions is for commands that only locate a manifest; they must not
 // accept stack flags they would ignore. It is exported because startOptions
 // embeds it and boa fills flags through reflection, which cannot set fields
@@ -258,6 +270,10 @@ DNS setup.`
 
 const stopDescription = `Stop the running stack for this project.
 
+With --worktrees, stop every stack whose root manifest is
+in this Git repository, including its linked worktrees.
+Other repositories and the shared Caddy stay running.
+
 Processes that do not exit within 15 seconds are
 force-killed.
 
@@ -269,18 +285,18 @@ const caddyDescription = `devhost sends every stack through one shared Caddy ser
 Download and trust it once, then start it before running
 a stack.`
 
-func createStopCommand(result *CommandLineArguments) boa.CmdT[ManifestOptions] {
-	return boa.CmdT[ManifestOptions]{
+func createStopCommand(result *CommandLineArguments) boa.CmdT[stopOptions] {
+	return boa.CmdT[stopOptions]{
 		Use:   stopCommandName,
 		Short: "Stop the running stack for this project",
 		Long:  stopDescription,
 		Args:  cobra.NoArgs,
-		RunFuncE: func(options *ManifestOptions, _ *cobra.Command, _ []string) error {
+		RunFuncE: func(options *stopOptions, _ *cobra.Command, _ []string) error {
 			if err := validateManifestPath(options.ManifestPath); err != nil {
 				return err
 			}
 
-			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath}
+			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath, Worktrees: options.Worktrees}
 			return nil
 		},
 	}
@@ -339,6 +355,14 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		Long:  stackDescription,
 		Args:  rejectUnknownCommand,
 		SubCmds: boa.SubCmds(
+			boa.CmdT[stackFindOptions]{
+				Use:   "find",
+				Short: "Print the PID and manifest of matching running stacks",
+				Long:  "Find running stacks by URL, hostname, stack name, or manifest path.\nURLs match their hostname exactly; other queries match case-insensitive\nsubstrings. Print every match once as PID, tab, absolute manifest path.\nNo matches produces empty output and succeeds.",
+				RunFunc: func(params *stackFindOptions, _ *cobra.Command, _ []string) {
+					*result = CommandLineArguments{Kind: KindStackFind, Query: params.Query}
+				},
+			},
 			boa.CmdT[boa.NoParams]{
 				Use:   stackListCommandName,
 				Short: "Print the PID and manifest of running stacks",

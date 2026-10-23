@@ -80,6 +80,31 @@ export function factory_homeWorktreeRepository(): IWorktreeRepository {
   };
 }
 
+export function factory_occupiedWorktreeRepository(urls: string[] = ["https://cart.localhost/"]): IWorktreeRepository {
+  const repository = factory_worktreeRepository();
+  return {
+    ...repository,
+    worktrees: repository.worktrees.map((entry) =>
+      entry.path === "/worktrees/cart"
+        ? {
+            ...entry,
+            available: false,
+            reason: "In use by another stack. Open it to view, or stop it before switching.",
+            owners: [
+              {
+                id: "owner-instance",
+                name: "cart-storybook",
+                pid: 1234,
+                manifestPath: "/worktrees/cart/devhost.toml",
+                urls,
+              },
+            ],
+          }
+        : entry,
+    ),
+  };
+}
+
 export function factory_longPathWorktreeRepository(): IWorktreeRepository {
   const repository = factory_worktreeRepository();
   const path = `/development/projects/${"long parent directory/".repeat(8)}.workspaces/worktree-stack-switch`;

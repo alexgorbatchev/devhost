@@ -20,12 +20,16 @@ Every stack on a machine routes through one managed Caddy, so its listeners belo
 
 Without the file, every setting keeps its default. A project manifest with a `[caddy]` table is rejected, and the error names the config file.
 
+Older checkouts may still contain `[caddy.global]`. Put the shared settings in `config.toml` and remove that block from each checkout's `devhost.toml`, including linked worktrees. A worktree with the obsolete block appears unavailable in the picker; refresh the worktree list after correcting it.
+
 To also serve the routed hosts and the shared fallback page through plain HTTP:
 
 ```toml
 [caddy]
 http = true
 ```
+
+If a tunnel or another proxy connects to devhost over HTTP, enable this setting even when the browser-facing URL uses HTTPS. The connection from that proxy to devhost determines which listener must serve the route. When the public page is blank but direct local HTTPS works, compare the local HTTP response and check this setting.
 
 To move the listeners off the default privileged ports, set one or both listener ports:
 

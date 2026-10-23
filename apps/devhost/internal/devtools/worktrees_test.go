@@ -1,6 +1,7 @@
 package devtools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,11 +9,54 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+func TestWorktreeOwnerStopEndpointValidatesSelection(t *testing.T) {
+	var stopped atomic.Bool
+	server, err := StartControlServer(StartControlServerOptions{
+		GetHealthResponse: func() (HealthResponse, error) { return HealthResponse{}, nil },
+		RefreshWorktrees:  func() error { return nil },
+		SwitchWorktree:    func(string, string) error { return fmt.Errorf("unexpected switch") },
+		StopWorktreeOwner: func(_ context.Context, id, path, owner string) error {
+			if id != "shop" || path != "/feature" || owner != "owner-instance" {
+				return fmt.Errorf("ownership changed")
+			}
+			stopped.Store(true)
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	for _, tc := range []struct {
+		name, payload string
+		status        int
+		stops         bool
+	}{
+		{"arbitrary PID", `{"repositoryId":"shop","path":"/feature","stopOwnerId":"owner-instance","pid":123}`, http.StatusBadRequest, false},
+		{"missing checkout", `{"repositoryId":"shop","stopOwnerId":"owner-instance"}`, http.StatusBadRequest, false},
+		{"stale owner", `{"repositoryId":"shop","path":"/feature","stopOwnerId":"old-instance"}`, http.StatusInternalServerError, false},
+		{"current owner", `{"repositoryId":"shop","path":"/feature","stopOwnerId":"owner-instance"}`, http.StatusOK, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			response := worktreeHTTPResponse(t, server, http.MethodPost, tc.payload)
+			response.Body.Close()
+			if response.StatusCode != tc.status || stopped.Load() != tc.stops {
+				t.Fatalf("stop response %d, stopped %v", response.StatusCode, stopped.Load())
+			}
+		})
+	}
+}
 
 func TestWorktreesEndpointPublishesSelectionToAllClients(t *testing.T) {
 	var mu sync.Mutex

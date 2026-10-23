@@ -87,6 +87,10 @@ func TestRunStackListPrintsThePIDAndTheManifestStopTakes(t *testing.T) {
 		if got, want := runStackList(t, elsewherePath), strconv.Itoa(stack.Process.Pid)+"\t"+manifestPath+"\n"; got != want {
 			t.Fatalf("AGENT=%s Run(stack list) stdout = %q, want %q", agent, got, want)
 		}
+		var found, findErrors strings.Builder
+		if code := Run([]string{"stack", "find", manifestPath}, elsewherePath, &found, &findErrors); code != 0 || found.String() != runStackList(t, elsewherePath) || findErrors.Len() != 0 {
+			t.Fatalf("find: code %d, stdout %q, stderr %q", code, found.String(), findErrors.String())
+		}
 	}
 
 	_, listedManifestPath, _ := strings.Cut(strings.TrimSuffix(runStackList(t, elsewherePath), "\n"), "\t")

@@ -11,6 +11,8 @@ import { ToolbarPopover } from "../../../shared/components/ToolbarPopover";
 import type { IWorktree, IWorktreeRepository } from "../../../shared/types";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 import { formatHomePath } from "../../../shared/formatHomePath";
+import { pristineFetch } from "../../../shared/pristineFetch";
+import { requestWorktrees } from "../requestWorktrees";
 
 interface IWorktreePickerProps {
   repository: IWorktreeRepository;
@@ -34,9 +36,10 @@ export function WorktreePicker({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isStopping, setIsStopping] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchReference = useRef<HTMLInputElement | null>(null);
-  const isBusy = repository.switching || isSubmitting;
+  const isBusy = repository.switching || isSubmitting || isStopping;
   const worktrees = query.trim()
     ? fuzzysort
         .go(query.trim(), repository.worktrees, {
@@ -83,6 +86,20 @@ export function WorktreePicker({
     if (message === null) onClose();
   };
 
+  const stopOwner = async (destination: string, ownerId: string): Promise<void> => {
+    setIsStopping(true);
+    setErrorMessage(null);
+    const result = await requestWorktrees(pristineFetch, {
+      repositoryId: repository.id,
+      path: destination,
+      stopOwnerId: ownerId,
+    });
+    const refreshError = await onRefresh();
+    setErrorMessage(result.error ?? refreshError);
+    setIsLoaded(refreshError === null);
+    setIsStopping(false);
+  };
+
   return (
     <div data-testid="WorktreePicker">
       {repository.error !== undefined || errorMessage !== null ? (
@@ -127,10 +144,42 @@ export function WorktreePicker({
                 panelWidth="sm"
                 testId="WorktreePicker--unavailable"
                 triggerAppearance="button"
-                triggerContent={<Badge variant="destructive">unavailable</Badge>}
+                triggerContent={<Badge variant="destructive">{entry.owners?.length ? "in use" : "unavailable"}</Badge>}
                 triggerLabel={`Why ${worktreeLabel(entry)} is unavailable`}
               >
                 <p className="m-0 p-2 [overflow-wrap:anywhere]">{entry.reason ?? "This checkout is unavailable."}</p>
+                {entry.owners?.map((owner) => (
+                  <div key={owner.id} className="flex flex-col gap-2 border-t p-2 [overflow-wrap:anywhere]">
+                    <strong>
+                      {owner.name} · PID {owner.pid}
+                    </strong>
+                    <span>{formatHomePath(owner.manifestPath, homeDirectoryPath)}</span>
+                    {owner.urls.length === 0 ? (
+                      <p className="m-0">This stack has no routed page.</p>
+                    ) : (
+                      owner.urls.map((url) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline"
+                        >
+                          Open stack · {url}
+                        </a>
+                      ))
+                    )}
+                    <p className="m-0">Stop all services in this stack to free the checkout.</p>
+                    <Button
+                      disabled={isBusy || isLoading || !isLoaded}
+                      onClick={(): void => {
+                        void stopOwner(entry.path, owner.id);
+                      }}
+                    >
+                      Stop stack
+                    </Button>
+                  </div>
+                ))}
               </ToolbarPopover>
             ) : null}
           </div>
@@ -145,7 +194,11 @@ export function WorktreePicker({
         {isLoading || isBusy ? (
           <p className="m-0 flex items-center gap-1.5 text-warning" role="status">
             <Icon glyph={RotateCwIcon} isSpinning />
-            {isLoading ? "Loading worktrees…" : "Switching and restarting stack…"}
+            {isLoading
+              ? "Loading worktrees…"
+              : isStopping
+                ? "Stopping other stack…"
+                : "Switching and restarting stack…"}
           </p>
         ) : null}
         <div className="flex flex-wrap gap-1.5">

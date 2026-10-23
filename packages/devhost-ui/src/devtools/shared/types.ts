@@ -92,6 +92,15 @@ export interface IWorktree {
   available: boolean;
   reason?: string;
   directories: IWorktreeDirectory[];
+  owners?: IWorktreeOwner[];
+}
+
+export interface IWorktreeOwner {
+  id: string;
+  name: string;
+  pid: number;
+  manifestPath: string;
+  urls: string[];
 }
 
 export interface IWorktreeRepository {

@@ -16,17 +16,22 @@ import (
 // is force-killed.
 const stopGracePeriod = 15 * time.Second
 
+type StopStackOptions struct {
+	ManifestPath string
+	Worktrees    bool
+}
+
 // StopStack finds all running processes associated with the given manifest and stops them.
 // It first attempts a clean shutdown using SIGTERM, and falls back to SIGKILL if processes
 // do not stop within the 15-second grace period.
-func StopStack(manifestPath string, environment map[string]string, stdout io.Writer, stderr io.Writer) error {
-	return stopStack(manifestPath, environment, stopGracePeriod, stdout, stderr)
+func StopStack(options StopStackOptions, environment map[string]string, stdout io.Writer, stderr io.Writer) error {
+	return stopStack(options, environment, stopGracePeriod, stdout, stderr)
 }
 
-func stopStack(manifestPath string, environment map[string]string, gracePeriod time.Duration, stdout io.Writer, stderr io.Writer) error {
-	absoluteTargetManifestPath, err := filepath.Abs(manifestPath)
+func stopStack(options StopStackOptions, environment map[string]string, gracePeriod time.Duration, stdout io.Writer, stderr io.Writer) error {
+	absoluteTargetManifestPath, err := filepath.Abs(options.ManifestPath)
 	if err != nil {
-		return fmt.Errorf("resolve absolute manifest path for %s: %w", manifestPath, err)
+		return fmt.Errorf("resolve absolute manifest path for %s: %w", options.ManifestPath, err)
 	}
 	absoluteTargetManifestPath = filepath.Clean(absoluteTargetManifestPath)
 
@@ -40,14 +45,19 @@ func stopStack(manifestPath string, environment map[string]string, gracePeriod t
 		return fmt.Errorf("scan claim directories for manifest process IDs: %w", err)
 	}
 
-	activePIDs := []int{}
-	for _, owner := range owners {
-		if resolveRecordedManifestPath(owner.ManifestPath) == absoluteTargetManifestPath {
-			activePIDs = append(activePIDs, owner.PID)
-		}
+	targets, siblings, err := selectStacksToStop(absoluteTargetManifestPath, options.Worktrees, owners)
+	if err != nil {
+		return err
+	}
+	if !options.Worktrees && siblings > 0 {
+		cliout.Log(stdout, "devhost", fmt.Sprintf("%d other stack(s) run in this repository's worktrees. Run %s to stop them all.", siblings, "devhost stop --worktrees --manifest "+cliout.ShellPath(absoluteTargetManifestPath)))
 	}
 
-	if len(activePIDs) == 0 {
+	if len(targets) == 0 {
+		if options.Worktrees {
+			cliout.Log(stdout, "devhost", fmt.Sprintf("No active devhost stack process found in the Git repository of manifest: %s", absoluteTargetManifestPath))
+			return nil
+		}
 		cliout.Log(stdout, "devhost", fmt.Sprintf("No active devhost stack process found for manifest: %s", absoluteTargetManifestPath))
 		if len(owners) > 0 {
 			// The stack the caller means may run from another manifest, such as the one
@@ -57,11 +67,18 @@ func stopStack(manifestPath string, environment map[string]string, gracePeriod t
 		return nil
 	}
 
-	cliout.Log(stdout, "devhost", fmt.Sprintf("Stopping %d active stack process(es) associated with manifest...", len(activePIDs)))
+	scope := "manifest"
+	if options.Worktrees {
+		scope = "this Git repository's worktrees"
+	}
+	cliout.Log(stdout, "devhost", fmt.Sprintf("Stopping %d active stack process(es) associated with %s...", len(targets), scope))
 
-	for _, pid := range activePIDs {
-		if err := stopProcess(pid, gracePeriod, stdout, stderr); err != nil {
-			return fmt.Errorf("stop process %d: %w", pid, err)
+	for _, owner := range targets {
+		if options.Worktrees {
+			cliout.Log(stdout, "devhost", fmt.Sprintf("Stopping stack PID %d: %s", owner.PID, owner.ManifestPath))
+		}
+		if err := stopProcess(owner.PID, gracePeriod, stdout, stderr); err != nil {
+			return fmt.Errorf("stop process %d: %w", owner.PID, err)
 		}
 	}
 
@@ -88,6 +105,7 @@ func stopProcess(pid int, gracePeriod time.Duration, stdout io.Writer, stderr io
 		// but checking is safe.
 		return fmt.Errorf("find process %d: %w", pid, err)
 	}
+	defer proc.Release() // Release the process handle after the stop attempt.
 
 	cliout.Log(stdout, "devhost", fmt.Sprintf("Sending SIGTERM to process %d...", pid))
 	if err := proc.Signal(syscall.SIGTERM); err != nil {

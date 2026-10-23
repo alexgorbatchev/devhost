@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-21 19:42
+  last_modified: 2026-10-23 11:40
   status: current
 ---
 
@@ -34,6 +34,7 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 - `devhost service list`: print the name of every service in the manifest on stdout, one per line in alphabetical order, in the same form with and without `AGENT=1`. With `--startable` it prints only the services that start when named, leaving out those marked `alwaysStart = true`. Feed the output to a picker: `devhost start $(devhost service list --startable | fzf --multi)`.
 - `devhost stop`: stop the running stack of the manifest. It sends SIGTERM to the stack's processes, waits up to 15 seconds, force-kills what remains, and reports each step on stdout. With no stack running from that manifest it says so and exits `0`, and when other stacks are running it adds `Other stacks are running. Run "devhost stack list" to print their PIDs and manifests.`
 - `devhost stack list`: print every manifest-backed stack running on the machine on stdout, one per line in manifest path order, in the same form with and without `AGENT=1`. A line is the PID of the stack's devhost process, one tab, and the absolute manifest path, which runs to the end of the line and may hold spaces. It takes no flags, reads no manifest, and prints nothing when no manifest-backed stack runs. Manifest-backed stacks are listed whatever their services are. Take the path with `cut -f2` and pass it to `devhost stop --manifest` to stop that stack from any directory: `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`.
+- `devhost stack find <query>`: print all matching live stacks in the same PID/tab/absolute-manifest format and order as `stack list`. `<query>` is a URL, hostname, stack name, or partial name. HTTP(S) URLs match the recorded hostname exactly, ignoring port, path, query, and fragment. Other queries match case-insensitive substrings of hostnames, stack names, and manifest paths. Every match prints once; zero matches prints nothing and exits `0`. Empty queries and malformed URLs fail. Lookup reads local records without contacting the URL.
 - `devhost caddy download`: download the Caddy server devhost manages. Run it once on a machine that has no `caddy` on `PATH`.
 - `devhost caddy privileged-ports`: on Linux, let the managed Caddy listen on ports 80 and 443 without root. It downloads Caddy first when needed and runs `sudo setcap` once. On macOS it reports that no setup is needed.
 - `devhost caddy start`: start the shared Caddy server in the background. Every stack on the machine routes through it. When the system does not trust Caddy's root certificate, it installs the certificate once, which asks for the user's password at a terminal. Under `AGENT=1` or without a terminal it prints `managed caddy local CA is not trusted, ...` as a warning instead; ask the user to run `devhost caddy trust` in their terminal. `devhost serve` does the same when it starts Caddy, and `devhost start` prints that warning once while the certificate is untrusted.
@@ -48,6 +49,8 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 `devhost`, `devhost caddy`, `devhost service`, `devhost stack`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
 
 ### Flags and Environment
+
+- `--worktrees`, `-w` (bool, default false): `devhost stop` only. Stop every stack whose root manifest belongs to the selected manifest's Git common directory, including the main checkout and linked worktrees. Each PID and manifest is printed before stopping. Unrelated repositories and shared Caddy keep running. Git discovery failure or a selected manifest outside Git fails before signaling. Plain stop suggests this flag when sibling stacks are running.
 
 - `--domain <hostname>`, `-d <hostname>` (string): `devhost serve` only. Required hostname, such as `notes.localhost`, with scheme, port, and path omitted. The empty parser default fails validation. The hostname must resolve to this machine. Invalid or missing values, positional arguments, and `--manifest` are rejected; inaccessible directories fail startup. Use `devhost caddy privileged-ports` once on Linux and `devhost caddy trust` for trusted HTTPS.
 - `--dir <directory>` (string): `devhost serve` only. Empty default selects the current directory; relative paths resolve from there. Mutually exclusive with `--port`, including an explicitly empty `--dir`.

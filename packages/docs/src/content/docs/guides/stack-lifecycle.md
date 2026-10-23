@@ -272,7 +272,17 @@ devhost stack list
 devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
 ```
 
-The last line stops a stack you pick, from any directory:
+To find the stack behind an address or name, use `devhost stack find <query>`:
+
+```bash
+devhost stack find https://app.localhost
+devhost stack find app.localhost
+devhost stack find app
+```
+
+URLs match the hostname exactly, ignoring their port, path, query, and fragment. Other queries match case-insensitive substrings of registered hostnames, stack names, and absolute manifest paths. Every matching live stack appears once, in the same tab-separated PID/manifest format and order as `stack list`. Multiple matches are all printed; no matches produce empty output and exit `0`. Empty queries and malformed HTTP(S) URLs fail. This searches local devhost records, without DNS lookups or requests to the supplied URL.
+
+The `fzf` example stops a stack you pick, from any directory:
 
 1. `devhost stack list` prints the running stacks.
 2. [`fzf`](https://github.com/junegunn/fzf) shows them as a list and prints the line you choose. Any picker that prints one of its input lines works in its place.
@@ -284,6 +294,15 @@ When you already know which stack you want, filter instead of picking, with a pa
 ```bash
 devhost stop --manifest "$(devhost stack list | cut -f2 | grep my-project)"
 ```
+
+To stop all stacks in the selected manifest's Git repository, including its main checkout and linked worktrees:
+
+```bash
+devhost stop --worktrees
+devhost stop --worktrees --manifest /path/to/checkout/devhost.toml
+```
+
+Repository membership follows each stack's root manifest and Git's common directory. Included manifests and service working directories do not expand the scope. Unrelated repositories and shared Caddy keep running. The command prints each selected PID and manifest before stopping it. It fails before stopping anything if the selected manifest is outside Git or repository discovery fails. Plain `stop` remains manifest-scoped and suggests `--worktrees` when it finds other stacks in the same repository.
 
 When you run `devhost stop`, the command performs the following lifecycle operations:
 

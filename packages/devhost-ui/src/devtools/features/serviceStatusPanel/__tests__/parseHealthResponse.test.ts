@@ -4,6 +4,49 @@ import type { HealthResponse } from "../../../shared/types";
 import { parseHealthResponse } from "../parseHealthResponse";
 
 describe("parseHealthResponse", () => {
+  test("validates occupied checkout owners before exposing stop actions or links", () => {
+    const parseOwner = (owner: unknown): HealthResponse | null =>
+      parseHealthResponse(
+        JSON.stringify({
+          services: [],
+          repositories: [
+            {
+              id: "shop",
+              name: "shop",
+              configuredPath: "/main",
+              defaultBranch: "main",
+              selectedPath: "/main",
+              runningPath: "/main",
+              serviceNames: [],
+              switching: false,
+              worktrees: [
+                {
+                  path: "/feature",
+                  branch: "feature",
+                  head: "abc",
+                  detached: false,
+                  available: false,
+                  directories: [],
+                  owners: [owner],
+                },
+              ],
+            },
+          ],
+        }),
+      );
+    const owner = {
+      id: "instance",
+      name: "storybook",
+      pid: 123,
+      manifestPath: "/feature/devhost.toml",
+      urls: ["https://storybook.localhost/"],
+    };
+    expect(parseOwner(owner)?.repositories?.[0]?.worktrees[0]?.owners).toEqual([owner]);
+    expect(parseOwner({ ...owner, urls: ["javascript:alert(1)"] })).toBeNull();
+    expect(parseOwner({ ...owner, pid: -1 })).toBeNull();
+    expect(parseOwner({ ...owner, id: 1 })).toBeNull();
+    expect(parseOwner(null)).toBeNull();
+  });
   test("retains effective source roots and repository state from the supervisor", () => {
     const payload = {
       services: [{ name: "web", managed: true, status: false, projectRootPath: "/feature" }],
