@@ -34,7 +34,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Start the root devhost stack locally: `just run`
 - Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires a source checkout: the one a development build records, which `just run` uses, or `DEVHOST_DEV_SOURCE_DIR`.
 - Start the dedicated Chrome for Testing with React Developer Tools that native React DevTools attaches to: `just dev-browser` (or `just dev-browser <port>`); set `DEVHOST_BROWSER_ENDPOINT` in `.envrc.local` to its endpoint, such as `http://127.0.0.1:9222`, and restart `just run`
-- Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure `DEVHOST_RECOVERY` through `.envrc` / `.envrc.local`.
+- Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure the shared `DEVHOST_DEV_EXT` suffix through `.env.local` (the tracked `.env` defaults to `.localhost`) and reload direnv.
 - Start the docs site locally: `just docs` (or `just docs run`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
 - Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design docs`
@@ -60,6 +60,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `packages/docs/` — public Astro docs site; follow `packages/docs/AGENTS.md`
 
 ## Shared gotchas
+
+- The development manifests compose `devhost`, `playground`, and `recovery` hostnames with `DEVHOST_DEV_EXT`. Root `.envrc` loads tracked `.env` defaults, ignored `.env.local` overrides, then the existing `.envrc.local` shell customizations. Reload direnv after editing these files. Devhost itself reads the exported environment and does not load dotenv files.
 
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `just check` runs `typescript-ai-policy check` first (wrapping the shared `oxfmt` / `oxlint` enforcement and excluding `packages/playground/**`), then delegates to package-specific checks.

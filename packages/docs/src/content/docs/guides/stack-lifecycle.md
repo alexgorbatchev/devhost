@@ -174,7 +174,7 @@ These pages work for aliases and path routes even when every devtools feature is
 
 If a browser navigation reaches the app but the app returns HTTP 404, devhost shows the same standalone page with **Page not found** and the checkout picker. Application HTTP 5xx responses, including empty compilation-error responses, show recovery controls and recent service logs with **<service> could not load**. The original HTTP error status is preserved. The page retains its path and query string and waits until that path returns neither 404 nor 5xx before automatically reloading. Fix the reported application error, then use **Restart** when needed. API and asset error responses pass through. Recovery responses are uncached HTTP errors. Assets and WebSocket traffic retain their direct proxy routes. Invalid configuration, ownership conflicts, and initial route registration failures still stop startup and are reported in the terminal.
 
-To try this from a devhost repository checkout, configure `DEVHOST_RECOVERY` in `.envrc.local` if you need a hostname other than the default `recovery.localhost`, reload direnv, and run:
+To try this from a devhost repository checkout, set `DEVHOST_DEV_EXT` in ignored `.env.local` if you need a suffix other than the tracked `.env` default of `.localhost`, reload direnv, and run. The recovery hostname is `recovery` followed by that suffix:
 
 ```bash
 just devhost demo-recovery

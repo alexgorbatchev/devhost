@@ -15,7 +15,7 @@ Storybook's Vite builder provides an `allowedHosts` config option. To support ro
 1. In `devhost.toml`, pass the allowed domains as an environment variable to the Storybook service:
    ```toml
    [services.storybook.env]
-   __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ env.DEVHOST_STORYBOOK }}"
+   __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "devhost{{ env.DEVHOST_DEV_EXT }}"
    ```
 2. Ensure `.storybook/main.ts` parses this environment variable and merges it into Storybook's `core.allowedHosts` and Vite's `server.allowedHosts` inside the `viteFinal` hook:
    ```typescript

@@ -14,4 +14,5 @@ storybook-static/
 /packages/docs/public/demos/*.mp4
 /.workspaces
 /.envrc.local
+/.env.local
 /.codegraph

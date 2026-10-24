@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-24 07:59
+last_modified: 2026-10-24 09:24
 status: current
 ---
 
@@ -167,6 +167,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | Port, bind host, hostname, and service variables passed to a service                                                                             | `guides/environment-variables.md`                                                                          | `environment-variables` step-1 to step-4 |
 | Environment interpolation with `{{ env.NAME }}`                                                                                                  | `guides/environment-variables.md`, "Environment variables in the manifest"                                 | No demo                                  |
+| Development hostname suffix from tracked `.env` and ignored `.env.local` overrides                                                               | `guides/environment-variables.md`, "Environment variables in the manifest"; `development/page-previews.md` | No demo                                  |
 | Service references with `{{ services.<name>.<property> }}`                                                                                       | `guides/service-references.md`                                                                             | `service-references` step-1 to step-4    |
 | Health checks with automatic ports                                                                                                               | `guides/service-references.md`, "Health checks with automatic ports"                                       | No demo                                  |
 | Manifest includes                                                                                                                                | `guides/manifest-includes.md`                                                                              | `manifest-includes` step-1 to step-6     |

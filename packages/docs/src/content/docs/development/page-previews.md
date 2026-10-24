@@ -8,7 +8,7 @@ From a devhost source checkout, start the development stack:
 just run
 ```
 
-Open `/__devhost__/pages/` on one of that stack's root-routed domains, such as the domain configured by `DEVHOST_STORYBOOK` or `DEVHOST_PLAYGROUND`. Keep the trailing slash. The gallery is served by devhost's control server, so the application can be starting or unavailable while you inspect the pages.
+Open `/__devhost__/pages/` on one of that stack's root-routed domains, such as `devhost.localhost` or `playground.localhost` with the repository defaults. The development manifests append `DEVHOST_DEV_EXT` to each hostname prefix. The tracked `.env` sets `.localhost`; set a different suffix in ignored `.env.local` and reload direnv to override it. Keep the trailing slash. The gallery is served by devhost's control server, so the application can be starting or unavailable while you inspect the pages.
 
 The gallery includes:
 
