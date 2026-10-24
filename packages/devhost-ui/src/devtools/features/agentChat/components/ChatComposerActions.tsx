@@ -1,5 +1,6 @@
 import { Button } from "@alexgorbatchev/shadcn";
-import { PlusIcon } from "lucide-react";
+import { AuiIf, ComposerPrimitive } from "@assistant-ui/react";
+import { ArrowUpIcon, PlusIcon } from "lucide-react";
 import { useContext, type JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
 import { AgentChatContext } from "../AgentChatContext";
@@ -34,6 +35,13 @@ export function ChatComposerActions(): JSX.Element {
         <Icon glyph={PlusIcon} />
       </Button>
       <TabShareActions />
+      <AuiIf condition={(state) => state.thread.isRunning && state.composer.canCancel}>
+        <ComposerPrimitive.Send asChild>
+          <Button size="icon-sm" aria-label="Send Message" title="Send Message">
+            <Icon glyph={ArrowUpIcon} />
+          </Button>
+        </ComposerPrimitive.Send>
+      </AuiIf>
     </div>
   );
 }

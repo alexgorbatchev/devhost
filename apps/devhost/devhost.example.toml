@@ -145,6 +145,12 @@ enabled = false
 # Conversations run in the selected checkout and survive browser reloads. Native approvals
 # require an explicit response. Capture attachments are PNG/JPEG data URLs, bounded to 8 MiB.
 enabled = true
+# Follow-ups can be sent while the agent is working. PNG/JPEG images can also be pasted.
+# The default workflow asks the agent to use a dedicated Git worktree, run checks,
+# commit and merge into local main, then remove its worktree and branch.
+# prompt replaces those workflow instructions; an empty string disables them.
+# Changes apply to the next send, including in existing conversations.
+# prompt = "Implement the requested changes in a worktree and leave the branch for review."
 
 [devtools.annotations]
 # Enable the browser context selector. Sending selected context also requires chat enabled.

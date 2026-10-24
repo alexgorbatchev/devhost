@@ -17,6 +17,7 @@ const websocketCloseReasonResourcesOff = "resource readouts are turned off"
 // reload replaces them with UpdateSettings, which keeps the listener, the
 // connected pages, and every chat session.
 type ControlSettings struct {
+	ChatPrompt      string
 	ComponentEditor string
 	FeatureToggles  FeatureToggles
 	NativeBrowser   manifest.DevtoolsBrowserConfig
@@ -32,6 +33,7 @@ type ControlSettings struct {
 
 func (o StartControlServerOptions) settings() ControlSettings {
 	return ControlSettings{
+		ChatPrompt:              o.ChatPrompt,
 		ComponentEditor:         o.ComponentEditor,
 		FeatureToggles:          o.FeatureToggles,
 		NativeBrowser:           o.NativeBrowser,

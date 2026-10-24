@@ -39,7 +39,7 @@ type DevtoolsBrowserConfig struct {
 }
 
 type DevtoolsConfig struct {
-	Chat             DevtoolsToggleConfig
+	Chat             DevtoolsChatConfig
 	Annotations      DevtoolsToggleConfig
 	Browser          DevtoolsBrowserConfig
 	ConfigEditor     DevtoolsToggleConfig

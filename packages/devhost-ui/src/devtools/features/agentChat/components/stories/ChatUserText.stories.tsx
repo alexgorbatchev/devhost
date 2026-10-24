@@ -17,6 +17,10 @@ export const CollapsedContext: Story = {
     const canvas = within(canvasElement);
     const trigger = await canvas.findByRole("button", { name: "Page Context" });
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    const workflow = canvas.getByRole("button", { name: "Workflow Instructions" });
+    await expect(workflow).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(workflow);
+    await expect(canvas.getByText("Work in a dedicated Git worktree.")).toBeVisible();
     await waitFor(() => expect(canvas.getByText("Improve This Layout")).toBeVisible());
     await userEvent.click(trigger);
     await expect(trigger).toHaveAttribute("aria-expanded", "true");

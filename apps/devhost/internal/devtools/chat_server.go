@@ -203,6 +203,19 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return
 	}
+	// Sends stay ordered while approvals and interrupts can pass a pending native acknowledgement.
+	sends := make(chan chatCommand, 16)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for command := range sends {
+			ctx, cancel := chatCallContext(s.ctx)
+			err := session.execute(ctx, command)
+			cancel()
+			writeChatCommandResult(client, id, command, err)
+		}
+	}()
+	defer func() { close(sends); <-done }()
 	for {
 		kind, payload, readErr := conn.ReadMessage()
 		if readErr != nil {
@@ -229,26 +242,53 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 		if commandErr == nil {
 			commandErr = s.chatCommandProjectError(session, r.URL.Query().Get("pageURL"), r.URL.Query().Get("chatTarget"))
 		}
+		if commandErr == nil && command.Type == "send" {
+			if command.Text == "" && len(command.Images) == 0 {
+				commandErr = fmt.Errorf("message is empty")
+			} else if prompt := s.currentSettings().ChatPrompt; prompt != "" {
+				command.Text += "\n\nDevhost workflow instructions:\n" + prompt
+			}
+		}
+		if commandErr == nil && command.Type == "send" {
+			encoded, encodeErr := json.Marshal(command)
+			if encodeErr != nil {
+				commandErr = fmt.Errorf("encode chat input: %w", encodeErr)
+			} else if len(encoded) > chatMessageLimit {
+				commandErr = fmt.Errorf("message including workflow instructions exceeds 8 MiB")
+			}
+		}
+		if commandErr == nil && command.Type == "send" {
+			select {
+			case sends <- command:
+				continue
+			default:
+				commandErr = fmt.Errorf("chat send queue is full; retry after a message is accepted")
+			}
+		}
 		if commandErr == nil {
 			ctx, cancel := chatCallContext(s.ctx)
 			commandErr = session.execute(ctx, command)
 			cancel()
 		}
-		response := chatMessage{Type: "error", SessionID: id}
-		if command.Type == "send" && command.CommandID != "" {
-			response.Type = "command_result"
-			response.CommandID = command.CommandID
-		}
-		if commandErr != nil {
-			response.Error = commandErr.Error()
-		}
-		if response.Type == "command_result" || commandErr != nil {
-			client.writeMu.Lock()
-			writeErr := client.writeJSONMessagesLocked([]any{response})
-			client.writeMu.Unlock()
-			if writeErr != nil {
-				return
-			}
+		writeChatCommandResult(client, id, command, commandErr)
+	}
+}
+
+func writeChatCommandResult(client *websocketClient, id string, command chatCommand, commandErr error) {
+	response := chatMessage{Type: "error", SessionID: id}
+	if command.Type == "send" && command.CommandID != "" {
+		response.Type = "command_result"
+		response.CommandID = command.CommandID
+	}
+	if commandErr != nil {
+		response.Error = commandErr.Error()
+	}
+	if response.Type == "command_result" || commandErr != nil {
+		client.writeMu.Lock()
+		err := client.writeJSONMessagesLocked([]any{response})
+		client.writeMu.Unlock()
+		if err != nil {
+			client.close()
 		}
 	}
 }

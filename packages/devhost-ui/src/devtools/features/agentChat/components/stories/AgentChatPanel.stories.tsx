@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { userEvent as nativeUserEvent } from "vitest/browser";
 import { AgentChatPanel } from "../AgentChatPanel";
+import { z } from "zod";
 import {
   ChatPreparationScene,
   ChatReloadScene,
@@ -18,6 +19,8 @@ import {
   readChatViewport,
   readOfferedConversations,
   readSentChatCommands,
+  acknowledgeChatSend,
+  copyChatImage,
 } from "./helpers";
 import {
   devtoolsStoryShadowRootHostTestId,
@@ -40,6 +43,61 @@ const meta: Meta<typeof AgentChatPanel> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const FollowUpsDuringActiveTurn: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    deliverChatStatus("running");
+    await canvas.findByText("codex · running");
+    const composer = canvas.getByRole("textbox", { name: "Message input" });
+    for (const [index, text] of ["Fix the heading", "Also adjust the spacing"].entries()) {
+      await userEvent.type(composer, text);
+      if (index === 0) await userEvent.click(canvas.getByRole("button", { name: "Send Message" }));
+      else await userEvent.keyboard("{Enter}");
+      await waitFor(() => expect(readSentChatCommands()).toHaveLength(index + 1));
+      const command = z.object({ commandId: z.string(), text: z.string() }).parse(readSentChatCommands()[index]);
+      expect(command.text).toBe(text);
+      acknowledgeChatSend(command.commandId);
+      await waitFor(() => expect(canvas.queryByRole("button", { name: "Close Conversation" })).toBeEnabled());
+    }
+    expect(canvas.getByText("codex · running")).toBeVisible();
+  },
+};
+
+export const PasteImageDuringActiveTurn: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    deliverChatStatus("running");
+    await canvas.findByText("codex · running");
+    await copyChatImage();
+    const composer = canvas.getByRole("textbox", { name: "Message input" });
+    await nativeUserEvent.click(composer);
+    await nativeUserEvent.keyboard("{ControlOrMeta>}v{/ControlOrMeta}");
+    await waitFor(() => expect(canvas.getByRole("button", { name: /^Remove .*\.png$/ })).toBeVisible());
+    await nativeUserEvent.keyboard("{Enter}");
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    const command = z
+      .object({ commandId: z.string(), text: z.string(), images: z.array(z.object({ dataURL: z.string() })) })
+      .parse(readSentChatCommands()[0]);
+    expect(command.text).toBe("");
+    expect(command.images).toEqual([{ dataURL: expect.stringMatching(/^data:image\/png;base64,/) }]);
+    acknowledgeChatSend(command.commandId, "Image delivery rejected");
+    await canvas.findByText("Image delivery rejected");
+    await waitFor(() => expect(canvas.getByRole("button", { name: /^Remove .*\.png$/ })).toBeVisible());
+    await userEvent.click(canvas.getByRole("button", { name: "Send Message" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(2));
+    const retried = z.object({ commandId: z.string(), images: z.unknown() }).parse(readSentChatCommands()[1]);
+    expect(retried.images).toEqual(command.images);
+    acknowledgeChatSend(retried.commandId);
+    await waitFor(() => expect(canvas.queryByRole("button", { name: /^Remove .*\.png$/ })).toBeNull());
+  },
+};
 
 export const EscapeInInjectedComposerInterruptsTurn: Story = {
   render: () => <InjectedChatScene />,

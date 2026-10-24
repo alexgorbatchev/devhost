@@ -5,35 +5,56 @@ import type { JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
 
 const contextSeparator = "\n\nPage context (the attached tab snapshot includes the annotations):\n";
+const workflowSeparator = "\n\nDevhost workflow instructions:\n";
 
 export function ChatUserText({ text }: TextMessagePartProps): JSX.Element {
-  const index = text.lastIndexOf(contextSeparator);
-  if (index < 0)
+  const workflowIndex = text.lastIndexOf(workflowSeparator);
+  const userText = workflowIndex < 0 ? text : text.slice(0, workflowIndex);
+  const index = userText.lastIndexOf(contextSeparator);
+  if (index < 0 && workflowIndex < 0)
     return (
       <p data-testid="ChatUserText" className="whitespace-pre-wrap">
         {text}
       </p>
     );
-  const context = text.slice(index + contextSeparator.length);
   return (
     <div data-testid="ChatUserText" className="flex flex-col gap-2">
-      <p className="whitespace-pre-wrap">{text.slice(0, index)}</p>
-      <Collapsible defaultOpen={false}>
-        <CollapsibleTrigger
-          render={
-            <Button size="sm" variant="outline">
-              <Icon glyph={FileTextIcon} />
-              Page Context
-            </Button>
-          }
+      <p className="whitespace-pre-wrap">{index < 0 ? userText : userText.slice(0, index)}</p>
+      {index < 0 ? null : (
+        <ChatContextDetails
+          title="Page Context"
+          text={formatContext(userText.slice(index + contextSeparator.length))}
         />
-        <CollapsibleContent>
-          <pre className="max-h-60 overflow-auto rounded-sm border border-border bg-background p-2 text-foreground whitespace-pre-wrap wrap-anywhere">
-            {formatContext(context)}
-          </pre>
-        </CollapsibleContent>
-      </Collapsible>
+      )}
+      {workflowIndex < 0 ? null : (
+        <ChatContextDetails title="Workflow Instructions" text={text.slice(workflowIndex + workflowSeparator.length)} />
+      )}
     </div>
+  );
+}
+
+interface IChatContextDetailsProps {
+  title: string;
+  text: string;
+}
+
+function ChatContextDetails({ title, text }: IChatContextDetailsProps): JSX.Element {
+  return (
+    <Collapsible defaultOpen={false}>
+      <CollapsibleTrigger
+        render={
+          <Button size="sm" variant="outline">
+            <Icon glyph={FileTextIcon} />
+            {title}
+          </Button>
+        }
+      />
+      <CollapsibleContent>
+        <pre className="max-h-60 overflow-auto rounded-sm border border-border bg-background p-2 text-foreground whitespace-pre-wrap wrap-anywhere">
+          {text}
+        </pre>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 

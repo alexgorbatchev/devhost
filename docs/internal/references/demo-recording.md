@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-23 13:28
+last_modified: 2026-10-23 09:48
 status: current
 ---
 
@@ -209,6 +209,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------- |
 | Browser chat through installed Codex or Claude Code, using native catalogs and configured accounts                                                                                                                            | README, "Browser chat and page context"; `guides/annotations.md`             | **No demo** |
 | Chat Settings captures pointer input above page controls and restores page interaction when closed; Harness, Model, and Conversation use styled select menus                                                                  | `guides/annotations.md`, "Connect an installed CLI"                          | **No demo** |
+| Active-turn annotation follow-ups, pasted PNG/JPEG images, configurable worktree/merge/cleanup prompt                                                                                                                         | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |
 | Native turn interruption, conversation replay, explicit approvals and questions; Close Conversation keeps the closed conversation listed until it is resumed                                                                  | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |
 | Development builds switch chat between the project and the devhost checkout, and serve the devtools UI from that checkout                                                                                                     | `guides/annotations.md`, "Chat about devhost itself"; `architecture/chat.md` | **No demo** |
 | Restore chat visibility, side, conversation, text draft, harness/model and scroll after navigation and reload; New Conversation beside Share Tab                                                                              | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |
