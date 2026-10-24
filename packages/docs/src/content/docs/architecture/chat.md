@@ -6,7 +6,7 @@ The injected chat uses installed Codex and Claude Code clients. Codex runs its n
 
 ## Discovery and checkout ownership
 
-`GET /__devhost__/chat/harnesses?pageURL=<page-url>&chatTarget=<target>` asks each installed client for its native model catalog without sending an inference request. Each harness reports `id`, `label`, `available`, `models`, and an optional error. A model exposes its selectable `id`, label, description, and complete native row as `metadata`. Discovery does not prove the account is signed in for inference.
+`GET /__devhost__/chat/harnesses?pageURL=<page-url>&chatTarget=<target>` asks each installed client for its native model catalog without sending an inference request. Each harness reports `id`, `label`, `available`, `models`, and an optional error. A model exposes its selectable `id`, label and description. Discovery does not prove the account is signed in for inference.
 
 Every chat request names a chat target, and the server maps it to the working directory:
 
@@ -51,17 +51,21 @@ The first frame is a `snapshot` with the current session, retained `events`, and
 
 Browser commands are:
 
-| Type        | Fields                                                                                | Native action                                  |
-| ----------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `send`      | Nonempty `commandId` string, `text`, optional `model`, optional `images: [{dataURL}]` | Start a native turn with text and image blocks |
-| `interrupt` | None                                                                                  | Interrupt the current native turn              |
-| `respond`   | `requestId` as string or number, native `result`                                      | Answer one currently pending native request    |
+| Type        | Fields                                                                                | Native action                                                |
+| ----------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `send`      | Nonempty `commandId` string, `text`, optional `model`, optional `images: [{dataURL}]` | Start a turn or steer active work with text and image blocks |
+| `interrupt` | None                                                                                  | Interrupt the current native turn                            |
+| `respond`   | `requestId` as string or number, native `result`                                      | Answer one currently pending native request                  |
 
 Each send receives `{type: "command_result", sessionId, commandId, error?}` on its issuing socket after native execution accepts or rejects it. Validation and native turn-start failures carry an error; success omits it. Acknowledgements are not broadcast to other browsers or retained as native conversation events. Missing command IDs and malformed commands that cannot be correlated use generic `error` frames, as do rejected interrupt and response commands.
 
 Claude Code runs with native user-message replay enabled. Devhost supplies a native message UUID and waits for the matching `user` replay before confirming the send; a correlated native error before replay rejects it. The replayed user message remains in history even if later inference fails. An empty send `model` restores the configured CLI default; an omitted model preserves the session's selected model. Codex resets use the effective project configuration or the native catalog's advertised default rather than assuming a null override clears sticky thread settings.
 
-Text stays intact. Only PNG/JPEG base64 data URLs are accepted as image attachments. The complete UTF-8 WebSocket command, including JSON fields and text, must fit within 8 MiB; the browser checks this before transmission so a rejected send retains its draft. The server independently enforces that native frame limit. Remote image URLs and browser filesystem paths are not accepted.
+The server appends the current `[devtools.chat].prompt` to each nonempty send as a labeled user-message section, leaving native system prompts and permissions intact. Omission selects the worktree/validation/local-main merge/cleanup workflow; an empty string omits the section. Reloaded instructions apply to existing sessions on their next send. The browser collapses this section under **Workflow Instructions**.
+
+Sends on a socket are ordered through a bounded delivery queue; approvals and interrupts remain readable while a send awaits native acknowledgement. Codex uses `turn/steer` with `expectedTurnId` when a turn is active, without model overrides. If native completion races a rejected steer, a new turn starts with that input; ambiguous transport failures are not retried. Claude uses native streaming user input while active, deferring model changes to the next new turn. The composer uses assistant-ui queue and image attachment adapters, and forwards pasted images together with captured page context. Browser queueing waits for delivery, not turn completion.
+
+Only PNG/JPEG base64 data URLs are accepted as image attachments. The complete UTF-8 WebSocket command, including JSON fields and text, must fit within 8 MiB; the browser checks this before transmission so a rejected send retains its draft. The server independently enforces that native frame limit. Remote image URLs and browser filesystem paths are not accepted.
 
 ## Permissions and failures
 

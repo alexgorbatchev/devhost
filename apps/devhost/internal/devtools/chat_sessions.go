@@ -403,70 +403,7 @@ func (s *chatSession) execute(ctx context.Context, command chatCommand) error {
 	if command.Type != "send" {
 		return fmt.Errorf("unknown chat command")
 	}
-	images, err := validateChatImages(command.Images)
-	if err != nil {
-		return err
-	}
-	if command.Text == "" && len(images) == 0 {
-		return fmt.Errorf("message is empty")
-	}
-	s.operation.Lock()
-	defer s.operation.Unlock()
-	info := s.snapshot()
-	if info.Status != "idle" && info.Status != "error" {
-		return fmt.Errorf("chat session is not idle")
-	}
-	if command.Model != nil {
-		s.model = *command.Model
-	}
-	s.mu.Lock()
-	s.info.Status = "running"
-	s.info.Error = ""
-	s.active = true
-	s.broadcastLocked(chatMessage{Type: "state", Session: s.infoCopyLocked()})
-	s.mu.Unlock()
-	if info.Harness == chatCodex {
-		input := []any{}
-		if command.Text != "" {
-			input = append(input, map[string]string{"type": "text", "text": command.Text})
-		}
-		for _, image := range images {
-			input = append(input, map[string]string{"type": "image", "url": image.dataURL})
-		}
-		params := map[string]any{"threadId": info.NativeSessionID, "input": input}
-		model := s.model
-		if model == "" {
-			model = s.configuredModel
-		}
-		params["model"] = model
-		_, err = s.process.call(ctx, "turn/start", params)
-	} else {
-		var model any
-		if s.model != "" {
-			model = s.model
-		}
-		_, err = s.process.call(ctx, "set_model", map[string]any{"model": model})
-		content := []any{}
-		if command.Text != "" {
-			content = append(content, map[string]string{"type": "text", "text": command.Text})
-		}
-		for _, image := range images {
-			content = append(content, map[string]any{"type": "image", "source": map[string]string{"type": "base64", "media_type": image.mediaType, "data": image.data}})
-		}
-		if err == nil {
-			err = s.process.sendUser(ctx, info.NativeSessionID, content)
-		}
-	}
-	if err != nil {
-		s.mu.Lock()
-		if s.info.Status == "running" {
-			s.info.Status = "idle"
-		}
-		s.active = false
-		s.broadcastLocked(chatMessage{Type: "state", Session: s.infoCopyLocked()})
-		s.mu.Unlock()
-	}
-	return err
+	return s.send(ctx, command)
 }
 
 func chatCallContext(ctx context.Context) (context.Context, context.CancelFunc) {

@@ -13,7 +13,7 @@ var tableKeys = map[string][]string{
 	"worktrees":                 {"enabled"},
 	"devtools":                  {"annotations", "browser", "chat", "configEditor", "editor", "externalToolbars", "idleTimeout", "minimap", "resources", "status", "shortcuts"},
 	"devtools.annotations":      {"enabled"},
-	"devtools.chat":             {"enabled"},
+	"devtools.chat":             {"enabled", "prompt"},
 	"devtools.configEditor":     {"enabled"},
 	"devtools.browser":          {"endpoint", "reactExtensionId"},
 	"devtools.editor":           {"enabled", "ide"},

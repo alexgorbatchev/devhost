@@ -12,6 +12,133 @@ import { useAgentChat } from "../useAgentChat";
 let mockFetch: IInstalledMockFetch;
 let sockets: IInstalledMockWebSocket;
 const session: IChatSession = { id: "chat-one", harness: "codex", projectRootPath: "/project", status: "idle" };
+
+test.each(["running", "requires_action"] as const)(
+  "sends multiple annotated follow-ups while the native session stays %s",
+  async (status) => {
+    const beforeSend = vi.fn((text: string) => ({ text: `${text}\nPage context` }));
+    const onSent = vi.fn();
+    const hook = renderHook(() =>
+      useAgentChat({ target: "project", pageURL: "https://app.localhost/follow-ups", beforeSend, onSent }),
+    );
+    await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
+    let resumed: Promise<void> | undefined;
+    await act(async () => {
+      resumed = hook.result.current.resumeSession(session);
+    });
+    await waitFor(() => expect(sockets.connections).toHaveLength(1));
+    const connection = sockets.connections[0];
+    await act(async () => {
+      connection?.send({
+        type: "snapshot",
+        sessionId: session.id,
+        session: { ...session, status },
+        pendingRequestIds: [],
+      });
+      await resumed;
+    });
+    for (const [index, text] of ["Second annotation", "Third annotation"].entries()) {
+      await act(async () => {
+        hook.result.current.runtime.thread.composer.setText(text);
+        hook.result.current.runtime.thread.composer.send();
+      });
+      await waitFor(() => expect(connection?.readSentFrames()).toHaveLength(index + 1));
+      const sent = z
+        .object({ commandId: z.string(), text: z.string() })
+        .parse(JSON.parse(String(connection?.readSentFrames()[index])));
+      expect(sent.text).toBe(`${text}\nPage context`);
+      await act(async () => {
+        connection?.send({ type: "command_result", sessionId: session.id, commandId: sent.commandId });
+      });
+      await waitFor(() => expect(hook.result.current.isPreparing).toBe(false));
+      expect(hook.result.current.session?.status).toBe(status);
+    }
+    expect(onSent).toHaveBeenCalledTimes(2);
+  },
+);
+
+test("a rejected active follow-up restores its text and image alongside a newer draft", async () => {
+  const hook = renderHook(() =>
+    useAgentChat({ target: "project", pageURL: "https://app.localhost/rejected-follow-up" }),
+  );
+  await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
+  let resumed: Promise<void> | undefined;
+  await act(async () => {
+    resumed = hook.result.current.resumeSession(session);
+  });
+  await waitFor(() => expect(sockets.connections).toHaveLength(1));
+  const connection = sockets.connections[0];
+  await act(async () => {
+    connection?.send({
+      type: "snapshot",
+      sessionId: session.id,
+      session: { ...session, status: "running" },
+      pendingRequestIds: [],
+    });
+    await resumed;
+  });
+  await act(async () => {
+    await hook.result.current.runtime.thread.composer.addAttachment(
+      new File(["image bytes"], "follow-up.png", { type: "image/png" }),
+    );
+    hook.result.current.runtime.thread.composer.setText("Keep this follow-up");
+    hook.result.current.runtime.thread.composer.send();
+  });
+  await waitFor(() => expect(connection?.readSentFrames()).toHaveLength(1));
+  const sent = z.object({ commandId: z.string() }).parse(JSON.parse(String(connection?.readSentFrames()[0])));
+  await act(async () => {
+    hook.result.current.runtime.thread.composer.setText("And this new draft");
+    connection?.send({
+      type: "command_result",
+      sessionId: session.id,
+      commandId: sent.commandId,
+      error: "Steering rejected",
+    });
+  });
+  await waitFor(() => expect(hook.result.current.sendError).toBe("Steering rejected"));
+  await waitFor(() =>
+    expect(hook.result.current.runtime.thread.composer.getState().text).toBe("Keep this follow-up\nAnd this new draft"),
+  );
+  expect(hook.result.current.runtime.thread.composer.getState().attachments).toMatchObject([{ name: "follow-up.png" }]);
+  mockFetch.fetch.mockResolvedValueOnce(Response.json({ ...session, status: "closed" }));
+  await act(async () => {
+    await hook.result.current.closeSession();
+  });
+  await waitFor(() => expect(hook.result.current.runtime.thread.composer.getState().queue).toHaveLength(0));
+});
+
+test("image-only composer attachments reach native input and return after rejection", async () => {
+  const hook = renderHook(() => useAgentChat({ target: "project", pageURL: "https://app.localhost/images" }));
+  await waitFor(() => expect(hook.result.current.isCatalogLoading).toBe(false));
+  mockFetch.fetch.mockResolvedValueOnce(Response.json(session));
+  await act(async () => {
+    await hook.result.current.runtime.thread.composer.addAttachment(
+      new File(["image bytes"], "pasted.png", { type: "image/png" }),
+    );
+    hook.result.current.runtime.thread.composer.send();
+  });
+  await waitFor(() => expect(sockets.connections).toHaveLength(1));
+  const connection = sockets.connections[0];
+  await act(async () => {
+    connection?.send({ type: "snapshot", sessionId: session.id, session, pendingRequestIds: [] });
+  });
+  await waitFor(() => expect(connection?.readSentFrames()).toHaveLength(1));
+  const sent = z
+    .object({ commandId: z.string(), text: z.string(), images: z.array(z.object({ dataURL: z.string() })) })
+    .parse(JSON.parse(String(connection?.readSentFrames()[0])));
+  expect(sent.text).toBe("");
+  expect(sent.images).toEqual([{ dataURL: `data:image/png;base64,${btoa("image bytes")}` }]);
+  await act(async () => {
+    connection?.send({
+      type: "command_result",
+      sessionId: session.id,
+      commandId: sent.commandId,
+      error: "Native image rejected",
+    });
+  });
+  await waitFor(() => expect(hook.result.current.sendError).toBe("Native image rejected"));
+  expect(hook.result.current.runtime.thread.composer.getState().attachments).toMatchObject([{ name: "pasted.png" }]);
+});
 beforeEach(() => {
   for (const key of Object.keys(localStorage).filter((key) => key.startsWith("devhost:settings:")))
     localStorage.removeItem(key);

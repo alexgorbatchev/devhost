@@ -402,6 +402,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		switchWorktree := func(id, path string) error { return state.switchWorktree(lifecycleCtx, id, path) }
 		settings := devtoolsControlSettings(*manifest)
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
+			ChatPrompt:    settings.ChatPrompt,
 			NativeBrowser: settings.NativeBrowser,
 			OwnsDocumentURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
@@ -1406,6 +1407,7 @@ func devtoolsControlSettings(m ResolvedManifest) devtools.ControlSettings {
 	return devtools.ControlSettings{
 		ComponentEditor:         m.Devtools.Editor.IDE,
 		FeatureToggles:          resolveSupportedDevtoolsFeatures(m.Devtools),
+		ChatPrompt:              m.Devtools.Chat.Prompt,
 		NativeBrowser:           m.Devtools.Browser,
 		Position:                m.Devtools.Status.Position,
 		PrimaryService:          m.PrimaryService,

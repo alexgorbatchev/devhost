@@ -105,6 +105,31 @@ export function readSentChatCommands(): unknown[] {
   return liveChatConnection.readSentFrames().map((frame) => JSON.parse(String(frame)));
 }
 
+export function acknowledgeChatSend(commandId: string, error?: string): void {
+  if (!liveChatConnection) throw new Error("The chat stream is not connected.");
+  liveChatConnection.send({ type: "command_result", sessionId: fixture_reloadSession.id, commandId, error });
+}
+
+export async function copyChatImage(): Promise<void> {
+  const { targetInfo } = await cdp().send("Target.getTargetInfo");
+  await cdp().send("Browser.grantPermissions", {
+    browserContextId: targetInfo.browserContextId,
+    origin: window.location.origin,
+    permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"],
+  });
+  await cdp().send("Page.bringToFront");
+  const canvas = document.createElement("canvas");
+  canvas.width = 2;
+  canvas.height = 2;
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((value) => {
+      if (value) resolve(value);
+      else reject(new Error("Unable to create clipboard image"));
+    }, "image/png"),
+  );
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+}
+
 /** The injected app inside a devtools shadow root, as `renderDevtools` mounts it on a page. */
 export function InjectedChatScene(): JSX.Element {
   return renderDevtoolsInStoryShadowRoot(<App />);
@@ -240,7 +265,7 @@ export function UserMessageScene(): JSX.Element {
       content: [
         {
           type: "text",
-          text: 'Improve This Layout\n\nPage context (the attached tab snapshot includes the annotations):\n{"title":"Example Page","url":"https://app.localhost/","markers":[],"shapes":[]}',
+          text: 'Improve This Layout\n\nPage context (the attached tab snapshot includes the annotations):\n{"title":"Example Page","url":"https://app.localhost/","markers":[],"shapes":[]}\n\nDevhost workflow instructions:\nWork in a dedicated Git worktree.',
         },
       ],
     },

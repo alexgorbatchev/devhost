@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   MessageNotSentError,
+  SimpleImageAttachmentAdapter,
+  createMessageQueue,
   useExternalStoreRuntime,
   type AppendMessage,
+  type AssistantRuntime,
   type ThreadMessageLike,
 } from "@assistant-ui/react";
 import { createAgentChatClient } from "../createAgentChatClient";
@@ -71,7 +74,14 @@ export function useAgentChat({
         const prepared = await preparation;
         if (prepared === null)
           throw new MessageNotSentError("Tab sharing was cancelled. Your draft has been retained.");
-        await client.send(prepared, text);
+        const images = [
+          ...(prepared.images ?? []),
+          ...message.content.filter((part) => part.type === "image").map((part) => ({ dataURL: part.image })),
+          ...(message.attachments ?? []).flatMap((attachment) =>
+            attachment.content.filter((part) => part.type === "image").map((part) => ({ dataURL: part.image })),
+          ),
+        ];
+        await client.send({ ...prepared, images }, text);
         settingsStore.getState().updateChat({ draft: lifetime.composerText });
         onSent?.();
       } catch (error) {
@@ -84,7 +94,53 @@ export function useAgentChat({
     },
     [beforeSend, client, lifetime, onSent, settingsStore],
   );
-  const isRunning = state.session?.status === "running";
+  const isRunning = state.session?.status === "running" || state.session?.status === "requires_action";
+  const sendReference = useRef(onNew);
+  const runtimeReference = useRef<AssistantRuntime | null>(null);
+  useLayoutEffect(() => {
+    sendReference.current = onNew;
+  }, [onNew]);
+  // This queue waits for delivery acknowledgement, not for the agent's turn to finish.
+  // Native harnesses own when accepted follow-ups enter their active work.
+  const sessionID = state.session?.id;
+  const queue = useMemo(() => {
+    const controller = createMessageQueue({
+      run: async (message) => {
+        controller.notifyBusy();
+        try {
+          await sendReference.current(message);
+        } catch {
+          // The shared Thread does not render queued input. Restore failed
+          // follow-ups to its native composer so text and images remain editable.
+          if (client.getSnapshot().session?.id === sessionID) {
+            controller.notifyCancelled();
+            const composer = runtimeReference.current?.thread.composer;
+            if (composer) {
+              const text = message.content
+                .filter((part) => part.type === "text")
+                .map((part) => part.text)
+                .join("\n");
+              composer.setText([text, composer.getState().text].filter(Boolean).join("\n"));
+              for (const attachment of message.attachments ?? []) await composer.addAttachment(attachment);
+            }
+          }
+        } finally {
+          controller.notifyIdle();
+        }
+      },
+    });
+    return controller;
+  }, [client, sessionID]);
+  const readQueue = useCallback(() => queue.adapter.items, [queue]);
+  const readSteerQueue = useCallback(() => queue.adapter.steerItems, [queue]);
+  useSyncExternalStore(queue.subscribe, readQueue);
+  useSyncExternalStore(queue.subscribe, readSteerQueue);
+  useEffect(() => () => queue.clear(), [queue]);
+  const attachments = useMemo(() => {
+    const adapter = new SimpleImageAttachmentAdapter();
+    adapter.accept = "image/png,image/jpeg";
+    return adapter;
+  }, []);
   const reportAction = useCallback(
     async (action: ChatAction): Promise<void> => {
       try {
@@ -107,12 +163,18 @@ export function useAgentChat({
     convertMessage: (message) => message,
     isRunning,
     isLoading: state.isConnecting,
-    isSendDisabled: isPreparing || state.isCatalogLoading || state.session?.status === "requires_action",
+    isSendDisabled: isPreparing || state.isCatalogLoading,
+    adapters: { attachments },
+    queue:
+      isRunning || queue.adapter.items.length > 0 || queue.adapter.steerItems.length > 0 ? queue.adapter : undefined,
     onNew,
     onCancel: async () => {
       interrupt();
     },
   });
+  useLayoutEffect(() => {
+    runtimeReference.current = runtime;
+  }, [runtime]);
   // The native runtime applies the adapter in an effect, after the server snapshot has reached this hook.
   // Wait for that runtime's history before allowing the viewport to restore or record a position.
   const subscribeToHistory = useCallback((listener: VoidFunction) => runtime.thread.subscribe(listener), [runtime]);

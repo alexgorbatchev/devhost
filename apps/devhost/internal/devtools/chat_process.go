@@ -22,6 +22,15 @@ type chatRPCResult struct {
 	err   error
 }
 
+type chatNativeError struct {
+	harness string
+	payload json.RawMessage
+}
+
+func (e *chatNativeError) Error() string {
+	return fmt.Sprintf("%s request failed: %s", e.harness, e.payload)
+}
+
 type chatProcess struct {
 	harness     string
 	cmd         *exec.Cmd
@@ -252,7 +261,7 @@ func (p *chatProcess) resolve(raw json.RawMessage) {
 	}
 	result := chatRPCResult{value: value}
 	if len(errorValue) > 0 && string(errorValue) != "null" {
-		result.err = fmt.Errorf("%s request failed: %s", p.harness, errorValue)
+		result.err = &chatNativeError{harness: p.harness, payload: errorValue}
 	}
 	p.deliver(key, result)
 }

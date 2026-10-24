@@ -99,6 +99,7 @@ type ServiceLogEntry struct {
 }
 
 type StartControlServerOptions struct {
+	ChatPrompt      string
 	NativeBrowser   manifest.DevtoolsBrowserConfig
 	OwnsDocumentURL func(int, string) (bool, error)
 	// ListConfigFiles names the files the config editor may change.

@@ -156,7 +156,7 @@ While `devhost start` runs, saving `devhost.toml` or an included manifest applie
 
 ### Browser chat and page context
 
-**Chat** in the toolbar talks to your installed Codex or Claude Code CLI, with its own sign-in and settings, in the selected checkout. **Select Elements**, or Alt-click, adds page elements and drawings as context, and a shared tab supplies a snapshot. A conversation keeps running while chat is collapsed or the page reloads, and devhost never approves a native request on its own. Set `[devtools.chat].enabled = false` or `[devtools.annotations].enabled = false` to turn either off. See the [chat and context guide](https://alexgorbatchev.github.io/devhost/guides/annotations/) for sharing, approvals, and selection plugins.
+**Chat** in the toolbar talks to your installed Codex or Claude Code CLI, with its own sign-in and settings, starting from the selected checkout. **Select Elements**, or Alt-click, adds page elements and drawings as context, and a shared tab supplies a snapshot. A conversation keeps running while chat is collapsed or the page reloads, and devhost never approves a native request on its own. Set `[devtools.chat].enabled = false` or `[devtools.annotations].enabled = false` to turn either off. See the [chat and context guide](https://alexgorbatchev.github.io/devhost/guides/annotations/) for sharing, approvals, and selection plugins.
 
 ## Build from source
 

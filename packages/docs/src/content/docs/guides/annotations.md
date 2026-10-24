@@ -57,6 +57,25 @@ Selected element metadata includes its path, nearby text, accessibility informat
 
 Selection highlights and drawings render above page content, including the page's open Popover API panels and modal `<dialog>` elements. They stay beneath devhost's toolbar, panels, and chat, unless the **devhost** chat directory makes devhost's UI the subject; then they render above it too. The floating annotation tools always render on top. Tools and chat stay usable while a modal is open, so you can annotate it and send the snapshot without closing it. Annotation controls stay inside the active popup's interaction scope without moving or reopening the target itself. Escape ends selection or drawing without dismissing that popup; another Escape follows its normal close behavior. Separate inspector windows and browser-controlled dialogs, such as `window.alert()`, are outside the page canvas.
 
+## Send follow-ups and paste images
+
+Send another message or annotation while the agent is working, including while it awaits an approval. Each send waits for snapshot preparation and native acceptance, then the composer and annotation tools are ready for the next request. Codex receives follow-ups through native steering of the active turn; Claude Code receives them through its streaming input. The harness decides when to incorporate accepted input. Sending does not approve pending tools or interrupt the agent. Model changes apply to the next new turn.
+
+Paste a PNG or JPEG into the message box with your usual paste shortcut. The composer shows a preview with a remove button. Send images alone, with text, or alongside an annotated tab snapshot. Pasted images need no tab-sharing permission. The complete message, including images, must fit within 8 MiB. Rejected sends restore their text and attachments to the composer for retry. Image drafts and queued follow-ups stay in this page's memory and are lost on reload.
+
+## Configure the workflow prompt
+
+By default, devhost adds workflow instructions to each message asking the agent to implement the requests in a dedicated Git worktree, preserve unrelated changes, run required checks, commit and merge into local `main`, then remove its worktree and branch after a successful merge. Related follow-ups reuse that worktree. Remote publishing requires a separate request. If validation or merging is blocked, the instructions ask the agent to retain its worktree and report the blocker. These are agent instructions; native permissions and repository rules still apply, and devhost itself does not perform the Git operations.
+
+Set `prompt` in `devhost.toml` to replace the default instructions:
+
+```toml
+[devtools.chat]
+prompt = "Implement the requested changes in a worktree. Run checks and leave the branch for review."
+```
+
+An empty string disables the added instructions. Omitting `prompt` uses the default. Manifest reload applies edits to the next message, even in an existing conversation; earlier messages remain part of that conversation. Expand **Workflow Instructions** on a sent message to inspect what was included.
+
 ## Draw over the page
 
 Choose **Arrow**, **Line**, or **Box** from the floating toolbar, then drag on the visible page. With the **devhost** chat directory you can also draw over the devhost toolbar and chat panel; otherwise they stay above your drawings and receive the pointer. Each completed drawing ends drawing mode, appears in **Page context**, and places the cursor in the composer. Drag an existing drawing by its stroke to move it. Escape cancels an in-progress move or drawing. Use **Undo Drawing** to remove the most recent shape, or remove any drawing individually from the context list. Drawing coordinates and selected element metadata accompany the captured image.

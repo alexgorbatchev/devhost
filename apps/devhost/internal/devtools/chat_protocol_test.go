@@ -50,6 +50,7 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 		}
 	}
 	decoder := json.NewDecoder(os.Stdin)
+	var delayedUser *chatNativeFrame
 	encoder := json.NewEncoder(os.Stdout)
 	write := func(value any) {
 		if err := encoder.Encode(value); err != nil {
@@ -105,6 +106,18 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 				write(map[string]any{"method": "turn/started", "params": map[string]any{"threadId": "codex-session", "turn": map[string]string{"id": "turn-one"}}})
 				write(map[string]any{"id": "approval-one", "method": "item/commandExecution/requestApproval", "params": map[string]string{"threadId": "codex-session", "turnId": "turn-one"}})
 				result = map[string]any{"turn": map[string]string{"id": "turn-one"}, "input": params["input"]}
+			case "turn/steer":
+				if os.Getenv("DEVHOST_CHAT_STEER_FINISH") == "1" {
+					write(map[string]any{"method": "serverRequest/resolved", "params": map[string]string{"requestId": "approval-one"}})
+					write(map[string]any{"method": "turn/completed", "params": map[string]any{"turn": map[string]string{"id": "turn-one", "status": "completed"}}})
+					write(map[string]any{"id": frame.ID, "error": map[string]any{"code": -32600, "message": "No active turn"}})
+					continue
+				}
+				if string(params["expectedTurnId"]) != `"turn-one"` || params["model"] != nil {
+					os.Exit(11)
+				}
+				write(map[string]any{"type": "fixture_steer", "input": params["input"]})
+				result = map[string]any{"turnId": "turn-one"}
 			case "turn/interrupt":
 				write(map[string]any{"method": "turn/completed", "params": map[string]any{"turn": map[string]string{"id": "turn-one", "status": "interrupted"}}})
 			case "initialized":
@@ -140,6 +153,11 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 		}
 		if frame.Type == "user" {
 			write(map[string]any{"type": "system", "subtype": "init", "session_id": "claude-session"})
+			if os.Getenv("DEVHOST_CHAT_DELAY_REPLAY") == "1" {
+				delayedUser = &frame
+				write(map[string]any{"type": "control_request", "request_id": "delivery-approval", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Read", "input": map[string]string{"file_path": "example.txt"}}})
+				continue
+			}
 			if os.Getenv("DEVHOST_CHAT_USER_REJECT") == "1" {
 				write(map[string]any{"type": "user", "uuid": "11111111-1111-4111-8111-111111111111", "isReplay": true, "session_id": "claude-session", "parent_tool_use_id": nil, "message": frame.Message})
 				write(map[string]any{"type": "result", "is_error": true, "result": "Native input rejected", "user_message_uuid": frame.UUID})
@@ -152,6 +170,10 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 			continue
 		}
 		if len(frame.ID) > 0 || frame.Type == "control_response" {
+			if delayedUser != nil {
+				write(map[string]any{"type": "user", "uuid": delayedUser.UUID, "isReplay": true, "session_id": "claude-session", "message": delayedUser.Message})
+				delayedUser = nil
+			}
 			write(map[string]any{"type": "fixture_received_response", "response": json.RawMessage(frame.Result), "native": frame})
 			continue
 		}

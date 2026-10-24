@@ -106,7 +106,7 @@ func validateWorktrees(raw any, issues *[]string) WorktreesConfig {
 func DefaultDevtools() DevtoolsConfig {
 	var schemaIssues []string
 	return DevtoolsConfig{
-		Chat:             DevtoolsToggleConfig{Enabled: true},
+		Chat:             DevtoolsChatConfig{Enabled: true, Prompt: defaultChatPrompt},
 		Annotations:      DevtoolsToggleConfig{Enabled: true},
 		Browser:          DevtoolsBrowserConfig{ReactExtensionID: defaultReactExtensionID},
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
@@ -149,7 +149,7 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 
 	allowKeys(value, "devtools", "devtools", schemaIssues)
 
-	readDevtoolsToggle(value, "chat", &result.Chat.Enabled, schemaIssues)
+	result.Chat = validateDevtoolsChat(value["chat"], schemaIssues)
 	readDevtoolsToggle(value, "annotations", &result.Annotations.Enabled, schemaIssues)
 	result.Browser = validateNativeBrowser(value["browser"], schemaIssues)
 	result.Resources = validateDevtoolsResources(value["resources"], schemaIssues)
