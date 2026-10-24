@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-23 09:48
+last_modified: 2026-10-24 07:59
 status: current
 ---
 
@@ -152,7 +152,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Start part of a stack by naming services                                                  | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
 | Named service groups                                                                      | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
 | Start a stopped service from the Services panel                                           | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
-| Shared-design 404, startup and recovery pages; development page gallery                   | `guides/stack-lifecycle.md`, "Startup and recovery pages"; `development/page-previews.md`                                 | No demo                                          |
+| shadcn error and recovery pages; HTML fallback; in-place refresh; gallery                 | `guides/stack-lifecycle.md`, "Startup and recovery pages"; `development/page-previews.md`                                 | No demo                                          |
 | Configuration hot reload, applied and rejected                                            | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
 | Every manifest setting reloads: name, devtools, worktrees, killZombies                    | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`                                                           | No demo                                          |
 | Unmanaged services, such as a Docker container                                            | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |

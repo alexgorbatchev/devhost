@@ -28,7 +28,7 @@ func assertPagePreviewNavigation(t *testing.T, ctx context.Context) {
 	if _, err := chromedp.Run(ctx, chromedp.Poll[bool](`document.querySelector('#error').textContent.includes('Preview only') && location.pathname.endsWith('/500')`)); err != nil {
 		t.Fatal(err)
 	}
-	if err := chromedp.Do(ctx, chromedp.Navigate(url+"route-not-found"), chromedp.WaitVisible(chromedp.CSS(".devhost-status__link"))); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Navigate(url+"route-not-found"), chromedp.WaitVisible(chromedp.CSS(`a[href$="files/"]`))); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := chromedp.Run(ctx, chromedp.Poll[bool](`Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/pages/status.css') && sheet.cssRules.length > 0)`)); err != nil {

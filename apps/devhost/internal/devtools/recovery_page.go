@@ -1,11 +1,7 @@
 package devtools
 
 import (
-	"bytes"
-	_ "embed"
 	"encoding/json"
-	"fmt"
-	"html/template"
 	"io"
 	"net/http"
 	"strings"
@@ -26,18 +22,6 @@ type RecoveryState struct {
 	CanRestart   bool                 `json:"canRestart"`
 	Logs         []string             `json:"logs"`
 	Repositories []WorktreeRepository `json:"repositories,omitempty"`
-}
-
-//go:embed recovery_page.html
-var recoveryDocument string
-
-var recoveryTemplate = template.Must(template.New("recovery").Parse(recoveryDocument))
-
-type recoveryPageData struct {
-	RecoveryState
-	Status      int
-	Styles      template.CSS
-	ThemeScript template.JS
 }
 
 func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoveryState, status int, injectToolbar bool) {
@@ -61,13 +45,12 @@ func serveRecoveryPage(w http.ResponseWriter, r *http.Request, state RecoverySta
 }
 
 func renderRecoveryDocument(state RecoveryState, status int, injectToolbar bool) (string, error) {
-	var body bytes.Buffer
-	// The trusted stylesheet is embedded at build time; service data remains escaped.
-	page := recoveryPageData{RecoveryState: state, Status: status, Styles: template.CSS(statuspage.CSS), ThemeScript: template.JS(statuspage.ThemeScript)}
-	if err := recoveryTemplate.Execute(&body, page); err != nil {
+	document, err := statuspage.Render(statuspage.Page{
+		Kind: "recovery", Status: status, Title: state.Title, Message: state.Message, Recovery: state,
+	}, "")
+	if err != nil {
 		return "", err
 	}
-	document := body.String()
 	if injectToolbar {
 		document = injectDevtoolsScript(document)
 	}
@@ -126,6 +109,9 @@ func serveRecoveryControl(w http.ResponseWriter, r *http.Request, options StartD
 	}
 }
 
-func renderUnavailableDocument() string {
-	return fmt.Sprintf(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Service unavailable · devhost</title><script>%s</script><style>%s</style></head><body data-devhost-recovery><main class="devhost-status"><p class="devhost-status__brand">devhost / connection</p><p class="devhost-status__code">502</p><h1 class="devhost-status__title">Service unavailable</h1><p class="devhost-status__body">Use devhost to view logs and restart it.</p></main></body></html>`, statuspage.ThemeScript, statuspage.CSS)
+func renderUnavailableDocument() (string, error) {
+	return statuspage.Render(statuspage.Page{
+		Kind: "unavailable", Status: http.StatusBadGateway, Title: "Service unavailable",
+		Message: "Use devhost to view logs and restart it.",
+	}, "")
 }

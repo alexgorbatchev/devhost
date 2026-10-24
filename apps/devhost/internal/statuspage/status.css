@@ -68,14 +68,6 @@ summary:focus-visible {
   background: var(--dh-mark);
   border-radius: var(--dh-radius-sm);
 }
-.devhost-status__code {
-  margin: 0;
-  font-size: clamp(4rem, 16vw, 6rem);
-  line-height: 1;
-  letter-spacing: -0.06em;
-  font-weight: 700;
-  color: var(--dh-accent);
-}
 .devhost-status__title {
   margin: 20px 0 0;
   font-size: clamp(1.4rem, 4vw, 2rem);
@@ -130,14 +122,6 @@ summary:focus-visible {
 .devhost-status__arrow {
   flex: none;
   color: var(--dh-accent);
-}
-.devhost-status__empty {
-  margin: 0;
-  padding: 20px;
-  border: 1px dashed var(--dh-line);
-  color: var(--dh-fg-muted);
-  background: var(--dh-surface-2);
-  line-height: 1.75;
 }
 @media (max-width: 640px) {
   body {

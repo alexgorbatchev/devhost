@@ -23,7 +23,7 @@ type managedCaddyNotFoundRouteLink struct {
 	URL  string
 }
 
-var managedCaddyNotFoundPageCSS = statuspage.CSS
+var managedCaddyNotFoundPageCSS = statuspage.PageCSS
 
 func createManagedCaddyNotFoundSitePaths(caddyDirectoryPath string) managedCaddyNotFoundSitePaths {
 	directoryPath := filepath.Join(caddyDirectoryPath, "route-not-found")
@@ -46,7 +46,11 @@ func syncManagedCaddyNotFoundSite(routesDirectoryPath string, httpsPort int) err
 		return fmt.Errorf("create managed caddy not-found directory %s: %w", sitePaths.DirectoryPath, err)
 	}
 
-	if err := os.WriteFile(sitePaths.PagePath, []byte(renderManagedCaddyNotFoundPage(routeLinks)), 0o644); err != nil {
+	document, err := renderManagedCaddyNotFoundPage(routeLinks)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(sitePaths.PagePath, []byte(document), 0o644); err != nil {
 		return fmt.Errorf("write managed caddy not-found page %s: %w", sitePaths.PagePath, err)
 	}
 
@@ -112,7 +116,7 @@ func readActiveRouteLinks(routesDirectoryPath string, httpsPort int) ([]managedC
 	return routeLinks, nil
 }
 
-func renderManagedCaddyNotFoundPage(routeLinks []managedCaddyNotFoundRouteLink) string {
+func renderManagedCaddyNotFoundPage(routeLinks []managedCaddyNotFoundRouteLink) (string, error) {
 	links := make([]statuspage.RouteLink, 0, len(routeLinks))
 	for _, route := range routeLinks {
 		links = append(links, statuspage.RouteLink{Host: route.Host, URL: route.URL})

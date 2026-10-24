@@ -1,0 +1,23 @@
+@import "tailwindcss" source(none);
+@import "@alexgorbatchev/shadcn/theme.css";
+@import "@alexgorbatchev/devhost-design/tokens.css";
+
+@source "./components";
+@source "../../node_modules/@alexgorbatchev/shadcn/dist";
+
+/* Standalone documents own their root; the injected toolbar keeps its separate Shadow DOM theme. */
+:root {
+  --background: var(--dh-surface);
+  --foreground: var(--dh-fg);
+  --card: var(--dh-surface);
+  --card-foreground: var(--dh-fg);
+  --primary: var(--dh-accent);
+  --primary-foreground: var(--dh-on-accent);
+  --secondary: var(--dh-surface-2);
+  --secondary-foreground: var(--dh-fg);
+  --muted: var(--dh-surface-2);
+  --muted-foreground: var(--dh-fg-muted);
+  --border: var(--dh-line);
+  --input: var(--dh-input-line);
+  --ring: var(--dh-accent);
+}

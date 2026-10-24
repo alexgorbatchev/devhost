@@ -3,6 +3,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BunPlugin } from "bun";
 import tailwindPlugin from "bun-plugin-tailwind";
+import { buildStatusPages } from "./buildStatusPages";
 
 const devtoolsPackageUrl: URL = new URL("../../../packages/devhost-ui/package.json", import.meta.url);
 const devtoolsEntrypointPath: string = fileURLToPath(
@@ -158,6 +159,7 @@ function createInlineDevtoolsStylesheetPlugin(stylesheetText: string): BunPlugin
 
 if (import.meta.main) {
   await buildDevtoolsBundle({ isProduction: Bun.env.DEVHOST_DEVTOOLS_DEVELOPMENT !== "1" });
+  await buildStatusPages();
   const statusBuild = await Bun.build({
     entrypoints: [fileURLToPath(new URL("../internal/statuspage/status.css", import.meta.url))],
     outdir: fileURLToPath(new URL("../internal/statuspage/dist/", import.meta.url)),

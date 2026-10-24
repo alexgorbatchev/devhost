@@ -1,6 +1,8 @@
 # devhost UI package
 
-Local React workspace for the injected `devhost` browser UI that gets embedded into routed pages and exercised through Storybook.
+Local React workspace for the injected `devhost` browser UI and standalone status pages, exercised through Storybook.
+
+`src/statusPages/` owns the standalone 404, recovery, and unavailable-backend views, composed from `@alexgorbatchev/shadcn`. Its document stylesheet is separate from the injected Shadow DOM stylesheet. The `status-pages` export is bundled by `apps/devhost/scripts/buildStatusPages.ts` and embedded by Go; preserve self-contained assets, abortable recovery requests, and the escaped server-rendered fallback. Keep behavior coverage in the component stories, recovery hook tests, and Go browser tests, including Caddy route independence and narrow-screen contrast.
 
 ## Commands
 

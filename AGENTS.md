@@ -9,7 +9,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check the full repo: `just check`
 - Prepare the workspace dependencies and embedded bundle: `just setup`
 - Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`)
-- Refresh the generated embedded devtools bundle and standalone page stylesheet: `just devhost build-devtools-bundle`
+- Refresh the generated embedded devtools bundle and standalone page scripts and stylesheets: `just devhost build-devtools-bundle`
 - Check `devhost` app-only validations: `just devhost check`
 - Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just cli <args>` is the human-mode equivalent); they forward to `devhost run-ai` and `devhost run`, respectively
 - Run every workspace test suite: `just test`

@@ -70,7 +70,7 @@ func TestRecoveryDesignInBrowser(t *testing.T) {
 			if err != nil || !matches {
 				t.Errorf("page does not follow the shared %s design palette: %v", theme, err)
 			}
-			for _, selector := range []string{"#title", "#message", "#logs", "summary", "legend"} {
+			for _, selector := range []string{"#title", "#message", "#logs", "#logs-toggle", "legend"} {
 				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+chromium.Contrast+`)(document.querySelector('`+selector+`'))`))
 				if err != nil || ratio < 4.5 {
 					t.Errorf("%s contrast=%v, err=%v; want at least 4.5", selector, ratio, err)

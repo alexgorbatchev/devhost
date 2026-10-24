@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Page.Title}} · devhost</title>
+    <script>
+      {{.ThemeScript}}
+    </script>
+    {{if .StylesheetURL}}
+    <link rel="stylesheet" href="{{.StylesheetURL}}" />
+    {{else}}
+    <style>
+      {{.Styles}}
+    </style>
+    {{end}}
+  </head>
+  <body data-devhost-recovery="{{.Page.Kind}}">
+    <div id="devhost-status">
+      <main>
+        <p>devhost · {{.Page.Status}}</p>
+        <h1>{{.Page.Title}}</h1>
+        <p>{{.Page.Message}}</p>
+        {{if eq .Page.Kind "not-found"}}
+        <h2>Active hostnames</h2>
+        <ul>
+          {{range .Page.Routes}}
+          <li>
+            <a href="{{.URL}}"><span>{{.Host}}</span></a>
+          </li>
+          {{else}}
+          <li>
+            No devhost hostnames are active right now. Start a stack and the available hostnames will appear here.
+          </li>
+          {{end}}
+        </ul>
+        {{end}} {{with .Page.Recovery}}
+        <p>Service: {{.Service}} · {{.Address}}</p>
+        <p>
+          JavaScript is needed for live status, Restart and Switch worktree controls. Refresh this page after the
+          service is ready.
+        </p>
+        {{range .Repositories}}
+        <h2>{{.Name}}</h2>
+        <p>{{.SelectedPath}}</p>
+        {{if .BlockedReason}}
+        <p>{{.BlockedReason}}</p>
+        {{end}} {{if .Error}}
+        <p>{{.Error}}</p>
+        {{end}} {{end}}
+        <details open>
+          <summary>Recent logs</summary>
+          <pre>
+{{range .Logs}}{{.}}
+{{end}}</pre
+          >
+        </details>
+        {{end}}
+      </main>
+    </div>
+    <script id="devhost-status-data" type="application/json">
+      {{.Page}}
+    </script>
+    <script>
+      {{.Script}}
+    </script>
+  </body>
+</html>

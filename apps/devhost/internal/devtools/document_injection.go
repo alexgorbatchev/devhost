@@ -110,12 +110,16 @@ func StartDocumentInjectionServer(options StartDocumentInjectionServerOptions) (
 				serveRecoveryPage(writer, request, state, http.StatusBadGateway, options.shouldInject())
 				return
 			}
+			document, renderErr := renderUnavailableDocument()
+			if renderErr != nil {
+				http.Error(writer, "Unable to render service status", http.StatusBadGateway)
+				return
+			}
 			writer.Header().Set("cache-control", "no-store")
 			writer.Header().Set("content-type", "text/html; charset=utf-8")
 			writer.WriteHeader(http.StatusBadGateway)
 			// Keep the injected control UI available when a document's backend is down.
 			// A disconnected browser cannot receive the recovery response, so delivery is best-effort.
-			document := renderUnavailableDocument()
 			_, _ = io.WriteString(writer, injectDevtoolsScript(document))
 		},
 	}
