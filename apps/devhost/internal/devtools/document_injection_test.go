@@ -241,7 +241,7 @@ func TestDocumentInjectionServerServesRecoveryPageWhenBackendExits(t *testing.T)
 		t.Fatalf("content-type = %q", response.Header.Get("content-type"))
 	}
 	body := readResponseText(t, response)
-	for _, content := range []string{`<h1 class="devhost-status__title">Service unavailable</h1>`, `Use devhost to view logs and restart it.`, `<script type="module" src="/__devhost__/inject.js"></script>`, `<meta name="viewport"`, `data-devhost-recovery`} {
+	for _, content := range []string{`<h1>Service unavailable</h1>`, `Use devhost to view logs and restart it.`, `<script type="module" src="/__devhost__/inject.js"></script>`, `<meta name="viewport"`, `data-devhost-recovery`} {
 		if !strings.Contains(body, content) {
 			t.Fatalf("recovery body missing %q", content)
 		}

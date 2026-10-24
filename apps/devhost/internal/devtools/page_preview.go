@@ -67,7 +67,7 @@ func (s *ControlServer) handlePagePreview(w http.ResponseWriter, r *http.Request
 	case "status.css":
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		if r.Method != http.MethodHead {
-			_, _ = io.WriteString(w, statuspage.CSS) // Delivery is best-effort.
+			_, _ = io.WriteString(w, statuspage.PageCSS) // Delivery is best-effort.
 		}
 	case "route-not-found", "route-not-found-empty":
 		var routes []statuspage.RouteLink
@@ -77,9 +77,19 @@ func (s *ControlServer) handlePagePreview(w http.ResponseWriter, r *http.Request
 				{Host: "api.localhost", URL: pagePreviewPath + "500"},
 			}
 		}
-		servePreviewDocument(w, r, statuspage.NotFoundPage(routes, pagePreviewPath+"status.css"), http.StatusNotFound)
+		document, err := statuspage.NotFoundPage(routes, pagePreviewPath+"status.css")
+		if err != nil {
+			http.Error(w, "Unable to render preview", http.StatusInternalServerError)
+			return
+		}
+		servePreviewDocument(w, r, document, http.StatusNotFound)
 	case "backend-unavailable":
-		servePreviewDocument(w, r, renderUnavailableDocument(), http.StatusBadGateway)
+		document, err := renderUnavailableDocument()
+		if err != nil {
+			http.Error(w, "Unable to render preview", http.StatusInternalServerError)
+			return
+		}
+		servePreviewDocument(w, r, document, http.StatusBadGateway)
 	default:
 		http.NotFound(w, r)
 	}

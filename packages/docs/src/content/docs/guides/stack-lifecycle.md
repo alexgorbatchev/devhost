@@ -158,7 +158,9 @@ Exited foreground services, including ones that exit before their startup health
 
 ## Startup and recovery pages
 
-Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup, recovery, and managed proxy 404 pages use devhost's shared design: monospace type, neutral surfaces, magenta accents, compact borders, and left-aligned content. Light and dark themes follow your browser preference, including changes while the page is open. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
+Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup, recovery, unavailable-backend, and managed proxy 404 pages use the same shared controls as devtools, with monospace type, neutral surfaces, magenta accents, compact borders, and left-aligned content. Light and dark themes follow your browser preference, including changes while the page is open. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
+
+The page carries its own interface code and needs no CDN or working application assets. If JavaScript is unavailable, the initial error, service details, recent logs, and active route links remain readable as HTML. Live updates and recovery controls require JavaScript. **Recent logs** expands or collapses the log output; refreshing worktrees updates the choices in place.
 
 Stopping the stack during startup cancels the health wait and reports shutdown progress for every launched service.
 

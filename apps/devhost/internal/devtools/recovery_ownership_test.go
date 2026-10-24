@@ -98,7 +98,7 @@ func TestRecoveryPageOpensAndStopsWorktreeOwner(t *testing.T) {
 	if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("button[data-stop-owner]"))); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := chromedp.Run(ctx, chromedp.Poll[bool](`document.getElementById('error').textContent.trim() === 'Stack ownership changed; refresh worktrees'`)); err != nil {
+	if _, err := chromedp.Run(ctx, chromedp.Poll[bool](`document.getElementById('error')?.textContent.trim() === 'Stack ownership changed; refresh worktrees'`)); err != nil {
 		t.Fatal(err)
 	}
 	if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("button[data-stop-owner]"))); err != nil {

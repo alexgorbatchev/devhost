@@ -38,7 +38,7 @@ func TestSyncManagedCaddyNotFoundSite(t *testing.T) {
 		t.Fatalf("ReadFile(...) error = %v", err)
 	}
 	pageText := string(pageTextBytes)
-	if !strings.Contains(pageText, `<link rel="stylesheet" href="/devhost-route-not-found.css">`) {
+	if !strings.Contains(pageText, `<link rel="stylesheet" href="/devhost-route-not-found.css"`) {
 		t.Fatalf("pageText missing stylesheet link: %q", pageText)
 	}
 	if !strings.Contains(pageText, `href="https://api.localhost:4443/v1"`) || !strings.Contains(pageText, `href="https://hello.localhost:4443/"`) || !strings.Contains(pageText, `href="https://legacy.localhost:4443/"`) {

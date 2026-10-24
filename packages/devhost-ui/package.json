@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/devtools/index.ts",
     "./main": "./src/devtools/main.ts",
+    "./status-pages": "./src/statusPages/main.ts",
     "./redux": "./src/devtools/features/reduxDevtools/index.ts"
   },
   "dependencies": {
