@@ -34,6 +34,8 @@ Placeholder names start with a letter or underscore, followed by letters, digits
 
 For values another service resolves at launch, such as an automatic port, use [service references](../service-references/) instead.
 
+Devhost reads the exported process environment; it does not load `.env` files itself. In this repository's development checkout, `.envrc` uses direnv to load tracked `.env` defaults followed by ignored `.env.local` overrides. The development manifests use `devhost{{ env.DEVHOST_DEV_EXT }}`, `playground{{ env.DEVHOST_DEV_EXT }}`, and `recovery{{ env.DEVHOST_DEV_EXT }}`. The default suffix is `.localhost`; set `DEVHOST_DEV_EXT` in `.env.local` and reload direnv to change it for all three hosts. Include any separator, such as the leading dot, in the suffix.
+
 ## Operational bind inputs
 
 - `DEVHOST_BIND_HOST`
