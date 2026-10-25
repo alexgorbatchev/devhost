@@ -1,0 +1,15 @@
+set working-directory := "../../.."
+
+# Regenerate and validate the architecture overview with Archify 3.2.0
+[default]
+build:
+    #!/bin/sh
+    set -eu
+    : "${ARCHIFY_CLI:?Set ARCHIFY_CLI to Archify 3.2.0 bin/archify.mjs}"
+    mkdir -p .tmp/architecture-review
+    review_dir=$(mktemp -d .tmp/architecture-review/run.XXXXXX)
+    node "$ARCHIFY_CLI" finalize architecture docs/internal/architecture/overview.json docs/internal/architecture/overview.html --repo-root . --quality showcase --out-dir "$review_dir/overview" --json
+
+# Serve the committed diagrams; devhost supplies PORT
+run:
+    bun --hot packages/devhost-ui/scripts/architecture/serveArchitecture.ts

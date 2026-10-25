@@ -5,6 +5,7 @@ mod docs 'packages/docs/justfile'
 mod demo 'packages/devhost-ui/scripts/demo/justfile'
 mod playground-backend 'packages/playground/backend/justfile'
 mod playground-frontend 'packages/playground/frontend/justfile'
+mod archify 'docs/internal/architecture/justfile'
 
 # Run devhost from source in the calling directory
 cli *args: (devhost::run args)

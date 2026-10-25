@@ -37,3 +37,14 @@ watch = ["src/"]
 
 [services.playground-frontend.env]
 NODE_ENV = "development"
+
+# Keep architecture documentation available with every service selection.
+[services.archify]
+alwaysStart = true
+command = ["just", "archify", "run"]
+port = "auto"
+bindHost = "127.0.0.1"
+host = "devhost-archify{{ env.DEVHOST_DEV_EXT }}"
+
+[services.archify.health]
+http = "/"
