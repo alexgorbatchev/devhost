@@ -1,4 +1,6 @@
 import type { JSX } from "react";
+import { LoaderCircleIcon } from "lucide-react";
+import { Icon } from "../../components/ui/Icon";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { createDevtoolsSettingsStore } from "../shared/createDevtoolsSettingsStore";
@@ -111,6 +113,7 @@ function AppContent(): JSX.Element {
     [projectRootPath],
   );
   const isChatOpen = useStore(settingsStore, (state) => state.chat.isOpen);
+  const [isChatBusy, setIsChatBusy] = useState(false);
   const setIsChatOpen = useCallback(
     (isOpen: boolean): void => {
       settingsStore.getState().updateChat({ isOpen });
@@ -215,6 +218,7 @@ function AppContent(): JSX.Element {
           onTargetChange={isDevhostChatAvailable ? setChatTarget : undefined}
           isOpen={isChatOpen}
           onOpenChange={setIsChatOpen}
+          onBusyChange={setIsChatBusy}
           isSelectionEnabled={annotationEnabled}
           rootReference={appRootReference}
         />
@@ -302,7 +306,12 @@ function AppContent(): JSX.Element {
           ) : null}
           {chatEnabled ? (
             <ToolbarSegment ariaLabel="Chat">
-              <Button aria-expanded={isChatOpen} onClick={() => setIsChatOpen(!isChatOpen)}>
+              <Button
+                aria-expanded={isChatOpen}
+                aria-busy={isChatBusy}
+                startEnhancer={isChatBusy ? <Icon glyph={LoaderCircleIcon} isSpinning /> : undefined}
+                onClick={() => setIsChatOpen(!isChatOpen)}
+              >
                 Chat
               </Button>
             </ToolbarSegment>

@@ -37,6 +37,13 @@
   padding-bottom: calc(var(--spacing) * 2);
 }
 
+/* The native Thread has no stop-icon slot. Keep its stop glyph and the compact composer's glyph consistent. */
+button[aria-label="Stop Generating"] > .lucide-square {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
 @custom-variant dark (&:where(:host([data-theme="dark"]) *, [data-devhost-story-theme][data-theme="dark"] *));
 
 @source "../../**/*.{ts,tsx}";

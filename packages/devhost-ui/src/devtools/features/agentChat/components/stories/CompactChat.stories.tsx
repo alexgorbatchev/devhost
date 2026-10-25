@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { userEvent as nativeUserEvent } from "vitest/browser";
 import { z } from "zod";
+import { assert } from "vitest";
 import { CompactChat } from "../CompactChat";
 import { readContrastRatio } from "../../../../../../../../test-support/readContrastRatio";
 import {
@@ -23,6 +24,56 @@ const meta: Meta<typeof CompactChat> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const ToolbarTracksCollapsedChat: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    const toolbar = within(canvas.getByRole("toolbar", { name: "devhost" }));
+    const chatButton = toolbar.getByRole("button", { name: "Chat" });
+    expect(chatButton).toHaveAttribute("aria-busy", "false");
+    expect(within(chatButton).queryByTestId("Icon")).toBeNull();
+
+    deliverChatStatus("running");
+    await waitFor(() => expect(chatButton).toHaveAttribute("aria-busy", "true"));
+    expect(within(chatButton).getByTestId("Icon").getAnimations()).toHaveLength(1);
+    await userEvent.click(chatButton);
+    expect(chatButton).toHaveAttribute("aria-expanded", "false");
+    expect(canvas.queryByRole("complementary", { name: "Agent chat" })).toBeNull();
+    expect(chatButton).toBeEnabled();
+    expect(within(chatButton).getByTestId("Icon").getAnimations()).toHaveLength(1);
+
+    deliverChatStatus("requires_action");
+    await waitFor(() => expect(chatButton).toHaveAttribute("aria-busy", "true"));
+    deliverChatStatus("idle");
+    await waitFor(() => expect(chatButton).toHaveAttribute("aria-busy", "false"));
+    expect(within(chatButton).queryByTestId("Icon")).toBeNull();
+    await userEvent.click(chatButton);
+    expect(canvas.getByRole("complementary", { name: "Agent chat" })).toBeVisible();
+  },
+};
+
+export const StopGenerationInBothViews: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    for (const [index, view] of ["Compact Chat", "Expand Chat"].entries()) {
+      await userEvent.click(canvas.getByRole("button", { name: view }));
+      deliverChatStatus("running");
+      const stop = await canvas.findByRole("button", { name: "Stop Generating" });
+      const icon = stop.querySelector("svg");
+      assert(icon);
+      expect(icon.getBoundingClientRect().width).toBe(12);
+      expect(icon.getBoundingClientRect().height).toBe(12);
+      expect(getComputedStyle(icon).fill).toBe(getComputedStyle(icon).color);
+      await userEvent.click(stop);
+      await waitFor(() => expect(readSentChatCommands()).toHaveLength(index + 1));
+      expect(readSentChatCommands().at(-1)).toEqual({ type: "interrupt" });
+      deliverChatStatus("idle");
+      await waitFor(() => expect(canvas.queryByRole("button", { name: "Stop Generating" })).toBeNull());
+    }
+  },
+};
+
 export const CompactReplyCycle: Story = {
   render: () => <ChatReloadScene />,
   beforeEach: () => installChatReloadServer(),
@@ -42,6 +93,7 @@ export const CompactReplyCycle: Story = {
       await userEvent.type(composer, text);
       await userEvent.keyboard("{Enter}");
       await latest.findByText("Working…");
+      expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-busy", "true");
       expect(readContrastRatio(latest.getByText("Working…"))).toBeGreaterThanOrEqual(4.5);
       expect(latest.queryByText(/^Reply 30:/)).toBeNull();
       expect(latest.queryByText("Live reply 31.")).toBeNull();
