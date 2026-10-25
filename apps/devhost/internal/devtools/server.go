@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -325,6 +327,7 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
 	}
 	controlServer.chat = newChatStore(controlServer.ctx, options.chatCommand)
+	controlServer.chat.log = controlServer.logChat
 	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
 	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
 	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))
@@ -872,6 +875,20 @@ func (c *websocketClient) writeJSONMessagesLocked(values []any) error {
 		}
 	}
 	return nil
+}
+
+// writeTextReaderLocked streams a text message with the same deadline as other
+// writes. The caller holds writeMu; a failed write retires the connection.
+func (c *websocketClient) writeTextReaderLocked(reader io.Reader) error {
+	if err := c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout)); err != nil {
+		return err
+	}
+	writer, err := c.conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, reader)
+	return errors.Join(err, writer.Close())
 }
 
 // close ends a connection that is already broken or that the browser is closing: nobody is left to tell why.

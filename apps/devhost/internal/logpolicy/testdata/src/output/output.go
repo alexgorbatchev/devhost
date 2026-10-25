@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 func output(w io.Writer, response http.ResponseWriter, file *os.File) {
@@ -41,4 +43,26 @@ func output(w io.Writer, response http.ResponseWriter, file *os.File) {
 	io.WriteString(response, "HTTP body")
 	file.Write([]byte("file contents"))
 	_ = f.Errorf("failure: %s", "context")
+}
+
+func streamSocket(conn *websocket.Conn, input io.Reader, other io.WriteCloser) {
+	writer, err := conn.NextWriter(1)
+	if err != nil {
+		return
+	}
+	io.Copy(writer, input)
+	alias := writer
+	io.Copy(alias, input)
+	uncertain, err := conn.NextWriter(1)
+	if err != nil {
+		return
+	}
+	uncertain = other
+	io.Copy(uncertain, input) // want "use cliout"
+	terminal, err := conn.NextWriter(1)
+	if err != nil {
+		return
+	}
+	terminal = os.Stderr
+	io.Copy(terminal, input) // want "use cliout"
 }

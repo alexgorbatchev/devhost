@@ -142,15 +142,15 @@ func TestChatClosedStateSurvivesFinalNativeProcessFrames(t *testing.T) {
 			}
 			session.mu.Lock()
 			defer session.mu.Unlock()
-			if len(session.events) == 0 {
+			if int(session.events.sequence) == 0 {
 				t.Fatal("The final native frame was lost")
 			}
 			var final chatNativeFrame
-			if err := json.Unmarshal(session.events[len(session.events)-1].Payload, &final); err != nil {
+			if err := json.Unmarshal(chatTestEvents(t, session)[int(session.events.sequence)-1].Payload, &final); err != nil {
 				t.Fatal(err)
 			}
 			if harness == chatCodex && final.Method != "turn/completed" {
-				t.Fatalf("Final Codex frame=%s", session.events[len(session.events)-1].Payload)
+				t.Fatalf("Final Codex frame=%s", chatTestEvents(t, session)[int(session.events.sequence)-1].Payload)
 			}
 			if harness == chatClaude && (final.Type != "result" || session.info.NativeSessionID != "closed-native-session") {
 				t.Fatalf("Final Claude identity/result lost: %+v", session.info)

@@ -46,6 +46,12 @@ type chatProcess struct {
 	diagnostics []byte
 }
 
+type chatInputRejectedError struct{ result json.RawMessage }
+
+func (e *chatInputRejectedError) Error() string {
+	return fmt.Sprintf("Claude rejected the user message: %s", e.result)
+}
+
 func startChatProcess(ctx context.Context, harness, cwd string, args []string, command chatCommandFactory, receive func(json.RawMessage)) (*chatProcess, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	executable := "codex"
@@ -231,7 +237,7 @@ func (p *chatProcess) resolve(raw json.RawMessage) {
 			return
 		}
 		if frame.Type == "result" && frame.IsError && frame.UserMessageUUID != "" {
-			p.deliver("user:"+frame.UserMessageUUID, chatRPCResult{err: fmt.Errorf("Claude rejected the user message: %s", frame.Result)})
+			p.deliver("user:"+frame.UserMessageUUID, chatRPCResult{err: &chatInputRejectedError{result: frame.Result}})
 			return
 		}
 		if frame.Type != "control_response" {

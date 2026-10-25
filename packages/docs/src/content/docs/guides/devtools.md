@@ -212,7 +212,7 @@ All paths below are relative to the routed app's origin. Requests with JSON bodi
 | `/__devhost__/config/validate`          | `POST`        | Check unsaved content with the checks a reload makes                        |
 | `/__devhost__/config/save`              | `POST`        | Write checked content over the version it was edited from                   |
 
-Chat `GET` and `DELETE` requests take `pageURL` and `chatTarget` (`project` or `devhost`) query parameters; `POST` carries them as `pageURL` and `target`.
+Chat discovery, listing, WebSocket attachment, and `POST /__devhost__/chat/sessions/<id>/close` take `pageURL` and `chatTarget` (`project` or `devhost`) query parameters. Session creation (`POST /__devhost__/chat/sessions`) carries them as `pageURL` and `target` in JSON.
 
 Handlers still validate methods, payloads, enabled features, and session state. Malformed requests can produce `400 Bad Request`, unsupported methods produce `405 Method Not Allowed`, and unavailable controls can produce `501 Not Implemented`. The config routes answer `404 Not Found` while the config editor is off. A save answers `403 Forbidden` for a file the editor does not list or a client on another machine, `409 Conflict` with the file on disk when it changed since the editor read it, and `422 Unprocessable Entity` with the issues when the content fails the checks.
 

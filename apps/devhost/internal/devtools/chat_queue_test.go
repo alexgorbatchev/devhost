@@ -32,7 +32,16 @@ func TestChatSendsAnnotationsDuringActiveTurn(t *testing.T) {
 }
 
 func TestChatSteerRacingCompletionStartsNextTurn(t *testing.T) {
-	t.Setenv("DEVHOST_CHAT_STEER_FINISH", "1")
+	for _, outcome := range []string{"completed", "failed"} {
+		t.Run(outcome, func(t *testing.T) {
+			t.Setenv("DEVHOST_CHAT_STEER_FINISH", outcome)
+			assertChatSteerRacingCompletionStartsNextTurn(t)
+		})
+	}
+}
+
+func assertChatSteerRacingCompletionStartsNextTurn(t *testing.T) {
+	t.Helper()
 	store := chatTestStore(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -46,10 +55,13 @@ func TestChatSteerRacingCompletionStartsNextTurn(t *testing.T) {
 		}
 	}
 	waitChatState(t, session, "requires_action")
+	if info := session.snapshot(); info.Error != "" {
+		t.Fatalf("new turn kept the previous failure: %+v", info)
+	}
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	starts := 0
-	for _, event := range session.events {
+	for _, event := range chatTestEvents(t, session) {
 		var frame chatNativeFrame
 		if err := json.Unmarshal(event.Payload, &frame); err != nil {
 			t.Fatal(err)
