@@ -229,6 +229,7 @@ type listingEntry struct {
 }
 type pageData struct {
 	Title       string
+	Breadcrumbs []listingEntry
 	Markdown    bool
 	CSS         template.CSS
 	Styles      template.CSS
@@ -281,6 +282,7 @@ func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File
 }
 
 func (h *Handler) document(w http.ResponseWriter, r *http.Request, data pageData) {
+	data.Breadcrumbs = breadcrumbs(r.URL.Path)
 	data.CSS = template.CSS(markdownCSS)                   // Pinned, embedded upstream stylesheet.
 	data.Styles = template.CSS(statuspage.CSS)             // Trusted bundled design stylesheet.
 	data.ThemeScript = template.JS(statuspage.ThemeScript) // Embedded script; no user data.

@@ -46,6 +46,8 @@ Directories serve `index.html` first, then `index.md`. A directory with neither 
 
 Directory listings and Markdown pages share devhost's monospace page chrome, neutral surfaces, compact borders, and magenta accents. Markdown files (`.md`, case-insensitive) retain GitHub Markdown formatting, including tables, task lists, and strikethrough. Colors follow the browser's light or dark preference. Raw Markdown HTML and unsafe link destinations are suppressed in the rendered view.
 
+The breadcrumb above a listing or Markdown page links to its parent directories. Select **devhost** to return to the served root. The current location is shown as text; the root shows **devhost** once, including when it serves `index.md`.
+
 Use the small **Show source** button to view the original Markdown and **Show rendered** to return. The choice is saved in browser local storage for that origin and applies to other Markdown pages, reloads, and later sessions on the same origin. If browser storage is unavailable, the toggle still works for the current page.
 
 HTML documents, including rendered Markdown, receive the usual devhost toolbar. Dotfiles and directories beginning with `.` are hidden from listings and direct requests. Symlinks work within the served root; links to hidden paths or outside the root are excluded. Only regular files and directories are served.
