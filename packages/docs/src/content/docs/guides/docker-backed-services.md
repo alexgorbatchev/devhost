@@ -1,7 +1,5 @@
 ---
-title: "Docker-backed services"
-sidebar:
-  order: 5
+title: "Docker and external services"
 ---
 
 <!-- guide-demo -->
@@ -12,23 +10,45 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-`devhost` can front a Docker- or Compose-managed backend, but only when the container publishes a port onto the host and `devhost` routes to that host-visible port.
-`devhost` does not proxy to Docker-internal service names or container-network-only addresses.
+devhost can give a Docker container, or any server something else runs, an HTTPS hostname. It routes to a port published on this machine; it cannot reach container names or addresses inside a Docker network.
 
-If another process or tool already owns the backend lifecycle, declare that service with `managed = false` so `devhost` claims the hostname and fixed port without trying to spawn or restart it.
+## Route a container that Docker runs
 
-For example, if your Compose service publishes `4000:4000`, you can route it like this:
+Publish the container's port on the host, for example `ports: ["4100:4100"]` in Compose, then declare the service as external with `managed = false`:
 
 ```toml
-name = "hello-stack"
+[services.preview]
+managed = false
+port = 4100
+host = "preview.hello.localhost"
+```
 
-[services.ui]
-primary = true
-command = ["bun", "run", "ui:dev"]
-port = 3000
-host = "hello.localhost"
-dependsOn = ["api"]
+devhost claims the hostname and port, waits until the port accepts connections, and routes to it. It never starts, stops, or restarts the container.
 
+- An external service cannot have a `command`, `injectPort`, or `port = "auto"`; routing it takes a fixed `port`.
+- Its health check can be the default TCP check, an explicit `tcp` port, or an `http` URL, but not `process`, since devhost owns no process for it.
+- The Services panel tags it `external` and offers no restart; recover it outside devhost.
+- A repository that contains an external service cannot [switch worktrees](../../stacks/worktrees/).
+
+To start the container from another service of the stack, add that service to `dependsOn`:
+
+```toml
+[services.infra]
+command = ["bun", "run", "dev:infra"]   # starts the containers
+health = { process = true }
+
+[services.preview]
+managed = false
+dependsOn = ["infra"]
+port = 4100
+host = "preview.hello.localhost"
+```
+
+## Let devhost run Compose
+
+When devhost should start and stop the container itself, make it an ordinary service whose command runs Compose in the foreground:
+
+```toml
 [services.api]
 command = ["docker", "compose", "up", "--build", "api"]
 port = 4000
@@ -36,24 +56,4 @@ host = "api.hello.localhost"
 health = { http = "http://127.0.0.1:4000/healthz" }
 ```
 
-That works because the API is reachable from the host on `127.0.0.1:4000`.
-If the API only exists inside the Docker network, for example as `http://api:4000`, `devhost` cannot route to it directly.
-
-For a backend that is started separately and only becomes reachable later, use an unmanaged service instead:
-
-```toml
-name = "hello-stack"
-
-[services.dev]
-command = ["bun", "run", "dev:infra"]
-health = { process = true }
-
-[services.preview]
-managed = false
-dependsOn = ["dev"]
-port = 4100
-host = "preview.hello.localhost"
-```
-
-Unmanaged services must omit `command`, `injectPort`, and `port = "auto"`.
-They can still use fixed-port routing and explicit TCP or HTTP health checks, but `health.process` is invalid because `devhost` does not own a child process for them.
+This works because Compose publishes `4000:4000` on the host. Health URLs must use `127.0.0.1`, `localhost`, or `::1`; a Docker-internal name such as `http://api:4000` is rejected.

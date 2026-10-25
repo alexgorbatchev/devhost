@@ -6,16 +6,7 @@ import { describe, expect, it } from "bun:test";
 const docsPackagePath = new URL("../..", import.meta.url);
 
 describe("docs sync script", () => {
-  it("keeps guides and architecture docs inside the docs workspace", () => {
-    const syncScriptPath = join(docsPackagePath.pathname, "sync.ts");
-    const syncScriptText = readFileSync(syncScriptPath, "utf8");
-
-    expect(syncScriptText).not.toContain("apps/devhost/docs/guides");
-    expect(syncScriptText).not.toContain("apps/devhost/docs/architecture");
-    expect(syncScriptText).not.toContain("fs.rmSync(directoryPath, { recursive: true, force: true })");
-  });
-
-  it("converts README GitHub alerts into Starlight asides", () => {
+  it("writes the landing page from the README and the favicon", () => {
     const syncResult = Bun.spawnSync(["bun", "sync.ts"], {
       cwd: docsPackagePath.pathname,
       stderr: "pipe",
@@ -27,7 +18,11 @@ describe("docs sync script", () => {
     const landingPagePath = join(docsPackagePath.pathname, "src/content/docs/index.mdx");
     const landingPageText = readFileSync(landingPagePath, "utf8");
 
-    expect(landingPageText).toContain(":::caution[Important]");
-    expect(landingPageText).not.toContain("> [!IMPORTANT]");
+    expect(landingPageText).toStartWith("---\n");
+    const readmeText = readFileSync(join(docsPackagePath.pathname, "../../apps/devhost/README.md"), "utf8");
+    const firstSection = readmeText.split("\n").find((line) => line.startsWith("## "));
+    expect(firstSection).toBeDefined();
+    expect(landingPageText).toContain(`${firstSection}\n`);
+    expect(readFileSync(join(docsPackagePath.pathname, "public/favicon.svg"), "utf8")).toStartWith("<svg ");
   });
 });

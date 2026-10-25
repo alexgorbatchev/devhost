@@ -1,7 +1,5 @@
 ---
-title: "Service References"
-sidebar:
-  order: 8
+title: "Connect services"
 ---
 
 <!-- guide-demo -->
@@ -12,39 +10,13 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-`devhost` supports late-binding/runtime service references using `{{ services.<name>.<property> }}` placeholders. This allows services to dynamically discover configuration from other services in the stack (such as auto-allocated ports or bind hosts) right before they are launched.
+A service reference, `{{ services.<name>.<property> }}`, fills in another service's address when the stack starts. One service can point at another even when that one's port is assigned at startup with `port = "auto"`.
 
-This is particularly useful in multi-service monorepos where databases or backend services run on dynamically allocated ports (`port = "auto"`), and consuming services need to discover those ports to establish a network connection.
-
-## Placeholders
-
-This applies to:
-
-- String fields in service `command` arrays
-- Values in service `env` maps
-- The service's `health.http` URL
-
-### Supported properties
-
-- `port`
-  - The resolved port number of the target service (e.g., `{{ services.postgres.port }}`).
-  - If the referenced service does not have a port configured, `devhost` will raise a resolution error at startup.
-- `host`
-  - The first configured public routing hostname of the target service, falling back to its bind host if no routing host is defined. This can address Caddy rather than the application's listener; it is not a direct connection address.
-- `bindHost`
-  - The configured bind host of the target service. Wildcards (`0.0.0.0` and `::`) describe listening addresses, and IPv6 literals need brackets when constructing a URL manually.
-- `url`
-  - The direct HTTP base URL built from the target service's bind host and assigned port, for example `{{ services.api.url }}`.
-  - Uses loopback for wildcard listeners: `0.0.0.0` becomes `127.0.0.1`, and `::` becomes `::1`. IPv6 addresses are bracketed automatically.
-  - Uses `http`, includes the assigned port, and has no trailing slash or public routing path. It bypasses Caddy and its public HTTPS hostname.
-  - Requires the referenced service to define a port. Append a path, for example `{{ services.api.url }}/health`.
-
-## Example
+## Point one service at another
 
 ```toml
 [services.api]
 command = ["bun", "run", "api:dev"]
-bindHost = "127.0.0.1"
 port = "auto"
 
 [services.web]
@@ -54,41 +26,60 @@ dependsOn = ["api"]
 env = { API_URL = "{{ services.api.url }}" }
 ```
 
-In this example, the API's bind host and assigned port are resolved into the web service's `API_URL` at startup. The `api:dev` and `web:dev` scripts must launch servers that listen on their injected `PORT` values.
+At startup, `API_URL` becomes something like `http://127.0.0.1:41234`, and `dependsOn` makes sure `api` is running first. Both scripts must listen on the `PORT` devhost gives them.
+
+References work in `command` arguments, `env` values, and `health.http` URLs.
+
+## Properties
+
+| Property   | Value                                                                                                                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`      | Direct HTTP address of the service, such as `http://127.0.0.1:41234`. No trailing slash; append a path: `{{ services.api.url }}/health`. A listener on `0.0.0.0` or `::` becomes `127.0.0.1` or `[::1]`. |
+| `port`     | The service's port, such as `41234`.                                                                                                                                                                     |
+| `bindHost` | The address the service listens on, as configured. A wildcard (`0.0.0.0`, `::`) is not an address to connect to, and an IPv6 address needs brackets in a URL.                                            |
+| `host`     | The service's first public hostname, or its `bindHost` when it has none. A public hostname goes through Caddy over HTTPS, so use `url` to reach the service directly.                                    |
+
+A reference to a service without a port, through `url` or `port`, fails at startup.
 
 ## Health checks with automatic ports
 
-Services with a fixed or automatic `port` inherit a TCP readiness probe on that port. A health table can customize its timing without specifying a probe:
+A service with a `port`, fixed or automatic, gets a TCP health check on that port without any configuration. A health table can change only the timing:
 
 ```toml
-[services.garaje]
-command = ["bun", "run", "dev"]
-port = "auto"
-
-[services.garaje.health]
+[services.api.health]
 timeout = 60000
 ```
 
-`timeout` is the total startup readiness budget in milliseconds (default `30000`). `interval` is the delay between attempts (default `200` milliseconds). `retries` defaults to `0`, which leaves attempts bounded by the timeout; a positive value permits that many retries after the first failed attempt. A timeout-only table continues to check TCP connectivity, not HTTP application readiness. Without a service port, the health table must select a probe.
+| Key        | Default | Meaning                                                                                           |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `timeout`  | `30000` | Milliseconds to wait for the service to become ready.                                             |
+| `interval` | `200`   | Milliseconds between attempts.                                                                    |
+| `retries`  | `0`     | With `N`, give up after `N + 1` failed attempts in a row. `0` leaves `timeout` as the only limit. |
 
-For HTTP readiness, a path beginning with a single `/` is shorthand for the current service's direct HTTP URL:
+To wait for an HTTP response instead, give `http` a path. It is a shorthand for the service's own `url`:
 
 ```toml
-[services.garaje.health]
-http = "/health?ready=1"
+[services.api.health]
+http = "/health?ready=1"   # same as "{{ services.api.url }}/health?ready=1"
 timeout = 60000
 ```
 
-The shorthand requires a service port and targets the app's root path, independently of its public Caddy routing path. Escaped paths and query strings are retained. The equivalent full template is `http = "{{ services.garaje.url }}/health?ready=1"`. URLs can also be assembled explicitly, for example `http = "http://127.0.0.1:{{ services.garaje.port }}/health"`.
+- The path is relative to the service itself, not to its public `path` on Caddy.
+- A health check is ready on any `2xx` response.
+- A full URL can use references too: `http = "http://127.0.0.1:{{ services.api.port }}/health"`. It must point at `127.0.0.1`, `localhost`, or `::1`.
+- A health table uses at most one of `tcp`, `http`, or `process`. A `tcp` target is a fixed port number. Without a service `port`, a health table must choose one.
 
-An explicit health table selects at most one of `tcp`, `http`, or `process`. Explicit TCP targets remain fixed numeric ports; HTTP URLs support service templates and absolute `http` or `https` URLs. Resolved HTTP targets must use `127.0.0.1`, `localhost`, or `::1`. The `host` template property commonly names the public proxy and is therefore unsuitable for these direct probes. Process probes retain their restrictions to managed, non-routed foreground services.
+Mistakes such as a missing service, a malformed URL, or a non-loopback address fail before any service starts.
 
-All service ports resolve before health URL templates are evaluated. Missing references, malformed URLs, and non-loopback HTTP targets fail before service launch. A health reference does not start the referenced service: use `dependsOn` when its readiness is required.
+## References to services that are not started
 
-## References to stopped services
+When you [start part of a stack](../stack-lifecycle/#start-part-of-a-stack), a service that is not started still has its address, so references to it resolve to the same value before and after it starts. A reference never starts a service: add it to `dependsOn` when the consumer needs it running, including for a health check that points at it.
 
-When `devhost start` names the services to run, a monorepo stack runs with some services stopped. A stopped service keeps its assigned address, so a reference to it resolves to the same value it has when the service runs, and stays the same when the service starts later. A reference does not start the service it names: add the service to `dependsOn`, as `web` does above, when the consumer needs it running. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack).
+## After a reload or restart
 
-## References after reload or restart
+- A hot reload resolves references again and restarts the services whose values changed.
+- A single-service restart keeps its automatic port, so references to it stay correct.
+- **Restart Stack**, and startup's retry after a port collision, assign new automatic ports and rebuild every reference, including health URLs. Health timing and check types stay as configured.
+- Fixed TCP ports and URLs without references never change.
 
-A configuration reload resolves command, environment, and health URL templates against the accepted service configuration and restarts affected consumers. Individual service restarts preserve their assigned automatic port. Automatic-port collision retries and **Restart Stack** rebuild references, including health URLs that reference another service, using the new assigned ports while retaining configured health timing and probe kinds. Explicit numeric TCP targets and absolute URLs without templates keep their configured targets. See [Stack lifecycle](./stack-lifecycle/) for recovery and restoration behavior.
+See [Restarts and recovery](../../stacks/recovery/).

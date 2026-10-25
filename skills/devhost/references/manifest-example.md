@@ -73,12 +73,12 @@ ide = "vscode"
 # Toolkit requires one public instrument EnhancedStore; Zustand requires actual StoreApi plus snapshot/restore.
 # The Redux entry opens the upstream browser inspector; disabling closes its owned monitor/subscriptions only.
 # Inspector modules/styles are content-versioned in compiled builds; its stylesheet stays in the popup document.
-# Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
+# Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/guides/devtools/#third-party-devtools
 enabled = true
 
 # Optional native React access; no browser resources are allocated while endpoint is empty.
 # Start your dedicated browser/profile yourself and install the original extension before the host loads.
-# Version boundary: Chrome 154.0.8037.92 or newer, React extension 8.0.0 or newer, React/React DOM 19.2.5.
+# Version boundary: Chrome 154.0.8037.92 or newer, React extension 8.0.0 or newer, React DOM 19.2.5 or a newer React 19 release.
 # Browser connects/disconnects devhost control; native window and profile stay browser-owned.
 [devtools.browser]
 endpoint = ""

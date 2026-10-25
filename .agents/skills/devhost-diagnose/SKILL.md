@@ -4,7 +4,7 @@ description: Diagnose issues in running devhost instances, including routed apps
 author: alexgorbatchev
 metadata:
   created_on: 2026-10-13 17:00
-  last_modified: 2026-10-13 17:03
+  last_modified: 2026-10-25 11:23
   status: current
 ---
 
@@ -31,17 +31,17 @@ For a silent feature, first determine whether it is mounted and enabled. Treat a
 
 | Symptom | First evidence | Source to inspect if needed |
 | --- | --- | --- |
-| Holding Alt does nothing | `annotationEnabled`, `annotationActions`, presence of the composer | `packages/devhost-ui/src/devtools/components/App.tsx`; `apps/devhost/internal/services/stack.go` |
+| Holding Alt does nothing | `chatEnabled` and `annotationEnabled` in `/__devhost__/config.json`, presence of the chat panel | `packages/devhost-ui/src/devtools/components/App.tsx`; `packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx` |
 | Toolbar missing | Routed document, injected entry request, config request, `#devhost-devtools-host` and its shadow root | `apps/devhost/internal/devtools/document_injection.go`; `packages/devhost-ui/src/devtools/startDevtools.ts` |
-| Service fails or recovery stays open | Startup health target and timeout, preceding stack logs, service state, route readiness | `packages/docs/src/content/docs/guides/stack-lifecycle.md`; `apps/devhost/internal/services/` |
-| Logs, resources, queues, or highlights stop updating | Relevant feature flag and same-origin WebSocket lifecycle | `packages/docs/src/content/docs/guides/devtools.md`; corresponding UI feature and server handler |
+| Service fails or recovery stays open | Startup health target and timeout, preceding stack logs, service state, route readiness | `packages/docs/src/content/docs/stacks/recovery.md`; `apps/devhost/internal/services/` |
+| Logs, resources, queues, or highlights stop updating | Relevant feature flag and same-origin WebSocket lifecycle | `packages/docs/src/content/docs/reference/control-api.md`; corresponding UI feature and server handler |
 | Source edits do not appear | Executable actually running, injected asset URLs, configured source checkout | `apps/devhost/internal/services/dev_source.go`; `apps/devhost/internal/devtools/asset_handlers.go` |
 
 For Alt selection specifically:
 
-- Verify `annotationEnabled` and configured actions. `App.tsx` conditionally mounts `AnnotationComposer`; without it, the selection hook cannot handle Alt.
-- When disabled, inspect root-level `[annotation]` and `[[annotation.actions]]` in the owning manifest and its includes. Read `packages/docs/src/content/docs/guides/annotations.md` and `apps/devhost/devhost.example.toml` before proposing configuration. Ask which action or adapter to use if the user's intent does not specify one; do not choose an agent on their behalf.
-- When enabled, reproduce with focus on the page, hold Alt, and move over a target. Inspect `useAnnotationSelectionDraft.ts` under the annotation composer's `hooks/` directory for editing-surface, submission, key-release, and window-blur gates. Check the selected plugin and candidate resolution if selection activates but no target appears.
+- Verify `chatEnabled` and `annotationEnabled`. `App.tsx` mounts `PageChat` only while chat is on, and `PageChat` passes `isSelectionEnabled={annotationEnabled}` to `usePageSelection`; without both, nothing handles Alt.
+- When disabled, inspect `[devtools.chat].enabled` and `[devtools.annotations].enabled` in the root manifest; included manifests cannot set them. A root-level `[annotation]` table is rejected at load, so its presence surfaces as a manifest error, not a silent gate. Read `packages/docs/src/content/docs/guides/annotations.md` and `apps/devhost/devhost.example.toml` before proposing configuration.
+- When enabled, reproduce with focus on the page, hold Alt, and move over a target. Alt works while typing in the chat composer but not in the page's own fields. Inspect `packages/devhost-ui/src/devtools/features/annotationComposer/hooks/usePageSelection.ts` for its disabled conditions (an active drawing tool or a screenshot capture), page-field typing, and Alt key-release handling. Check the selected plugin and candidate resolution if selection activates but no target appears.
 - Distinguish injected devhost overlays from app-owned or third-party overlays before assigning a failing code path.
 
 ## Reproduce through the rendered page
@@ -54,7 +54,7 @@ Use the agent-browser skill for a separate browser session. Inspect an already-o
 4. For connection failures, inspect the relevant `/__devhost__/ws/` request and messages using the routed origin and its HTTP/HTTPS scheme. Verify the current handler before inventing an HTTP health or logs endpoint. Native browser control reconnects explicitly; other documented UI event connections reconnect automatically.
 5. If access or reproduction fails, report the failed command, result, and missing evidence. Request only the evidence needed to continue, such as the affected browser's network failure or owning stack logs. Do not assert a cause without supporting observations.
 
-Read `packages/docs/src/content/docs/guides/devtools.md` for the control API and connection behavior. Check current handlers before relying on payload shapes or error semantics. For source checkout rebuilding, verify `DEVHOST_DEV_SOURCE_DIR` on the running process; rebuilding this checkout does not prove a separately installed binary serves it.
+Read `packages/docs/src/content/docs/reference/control-api.md` for the control API and connection behavior. Check current handlers before relying on payload shapes or error semantics. For source checkout rebuilding, verify `DEVHOST_DEV_SOURCE_DIR` on the running process; rebuilding this checkout does not prove a separately installed binary serves it.
 
 ## Fix and verify within the requested scope
 

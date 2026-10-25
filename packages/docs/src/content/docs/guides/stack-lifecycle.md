@@ -1,7 +1,5 @@
 ---
-title: "Stack lifecycle"
-sidebar:
-  order: 3
+title: "Run a stack"
 ---
 
 <!-- guide-demo -->
@@ -12,119 +10,78 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-The canonical manifest reference lives in [../devhost.example.toml](../reference/devhost-example/).
-Use that file as the documented source of truth for top-level sections, allowed values, defaults, health variants, inline explanations, and copy/paste examples.
+A stack is everything one `devhost.toml` describes, started with one command and stopped with another. This page covers starting, stopping, and starting only the part of a stack you need.
 
-Copy it to `devhost.toml` in your project root and trim it down to the services you actually run.
+## Start a stack
 
-For static files, Markdown, or an existing local HTTP port, use [`devhost serve`](../../reference/files/) without a manifest. Select `--dir <directory>` or `--port <port>`; omitting both serves the current directory.
+Describe your services in `devhost.toml`:
 
-Each TOML table must be declared once. Keep all fields for a service inside a single `[services.<name>]` block instead of reopening that table later.
+```toml
+name = "hello"
 
-When you run `devhost start`, it:
+[services.web]
+command = ["bun", "run", "web:dev"]
+port = 3000
+host = "hello.localhost"
+dependsOn = ["api"]
 
-1. discovers `devhost.toml` upward from the current directory, unless `--manifest` or `DEVHOST_MANIFEST` is provided
-2. parses TOML and validates schema and semantics
-3. resolves `port = "auto"` before spawning managed foreground children
-4. requires the managed Caddy admin API to already be available
-5. reserves the fixed numeric bind ports of the services it starts before starting any of them
-6. reserves the public hostnames of the services it starts before starting any of them
-7. registers all selected service routes and serves startup status at their domains before launching children
-8. starts managed services in dependency order, using either a foreground `command` or daemon `lifecycle.start`, and forwards browser pages to each app once its health check and route update succeed
-9. keeps the stack, sibling services, routes, and retained logs available after service launch errors, health timeouts, and foreground process exits, including exit code `0`, for explicit recovery
-10. removes routes and reservations on explicit shutdown, idle timeout, or fatal startup errors, forwards shutdown signals to managed foreground services through the service-containment backend for the current platform, and runs daemon `lifecycle.stop` commands for managed daemon services
-
-After startup, devhost prints one line for each URL of each started service, such as `web (primary): https://app.localhost`. A routed service lists every public URL; a service without a route but with a port lists its direct `http://` address. The primary service is marked `(primary)`.
-
-## Running stacks in the browser
-
-Open [https://devhost.localhost/](https://devhost.localhost/) on the machine running devhost for a directory of its running stacks. Set `[caddy].stackDirectoryHost` in the shared `config.toml` to choose another hostname; the configured hostname is reserved for this page. See [shared managed Caddy settings](../shared-managed-caddy-settings/#choose-the-stack-directory-hostname). It uses the shared managed Caddy HTTPS port; with `httpsPort = 8443`, open `https://devhost.localhost:8443/`.
-
-Service URLs are the main links: every hostname alias and path route appears, and services with a port but no route show their direct HTTP address. Each stack appears in a React/shadcn card, with totals of the listed stacks and URLs above the filter. Exited processes are excluded even while their parent has not reaped them, and their hostname and fixed-port claims can be reused. Each stack also shows its process ID, project directory, service state, and service working directories. Services left out of the startup selection are marked **Not started** and have no link. Manifest-free file and port sessions appear alongside manifest-backed stacks.
-
-Expand **Configuration** to see the absolute root manifest path, included TOML paths, and shared `config.toml` path and contents. These are read-only files from disk; a rejected edit can differ from the configuration the stack is running. A missing shared config file is identified as using defaults. Configuration visibility works independently of the injected devtools and config editor settings.
-
-Use **Refresh / filter** to update the snapshot or search by stack name, service name, URL, or file path. One unavailable stack keeps its identifying information and an error while the others remain visible. The directory lists live stacks in the same devhost state directory and accepts local clients by default. Set `[caddy].stackDirectoryAllowRemote = true` in `config.toml` to allow other devices to read it, including raw configuration files. It remains read-only. After the last stack shuts down, Caddy keeps serving the empty directory until Caddy itself stops.
-
-Caddy can use any running stack to serve the directory. If every stack process exits abruptly before cleaning up, the directory reports that it is unavailable; start or restart a stack to restore it.
-
-## Restart after upgrading devhost
-
-After installing a new devhost executable, replace the running supervisors:
-
-```bash
-devhost stack restart --all
+[services.api]
+command = ["bun", "run", "api:dev"]
+port = 4000
+host = "api.hello.localhost"
+health = { http = "/healthz" }
 ```
 
-This includes manifest stacks and standalone `serve` sessions in the same state directory. To restart only this project's running stack, use `devhost stack restart`; `--manifest path/to/devhost.toml` selects another project. `--all` cannot be combined with `--manifest` or `DEVHOST_MANIFEST`.
+Then start it from that directory or any directory below it:
 
-The command captures every selected process's arguments, working directory, and environment before stopping any stack. It then stops and relaunches each stack with the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+```bash
+devhost start
+```
 
-Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or signal a standalone session's PID, to stop its replacement.
+devhost uses the nearest `devhost.toml` in the current directory or a parent. Pass `--manifest path/to/devhost.toml`, or set `DEVHOST_MANIFEST`, to use another one. The [manifest reference](../../reference/devhost-example/) lists every setting.
 
-Shutdown has a 15-second grace period. A stack that is still stopping is reported as a failure and gets no replacement; it is not force-killed. A replacement has 30 seconds to register its control server; registration confirms the supervisor started, while its services may still be starting. A registration timeout leaves the replacement running and prints its PID and log path. Failures return a nonzero exit code while the command attempts the remaining captured stacks. Shared Caddy stays running.
+On start, devhost:
+
+1. Validates the whole manifest, and stops with a list of problems if anything is wrong.
+2. Claims the stack's hostnames and fixed ports, and fails if another stack holds one.
+3. Adds the routes in Caddy, so each hostname shows a startup page right away.
+4. Starts services one at a time in dependency order, waiting for each health check before the next: `api` first, because `web` depends on it.
+5. Switches each hostname from its startup page to the app once the app is healthy.
+6. Prints one line per URL, such as `web (primary): https://hello.localhost`. A service without a `host` but with a `port` shows its direct `http://` address.
+
+The shared Caddy must already be running; see [Prepare Caddy](../managed-caddy/#prepare-caddy).
+
+A service that exits or fails its health check does not stop the stack. Its hostname shows the error and recent logs with a **Restart** button; see [Restarts and recovery](../../stacks/recovery/).
 
 ## Service commands and working directories
 
-Service commands run directly, not through an implicit shell. `command = ["storybook", "dev", "--port", "$PORT"]` passes the literal string `$PORT` as an argument, while `command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]` lets the shell expand `$PORT` from the child process environment. [Manifest interpolation](../environment-variables/#environment-variables-in-the-manifest) still runs before launch, so `{{ env.NAME }}` placeholders in command arguments are replaced first.
+Commands run directly, not through a shell:
 
-Service `cwd` values accept absolute paths or paths relative to the manifest directory. Absolute paths are used directly and may point outside the manifest directory. Relative paths resolve against the manifest directory and must stay within it.
+```toml
+# Passes the literal text "$PORT" to storybook:
+command = ["storybook", "dev", "--port", "$PORT"]
 
-Before launching a foreground service, devhost checks that its working directory exists and is a directory. If it is not, the error names `services.<name>.cwd`, shows the resolved path, and asks you to check the configured path. Other launch failures show the executable and working directory alongside the operating-system error.
+# Runs a shell, which expands $PORT from the environment:
+command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]
+```
 
-## Starting part of a stack
+`{{ env.NAME }}` and `{{ services.<name>.port }}` placeholders are filled in before the command runs, so they need no shell. See [Environment variables](../environment-variables/) and [Connect services](../service-references/).
 
-A monorepo manifest describes every app and backend in the repository, often merged from one file per package with [manifest includes](../manifest-includes/). A single task usually touches one or two of those apps, and plain `devhost start` launches all of them. Name the services you are working on to start one slice of the stack:
+`cwd` sets a service's working directory: an absolute path, or a path relative to the manifest's directory that stays inside it. It defaults to the manifest's directory. devhost checks that the directory exists before starting the service and names `services.<name>.cwd` when it does not.
+
+## Start part of a stack
+
+A large manifest, such as one for a whole monorepo, usually describes more services than one task needs. Name the services you are working on:
 
 ```bash
 devhost start web admin
 ```
 
-Starting a slice gives you:
+devhost starts the named services, everything they reach through `dependsOn`, and every service marked `alwaysStart = true` with its own dependencies. Set `alwaysStart` on services every task needs, such as a database. The rest are **not started**: they run no process and hold no hostname or port, so another stack can use them.
 
-- **Less to launch.** The services left out run no process, and startup waits only for the health checks of the services it starts.
-- **Free hostnames and ports.** The services left out reserve no hostname and no fixed port, so another stack can use them at the same time.
-- **Dependencies without bookkeeping.** devhost follows `dependsOn` from the services you name, so you name the app and get the backends it needs.
-- **Room to grow the slice.** A service left out starts later from the devtools while the running services keep running.
-
-devhost starts the named services, every service they reach through `dependsOn`, and every service marked `alwaysStart = true` together with its own `dependsOn` chain. Set `alwaysStart = true` on the services every slice needs, such as a database or a proxy.
-
-Plain `devhost start` starts every service, whatever `alwaysStart` says. A service or group name the manifest does not define fails the command before anything starts and lists the defined names.
-
-### Named service groups
-
-Define a short name under `[groups]` to select entry-point services. Groups work in standalone manifests and in each app's included `devhost.toml`. `dependsOn` supplies the selected services' dependency chains:
+With this manifest:
 
 ```toml
-[groups]
-app = ["app-frontend"]
-
-[services.app-frontend]
-command = ["bun", "run", "dev"]
-cwd = "frontend"
-port = "auto"
-dependsOn = ["app-backend"]
-
-[services.app-backend]
-command = ["bun", "run", "dev"]
-cwd = "backend"
-port = "auto"
-dependsOn = ["database"]
-```
-
-With `database` also defined in the manifest, `devhost start app` selects `app-frontend` and starts its dependency chain: database, backend, then frontend. In a monorepo, each app can define its own group alongside its services, and `database` can live in a shared infrastructure manifest. The root needs only [includes](../manifest-includes/) to merge those files. Another app can define an `admin = ["admin-frontend"]` entry under `[groups]`; run both with `devhost start app admin`.
-
-Group names use the same format as service names: a lowercase letter followed by lowercase letters, digits, or hyphens. They must be unique across all included files and distinct from service names. Each group contains a non-empty array of service names from the complete manifest. Nested groups and unknown members are rejected. Groups and individual services can be mixed on the command line; shared services start once, and `alwaysStart` services retain their usual behavior. Plain `devhost start` still starts every service. `devhost service list` lists individual services only.
-
-Selected groups use their current membership after a manifest reload. Adding or removing a member changes the running selection, retaining services still selected by other groups, explicit service names, dependencies, or `alwaysStart`. Removing a selected group removes its selection. Stack restarts retain the requested group names. Invalid group edits leave the accepted configuration running.
-
-### Example: slices of a monorepo
-
-This manifest has three apps, one API they share, and a database:
-
-```toml
-name = "acme"
-
 [services.db]
 command = ["bun", "run", "db:dev"]
 port = "auto"
@@ -153,192 +110,157 @@ port = "auto"
 host = "docs.acme.localhost"
 ```
 
-| Command                   | Starts                              | Leaves stopped        |
-| ------------------------- | ----------------------------------- | --------------------- |
-| `devhost start web`       | `web`, `api`, `db`                  | `admin`, `docs`       |
-| `devhost start web admin` | `web`, `admin`, `api`, `db`         | `docs`                |
-| `devhost start docs`      | `docs`, `db`                        | `api`, `web`, `admin` |
-| `devhost start`           | `db`, `api`, `web`, `admin`, `docs` | none                  |
+| Command                   | Starts                       | Not started           |
+| ------------------------- | ---------------------------- | --------------------- |
+| `devhost start web`       | `web`, `api`, `db`           | `admin`, `docs`       |
+| `devhost start web admin` | `web`, `admin`, `api`, `db`  | `docs`                |
+| `devhost start docs`      | `docs`, `db` (`alwaysStart`) | `api`, `web`, `admin` |
+| `devhost start`           | everything                   | none                  |
 
-`devhost start web` reaches `api` through `dependsOn` and `db` through `api`. `devhost start docs` starts `db` because of `alwaysStart`, although `docs` does not depend on it, and leaves `api` stopped because nothing started depends on it.
-
-After `devhost start web`, startup names the services it left out:
+Plain `devhost start` always starts every service. An unknown name fails before anything starts and lists the names the manifest defines. Startup prints the services it left out:
 
 ```text
 [acme] not started: admin, docs
 ```
 
-### Stopped services
-
-The services left out are stopped. They run no process, have no route, and hold no hostname or fixed-port reservation, so another stack can use those hostnames and ports. Startup prints them on a `not started:` line. They keep an assigned address: `{{ services.<name>.port }}` references and `DEVHOST_PORT_<NAME>` variables that name a stopped service resolve as they do when it runs, and stay the same when it starts. A reference without a `dependsOn` entry does not start the service it names.
-
-With `[devtools.status]` enabled, the Services panel shows **Stopped services** with their count. It opens the list of stopped services; **Start** starts one together with what it depends on, and the services already running keep running. If the service fails to start, the list shows the error and the service stays stopped. Stopped services cannot be restarted, including by the restart shortcut when the primary service is one of them.
-
-The requested service and group names last for the run. Manifest reloads and **Restart Stack** retain those names; selected groups use their current membership. A service added to the manifest stays stopped unless selected by a group, reached through dependencies, or marked `alwaysStart`. Edits to a stopped service take effect when it starts. Stop and start devhost to change the command-line selection.
-
-`devhost service list` prints the service names of the manifest, one per line in alphabetical order. `--startable` leaves out the `alwaysStart` services, which start whether or not they are named. Use it to pick a slice:
+To pick services interactively, list them with `devhost service list`. `--startable` leaves out the `alwaysStart` services, which start anyway:
 
 ```bash
 devhost start $(devhost service list --startable | fzf --multi)
 ```
 
-Exited foreground services, including ones that exit before their startup health check passes, remain stopped until explicit recovery or a configuration edit affecting them; the stack keeps running until `devhost stop`, a shutdown signal, or the configured idle timeout stops it. With status devtools enabled, exited services appear in a full-screen recovery overlay with their exit code, retained stdout/stderr logs, and a restart button. Failed attempts remain retryable. Executable launch errors and startup health timeouts also keep the supervisor running for recovery; daemon lifecycle and external services report health separately from foreground process exits.
+### Named service groups
 
-## Startup and recovery pages
+Give a selection a short name under `[groups]`:
 
-Open a service's domain while it starts to see **Starting <service>**, its assigned address, and recent stdout/stderr. Startup, recovery, unavailable-backend, and managed proxy 404 pages use the same shared controls as devtools, with monospace type, neutral surfaces, magenta accents, compact borders, and left-aligned content. Light and dark themes follow your browser preference, including changes while the page is open. The existing tab reloads its original path and query string once health checks and routing succeed. Devhost never launches a browser.
-
-The page carries its own interface code and needs no CDN or working application assets. If JavaScript is unavailable, the initial error, service details, recent logs, and active route links remain readable as HTML. Live updates and recovery controls require JavaScript. **Recent logs** expands or collapses the log output; refreshing worktrees updates the choices in place.
-
-Stopping the stack during startup cancels the health wait and reports shutdown progress for every launched service.
-
-While a managed service starts, progress logs name the TCP address or HTTP URL being checked, elapsed time, and configured timeout. A failed check retains its target and a configuration hint in the error shown in logs and recovery pages. For a TCP loopback mismatch, devhost reports the alternative address that accepted a connection and the service's exact `bindHost` setting to change. That warning appears once per startup attempt; health checks continue against the configured target.
-
-Before terminating a foreground process that failed startup health checks, devhost prints the failure and explains that it is sending `SIGTERM (signal 15)`. If the failure stops a worktree repository's other services, a separate line names that repository, its services, and the failing member. Child command diagnostics remain visible after these explanations.
-
-If startup times out, the process exits, or the backend is unreachable, the same domain shows the recorded failure and recent service logs. **Restart <service>** becomes available for managed services after stack initialization and stays disabled during an active restart. Failed attempts show their error and remain retryable. External services show status and require recovery outside devhost.
-
-These pages work for aliases and path routes even when every devtools feature is disabled. They do not depend on the app or injected toolbar. With worktrees enabled, each repository has a checkout picker and **Switch worktree** action on the standalone page. **Refresh worktrees**, beside the **Worktrees** heading, discovers added and deleted checkouts across all repositories. Switching loads the target checkout configuration and restarts the whole managed stack and reloads the current URL after success; failures stay visible and retryable. Restarting a member of a failed repository retries the whole group. If a member fails its health check, the group stops and every member's recovery page shows that member's error, replacing the switch progress message. Repositories containing external services show why switching is unavailable. When enabled on a root route, the toolbar also remains available for stack recovery.
-
-If a browser navigation reaches the app but the app returns HTTP 404, devhost shows the same standalone page with **Page not found** and the checkout picker. Application HTTP 5xx responses, including empty compilation-error responses, show recovery controls and recent service logs with **<service> could not load**. The original HTTP error status is preserved. The page retains its path and query string and waits until that path returns neither 404 nor 5xx before automatically reloading. Fix the reported application error, then use **Restart** when needed. API and asset error responses pass through. Recovery responses are uncached HTTP errors. Assets and WebSocket traffic retain their direct proxy routes. Invalid configuration, ownership conflicts, and initial route registration failures still stop startup and are reported in the terminal.
-
-To try this from a devhost repository checkout, export `DEVHOST_DEV_EXT` in ignored `.envrc.local` if you need a suffix other than the tracked `.envrc` default of `.localhost`, reload direnv, and run. The recovery hostname is `recovery` followed by that suffix:
-
-```bash
-just devhost demo-recovery
+```toml
+[groups]
+app = ["web"]
+backoffice = ["admin"]
 ```
 
-Open that hostname manually. The separate `demos/recovery/devhost.toml` starts a service that deliberately leaves its automatic port closed: the page shows startup progress, then a health timeout after ten seconds with its logs and a **Restart unhealthy** button. Restart repeats the deliberate failure. The demo disables the injected toolbar so you can inspect the standalone recovery page. Press **Ctrl-C** to stop the demo stack.
+`devhost start app` starts `web` and its dependencies. Mix groups and services freely: `devhost start app docs`. In a monorepo, each package can define its own group in its [included manifest](../manifest-includes/).
 
-For an always-available gallery of the 404, server-error, recovery, directory, and Markdown pages, run `just run` in the checkout and open `/__devhost__/pages/` on a root-routed development domain. See [Preview standalone pages](../../development/page-previews/) for the examples and development-mode requirements.
+- Group names follow service-name rules (a lowercase letter, then lowercase letters, digits, or hyphens), are unique across all included files, and cannot match a service name.
+- A group lists one or more services. Groups cannot contain other groups.
+- `devhost service list` lists services, not groups.
 
-## Configuration hot reload
+### Starting the rest later
 
-Saving the root manifest or an included manifest reloads service configuration, including saves from editors that replace the file. Added and deleted files matching an `includes` pattern change service membership. The whole candidate must parse, validate, and have a valid dependency order before devhost changes running services. Invalid edits print `configuration reload rejected` and leave the stack running; open pages show the reason below the toolbar until a later reload is accepted. Saves from the devtools [config editor](../devtools/#config-editor) take this same path, and the editor reports when the reload that follows its save finishes.
+With the devtools toolbar, the Services panel shows **Stopped services** with a count. **Start** on one starts it and what it depends on, without touching the running services. If it fails, the error shows in the list and the service stays stopped.
 
-```mermaid
-flowchart TD
-    save["Save devhost.toml or an include,<br/>or add or delete an included file"]
-    wait["Wait 200 ms for more saves"]
-    valid{"Does the whole<br/>manifest validate?"}
-    rejected["Print configuration<br/>reload rejected; the<br/>accepted manifest<br/>keeps running"]
-    plan["Find affected services:<br/>changed ones, their<br/>dependents and their<br/>repository groups"]
-    claim{"New hostnames and<br/>fixed ports free?"}
-    stop["Stop them,<br/>dependents first"]
-    start["Start replacements,<br/>wait for health checks"]
-    routes["Publish every route<br/>in one Caddy reload"]
-    restore["Roll back<br/>services<br/>and routes"]
-    accept["Accept the manifest:<br/>apply its settings,<br/>update open pages,<br/>print configuration<br/>reloaded"]
+A service that is not started keeps an assigned address, so `{{ services.<name>.port }}` and `DEVHOST_PORT_<NAME>` resolve the same way before and after it starts. Referring to a service does not start it; list it in `dependsOn` for that.
 
-    save --> wait --> valid
-    valid -- no --> rejected
-    valid -- yes --> plan --> claim
-    claim -- no --> rejected
-    claim -- yes --> stop --> start --> routes --> accept
-    stop -. fails .-> restore
-    start -. fails .-> restore
-    routes -. fails .-> restore
-    restore --> rejected
-```
+The names you started with last for the whole run: hot reloads and **Restart Stack** keep them, and an edited group's new members join the running selection. To change the selection, stop the stack and start it again.
 
-Services the edit does not affect keep running throughout, and so do chat sessions.
+## Stop a stack
 
-Service commands, environment, working directories, health checks, dependencies, routes, watch paths, additions/removals, and primary-service selection reload. Compatible automatic ports and selected Git checkouts are preserved. Affected services and their dependents stop in reverse dependency order and start in dependency order; an affected repository restarts as a group. A service that joins a repository, whether added to the manifest or started from **Stopped services**, starts in the checkout that repository runs from and leaves its other services running. Changes to injected `DEVHOST_PORT_*` values can require restarting otherwise unchanged services.
-
-Devhost updates routing and ownership claims and retains its control listener, connected browsers, and existing chat sessions. Launch or routing failures trigger restoration of the previous services and routes, with restoration errors reported explicitly. Unrelated edits preserve stopped services' recovery state. Unrelated filesystem writes do not trigger or postpone a reload. Shutdown signals interrupt replacement health waits and clean up the stack without launching restoration services. Successful reloads print `configuration reloaded: <files>`, listing the root manifest and all current included manifests relative to the root manifest directory. Deleted includes are absent from this list.
-
-Every manifest setting reloads, including `name`, `killZombies`, devtools settings, and worktree enablement. Devtools edits restart no service. Open pages apply new devtools settings without reloading; a page that loaded while every devtools feature was off shows the toolbar once it reloads. Turning chat off hides it and its routes; conversations already running keep running and reappear when chat is turned back on. Changing `devtools.idleTimeout` starts, stops, or restarts the idle timeout unless `--idle-timeout` is set. Turning worktrees on keeps the running checkout and forgets a selection saved by an earlier run; turning them off while another checkout runs switches the stack back to the root checkout, whose manifest then applies.
-
-Worktree additions and deletions are discovered when opening the separate **Worktrees** toolbar picker or pressing **Refresh**. Deleting an inactive worktree does not restart services. Switching loads the target checkout's manifest and includes, restarts the entire managed stack, and watches that configuration for subsequent edits. Its service set and routes may differ; a successful switch reloads the browser at its existing URL, where the proxy's 404 page lists available routes if the old route is gone. The stack takes the target manifest's settings, including its name. Invalid targets leave the current stack running; launch failures attempt to restore the previous services and routes. Refreshing after deletion of the running checkout stops only that repository's group and blocks new external editor links and chat sessions until an available checkout is selected. The saved selection remains visible with a recovery error; devhost does not silently fall back.
-
-Worktree switching logs the source and target checkout directory names before restarting the stack and confirms them after success. Rejected targets and failed switches log their error, including any restoration failure.
-
-Foreground restart success requires both a healthy replacement and refreshed routes. A single-service restart keeps its assigned automatic port. If another listener occupies it, the service remains stopped and the error points to **Restart Stack**. Health remains pending until routing completes. If routing fails, devhost restores the previous route registration, configuration, and document backend, stops the replacement, and leaves recovery available for another attempt. The restart response and retained service logs include routing and restoration errors.
-
-Devhost checks each foreground service's assigned automatic port before launching it. Startup, manifest reload, and **Restart Stack** retry detected bind collisions with another automatic port, up to three times. Individual restarts keep their assigned port and report a conflict instead.
-
-**Restart Stack** is available in the Services panel and recovery overlay. It stops every managed service in reverse dependency order, assigns fresh automatic ports, rebuilds command templates and injected environments, and starts services in dependency order before updating routes. Fixed ports and selected worktrees are retained; external services keep running. The control listener, document recovery listeners, and existing chat sessions stay available. The action uses the last accepted manifest, including when an edit on disk is invalid. Failed launches or route updates attempt to restore the previous stack and report restoration errors, with another stack restart available. Reassigning automatic ports cannot resolve a fixed-port conflict; free that port or change its manifest setting.
-
-`devhost`-owned logs use the manifest `name` when available and fall back to `devhost`. In human mode (`AGENT=0` or unset), foreground stack logs and child stdout and stderr use names padded to a shared width, followed by one space and `| `:
-
-```text
-api      | listening
-devhost  | frontend: https://frontend.localhost
-frontend | a long line continues here
-         | with the same separator alignment
-```
-
-Each stack or service name has a distinct color on terminals; stdout and stderr share its color. `NO_COLOR` with a non-empty value or `TERM=dumb` disables these added colors, and redirected output has no added colors. When the destination terminal's width is available, long lines wrap with a blank name column and aligned separator. A positive `COLUMNS` value supplies the width when the terminal size is unavailable. Wrapping preserves child ANSI escapes and measures Unicode display width. Unknown widths and widths too small to fit the prefix leave lines unwrapped. Terminal resizing applies to subsequent lines.
-
-Agent mode (`AGENT=1`) uses compact `stack-name: ` and `service-name: ` prefixes without padding, added colors, or wrapping. On-demand devtools asset rebuild notices and every line of compiler diagnostics use the same stack prefix and output formatting. Retained diagnostics and browser log records keep their original bracket prefixes in either mode.
-
-`AGENT=1` (or `true`, or `yes`) also changes the lines devhost writes outside the logs. Help screens become compact `key: value` text without tree glyphs or column padding, each listing every command below the one asked about. Command failures, warnings, and `devhost stop` progress use this same output formatter with the `devhost` label. Failures have `[ERROR]` and optional `[INFO]` hints for people, or `ERR:` with the complete error for agents. Warnings use `[WARN]` or `WARN:`. Devhost-owned diagnostics shorten a home-directory path to `~` or `~/...`, including paths embedded in errors. Child output stays unchanged, and machine-readable lists and certificates retain their byte-exact output and absolute paths. These lines go to stderr, and the exit code is the same in both modes. `--version`, completion scripts, and `devhost caddy print-root-cert` print the same text in both.
-
-Managed Caddy runtime logs stay in `caddy.runtime.log` in its state directory, with Caddy's automatic log rotation. Background Caddy output stays out of the terminal. Successful route reloads are quiet by default; `devhost start --debug` shows their output. Failed reloads and explicit `devhost caddy ...` commands display Caddy's diagnostics through the usual log formatter with the `caddy` label: `caddy | ` for people and `caddy: ` under `AGENT=1`. Devhost's own messages about Caddy use the `devhost` label. [Troubleshooting](../troubleshooting/#caddy-is-unavailable-or-cannot-start) lists the Caddy lines devhost leaves out.
-
-Managed foreground-service shutdown is best-effort and platform-specific. On Linux, `devhost` enables child-subreaper tracking and remembers discovered descendants; on macOS and other platforms, it falls back to descendant discovery and signaling without Linux subreaper guarantees. On every platform, after a service with a port stops, `devhost` watches that port for 2 seconds and terminates owned processes that bind it again, so stopping or restarting a service with a port takes about 2 seconds. Linux reads listeners from `/proc`; macOS and other platforms use `lsof`, and without `lsof` no late listener is detected. Services that intentionally daemonize or fully detach from `devhost` supervision are unsupported in foreground `command` mode unless they also provide a cooperative shutdown path that `devhost` can call explicitly. If `devhost` still cannot stop managed services during cleanup, it exits non-zero and reports each affected service plus any surviving listener or descendant details it could still observe.
-
-## Stopping a Stack
-
-Press **Ctrl-C** in the stack's terminal to stop it. Devhost prints `Stopping service <name>...` for each managed service as shutdown begins and `Stopped service <name>.` after its cleanup succeeds, all prefixed with the stack name. `Stack stopped.` confirms that service and routing cleanup finished successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services instead of claiming success. Ctrl-C exits with code `130`; SIGTERM exits with `143`.
-
-Stopping the stack leaves the loaded app visible without opening the service-crash recovery overlay. Service exits during shutdown are excluded from browser health updates, including probes that began before shutdown. Health polling cancels immediately during shutdown instead of waiting for its next interval.
-
-Devhost acknowledges the first shutdown signal as soon as it receives it, without waiting for in-flight startup or reload work to finish. Ctrl-C prints `[stack-name] Received SIGINT (Ctrl-C) (signal 2); shutting down the stack.` once. SIGTERM and SIGHUP also name the received signal. Service and routing cleanup can take longer; wait for `Stack stopped.` to confirm completion. A child command reporting signal `15` or exit code `143` after devhost announces termination is reporting the stop request; read the preceding devhost line for its cause.
-
-To shut down a running stack cleanly, you can run the `stop` command from your project's manifest directory, or point to it explicitly:
+Press **Ctrl-C** in the stack's terminal, or run this from the manifest's directory:
 
 ```bash
 devhost stop
-# Or with an explicit manifest:
 devhost stop --manifest path/to/devhost.toml
 ```
 
-A stack is identified by the absolute path of its manifest, whichever way `--manifest` was written when it started. `devhost stack list` prints every manifest-backed stack running on the machine, one per line in manifest path order, and prints nothing when none runs. Each line is the PID of the stack's devhost process, one tab, and the absolute manifest path; the path runs to the end of the line, so it stays one field when it holds spaces. Manifest-backed stacks are listed even when their services have no hostname and no port. File sessions are stopped from their terminal or by signaling their devhost process. Use the list to stop a stack from another directory, such as one that holds a hostname you need:
+devhost prints `Stopping service <name>...` and `Stopped service <name>.` for each service, then `Stack stopped.` once every service and route is cleaned up. If cleanup fails, it names the services instead of claiming success. Ctrl-C exits with code `130`, `SIGTERM` with `143`.
+
+`devhost stop` sends the stack `SIGTERM`, waits up to 15 seconds, and then kills whatever is left. When nothing runs from that manifest, it says so, exits `0`, and points to `devhost stack list` if other stacks are running.
+
+### Stop a stack started elsewhere
+
+`devhost stack list` prints every running stack as its PID, a tab, and its absolute manifest path:
 
 ```bash
 devhost stack list
 # 3596463	/home/me/projects/app/devhost.toml
+```
+
+Pass a path to `devhost stop --manifest`, from any directory. With [`fzf`](https://github.com/junegunn/fzf), or any picker that prints the line you choose:
+
+```bash
 devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
-```
-
-To find the stack behind an address or name, use `devhost stack find <query>`:
-
-```bash
-devhost stack find https://app.localhost
-devhost stack find app.localhost
-devhost stack find app
-```
-
-URLs match the hostname exactly, ignoring their port, path, query, and fragment. Other queries match case-insensitive substrings of registered hostnames, stack names, and absolute manifest paths. Every matching live stack appears once, in the same tab-separated PID/manifest format and order as `stack list`. Multiple matches are all printed; no matches produce empty output and exit `0`. Empty queries and malformed HTTP(S) URLs fail. This searches local devhost records, without DNS lookups or requests to the supplied URL.
-
-The `fzf` example stops a stack you pick, from any directory:
-
-1. `devhost stack list` prints the running stacks.
-2. [`fzf`](https://github.com/junegunn/fzf) shows them as a list and prints the line you choose. Any picker that prints one of its input lines works in its place.
-3. `cut -f2` keeps the second tab-separated field, the manifest path. `cut -f1` gives the PID.
-4. `devhost stop --manifest` stops the stack of that manifest. The quotes keep a path with spaces in one piece.
-
-When you already know which stack you want, filter instead of picking, with a pattern that matches one stack:
-
-```bash
 devhost stop --manifest "$(devhost stack list | cut -f2 | grep my-project)"
 ```
 
-To stop all stacks in the selected manifest's Git repository, including its main checkout and linked worktrees:
+To find the stack behind a URL, hostname, stack name, or path, use `devhost stack find`. A URL matches its hostname exactly; anything else matches part of a hostname, stack name, or manifest path, ignoring case:
+
+```bash
+devhost stack find https://app.localhost
+devhost stack find app
+```
+
+It prints matches in the same format and prints nothing, successfully, when nothing matches.
+
+### Stop every worktree of a repository
 
 ```bash
 devhost stop --worktrees
-devhost stop --worktrees --manifest /path/to/checkout/devhost.toml
 ```
 
-Repository membership follows each stack's root manifest and Git's common directory. Included manifests and service working directories do not expand the scope. Unrelated repositories and shared Caddy keep running. The command prints each selected PID and manifest before stopping it. It fails before stopping anything if the selected manifest is outside Git or repository discovery fails. Plain `stop` remains manifest-scoped and suggests `--worktrees` when it finds other stacks in the same repository.
+This stops every stack whose root manifest is in the current Git repository, including its linked worktrees, and prints each one first. Other repositories and Caddy keep running. Plain `devhost stop` suggests `--worktrees` when it sees other stacks in the same repository.
 
-When you run `devhost stop`, the command performs the following lifecycle operations:
+## Restart after upgrading devhost
 
-1. **Path Resolution**: Resolves the absolute and clean filesystem path of the target manifest file.
-2. **Scan Records**: Reads the record every running stack keeps of itself (`stacks`), and the claims and registrations directories (`.host-claims`, `port-claims`, and `.registrations`), to discover all PIDs registered under that manifest path. Each record also carries the start identity of the process that wrote it, so a record left by a stack that exited is skipped even when its PID has since gone to another process. Records written by a devhost version without start identities are matched by PID alone until those stacks restart.
-3. **Graceful Term**: Sends `SIGTERM` (or platform equivalent) to each active process, and polls for up to 15 seconds to allow them to stop cleanly.
-4. **Force Kill Escalation**: If any target processes remain active after the 15-second grace period, it escalates to `SIGKILL` (force-killing) to ensure the stack is fully cleared.
+After installing a new devhost executable, replace the running supervisors:
 
-When no stack runs from that manifest, `devhost stop` says so and exits `0`. If other stacks are running it adds a line that points to `devhost stack list`, because the stack you mean may have been started from another manifest.
+```bash
+devhost stack restart --all
+```
+
+This includes manifest stacks and standalone `serve` sessions in the same state directory. To restart only this project's running stack, use `devhost stack restart`; `--manifest path/to/devhost.toml` selects another project. `--all` cannot be combined with `--manifest` or `DEVHOST_MANIFEST`.
+
+The command captures every selected process's arguments, working directory, and environment before stopping any stack. It then stops and relaunches each stack with the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+
+Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or signal a standalone session's PID, to stop its replacement.
+
+Shutdown has a 15-second grace period. A stack that is still stopping is reported as a failure and gets no replacement; it is not force-killed. A replacement has 30 seconds to register its control server; registration confirms the supervisor started, while its services may still be starting. A registration timeout leaves the replacement running and prints its PID and log path. Failures return a nonzero exit code while the command attempts the remaining captured stacks. Shared Caddy stays running.
+
+## Stop automatically when idle
+
+An idle timeout stops the stack after a period without activity:
+
+```toml
+[devtools]
+idleTimeout = "1h"
+```
+
+`devhost start --idle-timeout 30m` and `DEVHOST_IDLE_TIMEOUT` set it too; the flag wins over the variable, which wins over the manifest. A saved change to `idleTimeout` applies at once unless the flag or variable sets it.
+
+Each of these counts as activity and restarts the countdown:
+
+- an open page with the devtools toolbar,
+- a request through Caddy to one of the stack's hostnames,
+- a chat turn in progress, or one waiting for your answer,
+- a connected native browser control.
+
+Reloading a page closes its connection for a moment; the countdown restarts then, so a reload never triggers a shutdown. devhost logs `Idle timeout enabled: 1h` at startup and `Idle timeout of 1h reached` before it stops the stack.
+
+## Running stacks in the browser
+
+[https://devhost.localhost/](https://devhost.localhost/) lists every stack running on this machine by default. Set `[caddy].stackDirectoryHost` in the shared `config.toml` to choose another hostname; see [Proxy ports and listeners](../shared-managed-caddy-settings/#choose-the-stack-directory-hostname). With a custom `httpsPort`, add the port: `https://devhost.localhost:8443/`.
+
+Stacks appear in a single column of compact cards showing their PID, directory, and services. Service names, statuses, and URLs use aligned table columns across stacks; on narrow screens the status sits below the service name. Configuration labels and values also align across cards. Counts of the listed stacks and URLs appear above the filter. Service URLs are the main links, including every alias and path route; services left out of the selection are marked **Not started**. Sessions from `devhost serve` appear too. Exited processes are excluded even while their parent has not reaped them, and their hostname and fixed-port claims can be reused.
+
+- **Configuration** expands the root manifest path and file list. Expand a file to read the root manifest, each included manifest, or `config.toml` from disk. A rejected edit on disk can differ from what the stack runs.
+- **Refresh / filter** reloads the list or filters it by stack, service, URL, or path.
+- **Clear filter** restores the full list; an empty search result also offers **Show all stacks**.
+- The page accepts local clients by default. Set `[caddy].stackDirectoryAllowRemote = true` in `config.toml` to permit other devices to read it, including its raw configuration files. It remains read-only and works without the devtools toolbar.
+
+Any running stack can serve the page. After the last stack stops cleanly, the page shows an empty list until Caddy stops. If every stack exits without cleaning up, the page says it is unavailable until a stack starts again.
+
+## How devhost stops services
+
+Stopping is best-effort and depends on the platform:
+
+- On Linux, devhost tracks every process a service starts, including orphaned ones.
+- On macOS and elsewhere, it finds descendants by walking the process tree, which can miss a process that detached.
+- On every platform, after a service with a port stops, devhost watches that port for 2 seconds and stops any process it started that binds it again. A restart therefore takes about 2 seconds longer. Outside Linux this needs `lsof`.
+
+A service that daemonizes or detaches itself cannot be stopped this way; use [daemon mode](../managed-daemon-style-services/). If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.
+
+## Related pages
+
+- [Hot reload](../../stacks/hot-reload/): what happens when you save the manifest.
+- [Restarts and recovery](../../stacks/recovery/): startup pages, crashed services, and **Restart Stack**.
+- [Git worktrees](../../stacks/worktrees/): switch the stack to another checkout.
+- [Terminal output](../../reference/output/): log prefixes, colors, and `AGENT=1`.

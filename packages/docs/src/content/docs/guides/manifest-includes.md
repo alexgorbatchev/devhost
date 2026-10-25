@@ -1,7 +1,5 @@
 ---
-title: "Manifest Includes"
-sidebar:
-  order: 8
+title: "Monorepos and includes"
 ---
 
 <!-- guide-demo -->
@@ -12,88 +10,56 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-`devhost` supports splitting stack configurations across multiple files using the `includes` key. This is particularly valuable in monorepo environments, allowing each sub-application or workspace package to maintain and control its own service definitions locally without cluttering a single massive root-level manifest.
+In a monorepo, each package can keep its services in its own `devhost.toml`, next to its code. A root manifest pulls them together with `includes`, and `devhost start` from the root runs them as one stack.
 
-## Usage
-
-In your root-level `devhost.toml`, define the stack `name`, any global settings, and specify the `includes` key with a list of file paths or glob patterns (resolved relative to the directory of the root manifest):
+## Include package manifests
 
 ```toml
-# root devhost.toml
-name = "my-monorepo-stack"
-
-includes = [
-  "packages/*/devhost.toml",
-  "apps/*/devhost.toml"
-]
+# devhost.toml at the repository root
+name = "acme"
+includes = ["apps/*/devhost.toml", "packages/*/devhost.toml"]
 ```
 
-Each matching sub-manifest is parsed, prepared, and merged recursively into the main stack.
+```toml
+# apps/api/devhost.toml
+[services.api]
+command = ["bun", "run", "dev"]
+port = "auto"
+watch = ["src/"]
+```
 
-## Starting part of the merged stack
+`includes` takes paths or glob patterns, relative to the root manifest. Included manifests can include others in turn.
 
-The merged stack holds every service of every included manifest, which is usually more than one task needs. Name the services to run from the root manifest's directory, and devhost starts those, the services they reach through `dependsOn`, and the services marked `alwaysStart = true`:
+- Each included manifest contributes its `[services.*]` and `[groups]`. Everything else, such as `name` and `[devtools]`, comes from the root manifest only.
+- Service names and group names must be unique across all the files. A duplicate fails with a conflict error.
+- `dependsOn` and groups can refer to services from any included file.
+- Matching files are merged in alphabetical order, so the fallback primary service is always the same.
+- A file that includes itself, directly or through another file, is read only once.
+- `{{ env.NAME }}` placeholders work in every included file.
+
+## Paths in included manifests
+
+Paths in an included manifest are relative to that manifest's own directory, as if it were run on its own:
+
+- A service without `cwd` runs in its manifest's directory, `apps/api` above.
+- A relative `cwd` resolves from there too, and relative `watch` paths from the service's `cwd`, so `watch = ["src/"]` watches `apps/api/src/`.
+
+## Start one app of the monorepo
+
+The merged stack holds every service of every package, usually more than one task needs. From the root, name what you are working on:
 
 ```bash
 devhost start web api
 ```
 
-The names can come from any included manifest, and `dependsOn` can cross from one included manifest to another. The services left out run no process and reserve no hostname or port. See [Starting part of a stack](../stack-lifecycle/#starting-part-of-a-stack) for the selection rules, a worked example, and how to start a stopped service later.
+devhost starts those services, what they reach through `dependsOn` (even across files), and services marked `alwaysStart`. Each package can define its own [group](../stack-lifecycle/#named-service-groups) next to its services, so the root needs nothing but `includes`. See [Start part of a stack](../stack-lifecycle/#start-part-of-a-stack).
 
-Groups defined under `[groups]` merge alongside services. Each app can own its group in its local `devhost.toml`; the root needs only `includes`. Group members can reference services from any included manifest, and duplicate group names are rejected. See [Named service groups](../stack-lifecycle/#named-service-groups) for configuration, startup selection, and reload behavior.
+## Run a package on its own
 
-## Changes while the stack is running
+An included manifest is a complete manifest. Run `devhost start` in its directory and it starts as a standalone stack, with its own `name` and settings. Inside the root's stack, those settings are ignored and the root's apply.
 
-Saving the root manifest or an included manifest reloads the merged service configuration. Adding or deleting files matching an `includes` glob adds or removes their services without restarting devhost. Devhost validates the whole candidate before changing running services; rejected edits leave the accepted configuration in place. Devtools settings reload too, including chat and page-selection enablement, from an included file as well as the root manifest.
+A manifest file belongs to one running stack at a time. A standalone package stack and a root stack that includes the same file cannot run together, even when they start different services; the second fails with an error naming the file, the owner's PID, and the `devhost stop --manifest` command for it. Stop one before starting the other.
 
-Affected services, their dependents, and affected repository groups restart together. Compatible automatic ports and selected checkouts are retained. Selecting a worktree loads that checkout's root manifest and includes, restarts the whole managed stack, and watches those files for subsequent edits. See [Stack lifecycle](./stack-lifecycle/) for reload boundaries and restoration after launch or routing failures.
+## Changes while the stack runs
 
-## Sub-Manifest Solo Runs & Override Protection
-
-To support local solo development, a sub-manifest (such as `packages/app1/devhost.toml`) can define a complete standalone stack configuration (including its own `name`, local `caddy` port mappings, or `devtools` overlays).
-
-When a sub-manifest is run solo (by running `devhost start` from its local package directory), it runs as a first-class standalone stack.
-
-Within the same devhost state directory, each manifest file belongs to one running stack. Startup fails if the root manifest or any recursively included file is already used by another stack, including when two different roots share an include. This applies even when you select different services from the same manifest. Relative paths and symlink aliases identify the same file. The error names the conflicting file and owner PID and gives a `devhost stop --manifest` command for that stack; the existing stack keeps running regardless of `killZombies`.
-
-Hot reload reserves newly included files before changing services. An include owned by another stack rejects the reload and leaves the accepted configuration running. Removed includes become available to other stacks after a successful reload. Failed reloads retain the previous file reservations. Stopping a stack releases its reservations, and records belonging to exited processes do not prevent startup.
-
-However, when included in a root manifest:
-
-1. Local services (`services`) and groups (`groups`) are extracted and merged.
-2. Root global settings (like stack name, Caddy proxy front door, and devtools toggle settings) remain authoritative and **cannot be overridden** by the sub-manifests.
-
-This enables you to use the exact same configuration files both for individual sub-application solo runs and as modular components of a large multi-service stack.
-
-## Path Resolution & Working Directory Defaults
-
-Normally, paths in `devhost` are resolved relative to the manifest directory. To keep workspace configurations completely self-contained, `devhost` automatically applies the following rules during merging:
-
-- **Relative Path Rewriting**: Any relative `cwd` or `watch` folder defined in a sub-manifest is automatically resolved and rewritten relative to the **root manifest's directory** before spawning or tracking.
-- **Default Working Directory**: If a service in a sub-manifest omits `cwd`, it automatically defaults to the directory of the sub-manifest where that service was defined, rather than defaulting to the root manifest directory.
-
-### Example Path Translation
-
-If the root manifest is at `/project/devhost.toml` and includes `/project/packages/api/devhost.toml`:
-
-```toml
-# /project/packages/api/devhost.toml
-[services.api]
-command = ["bun", "run", "dev"]
-# cwd is omitted, so it defaults to "." (the app directory)
-watch = ["src/"]
-```
-
-During merging, `devhost` translates the paths relative to the root manifest directory `/project`:
-
-- `cwd` becomes `packages/api`
-- `watch` becomes `["packages/api/src/"]`
-
-## Rules and Constraints
-
-To ensure configuration robustness and prevent common monorepo pitfalls, `devhost` enforces these rules at validation time:
-
-- **Unique Service Names**: Service names must be unique across all merged manifests. If two manifests define the same service name, `devhost` aborts with a clear conflict error.
-- **Deterministic Order**: Glob pattern matches are sorted alphabetically prior to merging, ensuring that the service load order (and fallback primary service selection) remains 100% deterministic across all filesystems and operating systems.
-- **Cyclic Reference Protection**: If Manifest A includes Manifest B, which includes Manifest A, `devhost` safely detects the cyclic reference and skips already-visited files without infinite recursion.
-- **Shared Variables**: Environment variable interpolation (e.g. `{{ env.NAME }}`) runs on the fully merged map, enabling system variables to propagate cleanly to all sub-manifest definitions.
+Saving the root or any included manifest [hot-reloads](../../stacks/hot-reload/) the merged stack. Adding or deleting a file that matches an `includes` pattern adds or removes its services. An include that another stack is using rejects the reload, and the stack keeps running as it was.

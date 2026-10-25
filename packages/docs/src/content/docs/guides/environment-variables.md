@@ -1,7 +1,5 @@
 ---
-title: "Environment Variables"
-sidebar:
-  order: 7
+title: "Environment variables"
 ---
 
 <!-- guide-demo -->
@@ -12,14 +10,42 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-`devhost` injects environment variables into each managed service command invocation.
-Only `DEVHOST_BIND_HOST` and `PORT` are operational bind inputs.
-The remaining variables are context metadata and must not be used as socket bind targets.
-Undocumented `DEVHOST_*` variables are reserved for internal supervision and may change without notice.
+devhost passes each service its port, its hostname, and the ports of the other services, alongside any variables you set yourself. You can also read your own environment inside the manifest.
+
+## Set variables for a service
+
+```toml
+[services.web]
+command = ["bun", "run", "dev"]
+port = "auto"
+env = { NODE_ENV = "development", API_URL = "{{ services.api.url }}" }
+```
+
+Each service inherits devhost's environment, plus its `env` table, plus the variables below. To pass a value that another service gets at startup, such as an automatic port, use a [service reference](../service-references/) like the one above.
+
+## Variables devhost sets
+
+| Variable                | Set when                               | Value                                                                                                                         |
+| ----------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | The service has a `port`               | The port to listen on, including one chosen by `port = "auto"`                                                                |
+| `DEVHOST_BIND_HOST`     | Always                                 | The address to listen on (the service's `bindHost`, `127.0.0.1` by default)                                                   |
+| `DEVHOST_HOST`          | The service has a `host`               | Its public hostname; the first one when `host` is a list                                                                      |
+| `DEVHOST_PATH`          | The service has a `host` and a `path`  | Its public path prefix, for mounting a router under it                                                                        |
+| `DEVHOST_PORT_<NAME>`   | Any service in the manifest has a port | That service's port. The name is upper-cased, with other characters as `_`: `postgres-db` becomes `DEVHOST_PORT_POSTGRES_DB`. |
+| `DEVHOST_SERVICE_NAME`  | Always                                 | The service's name in the manifest                                                                                            |
+| `DEVHOST_MANIFEST_PATH` | Always                                 | The absolute path of the root manifest                                                                                        |
+
+Bind your server to `DEVHOST_BIND_HOST` and `PORT` only. The other variables describe the service and its neighbors; never use them as a listening address. Other `DEVHOST_*` variables are internal and can change without notice.
+
+- External services (`managed = false`) get none of these, because devhost does not start them.
+- `injectPort = false` keeps devhost from setting `PORT`, while routing and health checks still use the configured port. Use it when one command starts several servers; see [One command runs several dev servers](../troubleshooting/#one-command-runs-several-dev-servers).
+- Setting `PORT` does not make `$PORT` work inside `command`, which runs without a shell; see [Service commands and working directories](../stack-lifecycle/#service-commands-and-working-directories).
+
+Each process receives these values when it starts. When a reload or **Restart Stack** changes a port, devhost restarts the services whose variables change, so they never hold a stale port. A single-service restart keeps its port, so nothing else needs to restart. Chat sessions keep the environment they started with.
 
 ## Environment variables in the manifest
 
-Manifest string values read environment variables through `{{ env.NAME }}` placeholders. This applies to string fields throughout the manifest, including hosts, paths, `cwd` values, command arguments, labels, and `env` maps:
+Any string in the manifest can read your environment with `{{ env.NAME }}`, including names, hostnames, paths, `cwd`, commands, and `env` values:
 
 ```toml
 name = "{{ env.USER }}-stack"
@@ -30,58 +56,8 @@ port = "auto"
 host = "web-{{ env.USER }}.localhost"
 ```
 
-Placeholder names start with a letter or underscore, followed by letters, digits, or underscores. Other text stays literal, including malformed `{{ ... }}` sequences, and an unterminated `{{` keeps the rest of that string literal. A valid placeholder naming an undefined variable is a manifest read error; a defined variable may expand to the empty string.
+- A name starts with a letter or underscore, followed by letters, digits, or underscores.
+- An unset variable is an error when the manifest is read. A variable set to an empty string expands to nothing.
+- Text that is not a valid placeholder stays as written, including a `{{` that is never closed.
 
-For values another service resolves at launch, such as an automatic port, use [service references](../service-references/) instead.
-
-Devhost reads the exported process environment; it does not load `.env` files itself. In this repository's development checkout, `.envrc` exports defaults, then uses direnv's `source_env_if_exists` to load ignored `.envrc.local` shell customizations. The development manifests append `DEVHOST_DEV_EXT` to their hostname prefixes. The default suffix is `.localhost`; add `export DEVHOST_DEV_EXT='.example.test'` to `.envrc.local` and reload direnv to override it for all development hosts. Include any separator, such as the leading dot, in the suffix.
-
-## Operational bind inputs
-
-- `DEVHOST_BIND_HOST`
-  - the actual interface the child process is expected to listen on
-  - use this for binding sockets
-- `PORT`
-  - the listening port selected by `devhost`
-  - injected when the service defines `port`, including foreground services with `port = "auto"`, unless `injectPort = false`
-  - for `port = "auto"`, startup and configuration reload may retry a clear bind collision; individual service restarts retain the assigned port
-  - **Restart Stack** reassigns automatic ports and relaunches all managed services with refreshed port variables
-  - not injected for services that do not define `port` or for unmanaged services
-  - injection only adds `PORT` to the child process environment; it does not make `"$PORT"` expand inside a manifest `command`
-  - `command = ["storybook", "dev", "--port", "$PORT"]` passes literal `$PORT`; use an explicit shell only when you intentionally need shell expansion
-- `injectPort = false`
-  - service-level opt-out for `PORT` injection
-  - keeps routing and health checks on the configured service `port`, but does not export `PORT` into the child process environment
-  - useful for wrapper commands that launch multiple dev processes under one top-level command
-
-## Routed-service context
-
-- `DEVHOST_HOST`
-  - injected only for routed services with `host`
-  - the public routed hostname from the service `host` field
-  - use this when the app needs to know its public development URL or origin
-- `DEVHOST_PATH`
-  - injected only for routed services with `host` and an explicit `path`
-  - the public routed subpath from the service `path` field
-  - use this when the app needs to mount its router under a specific prefix
-
-## Manifest metadata
-
-- `DEVHOST_SERVICE_NAME`
-  - the manifest service key for the current child process
-- `DEVHOST_MANIFEST_PATH`
-  - the absolute path to the resolved `devhost.toml`
-
-## Auto-Injected Service Port Variables
-
-To simplify service discovery without requiring manual template references, `devhost` also automatically injects the resolved port of **every** service with a port as an environment variable into all child processes using the format `DEVHOST_PORT_<SERVICE_NAME_UPPERCASE>`. Non-alphanumeric characters in the service name are replaced with underscores (e.g., `postgres-db` becomes `DEVHOST_PORT_POSTGRES_DB`).
-
-For example, if a `postgres` service has resolved port `5433`, every managed service command receives:
-
-```sh
-DEVHOST_PORT_POSTGRES=5433
-```
-
-This allows programs to dynamically query ports directly from the environment at startup.
-
-These values are snapshots for each process invocation. A configuration reload restarts services whose injected port variables change, including otherwise unchanged consumers. **Restart Stack** rebuilds these variables for every managed service. Individual restarts keep their assigned port, so other running services retain valid port references. Existing native chat sessions keep their launch environment. See [Stack lifecycle](./stack-lifecycle/) for recovery behavior.
+devhost reads the environment it was started with, and does not load `.env` files. Use a tool such as [direnv](https://direnv.net/) to export variables per project.
