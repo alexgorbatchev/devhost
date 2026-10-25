@@ -13,12 +13,11 @@ import (
 )
 
 const operationTimeout = 5 * time.Second
-const supportedReactVersion = "19.2.5"
 
 // This reads the maintained hook/Fiber root contract without adding a backend,
 // registering a renderer, subscribing to the hook, or changing the host tree.
-const observeHostFunction = `function(binding, supportedVersion) {
- const result = { matches: false, hostRoots: 0, unsupportedRoots: 0 };
+const observeHostFunction = `function(binding) {
+ const result = { matches: false, roots: [], unsupportedContainers: 0 };
  if (location.href !== binding.href) return result;
  const markers = [...document.querySelectorAll("[data-devhost-devtools]")];
  const roots = markers.flatMap(marker => [marker, ...(marker.shadowRoot ? marker.shadowRoot.querySelectorAll("[data-devhost-devtools]") : [])]);
@@ -32,22 +31,48 @@ const observeHostFunction = `function(binding, supportedVersion) {
   if (!(fiberRoots instanceof Set)) continue;
   for (const root of fiberRoots) {
    const container = root.containerInfo;
-   if (!(container instanceof Element) && !(container instanceof ShadowRoot)) { result.unsupportedRoots++; continue; }
+   if (!(container instanceof Element) && !(container instanceof ShadowRoot)) { result.unsupportedContainers++; continue; }
    const host = container instanceof ShadowRoot ? container.host : container;
    const containingRoot = host.getRootNode();
    const shadowHost = containingRoot instanceof ShadowRoot ? containingRoot.host : null;
    if (host.closest("[data-devhost-devtools]") || (shadowHost && shadowHost.closest("[data-devhost-devtools]"))) continue;
-   if (renderer.version !== supportedVersion) { result.unsupportedRoots++; continue; }
-   if (host.isConnected) result.hostRoots++;
+   result.roots.push({ version: typeof renderer.version === "string" ? renderer.version : "", connected: host.isConnected });
   }
  }
  return result;
 }`
 
+// hostScan is what observeHostFunction reports: the page's own React roots, outside devhost's toolbar.
+type hostScan struct {
+	Matches               bool           `json:"matches"`
+	Roots                 []rendererRoot `json:"roots"`
+	UnsupportedContainers int            `json:"unsupportedContainers"`
+}
+
+type rendererRoot struct {
+	Version   string `json:"version"`
+	Connected bool   `json:"connected"`
+}
+
 type hostObservation struct {
-	Matches          bool `json:"matches"`
-	HostRoots        int  `json:"hostRoots"`
-	UnsupportedRoots int  `json:"unsupportedRoots"`
+	Matches          bool
+	HostRoots        int
+	UnsupportedRoots int
+}
+
+// observation counts the connected roots of a supported React DOM release as hosts. A root of another release, or
+// one whose container is neither an Element nor a ShadowRoot, is unsupported.
+func (scan hostScan) observation() hostObservation {
+	result := hostObservation{Matches: scan.Matches, UnsupportedRoots: scan.UnsupportedContainers}
+	for _, root := range scan.Roots {
+		switch {
+		case !isSupportedReactVersion(root.Version):
+			result.UnsupportedRoots++
+		case root.Connected:
+			result.HostRoots++
+		}
+	}
+	return result
 }
 
 type extensionManifest struct {
@@ -79,11 +104,11 @@ func observeNativeHost(ctx context.Context, binding Binding) (hostObservation, e
 	if err != nil {
 		return hostObservation{}, err
 	}
-	observation, observeErr := chromedp.Run(call, chromedp.CallFunctionOn[hostObservation](observeHostFunction, func(params *runtime.CallFunctionOnParams) {
+	scan, observeErr := chromedp.Run(call, chromedp.CallFunctionOn[hostScan](observeHostFunction, func(params *runtime.CallFunctionOnParams) {
 		params.ObjectID = global.ObjectID
-	}, binding, supportedReactVersion))
+	}, binding))
 	_, releaseErr := chromedp.Call(call, runtime.ReleaseObject, runtime.ReleaseObjectParams{ObjectID: global.ObjectID})
-	return observation, errors.Join(observeErr, releaseErr)
+	return scan.observation(), errors.Join(observeErr, releaseErr)
 }
 
 func observeReactExtension(ctx context.Context) (bool, error) {
@@ -109,7 +134,7 @@ func extensionStateMessage(available bool) string {
 
 func nativeDocumentMessage(observation hostObservation) string {
 	if observation.UnsupportedRoots > 0 {
-		return "A host renderer or root container is outside the tested React DOM 19.2.5 Element/ShadowRoot contract."
+		return "A host renderer or root container is outside the supported contract: React DOM 19.2.5 or a newer React 19 release, rendering into an Element or ShadowRoot."
 	}
 	return "No mounted React host was detected. The devhost toolbar does not count as a host application."
 }

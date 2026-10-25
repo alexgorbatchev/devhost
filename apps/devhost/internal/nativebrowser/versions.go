@@ -11,6 +11,9 @@ import (
 var (
 	minimumBrowserVersion        = []int{154, 0, 8037, 92}
 	minimumReactExtensionVersion = []int{8, 0, 0, 0}
+	// The hook and Fiber root fields observeHostFunction reads are internal to React, so a new major release is
+	// unsupported until it is verified.
+	minimumReactVersion = []int{19, 2, 5}
 )
 
 const browserProductPrefix = "Chrome/"
@@ -49,4 +52,14 @@ func isSupportedBrowserProduct(product string) bool {
 func isSupportedReactExtensionVersion(version string) bool {
 	parts, ok := parseVersion(version, 4)
 	return ok && slices.Compare(parts, minimumReactExtensionVersion) >= 0
+}
+
+// isSupportedReactVersion reports whether a renderer's React DOM version, as `major.minor.patch`, is the oldest
+// verified React 19 release or a newer React 19 release. Prereleases such as canaries are unsupported.
+func isSupportedReactVersion(version string) bool {
+	if strings.Count(version, ".") != 2 {
+		return false
+	}
+	parts, ok := parseVersion(version, 3)
+	return ok && parts[0] == minimumReactVersion[0] && slices.Compare(parts, minimumReactVersion) >= 0
 }

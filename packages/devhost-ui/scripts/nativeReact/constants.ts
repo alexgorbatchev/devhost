@@ -4,5 +4,5 @@ export const nativeReactMinimumExtensionVersion: string = "8.0.0";
 export const nativeReactExtensionId: string = "fmkadmapgofadopljbjfkapdkoienihi";
 export const nativeReactChromeForTestingListingUrl: string =
   "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json";
-export const nativeReactHostVersion: string = "19.2.5";
+export const nativeReactHostVersion: string = "19.3.1";
 export const nativeReactDeadlineMilliseconds: number = 30_000;
