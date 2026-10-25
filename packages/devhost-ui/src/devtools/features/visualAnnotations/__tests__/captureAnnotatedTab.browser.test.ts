@@ -1,8 +1,34 @@
 import { expect, test, vi } from "vitest";
 import { captureAnnotatedTab } from "../captureAnnotatedTab";
-import { createChatCaptureFixture, createSharedTabFixture } from "./helpers";
+import { createChatCaptureFixture, createResizingChatCaptureFixture, createSharedTabFixture } from "./helpers";
 import { createDomAnnotationSelectionCandidateForElement } from "../../annotationComposer/createDomAnnotationSelectionCandidateForElement";
 import { placeElement } from "../../../../../test-support/hostPageUtils";
+
+test("restores excluded surfaces and rechecks their pixels after a tab resize", async () => {
+  const fixture = createResizingChatCaptureFixture();
+  try {
+    const snapshot = await captureAnnotatedTab({
+      ...fixture,
+      sharedStream: fixture.stream,
+      shouldKeepAnnotatedSurfaces: false,
+    });
+    expect(snapshot.height).toBe(24);
+    expect(fixture.readPreparations()).toBe(2);
+    expect(getComputedStyle(fixture.chat).visibility).toBe("visible");
+    expect(fixture.root.hasAttribute("data-devhost-capturing")).toBe(false);
+    expect(fixture.track.readyState).toBe("live");
+    const bitmap = await createImageBitmap(await (await fetch(snapshot.dataUrl)).blob());
+    try {
+      fixture.context.drawImage(bitmap, 0, 0);
+      expect(Array.from(fixture.context.getImageData(20, 10, 1, 1).data)).toEqual([0, 255, 0, 255]);
+    } finally {
+      bitmap.close();
+    }
+  } finally {
+    fixture.observer.disconnect();
+    fixture.track.stop();
+  }
+});
 
 test.each([
   ["role", "tooltip"],

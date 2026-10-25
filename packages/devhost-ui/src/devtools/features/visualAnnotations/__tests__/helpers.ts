@@ -63,3 +63,36 @@ export function createSharedTabFixture() {
   requestAnimationFrame(paintFrame);
   return { document, mediaDevices: { getDisplayMedia: async () => stream }, stream, track, canvas, context };
 }
+
+export function createResizingChatCaptureFixture() {
+  const fixture = createChatCaptureFixture();
+  fixture.observer.disconnect();
+  let preparations = 0;
+  const observer = new MutationObserver(() => {
+    const isCapturing = fixture.root.hasAttribute("data-devhost-capturing");
+    if (isCapturing) {
+      preparations += 1;
+      fixture.canvas.height = 24;
+    }
+    fixture.context.fillStyle = isCapturing ? "lime" : "red";
+    fixture.context.fillRect(0, 0, fixture.canvas.width, fixture.canvas.height);
+  });
+  observer.observe(fixture.root, { attributes: true, attributeFilter: ["data-devhost-capturing"] });
+  return { ...fixture, observer, readPreparations: () => preparations };
+}
+
+export async function resizeSharedTab(stream: MediaStream, canvas: HTMLCanvasElement, height: number): Promise<void> {
+  if (canvas.height === height) return;
+  const video = document.createElement("video");
+  video.muted = true;
+  video.srcObject = stream;
+  try {
+    await video.play();
+    const resized = new Promise<void>((resolve) => video.addEventListener("resize", () => resolve(), { once: true }));
+    canvas.height = height;
+    await resized;
+  } finally {
+    video.pause();
+    video.srcObject = null;
+  }
+}

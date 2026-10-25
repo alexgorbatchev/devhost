@@ -1,9 +1,23 @@
 import { describe, expect, test, vi } from "vitest";
 
 import { captureTabSnapshot } from "../captureTabSnapshot";
-import { createSharedTabFixture } from "./helpers";
+import { createSharedTabFixture, resizeSharedTab } from "./helpers";
 
 describe("captureTabSnapshot", () => {
+  test("recaptures after the shared tab resizes during preparation", async () => {
+    const fixture = createSharedTabFixture();
+    const prepare = vi.fn(async () => {
+      await resizeSharedTab(fixture.stream, fixture.canvas, 24);
+      fixture.context.fillStyle = "lime";
+      fixture.context.fillRect(0, 0, 64, 24);
+    });
+    const snapshot = await captureTabSnapshot({ ...fixture, prepare });
+    expect(snapshot.width).toBe(64);
+    expect(snapshot.height).toBe(24);
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(fixture.stream.active).toBe(false);
+  });
+
   test("cancels while hidden regions remain stale and releases only the snapshot clone", async () => {
     const fixture = createSharedTabFixture();
     const controller = new AbortController();

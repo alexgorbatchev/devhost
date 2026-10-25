@@ -26,6 +26,7 @@ export async function recordAnnotations(
   }
   const chat = page.getByRole("complementary", { name: "Agent chat", exact: true });
   await chat.waitFor();
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Expand Chat", exact: true }));
   await clickWithIndicator(page, chat.getByRole("button", { name: "Chat Settings", exact: true }));
   const settings = page.getByRole("dialog", { name: "Chat Settings", exact: true });
   for (const [setting, option] of [
@@ -49,7 +50,15 @@ export async function recordAnnotations(
   console.log(
     "Choose this current tab in the browser sharing picker. Review native requests in chat; the recorder never approves them.",
   );
+  await clickWithIndicator(page, chat.getByRole("button", { name: "Share Tab", exact: true }));
+  await chat.getByRole("button", { name: "Stop Sharing", exact: true }).waitFor({ timeout: 180_000 });
   await clickWithIndicator(page, chat.getByRole("button", { name: "Send Message", exact: true }));
+  await clickWithIndicator(
+    page,
+    page
+      .getByRole("dialog", { name: "Share Screenshot", exact: true })
+      .getByRole("button", { name: "Share Whole Tab", exact: true }),
+  );
   await chat.getByRole("status").filter({ hasText: "codex · running" }).waitFor({ timeout: 180_000 });
   await changeCaption("Codex is working on the selected page context.");
   await page.screenshot({ path: join(runtime.directoryPath, "agent-working.png") });

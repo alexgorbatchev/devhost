@@ -38,6 +38,8 @@ export async function openSavedChatConversation(canvasElement: HTMLElement): Pro
   await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
   await userEvent.keyboard("{Escape}");
   await canvas.findByText("codex · idle");
+  await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
+  await canvas.findByRole("button", { name: "New Conversation" });
 }
 
 /** The page annotations' drawing canvas, which follows an open host modal into an annotation host inside it. */
@@ -265,7 +267,7 @@ export function UserMessageScene(): JSX.Element {
       content: [
         {
           type: "text",
-          text: 'Improve This Layout\n\nPage context (the attached tab snapshot includes the annotations):\n{"title":"Example Page","url":"https://app.localhost/","markers":[],"shapes":[]}\n\nDevhost workflow instructions:\nWork in a dedicated Git worktree.',
+          text: 'Improve This Layout\n\nPage context:\n{"title":"Example Page","url":"https://app.localhost/","markers":[],"shapes":[]}\n\nDevhost workflow instructions:\nWork in a dedicated Git worktree.',
         },
       ],
     },

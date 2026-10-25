@@ -166,6 +166,7 @@ export const ReloadRestoresConversationView: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
     await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
     await userEvent.keyboard("{Escape}");
+    await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
     await userEvent.click(canvas.getByRole("button", { name: "Move Chat To Left" }));
     const composer = await canvas.findByRole("textbox");
     await userEvent.type(composer, "Keep this unsent review");
@@ -182,6 +183,7 @@ export const ReloadRestoresConversationView: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
     await expect(canvas.getByRole("button", { name: "Move Chat To Right" })).toBeVisible();
     await expect(await canvas.findByRole("textbox")).toHaveValue("Keep this unsent review");
+    await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
     const restored = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
     await waitFor(() => expect(restored.scrollTop).toBeCloseTo(position, 0));
     await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
@@ -200,6 +202,7 @@ export const RepliesFollowUntilReaderScrollsBack: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
     await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
     await userEvent.keyboard("{Escape}");
+    await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
     const viewport = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
     for (let sequence = 1; sequence <= 40; sequence += 1) {
       deliverChatReply(sequence);

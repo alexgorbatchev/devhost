@@ -10,6 +10,7 @@ export function ChatComposerActions(): JSX.Element {
   const chat = useContext(AgentChatContext);
   if (!chat) throw new Error("Chat composer actions require an agent chat controller.");
   const isBusy =
+    chat.isAwaitingReply ||
     chat.isPreparing ||
     chat.isConnecting ||
     chat.isCatalogLoading ||
