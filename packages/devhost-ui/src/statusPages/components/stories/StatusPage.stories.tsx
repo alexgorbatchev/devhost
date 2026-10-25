@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 import { StatusPage } from "../StatusPage";
 import { createStoryClient } from "./helpers";
+import { fixture_directoryStack } from "./fixtures";
 
 const meta: Meta<typeof StatusPage> = {
   title: "@alexgorbatchev/devhost-ui/statusPages/components/StatusPage",
@@ -56,5 +57,25 @@ export const Unavailable: Story = {
   play: async ({ canvasElement }): Promise<void> => {
     await expect(within(canvasElement).getByRole("heading", { level: 1 })).toHaveTextContent("Service unavailable");
     await expect(within(canvasElement).queryByRole("button")).toBeNull();
+  },
+};
+export const Stacks: Story = {
+  args: {
+    data: {
+      kind: "stacks",
+      status: 200,
+      title: "Running stacks",
+      message: "Open a service URL.",
+      routes: [],
+      stacks: [fixture_directoryStack],
+    },
+  },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Running stacks");
+    await expect(canvas.getByRole("link", { name: "https://shop.localhost/" })).toHaveAttribute(
+      "href",
+      "https://shop.localhost/",
+    );
   },
 };

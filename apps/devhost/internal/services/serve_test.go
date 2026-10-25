@@ -164,9 +164,9 @@ func testServeSession(t *testing.T, external bool) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("no document server")
 	}
-	wantHeading := "<h1>Directory session</h1>"
+	wantContent := "# Directory session"
 	if external {
-		wantHeading = "<h1>Files session</h1>"
+		wantContent = "<h1>Files session</h1>"
 	}
 	waitForCondition(t, 10*time.Second, func() bool {
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/", document.Port()), nil)
@@ -180,6 +180,6 @@ func testServeSession(t *testing.T, external bool) {
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
-		return err == nil && strings.Contains(string(body), wantHeading) && strings.Contains(string(body), "/__devhost__/")
+		return err == nil && strings.Contains(string(body), wantContent) && strings.Contains(string(body), "/__devhost__/")
 	})
 }

@@ -2,7 +2,7 @@
 
 Local React workspace for the injected `devhost` browser UI and standalone status pages, exercised through Storybook.
 
-`src/statusPages/` owns the standalone 404, recovery, and unavailable-backend views, composed from `@alexgorbatchev/shadcn`. Its document stylesheet is separate from the injected Shadow DOM stylesheet. The `status-pages` export is bundled by `apps/devhost/scripts/buildStatusPages.ts` and embedded by Go; preserve self-contained assets, abortable recovery requests, and the escaped server-rendered fallback. Keep behavior coverage in the component stories, recovery hook tests, and Go browser tests, including Caddy route independence and narrow-screen contrast.
+`src/statusPages/` owns every built-in page: 404, recovery, unavailable backend, running-stack directory, file listing, Markdown, and preview gallery. Build these as React views composed from `@alexgorbatchev/shadcn`; do not create hand-written HTML page templates or inline page behavior. Its document stylesheet is separate from the injected Shadow DOM stylesheet. The `status-pages` export is bundled by `apps/devhost/scripts/buildStatusPages.ts` and embedded by Go; preserve self-contained assets, abortable recovery requests, and the escaped server-rendered fallback. Keep behavior coverage in component stories, hook tests, and Go browser tests, including Caddy route independence, file navigation, remembered Markdown source view, and narrow-screen contrast. Markdown uses `react-markdown` and `remark-gfm` with raw HTML disabled and default safe URL handling; its upstream stylesheet and license live beside `statusPages.css`.
 
 ## Commands
 

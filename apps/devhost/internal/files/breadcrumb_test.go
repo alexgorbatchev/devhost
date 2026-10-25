@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/browsertest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 	"github.com/chromedp/chromedp"
 )
 
@@ -33,16 +34,16 @@ func TestBreadcrumbNavigationInBrowser(t *testing.T) {
 	longName := strings.Repeat("long", 50) + ".md"
 	for _, tt := range []struct {
 		name, file, target string
-		crumbs             []listingEntry
+		crumbs             []statuspage.FileLink
 	}{
-		{"root listing", "notes.md", "/", []listingEntry{{Name: "devhost"}}},
-		{"root index", "index.md", "/", []listingEntry{{Name: "devhost"}}},
-		{"explicit index", "index.md", "/index.md", []listingEntry{{"devhost", "/"}, {Name: "index.md"}}},
-		{"nested listing", "docs/deeper/notes.md", "/docs/deeper/", []listingEntry{{"devhost", "/"}, {"docs", "/docs/"}, {Name: "deeper"}}},
-		{"nested index", "docs/deeper/index.md", "/docs/deeper/", []listingEntry{{"devhost", "/"}, {"docs", "/docs/"}, {Name: "deeper"}}},
-		{"nested markdown", "docs/deeper/notes.md", "/docs/deeper/notes.md", []listingEntry{{"devhost", "/"}, {"docs", "/docs/"}, {"deeper", "/docs/deeper/"}, {Name: "notes.md"}}},
-		{"escaped names", "a #?% <tag> é/notes.md", "/a%20%23%3F%25%20%3Ctag%3E%20%C3%A9/notes.md?ignored=true", []listingEntry{{"devhost", "/"}, {"a #?% <tag> é", "/a%20%23%3F%25%20%3Ctag%3E%20%C3%A9/"}, {Name: "notes.md"}}},
-		{"narrow viewport", "docs/" + longName, "/docs/" + longName, []listingEntry{{"devhost", "/"}, {"docs", "/docs/"}, {Name: longName}}},
+		{"root listing", "notes.md", "/", []statuspage.FileLink{{Name: "devhost"}}},
+		{"root index", "index.md", "/", []statuspage.FileLink{{Name: "devhost"}}},
+		{"explicit index", "index.md", "/index.md", []statuspage.FileLink{{Name: "devhost", Href: "/"}, {Name: "index.md"}}},
+		{"nested listing", "docs/deeper/notes.md", "/docs/deeper/", []statuspage.FileLink{{Name: "devhost", Href: "/"}, {Name: "docs", Href: "/docs/"}, {Name: "deeper"}}},
+		{"nested index", "docs/deeper/index.md", "/docs/deeper/", []statuspage.FileLink{{Name: "devhost", Href: "/"}, {Name: "docs", Href: "/docs/"}, {Name: "deeper"}}},
+		{"nested markdown", "docs/deeper/notes.md", "/docs/deeper/notes.md", []statuspage.FileLink{{Name: "devhost", Href: "/"}, {Name: "docs", Href: "/docs/"}, {Name: "deeper", Href: "/docs/deeper/"}, {Name: "notes.md"}}},
+		{"escaped names", "a #?% <tag> é/notes.md", "/a%20%23%3F%25%20%3Ctag%3E%20%C3%A9/notes.md?ignored=true", []statuspage.FileLink{{Name: "devhost", Href: "/"}, {Name: "a #?% <tag> é", Href: "/a%20%23%3F%25%20%3Ctag%3E%20%C3%A9/"}, {Name: "notes.md"}}},
+		{"narrow viewport", "docs/" + longName, "/docs/" + longName, []statuspage.FileLink{{Name: "devhost", Href: "/"}, {Name: "docs", Href: "/docs/"}, {Name: longName}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := filepath.Join(runDir, tt.name)
@@ -67,9 +68,9 @@ func TestBreadcrumbNavigationInBrowser(t *testing.T) {
 			if err := chromedp.Do(ctx, chromedp.EmulateViewport(375, 800), chromedp.Navigate(server.URL+tt.target), chromedp.WaitVisible(chromedp.CSS(`nav[aria-label="Breadcrumb"]`))); err != nil {
 				t.Fatal(err)
 			}
-			got, err := chromedp.Run(ctx, chromedp.Evaluate[[]listingEntry](`Array.from(document.querySelectorAll('nav[aria-label="Breadcrumb"] li'), li => {
+			got, err := chromedp.Run(ctx, chromedp.Evaluate[[]statuspage.FileLink](`Array.from(document.querySelectorAll('nav[aria-label="Breadcrumb"] [data-slot="breadcrumb-item"]'), li => {
                 const crumb = li.querySelector('a, [aria-current]');
-                return {Name: crumb.textContent, Href: crumb.getAttribute('href') || ''};
+                return {name: crumb.textContent, href: crumb.getAttribute('href') || ''};
             })`))
 			if err != nil || !reflect.DeepEqual(got, tt.crumbs) {
 				t.Fatalf("breadcrumbs = %+v, err = %v; want %+v", got, err, tt.crumbs)
@@ -85,7 +86,7 @@ func TestBreadcrumbNavigationInBrowser(t *testing.T) {
 				t.Fatalf("breadcrumb semantics, escaping, or layout failed: %v, %v", ok, err)
 			}
 			for i := len(tt.crumbs) - 2; i >= 0; i-- {
-				if err := chromedp.Do(ctx, chromedp.Navigate(server.URL+tt.target), chromedp.Click(chromedp.CSS(`nav[aria-label="Breadcrumb"] li:nth-child(`+strconv.Itoa(i+1)+`) a`)), chromedp.WaitReady(chromedp.CSS("body"))); err != nil {
+				if err := chromedp.Do(ctx, chromedp.Navigate(server.URL+tt.target), chromedp.WaitVisible(chromedp.CSS(`nav[aria-label="Breadcrumb"]`)), chromedp.Click(chromedp.CSS(`nav[aria-label="Breadcrumb"] [data-slot="breadcrumb-item"]:nth-of-type(`+strconv.Itoa(i*2+1)+`) a`)), chromedp.WaitReady(chromedp.CSS("body"))); err != nil {
 					t.Fatal(err)
 				}
 				location, err := chromedp.Run(ctx, chromedp.Evaluate[string](`location.pathname + location.search`))

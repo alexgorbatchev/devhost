@@ -20,6 +20,7 @@ export const optimizeDependencyEntries: string[] = [
   "fuzzysort",
   "@hookform/devtools",
   "react-hook-form",
+  "react-markdown",
   "jotai",
   "jotai-devtools",
   "@storybook/react-dom-shim",

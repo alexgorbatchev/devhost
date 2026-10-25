@@ -1,51 +1,37 @@
 package statuspage
 
-import (
-	"bytes"
-	_ "embed"
-	"html/template"
-)
-
 type StackService struct {
-	Name      string
-	Directory string
-	URLs      []string
-	Status    string
+	Name      string   `json:"name"`
+	Directory string   `json:"directory"`
+	URLs      []string `json:"urls"`
+	Status    string   `json:"status"`
 }
 
 type StackConfig struct {
-	Path    string
-	Kind    string
-	Content string
-	Error   string
+	Path    string `json:"path"`
+	Kind    string `json:"kind"`
+	Content string `json:"content"`
+	Error   string `json:"error"`
 }
 
 type Stack struct {
-	Name         string
-	PID          int
-	ManifestPath string
-	Directory    string
-	StartedAt    string
-	Services     []StackService
-	Configs      []StackConfig
-	Error        string
+	Name         string         `json:"name"`
+	PID          int            `json:"pid"`
+	ManifestPath string         `json:"manifestPath"`
+	Directory    string         `json:"directory"`
+	StartedAt    string         `json:"startedAt"`
+	Services     []StackService `json:"services"`
+	Configs      []StackConfig  `json:"configs"`
+	Error        string         `json:"error"`
 }
 
-//go:embed stacks.html
-var stacksDocument string
-
-var stacksTemplate = template.Must(template.New("stacks").Parse(stacksDocument))
-
 func StackDirectory(stacks []Stack, query string) (string, error) {
-	data := struct {
-		Stacks      []Stack
-		Query       string
-		Styles      template.CSS
-		ThemeScript template.JS
-	}{stacks, query, template.CSS(CSS), template.JS(ThemeScript)}
-	var output bytes.Buffer
-	if err := stacksTemplate.Execute(&output, data); err != nil {
-		return "", err
+	message := "Open a service URL or expand its configuration below. Refresh to update."
+	if len(stacks) == 0 {
+		message = "No stacks running. Start a project with devhost start, then refresh this page."
+		if query != "" {
+			message = "No matching stacks. Try another name, URL, or path."
+		}
 	}
-	return output.String(), nil
+	return Render(Page{Kind: "stacks", Status: 200, Title: "Running stacks", Message: message, Stacks: stacks, Query: query}, "")
 }

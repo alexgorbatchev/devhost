@@ -44,7 +44,7 @@ Serve sessions use the usual hostname ownership checks, so a hostname already he
 
 Directories serve `index.html` first, then `index.md`. A directory with neither gets a clickable listing. Files are read on each request, so reloading shows changes and newly created files. Ordinary assets support GET, HEAD, and byte ranges. This is a static server: an unmatched URL returns 404 rather than falling back to a single-page application's entry point.
 
-Directory listings and Markdown pages share devhost's monospace page chrome, neutral surfaces, compact borders, and magenta accents. Markdown files (`.md`, case-insensitive) retain GitHub Markdown formatting, including tables, task lists, and strikethrough. Colors follow the browser's light or dark preference. Raw Markdown HTML and unsafe link destinations are suppressed in the rendered view.
+Listings and Markdown use the same React/shadcn interface as devhost's other built-in pages. An empty folder shows an empty state; JavaScript is required for rendered Markdown and its source toggle. Without JavaScript, the page still exposes escaped source text or directory links.
 
 The breadcrumb above a listing or Markdown page links to its parent directories. Select **devhost** to return to the served root. The current location is shown as text; the root shows **devhost** once, including when it serves `index.md`.
 

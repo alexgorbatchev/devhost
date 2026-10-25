@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +26,7 @@ func startDirectoryServer(t *testing.T) (*ControlServer, caddy.Paths) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	manifest := filepath.Join(t.TempDir(), "devhost.toml")
 	include := filepath.Join(filepath.Dir(manifest), "backend.toml")
-	writeTestFile(t, manifest, "name = \"project\"\n# <script>alert('source')</script>\n")
+	writeTestFile(t, manifest, "name = \"project\"\n# <script>alert('source')</script>\n# "+strings.Repeat("long-configuration-value", 80)+"\n")
 	writeTestFile(t, include, "[services.backend]\nport = 3001\n")
 	s, err := StartControlServer(StartControlServerOptions{
 		StackDirectoryPaths: paths,
@@ -81,26 +83,45 @@ func directoryText(t *testing.T, s *ControlServer, query string) string {
 func TestStackDirectoryCollectsSourcesAndURLs(t *testing.T) {
 	s, paths := startDirectoryServer(t)
 	body := directoryText(t, s, "")
-	for _, want := range []string{`href="https://project.localhost:4443/"`, `href="https://alias.localhost:4443/"`, `href="http://127.0.0.1:3001"`, "backend.toml", "[services.backend]", "File does not exist", "&lt;script&gt;", "No HTTP URL"} {
-		if !strings.Contains(body, want) {
-			t.Errorf("directory missing %q", want)
-		}
+	page := decodeDirectoryPage(t, body)
+	if page.Kind != "stacks" || len(page.Stacks) != 1 {
+		t.Fatalf("missing stack directory data: %+v", page)
+	}
+	stack := page.Stacks[0]
+	if len(stack.Services) != 3 || !reflect.DeepEqual(stack.Services[0].URLs, []string{"https://project.localhost:4443/", "https://alias.localhost:4443/"}) || !reflect.DeepEqual(stack.Services[1].URLs, []string{"http://127.0.0.1:3001"}) || len(stack.Services[2].URLs) != 0 {
+		t.Fatalf("directory lost service URLs: %+v", stack.Services)
+	}
+	if len(stack.Configs) != 3 || !strings.HasSuffix(stack.Configs[1].Path, "backend.toml") || stack.Configs[1].Content != "[services.backend]\nport = 3001\n" || stack.Configs[2].Error != "File does not exist; defaults apply." || !strings.Contains(stack.Configs[0].Content, "<script>") {
+		t.Fatalf("directory lost source configuration: %+v", stack.Configs)
 	}
 	if strings.Contains(body, "<script>alert") {
 		t.Fatal("TOML became executable HTML")
 	}
-	if got := directoryText(t, s, "?q=alias.localhost"); !strings.Contains(got, "Root manifest:") {
+	if got := decodeDirectoryPage(t, directoryText(t, s, "?q=alias.localhost")); len(got.Stacks) != 1 || got.Query != "alias.localhost" {
 		t.Fatal("URL filter omitted stack")
 	}
-	if got := directoryText(t, s, "?q=missing"); !strings.Contains(got, "No matching stacks") || strings.Contains(got, "Root manifest:") {
+	if got := decodeDirectoryPage(t, directoryText(t, s, "?q=missing")); len(got.Stacks) != 0 || got.Query != "missing" {
 		t.Fatal("unmatched filter returned stack")
 	}
 	if err := caddy.UnregisterStack(paths.StacksDirectoryPath); err != nil {
 		t.Fatal(err)
 	}
-	if got := directoryText(t, s, ""); !strings.Contains(got, "No stacks running") {
+	if got := decodeDirectoryPage(t, directoryText(t, s, "")); len(got.Stacks) != 0 {
 		t.Fatal("stopped stack remains listed")
 	}
+}
+
+func decodeDirectoryPage(t *testing.T, document string) statuspage.Page {
+	t.Helper()
+	payload := regexp.MustCompile(`(?s)<script id="devhost-status-data" type="application/json">(.*?)</script>`).FindStringSubmatch(document)
+	if len(payload) != 2 {
+		t.Fatal("missing embedded directory data")
+	}
+	var page statuspage.Page
+	if err := json.Unmarshal([]byte(payload[1]), &page); err != nil {
+		t.Fatal(err)
+	}
+	return page
 }
 
 func TestStackDirectoryGuardsConfiguration(t *testing.T) {
@@ -204,23 +225,40 @@ func TestStackDirectoryInBrowser(t *testing.T) {
 			if _, err := chromedp.Call(ctx, emulation.SetEmulatedMedia, emulation.SetEmulatedMediaParams{Features: []*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: theme}}}); err != nil {
 				t.Fatal(err)
 			}
-			if err := chromedp.Do(ctx, chromedp.EmulateViewport(360, 800), chromedp.Navigate(serverURL(s.Port(), stackDirectoryPath)), chromedp.WaitVisible(chromedp.CSS(".url"))); err != nil {
+			linkSelector := `a[href="https://project.localhost:4443/"]`
+			if err := chromedp.Do(ctx, chromedp.EmulateViewport(360, 800), chromedp.Navigate(serverURL(s.Port(), stackDirectoryPath)), chromedp.WaitVisible(chromedp.CSS(linkSelector))); err != nil {
 				t.Fatalf("navigate: %v", err)
 			}
-			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("article > details > summary"))); err != nil {
+			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS(`[data-testid="StackDirectoryCard--configuration-toggle"]`))); err != nil {
 				t.Fatalf("expand configuration: %v", err)
 			}
-			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("article details details summary")), chromedp.WaitVisible(chromedp.CSS("pre"))); err != nil {
+			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS(`[data-testid="StackDirectoryCard--file-toggle"]`)), chromedp.WaitVisible(chromedp.CSS("pre"))); err != nil {
 				t.Fatalf("expand file: %v", err)
 			}
 			fits, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.documentElement.scrollWidth <= innerWidth && document.querySelector('pre').textContent.includes('<script>')`))
 			if err != nil || !fits {
 				t.Fatalf("configuration content is missing or overflows the viewport: %v", err)
 			}
-			ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](fmt.Sprintf("(%s)(document.querySelector('.url'))", chromium.Contrast)))
+			ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](fmt.Sprintf("(%s)(document.querySelector(%q))", chromium.Contrast, linkSelector)))
 			if err != nil || ratio < 4.5 {
 				t.Fatalf("URL contrast %f: %v", ratio, err)
 			}
+			if err := chromedp.Do(ctx, chromedp.SendKeys(chromedp.CSS(`input[name="q"]`), "missing"), chromedp.Click(chromedp.CSS(`button[type="submit"]`)), chromedp.WaitVisible(chromedp.CSS(`a[href="?"]`))); err != nil {
+				t.Fatalf("filter stacks: %v", err)
+			}
+			filtered, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`location.search === '?q=missing' && !document.querySelector('[data-testid="StackDirectoryCard"]') && document.body.textContent.includes('No matching stacks')`))
+			if err != nil || !filtered {
+				t.Fatalf("native filter form did not navigate to empty results: %v", err)
+			}
+			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS(`a[href="?"]`)), chromedp.WaitVisible(chromedp.CSS(linkSelector))); err != nil {
+				t.Fatalf("clear filter: %v", err)
+			}
 		})
+	}
+	if _, err := chromedp.Call(ctx, emulation.SetEmulatedMedia, emulation.SetEmulatedMediaParams{Features: []*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "dark"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := chromedp.Run(ctx, chromedp.Poll[bool](fmt.Sprintf(`document.documentElement.dataset.theme === 'dark' && (%s)(document.querySelector('a[href="https://project.localhost:4443/"]')) >= 4.5`, chromium.Contrast))); err != nil {
+		t.Fatalf("system theme change did not preserve readable URLs: %v", err)
 	}
 }

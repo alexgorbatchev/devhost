@@ -66,13 +66,13 @@ func TestServeFiles(t *testing.T) {
 		status               int
 		contains, excludes   []string
 	}{
-		{"markdown", "GET", "/", 200, []string{"<h1>Welcome</h1>", "<table>", "type=\"checkbox\"", "<del>old</del>", "&lt;script&gt;", "Show source"}, []string{"<script>window.pwned", "href=\"javascript:"}},
+		{"markdown", "GET", "/", 200, []string{"# Welcome", "| A | B |", "- [x] Done", "~~old~~", "&lt;script&gt;"}, []string{"<script>window.pwned", "href=\"javascript:"}},
 		{"index priority", "GET", "/nested/", 200, []string{"HTML index"}, []string{"Lower priority"}},
 		{"listing", "GET", "/listing/", 200, []string{"a%20&amp;%20b.txt", "a &amp; b.txt"}, []string{".secret"}},
 		{"directory redirect", "GET", "/listing?keep=true", 301, []string{"/listing/?keep=true"}, nil},
 		{"file trailing slash", "GET", "/index.md/", 404, nil, nil},
 		{"file as directory", "GET", "/target.txt/child", 404, nil, nil},
-		{"root symlink", "GET", "/root/", 200, []string{"<h1>Welcome</h1>"}, nil},
+		{"root symlink", "GET", "/root/", 200, []string{"# Welcome"}, nil},
 		{"symlink loop", "GET", "/loop", 404, nil, nil},
 		{"hidden symlink target", "GET", "/hidden-target", 404, nil, []string{"password"}},
 		{"parent escapes root", "GET", "/outside-parent", 404, nil, nil},
@@ -83,8 +83,8 @@ func TestServeFiles(t *testing.T) {
 		{"outside symlink", "GET", "/escape", 404, nil, []string{"outside secret"}},
 		{"inside symlink", "GET", "/safe.txt", 200, []string{"hello world"}, nil},
 		{"absolute inside symlink", "GET", "/absolute.txt", 200, []string{"hello world"}, nil},
-		{"markdown alias", "GET", "/alias.md", 200, []string{"<p>hello world</p>", "Show source"}, nil},
-		{"uppercase markdown", "GET", "/UPPER.MD", 200, []string{"<h1>Uppercase</h1>"}, nil},
+		{"markdown alias", "GET", "/alias.md", 200, []string{"hello world"}, nil},
+		{"uppercase markdown", "GET", "/UPPER.MD", 200, []string{"# Uppercase"}, nil},
 		{"parent after symlink", "GET", "/parent.txt", 200, []string{"parent target"}, []string{"root target"}},
 		{"absolute parent after symlink", "GET", "/absolute-parent.txt", 200, []string{"parent target"}, []string{"root target"}},
 		{"missing link component", "GET", "/broken.txt", 404, nil, []string{"root target"}},
@@ -136,7 +136,7 @@ func TestServeFiles(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("GET", "/safe-new.md", nil))
-	if !strings.Contains(w.Body.String(), "<h1>New file</h1>") {
+	if !strings.Contains(w.Body.String(), "# New file") {
 		t.Fatal("new file was not served")
 	}
 }

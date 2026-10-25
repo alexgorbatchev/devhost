@@ -2,14 +2,15 @@ package services
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
+	"regexp"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 )
 
 func TestDirectoryServicesUsesResolvedRoutesAndSelection(t *testing.T) {
@@ -74,8 +75,23 @@ func TestStackDirectoryReflectsManifestReload(t *testing.T) {
 		}
 		defer response.Body.Close()
 		data, err := io.ReadAll(response.Body)
-		if err != nil || response.StatusCode != http.StatusOK || !strings.Contains(string(data), fmt.Sprintf(`href="https://%s"`, want)) || !strings.Contains(string(data), f.path) || !strings.Contains(string(data), f.configPath) {
-			t.Fatalf("live directory response: status %d, %v, %s", response.StatusCode, err, data)
+		if err != nil || response.StatusCode != http.StatusOK {
+			t.Fatalf("live directory response: status %d, %v", response.StatusCode, err)
+		}
+		payload := regexp.MustCompile(`(?s)<script id="devhost-status-data" type="application/json">(.*?)</script>`).FindSubmatch(data)
+		if len(payload) != 2 {
+			t.Fatal("live directory is missing its page data")
+		}
+		var page statuspage.Page
+		if err := json.Unmarshal(payload[1], &page); err != nil {
+			t.Fatal(err)
+		}
+		if page.Kind != "stacks" || len(page.Stacks) != 1 {
+			t.Fatalf("live directory page: kind %q, %d stacks", page.Kind, len(page.Stacks))
+		}
+		stack := page.Stacks[0]
+		if len(stack.Services) != 1 || !slices.Equal(stack.Services[0].URLs, []string{"https://" + want}) || stack.ManifestPath != f.path || !slices.ContainsFunc(stack.Configs, func(config statuspage.StackConfig) bool { return config.Path == f.configPath }) {
+			t.Fatalf("directory failed to reflect live routes or config paths: %+v", stack.Services)
 		}
 	}
 	read("original.localhost")
