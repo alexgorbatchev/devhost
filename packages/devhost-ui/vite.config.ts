@@ -15,6 +15,7 @@ export const optimizeDependencyEntries: string[] = [
   "@assistant-ui/react",
   "@assistant-ui/store",
   "@assistant-ui/react-markdown",
+  "@base-ui/react/number-field",
   "remark-gfm",
   "fuzzysort",
   "@hookform/devtools",

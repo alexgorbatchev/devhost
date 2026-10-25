@@ -4,7 +4,7 @@ import { FileTextIcon } from "lucide-react";
 import type { JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
 
-const contextSeparator = "\n\nPage context (the attached tab snapshot includes the annotations):\n";
+const contextSeparator = "\n\nPage context:\n";
 const workflowSeparator = "\n\nDevhost workflow instructions:\n";
 
 export function ChatUserText({ text }: TextMessagePartProps): JSX.Element {

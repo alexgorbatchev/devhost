@@ -124,6 +124,8 @@ export interface IAgentChatClient {
   dispose: () => void;
 }
 export interface IAgentChatController {
+  isAwaitingReply: boolean;
+  replyAfterMessageId?: string;
   settingsStore: DevtoolsSettingsStore;
   runtime: AssistantRuntime;
   isHistoryReady: boolean;

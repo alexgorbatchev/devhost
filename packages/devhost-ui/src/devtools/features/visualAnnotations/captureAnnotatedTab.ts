@@ -18,31 +18,41 @@ const tooltipSelector: string = '[role=tooltip], [data-slot="tooltip-content"]';
 export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions): Promise<ITabSnapshot> {
   const includedSurfaces: Element[] = [];
   const roots = new Set([options.root, ...(options.annotationRoot ? [options.annotationRoot] : [])]);
+  const restore = (): void => {
+    for (const root of roots) root.removeAttribute("data-devhost-capturing");
+    for (const surface of includedSurfaces) surface.removeAttribute("data-devhost-capture-include");
+  };
   try {
-    const bounds = options.shouldKeepAnnotatedSurfaces ? readAnnotationBounds(options) : [];
-    const surfaces = new Set(
-      Array.from(roots).flatMap((root) =>
-        Array.from(
-          root.querySelectorAll(
-            `[data-devhost-capture-exclude], :popover-open, :modal, [role=dialog], ${tooltipSelector}`,
-          ),
-        ),
-      ),
-    );
-    for (const surface of surfaces) {
-      if (
-        surface === options.annotationRoot ||
-        surface.matches(tooltipSelector) ||
-        surface.closest("[data-devhost-annotation-controls]") !== null ||
-        surface.hasAttribute("data-devhost-capture-include")
-      )
-        continue;
-      const rectangle = surface.getBoundingClientRect();
-      if (bounds.some((annotation) => intersects(annotation, rectangle))) includedSurfaces.push(surface);
-    }
     return await captureTabSnapshot({
       ...options,
-      prepare: async () => {
+      restore: async (signal) => {
+        restore();
+        await waitForPaint(signal);
+        await waitForPaint(signal);
+      },
+      prepare: async (signal) => {
+        includedSurfaces.length = 0;
+        const bounds = options.shouldKeepAnnotatedSurfaces ? readAnnotationBounds(options) : [];
+        const surfaces = new Set(
+          Array.from(roots).flatMap((root) =>
+            Array.from(
+              root.querySelectorAll(
+                `[data-devhost-capture-exclude], :popover-open, :modal, [role=dialog], ${tooltipSelector}`,
+              ),
+            ),
+          ),
+        );
+        for (const surface of surfaces) {
+          if (
+            surface === options.annotationRoot ||
+            surface.matches(tooltipSelector) ||
+            surface.closest("[data-devhost-annotation-controls]") !== null ||
+            surface.hasAttribute("data-devhost-capture-include")
+          )
+            continue;
+          const rectangle = surface.getBoundingClientRect();
+          if (bounds.some((annotation) => intersects(annotation, rectangle))) includedSurfaces.push(surface);
+        }
         const hiddenRegions = Array.from(surfaces)
           .filter(
             (surface) =>
@@ -54,16 +64,13 @@ export async function captureAnnotatedTab(options: IAnnotatedTabCaptureOptions):
           .map((surface) => surface.getBoundingClientRect());
         for (const surface of includedSurfaces) surface.setAttribute("data-devhost-capture-include", "");
         for (const root of roots) root.setAttribute("data-devhost-capturing", "");
-        const timeout = AbortSignal.timeout(10_000);
-        const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
         await waitForPaint(signal);
         await waitForPaint(signal);
         return hiddenRegions;
       },
     });
   } finally {
-    for (const root of roots) root.removeAttribute("data-devhost-capturing");
-    for (const surface of includedSurfaces) surface.removeAttribute("data-devhost-capture-include");
+    restore();
   }
 }
 

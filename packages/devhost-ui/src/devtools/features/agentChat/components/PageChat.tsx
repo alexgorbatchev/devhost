@@ -1,5 +1,15 @@
 import { DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type JSX, type RefObject } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type JSX,
+  type RefObject,
+} from "react";
 import { AnnotationSelectionOverlay } from "../../annotationComposer/components/AnnotationSelectionOverlay";
 import { AnnotationSelectionHint } from "../../annotationComposer/components/AnnotationSelectionHint";
 import {
@@ -21,6 +31,13 @@ import { PageContextList } from "./PageContextList";
 import { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
 import type { ChatTarget, DevtoolsSettingsStore } from "../../../shared/types";
 import { AnnotationTopLayer } from "../../../shared/components/AnnotationTopLayer";
+import { useScreenshotSelection } from "../../visualAnnotations/hooks/useScreenshotSelection";
+
+const ScreenshotShareDialog = lazy(() =>
+  import("../../visualAnnotations/components/ScreenshotShareDialog").then((module) => ({
+    default: module.ScreenshotShareDialog,
+  })),
+);
 
 interface IPageChatProps {
   settingsStore?: DevtoolsSettingsStore;
@@ -43,6 +60,8 @@ export function PageChat({
   onTargetChange,
 }: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
+  const screenshotSelection = useScreenshotSelection(sharing.stream);
+  const [shouldIncludeSnapshot, setShouldIncludeSnapshot] = useState(true);
   // Portals inherit from this interactive surface rather than the passive full-viewport devtools root.
   const portalReference = useRef<HTMLDivElement | null>(null);
   const annotationReference = useRef<HTMLDivElement | null>(null);
@@ -88,37 +107,50 @@ export function PageChat({
         url: window.location.href,
         targets: selectedTargets,
         shapes,
-        capture: async () => {
-          const controller = new AbortController();
-          captureReference.current?.abort();
-          captureReference.current = controller;
-          try {
-            const root = rootReference.current;
-            if (root === null) throw new Error("Chat is no longer mounted.");
-            const capture = captureAnnotatedTab({
-              root,
-              document,
-              mediaDevices: navigator.mediaDevices,
-              signal: controller.signal,
-              sharedStream: sharing.stream,
-              selectedTargets,
-              shapes,
-              annotationRoot: annotationReference.current,
-              shouldKeepAnnotatedSurfaces: isAnnotatingDevhost,
-            });
-            setIsCapturing(true);
-            stopSelection();
-            setTool(null);
-            return await capture;
-          } finally {
-            if (captureReference.current === controller) {
-              captureReference.current = null;
-              setIsCapturing(false);
-            }
-          }
-        },
+        selectSnapshot: screenshotSelection.select,
+        capture:
+          sharing.stream && shouldIncludeSnapshot
+            ? async () => {
+                const controller = new AbortController();
+                captureReference.current?.abort();
+                captureReference.current = controller;
+                try {
+                  const root = rootReference.current;
+                  if (root === null) throw new Error("Chat is no longer mounted.");
+                  const capture = captureAnnotatedTab({
+                    root,
+                    document,
+                    mediaDevices: navigator.mediaDevices,
+                    signal: controller.signal,
+                    sharedStream: sharing.stream,
+                    selectedTargets,
+                    shapes,
+                    annotationRoot: annotationReference.current,
+                    shouldKeepAnnotatedSurfaces: isAnnotatingDevhost,
+                  });
+                  setIsCapturing(true);
+                  stopSelection();
+                  setTool(null);
+                  return await capture;
+                } finally {
+                  if (captureReference.current === controller) {
+                    captureReference.current = null;
+                    setIsCapturing(false);
+                  }
+                }
+              }
+            : undefined,
       }),
-    [isAnnotatingDevhost, rootReference, selectedTargets, stopSelection, shapes, sharing.stream],
+    [
+      isAnnotatingDevhost,
+      rootReference,
+      selectedTargets,
+      stopSelection,
+      shapes,
+      sharing.stream,
+      shouldIncludeSnapshot,
+      screenshotSelection.select,
+    ],
   );
   const clearContext = useCallback((): void => {
     clearSelection();
@@ -163,8 +195,20 @@ export function PageChat({
             {marks}
           </AnnotationTopLayer>
         )}
-        <AnnotationTopLayer ref={annotationReference} isVisible={isOpen || hasPageMarks}>
+        <AnnotationTopLayer
+          ref={annotationReference}
+          isVisible={isOpen || hasPageMarks || screenshotSelection.snapshot !== null}
+        >
           <div ref={portalReference} className="pointer-events-auto relative z-(--devhost-z-modal)" />
+          {screenshotSelection.snapshot ? (
+            <Suspense fallback={null}>
+              <ScreenshotShareDialog
+                snapshot={screenshotSelection.snapshot}
+                onShare={screenshotSelection.confirm}
+                onCancel={screenshotSelection.cancel}
+              />
+            </Suspense>
+          ) : null}
           <AnnotationSelectionHint
             isVisible={isSelectionMode || tool !== null}
             text={tool ? `Drag To Draw A ${tool}. Esc To Cancel.` : "Click Elements To Add Context. Esc To Finish."}
@@ -185,7 +229,7 @@ export function PageChat({
             />
           ) : null}
           <AgentChatPanel
-            sharing={sharing}
+            sharing={{ ...sharing, shouldIncludeSnapshot, setShouldIncludeSnapshot }}
             chat={chat}
             composerInputRef={composerInputReference}
             headerControls={

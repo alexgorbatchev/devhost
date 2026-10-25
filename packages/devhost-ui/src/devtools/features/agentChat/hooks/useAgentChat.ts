@@ -15,6 +15,12 @@ import { createDevtoolsSettingsStore } from "../../../shared/createDevtoolsSetti
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 
 type ChatAction = () => Promise<void>;
+interface IReplyBoundary {
+  sessionId?: string;
+  messageId?: string;
+  isPending: boolean;
+  hasStarted: boolean;
+}
 
 export function useAgentChat({
   pageURL,
@@ -45,6 +51,7 @@ export function useAgentChat({
   const client = lifetime.client;
   const state = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const [isPreparing, setIsPreparing] = useState(false);
+  const [replyBoundary, setReplyBoundary] = useState<IReplyBoundary | null>(null);
   useEffect(() => {
     const generation = ++lifetime.generation;
     void client.refreshCatalog();
@@ -58,6 +65,26 @@ export function useAgentChat({
     () => projectChatEvents(state.session?.harness ?? state.selectedHarness, state.events, state.pendingRequestIds),
     [state.events, state.pendingRequestIds, state.selectedHarness, state.session?.harness],
   );
+  useEffect(() => {
+    if (!replyBoundary?.isPending) return;
+    const status = state.session?.status;
+    const hasStarted = status === "running" || status === "requires_action";
+    const boundaryIndex = projection.messages.findIndex((message) => message.id === replyBoundary.messageId);
+    const hasReply = projection.messages.some(
+      (message, index) =>
+        index > boundaryIndex &&
+        message.role === "assistant" &&
+        message.content !== undefined &&
+        typeof message.content !== "string" &&
+        message.content.some((part) => part.type === "text"),
+    );
+    if (hasStarted && !replyBoundary.hasStarted) setReplyBoundary({ ...replyBoundary, hasStarted: true });
+    else if (
+      !hasStarted &&
+      (replyBoundary.hasStarted || status === "error" || status === "closed" || (!isPreparing && hasReply))
+    )
+      setReplyBoundary({ ...replyBoundary, isPending: false });
+  }, [isPreparing, projection.messages, replyBoundary, state.session?.status]);
   const onNew = useCallback(
     async (message: AppendMessage): Promise<void> => {
       const text = message.content
@@ -66,8 +93,15 @@ export function useAgentChat({
         .join("\n");
       // The native composer detaches its text before onNew. Retain it until the server acknowledges the send.
       settingsStore.getState().updateChat({ draft: text });
+      const previousBoundary = replyBoundary;
+      setReplyBoundary({
+        sessionId: client.getSnapshot().session?.id,
+        messageId: projection.messages.at(-1)?.id,
+        isPending: true,
+        hasStarted: state.session?.status === "running" || state.session?.status === "requires_action",
+      });
       try {
-        // Invoke before awaiting anything: a root-owned getDisplayMedia call needs the user's activation.
+        // Prepare page context before connecting and delivering the message.
         const preparation = beforeSend ? beforeSend(text) : {};
         setIsPreparing(true);
         client.setSendError(null);
@@ -85,6 +119,7 @@ export function useAgentChat({
         settingsStore.getState().updateChat({ draft: lifetime.composerText });
         onSent?.();
       } catch (error) {
+        setReplyBoundary(previousBoundary);
         const message = error instanceof Error ? error.message : String(error);
         client.setSendError(message);
         throw new MessageNotSentError(message);
@@ -92,7 +127,7 @@ export function useAgentChat({
         setIsPreparing(false);
       }
     },
-    [beforeSend, client, lifetime, onSent, settingsStore],
+    [beforeSend, client, lifetime, onSent, settingsStore, replyBoundary, projection.messages, state.session?.status],
   );
   const isRunning = state.session?.status === "running" || state.session?.status === "requires_action";
   const sendReference = useRef(onNew);
@@ -154,6 +189,7 @@ export function useAgentChat({
   const interrupt = useCallback((): void => {
     try {
       client.interrupt();
+      setReplyBoundary((current) => (current ? { ...current, isPending: false } : null));
     } catch (error) {
       client.setSendError(error instanceof Error ? error.message : String(error));
     }
@@ -199,6 +235,10 @@ export function useAgentChat({
     });
   }, [lifetime, runtime, settingsStore]);
   return {
+    isAwaitingReply:
+      replyBoundary?.isPending === true &&
+      (replyBoundary.sessionId === undefined || replyBoundary.sessionId === state.session?.id),
+    replyAfterMessageId: replyBoundary?.sessionId === state.session?.id ? replyBoundary?.messageId : undefined,
     settingsStore,
     runtime,
     isHistoryReady,
@@ -218,9 +258,18 @@ export function useAgentChat({
     pendingRequests: projection.pendingRequests,
     events: projection.events,
     refreshCatalog: client.refreshCatalog,
-    newSession: () => reportAction(client.newSession),
-    resumeSession: (session) => reportAction(() => client.resumeSession(session)),
-    closeSession: () => reportAction(client.closeSession),
+    newSession: () => {
+      setReplyBoundary(null);
+      return reportAction(client.newSession);
+    },
+    resumeSession: (session) => {
+      setReplyBoundary(null);
+      return reportAction(() => client.resumeSession(session));
+    },
+    closeSession: () => {
+      setReplyBoundary(null);
+      return reportAction(client.closeSession);
+    },
     interrupt,
     respond: client.respond,
   };

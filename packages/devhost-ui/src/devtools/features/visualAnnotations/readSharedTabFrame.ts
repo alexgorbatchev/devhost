@@ -8,6 +8,7 @@ export async function readSharedTabFrame(
   stream: MediaStream,
   signal?: AbortSignal,
   prepare?: ITabCaptureOptions["prepare"],
+  restore?: ITabCaptureOptions["restore"],
 ): Promise<ITabSnapshot> {
   const video = document.createElement("video");
   video.muted = true;
@@ -32,42 +33,53 @@ export async function readSharedTabFrame(
     });
     cancellation.throwIfAborted();
     video.srcObject = readerStream;
-    await waitForFrame(video, readerStream, cancellation);
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
     const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (context === null || canvas.width === 0 || canvas.height === 0) {
+    if (context === null) {
       throw new Error("The shared tab did not produce a usable image.");
     }
-    context.drawImage(video, 0, 0);
-    if (prepare) {
-      // Start playback before changing the page, then consume the frame produced by that change.
-      const before = context.getImageData(0, 0, canvas.width, canvas.height);
-      const regions = await prepare();
-      cancellation.throwIfAborted();
-      const hasChanged = createChangedRegionCheck(
-        context,
-        before,
-        regions ?? [],
-        document.defaultView?.innerWidth ?? canvas.width,
-        document.defaultView?.innerHeight ?? canvas.height,
-      );
-      // Reattach the video sink after preparation to request a fresh source frame, even for a static tab.
-      // Keep the shared tracks running; only this snapshot reader is restarted.
-      const minimumFrameTime = performance.now();
-      video.pause();
-      video.srcObject = null;
-      video.srcObject = readerStream;
-      await waitForFrame(video, readerStream, cancellation, minimumFrameTime, () => {
-        if (video.videoWidth !== canvas.width || video.videoHeight !== canvas.height) {
-          throw new Error("The shared tab changed size while the screenshot was being captured. Try again.");
+    while (true) {
+      await waitForFrame(video, readerStream, cancellation, performance.now());
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      if (canvas.width === 0 || canvas.height === 0) throw new Error("The shared tab did not produce a usable image.");
+      const viewportWidth = document.defaultView?.innerWidth ?? canvas.width;
+      const viewportHeight = document.defaultView?.innerHeight ?? canvas.height;
+      context.drawImage(video, 0, 0);
+      if (prepare) {
+        // Start playback before changing the page, then consume the frame produced by that change.
+        const before = context.getImageData(0, 0, canvas.width, canvas.height);
+        const regions = await prepare(cancellation);
+        cancellation.throwIfAborted();
+        const hasChanged = createChangedRegionCheck(context, before, regions ?? [], viewportWidth, viewportHeight);
+        // Reattach the video sink after preparation to request a fresh source frame, even for a static tab.
+        // Keep the shared tracks running; only this snapshot reader is restarted.
+        const minimumFrameTime = performance.now();
+        video.pause();
+        video.srcObject = null;
+        video.srcObject = readerStream;
+        let hasResized = false;
+        await waitForFrame(video, readerStream, cancellation, minimumFrameTime, () => {
+          hasResized =
+            video.videoWidth !== canvas.width ||
+            video.videoHeight !== canvas.height ||
+            (document.defaultView !== null &&
+              (document.defaultView.innerWidth !== viewportWidth ||
+                document.defaultView.innerHeight !== viewportHeight));
+          if (hasResized) return true;
+          context.drawImage(video, 0, 0);
+          return hasChanged();
+        });
+        if (hasResized) {
+          // A sharing infobar can change both viewport and capture dimensions. Rebuild a visible baseline and
+          // prepare again; resizing the old image would make its hidden-region comparison unreliable.
+          await restore?.(cancellation);
+          cancellation.throwIfAborted();
+          continue;
         }
-        context.drawImage(video, 0, 0);
-        return hasChanged();
-      });
+      }
+      return { dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height };
     }
-    return { dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height };
   } finally {
     lifecycle.abort();
     video.pause();

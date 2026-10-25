@@ -25,7 +25,7 @@ export const NewConversationStaysSelectedAfterReload: Story = {
     const newConversation = canvas.getByRole("button", { name: "New Conversation" });
     const shareTab = canvas.getByRole("button", { name: "Share Tab" });
     expect(newConversation.getBoundingClientRect().right).toBeLessThanOrEqual(shareTab.getBoundingClientRect().left);
-    expect(newConversation.parentElement).toBe(shareTab.parentElement);
+    expect(canvas.getByRole("group", { name: "Conversation actions" })).toContainElement(shareTab);
     await expect(newConversation).toBeEnabled();
     await userEvent.click(newConversation);
     await canvas.findByText("Chat with your configured coding agent.");

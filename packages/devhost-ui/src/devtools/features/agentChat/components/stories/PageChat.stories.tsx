@@ -2,12 +2,17 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor, within } from "storybook/test";
 import { assert } from "vitest";
 import { userEvent } from "vitest/browser";
+import { z } from "zod";
 import {
   PageChatScene,
   ShadowPageChatScene,
   dragWithMouse,
   installPageChatCatalog,
   readModalAnnotationCanvas,
+  installChatReloadServer,
+  chooseChatSetting,
+  readSentChatCommands,
+  acknowledgeChatSend,
 } from "./helpers";
 import {
   devtoolsStoryShadowRootHostTestId,
@@ -25,6 +30,41 @@ const meta: Meta<typeof PageChat> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const SendSelectedContextWithoutSharing: Story = {
+  beforeEach: () => installChatReloadServer([]),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Open chat" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+    await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(canvas.getByRole("button", { name: "Select Elements" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Page counter: 0" }));
+    await userEvent.keyboard("{Escape}");
+    await canvas.findByRole("region", { name: "Page context" });
+    await userEvent.type(canvas.getByRole("textbox", { name: "Message input" }), "Review the counter");
+    await userEvent.click(canvas.getByRole("button", { name: "Send Message" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    const command = z
+      .object({ commandId: z.string(), text: z.string(), images: z.unknown().optional() })
+      .parse(readSentChatCommands()[0]);
+    expect(command.images).toBeUndefined();
+    const context = z
+      .object({
+        markers: z.array(z.object({ element: z.string() })),
+        shapes: z.array(z.unknown()),
+        screenshot: z.unknown().optional(),
+      })
+      .parse(JSON.parse(command.text.split("\n").at(-1) ?? ""));
+    expect(context.markers).toHaveLength(1);
+    expect(context.shapes).toEqual([]);
+    expect(context.screenshot).toBeUndefined();
+    expect(canvas.getByRole("button", { name: "Share Tab" })).toBeVisible();
+    acknowledgeChatSend(command.commandId);
+    await waitFor(() => expect(canvas.queryByRole("region", { name: "Page context" })).toBeNull());
+  },
+};
 
 export const FloatingToolsAndSettings: Story = {
   play: async ({ canvasElement }) => {

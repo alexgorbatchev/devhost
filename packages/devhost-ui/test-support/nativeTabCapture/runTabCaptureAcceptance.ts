@@ -56,6 +56,7 @@ export async function runTabCaptureAcceptance(
         const pageURL = new URL(fixture.server.url);
         if (options.isChatAnnotated) pageURL.searchParams.set("target", "devhost");
         await page.goto(String(pageURL));
+        await page.getByRole("button", { name: "Expand Chat", exact: true }).click();
         if (options.isSharingAheadOfTime) {
           await page.getByRole("button", { name: "Share Tab", exact: true }).click();
           await page.getByRole("button", { name: "Stop Sharing", exact: true }).waitFor();
@@ -81,12 +82,30 @@ export async function runTabCaptureAcceptance(
           await page.keyboard.press("Escape");
         }
         await page.getByRole("textbox").fill("Review this annotated page.");
+        if (!options.isSharingAheadOfTime) {
+          await page.getByRole("button", { name: "Share Tab", exact: true }).click();
+          await page.getByRole("button", { name: "Stop Sharing", exact: true }).waitFor();
+        }
         await page.getByRole("button", { name: "Send Message", exact: true }).hover();
         const tooltip = page.locator('[data-slot="tooltip-content"]').filter({ hasText: "Send Message" });
         await tooltip.waitFor({ timeout: 3_000 });
         const tooltipBounds = await tooltip.boundingBox();
         assert(tooltipBounds);
         await page.getByRole("button", { name: "Send Message", exact: true }).click();
+        const preview = page.getByRole("dialog", { name: "Share Screenshot", exact: true });
+        await preview.waitFor();
+        assert.equal(
+          fixture.readCommands().length,
+          0,
+          "A preview must not send the full screenshot before confirmation",
+        );
+        if (options.isCropping) {
+          await preview.getByRole("textbox", { name: "Left", exact: true }).fill("10");
+          await preview.getByRole("textbox", { name: "Top", exact: true }).fill("10");
+          await preview.getByRole("button", { name: "Share Selected Area", exact: true }).click();
+        } else {
+          await preview.getByRole("button", { name: "Share Whole Tab", exact: true }).click();
+        }
         const command = await Promise.race([
           fixture.sentCommand,
           new Promise<never>((_resolve, reject) => {
@@ -101,6 +120,16 @@ export async function runTabCaptureAcceptance(
         await page.getByRole("button", { name: "Send Message", exact: true }).waitFor();
         assert(await page.getByRole("button", { name: "Send Message", exact: true }).isEnabled());
         const serializedContext: unknown = JSON.parse(command.text.split("\n").at(-1) ?? "");
+        if (options.isCropping) {
+          assert(
+            typeof serializedContext === "object" && serializedContext !== null && "screenshot" in serializedContext,
+          );
+          assert.deepEqual(serializedContext.screenshot, {
+            width: 1270,
+            height: 790,
+            crop: { x: 10, y: 10, width: 1270, height: 790, sourceWidth: 1280, sourceHeight: 800 },
+          });
+        }
         assert(typeof serializedContext === "object" && serializedContext !== null && "shapes" in serializedContext);
         assert(Array.isArray(serializedContext.shapes));
         assert.equal(serializedContext.shapes.length, 1);
@@ -115,7 +144,7 @@ export async function runTabCaptureAcceptance(
         assert(typeof attachment.dataURL === "string");
         const dataURL = attachment.dataURL;
         const image = await page.evaluate(
-          async ({ dataURL, panel, dock, tooltipBounds }) => {
+          async ({ dataURL, panel, dock, tooltipBounds, cropOffset }) => {
             const source = new Image();
             source.src = dataURL;
             await source.decode();
@@ -126,11 +155,11 @@ export async function runTabCaptureAcceptance(
             if (!context) throw new Error("Native PNG decoding requires a canvas context.");
             context.drawImage(source, 0, 0);
             const pixel = (x: number, y: number): number[] =>
-              Array.from(context.getImageData(Math.round(x), Math.round(y), 1, 1).data);
+              Array.from(context.getImageData(Math.round(x - cropOffset), Math.round(y - cropOffset), 1, 1).data);
             const color = (value: string): number[] => {
               context.fillStyle = value;
               context.fillRect(0, 0, 1, 1);
-              return pixel(0, 0);
+              return Array.from(context.getImageData(0, 0, 1, 1).data);
             };
             // Annotation layers follow an open host modal or popover into hosts of their own.
             const trees = [
@@ -166,9 +195,9 @@ export async function runTabCaptureAcceptance(
                 tooltipBounds.y + tooltipBounds.height / 2 <= panel.y + panel.height,
             };
           },
-          { dataURL, panel, dock, tooltipBounds },
+          { dataURL, panel, dock, tooltipBounds, cropOffset: options.isCropping ? 10 : 0 },
         );
-        if (options.isSharingAheadOfTime) {
+        {
           const stoppedTrackCount = await page.evaluate(() => {
             const stopped: MediaStreamTrack[] = Reflect.get(window, "nativeCaptureStoppedTracks");
             return stopped.length;
@@ -186,8 +215,8 @@ export async function runTabCaptureAcceptance(
           }));
         });
         assert.deepEqual(errors, []);
-        assert.equal(image.width, 1280);
-        assert.equal(image.height, 800);
+        assert.equal(image.width, options.isCropping ? 1270 : 1280);
+        assert.equal(image.height, options.isCropping ? 790 : 800);
         for (const [actual, expected] of [
           [image.shape, image.expectedShape],
           [image.host, image.expectedHost],

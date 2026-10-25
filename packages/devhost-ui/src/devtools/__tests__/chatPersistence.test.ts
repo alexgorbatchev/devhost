@@ -65,6 +65,7 @@ test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
       await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Move Chat To Left" }).click();
       await page.getByRole("textbox").fill("Keep this unsent review after reload");
+      await page.getByRole("button", { name: "Expand Chat" }).click();
       const viewport = page.locator('[data-slot="aui_thread-viewport"]');
       await viewport.hover();
       await page.mouse.wheel(0, -100000);
@@ -80,6 +81,7 @@ test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
       await page.getByRole("button", { name: "Move Chat To Right" }).waitFor();
       await page.getByRole("textbox").waitFor();
       expect(await page.getByRole("textbox").inputValue()).toBe("Keep this unsent review after reload");
+      await page.getByRole("button", { name: "Expand Chat" }).click();
       await waitForChatScroll(page, 400);
       await page.getByRole("button", { name: "Chat Settings" }).click();
       await page
@@ -91,6 +93,7 @@ test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
       await page.reload();
       await chat.waitFor();
       expect(await chat.getAttribute("aria-expanded")).toBe("true");
+      await page.getByRole("button", { name: "Expand Chat" }).click();
       await waitForChatScroll(page, 400);
       expect(host.chatCommands).toEqual([]);
       expect(host.requestMethods.every((method) => method === "GET")).toBe(true);

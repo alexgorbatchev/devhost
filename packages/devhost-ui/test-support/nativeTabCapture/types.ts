@@ -3,6 +3,7 @@ export interface ITabCaptureAcceptanceOptions {
   topLayer?: "modal" | "popover";
   isChatAnnotated?: boolean;
   isSharingAheadOfTime?: boolean;
+  isCropping?: boolean;
 }
 export interface ITabCaptureFixtureServer {
   server: Server<undefined>;
