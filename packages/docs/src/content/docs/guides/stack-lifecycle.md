@@ -36,6 +36,18 @@ When you run `devhost start`, it:
 
 After startup, devhost prints one line for each URL of each started service, such as `web (primary): https://app.localhost`. A routed service lists every public URL; a service without a route but with a port lists its direct `http://` address. The primary service is marked `(primary)`.
 
+## Running stacks in the browser
+
+Open [https://devhost.localhost/](https://devhost.localhost/) on the machine running devhost for a directory of its running stacks. The dedicated hostname is reserved for this page. It uses the shared managed Caddy HTTPS port; with `httpsPort = 8443`, open `https://devhost.localhost:8443/`.
+
+Service URLs are the main links: every hostname alias and path route appears, and services with a port but no route show their direct HTTP address. Each stack also shows its process ID, project directory, service state, and service working directories. Services left out of the startup selection are marked **Not started** and have no link. Manifest-free file and port sessions appear alongside manifest-backed stacks.
+
+Expand **Configuration** to see the absolute root manifest path, included TOML paths, and shared `config.toml` path and contents. These are read-only files from disk; a rejected edit can differ from the configuration the stack is running. A missing shared config file is identified as using defaults. Configuration visibility works independently of the injected devtools and config editor settings.
+
+Use **Refresh / filter** to update the snapshot or search by stack name, service name, URL, or file path. One unavailable stack keeps its identifying information and an error while the others remain visible. The directory lists live stacks in the same devhost state directory and accepts local clients only. After the last stack shuts down, Caddy keeps serving the empty directory until Caddy itself stops.
+
+Caddy can use any running stack to serve the directory. If every stack process exits abruptly before cleaning up, the directory reports that it is unavailable; start or restart a stack to restore it.
+
 ## Service commands and working directories
 
 Service commands run directly, not through an implicit shell. `command = ["storybook", "dev", "--port", "$PORT"]` passes the literal string `$PORT` as an argument, while `command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]` lets the shell expand `$PORT` from the child process environment. [Manifest interpolation](../environment-variables/#environment-variables-in-the-manifest) still runs before launch, so `{{ env.NAME }}` placeholders in command arguments are replaced first.

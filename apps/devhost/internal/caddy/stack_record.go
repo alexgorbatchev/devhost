@@ -13,6 +13,7 @@ import (
 // registrations exist only for the hostnames and fixed ports a stack holds;
 // this record exists for every stack, so one that holds neither is known too.
 type stackRecord struct {
+	ControlPort        int      `json:"controlPort,omitempty"`
 	ManifestFiles      []string `json:"manifestFiles,omitempty"`
 	CreatedAt          string   `json:"createdAt"`
 	ManifestPath       string   `json:"manifestPath"`
@@ -22,6 +23,7 @@ type stackRecord struct {
 }
 
 type stackRecordJSON struct {
+	ControlPort        int      `json:"controlPort"`
 	ManifestFiles      []string `json:"manifestFiles"`
 	CreatedAt          *string  `json:"createdAt"`
 	ManifestPath       *string  `json:"manifestPath"`
@@ -31,6 +33,7 @@ type stackRecordJSON struct {
 }
 
 type RegisterStackOptions struct {
+	ControlPort         int
 	ManifestFiles       []string
 	ManifestPath        string
 	StackName           string
@@ -52,6 +55,7 @@ func registerStack(options RegisterStackOptions) error {
 	}
 
 	record := stackRecord{
+		ControlPort:        options.ControlPort,
 		CreatedAt:          formatRouteMutationTimestamp(routeMutationNow()),
 		ManifestPath:       options.ManifestPath,
 		OwnerPID:           routeMutationProcessID(),
@@ -66,11 +70,15 @@ func registerStack(options RegisterStackOptions) error {
 	if err := checkManifestOverlap(options.StacksDirectoryPath, record); err != nil {
 		return err
 	}
+	return writeStackRecord(options.StacksDirectoryPath, record)
+}
+
+func writeStackRecord(directory string, record stackRecord) error {
 	recordText, _ := json.MarshalIndent(record, "", "  ") // Primitive-only fields cannot fail JSON marshaling.
 
 	// Written beside the record and renamed over it, so a reader never sees half a
 	// record. The temporary name has no .json extension and is not read as one.
-	temporaryFile, err := os.CreateTemp(options.StacksDirectoryPath, "stack-*.tmp")
+	temporaryFile, err := os.CreateTemp(directory, "stack-*.tmp")
 	if err != nil {
 		return fmt.Errorf("create stack record: %w", err)
 	}
@@ -84,7 +92,7 @@ func registerStack(options RegisterStackOptions) error {
 		_ = os.Remove(temporaryPath) // best-effort removal; the close failure is returned.
 		return fmt.Errorf("write stack record: %w", err)
 	}
-	if err := os.Rename(temporaryPath, getStackRecordPath(options.StacksDirectoryPath)); err != nil {
+	if err := os.Rename(temporaryPath, getStackRecordPath(directory)); err != nil {
 		_ = os.Remove(temporaryPath) // best-effort removal; the rename failure is returned.
 		return fmt.Errorf("write stack record: %w", err)
 	}
@@ -153,7 +161,7 @@ func parseStackRecord(recordText []byte) (stackRecord, error) {
 		return stackRecord{}, fmt.Errorf("Stack record is malformed.")
 	}
 
-	record := stackRecord{CreatedAt: *value.CreatedAt, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID, StackName: *value.StackName}
+	record := stackRecord{ControlPort: value.ControlPort, CreatedAt: *value.CreatedAt, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID, StackName: *value.StackName}
 	record.ManifestFiles = value.ManifestFiles
 	if value.OwnerStartIdentity != nil {
 		record.OwnerStartIdentity = *value.OwnerStartIdentity

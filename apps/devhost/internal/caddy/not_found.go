@@ -58,7 +58,7 @@ func syncManagedCaddyNotFoundSite(routesDirectoryPath string, httpsPort int) err
 		return fmt.Errorf("write managed caddy not-found stylesheet %s: %w", sitePaths.StylesheetPath, err)
 	}
 
-	return nil
+	return syncStackDirectorySite(CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath), httpsPort)
 }
 
 func readActiveRouteLinks(routesDirectoryPath string, httpsPort int) ([]managedCaddyNotFoundRouteLink, error) {

@@ -262,6 +262,9 @@ func CleanupStaleFixedPortClaims(portClaimsDirectoryPath string) error {
 }
 
 func ClaimHost(options ClaimHostOptions) error {
+	if strings.EqualFold(options.Host, StackDirectoryHost) {
+		return fmt.Errorf("hostname %s is reserved for the devhost stack directory", options.Host)
+	}
 	if options.ZombieCleanup == nil {
 		options.ZombieCleanup = new(ZombieCleanup)
 	}

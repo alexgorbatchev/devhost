@@ -73,6 +73,8 @@ Stack shutdown removes its host snippets and leaves Caddy running with the setti
 
 ## Hostname and DNS expectations
 
+`https://devhost.localhost/` is the local [running-stack directory](../stack-lifecycle/#running-stacks-in-the-browser). Its hostname is reserved and cannot be assigned to a service. It uses Caddy's configured HTTPS port and accepts loopback clients only, even when application routes listen on all interfaces.
+
 `devhost` manages HTTPS routing through Caddy, not DNS.
 Your chosen hostnames must already resolve to this machine or the browser will never reach the local proxy.
 
