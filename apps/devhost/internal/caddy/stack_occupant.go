@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -95,6 +94,10 @@ func (o StackOccupant) signal(paths Paths, signal os.Signal) error {
 }
 
 func stackRouteURLs(paths Paths, owner stackRecord) ([]string, error) {
+	settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+	if err != nil {
+		return nil, err
+	}
 	urls := []string{}
 	entries, err := os.ReadDir(paths.RegistrationsDirectoryPath)
 	if errors.Is(err, os.ErrNotExist) {
@@ -126,8 +129,7 @@ func stackRouteURLs(paths Paths, owner stackRecord) ([]string, error) {
 		if path == "" {
 			path = "/"
 		}
-		u := url.URL{Scheme: "https", Host: r.Host, Path: path}
-		urls = append(urls, u.String())
+		urls = append(urls, CreateManagedCaddyURL("https", r.Host, settings.HTTPSPort, path))
 	}
 	slices.Sort(urls)
 	return slices.Compact(urls), nil

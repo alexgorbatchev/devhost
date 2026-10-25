@@ -42,6 +42,26 @@ func TestStackOccupantsMatchInputsAndLiveRoutes(t *testing.T) {
 	if got.PID != owner.pid || got.Name != "storybook" || !reflect.DeepEqual(got.URLs, []string{"https://storybook.localhost/ui/"}) {
 		t.Fatalf("owner details = %#v", got)
 	}
+	for _, tc := range []struct {
+		port int
+		url  string
+	}{
+		{443, "https://storybook.localhost/ui/"},
+		{8443, "https://storybook.localhost:8443/ui/"},
+		{9443, "https://storybook.localhost:9443/ui/"},
+	} {
+		t.Run(strconv.Itoa(tc.port), func(t *testing.T) {
+			settings := DefaultManagedCaddyGlobalSettings()
+			settings.HTTPSPort = tc.port
+			if err := writeAppliedManagedCaddySettings(paths, settings); err != nil {
+				t.Fatal(err)
+			}
+			owners, err := ReadStackOccupants(paths, []string{alias})
+			if err != nil || len(owners) != 1 || !reflect.DeepEqual(owners[0].URLs, []string{tc.url}) {
+				t.Fatalf("owner links after listener change = %#v, %v", owners, err)
+			}
+		})
+	}
 	r.CreatedAt = "replacement"
 	writeOccupantRecord(t, paths, r)
 	if err := got.Signal(paths, syscall.SIGTERM); err == nil {
