@@ -95,7 +95,7 @@ export function CompactChat({
                   <AuiIf condition={(state) => state.composer.canCancel}>
                     <ComposerPrimitive.Cancel asChild>
                       <Button size="icon-sm" aria-label="Stop Generating" title="Stop Generating">
-                        <Icon glyph={SquareIcon} />
+                        <Icon glyph={SquareIcon} size="sm" />
                       </Button>
                     </ComposerPrimitive.Cancel>
                   </AuiIf>

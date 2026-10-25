@@ -1,6 +1,6 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Button } from "@alexgorbatchev/shadcn";
-import { lazy, Suspense, useState, type JSX, type ReactNode, type Ref } from "react";
+import { lazy, Suspense, useEffect, useState, type JSX, type ReactNode, type Ref } from "react";
 import { useStore } from "zustand";
 import { cn } from "../../../../lib/utils";
 import type { IAgentChatController } from "../types";
@@ -26,6 +26,7 @@ interface IAgentChatPanelProps {
   headerControls?: ReactNode;
   isOpen: boolean;
   onClose: () => void;
+  onBusyChange?: (isBusy: boolean) => void;
   children: ReactNode;
   sharing?: IChatTabShare;
 }
@@ -36,6 +37,7 @@ export function AgentChatPanel({
   headerControls,
   isOpen,
   onClose,
+  onBusyChange,
   children,
   sharing,
 }: IAgentChatPanelProps): JSX.Element {
@@ -54,6 +56,10 @@ export function AgentChatPanel({
     chat.isConnecting ||
     chat.session?.status === "running" ||
     chat.session?.status === "requires_action";
+  useEffect(() => {
+    onBusyChange?.(isBusy);
+    return () => onBusyChange?.(false);
+  }, [isBusy, onBusyChange]);
   return (
     <aside
       data-testid="AgentChatPanel"

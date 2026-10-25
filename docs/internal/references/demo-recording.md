@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-25 07:45
+last_modified: 2026-10-25 08:20
 status: current
 ---
 
@@ -208,7 +208,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 | Feature                                                                                                                                                                                                                                                                                                                              | Documented in                                                                | Shown in    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | ----------- |
-| Compact chat with working state and latest reply; expand for full history, preserving drafts and attachments; native Codex or Claude Code catalogs and configured accounts                                                                                                                                                           | README, "Browser chat and page context"; `guides/annotations.md`             | **No demo** |
+| Compact chat with working state and latest reply; toolbar spinner persists with collapsed chat; small filled stop icon in both views; expand for full history, preserving drafts and attachments; native Codex or Claude Code catalogs and configured accounts                                                                       | README, "Browser chat and page context"; `guides/annotations.md`             | **No demo** |
 | Chat Settings captures pointer input above page controls and restores page interaction when closed; Harness, Model, and Conversation use styled select menus                                                                                                                                                                         | `guides/annotations.md`, "Connect an installed CLI"                          | **No demo** |
 | Active-turn annotation follow-ups, pasted PNG/JPEG images, configurable worktree/merge/cleanup prompt                                                                                                                                                                                                                                | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |
 | Native turn interruption, conversation replay, explicit approvals and questions; Close Conversation keeps the closed conversation listed until it is resumed                                                                                                                                                                         | `guides/annotations.md`; `architecture/chat.md`                              | **No demo** |

@@ -46,6 +46,7 @@ interface IPageChatProps {
   onTargetChange?: (target: ChatTarget) => void;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onBusyChange?: (isBusy: boolean) => void;
   isSelectionEnabled: boolean;
   rootReference: RefObject<HTMLDivElement | null>;
 }
@@ -53,6 +54,7 @@ interface IPageChatProps {
 export function PageChat({
   isOpen,
   onOpenChange,
+  onBusyChange,
   isSelectionEnabled,
   rootReference,
   settingsStore,
@@ -229,6 +231,7 @@ export function PageChat({
             />
           ) : null}
           <AgentChatPanel
+            onBusyChange={onBusyChange}
             sharing={{ ...sharing, shouldIncludeSnapshot, setShouldIncludeSnapshot }}
             chat={chat}
             composerInputRef={composerInputReference}

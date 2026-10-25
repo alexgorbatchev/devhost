@@ -32,7 +32,7 @@ Production entry scripts, Redux inspector modules/styles, content-hashed JavaScr
 
 The injected overlay is a compact toolbar docked to the right edge of the browser. It shows the stack name, service health, native CLI chat, supported third-party devtools toggles, and the **Config** button of the [config editor](#config-editor) when it is on. As the viewport narrows, controls wrap into additional rows, including within groups that are wider than the available space. Long stack and branch names truncate visually; hover their buttons for the full names. The toolbar stays beside the log minimap when it is visible. Use `[devtools.status].position` to switch between `top-right` and `bottom-right`; toolbar panels open above their button, or below it at `top-right`. Clicking the stack name collapses the toolbar to a single stack-health dot.
 
-The **Chat** button is vertically centered in its toolbar segment alongside the other controls.
+The **Chat** button is vertically centered in its toolbar segment alongside the other controls. It shows a spinner while chat is connecting, preparing a message, working, or waiting for your response, including when the chat panel is collapsed. The button remains available to open or collapse the panel.
 
 Toolbar panels, including Services, fade out in place when dismissed, staying beside their trigger until the animation finishes. With reduced motion enabled, they close immediately.
 
