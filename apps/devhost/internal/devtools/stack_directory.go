@@ -28,7 +28,12 @@ const (
 func (s *ControlServer) guardStackDirectory(w http.ResponseWriter, r *http.Request) bool {
 	w.Header().Set("Cache-Control", cacheControlNoStore)
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	if !isLocalClient(r) {
+	settings, _, err := caddy.ReadAppliedManagedCaddySettings(s.stackDirectoryPaths)
+	if err != nil {
+		http.Error(w, "Stack directory settings unavailable", http.StatusServiceUnavailable)
+		return false
+	}
+	if !isLocalClient(r) && !(settings.StackDirectoryAllowRemote && r.URL.Path == stackDirectoryPath) {
 		http.Error(w, "The stack directory is available on this machine only.", http.StatusForbidden)
 		return false
 	}
@@ -53,7 +58,8 @@ func (s *ControlServer) guardStackDirectory(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Cross-origin directory request", http.StatusForbidden)
 		return false
 	}
-	if !strings.EqualFold(host, caddy.StackDirectoryHost) && !s.servesRequestHost(r) {
+	directoryHost := settings.StackDirectoryHostname()
+	if !strings.EqualFold(host, directoryHost) && !s.servesRequestHost(r) {
 		http.Error(w, "Unknown stack directory host", http.StatusForbidden)
 		return false
 	}

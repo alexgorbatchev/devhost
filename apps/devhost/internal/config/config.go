@@ -17,6 +17,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/choices"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 )
 
 const fileName = "config.toml"
@@ -31,11 +32,13 @@ type fileContents struct {
 }
 
 type caddyContents struct {
-	AdminAddress *string `toml:"adminAddress"`
-	BindHost     *string `toml:"bindHost"`
-	HTTP         *bool   `toml:"http"`
-	HTTPPort     *int    `toml:"httpPort"`
-	HTTPSPort    *int    `toml:"httpsPort"`
+	AdminAddress              *string `toml:"adminAddress"`
+	BindHost                  *string `toml:"bindHost"`
+	HTTP                      *bool   `toml:"http"`
+	HTTPPort                  *int    `toml:"httpPort"`
+	HTTPSPort                 *int    `toml:"httpsPort"`
+	StackDirectoryHost        *string `toml:"stackDirectoryHost"`
+	StackDirectoryAllowRemote *bool   `toml:"stackDirectoryAllowRemote"`
 }
 
 // Path returns where the devhost config file lives: config.toml in
@@ -116,6 +119,17 @@ func Parse(path string, content []byte) (Config, error) {
 
 func applyCaddy(contents caddyContents, settings *caddy.ManagedCaddyGlobalSettings) []string {
 	issues := []string{}
+	if contents.StackDirectoryAllowRemote != nil {
+		settings.StackDirectoryAllowRemote = *contents.StackDirectoryAllowRemote
+	}
+	if contents.StackDirectoryHost != nil {
+		host := strings.ToLower(strings.TrimSpace(*contents.StackDirectoryHost))
+		if !manifest.IsValidHost(host) {
+			issues = append(issues, "caddy.stackDirectoryHost must be a hostname without a scheme, port, or path.")
+		} else {
+			settings.StackDirectoryHost = host
+		}
+	}
 	if contents.AdminAddress != nil {
 		if address := strings.TrimSpace(*contents.AdminAddress); address != "" {
 			settings.AdminAddress = address

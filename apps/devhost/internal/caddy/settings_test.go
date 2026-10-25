@@ -13,7 +13,7 @@ import (
 
 func TestApplyManagedCaddySettings(t *testing.T) {
 	running := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22001", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}
-	moved := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22002", BindHost: "127.0.0.1", HTTPEnabled: true, HTTPPort: 8080, HTTPSPort: 8443}
+	moved := ManagedCaddyGlobalSettings{StackDirectoryHost: "stacks.custom.localhost", AdminAddress: "127.0.0.1:22002", BindHost: "127.0.0.1", HTTPEnabled: true, HTTPPort: 8080, HTTPSPort: 8443}
 	tests := []struct {
 		name         string
 		next         ManagedCaddyGlobalSettings
@@ -79,6 +79,7 @@ func TestApplyManagedCaddySettings(t *testing.T) {
 			}
 			assertFileContains(t, getHostRoutePath(route.Host, paths.RoutesDirectoryPath), tc.wantSnippet)
 			assertFileContains(t, paths.CaddyfilePath, tc.wantCaddy)
+			assertFileContains(t, stackDirectorySnippetPath(paths), tc.wantApplied.StackDirectoryHostname())
 		})
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,15 +27,21 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 		t.Skip("native Caddy is unavailable")
 	}
 	paths := CreateManagedCaddyPaths(browsertest.RunDirectory(t, "stack-directory-caddy"))
-	ports := nettest.ReservePorts(t, 2)
+	ports := nettest.ReservePorts(t, 3)
 	settings := DefaultManagedCaddyGlobalSettings()
 	settings.AdminAddress = fmt.Sprintf("127.0.0.1:%d", ports[0])
 	settings.HTTPSPort = ports[1]
+	settings.HTTPPort = ports[2]
+	settings.HTTPEnabled = true
 	if err := EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
 		t.Fatal(err)
 	}
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/__devhost__/stacks" || r.URL.Query().Get("q") != "api" || r.Host != fmt.Sprintf("%s:%d", StackDirectoryHost, settings.HTTPSPort) {
+		port := settings.HTTPSPort
+		if r.Header.Get("X-Forwarded-Proto") == "http" {
+			port = settings.HTTPPort
+		}
+		if r.URL.Path != "/__devhost__/stacks" || r.URL.Query().Get("q") != "api" || r.Host != fmt.Sprintf("%s:%d", settings.StackDirectoryHostname(), port) {
 			t.Errorf("unexpected directory forwarding: %s %s", r.Host, r.URL)
 		}
 		fmt.Fprint(w, "running project")
@@ -47,7 +54,7 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 	if err := RegisterStack(RegisterStackOptions{StackName: "project", ManifestPath: filepath.Join(paths.StateDirectoryPath, "devhost.toml"), ControlPort: port, StacksDirectoryPath: paths.StacksDirectoryPath}); err != nil {
 		t.Fatal(err)
 	}
-	if err := syncStackDirectorySite(paths, settings.HTTPSPort); err != nil {
+	if err := syncStackDirectorySite(paths, settings); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -71,7 +78,7 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r.Host = fmt.Sprintf("%s:%d", StackDirectoryHost, settings.HTTPSPort)
+		r.Host = fmt.Sprintf("%s:%d", settings.StackDirectoryHostname(), settings.HTTPSPort)
 		response, err := client.Do(r)
 		if err != nil {
 			t.Fatal(err)
@@ -89,12 +96,76 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 	if got := read("/?q=api", http.StatusOK); got != "running project" {
 		t.Fatalf("directory response: %q", got)
 	}
+	settings.StackDirectoryHost = "stacks.custom.localhost"
+	if _, err := ApplyManagedCaddySettings(paths, settings, RouteCommandOutputWriters{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := read("/?q=api", http.StatusOK); got != "running project" {
+		t.Fatalf("custom directory hostname: %q", got)
+	}
+	assertFileContains(t, stackDirectorySnippetPath(paths), "https://stacks.custom.localhost:")
+	requestHTTP, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/?q=api", settings.HTTPPort), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requestHTTP.Host = fmt.Sprintf("%s:%d", settings.StackDirectoryHostname(), settings.HTTPPort)
+	httpResponse, err := client.Do(requestHTTP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	httpBody, err := io.ReadAll(httpResponse.Body)
+	httpResponse.Body.Close()
+	if err != nil || httpResponse.StatusCode != http.StatusOK || string(httpBody) != "running project" {
+		t.Fatalf("HTTP directory forwarding: status %d, body %q, error %v", httpResponse.StatusCode, httpBody, err)
+	}
+	t.Run("remote access follows shared settings", func(t *testing.T) {
+		addresses, err := net.InterfaceAddrs()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var address net.IP
+		for _, candidate := range addresses {
+			if network, ok := candidate.(*net.IPNet); ok && network.IP.To4() != nil && !network.IP.IsLoopback() {
+				address = network.IP
+				break
+			}
+		}
+		if address == nil {
+			t.Skip("no non-loopback IPv4 interface")
+		}
+		dialer := net.Dialer{LocalAddr: &net.TCPAddr{IP: address}}
+		remote := &http.Client{Transport: &http.Transport{DialContext: dialer.DialContext, TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, Timeout: 5 * time.Second}
+		defer remote.CloseIdleConnections()
+		for _, allow := range []bool{false, true, false} {
+			settings.StackDirectoryAllowRemote = allow
+			if _, err := ApplyManagedCaddySettings(paths, settings, RouteCommandOutputWriters{}); err != nil {
+				t.Fatal(err)
+			}
+			request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://127.0.0.1:%d/?q=api", settings.HTTPSPort), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request.Host = fmt.Sprintf("%s:%d", settings.StackDirectoryHostname(), settings.HTTPSPort)
+			response, err := remote.Do(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response.Body.Close()
+			want := http.StatusForbidden
+			if allow {
+				want = http.StatusOK
+			}
+			if response.StatusCode != want {
+				t.Fatalf("allow remote %t: status %d, want %d", allow, response.StatusCode, want)
+			}
+		}
+	})
 	read("/__devhost__/restart-stack", http.StatusNotFound)
 	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://127.0.0.1:%d/", settings.HTTPSPort), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	request.Host = fmt.Sprintf("%s:%d", StackDirectoryHost, settings.HTTPSPort)
+	request.Host = fmt.Sprintf("%s:%d", settings.StackDirectoryHostname(), settings.HTTPSPort)
 	response, err := client.Do(request)
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +214,7 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 	if body := read("/", http.StatusOK); !strings.Contains(body, "No stacks running") {
 		t.Fatal("last backend withdrawal did not serve the empty directory")
 	}
-	if err := ClaimHost(ClaimHostOptions{Host: StackDirectoryHost, ManifestPath: "other.toml", RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath}); err == nil {
+	if err := ClaimHost(ClaimHostOptions{Host: settings.StackDirectoryHostname(), ManifestPath: "other.toml", RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath}); err == nil {
 		t.Fatal("project claimed directory hostname")
 	}
 }
@@ -160,5 +231,17 @@ func TestReadLiveStacksSkipsStaleOwners(t *testing.T) {
 	stacks, err := ReadLiveStacks(paths)
 	if err != nil || len(stacks) != 1 || stacks[0].Name != "live" || stacks[0].ControlPort != 3000 {
 		t.Fatalf("live stacks: %+v, %v", stacks, err)
+	}
+}
+
+func TestStackDirectoryHostnameCannotReplaceProject(t *testing.T) {
+	paths := newManagedCaddyPaths(t)
+	settings := DefaultManagedCaddyGlobalSettings()
+	settings.StackDirectoryHost = "project.localhost"
+	if err := ClaimHost(ClaimHostOptions{Host: settings.StackDirectoryHost, ManifestPath: "/project/devhost.toml", RegistrationsDirectoryPath: paths.RegistrationsDirectoryPath}); err != nil {
+		t.Fatal(err)
+	}
+	if err := syncStackDirectorySite(paths, settings); err == nil || !strings.Contains(err.Error(), "already claimed") {
+		t.Fatalf("directory replaced claimed hostname: %v", err)
 	}
 }

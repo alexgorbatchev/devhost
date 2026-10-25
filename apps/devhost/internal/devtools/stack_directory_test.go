@@ -126,6 +126,56 @@ func TestStackDirectoryGuardsConfiguration(t *testing.T) {
 	}
 }
 
+func TestStackDirectoryGuardFollowsAppliedHostname(t *testing.T) {
+	s, paths := startDirectoryServer(t)
+	for _, host := range []string{"stacks.custom.localhost", "stacks.next.localhost"} {
+		writeTestFile(t, paths.AppliedSettingsPath, fmt.Sprintf(`{"stackDirectoryHost":%q}`, host))
+		if got := sendGuardTestRequest(t, s.Port(), "GET", stackDirectoryPath, host, nil, ""); got != http.StatusOK {
+			t.Fatalf("configured hostname %s: status %d", host, got)
+		}
+		if got := sendGuardTestRequest(t, s.Port(), "GET", stackDirectoryPath, caddy.StackDirectoryHost, nil, ""); got != http.StatusForbidden {
+			t.Fatalf("old directory hostname retained access: %d", got)
+		}
+		if got := sendGuardTestRequest(t, s.Port(), "POST", restartStackPath, host, http.Header{"Origin": {"https://" + host}}, ""); got != http.StatusForbidden {
+			t.Fatalf("directory hostname gained stack controls: %d", got)
+		}
+	}
+}
+
+func TestStackDirectoryRemoteAccessIsExplicitAndReadOnly(t *testing.T) {
+	s, paths := startDirectoryServer(t)
+	host := "stacks.custom.localhost"
+	for _, allowRemote := range []bool{false, true, false} {
+		writeTestFile(t, paths.AppliedSettingsPath, fmt.Sprintf(`{"stackDirectoryHost":%q,"stackDirectoryAllowRemote":%t}`, host, allowRemote))
+		for _, tc := range []struct {
+			name, method, path string
+			header             http.Header
+			remoteStatus       int
+		}{
+			{"directory", "GET", stackDirectoryPath, nil, http.StatusOK},
+			{"head", "HEAD", stackDirectoryPath, nil, http.StatusOK},
+			{"snapshot stays private", "GET", stackSnapshotPath, nil, http.StatusForbidden},
+			{"write rejected", "POST", stackDirectoryPath, nil, http.StatusForbidden},
+			{"cross-origin rejected", "GET", stackDirectoryPath, http.Header{"Origin": {"https://other.localhost"}}, http.StatusForbidden},
+		} {
+			t.Run(fmt.Sprintf("%t/%s", allowRemote, tc.name), func(t *testing.T) {
+				header := tc.header.Clone()
+				if header == nil {
+					header = make(http.Header)
+				}
+				header.Set("X-Forwarded-For", "192.0.2.1")
+				want := http.StatusForbidden
+				if allowRemote {
+					want = tc.remoteStatus
+				}
+				if got := sendGuardTestRequest(t, s.Port(), tc.method, tc.path, host, header, ""); got != want {
+					t.Fatalf("status %d, want %d", got, want)
+				}
+			})
+		}
+	}
+}
+
 func TestStackDirectoryKeepsUnavailableStacksVisible(t *testing.T) {
 	s, paths := startDirectoryServer(t)
 	data, err := json.Marshal(map[string]any{"createdAt": "2026-10-25T00:00:00Z", "manifestPath": "/other/devhost.toml", "ownerPid": os.Getppid(), "stackName": "other"})

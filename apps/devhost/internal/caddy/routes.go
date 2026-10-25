@@ -263,7 +263,12 @@ func CleanupStaleFixedPortClaims(portClaimsDirectoryPath string) error {
 }
 
 func ClaimHost(options ClaimHostOptions) error {
-	if strings.EqualFold(options.Host, StackDirectoryHost) {
+	paths := CreateManagedCaddyPathsForRoutesDirectory(filepath.Dir(options.RegistrationsDirectoryPath))
+	host, err := ReadStackDirectoryHostname(paths)
+	if err != nil {
+		return err
+	}
+	if strings.EqualFold(options.Host, host) {
 		return fmt.Errorf("hostname %s is reserved for the devhost stack directory", options.Host)
 	}
 	if options.ZombieCleanup == nil {
@@ -399,7 +404,7 @@ func cleanupStaleRegistrationsLocked(registrationsDirectoryPath string, routesDi
 		}
 	}
 	if len(affectedHosts) > 0 {
-		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); err != nil {
+		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings); err != nil {
 			return err
 		}
 	}
@@ -443,7 +448,7 @@ func UnregisterRoute(
 		if err := syncHostRoute(host, routesDirectoryPath, settings); err != nil {
 			return err
 		}
-		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); err != nil {
+		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings); err != nil {
 			return err
 		}
 
