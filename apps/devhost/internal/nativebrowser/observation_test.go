@@ -47,3 +47,49 @@ func TestIsSupportedReactExtensionVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestIsSupportedReactVersion(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		version string
+		want    bool
+	}{
+		{"19.2.5", true},
+		{"19.2.6", true},
+		{"19.3.1", true},
+		{"19.10.0", true},
+		{"19.2.4", false},
+		{"18.3.1", false},
+		{"20.0.0", false},
+		{"19.3.0-canary-a6b912fb-20261023", false},
+		{"19.3", false},
+		{"19.3.1.0", false},
+		{"", false},
+	} {
+		if got := isSupportedReactVersion(tc.version); got != tc.want {
+			t.Errorf("isSupportedReactVersion(%q) = %v, want %v", tc.version, got, tc.want)
+		}
+	}
+}
+
+func TestHostScanObservation(t *testing.T) {
+	t.Parallel()
+	scan := hostScan{
+		Matches: true,
+		Roots: []rendererRoot{
+			{Version: "19.3.1", Connected: true},
+			{Version: "19.2.5", Connected: false},
+			{Version: "18.3.1", Connected: true},
+			{Version: "", Connected: true},
+		},
+		UnsupportedContainers: 1,
+	}
+	got := scan.observation()
+	want := hostObservation{Matches: true, HostRoots: 1, UnsupportedRoots: 3}
+	if got != want {
+		t.Fatalf("observation() = %+v, want %+v", got, want)
+	}
+	if message := nativeDocumentMessage(got); message == "" {
+		t.Fatal("nativeDocumentMessage returned no message for unsupported roots")
+	}
+}
