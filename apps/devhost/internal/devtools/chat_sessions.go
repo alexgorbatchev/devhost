@@ -15,6 +15,7 @@ type chatStore struct {
 	mu       sync.Mutex
 	ctx      context.Context
 	command  chatCommandFactory
+	log      func(string)
 	sessions map[string]*chatSession
 	stopped  bool
 	wg       sync.WaitGroup
@@ -25,7 +26,9 @@ type chatSession struct {
 	operation       sync.Mutex
 	info            chatSessionInfo
 	process         *chatProcess
-	events          []chatEvent
+	events          *chatJournal
+	activity        chatActivity
+	cancel          context.CancelFunc
 	pending         map[string]json.RawMessage
 	turnID          string
 	active          bool
@@ -80,9 +83,18 @@ func (s *chatStore) close() {
 		session.closeWith(1001, "Devhost stopping")
 	}
 	s.wg.Wait()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, session := range s.sessions {
+		session.mu.Lock()
+		if err := session.events.remove(); err != nil {
+			session.logLocked("replay cleanup failed error=%q", chatLogError(err))
+		}
+		session.mu.Unlock()
+	}
 }
 
-func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd string) (*chatSession, error) {
+func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd string) (session *chatSession, err error) {
 	if !s.begin() {
 		return nil, fmt.Errorf("chat server is stopping")
 	}
@@ -92,7 +104,27 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 		return nil, fmt.Errorf("create chat session ID: %w", err)
 	}
 	// A resumed session continues the native conversation it names, so it carries that ID before the client reports it.
-	session := &chatSession{info: chatSessionInfo{ID: hex.EncodeToString(id), Harness: request.Harness, ProjectRootPath: cwd, NativeSessionID: request.ResumeID, Status: "starting"}, pending: map[string]json.RawMessage{}, clients: map[*websocketClient]struct{}{}}
+	session = &chatSession{info: chatSessionInfo{ID: hex.EncodeToString(id), Harness: request.Harness, ProjectRootPath: cwd, NativeSessionID: request.ResumeID, Status: "starting"}, pending: map[string]json.RawMessage{}, clients: map[*websocketClient]struct{}{}}
+	session.activity.log = s.log
+	session.logLocked("session starting project=%q model=%q resume=%q", cwd, request.Model, request.ResumeID)
+	session.events, err = newChatJournal()
+	if err != nil {
+		session.logLocked("session startup failed error=%q", chatLogError(err))
+		return nil, err
+	}
+	processCtx, cancel := context.WithCancel(s.ctx)
+	session.cancel = cancel
+	owned := session
+	retained := false
+	defer func() {
+		if !retained {
+			cancel()
+			owned.logLocked("session startup failed error=%q", chatLogError(err))
+			if cleanupErr := owned.events.remove(); cleanupErr != nil {
+				owned.logLocked("replay cleanup failed error=%q", chatLogError(cleanupErr))
+			}
+		}
+	}()
 	session.model = request.Model
 	args := []string{"app-server"}
 	if request.Harness == chatClaude {
@@ -101,7 +133,7 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 			args = append(args, "--resume", request.ResumeID)
 		}
 	}
-	process, err := startChatProcess(s.ctx, request.Harness, cwd, args, s.command, session.receive)
+	process, err := startChatProcess(processCtx, request.Harness, cwd, args, s.command, session.receive)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +148,9 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 			process.close()
 			return nil, modelErr
 		}
+		session.mu.Lock()
 		session.configuredModel = configured
+		session.mu.Unlock()
 		method := "thread/start"
 		params := map[string]any{"cwd": cwd}
 		if request.Model != "" {
@@ -145,6 +179,12 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 		session.mu.Unlock()
 	}
 	session.mu.Lock()
+	if session.events.err != nil {
+		err = session.events.err
+		session.mu.Unlock()
+		process.close()
+		return nil, err
+	}
 	if session.info.Status == "starting" {
 		session.info.Status = "idle"
 	}
@@ -161,19 +201,47 @@ func (s *chatStore) start(ctx context.Context, request chatSessionRequest, cwd s
 	}
 	s.sessions[info.ID] = session
 	s.mu.Unlock()
+	retained = true
+	session.mu.Lock()
+	action := "started"
+	if request.ResumeID != "" {
+		action = "resumed"
+	}
+	session.logLocked("session %s native_session=%q project=%q model=%q", action, session.info.NativeSessionID, cwd, request.Model)
+	session.mu.Unlock()
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		<-process.done
-		session.mu.Lock()
-		if session.info.Status != "closed" {
-			session.info.Status = "error"
-			session.info.Error = process.exitError().Error()
-		}
-		session.broadcastLocked(chatMessage{Type: "state", Session: session.infoCopyLocked()})
-		session.mu.Unlock()
+		defer cancel()
+		session.monitor()
 	}()
 	return session, nil
+}
+
+func (s *chatSession) monitor() {
+	ticker := time.NewTicker(chatHeartbeatInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case now := <-ticker.C:
+			s.heartbeat(now)
+		case <-s.process.done:
+			s.mu.Lock()
+			if s.info.Status != "closed" {
+				if !s.activity.started.IsZero() || !s.activity.dispatched.IsZero() {
+					s.finishTurnLocked(time.Now(), "failed")
+				}
+				s.info.Status = "error"
+				if s.info.Error == "" {
+					s.info.Error = s.process.exitError().Error()
+				}
+				s.logLocked("process failed error=%q", chatLogError(s.process.exitError()))
+			}
+			s.broadcastLocked(chatMessage{Type: "state", Session: s.infoCopyLocked()})
+			s.mu.Unlock()
+			return
+		}
+	}
 }
 
 // dropClosedLocked removes the closed records of a native conversation that a new session has resumed: the new
@@ -182,6 +250,14 @@ func (s *chatStore) dropClosedLocked(harness, root, nativeID string) {
 	for id, session := range s.sessions {
 		info := session.snapshot()
 		if info.Status == "closed" && info.Harness == harness && info.ProjectRootPath == root && info.NativeSessionID == nativeID {
+			// Closing marks the session before the CLI has finished flushing frames.
+			// Join it before retiring its journal, including concurrent close/resume.
+			<-session.process.done
+			session.mu.Lock()
+			if err := session.events.remove(); err != nil {
+				session.logLocked("replay cleanup failed error=%q", chatLogError(err))
+			}
+			session.mu.Unlock()
 			delete(s.sessions, id)
 		}
 	}
@@ -239,9 +315,25 @@ func (s *chatSession) receive(raw json.RawMessage) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.events = append(s.events, chatEvent{Sequence: uint64(len(s.events) + 1), Payload: raw})
-	if frame.SessionID != "" {
+	if s.events.err != nil {
+		return
+	}
+	if err := s.events.append(raw); err != nil {
+		if s.info.Status != "closed" {
+			s.info.Status, s.info.Error = "error", err.Error()
+			s.logLocked("replay failed error=%q", chatLogError(err))
+			s.broadcastLocked(chatMessage{Type: "state", Session: s.infoCopyLocked()})
+		}
+		s.cancel()
+		return
+	}
+	now := time.Now()
+	s.activity.lastEvent = now
+	if frame.SessionID != "" && frame.SessionID != s.info.NativeSessionID {
 		s.info.NativeSessionID = frame.SessionID
+		if s.info.Status != "closed" {
+			s.logLocked("native session identified native_session=%q", frame.SessionID)
+		}
 	}
 	// A terminating CLI can flush final frames after closure. Retain them without reopening the session.
 	if s.info.Status == "closed" {
@@ -251,12 +343,14 @@ func (s *chatSession) receive(raw json.RawMessage) {
 		key, err := chatRequestKey(frame.ID)
 		if err == nil {
 			s.pending[key] = frame.ID
+			s.logRequestLocked(now, key, frame.Method)
 		}
 	}
 	if frame.Type == "control_request" && frame.RequestID != "" {
 		id, err := json.Marshal(frame.RequestID)
 		if err == nil {
 			s.pending[string(id)] = id
+			s.logRequestLocked(now, string(id), chatClaudeRequestKind(frame))
 		}
 	}
 	if frame.Type == "control_cancel_request" {
@@ -286,15 +380,14 @@ func (s *chatSession) receive(raw json.RawMessage) {
 					id, err := json.Marshal(request.RequestID)
 					if err == nil {
 						s.pending[string(id)] = id
+						s.logRequestLocked(now, string(id), chatClaudeRequestKind(request))
 					}
 				}
 			}
 		}
 	}
 	var params struct {
-		Turn struct {
-			ID string `json:"id"`
-		} `json:"turn"`
+		Turn chatCodexTurn `json:"turn"`
 	}
 	if frame.Method == "turn/started" || frame.Method == "turn/completed" {
 		if json.Unmarshal(frame.Params, &params) == nil {
@@ -304,6 +397,7 @@ func (s *chatSession) receive(raw json.RawMessage) {
 	switch {
 	case frame.Method == "turn/started":
 		s.info.Status = "running"
+		s.info.Error = ""
 		s.active = true
 	case frame.Method == "turn/completed", frame.Type == "result":
 		s.info.Status = "idle"
@@ -317,8 +411,15 @@ func (s *chatSession) receive(raw json.RawMessage) {
 			s.active = frame.State != "idle"
 		}
 	}
-	if len(s.pending) > 0 {
+	if len(s.pending) > 0 && s.info.Status != "error" {
 		s.info.Status = "requires_action"
+	}
+	if frame.Method == "turn/completed" && params.Turn.Status == "failed" {
+		s.info.Status = "error"
+		s.info.Error = "Native Codex turn failed"
+		if params.Turn.Error != nil && params.Turn.Error.Message != "" {
+			s.info.Error = params.Turn.Error.Message
+		}
 	}
 	if frame.Type == "result" && frame.IsError {
 		s.info.Status = "error"
@@ -329,7 +430,17 @@ func (s *chatSession) receive(raw json.RawMessage) {
 			s.info.Error = "Native Claude turn failed"
 		}
 	}
-	s.broadcastLocked(chatMessage{Type: "event", Sequence: uint64(len(s.events)), Payload: raw})
+	if s.info.Harness == chatCodex {
+		s.logCodexFrameLocked(now, frame)
+	} else {
+		s.logClaudeFrameLocked(now, frame, raw)
+	}
+	requestOutcome := "resolved"
+	if frame.Type == "control_cancel_request" {
+		requestOutcome = "canceled"
+	}
+	s.logRequestsLocked(now, requestOutcome)
+	s.broadcastLocked(chatMessage{Type: "event", Sequence: s.events.sequence, Payload: raw})
 	s.broadcastLocked(chatMessage{Type: "state", Session: s.infoCopyLocked()})
 }
 
@@ -338,17 +449,34 @@ func (s *chatSession) close() {
 }
 func (s *chatSession) closeWith(code int, reason string) {
 	s.mu.Lock()
+	if s.info.Status != "closed" {
+		if !s.activity.started.IsZero() || !s.activity.dispatched.IsZero() {
+			s.finishTurnLocked(time.Now(), "interrupted")
+		}
+		clear(s.pending)
+		s.logRequestsLocked(time.Now(), "closed")
+		s.logLocked("session closed reason=%q", reason)
+	}
 	s.info.Status = "closed"
 	clients := snapshotClients(s.clients)
 	s.clients = map[*websocketClient]struct{}{}
 	s.mu.Unlock()
+	s.cancel()
 	for _, client := range clients {
 		client.closeWith(code, reason)
 	}
 	s.process.close()
 }
 
-func (s *chatSession) execute(ctx context.Context, command chatCommand) error {
+func (s *chatSession) execute(ctx context.Context, command chatCommand) (err error) {
+	if command.Type == "respond" || command.Type == "interrupt" {
+		started := time.Now()
+		defer func() {
+			s.mu.Lock()
+			s.logLocked("%s %s wait=%s error=%q", command.Type, chatCommandOutcome(err), chatDuration(time.Since(started)), chatLogError(err))
+			s.mu.Unlock()
+		}()
+	}
 	if command.Type == "respond" {
 		key, err := chatRequestKey(command.RequestID)
 		if err != nil {
@@ -367,7 +495,8 @@ func (s *chatSession) execute(ctx context.Context, command chatCommand) error {
 		nativeID, ok := s.pending[key]
 		if ok {
 			delete(s.pending, key)
-			if len(s.pending) == 0 {
+			s.logRequestsLocked(time.Now(), "response received")
+			if len(s.pending) == 0 && s.info.Status != "error" {
 				if s.active {
 					s.info.Status = "running"
 				} else {
@@ -381,11 +510,20 @@ func (s *chatSession) execute(ctx context.Context, command chatCommand) error {
 			return fmt.Errorf("native request is not pending")
 		}
 		if s.snapshot().Harness == chatCodex {
-			return s.process.write(map[string]any{"id": nativeID, "result": command.Result})
+			err = s.process.write(map[string]any{"id": nativeID, "result": command.Result})
+		} else {
+			err = s.process.write(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": id, "response": command.Result}})
 		}
-		return s.process.write(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": id, "response": command.Result}})
+		s.mu.Lock()
+		s.logLocked("response %s request=%s error=%q", chatCommandOutcome(err), key, chatLogError(err))
+		s.mu.Unlock()
+		return err
 	}
 	if command.Type == "interrupt" {
+		s.mu.Lock()
+		s.activity.interrupted = s.active
+		s.logLocked("interrupt requested turn=%q", s.activity.turn)
+		s.mu.Unlock()
 		info := s.snapshot()
 		if info.Harness == chatClaude {
 			_, err := s.process.call(ctx, "interrupt", nil)

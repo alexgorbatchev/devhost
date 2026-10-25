@@ -98,6 +98,15 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 				}
 				result = map[string]any{"thread": map[string]any{"id": "codex-session", "cwd": cwd}, "params": params}
 			case "turn/start":
+				if os.Getenv("DEVHOST_CHAT_BAD_PROTOCOL") == "1" {
+					if _, err := os.Stderr.WriteString(strings.Repeat("fixture diagnostic ", chatDiagnosticLimit)); err != nil {
+						os.Exit(12)
+					}
+					if _, err := os.Stdout.WriteString("{invalid native JSON}\n"); err != nil {
+						os.Exit(13)
+					}
+					os.Exit(14)
+				}
 				if os.Getenv("DEVHOST_CHAT_REJECT_TURN") == "1" {
 					write(map[string]any{"id": frame.ID, "error": map[string]any{"code": -32602, "message": "Native turn rejected"}})
 					continue
@@ -107,9 +116,13 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 				write(map[string]any{"id": "approval-one", "method": "item/commandExecution/requestApproval", "params": map[string]string{"threadId": "codex-session", "turnId": "turn-one"}})
 				result = map[string]any{"turn": map[string]string{"id": "turn-one"}, "input": params["input"]}
 			case "turn/steer":
-				if os.Getenv("DEVHOST_CHAT_STEER_FINISH") == "1" {
+				if outcome := os.Getenv("DEVHOST_CHAT_STEER_FINISH"); outcome != "" {
+					status := "completed"
+					if outcome == "failed" {
+						status = "failed"
+					}
 					write(map[string]any{"method": "serverRequest/resolved", "params": map[string]string{"requestId": "approval-one"}})
-					write(map[string]any{"method": "turn/completed", "params": map[string]any{"turn": map[string]string{"id": "turn-one", "status": "completed"}}})
+					write(map[string]any{"method": "turn/completed", "params": map[string]any{"turn": map[string]string{"id": "turn-one", "status": status}}})
 					write(map[string]any{"id": frame.ID, "error": map[string]any{"code": -32600, "message": "No active turn"}})
 					continue
 				}
@@ -307,7 +320,7 @@ func TestChatNativeSessionsApproveInterruptAndKeepReplay(t *testing.T) {
 				t.Fatal("native identity missing")
 			}
 			session.mu.Lock()
-			events := append([]chatEvent{}, session.events...)
+			events := chatTestEvents(t, session)
 			session.mu.Unlock()
 			if len(events) < 4 {
 				t.Fatalf("lost native history: %+v", events)
@@ -376,7 +389,7 @@ func TestChatInstalledConversation(t *testing.T) {
 			defer func() {
 				if directory := os.Getenv("DEVHOST_CHAT_EVIDENCE_DIR"); directory != "" {
 					session.mu.Lock()
-					encoded, err := json.MarshalIndent(session.events, "", "  ")
+					encoded, err := json.MarshalIndent(chatTestEvents(t, session), "", "  ")
 					session.mu.Unlock()
 					if err != nil {
 						t.Error(err)
@@ -404,7 +417,7 @@ func TestChatInstalledConversation(t *testing.T) {
 			session.mu.Lock()
 			defer session.mu.Unlock()
 			found := false
-			for _, event := range session.events {
+			for _, event := range chatTestEvents(t, session) {
 				var frame struct {
 					Method string `json:"method"`
 					Params struct {
@@ -442,7 +455,7 @@ func TestChatInstalledConversation(t *testing.T) {
 			if !found {
 				t.Fatal("native assistant response missing expected text")
 			}
-			t.Logf("%s actual native assistant turn completed with %d frames", harness, len(session.events))
+			t.Logf("%s actual native assistant turn completed with %d frames", harness, int(session.events.sequence))
 		})
 	}
 }

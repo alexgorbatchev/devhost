@@ -77,6 +77,14 @@ type chatMessage struct {
 	Error             string             `json:"error,omitempty"`
 }
 
+type chatCodexTurn struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+	Error  *struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
 type chatNativeFrame struct {
 	UUID            string          `json:"uuid"`
 	IsReplay        bool            `json:"isReplay"`

@@ -3,11 +3,24 @@ package devtools
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 )
+
+// The caller holds the session lock, matching production snapshot publication.
+func chatTestEvents(t *testing.T, session *chatSession) []chatEvent {
+	t.Helper()
+	var events []chatEvent
+	reader := io.MultiReader(strings.NewReader("["), session.events.reader(), strings.NewReader("]"))
+	if err := json.NewDecoder(reader).Decode(&events); err != nil {
+		t.Errorf("read chat replay: %v", err)
+	}
+	return events
+}
 
 func TestChatClaudeSendRetainsNativeUserReplay(t *testing.T) {
 	store := chatTestStore(t)
@@ -26,7 +39,7 @@ func TestChatClaudeSendRetainsNativeUserReplay(t *testing.T) {
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	var replays []chatNativeFrame
-	for _, event := range session.events {
+	for _, event := range chatTestEvents(t, session) {
 		var frame chatNativeFrame
 		if err := json.Unmarshal(event.Payload, &frame); err != nil {
 			t.Fatal(err)
@@ -79,7 +92,7 @@ func TestChatInstalledClaudeUserReplay(t *testing.T) {
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	var echoed bool
-	for _, event := range session.events {
+	for _, event := range chatTestEvents(t, session) {
 		var frame chatNativeFrame
 		if err := json.Unmarshal(event.Payload, &frame); err != nil {
 			t.Fatal(err)

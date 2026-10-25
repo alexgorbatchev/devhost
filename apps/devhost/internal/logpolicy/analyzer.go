@@ -136,6 +136,9 @@ func outputSink(pass *analysis.Pass, expr ast.Expr, origins map[types.Object][]a
 	if terminal(pass, expr, origins, make(map[types.Object]bool)) {
 		return true
 	}
+	if websocketWriter(pass, expr, origins, make(map[types.Object]bool)) {
+		return false
+	}
 	t := pass.TypesInfo.TypeOf(expr)
 	if t == nil {
 		return false
@@ -148,6 +151,32 @@ func outputSink(pass *analysis.Pass, expr ast.Expr, origins map[types.Object][]a
 		return false
 	}
 	return true
+}
+
+// NextWriter returns an interface, but writes native WebSocket frames rather
+// than terminal output. Follow aliases so callers can stream large payloads.
+func websocketWriter(pass *analysis.Pass, expr ast.Expr, origins map[types.Object][]ast.Expr, seen map[types.Object]bool) bool {
+	switch value := expr.(type) {
+	case *ast.ParenExpr:
+		return websocketWriter(pass, value.X, origins, seen)
+	case *ast.CallExpr:
+		fn := function(pass, value.Fun)
+		return fn != nil && fn.Pkg() != nil && fn.Pkg().Path() == "github.com/gorilla/websocket" && fn.Name() == "NextWriter"
+	case *ast.Ident:
+		obj := pass.TypesInfo.ObjectOf(value)
+		if obj == nil || seen[obj] || len(origins[obj]) == 0 {
+			return false
+		}
+		seen[obj] = true
+		defer delete(seen, obj)
+		for _, origin := range origins[obj] {
+			if !websocketWriter(pass, origin, origins, seen) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func terminal(pass *analysis.Pass, expr ast.Expr, origins map[types.Object][]ast.Expr, seen map[types.Object]bool) bool {
@@ -195,6 +224,12 @@ func assignments(pass *analysis.Pass, file *ast.File) map[types.Object][]ast.Exp
 					obj := pass.TypesInfo.ObjectOf(id)
 					result[obj] = append(result[obj], values[i])
 				}
+			}
+		}
+		if len(names) > 1 && len(values) == 1 {
+			if id, ok := names[0].(*ast.Ident); ok {
+				obj := pass.TypesInfo.ObjectOf(id)
+				result[obj] = append(result[obj], values[0])
 			}
 		}
 		return true

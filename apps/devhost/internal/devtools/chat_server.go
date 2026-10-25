@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // requireChatPage refuses a chat request that changes a session or opens a session socket unless a browser page
@@ -193,7 +194,7 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	client.writeMu.Lock()
-	err = client.writeJSONMessagesLocked([]any{chatMessage{Type: "snapshot", SessionID: id, Session: session.infoCopyLocked(), Events: session.events, PendingRequestIDs: session.pendingIDsLocked()}})
+	err = client.writeChatSnapshotLocked(session)
 	if err == nil {
 		session.clients[client] = struct{}{}
 	}
@@ -204,11 +205,17 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	// Sends stay ordered while approvals and interrupts can pass a pending native acknowledgement.
-	sends := make(chan chatCommand, 16)
+	type queuedCommand struct {
+		command  chatCommand
+		queuedAt time.Time
+	}
+	sends := make(chan queuedCommand, 16)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for command := range sends {
+		for queued := range sends {
+			command := queued.command
+			session.logCommand(command, "dequeued", time.Since(queued.queuedAt), nil)
 			ctx, cancel := chatCallContext(s.ctx)
 			err := session.execute(ctx, command)
 			cancel()
@@ -258,17 +265,24 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 			}
 		}
 		if commandErr == nil && command.Type == "send" {
+			session.mu.Lock()
 			select {
-			case sends <- command:
+			case sends <- queuedCommand{command: command, queuedAt: time.Now()}:
+				session.logCommandLocked(command, "queued", 0, nil)
+				session.mu.Unlock()
 				continue
 			default:
 				commandErr = fmt.Errorf("chat send queue is full; retry after a message is accepted")
 			}
+			session.mu.Unlock()
 		}
 		if commandErr == nil {
 			ctx, cancel := chatCallContext(s.ctx)
 			commandErr = session.execute(ctx, command)
 			cancel()
+		}
+		if command.Type == "send" {
+			session.logCommand(command, "rejected", 0, commandErr)
 		}
 		writeChatCommandResult(client, id, command, commandErr)
 	}

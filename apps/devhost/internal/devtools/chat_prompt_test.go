@@ -29,7 +29,7 @@ func TestChatPromptReloadReachesExistingSession(t *testing.T) {
 			want += "\n\nDevhost workflow instructions:\n" + prompt
 		}
 		session.mu.Lock()
-		events := append([]chatEvent{}, session.events...)
+		events := chatTestEvents(t, session)
 		session.mu.Unlock()
 		found := false
 		for _, event := range events {

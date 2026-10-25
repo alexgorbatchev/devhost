@@ -65,7 +65,7 @@ func TestChatModelSelectionResetsConfiguredDefault(t *testing.T) {
 			session.mu.Lock()
 			defer session.mu.Unlock()
 			var models []any
-			for _, event := range session.events {
+			for _, event := range chatTestEvents(t, session) {
 				var frame struct {
 					Type    string `json:"type"`
 					Model   any    `json:"model"`
