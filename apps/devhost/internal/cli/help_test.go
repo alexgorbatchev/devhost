@@ -37,7 +37,8 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 				"│  ╰─ list",
 				"├─ skill",
 				"├─ stack",
-				"│  ╰─ list",
+				"│  ├─ list",
+				"│  ╰─ restart",
 				"├─ start [service...]",
 				"╰─ stop",
 				"--version",
@@ -78,7 +79,7 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 		{
 			name:        "stack help lists its commands",
 			rawArgs:     []string{"stack"},
-			wantAll:     []string{"devhost stack [flags] [command]", "╰─ list"},
+			wantAll:     []string{"devhost stack [flags] [command]", "├─ list", "╰─ restart"},
 			wantMissing: []string{"├─ caddy"},
 		},
 		{

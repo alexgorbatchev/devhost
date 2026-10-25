@@ -95,6 +95,13 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 				{Command: "devhost stack find app", Comment: "print all partial matches"},
 			},
 		},
+		"devhost stack restart": {
+			Env: []cobrahelptree.EnvSpec{manifestEnvironmentSpec},
+			Quickstart: []cobrahelptree.QuickstartItem{
+				{Command: "devhost stack restart", Comment: "restart this project's running stack"},
+				{Command: "devhost stack restart --all", Comment: "use the new binary for every running stack"},
+			},
+		},
 		caddyCommandPath + " " + trustRemoteCommandName: {
 			Args: []cobrahelptree.ArgSpec{{Name: "<ssh-target>", Description: sshTargetDescription}},
 		},

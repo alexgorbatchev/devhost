@@ -9,6 +9,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv(restartHelperVariable) == "1" {
+		os.Exit(runRestartHelper())
+	}
 	if err := testenv.UsePhysicalTempDir(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

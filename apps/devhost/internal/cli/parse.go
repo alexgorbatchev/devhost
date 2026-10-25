@@ -30,6 +30,7 @@ const (
 	KindServiceList        Kind = "service-list"
 	KindStackList          Kind = "stack-list"
 	KindStackFind          Kind = "stack-find"
+	KindStackRestart       Kind = "stack-restart"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
@@ -85,6 +86,7 @@ type CommandLineArguments struct {
 	Startable bool
 	Worktrees bool
 	Query     string
+	All       bool
 }
 
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
@@ -199,6 +201,11 @@ type stopOptions struct {
 
 type stackFindOptions struct {
 	Query string `descr:"URL, hostname, stack name, or partial name to find." positional:"true"`
+}
+
+type stackRestartOptions struct {
+	ManifestOptions
+	All bool `descr:"Restart every stack and serve session in this state directory." name:"all"`
 }
 
 // ManifestOptions is for commands that only locate a manifest; they must not
@@ -363,6 +370,22 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 					*result = CommandLineArguments{Kind: KindStackFind, Query: params.Query}
 				},
 			},
+			boa.CmdT[stackRestartOptions]{
+				Use:   "restart",
+				Short: "Restart running stacks with this devhost executable",
+				Long:  stackRestartDescription,
+				Args:  cobra.NoArgs,
+				RunFuncE: func(options *stackRestartOptions, _ *cobra.Command, _ []string) error {
+					if options.All && options.ManifestPath != nil {
+						return fmt.Errorf("--all and --manifest (or DEVHOST_MANIFEST) are mutually exclusive")
+					}
+					if err := validateManifestPath(options.ManifestPath); err != nil {
+						return err
+					}
+					*result = CommandLineArguments{Kind: KindStackRestart, All: options.All, ManifestPath: options.ManifestPath}
+					return nil
+				},
+			},
 			boa.CmdT[boa.NoParams]{
 				Use:   stackListCommandName,
 				Short: "Print the PID and manifest of running stacks",
@@ -375,6 +398,21 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 		),
 	}
 }
+
+const stackRestartDescription = `Restart this project's running stack with the devhost
+executable running this command. Use --all for every stack
+and standalone serve session in the same state directory.
+
+Capture each process's arguments, working directory, and
+environment before stopping it. Replacements run in the
+background, with closed input and private log files whose
+paths are printed. Saved worktree choices are restored;
+services started later in the UI follow the launch selection.
+
+Stacks stop gracefully, one at a time. A stack still stopping
+after 15 seconds is left alone and reported as a failure.
+The shared Caddy stays running. A successful restart means
+the new control server registered; services may be starting.`
 
 func createCaddyCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{
