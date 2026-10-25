@@ -48,6 +48,22 @@ Use **Refresh / filter** to update the snapshot or search by stack name, service
 
 Caddy can use any running stack to serve the directory. If every stack process exits abruptly before cleaning up, the directory reports that it is unavailable; start or restart a stack to restore it.
 
+## Restart after upgrading devhost
+
+After installing a new devhost executable, replace the running supervisors:
+
+```bash
+devhost stack restart --all
+```
+
+This includes manifest stacks and standalone `serve` sessions in the same state directory. To restart only this project's running stack, use `devhost stack restart`; `--manifest path/to/devhost.toml` selects another project. `--all` cannot be combined with `--manifest` or `DEVHOST_MANIFEST`.
+
+The command captures every selected process's arguments, working directory, and environment before stopping any stack. It then stops and relaunches each stack with the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+
+Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or signal a standalone session's PID, to stop its replacement.
+
+Shutdown has a 15-second grace period. A stack that is still stopping is reported as a failure and gets no replacement; it is not force-killed. A replacement has 30 seconds to register its control server; registration confirms the supervisor started, while its services may still be starting. A registration timeout leaves the replacement running and prints its PID and log path. Failures return a nonzero exit code while the command attempts the remaining captured stacks. Shared Caddy stays running.
+
 ## Service commands and working directories
 
 Service commands run directly, not through an implicit shell. `command = ["storybook", "dev", "--port", "$PORT"]` passes the literal string `$PORT` as an argument, while `command = ["sh", "-c", "exec storybook dev --port \"$PORT\""]` lets the shell expand `$PORT` from the child process environment. [Manifest interpolation](../environment-variables/#environment-variables-in-the-manifest) still runs before launch, so `{{ env.NAME }}` placeholders in command arguments are replaced first.
