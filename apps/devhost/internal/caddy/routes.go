@@ -2,6 +2,7 @@ package caddy
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -1329,5 +1330,12 @@ func isManagedProcessAlive(processID int) bool {
 	defer process.Release() // Release the handle acquired for this liveness probe.
 
 	err = process.Signal(syscall.Signal(0))
-	return err == nil || errors.Is(err, syscall.EPERM)
+	if err != nil && !errors.Is(err, syscall.EPERM) {
+		return false
+	}
+
+	// Signal 0 still succeeds for an exited child until its parent reaps it.
+	// Keep ownership when the OS state is unreadable, as for permission errors.
+	exited, err := zombieExited(context.Background(), zombieOwner{pid: processID})
+	return err != nil || !exited
 }
