@@ -36,6 +36,8 @@ When an engineering design has been implemented or a runbook is superseded:
 
 - **Naming:** Filenames must use lowercase `kebab-case` naming (e.g. `deploy-runbook.md`).
 - **Organization:** Put related documents into folders (e.g., `docs/internal/eng-designs/` or `docs/internal/references/`). Create new subdirectories only when introducing a multiple-file active collection.
+- **Architecture diagrams:** Keep diagram JSON and generated HTML in `architecture/`, link delivered pages from `architecture/index.md`, and keep its regeneration justfile current. Serve project diagrams through the root stack's `archify` service and verify the exact active HTTP(S) URL before reporting a live link. Record only public `.localhost` defaults in tracked files; derive the active hostname from the running service or local configuration. `.archify/` is scratch space, and delivery receipts and browser captures are ignored local verification output.
+- **Architecture maintenance:** Update affected diagrams alongside changes to service supervision, routing, document injection, and devtools control ownership. Check committed source evidence before changing a pinned revision and identify behavior outside that snapshot. Regenerate changed diagrams with `just archify build`; automated browser checks and visual inspection remain separate.
 
 ## Shared boundaries
 

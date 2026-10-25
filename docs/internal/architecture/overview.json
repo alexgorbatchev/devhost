@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "devhost: service supervision and browser routing",
+    "locale": "en",
+    "output": "docs/internal/architecture/overview.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "revision": "b2496c7459ac103a50fb3842b741d145b7c7d18d",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser + devtools UI",
+      "sublabel": "Fetch config, mount React",
+      "pos": [40, 40],
+      "size": [190, 76],
+      "sources": [{ "path": "packages/devhost-ui/src/devtools/startDevtools.ts", "line": 6, "end_line": 22 }]
+    },
+    {
+      "id": "caddy",
+      "type": "backend",
+      "label": "Shared Caddy",
+      "sublabel": "Hostname + path routing",
+      "pos": [400, 40],
+      "size": [190, 76],
+      "sources": [{ "path": "apps/devhost/internal/caddy/routes.go", "line": 619, "end_line": 645 }]
+    },
+    {
+      "id": "document",
+      "type": "backend",
+      "label": "Document proxy",
+      "sublabel": "Inject enabled HTML",
+      "pos": [790, 40],
+      "size": [190, 76],
+      "sources": [{ "path": "apps/devhost/internal/devtools/document_injection.go", "line": 40, "end_line": 103 }]
+    },
+    {
+      "id": "control",
+      "type": "backend",
+      "label": "Devtools control",
+      "sublabel": "Assets, health, logs, actions",
+      "pos": [400, 280],
+      "size": [190, 76],
+      "sources": [{ "path": "apps/devhost/internal/devtools/server.go", "line": 327, "end_line": 356 }]
+    },
+    {
+      "id": "app",
+      "type": "backend",
+      "label": "Application service",
+      "sublabel": "Command, cwd, environment",
+      "pos": [790, 280],
+      "size": [190, 76],
+      "sources": [{ "path": "apps/devhost/internal/services/stack.go", "line": 1091, "end_line": 1108 }]
+    },
+    {
+      "id": "supervisor",
+      "type": "backend",
+      "label": "Stack supervisor",
+      "sublabel": "Start processes and routes",
+      "pos": [790, 510],
+      "size": [190, 76],
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 1124, "end_line": 1156 },
+        { "path": "apps/devhost/internal/services/routes.go", "line": 23, "end_line": 78 },
+        { "path": "apps/devhost/internal/services/selection.go", "line": 48, "end_line": 84 }
+      ]
+    },
+    {
+      "id": "manifest",
+      "type": "external",
+      "label": "Manifest selection",
+      "sublabel": "Services + dependencies",
+      "pos": [400, 510],
+      "size": [190, 76],
+      "sources": [{ "path": "apps/devhost/internal/services/selection.go", "line": 48, "end_line": 84 }]
+    }
+  ],
+  "connections": [
+    { "id": "browser-request", "from": "browser", "to": "caddy", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "document-request", "from": "caddy", "to": "document", "label": "Documents", "variant": "emphasis" },
+    { "id": "control-request", "from": "caddy", "to": "control", "label": "/__devhost__/*" },
+    { "id": "upstream-request", "from": "document", "to": "app", "label": "HTTP", "variant": "emphasis" },
+    { "id": "service-start", "from": "supervisor", "to": "app", "label": "Spawn" },
+    { "id": "selected-services", "from": "manifest", "to": "supervisor", "label": "Select" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Document path",
+      "items": [
+        "Caddy sends document requests to the per-service loopback proxy; other application traffic uses the direct upstream route.",
+        "The document proxy injects the script only when devtools are enabled and the response is HTML. Failed document requests can show recovery controls."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Control path",
+      "items": [
+        "The root-compatible service route exposes /__devhost__/* when devtools are enabled.",
+        "The browser fetches uncached instance configuration before mounting React. Control handlers serve assets, streams and stack actions."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Process ownership",
+      "items": [
+        "The supervisor selects requested services, group members, alwaysStart services and their dependencies, then launches each configured command.",
+        "The same supervisor prepares per-service document proxies and registers Caddy routes. The drawing separates request paths from process startup."
+      ]
+    }
+  ]
+}

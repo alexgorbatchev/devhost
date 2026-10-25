@@ -16,3 +16,6 @@ storybook-static/
 /.envrc.local
 /.env.local
 /.codegraph
+/.archify/
+/docs/internal/architecture/**/*.delivery*.json
+/docs/internal/architecture/**/.archify-delivery-lock.json

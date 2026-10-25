@@ -6,6 +6,7 @@ Local rules for the repository-level documentation in `docs/`.
 
 - Validate the documentation build: `just check`
 - Format all files in the repository: `just fix`
+- Regenerate architecture diagrams: `ARCHIFY_CLI=/path/to/archify/bin/archify.mjs just archify build`; see `internal/architecture/index.md` for prerequisites.
 
 ## Documentation topology
 
@@ -15,7 +16,7 @@ Local rules for the repository-level documentation in `docs/`.
 ## File Conventions
 
 - **Naming:** All markdown filenames under `docs/` must use lowercase `kebab-case` naming (e.g. `on-demand-assets-dev-loop.md`).
-- **File Extensions:** Use `.md` for all documentation files unless a template explicitly requires a different extension.
+- **File Extensions:** Use `.md` for documentation prose. Archify specifications and generated standalone diagrams in `internal/architecture/` use `.json` and `.html`; its `justfile` owns regeneration.
 
 ## Shared boundaries
 
