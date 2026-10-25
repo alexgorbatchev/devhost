@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-25 08:20
+last_modified: 2026-10-25 09:15
 status: current
 ---
 
@@ -141,25 +141,25 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 ### Stacks and services
 
-| Feature                                                                                   | Documented in                                                                                                             | Shown in                                         |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Find running stacks by URL or partial name; stop every worktree of one repository         | `guides/stack-lifecycle.md`                                                                                               | **No demo**                                      |
-| Serve files or a port without a manifest; shared-design listings and Markdown source view | `reference/files.md`                                                                                                      | No demo                                          |
-| Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                        | `guides/managed-caddy.md`, "Managed Caddy defaults"; `guides/shared-managed-caddy-settings.md`                            | No demo                                          |
-| Prefixed, screened Caddy diagnostics and actionable startup failures                      | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `guides/stack-lifecycle.md`                          | No demo                                          |
-| Local CA trusted once when devhost starts Caddy; untrusted-CA warning                     | `guides/managed-caddy.md`, "Prepare Caddy"; `guides/troubleshooting.md`, "Browsers reject devhost HTTPS certificates"     | No demo                                          |
-| Start a stack in dependency order, stop it with one command                               | `guides/stack-lifecycle.md`                                                                                               | `stack-lifecycle` step-1 to step-5; promo line-3 |
-| Start part of a stack by naming services                                                  | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
-| Named service groups                                                                      | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
-| Start a stopped service from the Services panel                                           | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
-| shadcn error and recovery pages; HTML fallback; in-place refresh; gallery                 | `guides/stack-lifecycle.md`, "Startup and recovery pages"; `development/page-previews.md`                                 | No demo                                          |
-| Configuration hot reload, applied and rejected                                            | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
-| Every manifest setting reloads: name, devtools, worktrees, killZombies                    | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`                                                           | No demo                                          |
-| Unmanaged services, such as a Docker container                                            | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
-| Daemon-style services with start, status, and stop commands                               | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
-| Service commands run without a shell                                                      | `guides/stack-lifecycle.md`, "Service commands and working directories"                                                   | No demo                                          |
-| Zombie process recovery                                                                   | `guides/troubleshooting.md`, "Zombie cleanup messages"                                                                    | No demo                                          |
-| Development servers that require a local origin                                           | `guides/managed-caddy.md`, "Development servers that require a local origin"                                              | No demo                                          |
+| Feature                                                                                  | Documented in                                                                                                             | Shown in                                         |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Find running stacks by URL or partial name; stop every worktree of one repository        | `guides/stack-lifecycle.md`                                                                                               | **No demo**                                      |
+| Serve files or a port without a manifest; directory breadcrumbs and Markdown source view | `reference/files.md`                                                                                                      | No demo                                          |
+| Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                       | `guides/managed-caddy.md`, "Managed Caddy defaults"; `guides/shared-managed-caddy-settings.md`                            | No demo                                          |
+| Prefixed, screened Caddy diagnostics and actionable startup failures                     | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `guides/stack-lifecycle.md`                          | No demo                                          |
+| Local CA trusted once when devhost starts Caddy; untrusted-CA warning                    | `guides/managed-caddy.md`, "Prepare Caddy"; `guides/troubleshooting.md`, "Browsers reject devhost HTTPS certificates"     | No demo                                          |
+| Start a stack in dependency order, stop it with one command                              | `guides/stack-lifecycle.md`                                                                                               | `stack-lifecycle` step-1 to step-5; promo line-3 |
+| Start part of a stack by naming services                                                 | `guides/stack-lifecycle.md`, "Starting part of a stack"                                                                   | No demo                                          |
+| Named service groups                                                                     | `guides/stack-lifecycle.md`, "Named service groups"                                                                       | No demo                                          |
+| Start a stopped service from the Services panel                                          | `guides/stack-lifecycle.md`, "Stopped services"; `guides/devtools.md`                                                     | No demo                                          |
+| shadcn error and recovery pages; HTML fallback; in-place refresh; gallery                | `guides/stack-lifecycle.md`, "Startup and recovery pages"; `development/page-previews.md`                                 | No demo                                          |
+| Configuration hot reload, applied and rejected                                           | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`; `guides/troubleshooting.md`, "Manifest changes rejected" | `troubleshooting` step-4 to step-9               |
+| Every manifest setting reloads: name, devtools, worktrees, killZombies                   | README, "Configuration Hot Reload"; `guides/stack-lifecycle.md`                                                           | No demo                                          |
+| Unmanaged services, such as a Docker container                                           | `guides/docker-backed-services.md`                                                                                        | `docker-backed-services` step-1 to step-9        |
+| Daemon-style services with start, status, and stop commands                              | `guides/managed-daemon-style-services.md`                                                                                 | `managed-daemon-style-services` step-1 to step-6 |
+| Service commands run without a shell                                                     | `guides/stack-lifecycle.md`, "Service commands and working directories"                                                   | No demo                                          |
+| Zombie process recovery                                                                  | `guides/troubleshooting.md`, "Zombie cleanup messages"                                                                    | No demo                                          |
+| Development servers that require a local origin                                          | `guides/managed-caddy.md`, "Development servers that require a local origin"                                              | No demo                                          |
 
 ### Manifest
 

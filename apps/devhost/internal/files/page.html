@@ -42,6 +42,28 @@
       }
       header .devhost-status__brand {
         margin: 0;
+        min-width: 0;
+      }
+      .devhost-breadcrumbs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        min-width: 0;
+      }
+      .devhost-breadcrumbs li {
+        display: flex;
+        gap: 10px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .devhost-breadcrumbs a {
+        color: inherit;
+      }
+      .devhost-breadcrumbs a:hover {
+        color: var(--dh-fg);
       }
       button {
         color: var(--dh-fg);
@@ -98,12 +120,17 @@
   <body>
     <main class="devhost-status devhost-files">
       <header>
-        <span class="devhost-status__brand">devhost / {{.Title}}</span>{{if .Markdown}}<button
-          id="toggle-source"
-          type="button"
-          aria-controls="source rendered"
-        >
-          Show source</button
+        <nav class="devhost-status__brand" aria-label="Breadcrumb">
+          <ol class="devhost-breadcrumbs">
+            {{range $i, $crumb := .Breadcrumbs}}
+            <li>
+              {{if $i}}<span aria-hidden="true">/</span>{{end}} {{if .Href}}<a href="{{.Href}}">{{.Name}}</a
+              >{{else}}<span aria-current="page">{{.Name}}</span>{{end}}
+            </li>
+            {{end}}
+          </ol>
+        </nav>
+        {{if .Markdown}}<button id="toggle-source" type="button" aria-controls="source rendered">Show source</button
         >{{end}}
       </header>
       {{if .Markdown}}

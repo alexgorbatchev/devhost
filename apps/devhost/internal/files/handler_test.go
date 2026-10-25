@@ -22,6 +22,7 @@ func TestServeFiles(t *testing.T) {
 		"listing/a & b.txt":        "hello world",
 		"UPPER.MD":                 "# Uppercase",
 		"listing/.secret":          "hidden",
+		"listing/index.html/child": "index is a directory",
 		".env":                     "password",
 		".private/token":           "hidden token",
 	} {
@@ -42,6 +43,10 @@ func TestServeFiles(t *testing.T) {
 		"absolute.txt": filepath.Join(dir, "listing/a & b.txt"), "alias.md": "listing/a & b.txt",
 		"deep": "nested/deeper", "parent.txt": "deep/../target.txt", "broken.txt": "missing/../target.txt",
 		"absolute-parent.txt": dir + "/deep/../target.txt",
+		"root":                dir,
+		"loop":                "loop",
+		"hidden-target":       "listing/../.env",
+		"outside-parent":      "../secret.txt",
 	} {
 		if err := os.Symlink(target, filepath.Join(dir, name)); err != nil {
 			t.Fatal(err)
@@ -64,6 +69,13 @@ func TestServeFiles(t *testing.T) {
 		{"markdown", "GET", "/", 200, []string{"<h1>Welcome</h1>", "<table>", "type=\"checkbox\"", "<del>old</del>", "&lt;script&gt;", "Show source"}, []string{"<script>window.pwned", "href=\"javascript:"}},
 		{"index priority", "GET", "/nested/", 200, []string{"HTML index"}, []string{"Lower priority"}},
 		{"listing", "GET", "/listing/", 200, []string{"a%20&amp;%20b.txt", "a &amp; b.txt"}, []string{".secret"}},
+		{"directory redirect", "GET", "/listing?keep=true", 301, []string{"/listing/?keep=true"}, nil},
+		{"file trailing slash", "GET", "/index.md/", 404, nil, nil},
+		{"file as directory", "GET", "/target.txt/child", 404, nil, nil},
+		{"root symlink", "GET", "/root/", 200, []string{"<h1>Welcome</h1>"}, nil},
+		{"symlink loop", "GET", "/loop", 404, nil, nil},
+		{"hidden symlink target", "GET", "/hidden-target", 404, nil, []string{"password"}},
+		{"parent escapes root", "GET", "/outside-parent", 404, nil, nil},
 		{"root listing protection", "GET", "/listing/.secret", 404, nil, []string{"hidden"}},
 		{"hidden file", "GET", "/.env", 404, nil, []string{"password"}},
 		{"hidden directory", "GET", "/.private/token", 404, nil, nil},
@@ -126,5 +138,70 @@ func TestServeFiles(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest("GET", "/safe-new.md", nil))
 	if !strings.Contains(w.Body.String(), "<h1>New file</h1>") {
 		t.Fatal("new file was not served")
+	}
+}
+
+func TestOpenUnavailableDirectory(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "file")
+	if err := os.WriteFile(file, []byte("content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{filepath.Join(dir, "missing"), file} {
+		t.Run(filepath.Base(name), func(t *testing.T) {
+			if h, err := Open(name); err == nil {
+				if err := h.Close(); err != nil {
+					t.Error(err)
+				}
+				t.Fatal("opened an unavailable directory")
+			}
+		})
+	}
+}
+
+func TestReadFailuresReturnServerError(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "notes.md")
+	if err := os.WriteFile(file, []byte("# Notes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := h.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	for _, tt := range []struct {
+		name, target, message string
+	}{
+		{"document", "notes.md", "Could not read document"},
+		{"directory", ".", "Could not read directory"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := h.open(tt.target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			info, err := f.Stat()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := f.Close(); err != nil {
+				t.Fatal(err)
+			}
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/", nil)
+			if info.IsDir() {
+				h.directory(w, r, f, tt.target)
+			} else {
+				h.file(w, r, f, info, tt.target)
+			}
+			if w.Code != http.StatusInternalServerError || !strings.Contains(w.Body.String(), tt.message) {
+				t.Fatalf("read failure: status=%d body=%q", w.Code, w.Body.String())
+			}
+		})
 	}
 }
