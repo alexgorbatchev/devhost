@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-24 09:24
+last_modified: 2026-10-25 14:06
 status: current
 ---
 
@@ -195,7 +195,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Service status updates with unavailable checkouts                                                                                               | `guides/devtools.md`                                      | **No demo**                                                           |
 | Recovery dialog after a service exits; stack shutdown preserves the loaded app without flashing recovery and cancels health polling immediately | `guides/devtools.md`, `guides/stack-lifecycle.md`         | No demo                                                               |
 | Host resource usage                                                                                                                             | `guides/devtools.md`, "Host resource usage"               | No demo                                                               |
-| Toolbar layout on narrow viewports                                                                                                              | `guides/devtools.md`                                      | No demo                                                               |
+| Toolbar layout on narrow viewports and vertically centered Chat button                                                                          | `guides/devtools.md`                                      | No demo                                                               |
 | TanStack Query devtools in the toolbar                                                                                                          | `guides/devtools.md`; `architecture/external-devtools.md` | `devtools` query-1; promo line-5                                      |
 | Other third-party devtools: native React DevTools, Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai                      | `architecture/external-devtools.md`                       | No demo                                                               |
 | Open component source                                                                                                                           | `guides/devtools.md`, "Open component source"             | No demo                                                               |
