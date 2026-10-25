@@ -140,6 +140,12 @@ export const App: Story = {
       expect(shadowRoot.querySelector("[data-testid='AnnotationSelectionOverlay']")).not.toBeNull();
     });
 
+    const chatBounds = within(toolbar).getByRole("button", { name: "Chat" }).getBoundingClientRect();
+    const toggleBounds = within(toolbar)
+      .getByRole("button", { name: "Collapse devhost toolbar" })
+      .getBoundingClientRect();
+    expect(chatBounds.top + chatBounds.height / 2).toBe(toggleBounds.top + toggleBounds.height / 2);
+
     await expect(shadowCanvas.queryByRole("complementary", { name: "Agent chat" })).toBeNull();
     await userEvent.click(within(toolbar).getByRole("button", { name: "Chat" }));
     await expect(await shadowCanvas.findByRole("complementary", { name: "Agent chat" })).toBeVisible();

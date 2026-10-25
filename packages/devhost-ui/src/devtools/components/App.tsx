@@ -34,6 +34,7 @@ import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
 import { isEventTargetEditingSurface } from "../shared/isEventTargetEditingSurface";
 import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
+import { ToolbarSegment } from "../shared/components/ToolbarSegment";
 import { DevtoolsTopLayer } from "../shared/components/DevtoolsTopLayer";
 import { useRetainedValue } from "../shared/hooks/useRetainedValue";
 import { ColorSchemeProvider, resolveRoutedServiceKeyForUrl, useResolvedColorScheme } from "../shared";
@@ -300,9 +301,11 @@ function AppContent(): JSX.Element {
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
           ) : null}
           {chatEnabled ? (
-            <Button aria-expanded={isChatOpen} onClick={() => setIsChatOpen(!isChatOpen)}>
-              Chat
-            </Button>
+            <ToolbarSegment ariaLabel="Chat">
+              <Button aria-expanded={isChatOpen} onClick={() => setIsChatOpen(!isChatOpen)}>
+                Chat
+              </Button>
+            </ToolbarSegment>
           ) : null}
         </DevtoolsToolbar>
       ) : null}
