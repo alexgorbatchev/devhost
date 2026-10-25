@@ -55,7 +55,7 @@ func replaceRoutesLocked(previous, options, affected []ActivateRouteOptions, man
 		if syncError := syncActivatedHostRoutes(affected, routesDirectoryPath, settings); syncError != nil {
 			return errors.Join(originalError, fmt.Errorf("restore host routes: %w", syncError))
 		}
-		if syncError := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); syncError != nil {
+		if syncError := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings); syncError != nil {
 			return errors.Join(originalError, fmt.Errorf("restore not-found site: %w", syncError))
 		}
 		if reloadAttempted {
@@ -104,7 +104,7 @@ func replaceRoutesLocked(previous, options, affected []ActivateRouteOptions, man
 	if err := syncActivatedHostRoutes(affected, routesDirectoryPath, settings); err != nil {
 		return rollback(err)
 	}
-	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings.HTTPSPort); err != nil {
+	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings); err != nil {
 		return rollback(err)
 	}
 	reloadAttempted = true

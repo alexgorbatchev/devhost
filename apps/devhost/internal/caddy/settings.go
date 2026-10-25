@@ -11,11 +11,13 @@ import (
 )
 
 type appliedSettingsJSON struct {
-	AdminAddress string `json:"adminAddress"`
-	BindHost     string `json:"bindHost"`
-	HTTPEnabled  bool   `json:"httpEnabled"`
-	HTTPPort     int    `json:"httpPort"`
-	HTTPSPort    int    `json:"httpsPort"`
+	AdminAddress              string `json:"adminAddress"`
+	BindHost                  string `json:"bindHost"`
+	HTTPEnabled               bool   `json:"httpEnabled"`
+	HTTPPort                  int    `json:"httpPort"`
+	HTTPSPort                 int    `json:"httpsPort"`
+	StackDirectoryHost        string `json:"stackDirectoryHost"`
+	StackDirectoryAllowRemote bool   `json:"stackDirectoryAllowRemote"`
 }
 
 // ReadAppliedManagedCaddySettings returns the listener settings the managed
@@ -116,7 +118,7 @@ func renderManagedCaddySettings(paths Paths, settings ManagedCaddyGlobalSettings
 		return err
 	}
 
-	return syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, settings.HTTPSPort)
+	return syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, settings)
 }
 
 func writeManagedCaddyfile(paths Paths, settings ManagedCaddyGlobalSettings, runtimeOS string) error {

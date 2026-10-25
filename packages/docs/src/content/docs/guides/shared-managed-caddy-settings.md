@@ -68,3 +68,20 @@ An invalid file, or settings Caddy rejects, such as a port another program holds
 Caddy keeps the settings it runs when the last route is removed, and runs until `devhost caddy stop`. The next `devhost caddy start` uses the config file's settings.
 
 For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname. See [Managed Caddy and routing](../managed-caddy/) for the manual lifecycle.
+
+## Choose the stack directory hostname
+
+Set `stackDirectoryHost` to a hostname that resolves to this machine, such as `stacks.localhost` or a hostname in your own development domain. Supply the hostname without a scheme, port, or path. The directory uses HTTPS and the shared `httpsPort`. With `http = true`, it also serves HTTP on `httpPort`, including requests from a TLS-terminating tunnel or reverse proxy.
+
+Saving the file moves the directory to the new hostname without restarting stacks. That hostname is reserved for the directory; a setting that conflicts with a running project's hostname is rejected, retaining the previous settings. Clearing the key restores `devhost.localhost`; an empty string is invalid. Access defaults to clients on the devhost machine. Set `stackDirectoryAllowRemote = true` to read the directory from other devices. They can read stack URLs and raw configuration files; the page has no authentication. Read-only methods, same-origin checks, and the separation from stack controls remain enforced. The per-stack snapshot endpoint stays local-only. Setting the option back to `false` withdraws remote access on reload.
+
+### Listen on loopback only
+
+`bindHost` covers only the public HTTP and HTTPS listeners. The admin API listens on `adminAddress`, and each service on its own `bindHost`, which default to loopback.
+
+- **Linux:** set `bindHost = "127.0.0.1"` to accept connections from this machine only.
+- **macOS:** Caddy keeps listening on all interfaces even with `"127.0.0.1"`, because binding a loopback address on a privileged port needs root. For strict loopback-only HTTPS on port 443, start Caddy from a privileged launcher such as `launchd` socket activation.
+
+### Privileged ports
+
+Ports below 1024 need privileges on Linux. `devhost caddy privileged-ports` grants them to the managed Caddy with `setcap`; that covers `httpPort` too when `http = true`. devhost does not set up `authbind` or firewall redirects. To avoid the question, move the listeners to unprivileged ports, as in the example above.

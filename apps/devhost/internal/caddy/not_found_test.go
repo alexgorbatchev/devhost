@@ -29,7 +29,7 @@ func TestSyncManagedCaddyNotFoundSite(t *testing.T) {
 	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "api.localhost.caddy"))
 	writeRouteFile(t, filepath.Join(paths.RoutesDirectoryPath, "legacy.localhost_legacy.caddy"))
 
-	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, 4443); err != nil {
+	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, ManagedCaddyGlobalSettings{HTTPSPort: 4443}); err != nil {
 		t.Fatalf("syncManagedCaddyNotFoundSite(...) unexpected error = %v", err)
 	}
 
@@ -72,7 +72,7 @@ func TestSyncManagedCaddyNotFoundSiteEmptyState(t *testing.T) {
 		t.Fatalf("MkdirAll(...) error = %v", err)
 	}
 
-	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, defaultManagedCaddyHTTPSPort); err != nil {
+	if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, DefaultManagedCaddyGlobalSettings()); err != nil {
 		t.Fatalf("syncManagedCaddyNotFoundSite(...) unexpected error = %v", err)
 	}
 

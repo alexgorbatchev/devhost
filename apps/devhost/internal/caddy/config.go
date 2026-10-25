@@ -8,11 +8,13 @@ import (
 // ManagedCaddyGlobalSettings are the listeners of the managed Caddy that every
 // stack on the machine shares, set by the devhost config file.
 type ManagedCaddyGlobalSettings struct {
-	AdminAddress string
-	BindHost     string
-	HTTPEnabled  bool
-	HTTPPort     int
-	HTTPSPort    int
+	AdminAddress              string
+	BindHost                  string
+	HTTPEnabled               bool
+	HTTPPort                  int
+	HTTPSPort                 int
+	StackDirectoryHost        string
+	StackDirectoryAllowRemote bool
 }
 
 // DefaultManagedCaddyGlobalSettings are the listeners the managed Caddy uses
@@ -50,7 +52,7 @@ func EnsureManagedCaddyConfig(paths Paths, settings ManagedCaddyGlobalSettings, 
 		if err != nil {
 			return err
 		}
-		if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, running.HTTPSPort); err != nil {
+		if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, running); err != nil {
 			return err
 		}
 
