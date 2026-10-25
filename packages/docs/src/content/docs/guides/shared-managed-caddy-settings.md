@@ -1,7 +1,5 @@
 ---
-title: "Shared managed Caddy settings"
-sidebar:
-  order: 4
+title: "Proxy ports and listeners"
 ---
 
 <!-- guide-demo -->
@@ -12,64 +10,48 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
-Every stack on a machine routes through one managed Caddy, so its listeners belong to the machine, not to a project. Set them in the `[caddy]` table of the devhost config file, `config.toml`, or edit that file from the devtools [config editor](../devtools/#config-editor):
+Every stack on a machine shares one Caddy, so its ports and listeners are machine settings. They live in the `[caddy]` table of the devhost config file, `config.toml`, not in any project's manifest.
 
-- `$DEVHOST_CONFIG_DIR/config.toml` when `DEVHOST_CONFIG_DIR` is set
-- otherwise `$XDG_CONFIG_HOME/devhost/config.toml` when `XDG_CONFIG_HOME` is set
-- otherwise `~/.config/devhost/config.toml`, on every platform
+## Where the file lives
 
-Without the file, every setting keeps its default. A project manifest with a `[caddy]` table is rejected, and the error names the config file.
+The first location that applies:
 
-Older checkouts may still contain `[caddy.global]`. Put the shared settings in `config.toml` and remove that block from each checkout's `devhost.toml`, including linked worktrees. A worktree with the obsolete block appears unavailable in the picker; refresh the worktree list after correcting it.
+1. `$DEVHOST_CONFIG_DIR/config.toml`
+2. `$XDG_CONFIG_HOME/devhost/config.toml`
+3. `~/.config/devhost/config.toml` (on every platform, including macOS)
 
-To also serve the routed hosts and the shared fallback page through plain HTTP:
+The file is optional; without it every setting keeps its default. You can also edit it from the browser with the [config editor](../devtools/#config-editor), which creates it when it is missing.
 
-```toml
-[caddy]
-http = true
-```
-
-If a tunnel or another proxy connects to devhost over HTTP, enable this setting even when the browser-facing URL uses HTTPS. The connection from that proxy to devhost determines which listener must serve the route. When the public page is blank but direct local HTTPS works, compare the local HTTP response and check this setting.
-
-To move the listeners off the default privileged ports, set one or both listener ports:
+## Settings
 
 ```toml
 [caddy]
+http = true          # also serve every route over plain HTTP
 httpPort = 8080
 httpsPort = 4443
-```
-
-The listener bind host defaults to all IPv4 and IPv6 interfaces:
-
-```toml
-[caddy]
+stackDirectoryHost = "stacks.localhost"
+stackDirectoryAllowRemote = false
 bindHost = "0.0.0.0"
-```
-
-That setting affects only the managed Caddy HTTP/HTTPS listeners. The admin API keeps its own address, and routed backends can keep their own `services.<name>.bindHost` on loopback behind Caddy. On Linux, set `bindHost = "127.0.0.1"` to keep the listeners on loopback. On macOS, that value keeps wildcard listeners for rootless HTTPS; strict loopback-only privileged HTTPS needs a privileged launcher.
-
-To move the managed Caddy admin API off the default endpoint `127.0.0.1:20197`:
-
-```toml
-[caddy]
 adminAddress = "127.0.0.1:22000"
 ```
 
-Ports must be integers from `1` to `65535`, and `adminAddress` must be a non-empty address. Any other key in the file is rejected.
+| Key                         | Default               | Meaning                                                                             |
+| --------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `stackDirectoryAllowRemote` | `false`               | Allow other devices to read the stack directory, including raw configuration files. |
+| `stackDirectoryHost`        | `"devhost.localhost"` | Hostname of the read-only running-stack directory.                                  |
+| `httpsPort`                 | `443`                 | Port of the HTTPS listener.                                                         |
+| `http`                      | `false`               | Also serve every route, and the 404 page, over plain HTTP.                          |
+| `httpPort`                  | `80`                  | Port of the HTTP listener, used when `http = true`.                                 |
+| `bindHost`                  | `"0.0.0.0"`           | Address the HTTP and HTTPS listeners bind: all IPv4 and IPv6 interfaces by default. |
+| `adminAddress`              | `"127.0.0.1:20197"`   | Address of Caddy's admin API, which devhost uses to change routes.                  |
 
-## Changing the settings while stacks run
+Ports are integers from `1` to `65535`. Any other key is rejected, and so is a `[caddy]` table in a manifest; the error names the config file instead.
 
-`devhost caddy start` starts Caddy with the config file's settings, and every stack applies them when it starts. Every running stack watches the file. Saving it moves the shared Caddy to the new settings with one reload, sent to the admin address Caddy is listening on, so changing `adminAddress` works the same way as changing a port. Nothing restarts: services, routes, terminals, and agent sessions keep running, and every running stack prints its service URLs again with the new port and shows them in devtools.
+:::tip[Tunnels and other proxies]
+Turn on `http = true` when a tunnel or another proxy connects to devhost over plain HTTP, even if visitors use HTTPS. If the public URL shows a blank page while `https://` works locally, this setting is the usual cause.
+:::
 
-An invalid file, or settings Caddy rejects, such as a port another program holds, leave Caddy on the settings it runs. Each stack prints `shared Caddy settings rejected` with the reason, once for each different error, and applies the file at its next save.
-
-## When the last stack stops
-
-Caddy keeps the settings it runs when the last route is removed, and runs until `devhost caddy stop`. The next `devhost caddy start` uses the config file's settings.
-
-For same-host composition within one manifest, use distinct paths such as `/api/*` and `/admin/*`, or combine one root-mounted fallback service with more specific subpath services on the same hostname. See [Managed Caddy and routing](../managed-caddy/) for the manual lifecycle.
-
-## Choose the stack directory hostname
+### Choose the stack directory hostname
 
 Set `stackDirectoryHost` to a hostname that resolves to this machine, such as `stacks.localhost` or a hostname in your own development domain. Supply the hostname without a scheme, port, or path. The directory uses HTTPS and the shared `httpsPort`. With `http = true`, it also serves HTTP on `httpPort`, including requests from a TLS-terminating tunnel or reverse proxy.
 
@@ -85,3 +67,23 @@ Saving the file moves the directory to the new hostname without restarting stack
 ### Privileged ports
 
 Ports below 1024 need privileges on Linux. `devhost caddy privileged-ports` grants them to the managed Caddy with `setcap`; that covers `httpPort` too when `http = true`. devhost does not set up `authbind` or firewall redirects. To avoid the question, move the listeners to unprivileged ports, as in the example above.
+
+## Changing settings while stacks run
+
+Every running stack watches the config file. When you save it:
+
+- Caddy moves to the new settings in one reload, including a new `adminAddress`.
+- Services, routes, terminals, and chat sessions keep running.
+- Every stack prints its service URLs again with the new port and updates them in devtools.
+
+If the file is invalid, or Caddy rejects the settings (for example, a port another program holds), Caddy keeps its current settings. Each stack prints `shared Caddy settings rejected` with the reason, and applies the file again on its next save.
+
+`devhost caddy start` and every stack that starts apply the file's settings. `devhost caddy stop` and `devhost caddy trust` find Caddy at the admin address it is running with, so they keep working after you change `adminAddress`.
+
+## When the last stack stops
+
+Caddy keeps its settings and keeps running until `devhost caddy stop`. The next `devhost caddy start` reads the config file again.
+
+## Older checkouts
+
+Earlier versions of devhost read these settings from a `[caddy.global]` table in `devhost.toml`. Move them to `config.toml` and delete the table from every checkout, including linked worktrees: the worktree picker marks a checkout with the old table as unavailable until you do.

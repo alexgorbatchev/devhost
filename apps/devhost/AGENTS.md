@@ -4,7 +4,7 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 ## Documentation policy
 
-- The public docs under `packages/docs/src/content/docs/` must always be kept up to date. They are where every feature is documented, however small. Update them in the same change whenever you change:
+- The public docs under `packages/docs/src/content/docs/` must always be kept up to date. They are where every feature is documented, however small, each in the page that owns it (see `packages/docs/AGENTS.md` for the layout). Update them in the same change whenever you change:
   - CLI usage
   - manifest behavior
   - injected environment variables
@@ -13,7 +13,7 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
   - devtools behavior
   - limitations, caveats, or failure modes
 - After every behavior change, review the docs and `README.md` for statements the change made inaccurate, and correct each one. This applies to the README as well: what it already says must stay true.
-- `README.md` is an overview, not a feature list. Do not add a new feature, section, or option to it without asking the user first; there are too many small features for all of them to belong there. Correcting or removing existing README text needs no approval.
+- `README.md` is the project's sales flyer and the docs landing page, not documentation. Keep it short and persuasive: a hook, the handful of main features as one-line benefits, a quick look at a manifest and its output, one install command, and links into the docs. Options, flags, configuration, setup details, troubleshooting, and contributor material belong in the docs site. This README intentionally leaves out the generic README sections (How it works, Options & flags, Setup). Ask the user before adding a feature or section to it; correcting, tightening, or removing README text needs no approval. Keep its install command free of version numbers, so a release needs no README edit.
 - `AGENTS.md` files must be kept up to date after workflow, policy, or contributor-expectation changes.
 - `RELEASE.md` must be kept up to date after tag, packaging, or GitHub release workflow changes.
 - If the manifest contract changes, also update `devhost.example.toml` and the devhost skill at `skills/devhost/SKILL.md` (and its reference files).

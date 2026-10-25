@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { DESIGN_TOKENS } from "@alexgorbatchev/devhost-design";
+
+import { createFaviconSvg } from "./src/favicon/createFaviconSvg";
+import { convertGitHubAlertsToStarlightAsides } from "./src/landingPage/convertGitHubAlertsToStarlightAsides";
 import { createLandingPage } from "./src/landingPage/createLandingPage";
 
 interface IMarkdownDocument {
@@ -14,6 +18,8 @@ const docsContentPath = path.join(docsPackagePath, "src/content/docs");
 const readmeSourcePath = path.join(repositoryRootPath, "apps/devhost/README.md");
 const manifestReferenceSourcePath = path.join(repositoryRootPath, "apps/devhost/devhost.example.toml");
 const promoBlockPath = path.join(docsPackagePath, "src/promoDemo.html");
+// Starlight links every page to `favicon.svg` at the site root, which `public/` supplies.
+const faviconPath = path.join(docsPackagePath, "public/favicon.svg");
 const publishedDocsBaseUrl = "https://alexgorbatchev.github.io/devhost";
 
 syncDocsSite();
@@ -22,6 +28,7 @@ function syncDocsSite(): void {
   fs.mkdirSync(docsContentPath, { recursive: true });
   syncLandingPage();
   syncManifestReference();
+  fs.writeFileSync(faviconPath, createFaviconSvg(DESIGN_TOKENS));
 }
 
 function syncLandingPage(): void {
@@ -160,83 +167,6 @@ function convertMarkdownPathToDocsRoute(link: string): string {
   }
 
   return `${link.slice(0, -3)}/`;
-}
-
-interface IStarlightAside {
-  title: string;
-  variant: string;
-}
-
-function convertGitHubAlertsToStarlightAsides(markdown: string): string {
-  const lines: string[] = markdown.split("\n");
-  const convertedLines: string[] = [];
-  let lineIndex: number = 0;
-
-  while (lineIndex < lines.length) {
-    const alertMatch = lines[lineIndex].match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/);
-
-    if (!alertMatch) {
-      convertedLines.push(lines[lineIndex]);
-      lineIndex += 1;
-      continue;
-    }
-
-    const aside: IStarlightAside = mapGitHubAlertToStarlightAside(alertMatch[1]);
-    const alertContentLines: string[] = [];
-    lineIndex += 1;
-
-    while (lineIndex < lines.length && lines[lineIndex].startsWith(">")) {
-      alertContentLines.push(removeMarkdownBlockquotePrefix(lines[lineIndex]));
-      lineIndex += 1;
-    }
-
-    const trimmedContent: string = trimBlankLines(alertContentLines).join("\n");
-    convertedLines.push(`:::${aside.variant}[${aside.title}]`);
-
-    if (trimmedContent.length > 0) {
-      convertedLines.push(trimmedContent);
-    }
-
-    convertedLines.push(":::");
-  }
-
-  return convertedLines.join("\n");
-}
-
-function mapGitHubAlertToStarlightAside(alertType: string): IStarlightAside {
-  switch (alertType) {
-    case "NOTE":
-      return { title: "Note", variant: "note" };
-    case "TIP":
-      return { title: "Tip", variant: "tip" };
-    case "IMPORTANT":
-      return { title: "Important", variant: "caution" };
-    case "WARNING":
-      return { title: "Warning", variant: "caution" };
-    case "CAUTION":
-      return { title: "Caution", variant: "danger" };
-    default:
-      return { title: alertType, variant: "note" };
-  }
-}
-
-function removeMarkdownBlockquotePrefix(line: string): string {
-  return line.replace(/^>\s?/, "");
-}
-
-function trimBlankLines(lines: string[]): string[] {
-  let startIndex: number = 0;
-  let endIndex: number = lines.length;
-
-  while (startIndex < endIndex && lines[startIndex].trim().length === 0) {
-    startIndex += 1;
-  }
-
-  while (endIndex > startIndex && lines[endIndex - 1].trim().length === 0) {
-    endIndex -= 1;
-  }
-
-  return lines.slice(startIndex, endIndex);
 }
 
 function createMarkdownPage(title: string, body: string): string {

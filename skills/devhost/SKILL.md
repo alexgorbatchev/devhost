@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-25 10:37
+  last_modified: 2026-10-25 11:13
   status: current
 ---
 
@@ -26,7 +26,7 @@ Read `Switching worktree: source -> target. Restarting stack.` before a checkout
 
 - `devhost serve`: serve files with `--dir <directory>` or route an existing HTTP service on `127.0.0.1` with `--port <port>`, over the required `--domain` hostname. With neither option, serve the current directory. HTML pages receive the usual devhost toolbar. File mode reads existing files on each request; port mode checks TCP readiness and leaves process startup, restart, and shutdown to the external owner. The command runs independently of manifests, `DEVHOST_MANIFEST`, build commands, and dependency installation. Caddy starts automatically when needed and remains running after shutdown. Stdout prints the service URL with stack label `serve-<domain>` and service name `serve`. Stop with Ctrl-C (`130`), SIGTERM (`143`), or another shutdown signal. Routes, ownership records, and temporary state are removed on normal exit; runtime files live in devhost's state directory, leaving the working or served directory untouched. Shutdown closes the directory server in file mode and leaves the external service running in port mode. Serve sessions participate in hostname ownership checks and use distinct domains for concurrency. `devhost stack list` and `devhost stop --manifest` address manifest-backed stacks; signal a serve session's devhost process or stop it from its terminal.
 
-Directories serve `index.html`, then `index.md`, then a clickable listing. Ordinary files support GET, HEAD, and byte ranges; missing paths return 404. Markdown (`.md`, case-insensitive) uses GitHub styling, GFM tables, task lists, and strikethrough, following the browser's light/dark preference. Raw HTML and dangerous link destinations are suppressed in rendered Markdown. **Show source** / **Show rendered** toggles original text; browser local storage remembers the choice per origin across pages, reloads, and later sessions. With storage unavailable the toggle works for the current page. Dotfiles, hidden directories, links to hidden paths, links outside the served root, and non-regular files are excluded. Symlinks within the root work. See [file serving](https://alexgorbatchev.github.io/devhost/reference/files/).
+Directories serve `index.html`, then `index.md`, then a clickable listing. Ordinary files support GET, HEAD, and byte ranges; missing paths return 404. Markdown (`.md`, case-insensitive) uses GitHub styling, GFM tables, task lists, and strikethrough, following the browser's light/dark preference. Raw HTML and dangerous link destinations are suppressed in rendered Markdown. **Show source** / **Show rendered** toggles original text; browser local storage remembers the choice per origin across pages, reloads, and later sessions. With storage unavailable the toggle works for the current page. Dotfiles, hidden directories, links to hidden paths, links outside the served root, and non-regular files are excluded. Symlinks within the root work. See [file serving](https://alexgorbatchev.github.io/devhost/start/serve/).
 
 Within one devhost state directory, `devhost start` rejects a root or recursively included manifest already registered to another live stack, even with different service selections or `killZombies = true`. Relative paths and symlink aliases resolve to the same file. The startup error uses the `devhost |` prefix for people and `devhost:` for agents, names the conflicting manifest, owner PID, and root manifest, and folds home-directory paths to `~/`. Follow its suggested stop command: `devhost stop` when manifest discovery or `DEVHOST_MANIFEST` selects the owner, or `devhost stop --manifest` with a shell-quoted path otherwise. The `~/` prefix stays unquoted for shell expansion. Stop that stack before retrying. Hot reload reserves added includes before changing services, rejects overlaps while preserving the accepted stack, and releases removed includes after success. Failed reloads retain previous reservations. Exited owners release their reservations for subsequent starts.
 
@@ -152,10 +152,10 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 - For React Hook Form, mount `@hookform/devtools`' `DevTool control={control}` in the host application for each form. The host application mounts each inspector and owns its form controls, form state, and native panel contents together with the upstream library; devhost supplies the launcher.
 - For Jotai, use tested `jotai-devtools@0.14.0` with `jotai@2.20.3`; import devtools before creating custom stores, import its stylesheet in the host app, and pass the same store to `Provider` and `DevTools`. Stay on 0.14.0, because the typed export of 0.15.0 is broken. The host application creates the inspector, and atom and history behavior stay native.
 - Use each **Jotai N** launcher to toggle its associated native root; open the panel to identify its store. Follow the setup guide below for session identities, shared upstream persistence, and production/version boundaries.
-- Use each **Form N** launcher to toggle its associated native inspector. Follow the [External Devtools setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/) for tested versions, encounter-order panel identities, remount behavior, and disabling aggregation.
+- Use each **Form N** launcher to toggle its associated native inspector. Follow the [third-party devtools setup pages](https://alexgorbatchev.github.io/devhost/guides/devtools/#third-party-devtools) for tested versions, encounter-order panel identities, remount behavior, and disabling aggregation.
 - For Vue, use the verified host combination `vite-plugin-vue-devtools@9.0.0-beta.1`, `vite@8.3.3`, Vue `3.5.43`, and `@vitejs/devtools@0.7.6` with `devtools: { apply: "serve" }`. Authorize the genuine native dock and mount a Vue app before expecting **Vue**. Hidden/passive hosts must be revealed through the native shortcut. Read the same setup guide for exact hub versions, native state and suppression ownership, title collisions, and project isolation. The host context, the Vue hooks, and the dock registrations all come from those genuine packages, and the rest of the repository's dependencies keep their versions. Other Vue releases require independent verification.
-- For **Redux**, import the served `/__devhost__/redux.js` development module and register actual Toolkit or native-middleware Zustand stores. Use one public instrument `EnhancedStore.liftedStore` for Toolkit; supply real Zustand `StoreApi`, data snapshot and validated partial restoration functions. Follow the [Redux setup guide](https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#redux-toolkit-and-zustand) for exact imports, versions, HMR disposal, browser policies, and serialization limits. The browser inspector needs no desktop application or extension. Its registration is explicit; an extension hook alone indicates no stores. Existing native extension controls keep their own cursor, and cold native Zustand history is limited. Disabling aggregation or unmounting closes only devhost's own monitor and subscriptions.
-- For native **React DevTools**, configure `[devtools.browser].endpoint` explicitly for an already running dedicated Chrome 154.0.8037.92 or newer profile with original React Developer Tools 8.0.0 or newer and mounted React/React DOM 19.2.5. Choose the dock's direct **Connect browser control** / **Disconnect browser control** command and read its full diagnostics; use the separate **React DevTools** action to open the browser-owned window, then select Components or Profiler there. Keep within this version boundary; verify host props/state and profiling in the native window before reporting live inspection. The browser belongs to the user: attach to the one already running and leave starting and closing it to them. The backend and the hooks are those of the original extension. Report live inspection on the evidence of host props/state read in the native window; an open window shows only that the window exists. Follow [Native React setup](references/setup.md#7-native-react-devtools) for endpoint, origin, identity, lifetime and diagnostic boundaries.
+- For **Redux**, import the served `/__devhost__/redux.js` development module and register actual Toolkit or native-middleware Zustand stores. Use one public instrument `EnhancedStore.liftedStore` for Toolkit; supply real Zustand `StoreApi`, data snapshot and validated partial restoration functions. Follow the [Redux setup guide](https://alexgorbatchev.github.io/devhost/integrations/redux/) for exact imports, versions, HMR disposal, browser policies, and serialization limits. The browser inspector needs no desktop application or extension. Its registration is explicit; an extension hook alone indicates no stores. Existing native extension controls keep their own cursor, and cold native Zustand history is limited. Disabling aggregation or unmounting closes only devhost's own monitor and subscriptions.
+- For native **React DevTools**, configure `[devtools.browser].endpoint` explicitly for an already running dedicated Chrome 154.0.8037.92 or newer profile with original React Developer Tools 8.0.0 or newer and a mounted React DOM 19.2.5 or newer React 19 release. Choose the dock's direct **Connect browser control** / **Disconnect browser control** command and read its full diagnostics; use the separate **React DevTools** action to open the browser-owned window, then select Components or Profiler there. Keep within this version boundary; verify host props/state and profiling in the native window before reporting live inspection. The browser belongs to the user: attach to the one already running and leave starting and closing it to them. The backend and the hooks are those of the original extension. Report live inspection on the evidence of host props/state read in the native window; an open window shows only that the window exists. Follow [Native React setup](references/setup.md#7-native-react-devtools) for endpoint, origin, identity, lifetime and diagnostic boundaries.
 - Preserve the compiled browser asset graph, including Redux inspector modules/styles, chunks/fonts, and gzip representations. Production inspector modules/styles use content-versioned immutable caching; source requests remain uncached and report failed builds as HTTP 503. Load the native inspector stylesheet only in its separate popup document.
 
 ### Service Configuration Constraints
@@ -197,20 +197,31 @@ When modifying or generating configurations inside `devhost.toml`, you **must** 
 
 ### Reference Guides
 
-Published guides include a video at the top. Read the guide prose for operational instructions; watching or downloading the video is optional.
+Many guides open with a video. Read the prose for operational instructions; it covers everything the video shows.
 
-- [Managed Caddy and routing](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
-- [Stack lifecycle](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/)
-- [Shared managed Caddy settings](https://alexgorbatchev.github.io/devhost/guides/shared-managed-caddy-settings/)
-- [Docker-backed services](https://alexgorbatchev.github.io/devhost/guides/docker-backed-services/)
-- [Managed daemon-style services](https://alexgorbatchev.github.io/devhost/guides/managed-daemon-style-services/)
+- [How devhost works](https://alexgorbatchev.github.io/devhost/start/how-it-works/)
+- [Serve files or a port](https://alexgorbatchev.github.io/devhost/start/serve/)
+- [Route apps over HTTPS](https://alexgorbatchev.github.io/devhost/guides/managed-caddy/)
+- [Proxy ports and listeners](https://alexgorbatchev.github.io/devhost/guides/shared-managed-caddy-settings/)
+- [Run a stack](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/)
+- [Hot reload](https://alexgorbatchev.github.io/devhost/stacks/hot-reload/)
+- [Restarts and recovery](https://alexgorbatchev.github.io/devhost/stacks/recovery/)
+- [Git worktrees](https://alexgorbatchev.github.io/devhost/stacks/worktrees/)
+- [Monorepos and includes](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/)
+- [Connect services](https://alexgorbatchev.github.io/devhost/guides/service-references/)
 - [Environment variables](https://alexgorbatchev.github.io/devhost/guides/environment-variables/)
-- [Service references](https://alexgorbatchev.github.io/devhost/guides/service-references/)
-- [Manifest includes](https://alexgorbatchev.github.io/devhost/guides/manifest-includes/)
+- [Docker and external services](https://alexgorbatchev.github.io/devhost/guides/docker-backed-services/)
+- [Background daemons](https://alexgorbatchev.github.io/devhost/guides/managed-daemon-style-services/)
+- [The devtools toolbar](https://alexgorbatchev.github.io/devhost/guides/devtools/)
+- [Chat with a coding agent](https://alexgorbatchev.github.io/devhost/guides/annotations/)
+- [Highlight source locations](https://alexgorbatchev.github.io/devhost/guides/react-highlight/)
 - [Troubleshooting](https://alexgorbatchev.github.io/devhost/guides/troubleshooting/)
-- [Devtools](https://alexgorbatchev.github.io/devhost/guides/devtools/)
-- [React Highlight](https://alexgorbatchev.github.io/devhost/guides/react-highlight/)
-- [Browser Chat and Page Context](https://alexgorbatchev.github.io/devhost/guides/annotations/)
+- [CLI reference](https://alexgorbatchev.github.io/devhost/reference/cli/)
+- [Manifest reference](https://alexgorbatchev.github.io/devhost/reference/devhost-example/)
+- [Terminal output](https://alexgorbatchev.github.io/devhost/reference/output/)
+- [Control API](https://alexgorbatchev.github.io/devhost/reference/control-api/)
+- [Chat API](https://alexgorbatchev.github.io/devhost/reference/chat-api/)
+- [Selection plugins](https://alexgorbatchev.github.io/devhost/reference/selection-plugins/)
 
 - **Full Manifest Example**: To read or copy a comprehensive, production-ready configuration illustrating every available feature and key, refer to the [Full Manifest Example](references/manifest-example.md).
 - **Vite & Storybook**: For modern frontend setups involving dynamic ports, IPv6 loopback bindings, or host verification security, refer to the [Vite & Storybook Manifest Integration guide](references/vite-storybook-integration.md).

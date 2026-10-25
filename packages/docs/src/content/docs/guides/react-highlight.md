@@ -1,7 +1,5 @@
 ---
-title: "React Highlight"
-sidebar:
-  order: 9
+title: "Highlight source locations"
 ---
 
 <!-- guide-demo -->
@@ -13,14 +11,14 @@ sidebar:
 <!-- /guide-demo -->
 
 :::note[Video coverage]
-The published film demonstrates the Neovim launcher. Devhost's current source-navigation controls use external IDE URL handlers; the cursor-highlight transport below remains available for integrations.
+The film shows a Neovim launcher that devhost no longer ships. The cursor transport below is what an editor integration uses today.
 :::
 
-React Highlight draws browser overlays for JSX source locators published to the running stack. It uses the instance-scoped control server and does not launch an editor or terminal. For normal component-source navigation, use Alt + right-click and an external editor configured through devtools.editor.
+React Highlight outlines the elements on the page that a source location renders, such as the JSX under your editor's cursor. An editor plugin or script publishes the location; devhost draws the outline in every open page of the stack. To go the other way, from the page to your editor, use [Alt + right-click](../devtools/#open-component-source).
 
-## Publish a source locator
+## Publish a location
 
-Enable editor devtools and publish through the routed page's origin. For example, a host-page integration can send:
+Send the location to the page's own hostname while `[devtools.editor].enabled` is on (the default):
 
 ```js
 await fetch("/__devhost__/react-highlight/cursor", {
@@ -30,62 +28,32 @@ await fetch("/__devhost__/react-highlight/cursor", {
 });
 ```
 
-Use a null locator to clear the current highlight. The control server supplies the instance's project root, stack name, and timestamp, then broadcasts the update on /**devhost**/ws/react-highlight. Separate stacks have separate control listeners. There is no generated Vim launcher or bundled editor plugin.
+The locator is `file:line:column`, relative to the project. Send `{"locator": null}` to clear the highlight. Each update replaces the previous one; avoid sending the same locator repeatedly.
 
-An accepted publish request confirms transport, not a DOM match. Integrations should avoid publishing unchanged locators repeatedly.
+A successful response means devhost received the update, not that anything matched on the page. Each stack has its own endpoint, so updates never reach another project's pages. devhost does not launch editors and ships no editor plugin.
 
-## Browser Matching
+## How the page finds elements
 
-Cursor highlight rectangles appear above page content, including existing popovers, and beneath the other injected devtools surfaces, without blocking page clicks. Cursor updates replace the previous rectangles; clearing the cursor removes them.
+The page matches a locator in one of two ways, in this order:
 
-Disabling editor devtools or removing the injected overlay closes its cursor connection and removes its highlights. Updates from a previous connection and matching results that finish after a newer cursor update or cleanup are discarded.
+1. **React source metadata.** A React development build that records source locations on its components gives exact matches.
+2. **Source maps.** When that metadata is missing, as with Bun's React development transform, the page reads the page's JavaScript source maps, finds the JSX at that line, and matches simple tags.
 
-The browser overlay matches received locators in two passes:
+The source-map fallback works for lowercase tags that render one DOM element, such as `<div>`, `<h1>`, `<p>`, `<code>`, or `<img>`. A component tag such as `<APITester />` creates no DOM element of its own, so without React's metadata it often cannot be matched.
 
-1. React fiber source metadata from the host page.
-2. Fetchable JavaScript source maps when fiber metadata is unavailable.
+Outlines appear above page content, including popovers, below devhost's own toolbar, and never block clicks.
 
-Fiber metadata is the most precise path because it can associate rendered DOM nodes with React source locations. Some development transforms, including the Bun React development transform used by the playground, do not expose source metadata on React fibers. In those cases, the source-map fallback reads the page's script source maps, finds the JSX source line, and maps simple host JSX tags to DOM elements.
+## Debug a highlight that does not appear
 
-The source-map fallback works best for lowercase host tags that render directly to DOM elements:
-
-```tsx
-<div className="app">
-<h1>Bun + React</h1>
-<p>
-<code>src/App.tsx</code>
-<img ... />
-```
-
-Uppercase component tags are best-effort without fiber metadata:
-
-```tsx
-<APITester />
-```
-
-`<APITester />` does not create an `APITester` DOM element. React calls the component function, and that function renders its own host elements. Without fiber source metadata or explicit runtime instrumentation, the browser cannot reliably map the component callsite to one rendered DOM subtree.
-
-## Debugging
-
-Open the browser console and listen for match diagnostics:
+Listen for match results in the browser console:
 
 ```js
 window.addEventListener("devhost:react-highlight", (event) => console.log(event.detail));
+// { locator: "src/App.tsx:15:7", matchedCount: 1 }
 ```
 
-Each received cursor update dispatches:
+- **`matchedCount` above `0`:** elements matched and should be outlined.
+- **`matchedCount` is `0`:** the update arrived, but nothing on the page matched that location. Check the line and column, and whether the tag is a component (see above).
+- **No event at all:** the update never arrived. Check that the publisher posts to the page's own hostname, that `[devtools.editor].enabled` is on, and that the locator is set.
 
-```js
-{
-  locator: "src/App.tsx:15:7",
-  matchedCount: 1
-}
-```
-
-Use this to separate transport from browser matching:
-
-- If the WebSocket receives cursor payloads and `matchedCount` is greater than `0`, the browser found DOM nodes and should draw an overlay.
-- If the WebSocket receives cursor payloads and `matchedCount` is `0`, transport works but the locator did not match DOM nodes.
-- If no cursor payloads arrive, check the publisher's routed endpoint, enabled editor feature, and source locator.
-
-Direct browser or command-line WebSocket clients must connect through the same route and authentication context as the page. If an upstream proxy redirects unauthenticated requests to a sign-in page, a raw `wss://.../__devhost__/ws/react-highlight` connection can fail before it reaches devhost.
+A script that connects to `wss://<host>/__devhost__/ws/react-highlight` directly needs the same route and sign-in as the page; an authenticating proxy can redirect it before it reaches devhost.

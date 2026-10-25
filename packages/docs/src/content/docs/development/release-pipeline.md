@@ -60,7 +60,7 @@ The Go checks include `logpolicy`, a type-aware analyzer that enforces the share
 
 The `docs` job of the same workflow runs after the release exists. It calls `.github/workflows/docs.yml`, which checks out the tag, builds `packages/docs`, and deploys the result to GitHub Pages. A failed release deploys nothing.
 
-A push to `main` does not deploy the site. Documentation merged to `main` is published with the next release. A correction to the documentation is published the same way, with the next release.
+A push to `main` does not deploy the site; documentation merged to `main`, corrections included, is published with the next release.
 
 The `github-pages` environment accepts deployments only from `main` and from tags that match `v*`. The `Deploy docs to GitHub Pages` workflow can also be run by hand, within those limits: a run from a release tag deploys that release's documentation again, unchanged, and a run from `main` deploys everything on `main`, including documentation of unreleased behavior. A branch that holds only a correction cannot be deployed.
 
@@ -70,7 +70,7 @@ The videos are assets of a GitHub release named `media`, not files in the reposi
 
 A tag carries its pins. The site built for a release therefore shows the videos that were pinned in the tagged commit, and an asset is never replaced, so an earlier tag still builds with the videos it pinned.
 
-New videos need a Linux host with the recording tools, a coding-agent request, an ElevenLabs key, and a review of the result. For that reason they are made by hand before the release:
+New videos need a Linux host with the recording tools, an operator to approve the coding agent's requests during recording, an ElevenLabs key, and a review of the result. For that reason they are made by hand before the release:
 
 1. `just demo audio-guides` generates the narration of changed lines.
 2. `just demo guides` records each guide and renders its film. `just demo record` does the same for the promo.

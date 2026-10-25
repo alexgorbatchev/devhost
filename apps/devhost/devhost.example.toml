@@ -1,30 +1,28 @@
 # devhost example manifest
 #
 # This file is meant to be read as documentation first and copied second.
-# Rename it to `devhost.toml` in your project root when you actually want to use it.
-# Saving this file or its includes hot-reloads service configuration. Invalid edits
-# leave the current stack running. Include glob additions and removals are observed.
+# Copy it to `devhost.toml` in your project root to use it.
+# While a stack runs, saving this file or one of its includes hot-reloads it, and files that
+# start or stop matching an include glob are picked up. Invalid edits leave the stack running.
 # Every setting reloads, including name, killZombies, devtools, and worktrees.enabled;
 # devtools edits restart no service.
-# Single-service restart keeps its assigned automatic port. If that port is occupied,
-# use "Restart Stack" in Services or recovery to restart all managed
-# services with fresh auto ports and rebuilt port references. Fixed ports are retained.
+# Guides: https://alexgorbatchev.github.io/devhost/stacks/hot-reload/
 #
 # Top-level sections:
 # - `name` (required)
 # - `killZombies` (optional; boolean to automatically kill zombie processes from the same manifest, default `true`)
 # - `includes` (optional; string or string array of file glob patterns to merge multiple sub-manifests)
 # - `[groups]` (optional; named selections of services for `devhost start <name>`)
-# - `[worktrees]` (optional; Git checkout selection for repository service groups, enabled by default)
-# - `[devtools]` (optional)
+# - `[worktrees]` (optional; Git checkout selection for services that share a repository, enabled by default)
+# - `[devtools]` (optional; idle timeout)
 # - `[devtools.browser]` (optional; explicitly configured native browser control)
 # - `[devtools.configEditor]` (optional; edit the configuration from the browser, off by default)
-# - `[devtools.editor]` (optional)
-# - `[devtools.externalToolbars]` (optional)
-# - `[devtools.minimap]` (optional)
+# - `[devtools.editor]` (optional; Alt + right-click opens component source, enabled by default)
+# - `[devtools.externalToolbars]` (optional; third-party devtools launchers, enabled by default)
+# - `[devtools.minimap]` (optional; log minimap, enabled by default)
 # - `[devtools.resources]` (optional; host CPU, memory, and disk readouts, enabled by default)
-# - `[devtools.status]` (optional)
-# - `[devtools.shortcuts]` (optional)
+# - `[devtools.status]` (optional; service status and toolbar position, enabled by default)
+# - `[devtools.shortcuts]` (optional; restart shortcut)
 # - `[devtools.chat]` (optional; installed CLI chat, enabled by default)
 # - `[devtools.annotations]` (optional; context selector, enabled by default)
 # - `[services.<name>]` (required; at least one service)
@@ -33,7 +31,7 @@
 # - service names must match `^[a-z][a-z0-9-]*$`
 # - every service must define either `port` or `health`
 # - `alwaysStart = false` by default; `alwaysStart = true` starts the service on every `devhost start`, including one that names other services
-# - `managed = true` by default; `managed = false` means devhost must not start or restart that service
+# - `managed = true` by default; `managed = false` means devhost does not start or restart that service
 # - daemon lifecycle services use `[services.<name>.lifecycle]` with `mode = "daemon"`
 # - daemon lifecycle services must keep `managed = true`, must omit top-level `command`, and must define `lifecycle.start` and `lifecycle.stop`
 # - daemon lifecycle services must not use `port = "auto"` or `health.process`
@@ -48,10 +46,10 @@
 # - hostname ownership is exclusive across projects, but one manifest may mount multiple services under the same host on distinct paths
 # - string values support environment-variable interpolation with `{{ env.NAME }}` placeholders
 # - placeholder names must start with a letter or underscore and then use letters, digits, or underscores
-# - other text stays literal
-# - malformed `{{ ... }}` text stays literal, and an unterminated `{{` keeps the rest of that string literal
-# - referencing an undefined valid placeholder is a manifest read error
-# - defined placeholders may expand to the empty string
+# - text outside placeholders stays literal, as do malformed `{{ ... }}` sequences; an unterminated `{{`
+#   keeps the rest of that string literal
+# - a well-formed placeholder whose variable is unset is a manifest read error
+# - a variable set to the empty string expands to the empty string
 
 # `name` labels the stack in logs and devtools. Saving a new name renames the running stack;
 # the stack is identified by the path of its root manifest.
@@ -59,24 +57,22 @@
 # `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}.localhost"`.
 name = "hello-stack"
 
-# `killZombies` controls whether devhost automatically kills and reclaims zombie
-# processes claiming the same hosts or ports from the same manifest path.
-# - `true` (default): find and kill any active devhost child or main process from the same manifest, log a message, and succeed.
-# - `false`: abort and report the claim conflict as an error.
+# `killZombies` controls whether devhost kills processes left by an earlier run of this
+# manifest that still hold its hostnames or ports, and reclaims them.
+# - `true` (default): stop such a process, log `Stopping zombie PID ...` and `Stopped zombie PID ...`, and continue.
+# - `false`: report the claim conflict as an error.
+# Running stacks and processes from other manifests are never killed.
 # killZombies = true
 
 # `includes` lists file paths or glob patterns (relative to this manifest's directory)
-# of sub-manifests to load and merge. This is perfect for monorepos where each sub-application
-# maintains its own services.
-# - Included manifests' services and groups are recursively merged.
-# - Service names must be unique across all merged manifests.
-# - Relative paths (like `cwd` and `watch` folders) in included manifests are automatically
-#   rewritten to be relative to the root manifest's directory.
-# - If `cwd` is missing in an included service, it defaults to the directory of the manifest
-#   it was defined in.
-# - Cyclic references are safely and gracefully ignored.
-# - The merged stack holds every included service. `devhost start web api` starts one slice of it:
-#   the named services, their `dependsOn` chains, and the `alwaysStart` services (see `services.db`).
+# of other manifests to merge into this stack. Use it in monorepos where each app keeps its own services.
+# - Only the services and groups of included manifests are merged, recursively; every other
+#   setting comes from this root manifest.
+# - Service and group names must be unique across all merged manifests.
+# - An included service without `cwd` runs in its own manifest's directory, and its relative
+#   paths resolve from there.
+# - Include cycles are ignored.
+# Guide: https://alexgorbatchev.github.io/devhost/guides/manifest-includes/
 #
 # includes = ["packages/*/devhost.toml", "apps/*/devhost.toml"]
 
@@ -88,13 +84,13 @@ name = "hello-stack"
 # Each group is a non-empty array of service names from the complete merged manifest;
 # nested groups and unknown services are rejected. Groups select services; dependsOn
 # defines their dependencies. Plain `devhost start` still starts every service.
-# Group edits hot-reload: selected groups use their current members. Removing a
-# selected group removes its selection; alwaysStart and other requested names remain.
+# Group edits hot-reload: a group named at startup follows its current members, and deleting
+# it drops the services only it selected; alwaysStart and other requested names remain.
 [groups]
 app = ["web"]
 
-# Managed Caddy lifecycle is shared and manual.
-# Start it explicitly with `devhost caddy start` before running one or more stacks.
+# Managed Caddy is shared by every stack and started by hand for stacks:
+# run `devhost caddy start` before starting one or more stacks.
 # All stacks share the same managed Caddy instance and the same global 404 hostname list.
 # Its admin address, bind host, HTTP enablement, and listener ports are machine settings,
 # not manifest settings: set them in the `[caddy]` table of the devhost config file,
@@ -109,31 +105,26 @@ app = ["web"]
 # Set enabled = false to disable discovery and saved-selection restore.
 # [worktrees]
 # enabled = false
-# The active stack choice is remembered per original manifest path across restarts.
-# Open the picker or press Refresh to discover added and deleted worktrees.
-# If the running checkout disappears, Refresh stops its services for explicit recovery.
-# Switches load the checkout's manifest and includes and restart the whole managed stack.
-# Service membership, commands, directories, environments, and routes may differ.
-# Missing saved checkouts keep the group stopped; failed switches restore the prior stack.
+# The selected checkout is remembered per root manifest path across restarts.
+# Switching loads that checkout's manifest and includes and restarts the whole managed stack;
+# the stack then takes that manifest's settings, including its name.
 # Repositories containing managed = false services cannot switch.
-# Keep configured cwd values in one checkout per repository. The target manifest uses
-# the same repository-relative path (or filename at the root for an outside manifest).
-# The stack takes the selected checkout's manifest settings, including its name.
+# Point every cwd of one repository into the same checkout.
 # Turning worktrees off while another checkout runs switches back to the root checkout.
+# Guide: https://alexgorbatchev.github.io/devhost/stacks/worktrees/
 
 [devtools.configEditor]
-# `enabled` controls whether the toolbar's Config button edits this manifest, its includes, and the
-# shared config.toml from the browser. Saves pass the checks a reload makes and then hot reload.
-# Only a browser on this machine can save, because the manifest sets the commands devhost runs.
+# `enabled` controls whether the toolbar shows a Config button for editing this manifest, its
+# includes, and the shared config.toml in the browser. Saves pass the checks a reload runs, then
+# hot-reload. Only a browser on this machine can save, because the manifest sets the commands devhost runs.
 # - `false` (default): no editor, and its control routes answer 404.
 # - `true`: show the Config button.
 enabled = false
 
 [devtools]
 # `idleTimeout` sets the automatic idle shutdown duration (e.g. 30s, 1m, 1h).
-# If the daemon receives no routed Caddy traffic and has no persistent browser WebSocket
-# connections or in-flight native chat turns for this duration, it automatically
-# stops all started services and cleanly shuts down the stack.
+# The stack shuts down after this long with no routed Caddy traffic, no open toolbar
+# connections, and no chat turn in progress. `--idle-timeout` and `DEVHOST_IDLE_TIMEOUT` override it.
 # - string (e.g. "1h"): enable auto-shutdown after the given duration.
 # - empty/negative/0 (default): disable auto-shutdown.
 # idleTimeout = "1h"
@@ -141,19 +132,19 @@ enabled = false
 [devtools.chat]
 # Native Codex app-server and Claude Code stream-json clients are discovered from PATH.
 # Keep each CLI signed in with its normal configuration; no API key is entered into devhost.
-# Native model catalogs supply the choices. Omitting a model keeps the CLI configured default.
-# Conversations run in the selected checkout and survive browser reloads. Native approvals
-# require an explicit response. Capture attachments are PNG/JPEG data URLs, bounded to 8 MiB.
+# Models come from each CLI's own list; "Configured default" keeps the CLI's default model.
+# Conversations run in the selected checkout and survive browser reloads. Approvals always
+# need your answer. A message, with its screenshots and pasted PNG/JPEG images, is limited to 8 MiB.
 enabled = true
-# Follow-ups can be sent while the agent is working. PNG/JPEG images can also be pasted.
-# The default workflow asks the agent to use a dedicated Git worktree, run checks,
-# commit and merge into local main, then remove its worktree and branch.
-# prompt replaces those workflow instructions; an empty string disables them.
-# Changes apply to the next send, including in existing conversations.
+# devhost adds workflow instructions to each message: use a dedicated Git worktree, run checks,
+# commit and merge into local main, then remove the worktree and branch.
+# `prompt` replaces those instructions; an empty string disables them.
+# Changes apply to the next message, including in existing conversations.
+# Guide: https://alexgorbatchev.github.io/devhost/guides/annotations/
 # prompt = "Implement the requested changes in a worktree and leave the branch for review."
 
 [devtools.annotations]
-# Enable the browser context selector. Sending selected context also requires chat enabled.
+# Enable element selection and drawing for chat. Sending selected context also requires chat to be enabled.
 enabled = true
 
 [devtools.editor]
@@ -169,51 +160,35 @@ enabled = true
 ide = "vscode"
 
 [devtools.browser]
-# Native React DevTools uses an already running dedicated browser/profile owned by you.
-# Install the original React Developer Tools extension before loading your React app.
-# Supported native versions: Chrome 154.0.8037.92 or newer, React Developer Tools 8.0.0 or newer,
-# and a mounted React DOM 19.2.5 Element/ShadowRoot host.
-# Native tests cover live host Components/Profiler and preserved-window connection lifetimes.
-# Empty endpoint (default) disables native browser access and starts no browser connection.
-# Set an explicit literal-loopback HTTP discovery endpoint with a nonzero port,
-# or a complete ws:// loopback /devtools/browser/<id> URL. DNS, remote addresses,
-# credentials, redirects, query/fragment parameters, and page WebSockets are rejected.
-# devhost never launches a browser, scans profiles, or closes your native windows.
-# Through the routed page, choose Connect browser control directly in the dock, then React DevTools.
-# The same button reads Disconnect browser control while connecting or connected.
-# Setup/status/observations/window/loss/error information is visible in the dock; errors have Copy.
-# Collapse hides the command and full readout but retains the connection and compact state cue.
-# Select Components or Profiler in the genuine native window yourself.
-# Disconnect releases devhost's connections; it preserves your native window and browser.
-# Controller connection/window presence does not certify live inspection or recovery.
-# Native window closure/replacement withholds React access; recovery remains unverified.
-# See https://alexgorbatchev.github.io/devhost/architecture/external-devtools/#native-react-devtools
+# Native React DevTools attaches to a dedicated Chrome profile that you start with remote debugging.
+# Requires Chrome 154.0.8037.92 or newer, the original React Developer Tools 8.0.0 or newer
+# (installed before loading your app), and an app on React DOM 19.2.5 or a newer React 19 release.
+# `endpoint` is the browser's debugging address:
+# - `""` (default): native browser access is off.
+# - `"http://127.0.0.1:<port>"`: a loopback IP with an explicit port.
+# - `"ws://127.0.0.1:<port>/devtools/browser/<id>"`: the browser's full WebSocket URL.
+# Hostnames, remote addresses, credentials, queries, fragments, and page WebSockets are rejected.
+# devhost never launches a browser, scans profiles, or closes your windows.
+# On the routed page, choose Connect browser control in the toolbar, then React DevTools,
+# and pick Components or Profiler in Chrome's DevTools window.
+# Guide: https://alexgorbatchev.github.io/devhost/integrations/react-devtools/
 endpoint = ""
-# Official Chrome Web Store ID. Set the actual ID only for a verified original unpacked extension.
+# `reactExtensionId` is the Chrome Web Store ID of the original extension. Change it only to the
+# ID of an unpacked build of that same extension.
 reactExtensionId = "fmkadmapgofadopljbjfkapdkoienihi"
 
 [devtools.externalToolbars]
 # `enabled` controls whether devhost aggregates detected third-party devtools launcher buttons.
 # - `true` (default): hide supported native launcher buttons and re-render them inside the devhost overlay.
 # - `false`: leave third-party launcher buttons untouched.
-# Supported tools: host-mounted TanStack Query, TanStack Router, the unified TanStack shell, React Hook Form, Jotai, and Vue inspectors.
-# For the unified shell, mount @tanstack/react-devtools 0.10.13 with native Form/Table/Pacer plugins.
-# One TanStack entry controls attached shells sharing upstream state; detached windows use native controls.
-# This integration targets development runtimes; see the setup guide for plugin/version boundaries.
-# For React Hook Form, mount @hookform/devtools DevTool with each form's control in your app.
-# For Jotai, mount jotai-devtools DevTools with each store; tested: 0.14.0 with jotai 2.20.3.
-# Import jotai-devtools before creating custom stores; its panel owns atoms and history.
-# devhost supplies separate Form N and Jotai N launchers; the host owns forms, stores, and native panels.
-# For Vue, install vite-plugin-vue-devtools 9.0.0-beta.1 in a Vite 8.3.3 development host
-# with @vitejs/devtools 0.7.6 and devtools.apply = "serve"; authorize its native dock first.
-# The Vue entry requires a mounted Vue app and visible native host; its inspector stays upstream-owned.
-# This host setup does not require upgrading an unrelated Vite 7 project; other Vue releases need verification.
-# For Redux Toolkit and native-middleware Zustand, opt into /__devhost__/redux.js on the routed development page.
-# Toolkit requires one public instrument EnhancedStore; Zustand requires actual StoreApi plus snapshot/restore.
-# The Redux entry opens the upstream browser inspector; disabling closes its owned monitor/subscriptions only.
-# Inspector modules/styles are content-versioned in compiled builds; its stylesheet stays in the popup document.
-# Configured native React access shares this enabled gate; disabling releases only devhost browser control.
-# Tested versions, setup, and panel identification: https://alexgorbatchev.github.io/devhost/architecture/external-devtools/
+# Supported tools:
+# - TanStack Query, TanStack Router, and the unified TanStack shell
+# - Redux Toolkit and Zustand stores registered through /__devhost__/redux.js
+# - Vue DevTools in a Vite DevTools dock
+# - React Hook Form DevTool panels and Jotai DevTools panels
+# Setup pages: https://alexgorbatchev.github.io/devhost/guides/devtools/#third-party-devtools
+# The panels stay the tools' own; devhost only collects their launchers.
+# `false` also turns off native React DevTools access configured under [devtools.browser].
 enabled = true
 
 [devtools.minimap]
@@ -232,9 +207,9 @@ enabled = true
 # - `true` (default): show the readouts.
 # - `false`: hide them; devhost samples nothing.
 enabled = true
-# `pollInterval` sets how often every readout is read, as a duration string of at least "250ms".
-# - omitted (default): CPU and memory are read every "2s", disk every "1m".
-# - string (e.g. "5s"): read all three at this rate, unless a readout sets its own below.
+# `pollInterval` sets how often each readout is sampled, as a duration string of at least "250ms".
+# - omitted (default): CPU and memory are sampled every "2s", disk every "1m".
+# - string (e.g. "5s"): sample all three at this rate, unless a readout sets its own below.
 # pollInterval = "5s"
 
 [devtools.resources.cpu]
@@ -256,8 +231,8 @@ enabled = true
 # pollInterval = "1m"
 
 [devtools.status]
-# Exited foreground services open a full-screen log view with a restart button.
-# devhost and sibling services keep running after service exits, including exit code 0.
+# When a foreground service exits, the page shows a full-screen log view with a restart button.
+# devhost and sibling services keep running after a service exits, even with exit code 0.
 # `enabled` controls whether service status is shown in the devtools toolbar.
 # - `true` (default): show service state and the services panel in the toolbar.
 # - `false`: hide service status.
@@ -268,12 +243,11 @@ enabled = true
 position = "bottom-right"
 
 [devtools.shortcuts]
-# `restartServices` defines a global keyboard shortcut to trigger a parallel, topological restart
-# of all dirty (modified) services in the browser.
-# - string (e.g. "alt+ctrl+r"): the keyboard shortcut.
-# Supported modifiers: "ctrl", "alt", "shift", "meta", combined with "+" and any physical layout-independent key code (like "r", "enter", "escape").
-# Syntaxes must be separated by "+", for example: "ctrl+shift+x".
-# If invalid syntax is provided or if omitted, it defaults back to "alt+ctrl+r".
+# `restartServices` is the browser shortcut that restarts every service marked `changed`
+# (or the primary service when none is), in dependency order.
+# - string (e.g. "alt+ctrl+r"): modifiers "ctrl", "alt", "shift", "meta" and one key code, such as
+#   "r", "enter", or "escape", joined with "+", for example "ctrl+shift+x".
+# Omitted or invalid values fall back to "alt+ctrl+r".
 restartServices = "alt+ctrl+r"
 
 # -----------------------------------------------------------------------------
@@ -324,9 +298,10 @@ cwd = "./app"
 # `port` sets the runtime listening port or requests automatic allocation.
 # - integer `1..65535`: use the exact port you provide.
 # - `"auto"`: allocate a best-effort free port before spawn and inject it as `PORT`.
-#   Startup and configuration reload retry clear bind collisions; individual restarts keep the assigned port.
-#   "Restart Stack" reassigns automatic ports and rebuilds references across all managed services.
-#   Automatic allocation is best-effort, without a cross-process global auto-port allocator.
+#   Startup and configuration reload retry with a new port when another process took the assigned one;
+#   individual restarts keep the assigned port. "Restart Stack" in the Services panel or on the
+#   recovery page reassigns automatic ports and rebuilds references across all managed services.
+#   Allocation is best-effort: nothing coordinates automatic ports across processes.
 port = 3000
 # `injectPort` controls whether devhost exports `PORT` to the child process.
 # - `true` (default): inject `PORT` when `port` is set.
@@ -346,14 +321,11 @@ bindHost = "127.0.0.1"
 # and the devtools service link. Startup logs list every routed URL.
 host = "hello.local.test"
 # host = ["hello.local.test", "alias.local.test"]
-# `proxyLocalOrigin` translates Host and matching public Origin to the local backend.
-# Enable for dev servers such as Bun HTML/HMR that reject public hostnames.
-# The local address uses this service's bindHost and resolved port.
-# Wildcard bindHost values use loopback: 0.0.0.0 -> 127.0.0.1; :: -> ::1.
-# The app must listen there: honor injected PORT for auto, or match a fixed port.
-# Defaults to false; requires host. Requests without Origin keep it absent.
-# Foreign, opaque, and duplicate origins receive 403. X-Forwarded-Host stays public.
-# Applies to documents, assets, subpaths, and WebSockets; follows automatic ports.
+# `proxyLocalOrigin` rewrites Host, and an Origin that matches the public hostname, to the
+# service's local address, for dev servers such as Bun HTML/HMR that reject public hostnames.
+# The local address is this service's bindHost (wildcards become loopback) and port, so the
+# app must listen exactly there. Defaults to false and requires host. Other origins get 403.
+# Guide: https://alexgorbatchev.github.io/devhost/guides/managed-caddy/#development-servers-that-require-a-local-origin
 # proxyLocalOrigin = true
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to `"/"`.
 # Use same-host composition only within one manifest, for example:
@@ -365,9 +337,9 @@ host = "hello.local.test"
 dependsOn = ["api"]
 # `watch` lists paths to watch for file changes; relative paths use the service cwd.
 # Relative watches follow a selected worktree; absolute watch paths remain unchanged.
-# - string array (e.g. ["src/"]): when files change, the service is marked `changed` (dirty) in the devtools toolbar.
-# - All folders are watched recursively. Heavy paths (e.g., node_modules, .git, .workspaces, .tmp) are automatically ignored.
-# - Rapid concurrent modifications are debounced by 200ms automatically.
+# - string array (e.g. ["src/"]): when files change, the service is marked `changed` in the devtools toolbar.
+# - Folders are watched recursively; node_modules, .git, .workspaces, and .tmp are ignored.
+# - Changes are debounced by 200ms.
 watch = ["src/"]
 # No explicit `[services.web.health]` block is used here.
 # Because `port = 3000`, devhost will apply the default TCP health check for `127.0.0.1:3000`.
@@ -396,22 +368,22 @@ dependsOn = ["db"]
 
 [services.api.env]
 LOG_LEVEL = "debug"
-# The db service binds IPv6 wildcard; connect through bracketed IPv6 loopback.
+# The db service binds the IPv6 wildcard address; connect through bracketed IPv6 loopback.
 DATABASE_URL = "postgres://postgres:postgres@[::1]:{{ services.db.port }}/mydb"
 
 [services.api.health]
-# `http` defines a readiness URL or a single-leading-slash path on this service.
-# Absolute http/https URLs target `127.0.0.1`, `localhost`, or `::1`.
-# Shorthand uses the assigned port and connectable bind host, including IPv6 brackets.
-# Equivalent template: `http = "{{ services.api.url }}/healthz"`.
-# Full construction also works: `http = "http://[::1]:{{ services.api.port }}/healthz"`.
-# The `host` template property names the public proxy; use `url` for direct health probes.
+# `http` is a readiness URL, ready on any 2xx response, or a path starting with a single `/`
+# on this service. A path is shorthand for `http = "{{ services.api.url }}/healthz"`,
+# which uses the assigned port and a connectable bind host, with IPv6 brackets.
+# Full URLs must target `127.0.0.1`, `localhost`, or `::1`, for example
+# `http = "http://[::1]:{{ services.api.port }}/healthz"`.
+# `{{ services.<name>.host }}` is the public hostname; use `url` for direct health checks.
 http = "/healthz"
 # `interval` sets the delay between HTTP health-check attempts.
-# - integer `>= 1`; `200` is the default.
+# - integer milliseconds `>= 1`; `200` is the default.
 interval = 500
 # `timeout` sets the maximum total wait time for this health check.
-# - integer `>= 1`; `30000` is the default.
+# - integer milliseconds `>= 1`; `30000` is the default.
 timeout = 5000
 # `retries` limits retries after the first failed attempt.
 # - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
@@ -460,21 +432,14 @@ dependsOn = ["db"]
 # `tcp` defines the port used by the TCP health check.
 # - integer `1..65535`.
 tcp = 6379
-# `interval` sets the delay between TCP health-check attempts.
-# - integer `>= 1`; `200` is the default.
+# `interval`, `timeout`, and `retries` work as in `services.api.health`.
 interval = 250
-# `timeout` sets the maximum total wait time for this health check.
-# - integer `>= 1`; `30000` is the default.
 timeout = 3000
-# `retries` limits retries after the first failed attempt.
-# - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
-#   bounds the total wait. A positive N permits N retries after the first
-#   failure, giving up after N + 1 consecutive failures or the timeout.
 retries = 10
 
 [services.db]
 # `alwaysStart` controls whether the service starts when `devhost start` names other services.
-# Naming services starts one slice of a large stack, such as the one app of a monorepo you are
+# Naming services starts part of a large stack, such as the monorepo app you are
 # working on, without launching the rest. Set `alwaysStart = true` on a service every slice
 # needs, such as this database, so it starts whichever services are named.
 # - `false` (default): the service starts when it is named, when a started service depends on it,
@@ -496,8 +461,7 @@ bindHost = "::"
 timeout = 60000
 
 [services.worker]
-# A background process with process-based health.
-# This is valid only for non-routed services.
+# A background process with process-based health, which only non-routed services may use.
 command = ["bun", "run", "worker:dev"]
 cwd = "./worker"
 dependsOn = ["api"]
@@ -506,14 +470,7 @@ dependsOn = ["api"]
 # `process` treats the service as healthy while the child process remains alive.
 # - `true`: enable process-based health checks.
 process = true
-# `interval` sets the delay between process-health checks.
-# - integer `>= 1`; `200` is the default.
+# `interval`, `timeout`, and `retries` work as in `services.api.health`.
 interval = 1000
-# `timeout` sets the maximum total wait time for this health check.
-# - integer `>= 1`; `30000` is the default.
 timeout = 1000
-# `retries` limits retries after the first failed attempt.
-# - integer `>= 0`; `0` (the default) disables the cap, so only `timeout`
-#   bounds the total wait. A positive N permits N retries after the first
-#   failure, giving up after N + 1 consecutive failures or the timeout.
 retries = 0

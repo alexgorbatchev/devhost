@@ -1238,50 +1238,95 @@
         </ul>
         <details open>
           <summary>
-            Routing
+            Get started
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
           </summary>
           <ul>
-            <li><a href="#/guides/managed-caddy/">Managed Caddy and routing</a></li>
-            <li><a href="#/guides/stack-lifecycle/">Stack lifecycle</a></li>
-            <li><a href="#/guides/shared-managed-caddy-settings/">Shared managed Caddy settings</a></li>
-            <li><a href="#/guides/docker-backed-services/">Docker-backed services</a></li>
-            <li><a href="#/guides/managed-daemon-style-services/">Managed daemon-style services</a></li>
-            <li><a href="#/guides/environment-variables/">Environment Variables</a></li>
-            <li><a href="#/guides/manifest-includes/">Manifest Includes</a></li>
-            <li><a href="#/guides/troubleshooting/">Troubleshooting</a></li>
+            <li><a href="#/start/install/">Install</a></li>
+            <li><a href="#/start/how-it-works/">How devhost works</a></li>
+            <li><a href="#/start/serve/">Serve files or a port</a></li>
           </ul>
         </details>
         <details open>
           <summary>
-            Devtools
+            Routing and HTTPS
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
           </summary>
           <ul>
-            <li><a href="#/guides/devtools/">Devtools</a></li>
-            <li><a href="#/guides/react-highlight/">React Highlight</a></li>
-            <li><a href="#/guides/annotations/">Annotations</a></li>
+            <li><a href="#/guides/managed-caddy/">Route apps over HTTPS</a></li>
+            <li><a href="#/guides/shared-managed-caddy-settings/">Proxy ports and listeners</a></li>
+          </ul>
+        </details>
+        <details open>
+          <summary>
+            Stacks
+            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </summary>
+          <ul>
+            <li><a href="#/guides/stack-lifecycle/">Run a stack</a></li>
+            <li><a href="#/stacks/hot-reload/">Hot reload</a></li>
+            <li><a href="#/stacks/recovery/">Restarts and recovery</a></li>
+            <li><a href="#/stacks/worktrees/">Git worktrees</a></li>
+            <li><a href="#/guides/manifest-includes/">Monorepos and includes</a></li>
+            <li><a href="#/guides/service-references/">Connect services</a></li>
+            <li><a href="#/guides/environment-variables/">Environment variables</a></li>
+            <li><a href="#/guides/docker-backed-services/">Docker and external services</a></li>
+            <li><a href="#/guides/managed-daemon-style-services/">Background daemons</a></li>
+          </ul>
+        </details>
+        <details open>
+          <summary>
+            Browser devtools
+            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </summary>
+          <ul>
+            <li><a href="#/guides/devtools/">The devtools toolbar</a></li>
+            <li><a href="#/guides/annotations/">Chat with a coding agent</a></li>
+            <li><a href="#/guides/react-highlight/">Highlight source locations</a></li>
             <li>
               <details open>
                 <summary>
-                  Architecture
+                  Third-party devtools
                   <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                 </summary>
                 <ul>
-                  <li><a href="#/architecture/external-devtools/">External Devtools</a></li>
-                  <li><a href="#/architecture/annotations/queue/">Durable Annotation Queues</a></li>
+                  <li><a href="#/integrations/react-devtools/">Native React DevTools</a></li>
+                  <li><a href="#/integrations/redux/">Redux Toolkit and Zustand</a></li>
+                  <li><a href="#/integrations/tanstack/">TanStack devtools</a></li>
+                  <li><a href="#/integrations/vue/">Vue DevTools</a></li>
+                  <li><a href="#/integrations/react-hook-form/">React Hook Form</a></li>
+                  <li><a href="#/integrations/jotai/">Jotai</a></li>
                 </ul>
               </details>
             </li>
           </ul>
         </details>
+        <ul>
+          <li><a href="#/guides/troubleshooting/">Troubleshooting</a></li>
+        </ul>
         <details open>
           <summary>
             Reference
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
           </summary>
           <ul>
+            <li><a href="#/reference/cli/">CLI</a></li>
             <li><a href="#/reference/devhost-example/">Manifest reference</a></li>
+            <li><a href="#/reference/output/">Terminal output</a></li>
+            <li><a href="#/reference/control-api/">Control API</a></li>
+            <li><a href="#/reference/chat-api/">Chat API</a></li>
+            <li><a href="#/reference/selection-plugins/">Selection plugins</a></li>
+          </ul>
+        </details>
+        <details open>
+          <summary>
+            Development
+            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </summary>
+          <ul>
+            <li><a href="#/development/building/">Build from source</a></li>
+            <li><a href="#/development/page-previews/">Preview standalone pages</a></li>
+            <li><a href="#/development/release-pipeline/">Release pipeline</a></li>
           </ul>
         </details>
         <!-- Starlight moves social links + theme select into the mobile menu footer. -->
@@ -1322,39 +1367,27 @@
             <h1 class="page-title">devhost</h1>
             <div class="prose">
               <p>
-                <code>devhost</code> gives your local app a proper front door: real hostnames, local HTTPS, and one
-                command to start and route your dev services.
+                <strong>Your dev stack, on real HTTPS hostnames, with one command.</strong> <code>devhost</code> starts
+                every service your app needs, puts each one on a hostname like <code>https://app.localhost</code>, and
+                keeps the whole thing running while you break things.
               </p>
-              <p>
-                Use it when <code>localhost:3000</code> stops being good enough: auth callbacks, cookie/domain behavior,
-                multi-service stacks, or just wanting <code>app.localhost</code> and <code>api.app.localhost</code> to
-                behave more like a real app. Any domain can work as well, as long as it is configured to resolve to the
-                machine running <code>devhost</code>.
-              </p>
-              <p>What it does well:</p>
+              <h2 id="why-devhost">Why devhost</h2>
               <ul>
-                <li>routes local services onto HTTPS hostnames through managed Caddy</li>
+                <li><strong>Real hostnames, real HTTPS.</strong> Give each service its own trusted hostname.</li>
+                <li><strong>One command for the whole stack.</strong> Services start in dependency order.</li>
+                <li><strong>Crashes don't take you down.</strong> A failing service shows its error at its URL.</li>
                 <li>
-                  starts one service or a full stack from <code>devhost.toml</code>, including optional externally
-                  managed backends
-                </li>
-                <li>waits for health checks before exposing managed routes</li>
-                <li>
-                  optionally injects browser devtools for logs, service status, annotations, browser-hosted Neovim
-                  sessions, hotkey-driven parallel restarts, and aggregated third-party launcher buttons
+                  <strong>Devtools in your page.</strong> Service status, live logs, restarts, and your React, Redux,
+                  TanStack, Vue, and Jotai devtools in one place.
                 </li>
               </ul>
               <h2 id="quick-start">Quick start</h2>
               <h3 id="installation">Installation</h3>
               <p>
                 Download the archive for your platform from
-                <a href="https://github.com/alexgorbatchev/devhost/releases">GitHub Releases</a>, extract it, and place
-                the <code>devhost</code> binary on your <code>PATH</code>.
-              </p>
-              <p>
-                Published GitHub Releases include versioned <code>.tar.gz</code> archives for <code>darwin-arm64</code>,
-                <code>linux-x64</code>, <code>linux-arm64</code>, <code>linux-x64-musl</code>, and
-                <code>linux-arm64-musl</code>.
+                <a href="https://github.com/alexgorbatchev/devhost/releases">GitHub Releases</a> and put
+                <code>devhost</code> on your <code>PATH</code>; the <a href="#/start/install/">install guide</a> has a
+                one-step command.
               </p>
               <p>To print the CLI build version:</p>
               <figure class="code" data-kind="terminal">
@@ -1369,7 +1402,7 @@
                     <li>a managed Caddy binary downloaded with <code>devhost caddy download</code></li>
                   </ul>
                 </li>
-                <li><code>nvim</code> and <code>curl</code> when <code>[devtools.editor].ide = "neovim"</code></li>
+                <li>an installed, signed-in Codex or Claude Code CLI for browser chat</li>
               </ul>
               <h3 id="minimal-example">Minimal example</h3>
               <p>Configure your stack in <code>devhost.toml</code>, then run it through <code>devhost</code>.</p>
@@ -1425,109 +1458,76 @@ open https://foo.localhost</code></pre>
         </div>
 
         <!-- ============================================================
-             PAGE: Devtools guide (src/content/docs/guides/devtools.md)
+             PAGE: The devtools toolbar (src/content/docs/guides/devtools.md)
              ============================================================ -->
-        <div class="content-grid" data-route="#/guides/devtools/" data-title="Devtools" hidden>
+        <div class="content-grid" data-route="#/guides/devtools/" data-title="The devtools toolbar" hidden>
           <main class="content">
             <ol class="breadcrumb" aria-label="Section">
-              <li>Devtools</li>
+              <li>Browser devtools</li>
             </ol>
-            <h1 class="page-title">Devtools</h1>
+            <h1 class="page-title">The devtools toolbar</h1>
             <div class="prose">
               <p>
-                <code>devhost</code> routing works without the browser tooling layer. Enable <code>devtools</code> only
-                when you want the injected overlay, service controls, annotations, or component-source navigation on top
-                of routed local apps.
+                devhost can add a small toolbar to every page of your app: service status and restarts, live logs, a
+                chat with your coding agent, Git worktree switching, and host resource usage. Routing works the same
+                with or without it.
               </p>
-              <p>When <code>devtools</code> are enabled, routed traffic is split like this:</p>
+              <h2 id="turn-it-on-or-off">Turn it on or off</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Setting</th>
+                    <th>Default</th>
+                    <th>Adds</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>[devtools.status].enabled</code></td>
+                    <td><code>true</code></td>
+                    <td>Service status, the Services panel, and the crash recovery view</td>
+                  </tr>
+                  <tr>
+                    <td><code>[devtools.chat].enabled</code></td>
+                    <td><code>true</code></td>
+                    <td><a href="#/guides/annotations/">Chat with your coding agent</a></td>
+                  </tr>
+                  <tr>
+                    <td><code>[devtools.configEditor].enabled</code></td>
+                    <td><code>false</code></td>
+                    <td>The config editor</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h2 id="services-panel">Services panel</h2>
               <ul>
-                <li><code>/__devhost__/*</code> → <code>devtools</code> control server</li>
-                <li><code>Sec-Fetch-Dest: document</code> requests → document injector server</li>
-                <li>everything else → app directly</li>
-              </ul>
-              <p>
-                That keeps assets, HMR, fetches, SSE, and WebSockets off the injection path. The control server also
-                owns the websocket status stream used by the injected UI.
-              </p>
-              <p>
-                The injected overlay is a single compact toolbar docked to the right edge of the browser. It shows the
-                stack name, service health, annotation queues, supported third-party devtools toggles, and terminal
-                sessions. Use <code>[devtools.status].position</code> to switch between <code>top-right</code> and
-                <code>bottom-right</code>; toolbar panels open above the toolbar, or below it at <code>top-right</code>.
-                Clicking the stack name collapses the toolbar to a single stack-health dot.
-              </p>
-              <p>
-                For annotation workflows, action configuration, and queue behavior, see
-                <a href="#/guides/annotations/">Annotations</a>.
-              </p>
-              <h2 id="open-component-source">Open component source</h2>
-              <p>
-                The shipped Go runtime supports <code>Alt</code> + <code>right-click</code> component-source navigation
-                whenever <code>[devtools.editor].enabled = true</code>.
-              </p>
-              <ul>
+                <li><strong>Applications</strong> lists services with a hostname, as links that open in a new tab.</li>
                 <li>
-                  When <code>[devtools.editor].ide = "neovim"</code>, <code>devhost</code> launches Neovim inside the
-                  injected xterm terminal, so <code>nvim</code> must be available on the machine running
-                  <code>devhost</code>.
+                  <strong>Restart Changed</strong> restarts the services marked <code>changed</code>. Its shortcut is
+                  <strong>Alt+Ctrl+R</strong>.
                 </li>
-                <li>
-                  Other supported editors use their direct external-editor URL launch path instead of the embedded
-                  terminal.
-                </li>
+                <li><strong>Restart Stack</strong> restarts every managed service with new automatic ports.</li>
               </ul>
-              <h2 id="automatic-idle-timeout">Automatic Idle Timeout</h2>
-              <p>
-                <code>devhost</code> supports automatically shutting down the entire stack and all of its managed child
-                processes when no activity has occurred for a configured duration.
-              </p>
+              <h2 id="host-resource-usage">Host resource usage</h2>
               <h3 id="configuration">Configuration</h3>
-              <p>You can configure the idle timeout in three ways, with the following priority of resolution:</p>
-              <ol>
-                <li>
-                  Command-line flag: <code>--idle-timeout &lt;duration&gt;</code> (e.g. <code>--idle-timeout 1h</code>,
-                  <code>--idle-timeout 30s</code>)
-                </li>
-                <li>Environment variable: <code>DEVHOST_IDLE_TIMEOUT</code></li>
-                <li>Manifest configuration: <code>devtools.idleTimeout</code> in <code>devhost.toml</code></li>
-              </ol>
-              <p>For example, to configure a 1-hour idle timeout directly in your manifest:</p>
               <figure class="code" data-kind="editor" data-lang="toml">
-                <pre tabindex="0"><code><span class="t-sec">[devtools]</span>
-<span class="t-key">idleTimeout</span> <span class="t-pun">=</span> <span class="t-str">"1h"</span></code></pre>
+                <pre tabindex="0"><code><span class="t-sec">[devtools.resources]</span>
+<span class="t-key">pollInterval</span> <span class="t-pun">=</span> <span class="t-str">"5s"</span>      <span class="t-cm"># all three readouts</span></code></pre>
               </figure>
-              <h3 id="how-activity-is-tracked">How activity is tracked</h3>
-              <p><code>devhost</code> passive activity tracking combines three signals:</p>
-              <ul>
-                <li>
-                  <strong>WebSocket connections:</strong> Any active WS connection to the devhost control server keeps
-                  the daemon alive. The daemon restarts the idle timer when connections drop to 0, providing a full
-                  timeout buffer across reloads.
-                </li>
-                <li>
-                  <strong>Application traffic:</strong> Requests proxied by Caddy are monitored by polling the
-                  modification time of stack-isolated Caddy access logs (<code
-                    >&lt;caddy-paths&gt;/logs/stack-&lt;manifest path hash&gt;_access.log</code
-                  >).
-                </li>
-                <li>
-                  <strong>Terminal sessions:</strong> The daemon will never shut down if there is an active interactive
-                  terminal session.
-                </li>
-              </ul>
-              <p>On startup, <code>devhost</code> prints a status line to confirm the timeout is active:</p>
+              <h3 id="when-a-readout-is-missing">When a readout is missing</h3>
+              <p>A readout that devhost cannot read is hidden, and devhost logs the reason once:</p>
               <figure class="code" data-kind="terminal" data-title="devhost output">
                 <pre
                   tabindex="0"
-                ><code><span class="t-cm">[stack-name]</span> Idle timeout enabled: 1h (will automatically shut down when inactive)</code></pre>
+                ><code><span class="t-cm">shop    |</span> devtools disk usage is unavailable: permission denied</code></pre>
               </figure>
             </div>
             <nav class="pagination" aria-label="Pagination">
-              <a href="#/guides/troubleshooting/" rel="prev">
-                <span class="dir">Previous</span><span class="ttl">Troubleshooting</span>
+              <a href="#/guides/managed-daemon-style-services/" rel="prev">
+                <span class="dir">Previous</span><span class="ttl">Background daemons</span>
               </a>
-              <a href="#/guides/react-highlight/" rel="next">
-                <span class="dir">Next</span><span class="ttl">React Highlight</span>
+              <a href="#/guides/annotations/" rel="next">
+                <span class="dir">Next</span><span class="ttl">Chat with a coding agent</span>
               </a>
             </nav>
           </main>
@@ -1535,31 +1535,30 @@ open https://foo.localhost</code></pre>
         </div>
 
         <!-- ============================================================
-             PAGE: External Devtools (architecture, mermaid diagram)
+             PAGE: How devhost works (concepts, diagram)
              ============================================================ -->
-        <div class="content-grid" data-route="#/architecture/external-devtools/" data-title="External Devtools" hidden>
+        <div class="content-grid" data-route="#/start/how-it-works/" data-title="How devhost works" hidden>
           <main class="content">
             <ol class="breadcrumb" aria-label="Section">
-              <li>Devtools</li>
-              <li>Architecture</li>
+              <li>Get started</li>
             </ol>
-            <h1 class="page-title">External Devtools</h1>
+            <h1 class="page-title">How devhost works</h1>
             <div class="prose">
               <p>
-                The external devtools feature aggregates supported third-party launcher buttons into the injected
-                <code>devhost</code> overlay without taking ownership of the third-party panels themselves. It is
-                intentionally conservative: <code>devhost</code> proxies launcher actions, hides the native launcher
-                chrome, and lets the host library keep rendering and managing its own panel state.
+                devhost runs your development services and puts each one behind a real HTTPS hostname, such as
+                <code>https://app.localhost</code>, instead of <code>localhost:3000</code>. This page explains the
+                moving parts and the words the rest of the docs use.
               </p>
-              <h2 id="architecture-flow">Architecture Flow</h2>
-              <!-- Excerpt of the first block of the real sequenceDiagram, drawn with the mermaid theme the site
-                   should configure (themeVariables mapped onto the tokens above). -->
+              <h2 id="the-pieces">The pieces</h2>
+              <!-- Sequence diagram drawn with the mermaid theme the site configures (themeVariables mapped onto the
+                   tokens above). The published page uses a flowchart; this mock keeps a sequence diagram to show
+                   actors, lifelines, and replies. -->
               <figure class="diagram">
                 <div
                   class="diagram-body"
                   tabindex="0"
                   role="img"
-                  aria-label="Sequence diagram: adapter detection and hide-rule installation"
+                  aria-label="Sequence diagram: how a page load reaches the app"
                 >
                   <svg viewBox="0 0 960 300" aria-hidden="true">
                     <defs>
@@ -1577,15 +1576,15 @@ open https://foo.localhost</code></pre>
                     </defs>
                     <g class="d-actor">
                       <rect x="10" y="8" width="170" height="30" rx="2" />
-                      <text x="95" y="28" text-anchor="middle">Host Page DOM</text>
+                      <text x="95" y="28" text-anchor="middle">Browser</text>
                       <rect x="195" y="8" width="210" height="30" rx="2" />
-                      <text x="300" y="28" text-anchor="middle">useExternalDevtoolsLaunchers</text>
+                      <text x="300" y="28" text-anchor="middle">Managed Caddy</text>
                       <rect x="420" y="8" width="200" height="30" rx="2" />
-                      <text x="520" y="28" text-anchor="middle">Devtools Adapter</text>
+                      <text x="520" y="28" text-anchor="middle">Document injector</text>
                       <rect x="635" y="8" width="150" height="30" rx="2" />
-                      <text x="710" y="28" text-anchor="middle">Hide Style</text>
+                      <text x="710" y="28" text-anchor="middle">Control server</text>
                       <rect x="800" y="8" width="150" height="30" rx="2" />
-                      <text x="875" y="28" text-anchor="middle">Panel UI</text>
+                      <text x="875" y="28" text-anchor="middle">web service</text>
                     </g>
                     <line class="d-life" x1="95" y1="38" x2="95" y2="292" />
                     <line class="d-life" x1="300" y1="38" x2="300" y2="292" />
@@ -1593,54 +1592,43 @@ open https://foo.localhost</code></pre>
                     <line class="d-life" x1="710" y1="38" x2="710" y2="292" />
                     <line class="d-life" x1="875" y1="38" x2="875" y2="292" />
 
-                    <text class="d-label" x="410" y="76" text-anchor="middle">isInstalled() / isOpen()</text>
+                    <text class="d-label" x="410" y="76" text-anchor="middle">GET https://app.localhost/</text>
                     <line class="d-msg" x1="300" y1="86" x2="518" y2="86" marker-end="url(#arrow)" />
 
-                    <text class="d-label" x="307" y="122" text-anchor="middle">Query stable selectors</text>
+                    <text class="d-label" x="307" y="122" text-anchor="middle">Page load</text>
                     <line class="d-msg" x1="520" y1="132" x2="97" y2="132" marker-end="url(#arrow)" />
 
-                    <text class="d-label" x="410" y="168" text-anchor="middle">Installed adapters + open state</text>
+                    <text class="d-label" x="410" y="168" text-anchor="middle">Page with the toolbar</text>
                     <line class="d-msg reply" x1="520" y1="178" x2="302" y2="178" marker-end="url(#arrow)" />
 
-                    <text class="d-label" x="505" y="214" text-anchor="middle">Write selector-based hide rules</text>
+                    <text class="d-label" x="505" y="214" text-anchor="middle">/__devhost__/config.json</text>
                     <line class="d-msg" x1="300" y1="224" x2="708" y2="224" marker-end="url(#arrow)" />
 
-                    <text class="d-label" x="588" y="260" text-anchor="middle">Launcher list snapshot</text>
+                    <text class="d-label" x="588" y="260" text-anchor="middle">Assets and WebSockets</text>
                     <line class="d-msg reply" x1="300" y1="270" x2="873" y2="270" marker-end="url(#arrow)" />
                   </svg>
                 </div>
               </figure>
-              <h2 id="how-it-works">How it works</h2>
-              <h3 id="adapter-owned-host-knowledge">Adapter-Owned Host Knowledge</h3>
-              <p>
-                Each supported third-party tool is modeled as an <code>IExternalDevtoolsAdapter</code> in
-                <code>src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts</code>.
-              </p>
               <ul>
-                <li><code>isInstalled()</code> answers whether the host page appears to have mounted the tool.</li>
-                <li><code>isOpen()</code> answers whether the native panel is currently expanded.</li>
                 <li>
-                  <code>open()</code> and <code>close()</code> proxy the tool's own launcher or minimize controls.
+                  <strong>The manifest.</strong> <code>devhost.toml</code> lists your services and their hostnames.
                 </li>
-                <li>
-                  <code>hideSelectors</code> lists the host selectors whose launcher chrome should be hidden while
-                  <code>devhost</code> is aggregating that tool.
-                </li>
+                <li><strong>The stack.</strong> <code>devhost start</code> starts the services in dependency order.</li>
+                <li><strong>Managed Caddy.</strong> One Caddy server terminates HTTPS for every stack.</li>
               </ul>
-              <h3 id="selector-based-suppression">Selector-Based Suppression</h3>
+              <h2 id="one-machine-many-stacks">One machine, many stacks</h2>
+              <h3 id="ownership">Ownership</h3>
               <p>
-                The feature does <strong>not</strong> remove host-owned nodes or keep mutable references to specific
-                launcher elements. Instead, <code>useExternalDevtoolsLaunchers.ts</code> writes a narrowly scoped
-                <code>&lt;style&gt;</code> tag into <code>document.head</code> with
-                <code>display: none !important</code> rules derived from the installed adapters.
+                A hostname, a fixed port, and a manifest file each belong to one running stack at a time. A second stack
+                that claims one fails to start and names the owner.
               </p>
             </div>
             <nav class="pagination" aria-label="Pagination">
-              <a href="#/guides/annotations/" rel="prev">
-                <span class="dir">Previous</span><span class="ttl">Annotations</span>
+              <a href="#/start/install/" rel="prev">
+                <span class="dir">Previous</span><span class="ttl">Install</span>
               </a>
-              <a href="#/architecture/annotations/queue/" rel="next">
-                <span class="dir">Next</span><span class="ttl">Durable Annotation Queues</span>
+              <a href="#/start/serve/" rel="next">
+                <span class="dir">Next</span><span class="ttl">Serve files or a port</span>
               </a>
             </nav>
           </main>
@@ -1697,8 +1685,9 @@ open https://foo.localhost</code></pre>
               </figure>
             </div>
             <nav class="pagination" aria-label="Pagination">
-              <a href="#/architecture/annotations/queue/" rel="prev">
-                <span class="dir">Previous</span><span class="ttl">Durable Annotation Queues</span>
+              <a href="#/reference/cli/" rel="prev"> <span class="dir">Previous</span><span class="ttl">CLI</span> </a>
+              <a href="#/reference/output/" rel="next">
+                <span class="dir">Next</span><span class="ttl">Terminal output</span>
               </a>
             </nav>
           </main>
@@ -1867,8 +1856,8 @@ open https://foo.localhost</code></pre>
                 </p>
                 <p>
                   This page is not part of the mockup. Mocked pages: <a href="#/">Overview</a>,
-                  <a href="#/guides/devtools/">Devtools</a>,
-                  <a href="#/architecture/external-devtools/">External Devtools</a>,
+                  <a href="#/start/how-it-works/">How devhost works</a>,
+                  <a href="#/guides/devtools/">The devtools toolbar</a>,
                   <a href="#/reference/devhost-example/">Manifest reference</a>, and
                   <a href="#/_primitives">Primitives</a>.
                 </p>
@@ -1905,8 +1894,8 @@ open https://foo.localhost</code></pre>
         >Page
         <select id="pc-page">
           <option value="#/">Overview</option>
-          <option value="#/guides/devtools/">Devtools guide</option>
-          <option value="#/architecture/external-devtools/">External Devtools (diagram)</option>
+          <option value="#/start/how-it-works/">How devhost works (diagram)</option>
+          <option value="#/guides/devtools/">Devtools toolbar guide</option>
           <option value="#/reference/devhost-example/">Manifest reference</option>
           <option value="#/_primitives">Primitives (all states)</option>
         </select>
@@ -2120,27 +2109,22 @@ open https://foo.localhost</code></pre>
         {
           href: "#/",
           title: "devhost",
-          text: "real hostnames, local HTTPS, and one command to start and route your dev services",
+          text: "Your dev stack, on real HTTPS hostnames, with one command",
         },
         {
-          href: "#/",
-          title: "devhost › Minimal example",
-          text: "Configure your stack in devhost.toml, then run it through devhost",
-        },
-        {
-          href: "#/guides/devtools/",
-          title: "Devtools",
-          text: "injected overlay, service controls, annotations, or component-source navigation",
+          href: "#/start/how-it-works/",
+          title: "How devhost works",
+          text: "the manifest, the stack, managed Caddy, and the devtools toolbar",
         },
         {
           href: "#/guides/devtools/",
-          title: "Devtools › Automatic Idle Timeout",
-          text: "shutting down the entire stack when no activity has occurred",
+          title: "The devtools toolbar",
+          text: "service status and restarts, live logs, chat, worktrees, and host resource usage",
         },
         {
-          href: "#/architecture/external-devtools/",
-          title: "External Devtools",
-          text: "aggregates supported third-party launcher buttons into the injected overlay",
+          href: "#/guides/stack-lifecycle/",
+          title: "Run a stack › Stop automatically when idle",
+          text: "stops the stack after a period without activity",
         },
         {
           href: "#/reference/devhost-example/",
@@ -2149,12 +2133,12 @@ open https://foo.localhost</code></pre>
         },
         {
           href: "#/guides/managed-caddy/",
-          title: "Managed Caddy and routing",
-          text: "routes local services onto HTTPS hostnames through managed Caddy",
+          title: "Route apps over HTTPS",
+          text: "routes every service with a host through one shared Caddy",
         },
         {
           href: "#/guides/environment-variables/",
-          title: "Environment Variables",
+          title: "Environment variables",
           text: "interpolation with {{ env.NAME }} placeholders",
         },
       ];

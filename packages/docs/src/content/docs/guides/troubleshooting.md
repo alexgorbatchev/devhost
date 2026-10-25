@@ -1,7 +1,5 @@
 ---
 title: "Troubleshooting"
-sidebar:
-  order: 10
 ---
 
 <!-- guide-demo -->
@@ -12,42 +10,44 @@ sidebar:
 </video>
 <!-- /guide-demo -->
 
+Each section starts from what you see and ends with the fix.
+
+## Manifest changes rejected
+
+`configuration reload rejected` means a saved edit to `devhost.toml` or an included manifest could not apply. The stack keeps running with the last accepted manifest, and pages with the toolbar show the reason under it.
+
+A syntax error names the file, line, and column; any other problem starts with the setting it concerns, such as `services.api.port`. Fix it and save again. If services failed to start partway through a reload, devhost restored the previous ones; the logs name anything it could not restore. See [Hot reload](../../stacks/hot-reload/).
+
 ## Caddy is unavailable or cannot start
 
-When the shared Caddy proxy is unavailable, `devhost` prints `Caddy is not available.` and asks you to run:
+`Caddy is not available.` means the shared proxy is not running. Start it:
 
 ```bash
 devhost caddy start
 ```
 
-Human output omits the underlying admin API connection error. `AGENT=1` retains that technical detail.
-
-If Caddy cannot bind HTTPS port 443 on Linux because it lacks permission, the error explains the missing setup and gives these recovery commands:
+On Linux, an error about binding port 443 means Caddy lacks the privilege to use low ports:
 
 ```bash
-devhost caddy privileged-ports
+devhost caddy privileged-ports   # may ask for your password
 devhost caddy start
 ```
 
-Setup may ask for your password. Run it again if the managed Caddy binary is replaced and loses its bind capability.
-
-Lines Caddy writes use the `caddy` label: `caddy | ` in human mode and `caddy: ` in agent mode. Devhost's own messages about Caddy use `devhost | ` and `devhost: `. After a Caddy command succeeds, devhost shows only Caddy's warnings and errors; after a failure it also shows Caddy's other lines. It leaves out the lines it reports itself, or that no setting of yours can change: the start confirmation, the trust-store lines of a local CA installation (such as `not NSS security databases found` and `define JAVA_HOME environment variable to use the Java trust`, which mean that no Firefox or Java trust store exists to install into), and the notes about the Caddyfile devhost generates. Runtime logs are retained in `<state-dir>/caddy/caddy.runtime.log`, with automatic rotation. Startup stdout and stderr are retained in `caddy.stdout.log` and `caddy.stderr.log` beside it; each start replaces those two files. The default state directory is `~/.local/state/devhost`; `XDG_STATE_HOME` and `DEVHOST_STATE_DIR` select other locations as described in [Managed Caddy defaults](../managed-caddy/#managed-caddy-defaults).
+Run `privileged-ports` again whenever the Caddy binary is replaced. For Caddy's own messages, read `<state>/caddy/caddy.runtime.log`, or `caddy.stdout.log` and `caddy.stderr.log` beside it for the last start; `AGENT=1` also prints the underlying connection error. See [Files and directories](../../reference/cli/#files-and-directories).
 
 ## Browsers reject devhost HTTPS certificates
 
-`managed caddy local CA is not trusted, so browsers will reject devhost HTTPS certificates.` means the system does not trust Caddy's local certificate authority. Devhost prints it when the installation was declined or failed, when it cannot ask for a password, and when a stack starts while the authority is untrusted. Install the authority from a terminal:
+`managed caddy local CA is not trusted, so browsers will reject devhost HTTPS certificates.` means your system does not trust Caddy's certificate authority yet: you declined the password prompt, the installation failed, or devhost could not ask (no terminal, or `AGENT=1`). Install it from a terminal:
 
 ```bash
 devhost caddy trust
 ```
 
-It may ask for your password, and reports when the authority is already trusted. See [Managed Caddy](../managed-caddy/#prepare-caddy).
+A phone or another computer needs the authority too; on a Mac, use `devhost caddy trust-remote`. See [Trust the certificates](../managed-caddy/#trust-the-certificates).
 
 ## Hostname already claimed
 
-`devhost start` fails with `<host> is already claimed by PID <pid> from <manifest>.` when another running stack routes that hostname. The stack may have been started from a different manifest, so `devhost stop` in your project folder reports that nothing is running there and points to `devhost stack list`.
-
-List the running stacks, then stop the one that holds the hostname:
+`<host> is already claimed by PID <pid> from <manifest>.` means another running stack routes that hostname. It may come from another directory, so `devhost stop` in yours finds nothing. Find and stop it:
 
 ```bash
 devhost stack list
@@ -55,67 +55,39 @@ devhost stack list
 devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
 ```
 
-Each line is the PID of the stack's devhost process, one tab, and its manifest path; the PID matches the one in the error. [Stopping a Stack](../stack-lifecycle/#stopping-a-stack) explains the command line piece by piece.
+The PID in the list matches the one in the error. See [Stop a stack started elsewhere](../stack-lifecycle/#stop-a-stack-started-elsewhere).
+
+## Manifest already in use
+
+An `already running` error means another live stack already uses your root manifest or one of its included manifests. A manifest file belongs to one stack at a time, even when the two stacks start different services. The error prints the command that stops the other stack; run it, then start yours. The same conflict rejects a hot reload that adds an include another stack uses.
 
 ## Zombie cleanup messages
 
-An `already running` startup error means another live stack in the same state directory owns the root manifest or an included file. The error uses the `devhost |` log prefix (`devhost:` in agent mode) and shortens home-directory paths to `~/`. Use its suggested stop command before starting this stack: it shows `devhost stop` when manifest discovery or `DEVHOST_MANIFEST` selects the owner, and includes `--manifest` otherwise. Explicit paths are shell-quoted while leaving `~/` expandable. The same conflict rejects an include change during hot reload. `killZombies` leaves registered live stacks running.
+`Stopping zombie PID ...` followed by `Stopped zombie PID ...` means devhost found a process from an earlier run of the same manifest, one that crashed or was killed, still holding a hostname or port, and stopped it. This is on by default (`killZombies = true`).
 
-With `killZombies = true` (the default), devhost attempts to kill an existing owner from the same manifest when reclaiming a hostname or fixed port. It prints `Stopping zombie PID ...` before the attempt and `Stopped zombie PID ...` only after confirming that the owner has exited. If the kill fails, exit cannot be verified, or the owner does not exit within five seconds, devhost reports an error and leaves that claim unreclaimed.
+- devhost tries each leftover process once per startup or reload, and prints the pair once even when that process held several hostnames and ports.
+- If the process cannot be killed, or has not exited after five seconds, devhost reports an error and leaves that hostname or port unclaimed.
+- Processes from a different manifest, and stacks that are still running, are never killed; they produce the usual conflict errors above.
 
-Each startup or configuration reload claim pass sends at most one kill attempt and prints at most one pair of messages per process identity, even when that process owns several route registrations, hostname claims, or fixed-port claims. Every claim is still checked and reclaimed separately. Claims from a different manifest remain conflicts.
-
-This cleanup handles processes a previous run left behind when it crashed, was aborted, or left child processes holding the same hostname or port. To get the ordinary hostname or port conflict error instead, set `killZombies = false` at the top level of the manifest:
+To get a conflict error instead of the cleanup, turn it off at the top of the manifest:
 
 ```toml
-name = "hello-stack"
 killZombies = false
 ```
 
-## Automatic port conflict during restart
+## Restart fails because a port is taken
 
-A single-service restart reuses its assigned automatic port. If another process occupies it, devhost reports the conflict and leaves the service stopped. Choose **Restart Stack** in the Services panel or recovery overlay to restart all managed services with fresh automatic ports and rebuilt port references and environments. External processes keep running, and fixed ports stay unchanged.
+A single-service restart keeps its automatic port. If another process took that port, the restart fails and points to **Restart Stack**, which assigns new automatic ports. A fixed `port` cannot be reassigned: stop whatever holds it or change the setting. See [Restarts and recovery](../../stacks/recovery/#port-conflicts-on-restart).
 
-This action uses the last accepted manifest, so an invalid edit on disk does not block recovery. Launch or routing failures display an error and remain retryable. A fixed-port conflict requires freeing the configured port or changing that service's `port` setting; automatic-port reassignment cannot resolve it.
+## The running worktree was deleted
 
-## Manifest changes rejected
-
-Saving `devhost.toml` or an included manifest reloads service configuration. A `configuration reload rejected` log names the reason an edit could not apply, and pages with devhost's toolbar show it below the toolbar. A syntax error gives the file, line, and column; each validation issue starts with the full path of the setting it concerns, such as `services.api.port`. Correct the errors and save again.
-
-If a replacement launch or route update fails, devhost attempts to restore the previous stack. Read the retained logs for restoration errors and recover stopped services explicitly. See [Stack lifecycle](./stack-lifecycle/) for the reload and recovery contract.
-
-## Deleted selected worktree
-
-Open the Worktrees toolbar picker or press **Refresh** after adding or deleting worktrees. If the running checkout was deleted, devhost stops only that repository's services and retains the missing selection with a recovery error. Select an available checkout before restarting the stack. External editor links and new chat sessions into that repository remain blocked until checkout recovery; other repositories keep running.
+devhost stops that repository's services and shows a recovery error. Open **Worktrees** and pick an available checkout. See [New and deleted worktrees](../../stacks/worktrees/#new-and-deleted-worktrees).
 
 ## Vite bind-host mismatch
 
-Some dev servers print a URL like `http://localhost:5173`, and many projects copy that port directly into `devhost.toml`. With Vite-style setups, `localhost` and `127.0.0.1` can point at different listeners, which makes the routed hostname and the printed dev-server URL appear to disagree.
+The dev server prints `http://localhost:5173` and works there, but `https://app.localhost` times out or shows another app's response.
 
-On some machines, though, `http://localhost:5173` and `http://127.0.0.1:5173` do not hit the same listener:
-
-- `localhost` may resolve to `::1`
-- `devhost` defaults `bindHost` to `127.0.0.1`
-- a routed hostname such as `https://app.localhost` will therefore proxy to `127.0.0.1:<port>` unless you override `bindHost`
-
-That can produce confusing behavior where the direct printed `localhost` URL works, but the routed `*.localhost` hostname lands on a different local process or response.
-
-When a TCP health check cannot connect to its configured address but a connection to the other loopback address succeeds, `devhost` logs one warning per startup attempt. Progress logs include the checked address and elapsed time alongside the configured timeout. The final error retains both addresses and a concrete `services.<name>.bindHost` hint, including on recovery pages. The probe establishes connectivity only; verify that the listener belongs to your app before changing `bindHost`.
-
-`bindHost` selects devhost's health-check and proxy target. The application owns its listener: changing the manifest alone does not reconfigure Vite's `server.host`. Configure Vite's `server.host` and `server.port` to match the manifest's address and assigned port, and use `server.strictPort = true` so it fails instead of moving to another port. See [Vite's server options](https://vite.dev/config/server-options).
-
-For an existing app verified to listen on IPv6 loopback, matching that listener means setting `bindHost = "::1"` explicitly:
-
-```toml
-[services.app]
-command = ["bun", "run", "dev"]
-cwd = "."
-port = 5173
-bindHost = "::1"
-host = "app.localhost"
-```
-
-If you are unsure which listener your app is using, compare these directly:
+`localhost` can resolve to IPv6 `::1`, while devhost connects to `127.0.0.1` unless the service sets `bindHost`. The two addresses can reach different listeners, or one can have none. Compare them:
 
 ```bash
 curl -I http://localhost:5173/
@@ -123,34 +95,39 @@ curl -I http://127.0.0.1:5173/
 curl -g -I 'http://[::1]:5173/'
 ```
 
-If those responses differ, match `bindHost` to the verified listener or configure the app to listen on devhost's address. Removing `bindHost` selects `127.0.0.1`, so it only resolves the mismatch if the app accepts IPv4 connections.
+When the health check fails on one loopback address but the other answers, devhost says so once per start and suggests the `services.<name>.bindHost` value to use. Check that the listener that answered really is your app, then either:
 
-A mismatch that prevents readiness ends with a health-check error after the configured timeout (30 seconds by default). The supervisor stays running and recovery remains retryable. With worktrees enabled, a failed repository restart stops the group and shows the failing service's error on every member's recovery page. Correct the listener configuration, then retry **Restart**.
+- **Make the app listen where devhost connects.** Set Vite's `server.host` and `server.port` to the manifest's address and port, and `server.strictPort = true` so Vite fails instead of moving to another port. See [Vite's server options](https://vite.dev/config/server-options).
+- **Point devhost at the app's listener**, for an app that listens on IPv6 loopback only:
 
-Before stopping a foreground process whose health check failed, devhost logs the health error and explains that it is sending `SIGTERM (signal 15)`. It also announces when a startup failure stops the repository's sibling services. Child messages such as `recipe dev was terminated ... by signal 15` or `script "dev" exited with code 143` can follow that stop request; the preceding devhost message explains the cause. If the stack itself received a signal, devhost names it in a `Received ...; shutting down the stack.` line before stopping services.
+  ```toml
+  [services.app]
+  command = ["bun", "run", "dev"]
+  port = 5173
+  bindHost = "::1"
+  host = "app.localhost"
+  ```
 
-## Composite services
+`bindHost` tells devhost where to connect and check health; it does not reconfigure your app. A mismatch ends in a health-check timeout (30 seconds by default) and a recovery page; fix the listener, then press **Restart**.
 
-Some "one command" dev scripts are really wrappers that launch multiple long-lived processes, such as a frontend dev server plus an API worker. In those setups, an inherited `PORT` can miswire child processes if every nested process sees the same value.
+## A tool reports signal 15 or exit code 143
 
-By default, `devhost` injects the configured service `port` as `PORT` into that top-level command.
-If the wrapper passes its environment through unchanged, every nested child process may inherit the same `PORT`.
+Messages such as `recipe dev was terminated ... by signal 15` or `script "dev" exited with code 143` mean devhost stopped that process. The devhost line just before it says why: a failed health check, a repository's sibling service failing, or a shutdown signal the stack received (`Received ...; shutting down the stack.`).
 
-That can produce confusing failures such as:
+## One command runs several dev servers
 
-- one child binding the routed service port even though that port was intended for a different nested process
-- another child silently moving to a fallback port after seeing the inherited `PORT` already in use
-- the frontend proxying `/api` to its usual target while the API actually bound somewhere else
-- routed requests returning backend `404`s even though the main page appears to load normally
+A wrapper command that starts, say, a frontend and an API together passes the service's `PORT` to every process it starts. One of them takes the routed port, another moves to a fallback, and API requests return `404` while the page looks fine.
 
-If your manifest service launches multiple dev processes under one command, prefer splitting them into separate `devhost` services.
-If you intentionally keep a composite wrapper, set `injectPort = false` on that service and configure the underlying processes explicitly instead:
+Split them into separate services, which is the better fix. To keep the wrapper, stop devhost from setting `PORT` and configure each process's port yourself:
 
 ```toml
 [services.app]
 command = ["bun", "run", "dev"]
-cwd = "."
 port = 5173
 injectPort = false
 host = "app.localhost"
 ```
+
+## A page through a tunnel or proxy is blank
+
+When a tunnel or another proxy connects to devhost over plain HTTP, Caddy needs its HTTP listener even if visitors use HTTPS. Set `http = true` in `config.toml`; see [Proxy ports and listeners](../shared-managed-caddy-settings/).
