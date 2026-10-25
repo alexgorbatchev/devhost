@@ -20,7 +20,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"first.md", "second.md"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("# Heading\n\n**bold** <script>window.pwned = true</script>"), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("# Heading\n\n**bold** <script>window.pwned = true</script>\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n- [x] Done\n\n~~old~~\n\n[bad](javascript:alert(1))"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -52,7 +52,14 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !restarted {
-			if err := chromedp.Do(ctx, chromedp.WaitVisible(chromedp.CSS("#rendered h1")), chromedp.Click(chromedp.CSS("#toggle-source"))); err != nil {
+			if err := chromedp.Do(ctx, chromedp.WaitVisible(chromedp.CSS("#rendered h1"))); err != nil {
+				t.Fatal(err)
+			}
+			safe, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#rendered table') !== null && document.querySelector('#rendered input[type=checkbox]').checked && document.querySelector('#rendered del').textContent === 'old' && document.querySelector('#rendered script') === null && !document.querySelector('#rendered a').getAttribute('href') && window.pwned === undefined`))
+			if err != nil || !safe {
+				t.Fatalf("Markdown rendering or sanitization failed: %v", err)
+			}
+			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("#toggle-source"))); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -65,7 +72,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			if err != nil || !ok {
 				t.Fatalf("source view is incorrect: %v %v", ok, err)
 			}
-			for _, selector := range []string{"#source", "#toggle-source", "header span"} {
+			for _, selector := range []string{"#source", "#toggle-source", `header [aria-current="page"]`} {
 				ratio, err := chromedp.Run(ctx, chromedp.Evaluate[float64](`(`+chromium.Contrast+`)(document.querySelector('`+selector+`'))`))
 				if err != nil || ratio < 4.5 {
 					t.Errorf("%s contrast=%v, err=%v; want at least 4.5", selector, ratio, err)

@@ -1,9 +1,7 @@
 package devtools
 
 import (
-	_ "embed"
 	"encoding/json"
-	"html/template"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -14,16 +12,6 @@ import (
 )
 
 const pagePreviewPath = controlPathPrefix + "/pages/"
-
-//go:embed page_preview.html
-var pagePreviewDocument string
-
-var pagePreviewTemplate = template.Must(template.New("page-previews").Parse(pagePreviewDocument))
-
-type pagePreviewData struct {
-	Styles      template.CSS
-	ThemeScript template.JS
-}
 
 func (s *ControlServer) handlePagePreview(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
@@ -59,11 +47,12 @@ func (s *ControlServer) handlePagePreview(w http.ResponseWriter, r *http.Request
 	}
 	switch name {
 	case "":
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if r.Method != http.MethodHead {
-			data := pagePreviewData{Styles: template.CSS(statuspage.CSS), ThemeScript: template.JS(statuspage.ThemeScript)}
-			_ = pagePreviewTemplate.Execute(w, data) // Static embedded template; delivery is best-effort.
+		document, err := statuspage.Render(statuspage.Page{Kind: "previews", Status: http.StatusOK, Title: "Standalone page previews", Message: "Examples use the real page components with sample data. Preview actions cannot change running services."}, "")
+		if err != nil {
+			http.Error(w, "Unable to render preview gallery", http.StatusInternalServerError)
+			return
 		}
+		servePreviewDocument(w, r, document, http.StatusOK)
 	case "status.css":
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		if r.Method != http.MethodHead {

@@ -3,6 +3,9 @@ import type { ReactElement } from "react";
 import type { IRecoveryClient, StatusPageData } from "../types";
 import { RecoveryPage } from "./RecoveryPage";
 import { StatusFrame } from "./StatusFrame";
+import { StackDirectoryPage } from "./StackDirectoryPage";
+import { FilePage } from "./FilePage";
+import { PreviewGallery } from "./PreviewGallery";
 
 interface IStatusPageProps {
   data: StatusPageData;
@@ -12,6 +15,9 @@ interface IStatusPageProps {
 export function StatusPage({ data, client }: IStatusPageProps): ReactElement {
   if (data.kind === "recovery" && data.recovery)
     return <RecoveryPage initial={data.recovery} status={data.status} client={client} />;
+  if (data.kind === "stacks") return <StackDirectoryPage stacks={data.stacks ?? []} query={data.query ?? ""} />;
+  if (data.kind === "files" && data.files) return <FilePage data={data.files} />;
+  if (data.kind === "previews") return <PreviewGallery />;
   return (
     <StatusFrame
       status={data.status}

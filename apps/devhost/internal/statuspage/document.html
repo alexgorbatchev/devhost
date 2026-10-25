@@ -21,7 +21,15 @@
         <p>devhost · {{.Page.Status}}</p>
         <h1>{{.Page.Title}}</h1>
         <p>{{.Page.Message}}</p>
-        {{if eq .Page.Kind "not-found"}}
+        {{with .Page.Files}} {{if .Markdown}}
+        <pre><code>{{.Source}}</code></pre>
+        {{else}}
+        <ul>
+          {{range .Entries}}
+          <li><a href="{{.Href}}">{{.Name}}</a></li>
+          {{end}}
+        </ul>
+        {{end}} {{end}} {{if eq .Page.Kind "not-found"}}
         <h2>Active hostnames</h2>
         <ul>
           {{range .Page.Routes}}

@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @import "@alexgorbatchev/shadcn/theme.css";
 @import "@alexgorbatchev/devhost-design/tokens.css";
+@import "./github-markdown.css";
 
 @source "./components";
 @source "../../node_modules/@alexgorbatchev/shadcn/dist";
@@ -20,4 +21,17 @@
   --border: var(--dh-line);
   --input: var(--dh-input-line);
   --ring: var(--dh-accent);
+}
+
+.markdown-body {
+  --bgColor-default: var(--dh-surface);
+  --bgColor-muted: var(--dh-surface-2);
+  --bgColor-neutral-muted: var(--dh-surface-3);
+  --fgColor-default: var(--dh-fg);
+  --fgColor-muted: var(--dh-fg-muted);
+  --fgColor-accent: var(--dh-accent);
+  --borderColor-default: var(--dh-line);
+  --borderColor-muted: var(--dh-line);
+  --borderColor-accent-emphasis: var(--dh-accent);
+  font-family: inherit;
 }

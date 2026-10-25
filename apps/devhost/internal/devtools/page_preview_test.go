@@ -1,13 +1,48 @@
 package devtools
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/browsertest"
+	"github.com/chromedp/chromedp"
 )
+
+func TestPagePreviewGalleryInBrowser(t *testing.T) {
+	root, err := filepath.Abs("../../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := startDevSourceControlServer(t, root)
+	chromium := browsertest.Locate(t)
+	run := browsertest.RunDirectory(t, "page-previews")
+	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(filepath.Join(run, "profile"))...)
+	defer stop()
+	browser, closeBrowser := chromedp.NewContext(allocator)
+	defer closeBrowser()
+	ctx, cancel := context.WithTimeout(browser, 30*time.Second)
+	defer cancel()
+	galleryURL := serverURL(server.Port(), pagePreviewPath)
+	for _, tc := range []struct{ link, target string }{
+		{`a[href="files/"]`, `[data-testid="FilePage"]`},
+		{`a[href="files/notes.md"]`, `#rendered h1`},
+		{`a[href="failed"]`, `#restart`},
+	} {
+		if err := chromedp.Do(ctx, chromedp.EmulateViewport(360, 800), chromedp.Navigate(galleryURL), chromedp.WaitVisible(chromedp.CSS(`[data-testid="PreviewGallery"]`)), chromedp.Click(chromedp.CSS(tc.link)), chromedp.WaitVisible(chromedp.CSS(tc.target))); err != nil {
+			t.Fatalf("preview %s: %v", tc.link, err)
+		}
+		fits, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.documentElement.scrollWidth <= innerWidth`))
+		if err != nil || !fits {
+			t.Fatalf("preview %s overflows the viewport: %v", tc.link, err)
+		}
+	}
+}
 
 func TestDevelopmentPagePreviews(t *testing.T) {
 	root, err := filepath.Abs("../../../..")

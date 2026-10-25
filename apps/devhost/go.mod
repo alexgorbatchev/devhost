@@ -17,7 +17,6 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.4.1
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/spf13/cobra v1.10.2
-	github.com/yuin/goldmark v1.8.6
 	golang.org/x/sys v0.48.0
 	golang.org/x/term v0.45.0
 	golang.org/x/tools v0.50.0

@@ -17,6 +17,21 @@ type Page struct {
 	Message  string      `json:"message"`
 	Routes   []RouteLink `json:"routes,omitempty"`
 	Recovery any         `json:"recovery,omitempty"`
+	Stacks   []Stack     `json:"stacks,omitempty"`
+	Query    string      `json:"query,omitempty"`
+	Files    *FilePage   `json:"files,omitempty"`
+}
+
+type FileLink struct {
+	Name string `json:"name"`
+	Href string `json:"href"`
+}
+
+type FilePage struct {
+	Breadcrumbs []FileLink `json:"breadcrumbs"`
+	Markdown    bool       `json:"markdown"`
+	Source      string     `json:"source"`
+	Entries     []FileLink `json:"entries"`
 }
 
 // PageCSS contains the standalone shadcn theme and component utilities.

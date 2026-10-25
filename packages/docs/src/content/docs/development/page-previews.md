@@ -21,7 +21,7 @@ The gallery includes:
 
 Each example uses the same renderer as the real page and retains its HTTP status. Recovery polling keeps the selected example visible. **Restart** and **Switch worktree** display a preview-only message and leave the running stack alone. **Refresh worktrees** reloads the sample data. The preview omits the live devtools toolbar.
 
-Change your browser's light or dark preference to inspect both themes; an open preview follows preference changes. Resize the browser for narrow-screen layouts. The error pages use the shared shadcn components from `packages/devhost-ui/src/statusPages/`; the directory and Markdown views retain their file-page renderer. The file examples live under `demos/pages/files/` and reflect edits on reload. After editing status-page components, styles, or Go templates, restart `just run` to rebuild the embedded pages.
+Change your system's light or dark preference, or resize the window, to check both themes and narrow layouts. All built-in pages, including the gallery, file browser, and running-stack directory, use React and the shared shadcn components in `packages/devhost-ui/src/statusPages/`. The file examples live in `demos/pages/files/` and reflect edits on reload. After editing page components or styles, restart `just run` to rebuild the embedded pages.
 
 Development builds, including the source shim behind `just run` and builds from `just dev-bootstrap`, enable the gallery through the checkout they record. Any other stack can set `DEVHOST_DEV_SOURCE_DIR` to the devhost checkout path. The gallery returns 404 when no source checkout is configured. It uses the existing stack's domains and control listener, so separate projects can run their own galleries concurrently.
 

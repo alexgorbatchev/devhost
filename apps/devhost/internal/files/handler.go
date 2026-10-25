@@ -2,11 +2,8 @@
 package files
 
 import (
-	"bytes"
 	"cmp"
-	_ "embed"
 	"fmt"
-	"html/template"
 	"io"
 	"io/fs"
 	"net/http"
@@ -20,23 +17,12 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
 )
-
-//go:embed github-markdown.css
-var markdownCSS string
-
-//go:embed page.html
-var pageHTML string
 
 const maxSymlinkDepth = 40
 
-var page = template.Must(template.New("files").Parse(pageHTML))
-
 type Handler struct {
-	root     *os.Root
-	markdown goldmark.Markdown
+	root *os.Root
 }
 
 // Open pins the served root; filesystem reads remain confined to it even if a
@@ -54,7 +40,7 @@ func Open(directory string) (*Handler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open served directory: %w", err)
 	}
-	return &Handler{root: root, markdown: goldmark.New(goldmark.WithExtensions(extension.GFM))}, nil
+	return &Handler{root: root}, nil
 }
 
 func (h *Handler) Close() error { return h.root.Close() }
@@ -215,28 +201,7 @@ func (h *Handler) file(w http.ResponseWriter, r *http.Request, f *os.File, info 
 		http.Error(w, "Could not read document", http.StatusInternalServerError)
 		return
 	}
-	var rendered bytes.Buffer
-	if err := h.markdown.Convert(source, &rendered); err != nil {
-		http.Error(w, "Could not render document", http.StatusInternalServerError)
-		return
-	}
-	h.document(w, r, pageData{Title: r.URL.Path, Markdown: true, Source: string(source), Content: template.HTML(rendered.String())})
-}
-
-type listingEntry struct {
-	Name string
-	Href string
-}
-type pageData struct {
-	Title       string
-	Breadcrumbs []listingEntry
-	Markdown    bool
-	CSS         template.CSS
-	Styles      template.CSS
-	ThemeScript template.JS
-	Source      string
-	Content     template.HTML
-	Entries     []listingEntry
+	h.document(w, r, statuspage.FilePage{Markdown: true, Source: string(source)})
 }
 
 func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File, name string) {
@@ -259,7 +224,7 @@ func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File
 		return
 	}
 	slices.SortFunc(entries, func(a, b fs.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
-	data := pageData{Title: r.URL.Path}
+	data := statuspage.FilePage{}
 	for _, entry := range entries {
 		f, err := h.open(path.Join(name, entry.Name()))
 		if err != nil {
@@ -276,23 +241,24 @@ func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File
 			label += "/"
 			href += "/"
 		}
-		data.Entries = append(data.Entries, listingEntry{Name: label, Href: href})
+		data.Entries = append(data.Entries, statuspage.FileLink{Name: label, Href: href})
 	}
 	h.document(w, r, data)
 }
 
-func (h *Handler) document(w http.ResponseWriter, r *http.Request, data pageData) {
+func (h *Handler) document(w http.ResponseWriter, r *http.Request, data statuspage.FilePage) {
 	data.Breadcrumbs = breadcrumbs(r.URL.Path)
-	data.CSS = template.CSS(markdownCSS)                   // Pinned, embedded upstream stylesheet.
-	data.Styles = template.CSS(statuspage.CSS)             // Trusted bundled design stylesheet.
-	data.ThemeScript = template.JS(statuspage.ThemeScript) // Embedded script; no user data.
-	var body bytes.Buffer
-	if err := page.Execute(&body, data); err != nil {
+	title := "Directory listing"
+	if data.Markdown {
+		title = r.URL.Path
+	}
+	body, err := statuspage.Render(statuspage.Page{Kind: "files", Status: http.StatusOK, Title: title, Files: &data}, "")
+	if err != nil {
 		http.Error(w, "Could not render page", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Rendering on every request keeps edits visible, including edits made within
 	// one filesystem timestamp tick; source and rendered views share one response.
-	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(body.Bytes()))
+	http.ServeContent(w, r, "", time.Time{}, strings.NewReader(body))
 }
