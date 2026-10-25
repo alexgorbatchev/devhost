@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-25 09:52
+last_modified: 2026-10-25 10:37
 status: current
 ---
 
@@ -144,6 +144,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Feature                                                                                  | Documented in                                                                                                             | Shown in                                         |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | Find running stacks by URL or partial name; stop every worktree of one repository        | `guides/stack-lifecycle.md`                                                                                               | **No demo**                                      |
+| Dedicated local stack directory with service URLs and read-only TOML sources             | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`                                   | **No demo**                                      |
 | Serve files or a port without a manifest; directory breadcrumbs and Markdown source view | `reference/files.md`                                                                                                      | No demo                                          |
 | Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                       | `guides/managed-caddy.md`, "Managed Caddy defaults"; `guides/shared-managed-caddy-settings.md`                            | No demo                                          |
 | Prefixed, screened Caddy diagnostics and actionable startup failures                     | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `guides/stack-lifecycle.md`                          | No demo                                          |

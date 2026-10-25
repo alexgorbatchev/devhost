@@ -60,7 +60,7 @@ func renderManagedCaddyfile(options renderManagedCaddyfileOptions) (string, erro
 		"}",
 	)
 
-	sections := []string{strings.Join(globalLines, "\n"), fmt.Sprintf("import %s", routesGlobPath)}
+	sections := []string{strings.Join(globalLines, "\n"), fmt.Sprintf("import %s", routesGlobPath), "import " + filepathQuote(stackDirectorySnippetPath(options.Paths))}
 	if options.EnableHTTP {
 		sections = append(sections, renderFallbackSiteBlock("http", httpPort, notFoundSitePaths.DirectoryPath, false))
 	}

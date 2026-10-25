@@ -29,6 +29,8 @@ func TestRenderManagedCaddyfile(t *testing.T) {
 		"",
 		`import "/tmp/devhost state/caddy/routes/*.caddy"`,
 		"",
+		`import "/tmp/devhost state/caddy/stack-directory.caddy"`,
+		"",
 		"https:// {",
 		"    tls internal {",
 		"        on_demand",

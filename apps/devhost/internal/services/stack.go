@@ -26,6 +26,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 )
 
 const (
@@ -275,6 +276,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		if devtoolsControlServer != nil {
+			cleanupError = appendCleanupError(cleanupError, caddy.SetStackControlPort(paths, 0))
+			cleanupError = appendCleanupError(cleanupError, caddy.SyncStackDirectory(paths, options.CaddyOutputWriters))
 			cleanupError = appendCleanupError(cleanupError, devtoolsControlServer.Stop())
 		}
 
@@ -402,8 +405,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		switchWorktree := func(id, path string) error { return state.switchWorktree(lifecycleCtx, id, path) }
 		settings := devtoolsControlSettings(*manifest)
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
-			ChatPrompt:    settings.ChatPrompt,
-			NativeBrowser: settings.NativeBrowser,
+			StackDirectoryPaths: paths,
+			GetStackServices:    func() ([]statuspage.StackService, error) { return state.directoryServices(lifecycleCtx) },
+			ChatPrompt:          settings.ChatPrompt,
+			NativeBrowser:       settings.NativeBrowser,
 			OwnsDocumentURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},
@@ -448,6 +453,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		state.control = controlServer
 		state.controlMu.Unlock()
 		routes.controlServer = controlServer
+		if err := caddy.SetStackControlPort(paths, controlServer.Port()); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
+		}
+		if err := caddy.SyncStackDirectory(paths, options.CaddyOutputWriters); err != nil {
+			return 0, joinCleanupError(err, cleanupError)
+		}
 	}
 	// Publish every selected route before any child waits for health. The document
 	// listener serves lifecycle state until both health and routing are ready.

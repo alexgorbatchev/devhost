@@ -15,7 +15,14 @@ func stackManifestFiles(configuration *manifest.Manifest) []string {
 }
 
 func (r *stackRuntime) registerManifestFiles(files []string) error {
+	r.controlMu.RLock()
+	port := 0
+	if r.control != nil {
+		port = r.control.Port()
+	}
+	r.controlMu.RUnlock()
 	return caddy.RegisterStack(caddy.RegisterStackOptions{
+		ControlPort:         port,
 		ManifestPath:        r.manifest.ManifestPath,
 		ManifestFiles:       files,
 		StackName:           r.manifest.Name,

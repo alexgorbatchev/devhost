@@ -17,8 +17,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 	"github.com/gorilla/websocket"
 )
 
@@ -101,9 +103,11 @@ type ServiceLogEntry struct {
 }
 
 type StartControlServerOptions struct {
-	ChatPrompt      string
-	NativeBrowser   manifest.DevtoolsBrowserConfig
-	OwnsDocumentURL func(int, string) (bool, error)
+	StackDirectoryPaths caddy.Paths
+	GetStackServices    func() ([]statuspage.StackService, error)
+	ChatPrompt          string
+	NativeBrowser       manifest.DevtoolsBrowserConfig
+	OwnsDocumentURL     func(int, string) (bool, error)
 	// ListConfigFiles names the files the config editor may change.
 	ListConfigFiles func() ([]ConfigFileRef, error)
 	// CheckConfigFile makes the checks a reload makes, with content in place of the file at path.
@@ -137,6 +141,8 @@ type StartControlServerOptions struct {
 }
 
 type ControlServer struct {
+	stackDirectoryPaths caddy.Paths
+	getStackServices    func() ([]statuspage.StackService, error)
 	// settings are what a hot reload changes; mu guards them with configJSON.
 	settings                ControlSettings
 	chat                    *chatStore
@@ -323,6 +329,12 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 	controlServer.configJSON = configJSON
 	mux := http.NewServeMux()
+	controlServer.stackDirectoryPaths = options.StackDirectoryPaths
+	controlServer.getStackServices = options.GetStackServices
+	if options.StackDirectoryPaths.StacksDirectoryPath != "" {
+		mux.HandleFunc(stackDirectoryPath, controlServer.handleStackDirectory)
+		mux.HandleFunc(stackSnapshotPath, controlServer.handleStackSnapshot)
+	}
 	if controlServer.devSource != nil {
 		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
 	}
