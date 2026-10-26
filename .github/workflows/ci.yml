@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -49,9 +50,9 @@ jobs:
       - name: Run checks
         run: just check
 
-  # devhost ships a macOS binary, but nothing ran its tests there before this job. It reports without failing the
-  # workflow; remove continue-on-error once it passes reliably.
+  # Keep advisory native verification available without spending a macOS runner on every change.
   go-macos:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     continue-on-error: true
     timeout-minutes: 30
