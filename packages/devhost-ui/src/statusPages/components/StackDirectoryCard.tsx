@@ -14,7 +14,12 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Separator,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@alexgorbatchev/shadcn";
 import { ArrowUpRightIcon, ChevronDownIcon, FileCodeIcon } from "lucide-react";
 import { useId, type ReactElement } from "react";
@@ -28,46 +33,93 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
   const id = useId();
   return (
     <section data-testid="StackDirectoryCard" aria-labelledby={id}>
-      <Card>
+      <Card size="sm" density="compact">
         <CardHeader>
           <CardTitle>
             <h2 id={id}>{stack.name}</h2>
           </CardTitle>
           <CardDescription>
-            <p className="break-all">{stack.directory || stack.manifestPath}</p>
+            <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 text-xs">
+              <dt>Directory</dt>
+              <dd className="break-all">{stack.directory || stack.manifestPath || "—"}</dd>
+            </dl>
           </CardDescription>
           <CardAction>
             <Badge variant="outline">PID {stack.pid}</Badge>
           </CardAction>
         </CardHeader>
         <CardContent>
-          <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-2">
             {stack.error && (
               <Alert variant="destructive">
                 <AlertDescription>{stack.error}</AlertDescription>
               </Alert>
             )}
-            {stack.services.map((service) => (
-              <div key={service.name} className="flex min-w-0 flex-col gap-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-medium">{service.name}</h3>
-                  <Badge variant={service.status === "Running" ? "success" : "secondary"}>{service.status}</Badge>
-                </div>
-                {service.urls.map((url) => (
-                  <ButtonLink key={url} href={url} title={url} variant="outline" align="start" fullWidth size="content">
-                    <span className="min-w-0 flex-1 break-all text-left font-mono text-sm">{url}</span>
-                    <ArrowUpRightIcon data-icon="inline-end" aria-hidden="true" />
-                  </ButtonLink>
-                ))}
-                {!service.urls.length && <p className="text-sm text-muted-foreground">No HTTP URL</p>}
-                {service.directory && <p className="text-xs text-muted-foreground break-all">{service.directory}</p>}
-              </div>
-            ))}
+            {!!stack.services.length && (
+              <Table layout="fixed" density="compact" aria-label={`${stack.name} services`}>
+                <colgroup>
+                  <col className="w-28 sm:w-44" />
+                  <col className="hidden w-28 sm:table-column" />
+                  <col />
+                </colgroup>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead scope="col">Service</TableHead>
+                    <TableHead scope="col" visibleFrom="sm">
+                      Status
+                    </TableHead>
+                    <TableHead scope="col">URLs / directory</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stack.services.map((service) => (
+                    <TableRow key={service.name}>
+                      <TableCell>
+                        <div className="flex flex-col items-start gap-1 py-1">
+                          <h3 className="max-w-full text-sm font-medium whitespace-normal break-all">{service.name}</h3>
+                          <p className="text-xs text-muted-foreground whitespace-normal sm:hidden">{service.status}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell visibleFrom="sm">
+                        <Badge variant={service.status === "Running" ? "success" : "secondary"}>{service.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex min-w-0 flex-col items-start gap-1 py-1">
+                          {service.urls.map((url) => (
+                            <ButtonLink
+                              key={url}
+                              href={url}
+                              title={url}
+                              variant="link"
+                              align="start"
+                              fullWidth
+                              size="inline"
+                            >
+                              <span className="min-w-0 flex-1 break-all text-left font-mono text-sm whitespace-normal">
+                                {url}
+                              </span>
+                              <ArrowUpRightIcon data-icon="inline-end" aria-hidden="true" />
+                            </ButtonLink>
+                          ))}
+                          {!service.urls.length && (
+                            <p className="text-sm text-muted-foreground whitespace-normal">No HTTP URL</p>
+                          )}
+                          {service.directory && (
+                            <p className="text-xs text-muted-foreground whitespace-normal break-all">
+                              {service.directory}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
         <CardFooter>
-          <div className="flex min-w-0 w-full flex-col gap-4">
-            <Separator />
+          <div className="min-w-0 w-full">
             <Collapsible>
               <CollapsibleTrigger
                 data-testid="StackDirectoryCard--configuration-toggle"
@@ -78,22 +130,26 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
                 <ChevronDownIcon data-icon="inline-end" />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="flex min-w-0 flex-col gap-4 pt-4">
-                  <p className="text-xs text-muted-foreground break-all">
-                    {stack.manifestPath ? `Root manifest: ${stack.manifestPath}` : "Manifest-free file or port session"}
-                  </p>
-                  {stack.startedAt && <p className="text-xs text-muted-foreground">Registered {stack.startedAt}</p>}
-                  <p className="text-xs text-muted-foreground">
-                    Current files on disk. Rejected edits can differ from the running configuration.
-                  </p>
+                <div className="flex min-w-0 flex-col gap-2 pt-2">
+                  <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <dt>Root manifest</dt>
+                    <dd className="break-all">{stack.manifestPath || "Manifest-free file or port session"}</dd>
+                    {stack.startedAt && (
+                      <>
+                        <dt>Registered</dt>
+                        <dd className="break-all">{stack.startedAt}</dd>
+                      </>
+                    )}
+                  </dl>
                   {stack.configs.map((config) => (
                     <Collapsible key={config.path}>
                       <CollapsibleTrigger
                         data-testid="StackDirectoryCard--file-toggle"
                         render={<Button variant="outline" size="content" align="start" fullWidth />}
                       >
-                        <span className="min-w-0 flex-1 break-all text-left">
-                          {config.kind} · {config.path}
+                        <span className="grid min-w-0 flex-1 grid-cols-[5rem_minmax(0,1fr)] gap-x-3 text-left">
+                          <span>{config.kind} ·</span>
+                          <span className="break-all">{config.path}</span>
                         </span>
                         <ChevronDownIcon data-icon="inline-end" />
                       </CollapsibleTrigger>
@@ -115,6 +171,9 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
                 </div>
               </CollapsibleContent>
             </Collapsible>
+            <p className="text-xs text-muted-foreground">
+              Current files on disk. Rejected edits can differ from the running configuration.
+            </p>
           </div>
         </CardFooter>
       </Card>

@@ -30,17 +30,16 @@ export function StackDirectoryPage({ stacks, query }: IStackDirectoryPageProps):
   return (
     <main
       data-testid="StackDirectoryPage"
-      className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-8 p-4 py-8 sm:p-8 sm:py-12 wrap-anywhere"
+      className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-4 p-4 sm:p-6 wrap-anywhere"
     >
-      <header className="flex flex-col gap-6">
+      <header className="flex flex-col gap-3">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <LayersIcon size={20} aria-hidden="true" />
           <span>devhost / stack directory</span>
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div className="flex flex-col gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Running stacks</h1>
-            <p className="text-sm text-muted-foreground">Your services, one place. Open a URL to get back to work.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Running stacks</h1>
           </div>
           <div className="flex items-center gap-2" aria-label="Directory totals">
             <Badge variant="secondary">
@@ -73,7 +72,7 @@ export function StackDirectoryPage({ stacks, query }: IStackDirectoryPageProps):
         )}
       </header>
       {stacks.length ? (
-        <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-3">
           {stacks.map((stack) => (
             <StackDirectoryCard key={stack.pid} stack={stack} />
           ))}

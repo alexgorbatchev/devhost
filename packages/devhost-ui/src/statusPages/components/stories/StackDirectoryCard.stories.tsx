@@ -23,13 +23,14 @@ export const Running: Story = {
       "href",
       "https://shop.localhost/api/",
     );
-    await expect(canvas.getByText("Not started")).toBeVisible();
+    await expect(canvas.getByRole("cell", { name: "Not started" })).toBeVisible();
     await expect(canvas.getByText("No HTTP URL")).toBeVisible();
     const configuration = canvas.getByRole("button", { name: "Configuration · 2 files" });
     await userEvent.click(configuration);
     await expect(configuration).toHaveAttribute("aria-expanded", "true");
-    await expect(canvas.getByText("Root manifest: /workspace/shop/devhost.toml")).toBeVisible();
-    await expect(canvas.getByText("Registered 2026-10-25T00:00:00Z")).toBeVisible();
+    await expect(canvas.getByText("Root manifest")).toBeVisible();
+    await expect(canvas.getByText("/workspace/shop/devhost.toml", { exact: true, selector: "dd" })).toBeVisible();
+    await expect(canvas.getByText("2026-10-25T00:00:00Z")).toBeVisible();
     const file = canvas.getByRole("button", { name: "manifest · /workspace/shop/devhost.toml" });
     await userEvent.click(file);
     await expect(canvas.getByRole("code").textContent).toBe(fixture_directoryStack.configs[0].content);
@@ -58,7 +59,7 @@ export const Unavailable: Story = {
     );
     await expect(canvas.queryByRole("link")).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Configuration · 0 files" }));
-    await expect(canvas.getByText("Root manifest: /workspace/shop/devhost.toml")).toBeVisible();
+    await expect(canvas.getByText("/workspace/shop/devhost.toml", { exact: true, selector: "dd" })).toBeVisible();
   },
 };
 
@@ -75,10 +76,10 @@ export const ManifestFree: Story = {
   },
   play: async ({ canvasElement }): Promise<void> => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("External")).toBeVisible();
+    await expect(canvas.getByRole("cell", { name: "External" })).toBeVisible();
     await expect(canvas.getByRole("link")).toHaveAttribute("href", "https://files.localhost/");
     await userEvent.click(canvas.getByRole("button", { name: "Configuration · 0 files" }));
     await expect(canvas.getByText("Manifest-free file or port session")).toBeVisible();
-    await expect(canvas.queryByText("Registered 2026-10-25T00:00:00Z")).toBeNull();
+    await expect(canvas.queryByText("Registered")).toBeNull();
   },
 };
