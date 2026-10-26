@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { StackDirectoryPage } from "../StackDirectoryPage";
 import { fixture_directoryStack } from "./fixtures";
 import "../../statusPages.css";
@@ -8,6 +8,13 @@ const meta: Meta<typeof StackDirectoryPage> = {
   title: "@alexgorbatchev/devhost-ui/statusPages/components/StackDirectoryPage",
   component: StackDirectoryPage,
   args: { stacks: [fixture_directoryStack], query: "" },
+  parameters: {
+    viewport: {
+      options: {
+        directoryPhone: { name: "Directory phone", styles: { width: "360px", height: "800px" } },
+      },
+    },
+  },
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -54,9 +61,11 @@ export const MultipleStacks: Story = {
       fixture_directoryStack,
       {
         ...fixture_directoryStack,
-        name: "api",
+        name: "a-much-longer-stack-name",
         pid: 456,
-        services: [{ name: "api", directory: "", status: "Running", urls: ["https://api.localhost/"] }],
+        services: [
+          { name: "api-with-a-long-service-name", directory: "", status: "Running", urls: ["https://api.localhost/"] },
+        ],
       },
     ],
   },
@@ -69,5 +78,57 @@ export const MultipleStacks: Story = {
       "href",
       "https://api.localhost/",
     );
+    const shop = canvas.getByRole("region", { name: "shop" });
+    const api = canvas.getByRole("region", { name: "a-much-longer-stack-name" });
+    await userEvent.click(within(shop).getByRole("button", { name: "Configuration · 2 files" }));
+    await userEvent.click(within(api).getByRole("button", { name: "Configuration · 2 files" }));
+    await waitFor(() => {
+      const first = shop.getBoundingClientRect();
+      const second = api.getBoundingClientRect();
+      expect(first.left).toBe(second.left);
+      expect(first.width).toBe(second.width);
+      expect(second.top).toBeGreaterThanOrEqual(first.bottom);
+      for (const label of ["Service", "Status", "URLs / directory"]) {
+        expect(within(shop).getByRole("columnheader", { name: label }).getBoundingClientRect().left).toBe(
+          within(api).getByRole("columnheader", { name: label }).getBoundingClientRect().left,
+        );
+      }
+      expect(
+        within(shop)
+          .getByRole("row", { name: /web Running/ })
+          .getBoundingClientRect().height,
+      ).toBeLessThan(110);
+      for (const label of ["Directory", "Root manifest", "Registered"]) {
+        expect(within(shop).getByText(label, { exact: true }).getBoundingClientRect().left).toBe(
+          within(api).getByText(label, { exact: true }).getBoundingClientRect().left,
+        );
+      }
+      expect(
+        within(shop).getByText("/workspace/shop/devhost.toml", { exact: true, selector: "dd" }).getBoundingClientRect()
+          .left,
+      ).toBe(
+        within(api).getByText("/workspace/shop/devhost.toml", { exact: true, selector: "dd" }).getBoundingClientRect()
+          .left,
+      );
+    });
+  },
+};
+
+export const Narrow: Story = {
+  globals: { viewport: { value: "directoryPhone", isRotated: false } },
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("link", { name: "https://shop.localhost/" })).toBeVisible();
+    await expect(canvas.getByRole("cell", { name: "worker Not started" })).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Configuration · 2 files" }));
+    await userEvent.click(canvas.getByRole("button", { name: "manifest · /workspace/shop/devhost.toml" }));
+    await expect(canvas.getByRole("code")).toHaveTextContent('name = "shop"');
+    await waitFor(() => {
+      const page = canvas.getByRole("main");
+      expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
+      expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(
+        canvasElement.ownerDocument.documentElement.clientWidth,
+      );
+    });
   },
 };
