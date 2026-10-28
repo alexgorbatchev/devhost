@@ -43,7 +43,6 @@ The first start installs Caddy's local certificate authority into your system tr
 ## Optional extras
 
 - **Browser chat** needs an installed, signed-in [Codex CLI](https://learn.chatgpt.com/docs/cli) or [Claude Code](https://code.claude.com/docs/en/cli-reference). See [Chat with a coding agent](../../guides/annotations/).
-- **Native React DevTools** needs a dedicated Chrome profile with remote debugging. See [Native React DevTools](../../integrations/react-devtools/).
 - **Shell completion:** `source <(devhost completion zsh)`, or `bash`, `fish`, `powershell`. See the [CLI reference](../../reference/cli/#other-commands).
 - **Coding agents:** `npx skills add alexgorbatchev/devhost --skill devhost -y` installs the devhost skill, which teaches agents every command and manifest rule. Set `AGENT=1` when an agent reads devhost's output; see [Terminal output](../../reference/output/).
 

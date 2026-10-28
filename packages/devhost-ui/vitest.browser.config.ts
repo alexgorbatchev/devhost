@@ -1,7 +1,6 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig, mergeConfig } from "vitest/config";
 
-import { nativeBrowserTransport, nativeBrowserTransportCommands } from "./test-support/nativeBrowserTransport";
 import viteConfig from "./vite.config";
 import { createCoverageOptions } from "./vitest.coverage";
 
@@ -11,7 +10,6 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     cacheDir: "./.cache/vite-browser",
-    plugins: [nativeBrowserTransport()],
     optimizeDeps: {
       include: [
         "@alexgorbatchev/shadcn",
@@ -32,7 +30,6 @@ export default mergeConfig(
     },
     test: {
       browser: {
-        commands: nativeBrowserTransportCommands,
         enabled: true,
         headless: true,
         instances: [{ browser: "chromium" }],

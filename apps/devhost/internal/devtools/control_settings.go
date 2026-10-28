@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,7 +19,6 @@ type ControlSettings struct {
 	ChatPrompt      string
 	ComponentEditor string
 	FeatureToggles  FeatureToggles
-	NativeBrowser   manifest.DevtoolsBrowserConfig
 	Position        string
 	PrimaryService  string
 	// ResourceIntervals turns each host readout on with its poll interval; all
@@ -36,7 +34,6 @@ func (o StartControlServerOptions) settings() ControlSettings {
 		ChatPrompt:              o.ChatPrompt,
 		ComponentEditor:         o.ComponentEditor,
 		FeatureToggles:          o.FeatureToggles,
-		NativeBrowser:           o.NativeBrowser,
 		Position:                o.Position,
 		PrimaryService:          o.PrimaryService,
 		ResourceIntervals:       o.ResourceUsage.Intervals,
@@ -69,8 +66,6 @@ func (s *ControlServer) currentSettings() ControlSettings {
 func (s *ControlServer) renderInjectedConfig(settings ControlSettings) ([]byte, error) {
 	config := injectedConfig{
 		ChatEnabled:             settings.FeatureToggles.ChatEnabled,
-		NativeBrowserConfigured: settings.NativeBrowser.Endpoint != "",
-		NativeBrowserInstanceID: s.nativeBrowserInstanceID,
 		AnnotationEnabled:       settings.FeatureToggles.AnnotationEnabled,
 		ConfigEditorEnabled:     settings.FeatureToggles.ConfigEditorEnabled,
 		ComponentEditor:         settings.ComponentEditor,

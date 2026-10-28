@@ -76,7 +76,6 @@ export default defineConfig({
             {
               label: "Third-party devtools",
               items: [
-                "integrations/react-devtools",
                 "integrations/redux",
                 "integrations/tanstack",
                 "integrations/vue",

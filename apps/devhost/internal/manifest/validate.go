@@ -108,7 +108,6 @@ func DefaultDevtools() DevtoolsConfig {
 	return DevtoolsConfig{
 		Chat:             DevtoolsChatConfig{Enabled: true, Prompt: defaultChatPrompt},
 		Annotations:      DevtoolsToggleConfig{Enabled: true},
-		Browser:          DevtoolsBrowserConfig{ReactExtensionID: defaultReactExtensionID},
 		Editor:           DevtoolsEditorConfig{Enabled: true, IDE: defaultDevtoolsEditor},
 		ExternalToolbars: DevtoolsToggleConfig{Enabled: true},
 		Minimap:          DevtoolsMinimapConfig{Enabled: true},
@@ -151,7 +150,6 @@ func validateDevtools(rawValue any, schemaIssues *[]string) DevtoolsConfig {
 
 	result.Chat = validateDevtoolsChat(value["chat"], schemaIssues)
 	readDevtoolsToggle(value, "annotations", &result.Annotations.Enabled, schemaIssues)
-	result.Browser = validateNativeBrowser(value["browser"], schemaIssues)
 	result.Resources = validateDevtoolsResources(value["resources"], schemaIssues)
 
 	if rawEditor := value["editor"]; rawEditor != nil {

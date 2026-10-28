@@ -46,10 +46,6 @@ dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
 run: devhost::build-devtools-bundle
     apps/devhost/scripts/runFromSource.sh start --manifest devhost.toml
 
-# Start the dedicated Chrome for Testing that native React DevTools attaches to (set DEVHOST_BROWSER_ENDPOINT to it)
-dev-browser port="9222":
-    bun packages/devhost-ui/scripts/startDevBrowser.ts {{port}}
-
 # Clean all node_modules directories across the repository
 clean:
     find . -name "node_modules" -type d -prune -exec rm -rf '{}' +

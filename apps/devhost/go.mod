@@ -9,7 +9,6 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/chromedp/cdproto v0.157.8
 	github.com/chromedp/chromedp v0.20.0
-	github.com/chromedp/chromedp/remote v0.2.0
 	github.com/creack/pty v1.1.24
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gorilla/websocket v1.5.3
@@ -28,9 +27,6 @@ require (
 	github.com/ebitengine/purego v0.11.1 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260213210345-44df1a37e875 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/gobwas/httphead v0.1.0 // indirect
-	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/nishanths/predeclared v0.3.0 // indirect

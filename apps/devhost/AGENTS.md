@@ -102,10 +102,6 @@ A development build records its checkout root in `internal/devbuild` through `-l
 
 `just devhost compile` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/bin/devhost`.
 
-Native React access is attach-only. `[devtools.browser].endpoint` explicitly names an already running user-owned loopback browser; retain it only in Go configuration. The injected config exposes a fresh instance identity and configured flag, never the endpoint. `internal/nativebrowser/` owns maintained typed CDP connections and target observers; cancellation detaches and joins them without closing browser windows, tabs or profiles. Keep persistent target initialization on its owning context rather than a disposable per-call timeout.
-
-The token-free native browser WebSocket passes the control guard, then requires the codec, a request origin that is a live Caddy route, and an instance/document binding on that origin. `requestDocumentOrigin` takes the scheme from the `X-Forwarded-Proto` Caddy sets, else `http`, and the Host; `internal/caddy/devtools_origin.go` decides whether that origin is a route, from `ReadAppliedManagedCaddySettings` (the listeners Caddy runs) and actual registration/path ownership. Forwarded headers and manifest fallback ports are not authority. Preserve explicit unavailable states, native-session-loss limits and host-root discrimination from the injected React tree. Browser/version/extension detection is not a live Components or Profiler test. Direct browser-control commands/diagnostics remain separate from the native React opener, and Disconnect releases devhost's resources without closing the user's native windows.
-
 ## Release workflow
 
 - Follow `RELEASE.md`; it is the authoritative runbook for the tag-driven GitHub Release binary flow.
@@ -136,7 +132,6 @@ The token-free native browser WebSocket passes the control guard, then requires 
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
 - `internal/browsertest/`, `internal/caddy/caddytest/`, `internal/nettest/`, `internal/testenv/` — test support: the repository's Chromium for browser tests, stand-ins for Caddy's admin endpoint and executable, reserved loopback ports, and the test process environment
 - `internal/procid/` — the start identity that tells a process from a later one with the same PID, and the Linux `/proc/<pid>/stat` reader the service containment shares
-- `internal/nativebrowser/` — attach-only typed CDP observation and native window access for explicitly configured user-owned browsers
 - `internal/devtools/` — Go devtools control servers plus embedded browser assets
 - `internal/devbuild/` — the source checkout a development build records at build time
 - `internal/hostusage/` — samples host CPU, memory, and disk usage for the toolbar readouts (gopsutil; Linux reads sysfs to leave out USB-attached and removable drives)

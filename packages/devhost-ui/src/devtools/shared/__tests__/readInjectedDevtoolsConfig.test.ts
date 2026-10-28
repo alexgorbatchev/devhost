@@ -92,18 +92,6 @@ describe("readInjectedDevtoolsConfig", () => {
       resourcesEnabled: false,
     });
   });
-  test("preserves only a valid native browser instance identity", () => {
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
-      nativeBrowserConfigured: true,
-      nativeBrowserInstanceId: "a".repeat(32),
-    });
-    expect(readInjectedDevtoolsConfig()).toMatchObject({
-      nativeBrowserConfigured: true,
-      nativeBrowserInstanceId: "a".repeat(32),
-    });
-    Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, { nativeBrowserInstanceId: "invalid" });
-    expect(readInjectedDevtoolsConfig().nativeBrowserInstanceId).toBe("");
-  });
   test("reuses parsed routing until the injected object is replaced", () => {
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
       homeDirectoryPath: "/home/first",

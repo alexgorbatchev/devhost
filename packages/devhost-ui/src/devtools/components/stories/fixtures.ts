@@ -3,8 +3,6 @@ import type { IDevhostStoryStack } from "../../../../.storybook/installDevhostSt
 export function factory_appStack(): IDevhostStoryStack {
   return {
     config: {
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
       componentEditor: "vscode",
       homeDirectoryPath: "/home/alex",
       devhostSourceRootPath: "",
@@ -73,8 +71,6 @@ export function factory_configEditorStack(): IDevhostStoryStack {
 export function factory_designOverviewStack(): IDevhostStoryStack {
   return {
     config: {
-      nativeBrowserConfigured: false,
-      nativeBrowserInstanceId: "",
       componentEditor: "vscode",
       homeDirectoryPath: "/home/alex",
       devhostSourceRootPath: "",

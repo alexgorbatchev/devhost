@@ -19,7 +19,6 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 	"github.com/gorilla/websocket"
 )
@@ -106,7 +105,6 @@ type StartControlServerOptions struct {
 	StackDirectoryPaths caddy.Paths
 	GetStackServices    func() ([]statuspage.StackService, error)
 	ChatPrompt          string
-	NativeBrowser       manifest.DevtoolsBrowserConfig
 	OwnsDocumentURL     func(int, string) (bool, error)
 	// ListConfigFiles names the files the config editor may change.
 	ListConfigFiles func() ([]ConfigFileRef, error)
@@ -144,13 +142,12 @@ type ControlServer struct {
 	stackDirectoryPaths caddy.Paths
 	getStackServices    func() ([]statuspage.StackService, error)
 	// settings are what a hot reload changes; mu guards them with configJSON.
-	settings                ControlSettings
-	chat                    *chatStore
-	nativeBrowserInstanceID string
-	homeDirectoryPath       string
-	ownsDocumentURL         func(int, string) (bool, error)
-	listConfigFiles         func() ([]ConfigFileRef, error)
-	checkConfigFile         func(string, []byte) error
+	settings          ControlSettings
+	chat              *chatStore
+	homeDirectoryPath string
+	ownsDocumentURL   func(int, string) (bool, error)
+	listConfigFiles   func() ([]ConfigFileRef, error)
+	checkConfigFile   func(string, []byte) error
 	// configSaveMu makes the version check and the write of one save a unit.
 	configSaveMu          sync.Mutex
 	listener              net.Listener
@@ -211,8 +208,6 @@ type injectedConfig struct {
 	ComponentEditor         string                  `json:"componentEditor"`
 	ChatEnabled             bool                    `json:"chatEnabled"`
 	ConfigEditorEnabled     bool                    `json:"configEditorEnabled"`
-	NativeBrowserConfigured bool                    `json:"nativeBrowserConfigured"`
-	NativeBrowserInstanceID string                  `json:"nativeBrowserInstanceId"`
 	HomeDirectoryPath       string                  `json:"homeDirectoryPath"`
 	Position                string                  `json:"position"`
 	ProjectRootPath         string                  `json:"projectRootPath"`
@@ -276,43 +271,37 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		// Path abbreviation is optional; keep absolute paths when no home is available.
 		home = ""
 	}
-	instanceID, err := createRandomID()
-	if err != nil {
-		_ = listener.Close() // The identity error is authoritative; no listener is retained.
-		return nil, fmt.Errorf("create native browser instance identity: %w", err)
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	controlServer := &ControlServer{
-		settings:                settings,
-		nativeBrowserInstanceID: instanceID,
-		homeDirectoryPath:       home,
-		ownsDocumentURL:         options.OwnsDocumentURL,
-		listConfigFiles:         options.ListConfigFiles,
-		checkConfigFile:         options.CheckConfigFile,
-		ctx:                     ctx,
-		cancel:                  cancel,
-		devSource:               options.DevSource,
-		onLog:                   options.OnLog,
-		resourceReaders:         options.ResourceUsage.Readers,
-		onResourceFailure:       options.ResourceUsage.OnFailure,
-		getHealth:               options.GetHealthResponse,
-		healthClients:           map[*websocketClient]struct{}{},
-		websocketWriteTimeout:   options.WebsocketWriteTimeout,
-		healthPollInterval:      options.HealthPollInterval,
-		listener:                listener,
-		logsClients:             map[*websocketClient]struct{}{},
-		nextLogEntryID:          1,
-		projectRootPath:         options.ProjectRootPath,
-		reactHighlightClients:   map[*websocketClient]struct{}{},
-		resourceClients:         map[*websocketClient]struct{}{},
-		restartService:          options.RestartService,
-		restartStack:            options.RestartStack,
-		startService:            options.StartService,
-		switchWorktree:          options.SwitchWorktree,
-		refreshWorktrees:        options.RefreshWorktrees,
-		stopWorktreeOwner:       options.StopWorktreeOwner,
-		getToolContext:          options.GetToolContext,
-		tracker:                 NewActivityTracker(),
+		settings:              settings,
+		homeDirectoryPath:     home,
+		ownsDocumentURL:       options.OwnsDocumentURL,
+		listConfigFiles:       options.ListConfigFiles,
+		checkConfigFile:       options.CheckConfigFile,
+		ctx:                   ctx,
+		cancel:                cancel,
+		devSource:             options.DevSource,
+		onLog:                 options.OnLog,
+		resourceReaders:       options.ResourceUsage.Readers,
+		onResourceFailure:     options.ResourceUsage.OnFailure,
+		getHealth:             options.GetHealthResponse,
+		healthClients:         map[*websocketClient]struct{}{},
+		websocketWriteTimeout: options.WebsocketWriteTimeout,
+		healthPollInterval:    options.HealthPollInterval,
+		listener:              listener,
+		logsClients:           map[*websocketClient]struct{}{},
+		nextLogEntryID:        1,
+		projectRootPath:       options.ProjectRootPath,
+		reactHighlightClients: map[*websocketClient]struct{}{},
+		resourceClients:       map[*websocketClient]struct{}{},
+		restartService:        options.RestartService,
+		restartStack:          options.RestartStack,
+		startService:          options.StartService,
+		switchWorktree:        options.SwitchWorktree,
+		refreshWorktrees:      options.RefreshWorktrees,
+		stopWorktreeOwner:     options.StopWorktreeOwner,
+		getToolContext:        options.GetToolContext,
+		tracker:               NewActivityTracker(),
 		// The zero upgrader refuses an Origin whose host differs from the request Host.
 		upgrader: websocket.Upgrader{},
 	}
@@ -344,7 +333,6 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
 	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))
 	mux.HandleFunc(chatWebsocketPath, controlServer.whileChatEnabled(controlServer.handleChatWebsocket))
-	mux.HandleFunc(nativeBrowserWebsocketPath, controlServer.handleNativeBrowserWebsocket)
 	mux.HandleFunc(injectedScriptPath, controlServer.handleInjectedScript)
 	mux.HandleFunc(injectedConfigPath, controlServer.handleInjectedConfig)
 	mux.HandleFunc(devtoolsAssetsPath, controlServer.handleDevtoolsAsset)

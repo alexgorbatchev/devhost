@@ -71,7 +71,7 @@ function createMonitorStoryHarness(): IMonitorStoryHarness {
   };
 }
 
-/** Real instrumented stores and producer dispatch; no extension or native-browser certification. */
+/** Real instrumented stores and producer dispatch; no extension certification. */
 interface IReduxMonitorStoryProps {
   shouldRegisterInitially?: boolean;
 }

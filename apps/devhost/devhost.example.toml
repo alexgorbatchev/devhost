@@ -15,7 +15,6 @@
 # - `[groups]` (optional; named selections of services for `devhost start <name>`)
 # - `[worktrees]` (optional; Git checkout selection for services that share a repository, enabled by default)
 # - `[devtools]` (optional; idle timeout)
-# - `[devtools.browser]` (optional; explicitly configured native browser control)
 # - `[devtools.configEditor]` (optional; edit the configuration from the browser, off by default)
 # - `[devtools.editor]` (optional; Alt + right-click opens component source, enabled by default)
 # - `[devtools.externalToolbars]` (optional; third-party devtools launchers, enabled by default)
@@ -159,23 +158,6 @@ enabled = true
 # - `"webstorm"`: open WebStorm via its browser URL handler.
 ide = "vscode"
 
-[devtools.browser]
-# Native React DevTools attaches to a dedicated Chrome profile that you start with remote debugging.
-# Requires Chrome 154.0.8037.92 or newer, the original React Developer Tools 8.0.0 or newer
-# (installed before loading your app), and an app on React DOM 19.2.5 or a newer React 19 release.
-# `endpoint` is the browser's debugging address:
-# - `""` (default): native browser access is off.
-# - `"http://127.0.0.1:<port>"`: a loopback IP with an explicit port.
-# - `"ws://127.0.0.1:<port>/devtools/browser/<id>"`: the browser's full WebSocket URL.
-# Hostnames, remote addresses, credentials, queries, fragments, and page WebSockets are rejected.
-# devhost never launches a browser, scans profiles, or closes your windows.
-# On the routed page, choose Connect browser control in the toolbar, then React DevTools,
-# and pick Components or Profiler in Chrome's DevTools window.
-# Guide: https://alexgorbatchev.github.io/devhost/integrations/react-devtools/
-endpoint = ""
-# `reactExtensionId` is the Chrome Web Store ID of the original extension. Change it only to the
-# ID of an unpacked build of that same extension.
-reactExtensionId = "fmkadmapgofadopljbjfkapdkoienihi"
 
 [devtools.externalToolbars]
 # `enabled` controls whether devhost aggregates detected third-party devtools launcher buttons.
@@ -188,7 +170,6 @@ reactExtensionId = "fmkadmapgofadopljbjfkapdkoienihi"
 # - React Hook Form DevTool panels and Jotai DevTools panels
 # Setup pages: https://alexgorbatchev.github.io/devhost/guides/devtools/#third-party-devtools
 # The panels stay the tools' own; devhost only collects their launchers.
-# `false` also turns off native React DevTools access configured under [devtools.browser].
 enabled = true
 
 [devtools.minimap]

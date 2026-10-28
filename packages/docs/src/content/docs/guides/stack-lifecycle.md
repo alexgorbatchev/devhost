@@ -230,8 +230,7 @@ Each of these counts as activity and restarts the countdown:
 
 - an open page with the devtools toolbar,
 - a request through Caddy to one of the stack's hostnames,
-- a chat turn in progress, or one waiting for your answer,
-- a connected native browser control.
+- a chat turn in progress, or one waiting for your answer.
 
 Reloading a page closes its connection for a moment; the countdown restarts then, so a reload never triggers a shutdown. devhost logs `Idle timeout enabled: 1h` at startup and `Idle timeout of 1h reached` before it stops the stack.
 
