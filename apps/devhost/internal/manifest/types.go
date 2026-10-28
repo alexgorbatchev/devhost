@@ -33,15 +33,9 @@ type WorktreesConfig struct {
 	Enabled bool
 }
 
-type DevtoolsBrowserConfig struct {
-	Endpoint         string
-	ReactExtensionID string
-}
-
 type DevtoolsConfig struct {
 	Chat             DevtoolsChatConfig
 	Annotations      DevtoolsToggleConfig
-	Browser          DevtoolsBrowserConfig
 	ConfigEditor     DevtoolsToggleConfig
 	Editor           DevtoolsEditorConfig
 	ExternalToolbars DevtoolsToggleConfig

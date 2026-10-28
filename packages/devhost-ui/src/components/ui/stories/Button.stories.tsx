@@ -187,10 +187,10 @@ export const WithShortcut: Story = {
 };
 
 export const Surface: Story = {
-  args: { children: "Connect browser control", variant: "surface", onClick: fn() },
+  args: { children: "Open panel", variant: "surface", onClick: fn() },
   play: async ({ args, canvasElement }) => {
     const panel = await readDevtoolsStoryShadowCanvas(canvasElement);
-    const button = panel.getByRole("button", { name: "Connect browser control" });
+    const button = panel.getByRole("button", { name: "Open panel" });
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledTimes(1);
     await expect(button).toBeEnabled();

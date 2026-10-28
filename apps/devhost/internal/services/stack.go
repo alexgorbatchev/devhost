@@ -408,7 +408,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			StackDirectoryPaths: paths,
 			GetStackServices:    func() ([]statuspage.StackService, error) { return state.directoryServices(lifecycleCtx) },
 			ChatPrompt:          settings.ChatPrompt,
-			NativeBrowser:       settings.NativeBrowser,
 			OwnsDocumentURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},
@@ -1419,7 +1418,6 @@ func devtoolsControlSettings(m ResolvedManifest) devtools.ControlSettings {
 		ComponentEditor:         m.Devtools.Editor.IDE,
 		FeatureToggles:          resolveSupportedDevtoolsFeatures(m.Devtools),
 		ChatPrompt:              m.Devtools.Chat.Prompt,
-		NativeBrowser:           m.Devtools.Browser,
 		Position:                m.Devtools.Status.Position,
 		PrimaryService:          m.PrimaryService,
 		ResourceIntervals:       resolveResourceIntervals(m.Devtools.Resources),

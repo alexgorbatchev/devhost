@@ -27,8 +27,6 @@ type FetchPreconnect = typeof fetch.preconnect;
 const storybookAsyncUtilTimeoutMs: number = 5000;
 
 const storybookInjectedConfig: IInjectedDevtoolsConfig = {
-  nativeBrowserConfigured: false,
-  nativeBrowserInstanceId: "",
   annotationEnabled: false,
   chatEnabled: false,
   componentEditor: "vscode",

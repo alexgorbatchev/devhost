@@ -16,16 +16,16 @@ devhost can add a small toolbar to every page of your app: service status and re
 
 The toolbar appears when at least one devtools feature is on, and most are on by default:
 
-| Setting                               | Default | Adds                                                                 |
-| ------------------------------------- | ------- | -------------------------------------------------------------------- |
-| `[devtools.status].enabled`           | `true`  | Service status, the Services panel, and the crash recovery view      |
-| `[devtools.minimap].enabled`          | `true`  | The log minimap                                                      |
-| `[devtools.chat].enabled`             | `true`  | [Chat with your coding agent](../annotations/)                       |
-| `[devtools.annotations].enabled`      | `true`  | Element selection and drawing for chat                               |
-| `[devtools.editor].enabled`           | `true`  | [Open component source](#open-component-source)                      |
-| `[devtools.externalToolbars].enabled` | `true`  | [Third-party devtools](../../integrations/react-devtools/) launchers |
-| `[devtools.configEditor].enabled`     | `false` | The [config editor](#config-editor)                                  |
-| `[devtools.resources].enabled`        | `true`  | [CPU, RAM, and disk readouts](#host-resource-usage)                  |
+| Setting                               | Default | Adds                                                            |
+| ------------------------------------- | ------- | --------------------------------------------------------------- |
+| `[devtools.status].enabled`           | `true`  | Service status, the Services panel, and the crash recovery view |
+| `[devtools.minimap].enabled`          | `true`  | The log minimap                                                 |
+| `[devtools.chat].enabled`             | `true`  | [Chat with your coding agent](../annotations/)                  |
+| `[devtools.annotations].enabled`      | `true`  | Element selection and drawing for chat                          |
+| `[devtools.editor].enabled`           | `true`  | [Open component source](#open-component-source)                 |
+| `[devtools.externalToolbars].enabled` | `true`  | [Third-party devtools](#third-party-devtools) launchers         |
+| `[devtools.configEditor].enabled`     | `false` | The [config editor](#config-editor)                             |
+| `[devtools.resources].enabled`        | `true`  | [CPU, RAM, and disk readouts](#host-resource-usage)             |
 
 With all of them off except `resources`, devhost injects nothing. Startup and recovery pages work either way. Every setting applies to open pages as soon as you save the manifest.
 
@@ -129,7 +129,6 @@ devhost opens the editor through its URL handler. To highlight the element under
 
 The toolbar collects the launcher buttons of devtools your app already mounts, so they stop covering your page. Each integration has its own setup page:
 
-- [Native React DevTools](../../integrations/react-devtools/)
 - [Redux Toolkit and Zustand](../../integrations/redux/)
 - [TanStack](../../integrations/tanstack/)
 - [Vue DevTools](../../integrations/vue/)

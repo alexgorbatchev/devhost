@@ -1,14 +1,14 @@
 ---
 created_on: 2026-10-25 10:59
-last_modified: 2026-10-25 10:59
+last_modified: 2026-10-28 09:37
 status: current
 ---
 
 # External devtools internals
 
-Contributor reference for the third-party devtools integrations in the injected toolbar: how host-mounted launchers are aggregated, how the Redux inspector and native React access are owned, the upstream contracts each integration is pinned to, and how the native React integration is validated. User setup, tested versions, and limitations live in the public pages under `packages/docs/src/content/docs/integrations/`.
+Contributor reference for the third-party devtools integrations in the injected toolbar: how host-mounted launchers are aggregated, how the Redux inspector is owned and the upstream contracts each integration is pinned to. User setup, tested versions, and limitations live in the public pages under `packages/docs/src/content/docs/integrations/`.
 
-Host-mounted integrations (TanStack Query, Router, and unified shell; React Hook Form; Jotai; Vue) proxy native controls and hide only launcher chrome; the host library keeps its panels. The Redux integration opens the upstream browser inspector in a separate owned window and connects explicitly registered stores through upstream's public custom-transport seam. Native React access attaches to an explicitly configured user-owned browser and opens its extension inspector; devhost owns only the browser-control connection.
+Host-mounted integrations (TanStack Query, Router, and unified shell; React Hook Form; Jotai; Vue) proxy native controls and hide only launcher chrome; the host library keeps its panels. The Redux integration opens the upstream browser inspector in a separate owned window and connects explicitly registered stores through upstream's public custom-transport seam.
 
 ## Architecture flow
 
@@ -152,50 +152,3 @@ Source: `packages/devhost-ui/src/devtools/features/reduxDevtools/` and `apps/dev
 - devhost neither overwrites the extension's hook or listeners nor calls shared disconnect or middleware cleanup; the extension keeps recording and replaying before, during, and after attachment.
 - Each upstream monitor keeps its own cursor: the released [pageScript handler](https://github.com/reduxjs/redux-devtools/blob/1c5df1ee3275612c34e8ad37dd58537c83d5e885/extension/src/pageScript/index.ts) omits broadcast while time traveling, paused, or locked.
 - Cold Zustand metadata and history in the extension can be incomplete when its frontend opens after stores were created, also with aggregation disabled. The tested coexistence sequence opens the empty extension frontend first, then creates the stores. devhost does not repair upstream cold history or enumerate private sessions.
-
-## Native React
-
-Source: `apps/devhost/internal/nativebrowser/`, `apps/devhost/internal/devtools/native_browser.go`, and `packages/devhost-ui/src/devtools/features/nativeBrowserConnection/` and `reactNativeDevtools/`.
-
-### Authority and ownership
-
-- The Go control server keeps the debugging endpoint private. Uncached configuration publishes only whether native access is configured and a fresh instance identity. Native access requires both a nonempty endpoint and `[devtools.externalToolbars].enabled`.
-- The browser uses the pristine `fetch`/`WebSocket` primitives and its current origin, negotiating `devhost-native-browser.v1` as a nonsecret codec identifier. Controls are token-free for trusted local development; instance and document identities constrain targeting, not authentication. Origin, Host, and binding checks do not authenticate same-origin scripts or local callers able to forge headers.
-- Each action rechecks the effective managed Caddy scheme and port, the current root-route owner, and service-path precedence. Host aliases are read from current registrations; a route owned by another project cannot control this document. Forwarded headers and manifest fallback ports supply no authority. Hosts whose registrations contain escaped matcher literals or repeated slashes withhold native access rather than approximate Caddy's path matching.
-- Native requests reject a foreign Origin, a Host that is not a route of this project, an incorrect protocol, stale instance identities, and foreign document bindings before browser discovery. A connection without an Origin comes from a tool; its document binding must name the route its Host addresses.
-- HTTP discovery reads only `/json/version`, within two seconds and 64 KiB, and accepts an advertised browser WebSocket only at the configured address and port.
-- The owned App supplies a random document identity. Go resolves the live page list and requires the complete current URL plus that instance/document marker; duplicate-URL tabs with different identities stay separate. Every observation rechecks current targets and host roots.
-- Maintained hook and Fiber fields (`getFiberRoots`, renderer version, `containerInfo`) identify mounted Element/ShadowRoot hosts and exclude marked devhost roots. The renderer version must be 19.2.5 or a newer React 19 release (`isSupportedReactVersion` in `versions.go`); a new major release stays unsupported until it is verified against these fields. This is a [pinned upstream internal contract](https://github.com/facebook/react/blob/278794d7dee9cd2a3a2aaf9f0b2a4b8b747d74ee/packages/react-devtools-shared/src/hook.js), not a stable public discovery SDK.
-- The Go-only connection uses chromedp 0.20.0, its remote allocator 0.2.0, and typed CDP 0.157.8 with public detach-on-cancel. Chrome's experimental `Target.getDevToolsTarget` and `Target.openDevTools` identify and open the native window. Their documented panel IDs cover built-ins only, so extension-tab selection is left to the user. There is no `CloseTarget`, profile disposal, hook mutation, private panel activation, or second frontend or backend in the connection lifetime. devhost installs no React backend and renders no inline inspector.
-
-### Lifetime
-
-- The connection owner lives outside the collapsed toolbar children, so collapsing keeps the connection. Disconnect, disabling external toolbars, or unmounting the App root releases sockets, attached targets, contexts, timers, and the browser connection.
-- Removing a DOM node is not a React unmount. A compiled injected document releases its connection on document disposal; the rendering entry does not expose a retained React Root handle.
-- Native window closure or replacement is a session loss that withholds React access for that mounted App lifetime. Controller reconnect does not clear it or certify recovery. Manual close/reopen produced a Loading or empty tree on Chrome 147 and 154 in isolated probes; the cause and backend recovery are unverified. The integration uses connect/disconnect with a preserved native window and does not substitute an automatic reload or manual repair step.
-- Late backend injection requires independent native verification; window or hook presence alone is insufficient.
-
-### Keyboard and focus
-
-The native checks verify non-destructive trusted Escape and same-button focus through connection transitions. They do not certify toolbar-wide roving or arrow-key navigation, or fix the separately recorded ShadowRoot popup focus-restoration failure. Other toolbar panels keep their own popup contracts.
-
-### Contributor validation
-
-Changes to native React control require both root `just check` and the native acceptance command. `just check` runs the provisioning unit tests and typechecks every native script but does not provision or run native acceptance.
-
-Prerequisites: macOS or Linux x64, native Caddy, `unzip` on PATH, and network access for downloads.
-
-1. From the repository root, run `just devhost compile`.
-2. Run `just ui test-native-react`.
-
-The command fails before browser resources start when Caddy, the compiled binary, or a download is missing. Each run downloads the current Stable Chrome for Testing for the platform and the React Developer Tools release the Chrome Web Store offers it, keeping Chrome archives per version so it downloads again only when Stable moves. Only the owned Chrome subprocess uses a relative temporary path, resolved against its fixed repository-root working directory: preserved evidence shows an absolute-`TMPDIR` launch ending in SIGTRAP and a relative-`TMPDIR` launch succeeding, cause unverified.
-
-Tests extract the original assets into a unique run directory and own a fresh headless profile, two Go stacks, and Caddy routes. The test-only Caddyfile uses `skip_install_trust`; Chromium ignores certificate errors for those owned TLS routes. These test dependencies are not shipped runtime dependencies. Headed behavior is unverified. The fixture host runs React 19.3.1 (`packages/devhost-ui/scripts/nativeReact/constants.ts`).
-
-The runner covers original Components and Profiler with live host props, state, and recorded commits; trusted Enter, Space, and pointer on the same command button; non-destructive Escape; full diagnostics and **Copy**; configuration and pending-result cancellation; App Root disposal; separate compiled injection; Go stop and restart; project and document isolation; preserved-window connection lifetimes; and retained native-session loss. Stories and Playwright layout fixtures do not replace it.
-
-- Configuration-request interleaving forwards unchanged network requests but disables HTTP cache on that routed fixture page.
-- Pending-result coverage forwards Go WebSocket frames through Playwright's page instrumentation; it tests client cancellation while awaiting a completed Go result, not suspension of an in-flight CDP action.
-- Compiled, pristine, and cache evidence uses a separate unrouted page.
-
-Preserve every assertion and stop all owned resources.

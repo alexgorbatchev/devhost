@@ -12,8 +12,6 @@ import {
 import { normalizeRoutedServicePath, type IRoutedServiceIdentity } from "./routedServices";
 
 export interface IInjectedDevtoolsConfig {
-  nativeBrowserConfigured: boolean;
-  nativeBrowserInstanceId: string;
   componentEditor: DevtoolsComponentEditor;
   homeDirectoryPath: string;
   position: DevtoolsPosition;
@@ -35,8 +33,6 @@ export interface IInjectedDevtoolsConfig {
 }
 
 const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
-  nativeBrowserConfigured: false,
-  nativeBrowserInstanceId: "",
   componentEditor: defaultDevtoolsComponentEditor,
   homeDirectoryPath: "",
   position: "bottom-right",
@@ -81,7 +77,6 @@ export function readInjectedDevtoolsConfig(): IInjectedDevtoolsConfig {
 }
 
 function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsConfig {
-  const nativeBrowserInstanceId: unknown = Reflect.get(injectedConfig, "nativeBrowserInstanceId");
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const homeDirectoryPath: unknown = Reflect.get(injectedConfig, "homeDirectoryPath");
   const devhostSourceRootPath: unknown = Reflect.get(injectedConfig, "devhostSourceRootPath");
@@ -105,11 +100,6 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
   const primaryService: string = readPrimaryServiceValue(injectedConfig);
 
   return {
-    nativeBrowserConfigured: readBooleanValue(injectedConfig, "nativeBrowserConfigured", false),
-    nativeBrowserInstanceId:
-      typeof nativeBrowserInstanceId === "string" && /^[a-f0-9]{32}$/.test(nativeBrowserInstanceId)
-        ? nativeBrowserInstanceId
-        : "",
     annotationEnabled,
     chatEnabled,
     componentEditor,

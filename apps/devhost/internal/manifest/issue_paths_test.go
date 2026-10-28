@@ -22,7 +22,6 @@ func TestValidationIssuesNameTheFullPathOfTheSetting(t *testing.T) {
 		{"the editor", "[devtools.editor]\nide = 3", "devtools.editor.ide must be a string."},
 		{"shortcuts", "[devtools.shortcuts]\nrestartServices = 1", "devtools.shortcuts.restartServices must be a string."},
 		{"the idle timeout", "[devtools]\nidleTimeout = 5", "devtools.idleTimeout must be a string."},
-		{"the native browser", "[devtools.browser]\nendpoint = 1", "devtools.browser.endpoint must be a string."},
 		{"a devtools toggle", "[devtools.minimap]\nenabled = 1", "devtools.minimap.enabled must be a boolean."},
 		{"resource readouts", "[devtools.resources]\nenabled = 1", "devtools.resources.enabled must be a boolean."},
 		{"one resource readout", "[devtools.resources.cpu]\nenabled = 1", "devtools.resources.cpu.enabled must be a boolean."},

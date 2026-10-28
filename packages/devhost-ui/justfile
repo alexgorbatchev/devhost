@@ -24,8 +24,3 @@ install-browser:
 # Start interactive Storybook dev server
 storybook:
     bun storybook dev --ci --port 6006
-
-# Run provisioned real native React acceptance from the repository root
-[no-cd]
-test-native-react:
-    bun packages/devhost-ui/scripts/runNativeReactAcceptance.ts

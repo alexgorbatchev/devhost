@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { LoaderCircleIcon } from "lucide-react";
 import { Icon } from "../../components/ui/Icon";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { createDevtoolsSettingsStore } from "../shared/createDevtoolsSettingsStore";
 import { PageChat } from "../features/agentChat/components/PageChat";
@@ -29,9 +29,6 @@ import {
   useServiceHealth,
 } from "../features/serviceStatusPanel";
 import { pristineFetch } from "../shared/pristineFetch";
-import { useNativeBrowserConnection } from "../shared/hooks/useNativeBrowserConnection";
-import { NativeBrowserConnectionControl, NativeBrowserConnectionStatus } from "../features/nativeBrowserConnection";
-import { ReactNativeAccessButton } from "../features/reactNativeDevtools";
 import { restartServices } from "../shared/restartServices";
 import { readInjectedDevtoolsConfig } from "../shared/readInjectedDevtoolsConfig";
 import { isEventTargetEditingSurface } from "../shared/isEventTargetEditingSurface";
@@ -55,7 +52,6 @@ export function App(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const {
-    nativeBrowserConfigured,
     annotationEnabled,
     chatEnabled,
     componentEditor,
@@ -75,9 +71,6 @@ function AppContent(): JSX.Element {
     primaryService,
   } = readInjectedDevtoolsConfig();
   const appRootReference = useRef<HTMLDivElement | null>(null);
-  const isNativeBrowserEnabled: boolean = externalToolbarsEnabled && nativeBrowserConfigured;
-  const nativeBrowser = useNativeBrowserConnection(isNativeBrowserEnabled);
-  const nativeBrowserStatusId: string = useId();
   const [isConfigEditorOpen, setIsConfigEditorOpen] = useState<boolean>(false);
   const configEditorClient = useMemo(() => createConfigEditorClient(pristineFetch), []);
   const {
@@ -206,10 +199,7 @@ function AppContent(): JSX.Element {
   }, []);
   const shouldRenderMinimap: boolean = minimapEnabled && logEntries.length > 0;
   return (
-    <DevtoolsTopLayer
-      ref={appRootReference}
-      nativeBrowserBinding={isNativeBrowserEnabled ? nativeBrowser.view.binding : null}
-    >
+    <DevtoolsTopLayer ref={appRootReference}>
       {chatEnabled ? (
         <PageChat
           key={`${chatTarget}:${chatRootPath}`}
@@ -240,28 +230,14 @@ function AppContent(): JSX.Element {
           collapsedIndicator={
             <>
               <StackHealthIndicator errorMessage={errorMessage} services={services} />
-              {isNativeBrowserEnabled ? <NativeBrowserConnectionStatus view={nativeBrowser.view} compact /> : null}
             </>
           }
           readout={
-            isNativeBrowserEnabled || isConfigurationRejected ? (
-              <>
-                <ConfigRejectionNotice
-                  configuration={configuration}
-                  onEdit={configEditorEnabled ? openConfigEditor : undefined}
-                />
-                {isNativeBrowserEnabled ? (
-                  <>
-                    <NativeBrowserConnectionControl
-                      view={nativeBrowser.view}
-                      statusId={nativeBrowserStatusId}
-                      onConnect={nativeBrowser.connect}
-                      onDisconnect={nativeBrowser.disconnect}
-                    />
-                    <NativeBrowserConnectionStatus view={nativeBrowser.view} id={nativeBrowserStatusId} />
-                  </>
-                ) : null}
-              </>
+            isConfigurationRejected ? (
+              <ConfigRejectionNotice
+                configuration={configuration}
+                onEdit={configEditorEnabled ? openConfigEditor : undefined}
+              />
             ) : undefined
           }
           isMinimapVisible={shouldRenderMinimap}
@@ -292,13 +268,6 @@ function AppContent(): JSX.Element {
               onToggle={(): void => {
                 setIsConfigEditorOpen((isOpen: boolean): boolean => !isOpen);
               }}
-            />
-          ) : null}
-          {isNativeBrowserEnabled ? (
-            <ReactNativeAccessButton
-              isAvailable={nativeBrowser.view.observation?.isReactAvailable === true}
-              isActionPending={nativeBrowser.view.isActionPending}
-              onOpen={nativeBrowser.openReact}
             />
           ) : null}
           {shouldRenderExternalDevtoolsPanel ? (

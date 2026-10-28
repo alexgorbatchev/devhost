@@ -3,10 +3,6 @@ name = "devhost"
 [devtools.shortcuts]
 restartServices = "alt+ctrl+r"
 
-# The browser `just dev-browser` starts; DEVHOST_BROWSER_ENDPOINT is empty, and native React access off, until it is set.
-[devtools.browser]
-endpoint = "{{ env.DEVHOST_BROWSER_ENDPOINT }}"
-
 [services.storybook]
 primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]

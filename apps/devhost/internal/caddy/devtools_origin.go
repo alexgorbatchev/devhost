@@ -27,7 +27,7 @@ func AllowsDevtoolsURL(paths Paths, owner DevtoolsRouteOwner, text string) (bool
 	}
 	settings, ok, err := ReadAppliedManagedCaddySettings(paths)
 	if err != nil {
-		return false, fmt.Errorf("read native browser route settings: %w", err)
+		return false, fmt.Errorf("read devtools route settings: %w", err)
 	}
 	if !ok {
 		return false, nil
@@ -51,7 +51,7 @@ func AllowsDevtoolsURL(paths Paths, owner DevtoolsRouteOwner, text string) (bool
 	}
 	registrations, err := readHostRegistrations(strings.ToLower(u.Hostname()), paths.RoutesDirectoryPath)
 	if err != nil {
-		return false, fmt.Errorf("read native browser host routes: %w", err)
+		return false, fmt.Errorf("read devtools host routes: %w", err)
 	}
 	return ownsDevtoolsDocument(registrations, owner, u.Path), nil
 }

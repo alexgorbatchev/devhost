@@ -11,11 +11,10 @@ import (
 var tableKeys = map[string][]string{
 	"":                          {"caddy", "devtools", "worktrees", "name", "services", "groups", "includes", "killZombies"},
 	"worktrees":                 {"enabled"},
-	"devtools":                  {"annotations", "browser", "chat", "configEditor", "editor", "externalToolbars", "idleTimeout", "minimap", "resources", "status", "shortcuts"},
+	"devtools":                  {"annotations", "chat", "configEditor", "editor", "externalToolbars", "idleTimeout", "minimap", "resources", "status", "shortcuts"},
 	"devtools.annotations":      {"enabled"},
 	"devtools.chat":             {"enabled", "prompt"},
 	"devtools.configEditor":     {"enabled"},
-	"devtools.browser":          {"endpoint", "reactExtensionId"},
 	"devtools.editor":           {"enabled", "ide"},
 	"devtools.externalToolbars": {"enabled"},
 	"devtools.minimap":          {"enabled"},

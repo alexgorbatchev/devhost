@@ -77,9 +77,8 @@ Connect with `wss://` on an HTTPS hostname, or `ws://` on plain HTTP:
 | `/__devhost__/ws/resources`                                             | CPU, memory, and disk readings; `404` while all readouts are off             |
 | `/__devhost__/ws/react-highlight`                                       | Editor cursor positions                                                      |
 | `/__devhost__/ws/chat?sessionId=<id>&pageURL=<url>&chatTarget=<target>` | One chat session; see the [Chat API](../chat-api/#event-stream-and-commands) |
-| `/__devhost__/ws/native-browser`                                        | [Native React DevTools](../../integrations/react-devtools/) browser control  |
 
-The toolbar reconnects every stream except native browser control after a loss, waiting from one up to ten seconds between attempts. While health is disconnected, services show as unavailable; logs keep what they buffered; resource readouts hide; editor highlights clear. Native browser control reconnects only when you choose **Connect browser control** again.
+The toolbar reconnects every stream after a loss, waiting from one up to ten seconds between attempts. While health is disconnected, services show as unavailable; logs keep what they buffered; resource readouts hide; editor highlights clear.
 
 devhost drops a connection whose reader stops reading for ten seconds while updates wait, for example a page paused in a debugger. The page reconnects once it runs again.
 
@@ -87,7 +86,7 @@ When the stack stops, every stream closes with code `1001` (going away). Closing
 
 ## Instance configuration and caching
 
-Before it mounts, the toolbar script fetches `/__devhost__/config.json` with `cache: "no-store"`. The response holds the stack name, project root, enabled features, and UI settings, and is sent with `Cache-Control: no-store`, so a reload always sees current settings. The native browser endpoint is never included.
+Before it mounts, the toolbar script fetches `/__devhost__/config.json` with `cache: "no-store"`. The response holds the stack name, project root, enabled features, and UI settings, and is sent with `Cache-Control: no-store`, so a reload always sees current settings.
 
 Everything else the toolbar loads is cached for a year:
 

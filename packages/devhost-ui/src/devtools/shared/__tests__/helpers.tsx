@@ -1,8 +1,5 @@
 import { act, render, type RenderResult } from "@testing-library/react";
 import { waitForAnimationFrame } from "../../../../test-support/hostPageUtils";
-import { NativeBrowserConnectionControl } from "../../features/nativeBrowserConnection/components/NativeBrowserConnectionControl";
-import { NativeBrowserConnectionStatus } from "../../features/nativeBrowserConnection/components/NativeBrowserConnectionStatus";
-import { createNativeBrowserView } from "../nativeBrowser/createNativeBrowserView";
 
 import {
   ResponsiveToolbarScene,
@@ -27,23 +24,8 @@ export async function renderResponsiveToolbar(props: IResponsiveToolbarProps): P
 }
 
 export async function renderResponsiveToolbarWithReadout(props: IResponsiveToolbarProps): Promise<RenderResult> {
-  const view = {
-    ...createNativeBrowserView(),
-    errorMessage:
-      "Browser discovery failed. Check the configured loopback endpoint and running dedicated profile. ".repeat(8),
-  };
   return renderResponsiveToolbar({
     ...props,
-    readout: (
-      <>
-        <NativeBrowserConnectionControl
-          view={view}
-          onConnect={async () => {}}
-          onDisconnect={() => {}}
-          statusId="mobile-browser-status"
-        />
-        <NativeBrowserConnectionStatus view={view} id="mobile-browser-status" />
-      </>
-    ),
+    readout: "A readout long enough to wrap inside the toolbar's narrow layout. ".repeat(48),
   });
 }

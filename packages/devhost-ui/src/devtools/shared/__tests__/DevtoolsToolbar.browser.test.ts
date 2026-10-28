@@ -61,7 +61,7 @@ describe("responsive toolbar", () => {
   );
 
   test.each<DevtoolsPosition>(["bottom-right", "top-right"])(
-    "keeps the wrapped %s toolbar onscreen with a tall browser readout",
+    "keeps the wrapped %s toolbar onscreen with a tall readout",
     async (position) => {
       await settleToolbar(async () => page.viewport(320, 480));
       const view = await renderResponsiveToolbarWithReadout({ isMinimapVisible: true, position });
