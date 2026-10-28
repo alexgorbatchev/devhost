@@ -22,7 +22,7 @@ var tableKeys = map[string][]string{
 	"devtools.resources.*":      {"enabled", "pollInterval"},
 	"devtools.status":           {"enabled", "position"},
 	"devtools.shortcuts":        {"restartServices"},
-	"services.*":                {"alwaysStart", "bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "proxyLocalOrigin", "watch"},
+	"services.*":                {"alwaysStart", "bindHost", "command", "cwd", "dependsOn", "env", "health", "host", "injectPort", "lifecycle", "managed", "path", "port", "primary", "proxyLocalOrigin", "serve", "watch"},
 	"services.*.health":         {"http", "interval", "process", "retries", "tcp", "timeout"},
 	"services.*.lifecycle":      {"mode", "start", "status", "stop"},
 }

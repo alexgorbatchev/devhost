@@ -89,6 +89,7 @@ type ValidatedService struct {
 	ProxyLocalOrigin bool
 	BindHost         string
 	Command          []string
+	Serve            string
 	Cwd              string
 	DependsOn        []string
 	Env              map[string]string

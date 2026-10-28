@@ -16,6 +16,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
@@ -49,16 +50,24 @@ func TestServeSessionAttemptsCaddyStartAndCleansUpFailure(t *testing.T) {
 }
 
 func TestServeSessionServesWithDevtoolsAndCleansUp(t *testing.T) {
-	for _, mode := range []string{"directory", "port"} {
-		t.Run(mode, func(t *testing.T) { testServeSession(t, mode == "port") })
+	for _, mode := range []string{"directory", "port", "manifest"} {
+		t.Run(mode, func(t *testing.T) { testServeSession(t, mode) })
 	}
 }
 
-func testServeSession(t *testing.T, external bool) {
+func testServeSession(t *testing.T, mode string) {
 	t.Helper()
+	external := mode == "port"
 	var log strings.Builder
 	dir := t.TempDir()
 	port := 0
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+	if mode == "manifest" {
+		body := fmt.Sprintf("name = 'files'\n[worktrees]\nenabled = false\n[services.files]\nserve = %q\nhost = 'files.localhost'\n", dir)
+		if err := os.WriteFile(manifestPath, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	var upstream *httptest.Server
 	if external {
 		port = nettest.ReservePort(t)
@@ -107,7 +116,14 @@ func testServeSession(t *testing.T, external bool) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		code, err := StartServe(dir, "files.localhost", port, StartStackOptions{CaddyPaths: paths, ConfigPath: configPath, LogWriter: &log})
+		options := StartStackOptions{CaddyPaths: paths, ConfigPath: configPath, LogWriter: &log}
+		var code int
+		var err error
+		if mode == "manifest" {
+			code, err = startTestFileStack(manifestPath, options)
+		} else {
+			code, err = StartServe(dir, "files.localhost", port, options)
+		}
 		done <- result{code, err}
 	}()
 	var signalChannel chan<- os.Signal
@@ -182,4 +198,20 @@ func testServeSession(t *testing.T, external bool) {
 		body, err := io.ReadAll(resp.Body)
 		return err == nil && strings.Contains(string(body), wantContent) && strings.Contains(string(body), "/__devhost__/")
 	})
+}
+
+func startTestFileStack(path string, options StartStackOptions) (int, error) {
+	raw, err := manifest.ReadManifest(path)
+	if err != nil {
+		return 0, err
+	}
+	configured, err := manifest.ValidateManifest(path, raw)
+	if err != nil {
+		return 0, err
+	}
+	resolved, err := ResolveServicePorts(configured)
+	if err != nil {
+		return 0, err
+	}
+	return StartStack(&resolved, []string{"files"}, options)
 }

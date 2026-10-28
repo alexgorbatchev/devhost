@@ -318,6 +318,18 @@ func validateService(
 	}
 
 	lifecycle, _ := readOptionalServiceLifecycle(value, fmt.Sprintf("services.%s.lifecycle", serviceName), schemaIssues)
+	serve, hasServe := readOptionalNonEmptyString(value, servicePath, "serve", schemaIssues)
+	if hasServe {
+		serve = resolveConstrainedPath(servicePath+".serve", serve, manifestDirectoryPath, validationIssues)
+		for _, key := range []string{"command", "cwd", "lifecycle", "env", "injectPort", "proxyLocalOrigin", "watch"} {
+			if _, exists := value[key]; exists {
+				*validationIssues = append(*validationIssues, fmt.Sprintf("%s must omit %s when serve is configured.", servicePath, key))
+			}
+		}
+		if !managed {
+			*validationIssues = append(*validationIssues, servicePath+".serve requires managed = true.")
+		}
+	}
 
 	command := []string{}
 	hasCommand := false
@@ -326,7 +338,7 @@ func validateService(
 		if !hasCommand {
 			command = []string{}
 		}
-	} else if managed {
+	} else if managed && !hasServe {
 		var ok bool
 		command, ok = readRequiredCommand(value, servicePath, "command", schemaIssues)
 		hasCommand = ok
@@ -379,6 +391,9 @@ func validateService(
 		cwd = valueCwd
 	}
 	resolvedCwd := resolveConstrainedPath(fmt.Sprintf("services.%s.cwd", serviceName), cwd, manifestDirectoryPath, validationIssues)
+	if hasServe {
+		resolvedCwd = serve
+	}
 
 	dependsOn := []string{}
 	if values, ok := readOptionalStringArray(value, servicePath, "dependsOn", schemaIssues); ok {
@@ -396,9 +411,12 @@ func validateService(
 	}
 
 	port, hasPort := readOptionalServicePort(value, servicePath, "port", schemaIssues)
+	if hasServe && !hasPort {
+		port, hasPort = &PortConfig{Auto: true}, true
+	}
 	injectPort, hasInjectPort := readOptionalBool(value, servicePath, "injectPort", schemaIssues)
 	if !hasInjectPort {
-		if !managed {
+		if !managed || hasServe {
 			injectPort = false
 		} else {
 			injectPort = true
@@ -452,6 +470,9 @@ func validateService(
 	if hasHealth && health.Process && hasHost {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process on a routed service.", serviceName))
 	}
+	if hasServe && hasHealth && health.Process {
+		*validationIssues = append(*validationIssues, servicePath+" must not use health.process when serve is configured.")
+	}
 	if hasHealth && health.Process && !managed {
 		*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s must not use health.process when managed = false.", serviceName))
 	}
@@ -498,6 +519,7 @@ func validateService(
 	}
 
 	return ValidatedService{
+		Serve:            serve,
 		AlwaysStart:      alwaysStart,
 		ProxyLocalOrigin: proxyLocalOrigin,
 		BindHost:         bindHost,

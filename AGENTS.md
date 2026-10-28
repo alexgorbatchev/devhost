@@ -38,6 +38,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
 - Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design docs`
 - Open the general design reference document (`packages/design/references/design-system.html`) in the default browser: `just design system`
+- Browse the design package while the root stack runs: `https://devhost-design.localhost/` (uses `DEVHOST_DEV_EXT` for the hostname suffix). Open `/references/design-system.html` for the general reference; the root lists package files. The manifest's native `serve` service starts with every service selection.
 
 ## Documentation policy
 

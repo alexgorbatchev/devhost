@@ -59,11 +59,15 @@ func StartServe(directory, domain string, port int, options StartStackOptions) (
 }
 
 func startFileServer(directory string) (int, <-chan error, func() error, error) {
+	return startFileServerAt(directory, "127.0.0.1:0")
+}
+
+func startFileServerAt(directory, address string) (int, <-chan error, func() error, error) {
 	handler, err := files.Open(directory)
 	if err != nil {
 		return 0, nil, nil, err
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return 0, nil, nil, errors.Join(fmt.Errorf("start file listener: %w", err), handler.Close())
 	}
@@ -71,6 +75,7 @@ func startFileServer(directory string) (int, <-chan error, func() error, error) 
 	serveErrors := make(chan error, 1)
 	var serverWG sync.WaitGroup
 	serverWG.Go(func() {
+		defer close(serveErrors)
 		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serveErrors <- fmt.Errorf("serve directory: %w", err)
 		}
@@ -81,4 +86,27 @@ func startFileServer(directory string) (int, <-chan error, func() error, error) 
 		return errors.Join(err, handler.Close())
 	}
 	return listener.Addr().(*net.TCPAddr).Port, serveErrors, closeServer, nil
+}
+
+func startFileService(service ResolvedService) (*startedService, error) {
+	if service.Port == nil {
+		return nil, fmt.Errorf("service %s has no file server port", service.Name)
+	}
+	address := net.JoinHostPort(service.BindHost, fmt.Sprint(*service.Port))
+	_, serveErrors, closeServer, err := startFileServerAt(service.Serve, address)
+	if err != nil {
+		return nil, fmt.Errorf("start file service %s: %w", service.Name, err)
+	}
+	started := &startedService{service: service, exited: make(chan struct{}), stopFileServer: closeServer}
+	go func() {
+		err := <-serveErrors
+		started.exitMu.Lock()
+		if err != nil {
+			started.exitCode = 1
+		}
+		started.hasExited = true
+		started.exitMu.Unlock()
+		close(started.exited)
+	}()
+	return started, nil
 }

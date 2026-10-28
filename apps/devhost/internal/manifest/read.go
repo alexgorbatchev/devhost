@@ -178,7 +178,11 @@ func prepareSubManifest(subManifest map[string]any, rootDir, subDir string) map[
 	if services, ok := subManifest["services"].(map[string]any); ok {
 		for _, serviceVal := range services {
 			if serviceMap, ok := serviceVal.(map[string]any); ok {
-				if _, exists := serviceMap["cwd"]; !exists {
+				_, servesFiles := serviceMap["serve"]
+				if serve, ok := serviceMap["serve"].(string); ok && serve != "" {
+					serviceMap["serve"] = rewriteManifestPath(rootDir, subDir, serve)
+				}
+				if _, exists := serviceMap["cwd"]; !exists && !servesFiles {
 					serviceMap["cwd"] = "."
 				}
 			}
@@ -189,6 +193,18 @@ func prepareSubManifest(subManifest map[string]any, rootDir, subDir string) map[
 	return rewritten.(map[string]any)
 }
 
+func rewriteManifestPath(rootDir, subDir, value string) string {
+	if filepath.IsAbs(value) || strings.Contains(value, "{{") {
+		return value
+	}
+	absPath := filepath.Join(subDir, value)
+	relPath, err := filepath.Rel(rootDir, absPath)
+	if err != nil {
+		return absPath
+	}
+	return relPath
+}
+
 func rewritePaths(rootManifestDir, subManifestDir string, value any) any {
 	switch item := value.(type) {
 	case map[string]any:
@@ -196,13 +212,7 @@ func rewritePaths(rootManifestDir, subManifestDir string, value any) any {
 		for k, v := range item {
 			if k == "cwd" {
 				if str, ok := v.(string); ok && !filepath.IsAbs(str) && !strings.Contains(str, "{{") {
-					absPath := filepath.Join(subManifestDir, str)
-					relPath, err := filepath.Rel(rootManifestDir, absPath)
-					if err == nil {
-						result[k] = relPath
-					} else {
-						result[k] = absPath
-					}
+					result[k] = rewriteManifestPath(rootManifestDir, subManifestDir, str)
 					continue
 				}
 			}
