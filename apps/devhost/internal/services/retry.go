@@ -72,6 +72,7 @@ func ReassignAutoPort(value ResolvedManifest, serviceName string) (ResolvedServi
 		for name, selected := range value.Services {
 			next := nextManifest.Services[name]
 			next.Cwd = selected.Cwd
+			next.Serve = selected.Serve
 			nextManifest.Services[name] = next
 		}
 		service = nextManifest.Services[serviceName]

@@ -252,6 +252,18 @@ restartServices = "alt+ctrl+r"
 # - `{{ services.<name>.host }}` names the first public routing host, falling back to bindHost
 # - `{{ services.<name>.url }}` builds the direct HTTP base URL, mapping wildcard hosts to loopback and bracketing IPv6
 
+# Static files can run as a native managed service instead of a child command:
+# [services.design]
+# serve = "packages/design"
+# host = "design.localhost"
+# alwaysStart = true
+# `serve` resolves relative to its declaring manifest, defaults to an automatic port,
+# and uses the same confined file browser and Markdown rendering as `devhost serve`.
+# Index precedence: index.html, index.md, README.md, readme.md, then a directory listing.
+# Configure port/bindHost, HTTP or TCP health, routes, and dependencies as needed.
+# `serve` replaces command and rejects cwd, env, injectPort, lifecycle,
+# proxyLocalOrigin, watch, managed = false, and health.process.
+
 [services.web]
 # `primary` marks this as the default service for stack-level behavior.
 # - `true`: make this the primary service.

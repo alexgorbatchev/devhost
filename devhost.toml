@@ -1,5 +1,10 @@
 name = "devhost"
 
+[services.design]
+alwaysStart = true
+serve = "packages/design"
+host = "devhost-design{{ env.DEVHOST_DEV_EXT }}"
+
 [devtools.shortcuts]
 restartServices = "alt+ctrl+r"
 

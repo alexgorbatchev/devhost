@@ -74,11 +74,14 @@ type StartStackOptions struct {
 }
 
 type startedService struct {
-	cmd         *exec.Cmd
-	containment *serviceContainment
-	service     ResolvedService
-	exited      chan struct{}
-	outputWG    sync.WaitGroup
+	stopFileServer func() error
+	fileStopOnce   sync.Once
+	fileStopError  error
+	cmd            *exec.Cmd
+	containment    *serviceContainment
+	service        ResolvedService
+	exited         chan struct{}
+	outputWG       sync.WaitGroup
 
 	restartMu               sync.Mutex
 	isRestarting            bool
@@ -843,6 +846,13 @@ func startServiceWithRetries(ctx context.Context, manifest *ResolvedManifest, st
 			stdoutWriter: options.ServiceStdoutWriter,
 		})
 		if err != nil {
+			if service.Serve != "" && start.AllowPortReassignment && ShouldRetryAutoPortStartup(service, err, nil, retryCount) {
+				retryCount++
+				if err := reassignStartupAutoPort(manifest, serviceName, options.LogWriter); err != nil {
+					return nil, err
+				}
+				continue
+			}
 			return nil, err
 		}
 
@@ -1099,6 +1109,9 @@ func runServiceCommand(
 }
 
 func startServiceProcess(manifest ResolvedManifest, service ResolvedService, options processStartOptions) (*startedService, error) {
+	if service.Serve != "" {
+		return startFileService(service)
+	}
 	if len(service.Command) == 0 {
 		return nil, fmt.Errorf("service %s command is empty", service.Name)
 	}
@@ -1253,6 +1266,12 @@ func forwardStartedServicesSignal(startedServices []*startedService, receivedSig
 
 func signalStartedService(startedService *startedService, signal os.Signal) {
 	if startedService == nil {
+		return
+	}
+	if startedService.stopFileServer != nil {
+		if _, terminate := isTerminationSignal(signal); terminate {
+			startedService.fileStopOnce.Do(func() { startedService.fileStopError = startedService.stopFileServer() })
+		}
 		return
 	}
 	startedService.noteShutdownSignal(signal)
@@ -1562,7 +1581,7 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 }
 
 func isManagedService(service ResolvedService) bool {
-	return service.Managed || len(service.Command) > 0
+	return service.Managed || len(service.Command) > 0 || service.Serve != ""
 }
 
 func usesDaemonLifecycle(service ResolvedService) bool {
@@ -1789,6 +1808,9 @@ func (s *startedService) closeContainment() {
 func (s *startedService) shutdownFailure() error {
 	if s == nil {
 		return nil
+	}
+	if s.stopFileServer != nil {
+		return s.fileStopError
 	}
 
 	problems := []string{}

@@ -43,6 +43,16 @@ func validateServiceWorkingDirectories(m ResolvedManifest, blocked map[string]st
 }
 
 func validateServiceWorkingDirectory(service ResolvedService) error {
+	if service.Serve != "" {
+		info, err := os.Stat(service.Serve)
+		if err != nil {
+			return fmt.Errorf("start service %s: cannot access serve directory %q: %w", service.Name, service.Serve, err)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("start service %s: serve path %q is not a directory", service.Name, service.Serve)
+		}
+		return nil
+	}
 	if service.Cwd == "" {
 		return nil
 	}

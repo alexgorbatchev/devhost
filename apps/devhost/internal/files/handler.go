@@ -205,7 +205,7 @@ func (h *Handler) file(w http.ResponseWriter, r *http.Request, f *os.File, info 
 }
 
 func (h *Handler) directory(w http.ResponseWriter, r *http.Request, dir *os.File, name string) {
-	for _, index := range []string{"index.html", "index.md"} {
+	for _, index := range []string{"index.html", "index.md", "README.md", "readme.md"} {
 		f, err := h.open(path.Join(name, index))
 		if err != nil {
 			continue

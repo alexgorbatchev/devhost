@@ -13,6 +13,8 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 
 ## Local conventions
 
+- The root `devhost.toml` serves this package at `https://devhost-design.localhost/` with the shared `DEVHOST_DEV_EXT` suffix override. Its `alwaysStart` native `serve` service stays available with every service selection. Use `/references/design-system.html`, `/references/devtools.html`, or `/references/docs.html` for the references, with live `tokens.css` loading.
+
 - `src/constants.ts` is the source of truth. `DESIGN_TOKENS` renders into `tokens.css` as `--dh-*` custom properties; `TERMINAL_PALETTES` feeds xterm, which takes literal colors.
 - `tokens.css` is generated and committed so CSS `@import` and the `file://` design references can load it without a build step. Never edit it by hand.
 - `tokens.css` sets dark values on `:root`, `:host`, and `::backdrop`, and light values wherever `data-theme="light"` is set (document root, wrapper element, or `:host([data-theme="light"])`). Consumers choose the scheme with `data-theme`, never by restating values.

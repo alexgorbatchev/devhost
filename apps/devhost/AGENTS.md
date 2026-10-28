@@ -127,7 +127,7 @@ A development build records its checkout root in `internal/devbuild` through `-l
 - `internal/manifest/` — manifest discovery, parsing, validation, and defaults
 - `internal/config/` — the devhost config file (`config.toml`) every stack on the machine shares: its path resolution and validation
 - `internal/choices/` — words the allowed values of a setting for validation issues, shared by the manifest and config validation
-- `internal/files/` — manifest-free static serving and safe GFM rendering; the embedded GitHub Markdown CSS retains its upstream version/source and MIT license
+- `internal/files/` — confined static serving and safe GFM rendering for standalone `serve` sessions and manifest `serve` services; the embedded GitHub Markdown CSS retains its upstream version/source and MIT license
 - `internal/services/` — child process orchestration, health checks, port resolution, and cleanup
 - `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
 - `internal/browsertest/`, `internal/caddy/caddytest/`, `internal/nettest/`, `internal/testenv/` — test support: the repository's Chromium for browser tests, stand-ins for Caddy's admin endpoint and executable, reserved loopback ports, and the test process environment

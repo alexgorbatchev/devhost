@@ -13,7 +13,7 @@ devhost serve --dir "./my notes" --domain notes.localhost
 
 The first command serves the current directory; `--dir` picks another one, relative to the current directory. Open `https://notes.localhost` once devhost prints the URL.
 
-- A folder serves `index.html`, then `index.md`, and otherwise shows a clickable listing.
+- A folder serves `index.html`, then `index.md`, then `README.md`, then `readme.md`, and otherwise shows a clickable listing confined to the served folder.
 - Files are read on every request, so a reload shows edits and new files.
 - Markdown files (`.md`, any case) render as GitHub Flavored Markdown, without raw HTML or unsafe links. **Show source** switches to the raw text and **Show rendered** switches back; the choice is remembered for that hostname.
 - A breadcrumb above each listing and Markdown page links to its parent folders; **devhost** returns to the served root.
@@ -21,6 +21,25 @@ The first command serves the current directory; `--dir` picks another one, relat
 - Files support `GET`, `HEAD`, and byte ranges.
 - Files and folders whose names start with `.` are not listed and not served. Symbolic links work only when they point inside the served folder.
 - This is a static server: an unknown URL returns 404, with no fallback to a single-page app's `index.html`.
+
+## Serve a folder in a stack
+
+Use `serve` in `devhost.toml` to run the same file server as a managed service:
+
+```toml
+name = "project"
+
+[services.design]
+serve = "packages/design"
+host = "design.localhost"
+alwaysStart = true
+```
+
+Relative directories resolve against the manifest that declares the service, including an included manifest. They stay within the root manifest directory; absolute directories can point elsewhere. The directory must exist. File browsing and symlink access remain confined to that directory.
+
+The service defaults to an automatic port and the loopback bind address. You can set `port` and `bindHost` explicitly, add host aliases or path routes, configure HTTP or TCP health checks, and use dependencies and service selection. `alwaysStart = true` keeps it available when you select other services. Path routes match the original request path; they do not strip a prefix from file paths.
+
+Devhost owns the file server directly. Starting, stopping, restarting, manifest reloads, and worktree switches use the stack's normal service lifecycle. Files are read live, so edits need only a browser reload. `serve` replaces `command`; it rejects `cwd`, child-process `env`, `injectPort`, `lifecycle`, `proxyLocalOrigin`, `watch`, `managed = false`, and process-only health checks. The served directory also supplies the service's project directory for editor and chat tools.
 
 ## Route a running server
 

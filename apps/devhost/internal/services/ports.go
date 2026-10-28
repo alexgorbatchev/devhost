@@ -51,6 +51,7 @@ type ResolvedService struct {
 	ProxyLocalOrigin bool
 	BindHost         string
 	Command          []string
+	Serve            string
 	Cwd              string
 	DependsOn        []string
 	Env              map[string]string
@@ -156,6 +157,7 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 		}
 
 		resolvedServices[serviceName] = ResolvedService{
+			Serve:            service.Serve,
 			ProxyLocalOrigin: service.ProxyLocalOrigin,
 			BindHost:         service.BindHost,
 			Command:          service.Command,
@@ -307,7 +309,7 @@ func interpolateServiceTemplates(val string, resolvedServices map[string]Resolve
 }
 
 func isValidatedServiceManaged(service manifest.ValidatedService) bool {
-	return service.Managed || len(service.Command) > 0 || service.Lifecycle.Mode == "daemon"
+	return service.Managed || len(service.Command) > 0 || service.Serve != "" || service.Lifecycle.Mode == "daemon"
 }
 
 func collectFixedPorts(services map[string]manifest.ValidatedService) map[string]map[int]struct{} {

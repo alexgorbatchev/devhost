@@ -114,6 +114,12 @@ restartServices = "alt+ctrl+r"
 # services
 # -----------------------------------------------------------------------------
 
+# Native file service: an automatic port and the stack lifecycle.
+# [services.design]
+# serve = "packages/design"
+# host = "design.localhost"
+# alwaysStart = true
+
 [services.web]
 # `primary` marks this as the default service for stack-level behavior (default: false).
 primary = true

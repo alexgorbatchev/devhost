@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-25 08:30
-last_modified: 2026-10-25 10:09
+last_modified: 2026-10-28 10:06
 status: current
 ---
 
@@ -13,6 +13,8 @@ Architecture diagrams for contributors working on service supervision, routing, 
 The overview cites committed revision `b2496c7459ac103a50fb3842b741d145b7c7d18d`. It abstracts individual devtools features, service restart internals, worktree management, and release deployment. The Archify site itself is contributor tooling added after that snapshot. Source references use local-only mode because the recorded repository identity uses SSH; inspect the cited paths at the pinned revision.
 
 The dedicated stack directory is also outside that snapshot. Shared Caddy serves `https://devhost.localhost/` through any available stack control server, which reads live stack records and gathers read-only service and TOML snapshots from their loopback control listeners. Stack startup publishes its listener in the record; reload preserves it, and shutdown withdraws it before stopping the listener. With no registered backend, Caddy serves an embedded empty directory. See `apps/devhost/internal/caddy/stack_directory.go`, `apps/devhost/internal/devtools/stack_directory.go`, and `apps/devhost/internal/services/stack_directory.go` for that path.
+
+Native manifest `serve` services are outside the pinned diagram snapshot as well. In current code, `startServiceProcess` delegates these services to `startFileService` in `apps/devhost/internal/services/serve.go`, which runs `internal/files` inside the supervisor instead of spawning a command. The same document proxies, Caddy routes, health checks, and lifecycle operations apply. Each file handler pins its served directory with `os.Root`; stopping a native service closes its listener and file handler. The root stack uses this mode for the design package.
 
 ## Viewing
 
