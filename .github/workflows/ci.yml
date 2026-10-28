@@ -16,11 +16,26 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Never execute fork-controlled code on a self-hosted runner.
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64", "linux-ci"]') }}
     # A run takes about seven minutes. Without a limit, a step that hangs holds the runner for six hours.
     timeout-minutes: 30
 
     steps:
+      - name: Verify self-hosted isolation and fresh state
+        if: runner.environment == 'self-hosted'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -u)" -ne 0
+          test ! -S /var/run/docker.sock
+          test ! -r /proc/1/environ
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test ! -e "$HOME/.ci-job-used"
+          touch "$HOME/.ci-job-used"
+          findmnt -n -o OPTIONS -T / | grep -Eq '(^|,)ro(,|$)'
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -45,6 +60,7 @@ jobs:
         run: just ui install-browser
 
       - name: Install test tools
+        if: runner.environment != 'self-hosted'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg unzip xvfb
 
       - name: Run checks
