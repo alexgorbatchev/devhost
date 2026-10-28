@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   check:
-    # Never execute fork-controlled code on a self-hosted runner.
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64", "linux-ci"]') }}
+    # Opt in only after the full suite passes locally; forks always stay hosted.
+    runs-on: ${{ vars.SELF_HOSTED_LINUX_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted", "linux", "x64", "linux-ci"]') || 'ubuntu-latest' }}
     # A run takes about seven minutes. Without a limit, a step that hangs holds the runner for six hours.
     timeout-minutes: 30
 
