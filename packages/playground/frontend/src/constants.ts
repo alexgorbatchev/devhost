@@ -2,11 +2,15 @@
 export const PROTOTYPES = [
   { label: "Devtools prototype", path: "/prototypes/references/devtools.html", file: "references/devtools.html" },
   { label: "Docs prototype", path: "/prototypes/references/docs.html", file: "references/docs.html" },
+  { label: "Status pages", path: "/prototypes/references/status-pages.html", file: "references/status-pages.html" },
   { label: "Design system", path: "/prototypes/references/design-system.html", file: "references/design-system.html" },
 ];
 
-// The prototypes link `../tokens.css`, so it sits one level above them.
-export const PROTOTYPE_STYLESHEET = { path: "/prototypes/tokens.css", file: "tokens.css" };
+// Keep stylesheet URLs aligned with the relative links in each prototype.
+export const PROTOTYPE_STYLESHEETS = [
+  { path: "/prototypes/tokens.css", file: "tokens.css" },
+  { path: "/prototypes/references/status-pages.css", file: "references/status-pages.css" },
+];
 
 // A document of its own outside the router, linked beside the prototypes.
 export const VIDEOS_PAGE = { label: "Demo videos", path: "/videos" };

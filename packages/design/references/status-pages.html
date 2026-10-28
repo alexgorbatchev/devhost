@@ -7,82 +7,130 @@
     <title>devhost — Standalone page design references</title>
     <link rel="stylesheet" href="status-pages.css" />
     <style>
-      body:has(#route-not-found:target) .workbench a[href="#route-not-found"],
-      body:has(#route-empty:target) .workbench a[href="#route-empty"],
-      body:has(#app-404:target) .workbench a[href="#app-404"],
-      body:has(#app-500:target) .workbench a[href="#app-500"],
-      body:has(#app-502:target) .workbench a[href="#app-502"],
-      body:has(#unavailable:target) .workbench a[href="#unavailable"],
-      body:has(#app-504:target) .workbench a[href="#app-504"],
-      body:has(#starting:target) .workbench a[href="#starting"],
-      body:has(#failed:target) .workbench a[href="#failed"],
-      body:has(#timeout:target) .workbench a[href="#timeout"],
-      body:has(#blocked:target) .workbench a[href="#blocked"],
-      body:has(#external:target) .workbench a[href="#external"],
-      body:has(#backend:target) .workbench a[href="#backend"],
-      body:has(#worktrees:target) .workbench a[href="#worktrees"],
-      body:has(#switching:target) .workbench a[href="#switching"],
-      body:has(#directory:target) .workbench a[href="#directory"],
-      body:has(#directory-empty:target) .workbench a[href="#directory-empty"],
-      body:has(#markdown:target) .workbench a[href="#markdown"],
-      body:has(#stacks:target) .workbench a[href="#stacks"],
-      body:has(#stacks-empty:target) .workbench a[href="#stacks-empty"],
-      body:has(#stacks-no-results:target) .workbench a[href="#stacks-no-results"],
-      body:has(#gallery:target) .workbench a[href="#gallery"],
-      body:not(:has(.page:target)) .workbench a[href="#unavailable"] {
+      body:has(#config-storybook:target) .service-nav a[href="#service-storybook"],
+      body:has(#dependencies-storybook:target) .service-nav a[href="#service-storybook"],
+      body:has(#service-storybook:target) .service-nav a[href="#service-storybook"],
+      body:has(#config-playground-backend:target) .service-nav a[href="#service-playground-backend"],
+      body:has(#dependencies-playground-backend:target) .service-nav a[href="#service-playground-backend"],
+      body:has(#service-playground-backend:target) .service-nav a[href="#service-playground-backend"],
+      body:has(#config-playground-frontend:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#dependencies-playground-frontend:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#service-playground-frontend:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#config-archify:target) .service-nav a[href="#service-archify"],
+      body:has(#dependencies-archify:target) .service-nav a[href="#service-archify"],
+      body:has(#service-archify:target) .service-nav a[href="#service-archify"],
+      body:has(#app-404:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#app-500:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#app-502:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#unavailable:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#app-504:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#starting:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#failed:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#timeout:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#blocked:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#worktrees:target) .service-nav a[href="#service-playground-frontend"],
+      body:has(#switching:target) .service-nav a[href="#service-playground-frontend"] {
         border-left-color: var(--accent);
         color: var(--accent);
         background: var(--panel);
       }
+      body:has(#stacks:target) .workbench a[href="#stacks"],
+      body:has(#stack-devhost:target) .workbench a[href="#stack-devhost"],
+      body:has(#stack-dependencies-devhost:target) .workbench a[href="#stack-dependencies-devhost"],
+      body:has(#stack-config-devhost:target) .workbench a[href="#stack-config-devhost"],
+      body:not(:has(.page:target)) .workspace-nav a[href="#stacks"] {
+        color: var(--accent);
+        background: var(--panel);
+        border-left-color: var(--accent);
+      }
     </style>
   </head>
   <body>
-    <aside class="workbench" aria-label="Design reference controls">
-      <p class="edition">Design study / 01</p>
-      <h2>Standalone pages</h2>
-      <p>A field manual for the moments around your application.</p>
-      <div class="theme" role="group" aria-label="Reference color scheme">
-        <label><input type="radio" name="theme" checked /> Paper</label
-        ><label><input id="night" type="radio" name="theme" /> Ink</label>
-      </div>
-      <nav aria-label="Page references">
-        <h3>Routing</h3>
-        <a href="#route-not-found"><span>01</span>Unknown hostname</a>
-        <a href="#route-empty"><span>02</span>No active routes</a>
-        <a href="#backend"><span>13</span>Backend fallback</a>
-        <h3>Recovery</h3>
-        <a href="#app-404"><span>03</span>App 404</a>
-        <a href="#app-500"><span>04</span>App 500</a>
-        <a href="#app-502"><span>05</span>App 502</a>
-        <a href="#unavailable"><span>06</span>App 503</a>
-        <a href="#app-504"><span>07</span>App 504</a>
-        <a href="#starting"><span>08</span>Starting</a>
-        <a href="#failed"><span>09</span>Process exited</a>
-        <a href="#timeout"><span>10</span>Startup timeout</a>
-        <a href="#blocked"><span>11</span>Blocked service</a>
-        <a href="#external"><span>12</span>External service</a>
-        <a href="#worktrees"><span>14</span>Worktree recovery</a>
-        <a href="#switching"><span>15</span>Switching checkout</a>
-        <h3>Content</h3>
-        <a href="#directory"><span>16</span>File directory</a>
-        <a href="#directory-empty"><span>17</span>Empty directory</a>
-        <a href="#markdown"><span>18</span>Markdown document</a>
-        <h3>Discovery</h3>
-        <a href="#stacks"><span>19</span>Running stacks</a>
-        <a href="#stacks-empty"><span>20</span>No running stacks</a>
-        <a href="#stacks-no-results"><span>21</span>No search results</a>
-        <a href="#gallery"><span>22</span>Preview gallery</a>
+    <aside class="workbench" aria-label="Workspace navigation">
+      <p class="edition">Local workspace</p>
+      <h2>Workspace</h2>
+      <nav class="workspace-nav" aria-label="Workspace">
+        <a href="#stacks">Stacks <span class="label">01</span></a>
       </nav>
-      <p class="note">
-        PROPOSAL, NOT PRODUCT<br />Static sample data.<br />Local interactions only.<br />Open this file in a browser.
-      </p>
+      <details class="stack-tree" open>
+        <summary>devhost <span class="label">4 services</span></summary>
+        <nav class="stack-nav" aria-label="devhost stack">
+          <a href="#stack-devhost">Overview</a><a href="#stack-dependencies-devhost">Dependency graph</a
+          ><a href="#stack-config-devhost">Configuration</a>
+        </nav>
+        <nav class="service-nav" aria-label="Stack services">
+          <a href="#service-storybook"
+            ><span class="service-dot" aria-hidden="true"></span
+            ><span class="service-name">storybook<small>Primary service</small></span></a
+          ><a href="#service-playground-backend"
+            ><span class="service-dot" aria-hidden="true"></span
+            ><span class="service-name">playground-backend<small>API route</small></span></a
+          ><a href="#service-playground-frontend"
+            ><span class="service-dot" aria-hidden="true"></span
+            ><span class="service-name">playground-frontend<small>Frontend</small></span></a
+          ><a href="#service-archify"
+            ><span class="service-dot" aria-hidden="true"></span
+            ><span class="service-name">archify<small>Always starts</small></span></a
+          >
+        </nav>
+      </details>
+      <p class="sidebar-empty">No stacks running.</p>
+      <div class="sidebar-footer">
+        <span class="label">Manifest</span><a href="#stack-config-devhost">devhost.toml ↗</a>
+        <p>Ports assigned automatically<br />Local HTTPS routes</p>
+      </div>
     </aside>
     <div class="stage">
       <header class="masthead">
-        <a href="#gallery" class="wordmark" aria-label="devhost reference gallery"
+        <a href="#stacks" class="wordmark" aria-label="devhost stack overview"
           ><span class="mark" aria-hidden="true">/↗</span>devhost</a
         ><span>LOCAL DEVELOPMENT, CONSIDERED.</span>
       </header>
+      <section class="reference-controls" aria-label="Design review controls">
+        <div>
+          <p class="edition">Design study / devhost.toml</p>
+          <p class="control-note">Sample runtime · default .localhost suffix · no live connection</p>
+        </div>
+        <div class="theme" role="group" aria-label="Reference color scheme">
+          <label><input type="radio" name="theme" checked /> Paper</label
+          ><label><input id="night" type="radio" name="theme" /> Ink</label>
+        </div>
+        <details class="scenario-picker">
+          <summary>Browse page scenarios <span class="label">22 states</span></summary>
+          <nav aria-label="Page references">
+            <h3>Routing</h3>
+            <a href="#route-not-found"><span>01</span>Unknown hostname</a>
+            <a href="#route-empty"><span>02</span>No active routes</a>
+            <a href="#backend"><span>13</span>Backend fallback</a>
+            <h3>Recovery</h3>
+            <a href="#app-404"><span>03</span>App 404</a>
+            <a href="#app-500"><span>04</span>App 500</a>
+            <a href="#app-502"><span>05</span>App 502</a>
+            <a href="#unavailable"><span>06</span>App 503</a>
+            <a href="#app-504"><span>07</span>App 504</a>
+            <a href="#starting"><span>08</span>Starting</a>
+            <a href="#failed"><span>09</span>Process exited</a>
+            <a href="#timeout"><span>10</span>Startup timeout</a>
+            <a href="#blocked"><span>11</span>Blocked service</a>
+            <a href="#external"><span>12</span>External service</a>
+            <a href="#worktrees"><span>14</span>Worktree recovery</a>
+            <a href="#switching"><span>15</span>Switching checkout</a>
+            <h3>Content</h3>
+            <a href="#directory"><span>16</span>File directory</a>
+            <a href="#directory-empty"><span>17</span>Empty directory</a>
+            <a href="#markdown"><span>18</span>Markdown document</a>
+            <h3>Discovery</h3>
+            <a href="#stacks"><span>19</span>Running stacks</a>
+            <a href="#stacks-empty"><span>20</span>No running stacks</a>
+            <a href="#stacks-no-results"><span>21</span>No search results</a>
+            <a href="#gallery"><span>22</span>Preview gallery</a>
+          </nav>
+          <p class="control-note">
+            Recovery examples apply to playground-frontend. File-serving and external-service examples cover
+            configurations outside this manifest.
+          </p>
+        </details>
+      </section>
       <main id="main" tabindex="-1">
         <article class="page" id="route-not-found" tabindex="-1" aria-label="Unknown hostname reference">
           <div class="folio"><span>preview.localhost</span><span>Routing / 01</span></div>
@@ -103,20 +151,26 @@
           <h2 class="section-title">Available on this machine</h2>
           <ul class="rows">
             <li>
-              <a href="#directory"
-                ><span>files.localhost<small>Project files</small></span
+              <a href="#service-storybook"
+                ><span>devhost-storybook.localhost<small>storybook · /</small></span
                 ><span aria-hidden="true">↗</span></a
               >
             </li>
             <li>
-              <a href="#starting"
-                ><span>web.localhost<small>Application</small></span
+              <a href="#service-playground-backend"
+                ><span>devhost-playground.localhost<small>playground-backend · /api/*</small></span
                 ><span aria-hidden="true">↗</span></a
               >
             </li>
             <li>
-              <a href="#app-500"
-                ><span>api.localhost<small>API service</small></span
+              <a href="#service-playground-frontend"
+                ><span>playground.localhost<small>playground-frontend · /</small></span
+                ><span aria-hidden="true">↗</span></a
+              >
+            </li>
+            <li>
+              <a href="#service-archify"
+                ><span>devhost-archify.localhost<small>archify · /</small></span
                 ><span aria-hidden="true">↗</span></a
               >
             </li>
@@ -151,7 +205,7 @@
           </p>
         </article>
         <article class="page" id="app-404" tabindex="-1" aria-label="App 404 reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">404</span><span class="status-name">Page not found</span>
@@ -169,30 +223,30 @@
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
               <pre>
-[web] GET /settings/billing
-[web] Responded with HTTP 404</pre
+[playground-frontend] GET /settings/billing
+[playground-frontend] Responded with HTTP 404</pre
               >
             </details>
             <aside class="aside-note">
               <h3>Check the path</h3>
               <p>
-                The hostname resolves to web. The missing page belongs to the application, so restarting the proxy will
-                not create it.
+                The hostname resolves to playground-frontend. The missing page belongs to the application, so restarting
+                the proxy will not create it.
               </p>
             </aside>
           </div>
@@ -202,7 +256,7 @@
           </p>
         </article>
         <article class="page" id="app-500" tabindex="-1" aria-label="App 500 reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">500</span><span class="status-name">Internal server error</span>
@@ -211,33 +265,36 @@
               <p class="eyebrow">Application error</p>
               <h1>The app hit<br />a problem.</h1>
               <p class="lede">
-                web returned an internal server error. Review its output, fix the cause, then restart the service.
+                playground-frontend returned an internal server error. Review its output, fix the cause, then restart
+                the service.
               </p>
               <div class="actions">
-                <a class="button" href="#starting">Restart web <span aria-hidden="true">&nbsp;↗</span></a>
+                <a class="button" href="#starting"
+                  >Restart playground-frontend <span aria-hidden="true">&nbsp;↗</span></a
+                >
               </div>
             </div>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] GET /dashboard
-<span class="log-error">[web] Error: DATABASE_URL is not configured</span>
-[web] Responded with HTTP 500</pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] GET /dashboard
+<span class="log-error">[playground-frontend] Error: DATABASE_URL is not configured</span>
+[playground-frontend] Responded with HTTP 500</pre>
             </details>
             <aside class="aside-note">
               <h3>Start with the error</h3>
@@ -250,7 +307,7 @@
           </p>
         </article>
         <article class="page" id="app-502" tabindex="-1" aria-label="App 502 reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">502</span><span class="status-name">Bad gateway</span>
@@ -259,33 +316,36 @@
               <p class="eyebrow">Application response</p>
               <h1>An upstream<br />didn’t answer.</h1>
               <p class="lede">
-                web returned HTTP 502. Inspect the application’s upstream connections and recent logs before restarting.
+                playground-frontend returned HTTP 502. Inspect the application’s upstream connections and recent logs
+                before restarting.
               </p>
               <div class="actions">
-                <a class="button" href="#starting">Restart web <span aria-hidden="true">&nbsp;↗</span></a>
+                <a class="button" href="#starting"
+                  >Restart playground-frontend <span aria-hidden="true">&nbsp;↗</span></a
+                >
               </div>
             </div>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] GET /api/projects
-<span class="log-error">[web] Upstream connection refused at 127.0.0.1:4000</span>
-[web] Responded with HTTP 502</pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] GET /api/projects
+<span class="log-error">[playground-frontend] Upstream connection refused at 127.0.0.1:5174</span>
+[playground-frontend] Responded with HTTP 502</pre>
             </details>
             <aside class="aside-note">
               <h3>Locate the failure</h3>
@@ -298,7 +358,7 @@
           </p>
         </article>
         <article class="page" id="unavailable" tabindex="-1" aria-label="App 503 reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">Service unavailable</span>
@@ -307,11 +367,12 @@
               <p class="eyebrow">Application response</p>
               <h1>A brief interruption.<br />A clear next step.</h1>
               <p class="lede">
-                web returned HTTP 503. Review the service output to find what’s unavailable, then restart when you’re
-                ready.
+                playground-frontend returned HTTP 503. Review the service output to find what’s unavailable, then
+                restart when you’re ready.
               </p>
               <div class="actions">
-                <a class="button" href="#starting">Restart web <span aria-hidden="true">&nbsp;↗</span></a
+                <a class="button" href="#starting"
+                  >Restart playground-frontend <span aria-hidden="true">&nbsp;↗</span></a
                 ><a class="text-link" href="#worktrees">Choose a worktree ↗</a>
               </div>
             </div>
@@ -319,23 +380,23 @@
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] GET /dashboard
-<span class="log-error">[web] Database connection unavailable</span>
-[web] Responded with HTTP 503</pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] GET /dashboard
+<span class="log-error">[playground-frontend] Database connection unavailable</span>
+[playground-frontend] Responded with HTTP 503</pre>
             </details>
             <aside class="aside-note">
               <h3>Your address stays put.</h3>
@@ -351,7 +412,7 @@
           </p>
         </article>
         <article class="page" id="app-504" tabindex="-1" aria-label="App 504 reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">504</span><span class="status-name">Gateway timeout</span>
@@ -359,32 +420,36 @@
             <div>
               <p class="eyebrow">Application response</p>
               <h1>The wait<br />ran out.</h1>
-              <p class="lede">web returned HTTP 504. Check the application logs for a slow or unreachable upstream.</p>
+              <p class="lede">
+                playground-frontend returned HTTP 504. Check the application logs for a slow or unreachable upstream.
+              </p>
               <div class="actions">
-                <a class="button" href="#starting">Restart web <span aria-hidden="true">&nbsp;↗</span></a>
+                <a class="button" href="#starting"
+                  >Restart playground-frontend <span aria-hidden="true">&nbsp;↗</span></a
+                >
               </div>
             </div>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] GET /reports/weekly
-<span class="log-error">[web] Upstream request exceeded its deadline</span>
-[web] Responded with HTTP 504</pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] GET /reports/weekly
+<span class="log-error">[playground-frontend] Upstream request exceeded its deadline</span>
+[playground-frontend] Responded with HTTP 504</pre>
             </details>
             <aside class="aside-note">
               <h3>Check the upstream</h3>
@@ -397,7 +462,7 @@
           </p>
         </article>
         <article class="page" id="starting" tabindex="-1" aria-label="Starting reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">Starting service</span>
@@ -405,22 +470,22 @@
             <div>
               <p class="eyebrow">Recovery in progress</p>
               <h1>Getting things<br />into place.</h1>
-              <p class="lede">web is starting. This page will reload when its health check passes.</p>
+              <p class="lede">playground-frontend is starting. This page will reload when its health check passes.</p>
               <div class="actions"><span class="signal">Waiting for the health check</span></div>
             </div>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="progress">
@@ -430,10 +495,10 @@
           </div>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
               <pre>
-[web] Starting development server
-[web] Checking TCP readiness at 127.0.0.1:3000</pre
+[playground-frontend] Starting development server
+[playground-frontend] Checking TCP readiness at 127.0.0.1:5173</pre
               >
             </details>
             <aside class="aside-note">
@@ -450,42 +515,44 @@
           </p>
         </article>
         <article class="page" id="failed" tabindex="-1" aria-label="Process exited reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">Service exited</span>
             </div>
             <div>
               <p class="eyebrow">Process stopped</p>
-              <h1>web stopped<br />unexpectedly.</h1>
+              <h1>playground-frontend stopped<br />unexpectedly.</h1>
               <p class="lede">
                 The process exited with code 1. Fix the error in its output, then restart when you’re ready.
               </p>
               <div class="actions">
-                <a class="button" href="#starting">Restart web <span aria-hidden="true">&nbsp;↗</span></a>
+                <a class="button" href="#starting"
+                  >Restart playground-frontend <span aria-hidden="true">&nbsp;↗</span></a
+                >
               </div>
             </div>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] Building application
-<span class="log-error">[web] Could not resolve import "./components/Header"</span>
-[web] Process exited with code 1</pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] Building application
+<span class="log-error">[playground-frontend] Could not resolve import "./components/Header"</span>
+[playground-frontend] Process exited with code 1</pre>
             </details>
             <aside class="aside-note">
               <h3>The proxy is still here.</h3>
@@ -500,7 +567,7 @@
           </p>
         </article>
         <article class="page" id="timeout" tabindex="-1" aria-label="Startup timeout reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">Health check failed</span>
@@ -509,33 +576,36 @@
               <p class="eyebrow">Startup did not finish</p>
               <h1>Started.<br />Never ready.</h1>
               <p class="lede">
-                web didn’t pass its health check before the startup deadline. Check the bind address and startup output.
+                playground-frontend didn’t pass its health check before the startup deadline. Check the bind address and
+                startup output.
               </p>
               <div class="actions">
-                <a class="button" href="#starting">Restart web <span aria-hidden="true">&nbsp;↗</span></a>
+                <a class="button" href="#starting"
+                  >Restart playground-frontend <span aria-hidden="true">&nbsp;↗</span></a
+                >
               </div>
             </div>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] Starting development server
-[web] Waiting for TCP readiness at 127.0.0.1:3000
-<span class="log-error">[web] Health check timed out after 10s</span></pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] Starting development server
+[playground-frontend] Waiting for TCP readiness at 127.0.0.1:5173
+<span class="log-error">[playground-frontend] Health check timed out after 10s</span></pre>
             </details>
             <aside class="aside-note">
               <h3>Check where it listens.</h3>
@@ -551,7 +621,7 @@
           </p>
         </article>
         <article class="page" id="blocked" tabindex="-1" aria-label="Blocked service reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">Service blocked</span>
@@ -568,20 +638,20 @@
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="callout">
-            <strong>Checkout unavailable</strong><br /><code>/workspace/atlas/feature-checkout</code><br />The
-            configured working directory could not be found.
+            <strong>Checkout unavailable</strong><br /><code>/workspace/devhost/checkouts/feature-checkout</code
+            ><br />The configured working directory could not be found.
           </div>
           <p class="reference-note">
             <strong>Design reference /</strong> Representative blocked-service state. The reason is supplied by the
@@ -589,7 +659,7 @@
           </p>
         </article>
         <article class="page" id="external" tabindex="-1" aria-label="External service reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>External service example</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">External service unavailable</span>
@@ -598,7 +668,7 @@
               <p class="eyebrow">Managed outside devhost</p>
               <h1>Waiting on<br />something outside.</h1>
               <p class="lede">
-                The external service at 127.0.0.1:3000 isn’t responding. Start it with the tool that owns it, then
+                The external service at 127.0.0.1:5173 isn’t responding. Start it with the tool that owns it, then
                 refresh the page.
               </p>
               <div class="actions"><a class="text-link" href="#external">Refresh page ↻</a></div>
@@ -607,15 +677,15 @@
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>External example</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>external-api</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="callout">
@@ -625,6 +695,10 @@
           <p class="reference-note">
             <strong>Design reference /</strong> Refresh revisits this static reference. No fabricated logs or restart
             action for an externally managed process.
+          </p>
+          <p class="reference-note">
+            <strong>Additional configuration /</strong> The root devhost.toml does not configure an externally managed
+            service. This example remains available for page coverage.
           </p>
         </article>
         <article class="page" id="backend" tabindex="-1" aria-label="Backend fallback reference">
@@ -652,24 +726,26 @@
           </p>
         </article>
         <article class="page" id="worktrees" tabindex="-1" aria-label="Worktree recovery reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Checkout recovery</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Checkout recovery</span></div>
           <div class="page-heading">
             <p class="eyebrow">500 / Application error</p>
             <h1>Change the checkout.<br />Keep your place.</h1>
-            <p class="lede">web couldn’t load. Review its logs or switch to another checkout of atlas.</p>
+            <p class="lede">
+              playground-frontend couldn’t load. Review its logs or switch to another checkout of devhost.
+            </p>
           </div>
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="support">
@@ -678,16 +754,16 @@
                 <legend>Choose a worktree</legend>
                 <label
                   ><input type="radio" name="worktree" checked /><span
-                    ><strong>main</strong><small>/workspace/atlas/main · Current checkout</small></span
+                    ><strong>main</strong><small>/workspace/devhost/main · Current checkout</small></span
                   ></label
                 ><label
                   ><input type="radio" name="worktree" /><span
-                    ><strong>feature/navigation</strong><small>/workspace/atlas/navigation · Available</small></span
+                    ><strong>feature/navigation</strong><small>/workspace/devhost/navigation · Available</small></span
                   ></label
                 ><label
                   ><input type="radio" name="worktree" disabled /><span
                     ><strong>feature/checkout</strong
-                    ><small>/workspace/atlas/checkout · Checkout is unavailable</small></span
+                    ><small>/workspace/devhost/checkout · Checkout is unavailable</small></span
                   ></label
                 >
               </fieldset>
@@ -703,10 +779,10 @@
           </div>
           <div style="margin-top: 32px">
             <details open>
-              <summary>Recent output <span class="label">web / stdout + stderr</span></summary>
-              <pre>[web] Starting development server
-[web] Listening on 127.0.0.1:3000
-<span class="log-error">[web] Request failed. See application output.</span></pre>
+              <summary>Recent output <span class="label">playground-frontend / stdout + stderr</span></summary>
+              <pre>[playground-frontend] Starting development server
+[playground-frontend] Listening on 127.0.0.1:5173
+<span class="log-error">[playground-frontend] Request failed. See application output.</span></pre>
             </details>
           </div>
           <p class="reference-note">
@@ -715,7 +791,7 @@
           </p>
         </article>
         <article class="page" id="switching" tabindex="-1" aria-label="Switching checkout reference">
-          <div class="folio"><span>atlas / web.localhost</span><span>Service response</span></div>
+          <div class="folio"><span>devhost / playground.localhost</span><span>Service response</span></div>
           <div class="hero">
             <div class="status-code">
               <span class="status-number">503</span><span class="status-name">Switching worktree</span>
@@ -724,8 +800,8 @@
               <p class="eyebrow">Recovery in progress</p>
               <h1>A new branch.<br />The same address.</h1>
               <p class="lede">
-                devhost is switching the repository and restarting its services. The page will reload after web becomes
-                ready.
+                devhost is switching the repository and restarting its services. The page will reload after
+                playground-frontend becomes ready.
               </p>
               <div class="actions"><span class="signal">Waiting for service readiness</span></div>
             </div>
@@ -733,15 +809,15 @@
           <dl class="facts">
             <div>
               <dt>Stack</dt>
-              <dd>atlas</dd>
+              <dd>devhost</dd>
             </div>
             <div>
               <dt>Service</dt>
-              <dd>web</dd>
+              <dd>playground-frontend</dd>
             </div>
             <div>
               <dt>Upstream</dt>
-              <dd>127.0.0.1:3000</dd>
+              <dd>127.0.0.1:5173</dd>
             </div>
           </dl>
           <div class="progress">
@@ -751,7 +827,7 @@
           </div>
           <div class="callout">
             <strong>Selected worktree</strong><br /><code>feature/navigation</code><br /><code
-              >/workspace/atlas/navigation</code
+              >/workspace/devhost/navigation</code
             >
           </div>
           <p class="reference-note">
@@ -760,7 +836,7 @@
           </p>
         </article>
         <article class="page" id="directory" tabindex="-1" aria-label="File directory reference">
-          <div class="folio"><span>files.localhost</span><span>Directory</span></div>
+          <div class="folio"><span>File-serving example</span><span>Directory</span></div>
           <nav class="breadcrumb" aria-label="File location"><a href="#directory">Files</a> / project /</nav>
           <div class="page-heading">
             <p class="eyebrow">Local files</p>
@@ -782,9 +858,13 @@
             <strong>Design reference /</strong> File names and directories only: the current page contract does not
             supply file sizes or modification times. Sample document links open the Markdown reference.
           </p>
+          <p class="reference-note">
+            <strong>Additional configuration /</strong> The root devhost.toml does not configure devhost file serving.
+            This example remains available for page coverage.
+          </p>
         </article>
         <article class="page" id="directory-empty" tabindex="-1" aria-label="Empty directory reference">
-          <div class="folio"><span>files.localhost</span><span>Directory</span></div>
+          <div class="folio"><span>File-serving example</span><span>Directory</span></div>
           <nav class="breadcrumb" aria-label="File location">
             <a href="#directory">Files</a> / <a href="#directory">project</a> / assets /
           </nav>
@@ -803,9 +883,13 @@
             <strong>Design reference /</strong> Sample data. Action links move between reference states; no running
             services are changed.
           </p>
+          <p class="reference-note">
+            <strong>Additional configuration /</strong> The root devhost.toml does not configure devhost file serving.
+            This example remains available for page coverage.
+          </p>
         </article>
         <article class="page" id="markdown" tabindex="-1" aria-label="Markdown document reference">
-          <div class="folio"><span>files.localhost</span><span>Document</span></div>
+          <div class="folio"><span>File-serving example</span><span>Document</span></div>
           <nav class="breadcrumb" aria-label="File location">
             <a href="#directory">Files</a> / <a href="#directory">project</a> / notes.md
           </nav>
@@ -837,11 +921,11 @@
               <tbody>
                 <tr>
                   <td>Web</td>
-                  <td><code>web.localhost</code></td>
+                  <td><code>playground.localhost</code></td>
                 </tr>
                 <tr>
                   <td>API</td>
-                  <td><code>api.localhost</code></td>
+                  <td><code>devhost-playground.localhost</code></td>
                 </tr>
               </tbody>
             </table>
@@ -870,8 +954,8 @@ devhost start
 
 | Service | Address |
 | --- | --- |
-| Web | web.localhost |
-| API | api.localhost |
+| Web | playground.localhost |
+| API | devhost-playground.localhost |
 
 ## Before you start
 
@@ -882,64 +966,56 @@ devhost start
             <strong>Design reference /</strong> Rendered/source controls work locally. Both views contain the same
             sample document.
           </p>
-        </article>
-        <article class="page" id="stacks" tabindex="-1" aria-label="Running stacks reference">
-          <div class="folio"><span>devhost / machine</span><span>Stack directory</span></div>
-          <div class="page-heading">
-            <p class="eyebrow">Your local workspace</p>
-            <h1>Everything<br />in its place.</h1>
-            <p class="lede">
-              Open a service or inspect its configuration. Refresh to update the running-stack snapshot.
-            </p>
-          </div>
-          <div class="stack">
-            <header>
-              <h2>atlas</h2>
-              <span class="signal">2 services</span>
-            </header>
-            <p>/workspace/atlas · PID 18420 · Started 09:41<br />Manifest /workspace/atlas/devhost.toml</p>
-            <ul class="rows">
-              <li>
-                <a href="#starting"
-                  ><span>web<small>web.localhost · /workspace/atlas/web</small></span
-                  ><span class="tag good">Running ↗</span></a
-                >
-              </li>
-              <li>
-                <a href="#app-500"
-                  ><span>api<small>api.localhost · /workspace/atlas/api</small></span
-                  ><span class="tag">Exited ↗</span></a
-                >
-              </li>
-            </ul>
-            <details>
-              <summary>Manifest configuration <span class="label">devhost.toml</span></summary>
-              <pre><code>name = "atlas"
-
-[services.web]
-command = ["bun", "run", "dev"]
-port = 3000
-host = "web.localhost"</code></pre>
-            </details>
-          </div>
-          <div class="stack">
-            <header>
-              <h2>notebook</h2>
-              <span class="signal">1 service</span>
-            </header>
-            <p>/workspace/notebook · PID 18516 · Started 10:02</p>
-            <ul class="rows">
-              <li>
-                <a href="#directory"
-                  ><span>files<small>files.localhost · /workspace/notebook</small></span
-                  ><span class="tag good">Running ↗</span></a
-                >
-              </li>
-            </ul>
-          </div>
           <p class="reference-note">
-            <strong>Design reference /</strong> Configuration disclosure works. Service links open sample states. Search
-            result and empty-directory layouts have separate references.
+            <strong>Additional configuration /</strong> The root devhost.toml does not configure devhost file serving.
+            This example remains available for page coverage.
+          </p>
+        </article>
+        <article class="page" id="stacks" tabindex="-1" aria-label="Running stacks">
+          <div class="folio"><span>Workspace</span><span>1 stack / 4 services</span></div>
+          <div class="page-heading">
+            <p class="eyebrow">Running stacks</p>
+            <h1 class="service-title">Your projects,<br />at a glance.</h1>
+            <p class="lede">Open a stack to inspect its services, configuration, and dependency graph.</p>
+          </div>
+          <section class="stack-card">
+            <header>
+              <div>
+                <p class="label">Stack / 01</p>
+                <h2><a href="#stack-devhost">devhost ↗</a></h2>
+              </div>
+              <span class="signal">Running</span>
+            </header>
+            <p class="stack-description">Development tools, playground services, and contributor architecture.</p>
+            <dl class="facts">
+              <div>
+                <dt>Services</dt>
+                <dd>4 running</dd>
+              </div>
+              <div>
+                <dt>Dependencies</dt>
+                <dd>0 declared</dd>
+              </div>
+              <div>
+                <dt>Manifest</dt>
+                <dd>devhost.toml</dd>
+              </div>
+            </dl>
+            <ul class="service-chips">
+              <li><a href="#service-storybook">storybook</a></li>
+              <li><a href="#service-playground-backend">playground-backend</a></li>
+              <li><a href="#service-playground-frontend">playground-frontend</a></li>
+              <li><a href="#service-archify">archify</a></li>
+            </ul>
+            <div class="actions">
+              <a class="button" href="#stack-devhost">Open stack ↗</a
+              ><a class="button secondary" href="#stack-dependencies-devhost">Dependency graph</a
+              ><a class="text-link" href="#stack-config-devhost">View configuration</a>
+            </div>
+          </section>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
           </p>
         </article>
         <article class="page" id="stacks-empty" tabindex="-1" aria-label="No running stacks reference">
@@ -997,6 +1073,938 @@ host = "web.localhost"</code></pre>
           <p class="reference-note">
             <strong>Design reference /</strong> This is the proposed gallery layout. All links navigate within this
             design reference.
+          </p>
+        </article>
+        <article class="page" id="service-storybook" tabindex="-1" aria-label="storybook service reference">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-storybook">storybook</a>
+          </nav>
+          <div class="folio"><span>devhost / storybook</span><span>Primary service</span></div>
+          <div class="page-heading">
+            <p class="eyebrow">Service overview</p>
+            <h1 class="service-title">storybook</h1>
+            <p class="lede">Component stories and interaction tests for the injected devtools UI.</p>
+            <div class="actions">
+              <a class="button" href="https://devhost-storybook.localhost/" target="_blank" rel="noreferrer"
+                >Open service ↗</a
+              ><span class="signal">Running</span>
+            </div>
+          </div>
+          <nav class="view-nav" aria-label="storybook views">
+            <a href="#service-storybook" aria-current="page">Overview</a><a href="#config-storybook">Configuration</a
+            ><a href="#dependencies-storybook">Dependencies</a>
+          </nav>
+          <dl class="facts">
+            <div>
+              <dt>Hostname</dt>
+              <dd>devhost-storybook.localhost</dd>
+            </div>
+            <div>
+              <dt>Route</dt>
+              <dd>/</dd>
+            </div>
+            <div>
+              <dt>Port</dt>
+              <dd>Automatically assigned</dd>
+            </div>
+          </dl>
+          <div class="support">
+            <div>
+              <h2 class="section-title">Start command</h2>
+              <pre><code>sh -c 'exec ./node_modules/.bin/storybook dev --ci --port &quot;$PORT&quot;'</code></pre>
+              <div class="callout"><strong>Working directory</strong><br /><code>packages/devhost-ui</code></div>
+            </div>
+            <aside class="aside-note">
+              <h3>Primary service</h3>
+              <p>Marked primary in devhost.toml. The allowed Vite host is derived from this service’s hostname.</p>
+            </aside>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is taken from devhost.toml. “Open service” opens the
+            actual .localhost URL in a new tab; running status is a design assumption.
+          </p>
+        </article>
+        <article
+          class="page"
+          id="service-playground-backend"
+          tabindex="-1"
+          aria-label="playground-backend service reference"
+        >
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-playground-backend">playground-backend</a>
+          </nav>
+          <div class="folio"><span>devhost / playground-backend</span><span>API route</span></div>
+          <div class="page-heading">
+            <p class="eyebrow">Service overview</p>
+            <h1 class="service-title">playground-backend</h1>
+            <p class="lede">The playground API, routed under /api/* on its own hostname.</p>
+            <div class="actions">
+              <a class="button" href="https://devhost-playground.localhost/api/" target="_blank" rel="noreferrer"
+                >Open service ↗</a
+              ><span class="signal">Running</span>
+            </div>
+          </div>
+          <nav class="view-nav" aria-label="playground-backend views">
+            <a href="#service-playground-backend" aria-current="page">Overview</a
+            ><a href="#config-playground-backend">Configuration</a
+            ><a href="#dependencies-playground-backend">Dependencies</a>
+          </nav>
+          <dl class="facts">
+            <div>
+              <dt>Hostname</dt>
+              <dd>devhost-playground.localhost</dd>
+            </div>
+            <div>
+              <dt>Route</dt>
+              <dd>/api/*</dd>
+            </div>
+            <div>
+              <dt>Port</dt>
+              <dd>Automatically assigned</dd>
+            </div>
+          </dl>
+          <div class="support">
+            <div>
+              <h2 class="section-title">Start command</h2>
+              <pre><code>just run</code></pre>
+              <div class="callout">
+                <strong>Working directory</strong><br /><code>packages/playground/backend</code>
+              </div>
+            </div>
+            <aside class="aside-note">
+              <h3>API route</h3>
+              <p>Only requests matching /api/* route to this service. The frontend uses a different hostname.</p>
+            </aside>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is taken from devhost.toml. “Open service” opens the
+            actual .localhost URL in a new tab; running status is a design assumption.
+          </p>
+        </article>
+        <article
+          class="page"
+          id="service-playground-frontend"
+          tabindex="-1"
+          aria-label="playground-frontend service reference"
+        >
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-playground-frontend">playground-frontend</a>
+          </nav>
+          <div class="folio"><span>devhost / playground-frontend</span><span>Frontend</span></div>
+          <div class="page-heading">
+            <p class="eyebrow">Service overview</p>
+            <h1 class="service-title">playground-frontend</h1>
+            <p class="lede">The playground application, with source watching and local-origin proxying.</p>
+            <div class="actions">
+              <a class="button" href="https://playground.localhost/" target="_blank" rel="noreferrer">Open service ↗</a
+              ><span class="signal">Running</span>
+            </div>
+          </div>
+          <nav class="view-nav" aria-label="playground-frontend views">
+            <a href="#service-playground-frontend" aria-current="page">Overview</a
+            ><a href="#config-playground-frontend">Configuration</a
+            ><a href="#dependencies-playground-frontend">Dependencies</a>
+          </nav>
+          <dl class="facts">
+            <div>
+              <dt>Hostname</dt>
+              <dd>playground.localhost</dd>
+            </div>
+            <div>
+              <dt>Route</dt>
+              <dd>/</dd>
+            </div>
+            <div>
+              <dt>Port</dt>
+              <dd>Automatically assigned</dd>
+            </div>
+          </dl>
+          <div class="support">
+            <div>
+              <h2 class="section-title">Start command</h2>
+              <pre><code>just run</code></pre>
+              <div class="callout">
+                <strong>Working directory</strong><br /><code>packages/playground/frontend</code>
+              </div>
+            </div>
+            <aside class="aside-note">
+              <h3>Frontend</h3>
+              <p>Binds to 127.0.0.1 with proxyLocalOrigin enabled, watches src/, and sets NODE_ENV to development.</p>
+            </aside>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is taken from devhost.toml. “Open service” opens the
+            actual .localhost URL in a new tab; running status is a design assumption.
+          </p>
+        </article>
+        <article class="page" id="service-archify" tabindex="-1" aria-label="archify service reference">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> / <a href="#service-archify">archify</a>
+          </nav>
+          <div class="folio"><span>devhost / archify</span><span>Always starts</span></div>
+          <div class="page-heading">
+            <p class="eyebrow">Service overview</p>
+            <h1 class="service-title">archify</h1>
+            <p class="lede">Contributor architecture diagrams. Included with every service selection.</p>
+            <div class="actions">
+              <a class="button" href="https://devhost-archify.localhost/" target="_blank" rel="noreferrer"
+                >Open service ↗</a
+              ><span class="signal">Running</span>
+            </div>
+          </div>
+          <nav class="view-nav" aria-label="archify views">
+            <a href="#service-archify" aria-current="page">Overview</a><a href="#config-archify">Configuration</a
+            ><a href="#dependencies-archify">Dependencies</a>
+          </nav>
+          <dl class="facts">
+            <div>
+              <dt>Hostname</dt>
+              <dd>devhost-archify.localhost</dd>
+            </div>
+            <div>
+              <dt>Route</dt>
+              <dd>/</dd>
+            </div>
+            <div>
+              <dt>Port</dt>
+              <dd>Automatically assigned</dd>
+            </div>
+          </dl>
+          <div class="support">
+            <div>
+              <h2 class="section-title">Start command</h2>
+              <pre><code>just archify run</code></pre>
+              <div class="callout"><strong>Working directory</strong><br /><code>.</code></div>
+            </div>
+            <aside class="aside-note">
+              <h3>Always starts</h3>
+              <p>alwaysStart is enabled. Binds to 127.0.0.1 and checks readiness with HTTP GET /.</p>
+            </aside>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is taken from devhost.toml. “Open service” opens the
+            actual .localhost URL in a new tab; running status is a design assumption.
+          </p>
+        </article>
+        <article class="page" id="stack-devhost" tabindex="-1" aria-label="devhost stack overview">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Stack overview</p>
+            <h1 class="service-title">devhost</h1>
+            <p class="lede">
+              Four services, one manifest. Inspect a service directly or follow its place in the dependency graph.
+            </p>
+          </div>
+          <nav class="view-nav" aria-label="devhost stack views">
+            <a href="#stack-devhost" aria-current="page">Overview</a><a href="#stack-config-devhost">Configuration</a
+            ><a href="#stack-dependencies-devhost">Dependencies</a>
+          </nav>
+          <dl class="facts">
+            <div>
+              <dt>Services</dt>
+              <dd>4 running</dd>
+            </div>
+            <div>
+              <dt>Startup dependencies</dt>
+              <dd>0 declared</dd>
+            </div>
+            <div>
+              <dt>Primary service</dt>
+              <dd><a href="#service-storybook">storybook</a></dd>
+            </div>
+          </dl>
+          <h2 class="section-title">Services</h2>
+          <ul class="rows">
+            <li>
+              <a href="#service-storybook"
+                ><span>storybook<small>devhost-storybook.localhost/ · packages/devhost-ui</small></span
+                ><span class="tag good">Running ↗</span></a
+              >
+            </li>
+            <li>
+              <a href="#service-playground-backend"
+                ><span
+                  >playground-backend<small
+                    >devhost-playground.localhost/api/* · packages/playground/backend</small
+                  ></span
+                ><span class="tag good">Running ↗</span></a
+              >
+            </li>
+            <li>
+              <a href="#service-playground-frontend"
+                ><span>playground-frontend<small>playground.localhost/ · packages/playground/frontend</small></span
+                ><span class="tag good">Running ↗</span></a
+              >
+            </li>
+            <li>
+              <a href="#service-archify"
+                ><span>archify<small>devhost-archify.localhost/ · .</small></span
+                ><span class="tag good">Running ↗</span></a
+              >
+            </li>
+          </ul>
+          <div class="actions">
+            <a class="button secondary" href="#stack-dependencies-devhost">Explore dependency graph ↗</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article class="page" id="stack-config-devhost" tabindex="-1" aria-label="devhost stack configuration">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Stack configuration</p>
+            <h1 class="service-title">The whole stack.</h1>
+            <p class="lede">Source configuration, including stack settings and all service tables.</p>
+          </div>
+          <nav class="view-nav" aria-label="devhost stack views">
+            <a href="#stack-devhost">Overview</a><a href="#stack-config-devhost" aria-current="page">Configuration</a
+            ><a href="#stack-dependencies-devhost">Dependencies</a>
+          </nav>
+          <section class="configuration">
+            <header>
+              <h2>devhost.toml</h2>
+              <span class="label">TOML / source</span>
+            </header>
+            <pre class="config-source"><code>name = &quot;devhost&quot;
+
+[devtools.shortcuts]
+restartServices = &quot;alt+ctrl+r&quot;
+
+# The browser `just dev-browser` starts; DEVHOST_BROWSER_ENDPOINT is empty, and native React access off, until it is set.
+[devtools.browser]
+endpoint = &quot;{{ env.DEVHOST_BROWSER_ENDPOINT }}&quot;
+
+[services.storybook]
+primary = true
+command = [&quot;sh&quot;, &quot;-c&quot;, &quot;exec ./node_modules/.bin/storybook dev --ci --port \&quot;$PORT\&quot;&quot;]
+cwd = &quot;packages/devhost-ui&quot;
+port = &quot;auto&quot;
+host = &quot;devhost-storybook{{ env.DEVHOST_DEV_EXT }}&quot;
+
+[services.storybook.env]
+__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = &quot;{{ services.storybook.host }}&quot;
+
+[services.playground-backend]
+command = [&quot;just&quot;, &quot;run&quot;]
+cwd = &quot;packages/playground/backend&quot;
+port = &quot;auto&quot;
+host = &quot;devhost-playground{{ env.DEVHOST_DEV_EXT }}&quot;
+path = &quot;/api/*&quot;
+
+[services.playground-frontend]
+command = [&quot;just&quot;, &quot;run&quot;]
+cwd = &quot;packages/playground/frontend&quot;
+bindHost = &quot;127.0.0.1&quot;
+port = &quot;auto&quot;
+host = &quot;playground{{ env.DEVHOST_DEV_EXT }}&quot;
+path = &quot;/&quot;
+# Bun HTML/HMR requires Host and Origin to use bindHost plus the assigned port.
+proxyLocalOrigin = true
+watch = [&quot;src/&quot;]
+
+[services.playground-frontend.env]
+NODE_ENV = &quot;development&quot;
+
+# Keep architecture documentation available with every service selection.
+[services.archify]
+alwaysStart = true
+command = [&quot;just&quot;, &quot;archify&quot;, &quot;run&quot;]
+port = &quot;auto&quot;
+bindHost = &quot;127.0.0.1&quot;
+host = &quot;devhost-archify{{ env.DEVHOST_DEV_EXT }}&quot;
+
+[services.archify.health]
+http = &quot;/&quot;
+</code></pre>
+          </section>
+          <h2 class="section-title related-heading">Inspect one service</h2>
+          <ul class="service-chips">
+            <li><a href="#config-storybook">storybook</a></li>
+            <li><a href="#config-playground-backend">playground-backend</a></li>
+            <li><a href="#config-playground-frontend">playground-frontend</a></li>
+            <li><a href="#config-archify">archify</a></li>
+          </ul>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article class="page" id="stack-dependencies-devhost" tabindex="-1" aria-label="devhost stack dependency graph">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Stack dependencies</p>
+            <h1 class="service-title">Four independent<br />starting points.</h1>
+            <p class="lede">
+              This graph shows declared startup dependencies. Arrows would run from a service to the service it depends
+              on.
+            </p>
+          </div>
+          <nav class="view-nav" aria-label="devhost stack views">
+            <a href="#stack-devhost">Overview</a><a href="#stack-config-devhost">Configuration</a
+            ><a href="#stack-dependencies-devhost" aria-current="page">Dependencies</a>
+          </nav>
+          <figure class="dependency-graph" aria-label="devhost startup dependency graph">
+            <figcaption>
+              <span><strong>devhost</strong><small>Startup dependencies · dependsOn</small></span
+              ><span class="label">4 services / 0 edges</span>
+            </figcaption>
+            <ul class="graph-nodes">
+              <li>
+                <a class="graph-node" href="#dependencies-storybook"
+                  ><span class="label">Primary service</span><strong>storybook</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-backend"
+                  ><span class="label">API route</span><strong>playground-backend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-frontend"
+                  ><span class="label">Frontend</span><strong>playground-frontend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-archify"
+                  ><span class="label">Always starts</span><strong>archify</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+            </ul>
+            <p class="graph-caption">
+              No <code>dependsOn</code> entries are declared. These services have no configured startup ordering. Select
+              a service to inspect its dependencies and dependents.
+            </p>
+          </figure>
+          <div class="support">
+            <aside class="aside-note">
+              <h3>Read the graph</h3>
+              <p>
+                Each node opens the service’s dependency view. Stack membership groups the nodes; it does not create a
+                dependency edge.
+              </p>
+            </aside>
+            <aside class="aside-note">
+              <h3>Other relationships</h3>
+              <p>
+                <a href="#config-storybook">storybook</a> references its own hostname.
+                <a href="#config-archify">archify</a> always starts. Neither setting declares a dependency.
+              </p>
+            </aside>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article class="page" id="config-storybook" tabindex="-1" aria-label="storybook configuration">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-storybook">storybook</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service configuration</p>
+            <h1 class="service-title">storybook</h1>
+            <p class="lede">The service’s declared configuration and nested tables, as written in devhost.toml.</p>
+          </div>
+          <nav class="view-nav" aria-label="storybook views">
+            <a href="#service-storybook">Overview</a><a href="#config-storybook" aria-current="page">Configuration</a
+            ><a href="#dependencies-storybook">Dependencies</a>
+          </nav>
+          <p class="source-location"><code>devhost.toml</code> · lines 10–18 · 2 tables</p>
+          <section class="configuration">
+            <header>
+              <h2>services.storybook</h2>
+              <span class="label">TOML / source</span>
+            </header>
+            <pre class="config-source"><code>[services.storybook]
+primary = true
+command = [&quot;sh&quot;, &quot;-c&quot;, &quot;exec ./node_modules/.bin/storybook dev --ci --port \&quot;$PORT\&quot;&quot;]
+cwd = &quot;packages/devhost-ui&quot;
+port = &quot;auto&quot;
+host = &quot;devhost-storybook{{ env.DEVHOST_DEV_EXT }}&quot;
+
+[services.storybook.env]
+__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = &quot;{{ services.storybook.host }}&quot;</code></pre>
+          </section>
+          <p class="config-explanation">
+            Environment expressions remain visible as source. Runtime-assigned ports and expanded values are not
+            substituted into this view.
+          </p>
+          <div class="actions">
+            <a class="button secondary" href="#dependencies-storybook">Inspect dependencies ↗</a
+            ><a class="text-link" href="#stack-config-devhost">View complete manifest</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article class="page" id="dependencies-storybook" tabindex="-1" aria-label="storybook dependencies">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-storybook">storybook</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service dependencies</p>
+            <h1 class="service-title">storybook</h1>
+            <p class="lede">No startup dependencies or dependents are declared for this service.</p>
+          </div>
+          <nav class="view-nav" aria-label="storybook views">
+            <a href="#service-storybook">Overview</a><a href="#config-storybook">Configuration</a
+            ><a href="#dependencies-storybook" aria-current="page">Dependencies</a>
+          </nav>
+          <div class="dependency-summary">
+            <section>
+              <p class="label">Outgoing / depends on</p>
+              <h2>0 dependencies</h2>
+              <p>No other service must start first through <code>dependsOn</code>.</p>
+            </section>
+            <section>
+              <p class="label">Incoming / depended on by</p>
+              <h2>0 dependents</h2>
+              <p>No service in devhost declares a dependency on this one.</p>
+            </section>
+          </div>
+          <figure class="dependency-graph" aria-label="devhost startup dependency graph">
+            <figcaption>
+              <span><strong>devhost</strong><small>Startup dependencies · dependsOn</small></span
+              ><span class="label">4 services / 0 edges</span>
+            </figcaption>
+            <ul class="graph-nodes">
+              <li>
+                <a class="graph-node is-focused" href="#dependencies-storybook" aria-current="page"
+                  ><span class="label">Primary service</span><strong>storybook</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-backend"
+                  ><span class="label">API route</span><strong>playground-backend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-frontend"
+                  ><span class="label">Frontend</span><strong>playground-frontend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-archify"
+                  ><span class="label">Always starts</span><strong>archify</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+            </ul>
+            <p class="graph-caption">
+              No <code>dependsOn</code> entries are declared. These services have no configured startup ordering. Select
+              a service to inspect its dependencies and dependents.
+            </p>
+          </figure>
+          <section class="configuration-reference">
+            <h2>Configuration references</h2>
+            <p>
+              <code>services.storybook.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS</code> reads
+              <code>{{ services.storybook.host }}</code>.
+            </p>
+            <a href="#config-storybook">View the self-reference in configuration ↗</a>
+            <p class="control-note">
+              A service reference supplies a value. It does not start a service or establish startup ordering.
+            </p>
+          </section>
+          <div class="actions">
+            <a class="button secondary" href="#config-storybook">View service configuration</a
+            ><a class="text-link" href="#stack-dependencies-devhost">View entire stack graph ↗</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article
+          class="page"
+          id="config-playground-backend"
+          tabindex="-1"
+          aria-label="playground-backend configuration"
+        >
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-playground-backend">playground-backend</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service configuration</p>
+            <h1 class="service-title">playground-backend</h1>
+            <p class="lede">The service’s declared configuration and nested tables, as written in devhost.toml.</p>
+          </div>
+          <nav class="view-nav" aria-label="playground-backend views">
+            <a href="#service-playground-backend">Overview</a
+            ><a href="#config-playground-backend" aria-current="page">Configuration</a
+            ><a href="#dependencies-playground-backend">Dependencies</a>
+          </nav>
+          <p class="source-location"><code>devhost.toml</code> · lines 20–25 · 1 table</p>
+          <section class="configuration">
+            <header>
+              <h2>services.playground-backend</h2>
+              <span class="label">TOML / source</span>
+            </header>
+            <pre class="config-source"><code>[services.playground-backend]
+command = [&quot;just&quot;, &quot;run&quot;]
+cwd = &quot;packages/playground/backend&quot;
+port = &quot;auto&quot;
+host = &quot;devhost-playground{{ env.DEVHOST_DEV_EXT }}&quot;
+path = &quot;/api/*&quot;</code></pre>
+          </section>
+          <p class="config-explanation">
+            Environment expressions remain visible as source. Runtime-assigned ports and expanded values are not
+            substituted into this view.
+          </p>
+          <div class="actions">
+            <a class="button secondary" href="#dependencies-playground-backend">Inspect dependencies ↗</a
+            ><a class="text-link" href="#stack-config-devhost">View complete manifest</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article
+          class="page"
+          id="dependencies-playground-backend"
+          tabindex="-1"
+          aria-label="playground-backend dependencies"
+        >
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-playground-backend">playground-backend</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service dependencies</p>
+            <h1 class="service-title">playground-backend</h1>
+            <p class="lede">No startup dependencies or dependents are declared for this service.</p>
+          </div>
+          <nav class="view-nav" aria-label="playground-backend views">
+            <a href="#service-playground-backend">Overview</a><a href="#config-playground-backend">Configuration</a
+            ><a href="#dependencies-playground-backend" aria-current="page">Dependencies</a>
+          </nav>
+          <div class="dependency-summary">
+            <section>
+              <p class="label">Outgoing / depends on</p>
+              <h2>0 dependencies</h2>
+              <p>No other service must start first through <code>dependsOn</code>.</p>
+            </section>
+            <section>
+              <p class="label">Incoming / depended on by</p>
+              <h2>0 dependents</h2>
+              <p>No service in devhost declares a dependency on this one.</p>
+            </section>
+          </div>
+          <figure class="dependency-graph" aria-label="devhost startup dependency graph">
+            <figcaption>
+              <span><strong>devhost</strong><small>Startup dependencies · dependsOn</small></span
+              ><span class="label">4 services / 0 edges</span>
+            </figcaption>
+            <ul class="graph-nodes">
+              <li>
+                <a class="graph-node" href="#dependencies-storybook"
+                  ><span class="label">Primary service</span><strong>storybook</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node is-focused" href="#dependencies-playground-backend" aria-current="page"
+                  ><span class="label">API route</span><strong>playground-backend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-frontend"
+                  ><span class="label">Frontend</span><strong>playground-frontend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-archify"
+                  ><span class="label">Always starts</span><strong>archify</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+            </ul>
+            <p class="graph-caption">
+              No <code>dependsOn</code> entries are declared. These services have no configured startup ordering. Select
+              a service to inspect its dependencies and dependents.
+            </p>
+          </figure>
+          <div class="actions">
+            <a class="button secondary" href="#config-playground-backend">View service configuration</a
+            ><a class="text-link" href="#stack-dependencies-devhost">View entire stack graph ↗</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article
+          class="page"
+          id="config-playground-frontend"
+          tabindex="-1"
+          aria-label="playground-frontend configuration"
+        >
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-playground-frontend">playground-frontend</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service configuration</p>
+            <h1 class="service-title">playground-frontend</h1>
+            <p class="lede">The service’s declared configuration and nested tables, as written in devhost.toml.</p>
+          </div>
+          <nav class="view-nav" aria-label="playground-frontend views">
+            <a href="#service-playground-frontend">Overview</a
+            ><a href="#config-playground-frontend" aria-current="page">Configuration</a
+            ><a href="#dependencies-playground-frontend">Dependencies</a>
+          </nav>
+          <p class="source-location"><code>devhost.toml</code> · lines 27–39 · 2 tables</p>
+          <section class="configuration">
+            <header>
+              <h2>services.playground-frontend</h2>
+              <span class="label">TOML / source</span>
+            </header>
+            <pre class="config-source"><code>[services.playground-frontend]
+command = [&quot;just&quot;, &quot;run&quot;]
+cwd = &quot;packages/playground/frontend&quot;
+bindHost = &quot;127.0.0.1&quot;
+port = &quot;auto&quot;
+host = &quot;playground{{ env.DEVHOST_DEV_EXT }}&quot;
+path = &quot;/&quot;
+# Bun HTML/HMR requires Host and Origin to use bindHost plus the assigned port.
+proxyLocalOrigin = true
+watch = [&quot;src/&quot;]
+
+[services.playground-frontend.env]
+NODE_ENV = &quot;development&quot;</code></pre>
+          </section>
+          <p class="config-explanation">
+            Environment expressions remain visible as source. Runtime-assigned ports and expanded values are not
+            substituted into this view.
+          </p>
+          <div class="actions">
+            <a class="button secondary" href="#dependencies-playground-frontend">Inspect dependencies ↗</a
+            ><a class="text-link" href="#stack-config-devhost">View complete manifest</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article
+          class="page"
+          id="dependencies-playground-frontend"
+          tabindex="-1"
+          aria-label="playground-frontend dependencies"
+        >
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> /
+            <a href="#service-playground-frontend">playground-frontend</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service dependencies</p>
+            <h1 class="service-title">playground-frontend</h1>
+            <p class="lede">No startup dependencies or dependents are declared for this service.</p>
+          </div>
+          <nav class="view-nav" aria-label="playground-frontend views">
+            <a href="#service-playground-frontend">Overview</a><a href="#config-playground-frontend">Configuration</a
+            ><a href="#dependencies-playground-frontend" aria-current="page">Dependencies</a>
+          </nav>
+          <div class="dependency-summary">
+            <section>
+              <p class="label">Outgoing / depends on</p>
+              <h2>0 dependencies</h2>
+              <p>No other service must start first through <code>dependsOn</code>.</p>
+            </section>
+            <section>
+              <p class="label">Incoming / depended on by</p>
+              <h2>0 dependents</h2>
+              <p>No service in devhost declares a dependency on this one.</p>
+            </section>
+          </div>
+          <figure class="dependency-graph" aria-label="devhost startup dependency graph">
+            <figcaption>
+              <span><strong>devhost</strong><small>Startup dependencies · dependsOn</small></span
+              ><span class="label">4 services / 0 edges</span>
+            </figcaption>
+            <ul class="graph-nodes">
+              <li>
+                <a class="graph-node" href="#dependencies-storybook"
+                  ><span class="label">Primary service</span><strong>storybook</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-backend"
+                  ><span class="label">API route</span><strong>playground-backend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node is-focused" href="#dependencies-playground-frontend" aria-current="page"
+                  ><span class="label">Frontend</span><strong>playground-frontend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-archify"
+                  ><span class="label">Always starts</span><strong>archify</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+            </ul>
+            <p class="graph-caption">
+              No <code>dependsOn</code> entries are declared. These services have no configured startup ordering. Select
+              a service to inspect its dependencies and dependents.
+            </p>
+          </figure>
+          <div class="actions">
+            <a class="button secondary" href="#config-playground-frontend">View service configuration</a
+            ><a class="text-link" href="#stack-dependencies-devhost">View entire stack graph ↗</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article class="page" id="config-archify" tabindex="-1" aria-label="archify configuration">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> / <a href="#service-archify">archify</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service configuration</p>
+            <h1 class="service-title">archify</h1>
+            <p class="lede">The service’s declared configuration and nested tables, as written in devhost.toml.</p>
+          </div>
+          <nav class="view-nav" aria-label="archify views">
+            <a href="#service-archify">Overview</a><a href="#config-archify" aria-current="page">Configuration</a
+            ><a href="#dependencies-archify">Dependencies</a>
+          </nav>
+          <p class="source-location"><code>devhost.toml</code> · lines 42–50 · 2 tables</p>
+          <section class="configuration">
+            <header>
+              <h2>services.archify</h2>
+              <span class="label">TOML / source</span>
+            </header>
+            <pre class="config-source"><code>[services.archify]
+alwaysStart = true
+command = [&quot;just&quot;, &quot;archify&quot;, &quot;run&quot;]
+port = &quot;auto&quot;
+bindHost = &quot;127.0.0.1&quot;
+host = &quot;devhost-archify{{ env.DEVHOST_DEV_EXT }}&quot;
+
+[services.archify.health]
+http = &quot;/&quot;</code></pre>
+          </section>
+          <p class="config-explanation">
+            Environment expressions remain visible as source. Runtime-assigned ports and expanded values are not
+            substituted into this view.
+          </p>
+          <div class="actions">
+            <a class="button secondary" href="#dependencies-archify">Inspect dependencies ↗</a
+            ><a class="text-link" href="#stack-config-devhost">View complete manifest</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
+          </p>
+        </article>
+        <article class="page" id="dependencies-archify" tabindex="-1" aria-label="archify dependencies">
+          <nav class="breadcrumb" aria-label="Location">
+            <a href="#stacks">Stacks</a> / <a href="#stack-devhost">devhost</a> / <a href="#service-archify">archify</a>
+          </nav>
+          <div class="page-heading">
+            <p class="eyebrow">Service dependencies</p>
+            <h1 class="service-title">archify</h1>
+            <p class="lede">No startup dependencies or dependents are declared for this service.</p>
+          </div>
+          <nav class="view-nav" aria-label="archify views">
+            <a href="#service-archify">Overview</a><a href="#config-archify">Configuration</a
+            ><a href="#dependencies-archify" aria-current="page">Dependencies</a>
+          </nav>
+          <div class="dependency-summary">
+            <section>
+              <p class="label">Outgoing / depends on</p>
+              <h2>0 dependencies</h2>
+              <p>No other service must start first through <code>dependsOn</code>.</p>
+            </section>
+            <section>
+              <p class="label">Incoming / depended on by</p>
+              <h2>0 dependents</h2>
+              <p>No service in devhost declares a dependency on this one.</p>
+            </section>
+          </div>
+          <figure class="dependency-graph" aria-label="devhost startup dependency graph">
+            <figcaption>
+              <span><strong>devhost</strong><small>Startup dependencies · dependsOn</small></span
+              ><span class="label">4 services / 0 edges</span>
+            </figcaption>
+            <ul class="graph-nodes">
+              <li>
+                <a class="graph-node" href="#dependencies-storybook"
+                  ><span class="label">Primary service</span><strong>storybook</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-backend"
+                  ><span class="label">API route</span><strong>playground-backend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node" href="#dependencies-playground-frontend"
+                  ><span class="label">Frontend</span><strong>playground-frontend</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+              <li>
+                <a class="graph-node is-focused" href="#dependencies-archify" aria-current="page"
+                  ><span class="label">Always starts</span><strong>archify</strong
+                  ><span class="graph-node-footer">0 dependencies <span aria-hidden="true">↗</span></span></a
+                >
+              </li>
+            </ul>
+            <p class="graph-caption">
+              No <code>dependsOn</code> entries are declared. These services have no configured startup ordering. Select
+              a service to inspect its dependencies and dependents.
+            </p>
+          </figure>
+          <section class="configuration-reference">
+            <h2>Startup selection</h2>
+            <p>
+              <code>alwaysStart = true</code> includes archify with every service selection. It does not make the other
+              services depend on archify.
+            </p>
+            <a href="#config-archify">View alwaysStart in configuration ↗</a>
+          </section>
+          <div class="actions">
+            <a class="button secondary" href="#config-archify">View service configuration</a
+            ><a class="text-link" href="#stack-dependencies-devhost">View entire stack graph ↗</a>
+          </div>
+          <p class="reference-note">
+            <strong>Design reference /</strong> Configuration is from the repository’s devhost.toml. Runtime status is
+            illustrative. These views are read-only.
           </p>
         </article>
       </main>
