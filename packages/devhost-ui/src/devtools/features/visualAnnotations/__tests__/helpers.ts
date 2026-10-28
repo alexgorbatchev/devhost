@@ -88,7 +88,15 @@ export async function resizeSharedTab(stream: MediaStream, canvas: HTMLCanvasEle
   video.srcObject = stream;
   try {
     await video.play();
-    const resized = new Promise<void>((resolve) => video.addEventListener("resize", () => resolve(), { once: true }));
+    const resized = new Promise<void>((resolve) => {
+      const onResize = (): void => {
+        // The video's initial resize event can still be queued after playback starts.
+        if (video.videoWidth !== canvas.width || video.videoHeight !== height) return;
+        video.removeEventListener("resize", onResize);
+        resolve();
+      };
+      video.addEventListener("resize", onResize);
+    });
     canvas.height = height;
     await resized;
   } finally {
