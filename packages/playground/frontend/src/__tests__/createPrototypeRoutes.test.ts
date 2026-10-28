@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import assert from "node:assert/strict";
 import { PROTOTYPES } from "../constants";
 import { createPrototypeRoutes } from "../createPrototypeRoutes";
 
@@ -16,15 +17,33 @@ describe("createPrototypeRoutes", () => {
     }
   });
 
-  test("serves the stylesheet each prototype links relative to its own URL", async () => {
+  test("serves each local stylesheet linked by a prototype", async () => {
     const routes = createPrototypeRoutes(DESIGN_DIRECTORY);
 
     for (const prototype of PROTOTYPES) {
-      const stylesheetPath = new URL("../tokens.css", new URL(prototype.path, "http://playground.localhost")).pathname;
-      const response = routes[stylesheetPath]?.();
+      const document = routes[prototype.path]?.();
+      assert(document);
+      const stylesheets: string[] = [];
+      await new HTMLRewriter().on('link[rel="stylesheet"]', {
+        element(element) {
+          const href = element.getAttribute("href");
+          assert(href);
+          stylesheets.push(href);
+        },
+      }).transform(document).text();
 
-      expect(response?.headers.get("content-type")).toStartWith("text/css");
-      expect(await response?.text()).toBe(await Bun.file(new URL("tokens.css", DESIGN_DIRECTORY)).text());
+      expect(stylesheets.length).toBeGreaterThan(0);
+      for (const href of stylesheets.filter(
+        (href) => new URL(href, "http://playground.localhost").origin === "http://playground.localhost",
+      )) {
+        const stylesheetPath = new URL(href, new URL(prototype.path, "http://playground.localhost")).pathname;
+        const response = routes[stylesheetPath]?.();
+
+        expect(response?.headers.get("content-type")).toStartWith("text/css");
+        expect(await response?.text()).toBe(
+          await Bun.file(new URL(href, new URL(prototype.file, DESIGN_DIRECTORY))).text(),
+        );
+      }
     }
   });
 
