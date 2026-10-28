@@ -6,6 +6,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      selfHosted:
+        description: Run a Linux-only pilot without enabling automatic local CI
+        type: boolean
+        default: false
+      stress:
+        description: Repeat CI regression tests before the full check suite
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -16,8 +25,8 @@ concurrency:
 
 jobs:
   check:
-    # Opt in only after the full suite passes locally; forks always stay hosted.
-    runs-on: ${{ vars.SELF_HOSTED_LINUX_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted", "linux", "x64", "linux-ci"]') || 'ubuntu-latest' }}
+    # A manual pilot does not enable automatic local CI; forks always stay hosted.
+    runs-on: ${{ (vars.SELF_HOSTED_LINUX_ENABLED == 'true' || (github.event_name == 'workflow_dispatch' && inputs.selfHosted)) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted", "linux", "x64", "linux-ci"]') || 'ubuntu-latest' }}
     # A run takes about seven minutes. Without a limit, a step that hangs holds the runner for six hours.
     timeout-minutes: 30
 
@@ -63,12 +72,19 @@ jobs:
         if: runner.environment != 'self-hosted'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg unzip xvfb
 
+      - name: Stress CI regression tests
+        if: github.event_name == 'workflow_dispatch' && inputs.stress
+        run: |
+          just devhost build-devtools-bundle
+          cd apps/devhost
+          go test -count=20 -v -run '^(TestStopStartedServicePreservesLateExternalPortRespawns|TestRecoveryDesignInBrowser)$' ./internal/services ./internal/devtools
+
       - name: Run checks
         run: just check
 
   # Keep advisory native verification available without spending a macOS runner on every change.
   go-macos:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && !inputs.selfHosted
     runs-on: macos-latest
     continue-on-error: true
     timeout-minutes: 30

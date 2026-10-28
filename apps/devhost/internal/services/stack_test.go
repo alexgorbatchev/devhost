@@ -1862,6 +1862,7 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 	tempDirectory := t.TempDir()
 	childPIDPath := filepath.Join(tempDirectory, "child.pid")
 	triggerPath := filepath.Join(tempDirectory, "trigger")
+	readyPath := filepath.Join(tempDirectory, "ready")
 
 	coordinator := exec.Command(os.Args[0], "-test.run=TestServiceHelperProcess", "--")
 	coordinator.Env = append(os.Environ(),
@@ -1900,6 +1901,7 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 			"GO_WANT_HELPER_PROCESS": "1",
 			"DEVHOST_HELPER_MODE":    "signal-external-coordinator-and-exit-on-term",
 			"TRIGGER_PATH":           triggerPath,
+			"READY_FILE_PATH":        readyPath,
 		},
 		Health:     ResolvedHealthConfig{Kind: "process"},
 		InjectPort: true,
@@ -1911,8 +1913,23 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 		t.Fatalf("startServiceProcess(...) error = %v", err)
 	}
 
-	if err := stopStartedService(startedService, 4*time.Second); err != nil {
-		t.Fatalf("stopStartedService(...) error = %v", err)
+	stopped := false
+	t.Cleanup(func() {
+		if !stopped {
+			if err := stopStartedService(startedService, 250*time.Millisecond); err != nil {
+				t.Error(err)
+			}
+		}
+	})
+	// A live process is not proof that its signal handler has been installed.
+	waitForCondition(t, stackChangeTimeout, func() bool {
+		_, err := os.Stat(readyPath)
+		return err == nil
+	})
+	stopErr := stopStartedService(startedService, 4*time.Second)
+	stopped = true
+	if stopErr != nil {
+		t.Fatalf("stopStartedService(...) error = %v", stopErr)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -3019,6 +3036,9 @@ func runSpawnDetachedExitChildOnTermAndExitHelper() {
 func runSignalExternalCoordinatorAndExitOnTermHelper() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.Signal(15))
+	if err := os.WriteFile(os.Getenv("READY_FILE_PATH"), []byte("ready"), 0o644); err != nil {
+		panic(err)
+	}
 	<-signals
 
 	if err := os.WriteFile(os.Getenv("TRIGGER_PATH"), []byte("go"), 0o644); err != nil {
