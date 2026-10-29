@@ -445,9 +445,17 @@ async function waitForRouterPanelToBeClosed(): Promise<void> {
   });
 }
 
+const openQueryPanelSelector = ".tsqd-main-panel:not(.tsqd-panel-transition-exit-active)";
+
+// The panel slides in from the bottom edge, and a reader sees it open once it
+// stands inside the viewport. The query devtools leave a panel closed before that
+// slide begins on the page for good, so closing waits for it.
 async function waitForQueryPanelToBeOpen(): Promise<void> {
   await waitFor(() => {
-    expect(document.querySelector(".tsqd-main-panel")).not.toBeNull();
+    const queryPanel = document.querySelector(openQueryPanelSelector);
+
+    expect(queryPanel).not.toBeNull();
+    expect(queryPanel?.getBoundingClientRect().bottom).toBeLessThanOrEqual(window.innerHeight);
   });
 }
 
@@ -526,6 +534,16 @@ async function runRouterLauncherCycle(
   await waitForRouterPanelToBeClosed();
 }
 
+async function waitForQueryLauncherState(
+  readQueryLauncherButton: LauncherButtonReader,
+  isOpen: boolean,
+): Promise<void> {
+  await waitFor(() => {
+    expect(readQueryLauncherButton()).toHaveAttribute("aria-pressed", String(isOpen));
+    expect(document.querySelector(openQueryPanelSelector) !== null).toBe(isOpen);
+  });
+}
+
 const sharedPlayTest = async ({ canvasElement, id }: IStoryRenderPlayTestArgs): Promise<void> => {
   const { readQueryLauncherButton, readRouterLauncherButton } = await setupSharedPlayTest({ canvasElement });
   await expect(readScriptRequestsSince(performance.measure(id, { start: id }).startTime)).toEqual([]);
@@ -547,6 +565,42 @@ export const Default: Story = {
     return <IntegratedPanel globals={context.globals} />;
   },
   play: sharedPlayTest,
+};
+
+export const QueryReopensWhileItsPanelSlidesOut: Story = {
+  play: async ({ canvasElement }) => {
+    const { readQueryLauncherButton } = await setupSharedPlayTest({ canvasElement });
+
+    await userEvent.click(readQueryLauncherButton());
+    await waitForQueryPanelToBeOpen();
+    // Pressing the launcher again in the same task finds the closed panel still
+    // sliding out, whatever the frame rate.
+    readQueryLauncherButton().click();
+    const isClosedPanelSlidingOut = document.querySelector(".tsqd-panel-transition-exit-active") !== null;
+    readQueryLauncherButton().click();
+    await expect(isClosedPanelSlidingOut).toBe(true);
+    await waitForQueryLauncherState(readQueryLauncherButton, true);
+    await waitForQueryPanelToBeOpen();
+    await userEvent.click(readQueryLauncherButton());
+    await waitForQueryLauncherState(readQueryLauncherButton, false);
+    await waitForQueryPanelToBeClosed();
+  },
+};
+
+export const QueryClosedBeforeItsPanelSlidesIn: Story = {
+  play: async ({ canvasElement }) => {
+    const { readQueryLauncherButton } = await setupSharedPlayTest({ canvasElement });
+
+    // Two presses handled in one task close the panel before its slide begins.
+    readQueryLauncherButton().click();
+    readQueryLauncherButton().click();
+    await waitForQueryLauncherState(readQueryLauncherButton, false);
+    await userEvent.click(readQueryLauncherButton());
+    await waitForQueryLauncherState(readQueryLauncherButton, true);
+    await waitForQueryPanelToBeOpen();
+    await userEvent.click(readQueryLauncherButton());
+    await waitForQueryLauncherState(readQueryLauncherButton, false);
+  },
 };
 
 export const ReactHookForm: Story = {
