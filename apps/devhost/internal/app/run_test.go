@@ -14,7 +14,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy/caddytest"
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
@@ -136,8 +136,14 @@ func TestRunPrintsTheSkill(t *testing.T) {
 				t.Fatalf("Run(skill) exit code = %d, want 0; stderr = %q", exitCode, stderr.String())
 			}
 
-			if stdout.String() != skill.Document() {
-				t.Fatalf("Run(skill) stdout is not the embedded SKILL.md byte for byte:\n%s", stdout.String())
+			// internal/cli pins these bytes; Run passes them on unchanged.
+			var want strings.Builder
+			if _, err := cli.ParseCommandLineArguments([]string{"skill"}, &want, io.Discard); err != nil {
+				t.Fatalf("cli.ParseCommandLineArguments(skill) unexpected error = %v", err)
+			}
+
+			if stdout.String() != want.String() {
+				t.Fatalf("Run(skill) stdout = %q, want %q", stdout.String(), want.String())
 			}
 
 			if stderr.String() != "" {

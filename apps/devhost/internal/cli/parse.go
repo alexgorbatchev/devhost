@@ -151,8 +151,8 @@ func newRootCommand(result *CommandLineArguments, rawArguments []string) (*cobra
 }
 
 // printedSkill reports whether the skill command ran. The help library adds it
-// to the root and prints the guide itself, so like the completion commands it
-// runs no devhost command function that could record it.
+// to the root and prints the install instructions itself, so like the completion
+// commands it runs no devhost command function that could record it.
 func printedSkill(command *cobra.Command) bool {
 	return command.Name() == skillCommandName && command.Parent() == command.Root()
 }

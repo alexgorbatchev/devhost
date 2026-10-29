@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 )
 
 // The skill has to reach an agent that has only the binary, so this runs the
@@ -22,6 +23,12 @@ func TestBinaryPrintsTheSkillWithoutTheRepository(t *testing.T) {
 	build := exec.CommandContext(t.Context(), "go", "build", "-o", binaryPath, ".")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build devhost: %v\n%s", err, output)
+	}
+
+	// internal/cli pins these bytes; the binary prints the same ones.
+	var want bytes.Buffer
+	if _, err := cli.ParseCommandLineArguments([]string{"skill"}, &want, io.Discard); err != nil {
+		t.Fatalf("cli.ParseCommandLineArguments(skill) unexpected error = %v", err)
 	}
 
 	for _, agent := range []string{"0", "1"} {
@@ -39,8 +46,8 @@ func TestBinaryPrintsTheSkillWithoutTheRepository(t *testing.T) {
 				t.Fatalf("devhost skill: %v\n%s", err, stderr.String())
 			}
 
-			if string(stdout) != skill.Document() {
-				t.Fatalf("devhost skill did not print the embedded SKILL.md byte for byte:\n%s", stdout)
+			if string(stdout) != want.String() {
+				t.Fatalf("devhost skill stdout = %q, want %q", stdout, want.String())
 			}
 
 			if stderr.String() != "" {
