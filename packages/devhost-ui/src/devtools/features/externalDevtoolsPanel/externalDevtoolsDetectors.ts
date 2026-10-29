@@ -1,6 +1,13 @@
 import type { IExternalDevtoolsAdapter } from "./types";
 import { tanStackDevtoolsAdapter } from "./tanStackDevtoolsAdapter";
 
+// TanStack Query devtools keep a closed panel on the page while it slides out,
+// marked with the exit transition classes. A panel closed before its opening
+// transition began never receives a transition event and stays on the page in
+// that state for good. Either way the panel is closed, and its buttons no longer
+// act on the devtools.
+const openTanStackQueryPanelSelector = ".tsqd-main-panel:not(.tsqd-panel-transition-exit-active)";
+
 const tanStackRouterDevtoolsAdapter: IExternalDevtoolsAdapter = {
   close: closeTanStackRouterDevtools,
   hideSelectors: ['footer.TanStackRouterDevtools > button:not([data-testid="tanstack_devtools"] *)'],
@@ -74,7 +81,7 @@ function isTanStackQueryDevtoolsInstalled(): boolean {
 }
 
 function isTanStackQueryDevtoolsOpen(): boolean {
-  return readStandaloneElement(".tsqd-main-panel") !== null;
+  return readStandaloneElement(openTanStackQueryPanelSelector) !== null;
 }
 
 function openTanStackQueryDevtools(): void {
@@ -97,7 +104,7 @@ function readTanStackQueryOpenButton(): HTMLElement | null {
 
 function readTanStackQueryCloseButton(): HTMLElement | null {
   return readStandaloneElement(
-    '.tsqd-minimize-btn, .tsqd-main-panel button[aria-label="Close tanstack query devtools"]',
+    `${openTanStackQueryPanelSelector} .tsqd-minimize-btn, ${openTanStackQueryPanelSelector} button[aria-label="Close tanstack query devtools"]`,
   );
 }
 

@@ -43,8 +43,7 @@ describe("externalDevtoolsDetectors", () => {
   test("query adapter opens with the open button and closes with the minimize button", () => {
     renderOnPage(`
       <div class="tsqd-open-btn-container"><button class="tsqd-open-btn"></button></div>
-      <div class="tsqd-main-panel"></div>
-      <button class="tsqd-minimize-btn"></button>
+      <aside class="tsqd-main-panel"><button class="tsqd-minimize-btn"></button></aside>
     `);
 
     const readOpenCount = countClicks(".tsqd-open-btn");
@@ -71,6 +70,46 @@ describe("externalDevtoolsDetectors", () => {
 
     expect(adapter.isInstalled()).toBe(true);
     expect(adapter.isOpen()).toBe(false);
+  });
+
+  test("query adapter treats a panel sliding out as closed and opens a new one", () => {
+    renderOnPage(`
+      <div class="tsqd-open-btn-container"><button class="tsqd-open-btn"></button></div>
+      <aside class="tsqd-main-panel tsqd-panel-transition-exit-active" data-testid="leaving">
+        <button class="tsqd-minimize-btn"></button>
+      </aside>
+    `);
+
+    const readOpenCount = countClicks(".tsqd-open-btn");
+    const readLeavingCloseCount = countClicks('[data-testid="leaving"] .tsqd-minimize-btn');
+    const adapter = readAdapter("tanstack-query");
+
+    expect(adapter.isInstalled()).toBe(true);
+    expect(adapter.isOpen()).toBe(false);
+    adapter.close();
+    expect(readLeavingCloseCount()).toBe(0);
+    adapter.open();
+    expect(readOpenCount()).toBe(1);
+  });
+
+  test("query adapter closes the open panel while an earlier one slides out", () => {
+    renderOnPage(`
+      <aside class="tsqd-main-panel tsqd-panel-transition-exit-active" data-testid="leaving">
+        <button class="tsqd-minimize-btn"></button>
+      </aside>
+      <aside class="tsqd-main-panel tsqd-panel-transition-enter-active" data-testid="arriving">
+        <button class="tsqd-minimize-btn"></button>
+      </aside>
+    `);
+
+    const readLeavingCloseCount = countClicks('[data-testid="leaving"] .tsqd-minimize-btn');
+    const readArrivingCloseCount = countClicks('[data-testid="arriving"] .tsqd-minimize-btn');
+    const adapter = readAdapter("tanstack-query");
+
+    expect(adapter.isOpen()).toBe(true);
+    adapter.close();
+    expect(readLeavingCloseCount()).toBe(0);
+    expect(readArrivingCloseCount()).toBe(1);
   });
 
   test("query adapter falls back to the buttons inside the panel", () => {
