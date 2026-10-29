@@ -5,7 +5,7 @@ go 1.26.7
 require github.com/BurntSushi/toml v1.5.0
 
 require (
-	github.com/alexgorbatchev/cobra-help-tree/v2 v2.2.1-0.20261008174837-2bc93c950a10
+	github.com/alexgorbatchev/cobra-help-tree/v3 v3.0.0
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/chromedp/cdproto v0.157.8
 	github.com/chromedp/chromedp v0.20.0

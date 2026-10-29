@@ -1,10 +1,8 @@
 package cli
 
 import (
-	cobrahelptree "github.com/alexgorbatchev/cobra-help-tree/v2"
+	cobrahelptree "github.com/alexgorbatchev/cobra-help-tree/v3"
 	"github.com/spf13/cobra"
-
-	"github.com/alexgorbatchev/devhost/apps/devhost/internal/skill"
 )
 
 const (
@@ -18,6 +16,10 @@ const (
 	stopPickedStackCommand = `devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"`
 )
 
+// skillSource is where the devhost agent skill is published:
+// skills/devhost/SKILL.md on the repository's default branch.
+var skillSource = cobrahelptree.SkillSource{Repository: "alexgorbatchev/devhost", Branch: "main"}
+
 var manifestEnvironmentSpec = cobrahelptree.EnvSpec{
 	Name:        manifestEnvironmentVariable,
 	Description: "Same as --manifest; the flag wins when both are set",
@@ -27,9 +29,10 @@ var manifestEnvironmentSpec = cobrahelptree.EnvSpec{
 // for the whole command hierarchy, and records in result that help was printed
 // so the caller does not go on to run a command.
 func installHelp(rootCommand *cobra.Command, result *CommandLineArguments) error {
-	// Skill adds the skill command and opens every agent help screen with an alert
-	// that sends the agent to it.
-	options := cobrahelptree.HelpOptions{Catalog: createHelpCatalog(), Skill: skill.Document()}
+	// Skill adds the skill command, which prints how to install the published
+	// skill, and opens every agent help screen with an alert that sends the agent
+	// to it.
+	options := cobrahelptree.HelpOptions{Catalog: createHelpCatalog(), Skill: skillSource}
 	if err := cobrahelptree.SetupWithOptions(rootCommand, options); err != nil {
 		return err
 	}

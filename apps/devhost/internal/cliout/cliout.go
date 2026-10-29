@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	cobrahelptree "github.com/alexgorbatchev/cobra-help-tree/v2"
+	cobrahelptree "github.com/alexgorbatchev/cobra-help-tree/v3"
 )
 
 // Failure is an error with what a person needs beside it. An agent is shown Err
