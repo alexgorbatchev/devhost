@@ -24,6 +24,7 @@ export interface IChatViewSettings {
   selectedModel: string;
   sessionId: string | null;
   draft: string;
+  isHotReloadNoticeDismissed: boolean;
   scroll: IChatScrollPosition | null;
 }
 

@@ -150,13 +150,17 @@ export function ChatReloadScene(): JSX.Element {
 }
 
 /** Serves the saved conversation; its stream replays `events` first. */
-export function installChatReloadServer(events: readonly IChatEvent[] = fixture_reloadEvents): VoidFunction {
+export function installChatReloadServer(
+  events: readonly IChatEvent[] = fixture_reloadEvents,
+  devhostSourceRootPath = "",
+): VoidFunction {
   const restoreCatalog = installPageChatCatalog();
   const catalogFetch = globalThis.fetch;
   const originalWebSocket = globalThis.WebSocket;
   const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
   Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
     projectRootPath: fixture_reloadSession.projectRootPath,
+    devhostSourceRootPath,
     chatEnabled: true,
     statusEnabled: false,
     minimapEnabled: false,
@@ -206,6 +210,18 @@ export function installChatReloadServer(events: readonly IChatEvent[] = fixture_
     restoreCatalog();
     Reflect.set(globalThis, "WebSocket", originalWebSocket);
     Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, originalConfig);
+  };
+}
+
+/** Serves chat on a page with Bun's development script, the hot reload marker that tests can add for real. */
+export function installHotReloadPage(devhostSourceRootPath = ""): VoidFunction {
+  const restoreServer = installChatReloadServer([], devhostSourceRootPath);
+  const script = document.createElement("script");
+  script.setAttribute("data-bun-dev-server-script", "");
+  document.head.append(script);
+  return () => {
+    script.remove();
+    restoreServer();
   };
 }
 

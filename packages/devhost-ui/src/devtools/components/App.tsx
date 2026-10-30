@@ -19,6 +19,7 @@ import {
   createConfigEditorClient,
 } from "../features/configEditor";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features/externalDevtoolsPanel";
+import { HotReloadNotice, createDisableHotReloadMessage, useHotReloadClient } from "../features/hotReloadNotice";
 import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ResourceUsagePanel, useResourceUsage } from "../features/resourceUsage";
@@ -138,6 +139,19 @@ function AppContent(): JSX.Element {
     },
     [settingsStore],
   );
+  const hotReloadClient = useHotReloadClient();
+  const isHotReloadNoticeDismissed = useStore(settingsStore, (state) => state.chat.isHotReloadNoticeDismissed);
+  const [isHotReloadDisableRequested, setIsHotReloadDisableRequested] = useState(false);
+  const [chatRequest, setChatRequest] = useState<string | null>(null);
+  const takeChatRequest = useCallback((delivery: Promise<boolean>): void => {
+    setChatRequest(null);
+    void delivery.then((isDelivered) => {
+      if (!isDelivered) setIsHotReloadDisableRequested(false);
+    });
+  }, []);
+  // The page keeps its hot reload client until it reloads, so a request already sent hides the notice until then.
+  const hotReloadNoticeClient =
+    chatEnabled && !isHotReloadNoticeDismissed && !isHotReloadDisableRequested ? hotReloadClient : null;
   const exitedServices = services.filter(
     (service) =>
       service.managed &&
@@ -211,6 +225,8 @@ function AppContent(): JSX.Element {
           onBusyChange={setIsChatBusy}
           isSelectionEnabled={annotationEnabled}
           rootReference={appRootReference}
+          requestedMessage={chatTarget === "project" && chatRequest !== null ? chatRequest : undefined}
+          onRequestedMessageTaken={takeChatRequest}
         />
       ) : null}
       {displayedComponentMenu !== null ? (
@@ -233,11 +249,27 @@ function AppContent(): JSX.Element {
             </>
           }
           readout={
-            isConfigurationRejected ? (
-              <ConfigRejectionNotice
-                configuration={configuration}
-                onEdit={configEditorEnabled ? openConfigEditor : undefined}
-              />
+            isConfigurationRejected || hotReloadNoticeClient !== null ? (
+              <>
+                <ConfigRejectionNotice
+                  configuration={configuration}
+                  onEdit={configEditorEnabled ? openConfigEditor : undefined}
+                />
+                {hotReloadNoticeClient !== null ? (
+                  <HotReloadNotice
+                    client={hotReloadNoticeClient}
+                    onDisable={(): void => {
+                      setIsHotReloadDisableRequested(true);
+                      setChatTarget("project");
+                      setIsChatOpen(true);
+                      setChatRequest(createDisableHotReloadMessage(hotReloadNoticeClient, window.location.href));
+                    }}
+                    onDismiss={(): void => {
+                      settingsStore.getState().updateChat({ isHotReloadNoticeDismissed: true });
+                    }}
+                  />
+                ) : null}
+              </>
             ) : undefined
           }
           isMinimapVisible={shouldRenderMinimap}

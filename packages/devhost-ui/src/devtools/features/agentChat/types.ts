@@ -148,6 +148,8 @@ export interface IAgentChatController {
   newSession: () => Promise<void>;
   resumeSession: (session: IChatSession) => Promise<void>;
   closeSession: () => Promise<void>;
+  /** Sends text without page context or the composer's draft. Resolves to whether the agent accepted it. */
+  sendMessage: (text: string) => Promise<boolean>;
   interrupt: () => void;
   respond: (requestId: ChatRequestId, result: unknown) => void;
 }
