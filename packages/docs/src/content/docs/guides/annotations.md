@@ -28,7 +28,7 @@ The agent works in the checkout the page belongs to. After a [worktree switch](.
 
 ## Talk to the agent
 
-Chat opens compact, showing a working spinner and then the latest reply. **Expand Chat** shows the whole conversation with streamed replies and tool activity; **Compact Chat** goes back. The panel can sit on either side of the page, and collapsing it does not stop the agent. The **Chat** button shows a spinner while the agent works or waits for you.
+Chat opens compact, showing a working spinner and then the latest reply. **Expand Chat** shows the whole conversation with streamed replies and tool activity, with consecutive tool calls in one collapsible group; **Compact Chat** goes back. The panel can sit on either side of the page, and collapsing it does not stop the agent. The **Chat** button shows a spinner while the agent works or waits for you.
 
 | To                            | Use                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------- |

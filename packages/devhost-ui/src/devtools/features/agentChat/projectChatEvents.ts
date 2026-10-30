@@ -1,4 +1,5 @@
 import type { ChatHarnessId, ChatRequestId, IChatEvent, IChatPendingRequest, IChatProjection } from "./types";
+import { groupSequentialToolCalls } from "./groupSequentialToolCalls";
 import { nativeArray, nativeRecord, nativeString } from "./nativeValue";
 import { projectCodexEvents } from "./projectCodexEvents";
 import { projectClaudeEvents } from "./projectClaudeEvents";
@@ -34,6 +35,8 @@ export function projectChatEvents(
         requests.set(id, { requestId: id, harness, method, payload });
     }
   }
-  const messages = harness === "codex" ? projectCodexEvents(events) : projectClaudeEvents(events);
+  const messages = groupSequentialToolCalls(
+    harness === "codex" ? projectCodexEvents(events) : projectClaudeEvents(events),
+  );
   return { messages, pendingRequests: [...requests.values()], events };
 }
