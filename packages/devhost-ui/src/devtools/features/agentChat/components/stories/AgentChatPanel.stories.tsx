@@ -22,6 +22,7 @@ import {
   acknowledgeChatSend,
   copyChatImage,
 } from "./helpers";
+import { fixture_toolSequenceEvents } from "./fixtures";
 import {
   devtoolsStoryShadowRootHostTestId,
   readDevtoolsStoryShadowCanvas,
@@ -189,6 +190,18 @@ export const ReloadRestoresConversationView: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
     await expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-expanded", "true");
     await expect(await canvas.findByRole("textbox")).toHaveValue("Keep this unsent review");
+  },
+};
+
+export const SequentialToolCallsShareOneGroup: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(fixture_toolSequenceEvents),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    await canvas.findByText("3 tool calls");
+    expect(canvas.queryByText("1 tool call")).toBeNull();
+    expect(await canvas.findByText("Commands finished.")).toBeVisible();
   },
 };
 

@@ -26,6 +26,23 @@ export const fixture_reloadEvents: readonly IChatEvent[] = Array.from({ length: 
   },
 }));
 
+export const fixture_toolSequenceEvents: readonly IChatEvent[] = [
+  ...["first", "second", "third"].map((id, index) => ({
+    sequence: index + 1,
+    payload: {
+      method: "item/completed",
+      params: { turnId: "turn", item: { type: "commandExecution", id, status: "completed", command: "pwd" } },
+    },
+  })),
+  {
+    sequence: 4,
+    payload: {
+      method: "item/completed",
+      params: { turnId: "turn", item: { type: "agentMessage", id: "reply", text: "Commands finished." } },
+    },
+  },
+];
+
 export const fixture_commandRequest: IChatPendingRequest = {
   requestId: 7,
   harness: "codex",
