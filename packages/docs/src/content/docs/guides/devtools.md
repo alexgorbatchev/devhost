@@ -39,6 +39,23 @@ The toolbar stays out of your page's way:
 - It stays above your page's popovers and modal dialogs, and chat keeps working while a modal is open.
 - Keys you type into it, such as in the chat composer, never trigger your page's shortcuts. Click the page to give it the keyboard back.
 
+## Hot reload notice
+
+With chat on, a page served with hot reloading shows a notice under the toolbar, because agent edits can then refresh the page while you use it. devhost recognizes these clients:
+
+| Client  | How the page shows it                                       |
+| ------- | ----------------------------------------------------------- |
+| Vite    | The page loaded `/@vite/client`                             |
+| Next.js | The development overlay's `nextjs-portal` element           |
+| Bun     | Bun's development script, absent with `hmr: false`          |
+| webpack | A global starting with `webpackHotUpdate`, the default name |
+
+**Disable Reloads** opens chat and asks your agent, in the **Project** directory, to turn off hot module replacement, automatic page reloads, and server restarts on file changes. It sends without selected elements, drawings, or a screenshot, into the open conversation or a new one, and the agent changes the configuration through its usual approvals. The notice stays hidden until the next page load, and it does not return once the page loads without the client. If the message cannot be delivered, chat shows why and the notice comes back.
+
+**Dismiss** hides the notice for this project and page origin in this browser.
+
+The notice means the client loaded, not that it is connected: a Vite server started with `server.ws: false` still shows it. Other tools, and a custom webpack `output.hotUpdateGlobal`, show no notice.
+
 ## Services panel
 
 Open the Services panel from the toolbar:

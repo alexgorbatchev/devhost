@@ -49,6 +49,9 @@ interface IPageChatProps {
   onBusyChange?: (isBusy: boolean) => void;
   isSelectionEnabled: boolean;
   rootReference: RefObject<HTMLDivElement | null>;
+  /** A message to send as soon as the conversation is ready. */
+  requestedMessage?: string;
+  onRequestedMessageTaken?: (delivery: Promise<boolean>) => void;
 }
 
 export function PageChat({
@@ -60,6 +63,8 @@ export function PageChat({
   settingsStore,
   target,
   onTargetChange,
+  requestedMessage,
+  onRequestedMessageTaken,
 }: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
   const screenshotSelection = useScreenshotSelection(sharing.stream);
@@ -165,6 +170,11 @@ export function PageChat({
     setShapes((current) => current.filter((shape) => !sentIds.has(shape.id)));
   }, [selectedTargets, removeSelection, shapes]);
   const chat = useAgentChat({ pageURL: sessionPageURL, target, beforeSend, onSent: clearSentContext, settingsStore });
+  const { isCatalogLoading, isConnecting, isPreparing, sendMessage } = chat;
+  useEffect(() => {
+    if (requestedMessage === undefined || isCatalogLoading || isConnecting || isPreparing) return;
+    onRequestedMessageTaken?.(sendMessage(requestedMessage));
+  }, [isCatalogLoading, isConnecting, isPreparing, onRequestedMessageTaken, requestedMessage, sendMessage]);
   const isContextDisabled = isCapturing || chat.isPreparing;
   const composerInputReference = useChatComposerFocus({ isOpen, contextCount: selectedTargets.length + shapes.length });
   const hasPageMarks: boolean = isSelectionMode || tool !== null || selectedTargets.length > 0 || shapes.length > 0;

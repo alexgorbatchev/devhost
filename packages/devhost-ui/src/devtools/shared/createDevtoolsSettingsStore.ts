@@ -18,6 +18,7 @@ const chatSchema = z.object({
   selectedModel: z.string().default(""),
   sessionId: z.string().nullable().default(null),
   draft: z.string().default(""),
+  isHotReloadNoticeDismissed: z.boolean().default(false),
   scroll: z
     .object({
       top: z.number().finite().nonnegative(),

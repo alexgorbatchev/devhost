@@ -130,7 +130,8 @@ The page stores its chat state in `localStorage`, under keys starting with `devh
 - whether chat is open, its side, and the chat target,
 - the selected harness, model, and session,
 - the unsent text, until the send is acknowledged,
-- the conversation's scroll position.
+- the conversation's scroll position,
+- whether the hot reload notice was dismissed.
 
 Each target keeps its own conversation state, so switching to **devhost** and back restores the project's conversation. Invalid or outdated saved data resets to defaults. Transcripts, screenshots, selections, drawings, screen-sharing permission, and approval answers are never stored in the browser.
 

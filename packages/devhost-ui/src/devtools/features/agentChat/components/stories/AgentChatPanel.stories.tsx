@@ -14,6 +14,7 @@ import {
   isChatViewportAtBottom,
   installChatReloadServer,
   installChatTargetServer,
+  installHotReloadPage,
   installPageChatCatalog,
   openSavedChatConversation,
   readChatViewport,
@@ -22,7 +23,7 @@ import {
   acknowledgeChatSend,
   copyChatImage,
 } from "./helpers";
-import { fixture_toolSequenceEvents } from "./fixtures";
+import { fixture_devhostSession, fixture_toolSequenceEvents } from "./fixtures";
 import {
   devtoolsStoryShadowRootHostTestId,
   readDevtoolsStoryShadowCanvas,
@@ -202,6 +203,80 @@ export const SequentialToolCallsShareOneGroup: Story = {
     await canvas.findByText("3 tool calls");
     expect(canvas.queryByText("1 tool call")).toBeNull();
     expect(await canvas.findByText("Commands finished.")).toBeVisible();
+  },
+};
+
+const sentChatText = z.object({ commandId: z.string(), text: z.string() });
+
+export const DisableReloadsAsksTheAgentOnce: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Collapse Chat" }));
+    expect(await canvas.findByText("Bun hot reloading is on")).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Disable Reloads" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    expect(await canvas.findByRole("complementary", { name: "Agent chat" })).toBeVisible();
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
+    const command = sentChatText.parse(readSentChatCommands()[0]);
+    expect(command.text).toContain("runs Bun hot reloading");
+    acknowledgeChatSend(command.commandId);
+    await waitFor(() => expect(canvas.queryByRole("button", { name: "Close Conversation" })).toBeEnabled());
+    expect(readSentChatCommands()).toHaveLength(1);
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    expect(await canvas.findByTestId("HotReloadNotice")).toBeVisible();
+  },
+};
+
+export const FailedDisableReloadsRequestOffersItAgain: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    acknowledgeChatSend(sentChatText.parse(readSentChatCommands()[0]).commandId, "Delivery rejected");
+    expect(await canvas.findByText("Delivery rejected")).toBeVisible();
+    expect(await canvas.findByTestId("HotReloadNotice")).toBeVisible();
+  },
+};
+
+export const DisableReloadsReachesTheProjectFromTheDevhostTarget: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(fixture_devhostSession.projectRootPath),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    const directory = within(await canvas.findByRole("group", { name: "Chat Directory" }));
+    await userEvent.click(directory.getByRole("button", { name: "devhost" }));
+    // Changing the target remounts chat, the directory toggle included.
+    await waitFor(() =>
+      expect(
+        within(canvas.getByRole("group", { name: "Chat Directory" })).getByRole("button", { name: "devhost" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    const reached = within(canvas.getByRole("group", { name: "Chat Directory" }));
+    expect(reached.getByRole("button", { name: "Project" })).toHaveAttribute("aria-pressed", "true");
+  },
+};
+
+export const DismissedHotReloadNoticeStaysDismissed: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByTestId("HotReloadNotice");
+    await userEvent.click(canvas.getByRole("button", { name: "Dismiss" }));
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    await canvas.findByRole("button", { name: "Chat" });
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
   },
 };
 

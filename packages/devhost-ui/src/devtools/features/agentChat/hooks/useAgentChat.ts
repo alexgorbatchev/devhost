@@ -85,6 +85,15 @@ export function useAgentChat({
     )
       setReplyBoundary({ ...replyBoundary, isPending: false });
   }, [isPreparing, projection.messages, replyBoundary, state.session?.status]);
+  const createReplyBoundary = useCallback(
+    (): IReplyBoundary => ({
+      sessionId: client.getSnapshot().session?.id,
+      messageId: projection.messages.at(-1)?.id,
+      isPending: true,
+      hasStarted: state.session?.status === "running" || state.session?.status === "requires_action",
+    }),
+    [client, projection.messages, state.session?.status],
+  );
   const onNew = useCallback(
     async (message: AppendMessage): Promise<void> => {
       const text = message.content
@@ -94,12 +103,7 @@ export function useAgentChat({
       // The native composer detaches its text before onNew. Retain it until the server acknowledges the send.
       settingsStore.getState().updateChat({ draft: text });
       const previousBoundary = replyBoundary;
-      setReplyBoundary({
-        sessionId: client.getSnapshot().session?.id,
-        messageId: projection.messages.at(-1)?.id,
-        isPending: true,
-        hasStarted: state.session?.status === "running" || state.session?.status === "requires_action",
-      });
+      setReplyBoundary(createReplyBoundary());
       try {
         // Prepare page context before connecting and delivering the message.
         const preparation = beforeSend ? beforeSend(text) : {};
@@ -127,7 +131,26 @@ export function useAgentChat({
         setIsPreparing(false);
       }
     },
-    [beforeSend, client, lifetime, onSent, settingsStore, replyBoundary, projection.messages, state.session?.status],
+    [beforeSend, client, createReplyBoundary, lifetime, onSent, settingsStore, replyBoundary],
+  );
+  const sendMessage = useCallback(
+    async (text: string): Promise<boolean> => {
+      const previousBoundary = replyBoundary;
+      setReplyBoundary(createReplyBoundary());
+      setIsPreparing(true);
+      client.setSendError(null);
+      try {
+        await client.send({ text }, text);
+        return true;
+      } catch (error) {
+        setReplyBoundary(previousBoundary);
+        client.setSendError(error instanceof Error ? error.message : String(error));
+        return false;
+      } finally {
+        setIsPreparing(false);
+      }
+    },
+    [client, createReplyBoundary, replyBoundary],
   );
   const isRunning = state.session?.status === "running" || state.session?.status === "requires_action";
   const sendReference = useRef(onNew);
@@ -270,6 +293,7 @@ export function useAgentChat({
       setReplyBoundary(null);
       return reportAction(client.closeSession);
     },
+    sendMessage,
     interrupt,
     respond: client.respond,
   };
