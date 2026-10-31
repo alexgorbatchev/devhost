@@ -59,6 +59,7 @@ function AppContent(): JSX.Element {
     chatEnabled,
     componentEditor,
     configEditorEnabled,
+    controlOrigin,
     devhostSourceRootPath,
     editorEnabled,
     externalToolbarsEnabled,
@@ -142,6 +143,10 @@ function AppContent(): JSX.Element {
     [settingsStore],
   );
   const runningAgents = useRunningAgents(chatEnabled, chatTarget);
+  const agentActivityURL =
+    controlOrigin === ""
+      ? ""
+      : `${controlOrigin}/__devhost__/agents/activity?${new URLSearchParams({ pageURL: window.location.href, chatTarget })}`;
   const [toolbarEdgeInset, setToolbarEdgeInset] = useState<number | null>(null);
   const hotReloadClient = useHotReloadClient();
   const isHotReloadNoticeDismissed = useStore(settingsStore, (state) => state.chat.isHotReloadNoticeDismissed);
@@ -325,7 +330,7 @@ function AppContent(): JSX.Element {
           {shouldRenderExternalDevtoolsPanel ? (
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
           ) : null}
-          <RunningAgentsPanel agents={runningAgents} />
+          <RunningAgentsPanel agents={runningAgents} activityURL={agentActivityURL} />
           {chatEnabled ? (
             <ToolbarSegment ariaLabel="Chat">
               <Button

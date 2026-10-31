@@ -18,6 +18,8 @@ export interface IInjectedDevtoolsConfig {
   projectRootPath: string;
   /** The devhost checkout chat can target instead of the project, or "" when devhost serves no source checkout. */
   devhostSourceRootPath: string;
+  /** The control server's own address, an origin no application page shares. */
+  controlOrigin: string;
   routedServices: IRoutedServiceIdentity[];
   stackName: string;
   annotationEnabled: boolean;
@@ -38,6 +40,7 @@ const defaultInjectedDevtoolsConfig: IInjectedDevtoolsConfig = {
   position: "bottom-right",
   projectRootPath: "",
   devhostSourceRootPath: "",
+  controlOrigin: "",
   routedServices: [],
   stackName: DEVHOST_SERVICE_NAME,
   annotationEnabled: false,
@@ -80,6 +83,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
   const componentEditor: DevtoolsComponentEditor = readComponentEditorValue(injectedConfig);
   const homeDirectoryPath: unknown = Reflect.get(injectedConfig, "homeDirectoryPath");
   const devhostSourceRootPath: unknown = Reflect.get(injectedConfig, "devhostSourceRootPath");
+  const controlOrigin: unknown = Reflect.get(injectedConfig, "controlOrigin");
   const position: DevtoolsPosition = readDevtoolsPositionValue(injectedConfig);
   const projectRootPath: string = readProjectRootPathValue(injectedConfig);
   const routedServices: IRoutedServiceIdentity[] = readRoutedServicesValue(injectedConfig);
@@ -108,6 +112,7 @@ function parseInjectedDevtoolsConfig(injectedConfig: object): IInjectedDevtoolsC
     position,
     projectRootPath,
     devhostSourceRootPath: typeof devhostSourceRootPath === "string" ? devhostSourceRootPath : "",
+    controlOrigin: typeof controlOrigin === "string" ? controlOrigin : "",
     routedServices,
     stackName,
     editorEnabled,

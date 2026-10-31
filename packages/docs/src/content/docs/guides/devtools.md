@@ -67,7 +67,9 @@ When coding agents are running in this checkout, the toolbar shows how many, wit
 | Idle                   | The agent's process is running, but it is doing nothing |
 | Running, state unknown | The process is running and its harness records no state |
 
-Codex does not record pending approvals, so a Codex agent waiting for one reads as working. Pi and OpenCode record no state. The list needs `[devtools.chat].enabled`, refreshes every ten seconds while the page is visible, and only reports: it shows no transcripts and cannot send anything to an agent.
+Codex does not record pending approvals, so a Codex agent waiting for one reads as working. Pi and OpenCode record no state. The list needs `[devtools.chat].enabled`, refreshes every ten seconds while the page is visible, and only reports: it cannot send anything to an agent.
+
+**Watch Live Activity** opens a separate page showing what the checkout's agents do from then on: prompts, replies, tool calls, and tool output, with no history, and long text cut off. Watching stops when you close that page. It opens at `http://127.0.0.1:<port>`, not on your app's hostname, because transcripts can contain anything an agent read, including secrets, and any script on your app's pages could otherwise read them.
 
 ## Services panel
 

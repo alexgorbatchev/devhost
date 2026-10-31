@@ -81,7 +81,13 @@ Sessions belong to the running stack: closing a tab or reloading never ends a tu
 | `lastActivity` | Unix milliseconds                                               |
 | `isOwned`      | Whether it is a chat session of this stack                      |
 
-The list is ordered by who needs attention: waiting, working, unknown, then idle. A top-level `error` reports a harness that could not be scanned, beside what the others found. Page scripts can read this response, so it carries no transcript paths or native session IDs.
+The list is ordered by who needs attention: waiting, working, unknown, then idle. A top-level `error` reports a harness that could not be scanned, beside what the others found. Page scripts can read this response, so it carries no transcript paths or native session IDs; transcript content is only on the [activity stream](#live-activity).
+
+### Live activity
+
+`/__devhost__/agents/activity` is a page, and `/__devhost__/ws/agents/activity` its stream, taking the same query. Both answer only on the control server's own address, `http://127.0.0.1:<port>`, which `config.json` names as `controlOrigin`: routed hostnames get `403`. The control API has no token, so its origin is the only boundary, and a transcript must never reach an origin that application scripts share.
+
+Each stream message is one event: `harness`, `pid`, `eventType`, `timestamp`, and optionally `role`, `toolName`, `text`, and `isError`. Event types are those of [agent-parser](https://github.com/alexgorbatchev/agent-parser), and `text` stops at 4 KiB. A stream follows the top-level agents in the directory from the moment it opens, without history, and stops watching when it closes. An agent that resumes an old session after the stream opens replays that session.
 
 ## Panel position
 

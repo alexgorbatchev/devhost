@@ -32,6 +32,7 @@ const idle: RunningAgent = { ...waiting, key: "codex:4", state: "idle" };
 const meta: Meta<typeof RunningAgentsPanel> = {
   title: "@alexgorbatchev/devhost-ui/devtools/features/runningAgents/components/RunningAgentsPanel",
   component: RunningAgentsPanel,
+  args: { activityURL: "http://127.0.0.1:4000/__devhost__/agents/activity?chatTarget=project" },
   render: (args, context) =>
     renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
@@ -55,6 +56,27 @@ export const ListsEachAgentsState: Story = {
     expect(rows[0]).toHaveTextContent("Waiting for approval · packages/ui · 2m ago");
     expect(rows[1]).toHaveTextContent("claude-code · fix-heading · this chat");
     expect(rows[2]).toHaveTextContent("Running, state unknown");
+  },
+};
+
+export const LinksToLiveActivityOnTheDirectOrigin: Story = {
+  args: { agents: [working] },
+  play: async ({ canvasElement }) => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Running agents: 1" }));
+    const link = await canvas.findByRole("link", { name: "Watch Live Activity" });
+    expect(new URL(link.getAttribute("href") ?? "").origin).toBe("http://127.0.0.1:4000");
+    expect(link).toHaveAttribute("rel", "noreferrer");
+  },
+};
+
+export const HidesTheLinkWithoutADirectOrigin: Story = {
+  args: { agents: [working], activityURL: "" },
+  play: async ({ canvasElement }) => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Running agents: 1" }));
+    await canvas.findAllByTestId("RunningAgentsPanel--agent");
+    expect(canvas.queryByRole("link", { name: "Watch Live Activity" })).toBeNull();
   },
 };
 
