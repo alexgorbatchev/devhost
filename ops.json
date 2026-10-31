@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793419713,
-    "op": "ClearAssignee"
+    "timestamp": 1793419714,
+    "op": "AddComment",
+    "text": "Done. Codex 0.164 echoes the ID as clientId on the userMessage item, and rollouts do record it, as client_id, once it is sent. Earlier samples showed none only because devhost did not send one."
   }
 ]
