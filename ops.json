@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793421120,
-    "op": "ClearAssignee"
+    "op": "AddComment",
+    "text": "Done. Scan cost on the development machine with 26 live sessions: 97 ms and 27 MB warm, 434 ms and 219 MB cold, which is why the server keeps one Snapshotter. Pages refresh every 10 seconds while visible and share a 5 second scan. The list follows the chat target."
   }
 ]
