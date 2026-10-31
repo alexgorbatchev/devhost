@@ -1,0 +1,31 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415722,
+    "op": "CreateTask",
+    "title": "Make native chat safe to use while an agent is already working",
+    "kind": "epic",
+    "description": "Sending from native chat while an agent is busy has failure modes that nothing covers today. The Disable Reloads button made them easy to reach, because a working agent is what reloads the page.\n\nObserved problems:\n- A delivered Claude Code message can be reported as failed.\n- Reloads bring the notice back, so a second click sends the request twice.\n- A chat with no attached session starts a second agent beside a busy one.\n- Agents that devhost did not start are invisible to it.\n\nEvidence, experiments and sources: `wiki/research/headless-agent-cli-message-delivery.md` in the ai-registry repository. Experiments ran against Claude Code 2.1.310.\n\nThe agent-watcher and agent-parser tasks are changes to those libraries, tracked here because devhost is the consumer."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415722,
+    "op": "SetPriority",
+    "priority": "high"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415722,
+    "op": "AddLabel",
+    "label": "chat"
+  }
+]
