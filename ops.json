@@ -4,28 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793416382,
-    "op": "CreateTask",
-    "title": "Make the chat panel draggable and remember its position per manifest",
-    "kind": "story",
-    "description": "Let the person drag the chat panel to where it is out of the way, and restore that position the next time the same manifest is open.\n\nRequirements:\n- Drag by the panel header, without starting a drag from its buttons.\n- Provide a keyboard alternative and a way to return to the default position.\n- Keep the panel reachable: clamp the saved position to the viewport on restore and on resize, and keep the header on screen.\n- Handle compact and expanded chat, which have different sizes. Decide whether they share a position.\n- Decide how dragging relates to the existing `chat.side` setting and its switch control, which it may replace.\n- Keep the current phone layout, or define what dragging means at that width.\n- Multiple devhost instances must not overwrite each other's position.\n\nStorage needs a design decision. `createDevtoolsSettingsStore` keys settings by project root path and page origin, so the same project on two service hostnames has two saved positions, and chat settings can come from a second store when the chat target is devhost. The injected devtools config has `projectRootPath` but no manifest path, so per-manifest storage needs devhost to inject a manifest identity. Position is a page layout setting, so it should not follow the chat target store.\n\nUpdate the public docs and the demo coverage table for the new behavior."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793416382,
-    "op": "SetPriority",
-    "priority": "medium"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793416382,
-    "op": "AddLabel",
-    "label": "chat"
+    "timestamp": 1793422962,
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
