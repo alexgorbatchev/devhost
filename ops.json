@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Expose delivery evidence for recovering after a process exits",
+    "kind": "task",
+    "description": "This covers recovery only. Live delivery reads stdout `command_lifecycle` frames and needs none of it, so wait until devhost builds recovery after a Claude Code process dies.\n\n`agent-parser` keeps a `UUID` field in its Claude Code line struct, but `ParsedEvent` has no field for it. Exposing that alone is not enough, because a sent UUID reaches the transcript in three shapes:\n\n| Case | Where the UUID lands |\n| --- | --- |\n| Normal turn | `user.uuid` |\n| Queued messages merged | The last in `user.uuid`, the others in `mergedSendUuids` |\n| Absorbed mid-turn | No `user` record; `queue-operation` `remove` with `commandUuid` and `reason: absorbed_mid_turn` |\n\nChange:\n- agent-parser: expose the message UUID and `mergedSendUuids` on `turn_start`, and emit an event for absorbed messages.\n- agent-watcher: export `locateTranscript`, because a snapshot does not list a dead session.\n\n`enqueue` and `dequeue` records carry no UUID, so a transcript can prove a message was consumed but not that it was queued. A missing record means unknown."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "low"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "agent-parser"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
