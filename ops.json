@@ -5,27 +5,10 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793417054,
-    "op": "CreateTask",
-    "title": "agent-parser: replace the WASM SQLite driver with a native one",
-    "kind": "task",
-    "description": "agent-parser reads OpenCode databases through `github.com/ncruces/go-sqlite3`, which runs SQLite as WASM. Replace it with a native driver.\n\nThe driver is registered in one place, `opencode.go`, and used through `database/sql` (`sql.Open(\"sqlite3\", dsn)`). agent-watcher names the module in `go.mod` for its tests and inherits the runtime dependency through agent-parser, so its `go.mod` and test fixtures change too. devhost has no SQLite dependency today and gains this one when it adopts agent-watcher.\n\nThe driver choice has a build constraint. devhost release artifacts are cross-compiled with `CGO_ENABLED=0` (`apps/devhost/scripts/buildReleaseArtifacts.ts`).\n- A cgo driver such as `github.com/mattn/go-sqlite3` does not work in those builds, so choosing one means changing the devhost release flow to cross-compile with a C toolchain per platform. That needs explicit approval.\n- `modernc.org/sqlite` is pure Go with no WASM and no cgo, so it fits the existing builds. It is the default choice unless a measured reason rules it out. Confirm this before starting.\n\nDetails to check:\n- The driver name and DSN syntax differ between drivers, including the options that open the OpenCode database read-only.\n- Reads must stay safe while OpenCode is writing to the database.\n- Compare binary size, startup time and query time against the current driver. The full agent-watcher scanner probe, with the WASM driver, built to 4.5 MB.\n- Update the `rust` counterpart only if it shares the dependency.\n\nDone when agent-parser and agent-watcher pass their tests on the new driver, `go mod tidy` removes the WASM modules from both, and a `CGO_ENABLED=0` build reads a real OpenCode database."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793417054,
-    "op": "SetPriority",
-    "priority": "medium"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793417054,
-    "op": "AddLabel",
-    "label": "agent-parser"
+    "op": "AddLink",
+    "kind": "relates",
+    "target": "46710418579360178ff84e3b418dc16de15ced24",
+    "target_repo": null,
+    "target_label": null
   }
 ]
