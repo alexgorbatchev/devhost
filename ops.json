@@ -1,0 +1,31 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415989,
+    "op": "CreateTask",
+    "title": "Stop agent edits from reloading the page while someone is using it",
+    "kind": "story",
+    "description": "Agents edit files, the dev server reacts, and the page reloads under the person using it. This is the problem the Disable Reloads button was built to relieve, and the button does not solve it.\n\nWhy the button is a workaround:\n- It asks an agent to rewrite the project development configuration, so relief depends on an agent running, reading the request and getting the change right for that framework.\n- The change is to shared configuration, and it has to be undone by hand.\n- It stops updates altogether, so the person stops seeing the work they asked for until they refresh.\n- It relies on chat delivery. Most of epic DEVHO-7b64ca51 exists because the request is sent while an agent is busy.\n\nDesired behavior:\n- While someone is using the page, agent edits do not reload it or discard its state.\n- The person can see that updates are waiting, and can apply them in one action.\n- This works with no agent involved and without changing the project configuration.\n\nKnown constraints:\n- There is no universal signal for hot reloading. Detection is per framework, and `readHotReloadClient.ts` shows only that a client is present.\n- HMR sockets bypass devhost and go straight through Caddy (`packages/docs/src/content/docs/reference/control-api.md`). Routing them through devhost reverses a documented rule and makes devhost failures able to break HMR.\n- A Caddy matcher can see the upgrade, but the access log entry appears only when the socket closes. Vite can also fall back to connecting directly to its own HMR server, which bypasses Caddy.\n- Server restarts are a separate case from client HMR, and need their own answer.\n- Multiple devhost instances must keep working concurrently.\n\nOpen questions:\n1. What counts as using the page: any recent input, focus in a form, an open devtools panel, or an explicit pause control?\n2. Where can updates be held? The injected devtools script is the first candidate, because it already runs in the page. Holding them there is untested.\n3. Which frameworks are in scope first, and what happens on the others?\n4. What should happen to Disable Reloads? If this ships, retire it unless a case remains that only a configuration change covers.\n\nStart with a spike that answers question 2 against Vite and Next.js, with no changes to routing. Update the public docs and the demo coverage table if user-visible behavior changes."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415989,
+    "op": "SetPriority",
+    "priority": "high"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415989,
+    "op": "AddLabel",
+    "label": "hot-reload"
+  }
+]
