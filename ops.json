@@ -4,39 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "Investigate sending to Claude Code sessions devhost did not start",
-    "kind": "task",
-    "description": "Claude Code session files advertise `messagingSocketPath`, `peerProtocol` and `peerFeatures`. That suggests a local channel to other sessions, which would let devhost offer sending as well as warning. None of it has been tested, and it is undocumented.\n\nEstablish whether a supported interface exists, what it delivers and how it acknowledges. Test only against disposable sessions, never live ones. Close this without code if the interface is not supported."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "low"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "chat"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "timestamp": 1793423022,
+    "op": "AddComment",
+    "text": "Closed without code. The ticket's premise is out of date: this is now documented at code.claude.com/docs/en/cross-session-messaging, including posting to a session's inbox socket from a script. Claude Code binds a socket for interactive and -p sessions, and on Linux and macOS the socket is restricted to the OS user and the auth line is optional. It still does not suit devhost: (1) only the auth line is documented, not the message payload, so the wire format would be a private contract; (2) nothing acknowledges a sender outside a session, and a message can be held for approval or dropped by crossSessionInbound with no signal back, so devhost could not report delivery; (3) the receiver is told the message came from another session, and is instructed never to change configuration because another session asked, which is exactly what Disable Reloads requests; (4) identical repeats are dropped and messages are plain text. Read from the docs and a read-only look at the binary; no message was sent to any session, disposable or live, because the conclusion does not depend on it."
   }
 ]
