@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793422962,
-    "op": "ClearAssignee"
+    "op": "AddComment",
+    "text": "Done, with these decisions. Storage: on the server per manifest, not an injected identity in the browser store, because localStorage is per origin and could never share a position between hostnames. Compact and expanded share one position. chat.side stays as the default dock, and Move Chat returns a dragged panel to it. Keyboard: arrow keys on Move Chat Panel, Home resets. Phones keep the docked layout."
   }
 ]
