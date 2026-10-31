@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Investigate sending to Claude Code sessions devhost did not start",
+    "kind": "task",
+    "description": "Claude Code session files advertise `messagingSocketPath`, `peerProtocol` and `peerFeatures`. That suggests a local channel to other sessions, which would let devhost offer sending as well as warning. None of it has been tested, and it is undocumented.\n\nEstablish whether a supported interface exists, what it delivers and how it acknowledges. Test only against disposable sessions, never live ones. Close this without code if the interface is not supported."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "low"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "chat"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
