@@ -5,7 +5,7 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793423022,
-    "op": "AddComment",
-    "text": "Closed without code. The ticket's premise is out of date: this is now documented at code.claude.com/docs/en/cross-session-messaging, including posting to a session's inbox socket from a script. Claude Code binds a socket for interactive and -p sessions, and on Linux and macOS the socket is restricted to the OS user and the auth line is optional. It still does not suit devhost: (1) only the auth line is documented, not the message payload, so the wire format would be a private contract; (2) nothing acknowledges a sender outside a session, and a message can be held for approval or dropped by crossSessionInbound with no signal back, so devhost could not report delivery; (3) the receiver is told the message came from another session, and is instructed never to change configuration because another session asked, which is exactly what Disable Reloads requests; (4) identical repeats are dropped and messages are plain text. Read from the docs and a read-only look at the binary; no message was sent to any session, disposable or live, because the conclusion does not depend on it."
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
