@@ -5,38 +5,10 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "agent-watcher: stop double-counting Codex processes",
-    "kind": "bug",
-    "description": "`LiveCodexProcessFinder` and the snapshot-based finder match both the `node .../codex` wrapper and its native child, so one agent counts as two processes. `CodexScanner.Scan` pairs processes with rollouts by working directory and time, so the spare PID can claim another rollout.\n\nObserved: one wrapper and child pair in a single directory claimed two top-level rollouts, and other pairs claimed subagent rollouts under separate PIDs. At least one of those two rollouts is falsely active, which would produce a warning about an agent that has finished.\n\nDrop a Codex process whose parent is also a Codex process, and add a regression test built from a wrapper and child pair."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "high"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "agent-watcher"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "op": "AddLink",
+    "kind": "blocks",
+    "target": "fa2305983e15144c9bd72914ceee30431e1c02cc",
+    "target_repo": null,
+    "target_label": null
   }
 ]
