@@ -4,8 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793424106,
-    "op": "SetStatus",
-    "status": "in-progress"
+    "timestamp": 1793424383,
+    "op": "AddComment",
+    "text": "Spike for question 2 done; the story stays open on product decisions. Tested in Chromium with real Vite 7.3.1 and Next.js 16.0.0, no routing changes, and React state in a counter.\n\n1. Full reloads CAN be held from the injected script. A navigate listener calling preventDefault on navigationType reload stopped location.reload() on both, and stopped the reload Vite sends after an index.html edit. No platform method is patched. Limit: it cannot tell a dev server's reload from the application's own location.reload(), for example after logging out. Next.js did not attempt a reload for a layout edit.\n\n2. Client HMR CANNOT be held from the injected script. It loads as a module at the end of body, after the HMR client has registered its listeners. Patching WebSocket.prototype.addEventListener at that point held nothing on either framework.\n\n3. Client HMR CAN be held by a script that runs before the page's own. A WebSocket subclass buffered messages with stopImmediatePropagation, then re-dispatched them: both frameworks held the update, applied it on release, kept React state, and did not reload. This needs a classic script early in the document, and it wraps WebSocket, which the repository forbids (src/devtools/AGENTS.md: never patch host platform methods; features: never wrap WebSocket). Sockets: Vite on /, Next.js on /_next/webpack-hmr.\n\nNot tested: holds longer than a few seconds (Next.js buffered 3 messages in 4 seconds, so heartbeats may be held too and a client could reconnect), server restarts, Firefox and Safari, SSE-based HMR, and Bun's HMR.\n\nDecisions needed: (a) whether wrapping WebSocket is acceptable for this feature, or only full reloads get held; (b) whether intercepting an application's own location.reload() is acceptable, and what counts as using the page; (c) which frameworks come first; (d) what happens to Disable Reloads."
   }
 ]
