@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793419713,
-    "op": "ClearAssignee"
+    "timestamp": 1793419714,
+    "op": "AddComment",
+    "text": "Confirmed and fixed. Without the variable no session_state_changed frames arrive. After an interrupt with a queued message, result fires while the queued message runs, so devhost showed idle. Those frames now own the status once they arrive; idle after an error result keeps the failure."
   }
 ]
