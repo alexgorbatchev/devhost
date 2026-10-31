@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793419713,
-    "op": "ClearAssignee"
+    "timestamp": 1793419714,
+    "op": "AddComment",
+    "text": "Done. Measured on 2.1.310: plain interrupt returns still_queued and starts the message; cancel_queued returns {still_queued: [], cancelled: [id]}. The browser shows 'Stopped before the agent read this message' on both harnesses. cancelled also arrives for the running message, which did run, so only a message that never started counts as cancelled. Codex reports nothing per message, so it is detected from turn/completed with status interrupted."
   }
 ]
