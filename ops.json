@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Join a running devhost session before starting a new one",
+    "kind": "story",
+    "description": "When a chat has no attached session, or the selected harness differs, `send` starts a new session (`createAgentChatClient.ts`). A busy agent in another conversation then gets a competitor editing the same checkout.\n\nChange, for requests that act on shared project state such as Disable Reloads:\n1. If exactly one devhost-owned session runs in the project, join it and name it in the chat.\n2. If several run, ask which one. Do not guess, because the request changes shared dev configuration.\n3. Never attach to a process devhost did not start, and never `--resume` a live session."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "medium"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "chat"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
