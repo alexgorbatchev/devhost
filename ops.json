@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "agent-watcher: remove AGENT_STATUS_TEST_MOCK_PROC from production code",
+    "kind": "task",
+    "description": "`AGENT_STATUS_TEST_MOCK_PROC` appears 10 times in non-test code. Setting it makes dead sessions look alive in production builds. Replace it with injected process providers, which the scanners already accept."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "low"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "agent-watcher"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
