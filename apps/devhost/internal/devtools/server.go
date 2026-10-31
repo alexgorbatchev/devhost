@@ -144,6 +144,7 @@ type ControlServer struct {
 	// settings are what a hot reload changes; mu guards them with configJSON.
 	settings          ControlSettings
 	chat              *chatStore
+	agents            *agentScanner
 	homeDirectoryPath string
 	ownsDocumentURL   func(int, string) (bool, error)
 	listConfigFiles   func() ([]ConfigFileRef, error)
@@ -328,7 +329,9 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
 	}
 	controlServer.chat = newChatStore(controlServer.ctx, options.chatCommand)
+	controlServer.agents = newAgentScanner()
 	controlServer.chat.log = controlServer.logChat
+	mux.HandleFunc(agentsPath, controlServer.whileChatEnabled(controlServer.handleAgents))
 	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
 	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
 	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))

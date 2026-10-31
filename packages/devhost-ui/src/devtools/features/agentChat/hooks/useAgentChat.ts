@@ -146,6 +146,7 @@ export function useAgentChat({
       setIsPreparing(true);
       client.setSendError(null);
       try {
+        await client.joinRunningSession();
         return await client.send({ text }, text);
       } catch (error) {
         setReplyBoundary(previousBoundary);
@@ -283,6 +284,9 @@ export function useAgentChat({
     isConnecting: state.isConnecting,
     isConnected: state.isConnected,
     sendError: state.sendError,
+    decision: state.decision,
+    decide: client.decide,
+    joinedSession: state.joinedSession,
     deliveryState: state.lastSend ? readSendState(deliveries, state.lastSend) : null,
     readDelivery,
     pendingRequests: projection.pendingRequests,

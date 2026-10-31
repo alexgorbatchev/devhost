@@ -17,6 +17,7 @@ export function serveTabCaptureFixture(bundlePath: string, title: string): ITabC
     async fetch(request, server): Promise<Response | undefined> {
       const url = new URL(request.url);
       if (url.pathname === "/favicon.ico") return new Response(null, { status: 204 });
+      if (url.pathname === "/__devhost__/agents") return Response.json({ agents: [] });
       if (url.pathname === "/__devhost__/chat/harnesses")
         return Response.json({ harnesses: [{ id: "codex", label: "Codex", available: true, models: [] }] });
       if (url.pathname === "/__devhost__/chat/sessions")

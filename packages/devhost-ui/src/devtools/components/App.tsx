@@ -21,6 +21,7 @@ import {
 } from "../features/configEditor";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features/externalDevtoolsPanel";
 import { HotReloadNotice, createDisableHotReloadMessage, useHotReloadClient } from "../features/hotReloadNotice";
+import { RunningAgentsPanel, useRunningAgents } from "../features/runningAgents";
 import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
 import { ResourceUsagePanel, useResourceUsage } from "../features/resourceUsage";
@@ -140,6 +141,7 @@ function AppContent(): JSX.Element {
     },
     [settingsStore],
   );
+  const runningAgents = useRunningAgents(chatEnabled, chatTarget);
   const hotReloadClient = useHotReloadClient();
   const isHotReloadNoticeDismissed = useStore(settingsStore, (state) => state.chat.isHotReloadNoticeDismissed);
   const [isHotReloadDisableRequested, setIsHotReloadDisableRequested] = useState(false);
@@ -319,6 +321,7 @@ function AppContent(): JSX.Element {
           {shouldRenderExternalDevtoolsPanel ? (
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
           ) : null}
+          <RunningAgentsPanel agents={runningAgents} />
           {chatEnabled ? (
             <ToolbarSegment ariaLabel="Chat">
               <Button

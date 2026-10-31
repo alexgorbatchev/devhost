@@ -49,6 +49,7 @@ An authenticating proxy in front of devhost still applies its own rules; a sign-
 | `/__devhost__/chat/harnesses`           | `GET`         | Installed coding agents and their models                                                           |
 | `/__devhost__/chat/sessions`            | `GET`, `POST` | List chat sessions, or start or resume one                                                         |
 | `/__devhost__/chat/sessions/<id>/close` | `POST`        | End a chat session's process                                                                       |
+| `/__devhost__/agents`                   | `GET`         | Agents running in the checkout; see [Running agents](../chat-api/#running-agents)                  |
 | `/__devhost__/redux.js`                 | `GET`         | Store registration module; see [Redux Toolkit and Zustand](../../integrations/redux/)              |
 
 The chat endpoints are described in the [Chat API](../chat-api/).

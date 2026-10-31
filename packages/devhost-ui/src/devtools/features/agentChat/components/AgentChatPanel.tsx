@@ -3,10 +3,12 @@ import { Button } from "@alexgorbatchev/shadcn";
 import { lazy, Suspense, useEffect, useState, type JSX, type ReactNode, type Ref } from "react";
 import { useStore } from "zustand";
 import { cn } from "../../../../lib/utils";
+import { formatChatSessionLabel } from "../formatChatSessionLabel";
 import type { IAgentChatController } from "../types";
 import { ApprovalRequests } from "./ApprovalRequests";
 import { ArrowLeftRightIcon, ChevronDownIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react";
 import { Icon } from "../../../../components/ui/Icon";
+import { ChatDecisionPrompt } from "./ChatDecisionPrompt";
 import { ChatDeliveryStatus } from "./ChatDeliveryStatus";
 import { ChatSettings } from "./ChatSettings";
 import { ChatUserText } from "./ChatUserText";
@@ -122,6 +124,12 @@ export function AgentChatPanel({
         {chat.sendError ? (
           <p role="alert" className="p-2 text-destructive">
             {chat.sendError}
+          </p>
+        ) : null}
+        {chat.decision ? <ChatDecisionPrompt decision={chat.decision} onDecide={chat.decide} /> : null}
+        {chat.joinedSession ? (
+          <p role="status" className="p-2 text-muted-foreground">
+            {`Sent to the running conversation ${formatChatSessionLabel(chat.joinedSession)}.`}
           </p>
         ) : null}
         <ChatDeliveryStatus state={chat.deliveryState} />

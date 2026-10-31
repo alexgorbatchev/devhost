@@ -1,4 +1,5 @@
 import type { AssistantRuntime, ThreadMessageLike } from "@assistant-ui/react";
+import type { RunningAgent } from "../../shared/readRunningAgents";
 import type { ChatTarget, DevtoolsSettingsStore } from "../../shared/types";
 
 export type ChatHarnessId = "codex" | "claude-code";
@@ -40,6 +41,12 @@ export interface IChatReceipt {
   sessionId: string;
   commandId: string;
 }
+/** A choice only the person can make: devhost never guesses when a request changes shared project state. */
+export type ChatDecision =
+  | { kind: "agents"; agents: readonly RunningAgent[] }
+  | { kind: "sessions"; sessions: readonly IChatSession[] };
+export type ChatDecisionAnswer = { kind: "start" } | { kind: "cancel" } | { kind: "join"; session: IChatSession };
+export type ChatDecisionHandler = (answer: ChatDecisionAnswer) => void;
 export interface IChatSession {
   id: string;
   harness: ChatHarnessId;
@@ -131,6 +138,9 @@ export interface IAgentChatClientState {
   isConnected: boolean;
   sendError: string | null;
   lastSend: IChatSendRecord | null;
+  decision: ChatDecision | null;
+  /** The running conversation a request joined, so the chat can name it. */
+  joinedSession: IChatSession | null;
   events: readonly IChatEvent[];
   pendingRequestIds: readonly ChatRequestId[];
 }
@@ -143,6 +153,9 @@ export interface IAgentChatClient {
   newSession: () => Promise<void>;
   resumeSession: (session: IChatSession) => Promise<void>;
   closeSession: () => Promise<void>;
+  /** Attaches the conversation already running in the project, asking when there are several; none is not an error. */
+  joinRunningSession: () => Promise<void>;
+  decide: ChatDecisionHandler;
   /** Resolves unless the message definitely failed; an unknown outcome resolves too, so nothing resends it. */
   send: (prepared: IChatPreparedSend, originalText: string) => Promise<IChatReceipt>;
   interrupt: () => void;
@@ -169,6 +182,9 @@ export interface IAgentChatController {
   isConnecting: boolean;
   isConnected: boolean;
   sendError: string | null;
+  decision: ChatDecision | null;
+  decide: ChatDecisionHandler;
+  joinedSession: IChatSession | null;
   /** The latest message's state, null before the first send of a conversation. */
   deliveryState: ChatDeliveryState | null;
   readDelivery: ChatDeliveryReader;
@@ -178,7 +194,10 @@ export interface IAgentChatController {
   newSession: () => Promise<void>;
   resumeSession: (session: IChatSession) => Promise<void>;
   closeSession: () => Promise<void>;
-  /** Sends text without page context or the composer's draft. Resolves to null when the send definitely failed. */
+  /**
+   * Sends a request that acts on shared project state, without page context or the composer's draft. It joins a
+   * running conversation rather than starting a second agent. Resolves to null when the send definitely failed.
+   */
   sendMessage: (text: string) => Promise<IChatReceipt | null>;
   interrupt: () => void;
   respond: (requestId: ChatRequestId, result: unknown) => void;
