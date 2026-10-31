@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793419714,
-    "op": "ClearAssignee"
+    "op": "AddComment",
+    "text": "Done. Lifecycle frames reach the journal: receive appends every decoded frame before anything else reads it, and a real run produced them on stdout. Stories cover clicking during a running turn and reloading while queued."
   }
 ]
