@@ -16,30 +16,82 @@ const userMessage = (id: string): unknown => ({
 });
 const turnEnded = (status: string): unknown => ({ method: "turn/completed", params: { turn: { id: "t", status } } });
 
-const cases: ReadonlyArray<[string, ChatHarnessId, readonly unknown[], ChatDeliveryState | undefined]> = [
-  ["queued mid-turn", "claude-code", [lifecycle("a", "queued")], "queued"],
-  ["picked up", "claude-code", [lifecycle("a", "queued"), lifecycle("a", "started")], "started"],
-  ["echo without lifecycle frames", "claude-code", [echo("a")], "started"],
-  [
-    "a late started frame never goes back",
-    "claude-code",
-    [lifecycle("a", "completed"), lifecycle("a", "started")],
-    "completed",
-  ],
-  ["completed", "claude-code", [lifecycle("a", "started"), lifecycle("a", "completed")], "completed"],
-  ["result finishes an echoed message", "claude-code", [echo("a"), result], "completed"],
-  ["result leaves a queued message queued", "claude-code", [lifecycle("a", "queued"), result], "queued"],
-  ["stopped before pickup", "claude-code", [lifecycle("a", "queued"), lifecycle("a", "cancelled")], "cancelled"],
-  ["stopped while running ran", "claude-code", [lifecycle("a", "started"), lifecycle("a", "cancelled")], "completed"],
-  ["refused", "claude-code", [lifecycle("a", "refused")], "failed"],
-  ["discarded", "claude-code", [lifecycle("a", "queued"), lifecycle("a", "discarded")], "failed"],
-  ["unknown lifecycle state", "claude-code", [lifecycle("a", "future")], undefined],
-  ["picked up by Codex", "codex", [userMessage("a")], "started"],
-  ["finished by Codex", "codex", [userMessage("a"), turnEnded("completed")], "completed"],
-  ["a user message without a client ID", "codex", [userMessage("")], undefined],
+interface IDeliveryCase {
+  name: string;
+  harness: ChatHarnessId;
+  payloads: readonly unknown[];
+  expected: ChatDeliveryState | undefined;
+}
+
+const cases: readonly IDeliveryCase[] = [
+  { name: "queued mid-turn", harness: "claude-code", payloads: [lifecycle("a", "queued")], expected: "queued" },
+  {
+    name: "picked up",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "queued"), lifecycle("a", "started")],
+    expected: "started",
+  },
+  { name: "echo without lifecycle frames", harness: "claude-code", payloads: [echo("a")], expected: "started" },
+  {
+    name: "a late started frame never goes back",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "completed"), lifecycle("a", "started")],
+    expected: "completed",
+  },
+  {
+    name: "completed",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "started"), lifecycle("a", "completed")],
+    expected: "completed",
+  },
+  {
+    name: "result finishes an echoed message",
+    harness: "claude-code",
+    payloads: [echo("a"), result],
+    expected: "completed",
+  },
+  {
+    name: "result leaves a queued message queued",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "queued"), result],
+    expected: "queued",
+  },
+  {
+    name: "stopped before pickup",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "queued"), lifecycle("a", "cancelled")],
+    expected: "cancelled",
+  },
+  {
+    name: "stopped while running ran",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "started"), lifecycle("a", "cancelled")],
+    expected: "completed",
+  },
+  { name: "refused", harness: "claude-code", payloads: [lifecycle("a", "refused")], expected: "failed" },
+  {
+    name: "discarded",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "queued"), lifecycle("a", "discarded")],
+    expected: "failed",
+  },
+  {
+    name: "unknown lifecycle state",
+    harness: "claude-code",
+    payloads: [lifecycle("a", "future")],
+    expected: undefined,
+  },
+  { name: "picked up by Codex", harness: "codex", payloads: [userMessage("a")], expected: "started" },
+  {
+    name: "finished by Codex",
+    harness: "codex",
+    payloads: [userMessage("a"), turnEnded("completed")],
+    expected: "completed",
+  },
+  { name: "a user message without a client ID", harness: "codex", payloads: [userMessage("")], expected: undefined },
 ];
 
-for (const [name, harness, payloads, expected] of cases) {
+for (const { name, harness, payloads, expected } of cases) {
   test(name, () => {
     expect(readChatDeliveries(harness, events(...payloads)).states.get("a")).toBe(expected);
   });

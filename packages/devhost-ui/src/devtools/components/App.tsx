@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { createDevtoolsSettingsStore } from "../shared/createDevtoolsSettingsStore";
 import { PageChat } from "../features/agentChat/components/PageChat";
+import type { IChatReceipt } from "../features/agentChat/types";
 
 import { Button } from "../shared";
 
@@ -142,16 +143,27 @@ function AppContent(): JSX.Element {
   const hotReloadClient = useHotReloadClient();
   const isHotReloadNoticeDismissed = useStore(settingsStore, (state) => state.chat.isHotReloadNoticeDismissed);
   const [isHotReloadDisableRequested, setIsHotReloadDisableRequested] = useState(false);
+  const hotReloadRequest = useStore(settingsStore, (state) => state.chat.hotReloadRequest);
   const [chatRequest, setChatRequest] = useState<string | null>(null);
-  const takeChatRequest = useCallback((delivery: Promise<boolean>): void => {
-    setChatRequest(null);
-    void delivery.then((isDelivered) => {
-      if (!isDelivered) setIsHotReloadDisableRequested(false);
-    });
-  }, []);
-  // The page keeps its hot reload client until it reloads, so a request already sent hides the notice until then.
+  const takeChatRequest = useCallback(
+    (receipt: Promise<IChatReceipt | null>): void => {
+      setChatRequest(null);
+      void receipt.then((sent) => {
+        if (sent === null) setIsHotReloadDisableRequested(false);
+        else settingsStore.getState().updateChat({ hotReloadRequest: sent });
+      });
+    },
+    [settingsStore],
+  );
+  const settleHotReloadRequest = useCallback((): void => {
+    settingsStore.getState().updateChat({ hotReloadRequest: null });
+  }, [settingsStore]);
+  // The page keeps its hot reload client until it reloads, so a request sent from this page hides the notice until
+  // then. A working agent is what reloads the page, so a request still being handled hides it across reloads too.
   const hotReloadNoticeClient =
-    chatEnabled && !isHotReloadNoticeDismissed && !isHotReloadDisableRequested ? hotReloadClient : null;
+    chatEnabled && !isHotReloadNoticeDismissed && !isHotReloadDisableRequested && hotReloadRequest === null
+      ? hotReloadClient
+      : null;
   const exitedServices = services.filter(
     (service) =>
       service.managed &&
@@ -227,6 +239,8 @@ function AppContent(): JSX.Element {
           rootReference={appRootReference}
           requestedMessage={chatTarget === "project" && chatRequest !== null ? chatRequest : undefined}
           onRequestedMessageTaken={takeChatRequest}
+          trackedRequest={chatTarget === "project" ? hotReloadRequest : null}
+          onTrackedRequestSettled={settleHotReloadRequest}
         />
       ) : null}
       {displayedComponentMenu !== null ? (

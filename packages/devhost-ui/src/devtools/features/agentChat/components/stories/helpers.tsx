@@ -8,7 +8,7 @@ import { PageChat } from "../PageChat";
 import { fixture_codexQuestion } from "../../questions/components/stories/fixtures";
 import { DensityProvider, PortalProvider } from "@alexgorbatchev/shadcn";
 import { useRef, useState, type JSX, type ReactElement } from "react";
-import type { ChatRequestId, IChatEvent, IChatPendingRequest, IChatSession } from "../../types";
+import type { ChatRequestId, ChatSentState, IChatEvent, IChatPendingRequest, IChatSession } from "../../types";
 import { ApprovalRequests } from "../ApprovalRequests";
 import { ChatApprovalRequest } from "../ChatApprovalRequest";
 import { ChatQuestionRequest } from "../../questions/components/ChatQuestionRequest";
@@ -75,6 +75,8 @@ export function isChatViewportAtBottom(viewport: HTMLDivElement): boolean {
 
 // The chat stream the reload server last accepted, so a story can deliver live events after the replay.
 let liveChatConnection: IMockWebSocketConnection | null = null;
+let liveChatStatus: IChatSession["status"] = fixture_reloadSession.status;
+let liveChatEvents: IChatEvent[] = [];
 
 /** Delivers a completed agent reply, `Live reply <sequence>.`, to the saved conversation. */
 export function deliverChatReply(sequence: number): void {
@@ -93,6 +95,7 @@ export function deliverChatReply(sequence: number): void {
 /** Reports a new status for the saved conversation, as the server does when a turn starts or ends. */
 export function deliverChatStatus(status: IChatSession["status"]): void {
   if (!liveChatConnection) throw new Error("The chat stream is not connected.");
+  liveChatStatus = status;
   liveChatConnection.send({
     type: "state",
     sessionId: fixture_reloadSession.id,
@@ -101,15 +104,23 @@ export function deliverChatStatus(status: IChatSession["status"]): void {
   });
 }
 
+/** Delivers a native frame, which the server retains and replays to a page that reloads. */
+export function deliverChatFrame(payload: unknown): void {
+  if (!liveChatConnection) throw new Error("The chat stream is not connected.");
+  const event: IChatEvent = { sequence: liveChatEvents.length + 1, payload };
+  liveChatEvents.push(event);
+  liveChatConnection.send({ type: "event", sessionId: fixture_reloadSession.id, ...event });
+}
+
 /** The commands the client has sent over the chat stream, oldest first. */
 export function readSentChatCommands(): unknown[] {
   if (!liveChatConnection) throw new Error("The chat stream is not connected.");
   return liveChatConnection.readSentFrames().map((frame) => JSON.parse(String(frame)));
 }
 
-export function acknowledgeChatSend(commandId: string, error?: string): void {
+export function acknowledgeChatSend(commandId: string, error?: string, delivery?: ChatSentState): void {
   if (!liveChatConnection) throw new Error("The chat stream is not connected.");
-  liveChatConnection.send({ type: "command_result", sessionId: fixture_reloadSession.id, commandId, error });
+  liveChatConnection.send({ type: "command_result", sessionId: fixture_reloadSession.id, commandId, error, delivery });
 }
 
 export async function copyChatImage(): Promise<void> {
@@ -157,6 +168,8 @@ export function installChatReloadServer(
   const restoreCatalog = installPageChatCatalog();
   const catalogFetch = globalThis.fetch;
   const originalWebSocket = globalThis.WebSocket;
+  liveChatStatus = fixture_reloadSession.status;
+  liveChatEvents = [...events];
   const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
   Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
     projectRootPath: fixture_reloadSession.projectRootPath,
@@ -198,8 +211,8 @@ export function installChatReloadServer(
         connection.send({
           type: "snapshot",
           sessionId: session.id,
-          session,
-          events: session.id === fixture_reloadSession.id ? events : [],
+          session: session.id === fixture_reloadSession.id ? { ...session, status: liveChatStatus } : session,
+          events: session.id === fixture_reloadSession.id ? liveChatEvents : [],
           pendingRequestIds: [],
         });
       } else connection.send({ services: [] });

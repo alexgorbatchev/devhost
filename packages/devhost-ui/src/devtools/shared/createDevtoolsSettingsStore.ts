@@ -19,6 +19,7 @@ const chatSchema = z.object({
   sessionId: z.string().nullable().default(null),
   draft: z.string().default(""),
   isHotReloadNoticeDismissed: z.boolean().default(false),
+  hotReloadRequest: z.object({ sessionId: z.string(), commandId: z.string() }).nullable().default(null),
   scroll: z
     .object({
       top: z.number().finite().nonnegative(),
