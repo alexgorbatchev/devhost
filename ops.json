@@ -5,9 +5,7 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793416160,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "op": "AddComment",
+    "text": "First version scope: a read-only list of agents working in this checkout, showing harness, state, name, subdirectory and time since last activity. No transcripts, and no sending to agents.\n\nConstraints:\n- Scan only while a page is open, and well below the 2 second default of `watcher.Run`. One warm scan took about 200 ms and allocated about 35 MB, it covers every agent on the machine, and several devhost instances can run at once.\n- The agent-watcher scan needs filtering to the checkout, including subdirectories. Exclude nothing the list should show: sessions devhost owns appear too, marked as such.\n- Claude Code state comes from session `status`; unknown values show as running, state unknown.\n- Live activity and transcripts are tracked separately in DEVHO-e5515cec."
   }
 ]
