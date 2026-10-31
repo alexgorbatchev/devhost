@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416160,
+    "op": "CreateTask",
+    "title": "Show live activity and transcripts for watched agents",
+    "kind": "story",
+    "description": "The running agents list starts as status only. This adds what an agent is doing right now, including agents devhost did not start. It stays read-only: no sending to those agents.\n\nRequirements:\n- agent-watcher: add a start-at-end option to `watcher.Run`. Without saved cursors, `Run` reads the full history of every running session, which was 75,346 events and 4.7 GB of cumulative allocation in 13 seconds on the test machine. Opening the panel must not replay history.\n- Limit tailing to agents in the checkout that the panel is showing, and stop when the panel closes. `Run` currently tails every session on the machine, and each concurrent `Run` needs its own cursor and session state paths.\n- Show normalized `agent-parser` events rather than raw transcript lines.\n\nSecurity check before any transcript content reaches the page: the toolbar is injected into the host application pages, and transcripts can contain anything an agent read, including secrets. Establish whether page scripts can reach this UI or its data. If they can, serve this view from a page devhost owns instead."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416160,
+    "op": "SetPriority",
+    "priority": "low"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416160,
+    "op": "AddLabel",
+    "label": "agent-watcher"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416160,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
