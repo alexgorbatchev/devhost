@@ -7,7 +7,11 @@ import {
   factory_designOverviewStack,
 } from "../src/devtools/components/stories/fixtures";
 import { installDevhostStackMock, type IDevhostStackMock, type IDevhostStoryStack } from "./installDevhostStackMock";
-import { installServiceRecoveryMock, type IServiceRecoveryMock } from "./installServiceRecoveryMock";
+import {
+  installServiceRecoveryMock,
+  type IServiceRecoveryMock,
+  type IServiceRecoveryPage,
+} from "./installServiceRecoveryMock";
 
 type DevhostStoryStackFactory = () => IDevhostStoryStack;
 
@@ -18,8 +22,11 @@ interface IDevhostStackDecoratorProps {
 
 interface IServiceRecoveryDecoratorProps {
   hasWorktreeFailure?: boolean;
+  pageService?: IServiceRecoveryPage;
   Story: ComponentType;
 }
+
+const apiPageService: IServiceRecoveryPage = { serviceName: "api" };
 
 /**
  * Runs a story against a mocked devhost control plane, selected by story `parameters`: `designOverview`,
@@ -30,7 +37,7 @@ export function withDevhostMock(Story: ComponentType, context: StoryContext): JS
     return <ServiceRecoveryDecorator Story={Story} hasWorktreeFailure />;
   }
   if (context.parameters.serviceRecovery === true) {
-    return <ServiceRecoveryDecorator Story={Story} />;
+    return <ServiceRecoveryDecorator Story={Story} pageService={context.parameters.pageService} />;
   }
   if (context.parameters.configEditor === true) {
     return <DevhostStackDecorator Story={Story} createStack={factory_configEditorStack} />;
@@ -57,17 +64,18 @@ function DevhostStackDecorator({ createStack, Story }: IDevhostStackDecoratorPro
 
 function ServiceRecoveryDecorator({
   hasWorktreeFailure = false,
+  pageService = apiPageService,
   Story,
 }: IServiceRecoveryDecoratorProps): JSX.Element | null {
   const [mock, setMock] = useState<IServiceRecoveryMock | null>(null);
 
   useEffect(() => {
-    const installedMock: IServiceRecoveryMock = installServiceRecoveryMock(hasWorktreeFailure);
+    const installedMock: IServiceRecoveryMock = installServiceRecoveryMock(hasWorktreeFailure, pageService);
 
     setMock(installedMock);
 
     return installedMock.uninstall;
-  }, [hasWorktreeFailure]);
+  }, [hasWorktreeFailure, pageService]);
 
   return mock === null ? null : (
     <>

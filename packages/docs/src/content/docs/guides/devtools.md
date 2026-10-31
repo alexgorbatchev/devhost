@@ -93,7 +93,7 @@ Open the Services panel from the toolbar:
 - **Restart Stack** restarts every managed service with new automatic ports.
 - **Stopped services** appears when you [started only part of the stack](../stack-lifecycle/#start-part-of-a-stack); **Start** starts one of them.
 
-When a service crashes, a full-screen view shows its exit code and logs with a **Restart** button. See [Restarts and recovery](../../stacks/recovery/) for what each restart does.
+When the page's own service crashes, or one it depends on, a full-screen view shows the exit code and logs with a **Restart** button. Any other crash only turns its row red here. See [Restarts and recovery](../../stacks/recovery/) for what each restart does.
 
 The **Worktrees** button switches the stack to another Git checkout; see [Git worktrees](../../stacks/worktrees/).
 

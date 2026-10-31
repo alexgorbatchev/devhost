@@ -216,6 +216,31 @@ export const ServiceCrashRecovery: Story = {
   },
 };
 
+export const UnrelatedServiceExitLeavesThePageOpen: Story = {
+  parameters: { serviceRecovery: true, pageService: { serviceName: "web" } },
+  render: () => renderDevtoolsInStoryShadowRoot(<DevtoolsApp />),
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await expect(await canvas.findByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Crash api" }));
+    const services = await canvas.findByRole("button", { name: "Services: 0 of 1 up" });
+    await expect(canvas.queryByRole("dialog", { name: "Service exited" })).toBeNull();
+    await userEvent.click(services);
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Restart api" })).toBeVisible());
+  },
+};
+
+export const DependencyExitOpensRecovery: Story = {
+  parameters: { serviceRecovery: true, pageService: { serviceName: "web", dependencies: ["api"] } },
+  render: () => renderDevtoolsInStoryShadowRoot(<DevtoolsApp />),
+  play: async ({ canvasElement }): Promise<void> => {
+    const canvas = await readDevtoolsStoryShadowCanvas(canvasElement);
+    await expect(await canvas.findByRole("button", { name: "Services: 1 of 1 up" })).toBeVisible();
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Crash api" }));
+    await expect(await canvas.findByRole("dialog", { name: "Service exited" })).toBeVisible();
+  },
+};
+
 export const WorktreeRecovery: Story = {
   parameters: { worktreeRecovery: true },
   render: () => renderDevtoolsInStoryShadowRoot(<DevtoolsApp />),

@@ -30,6 +30,7 @@ import {
   ServiceCrashOverlay,
   ServiceStatusPanel,
   WorktreeStatusPanel,
+  selectPageExitedServices,
   useServiceHealth,
 } from "../features/serviceStatusPanel";
 import { pristineFetch } from "../shared/pristineFetch";
@@ -40,7 +41,7 @@ import { DevtoolsToolbar } from "../shared/components/DevtoolsToolbar";
 import { ToolbarSegment } from "../shared/components/ToolbarSegment";
 import { DevtoolsTopLayer } from "../shared/components/DevtoolsTopLayer";
 import { useRetainedValue } from "../shared/hooks/useRetainedValue";
-import { ColorSchemeProvider, resolveRoutedServiceKeyForUrl, useResolvedColorScheme } from "../shared";
+import { ColorSchemeProvider, resolveRoutedServiceForUrl, useResolvedColorScheme } from "../shared";
 import { DEFAULT_RESTART_SERVICES_SHORTCUT } from "../shared/constants";
 import { selectRestartServiceNames } from "../shared/selectRestartServiceNames";
 
@@ -89,7 +90,8 @@ function AppContent(): JSX.Element {
     switchWorktree,
     startStoppedServices,
   } = useServiceHealth();
-  const currentRoutedServiceKey = resolveRoutedServiceKeyForUrl(routedServices, window.location.href);
+  const currentRoutedService = resolveRoutedServiceForUrl(routedServices, window.location.href);
+  const currentRoutedServiceKey = currentRoutedService?.serviceName ?? null;
   const currentRepository = repositories.find(
     (repository) => currentRoutedServiceKey !== null && repository.serviceNames.includes(currentRoutedServiceKey),
   );
@@ -176,15 +178,18 @@ function AppContent(): JSX.Element {
       : null;
   const isReloadHoldEnabled = useStore(settingsStore, (state) => state.chat.isReloadHoldEnabled);
   const reloadHold = useReloadHold(shouldRenderToolbar && isReloadHoldEnabled);
-  const exitedServices = services.filter(
-    (service) =>
-      service.managed &&
-      !service.status &&
-      service.exitCode !== undefined &&
-      !repositories.some(
-        (repository) =>
-          repository.serviceNames.includes(service.name) && (repository.switching || repository.error !== undefined),
-      ),
+  const exitedServices = selectPageExitedServices(
+    services.filter(
+      (service) =>
+        service.managed &&
+        !service.status &&
+        service.exitCode !== undefined &&
+        !repositories.some(
+          (repository) =>
+            repository.serviceNames.includes(service.name) && (repository.switching || repository.error !== undefined),
+        ),
+    ),
+    currentRoutedService,
   );
   const logEntries = useServiceLogs(isMinimapHovered && exitedServices.length === 0);
   useReactHighlightOverlay({

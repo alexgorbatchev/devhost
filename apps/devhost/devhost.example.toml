@@ -212,7 +212,8 @@ enabled = true
 # pollInterval = "1m"
 
 [devtools.status]
-# When a foreground service exits, the page shows a full-screen log view with a restart button.
+# When a page's own foreground service exits, or one it depends on, the page shows a full-screen
+# log view with a restart button. Any other exit only shows in the Services panel.
 # devhost and sibling services keep running after a service exits, even with exit code 0.
 # `enabled` controls whether service status is shown in the devtools toolbar.
 # - `true` (default): show service state and the services panel in the toolbar.

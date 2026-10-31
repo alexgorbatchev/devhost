@@ -63,7 +63,8 @@ describe("readInjectedDevtoolsConfig", () => {
       resourcesEnabled: true,
       primaryService: "web",
       routedServices: [
-        { host: "shop.localhost", path: "/*", serviceName: "web" },
+        { host: "shop.localhost", path: "/*", serviceName: "web", dependencies: ["api", 3] },
+        { host: "api.localhost", path: "/", serviceName: "api" },
         { host: 3, path: "/", serviceName: "invalid" },
       ],
     });
@@ -75,7 +76,10 @@ describe("readInjectedDevtoolsConfig", () => {
       position: "top-right",
       resourcesEnabled: true,
       primaryService: "web",
-      routedServices: [{ host: "shop.localhost", path: "/", serviceName: "web" }],
+      routedServices: [
+        { host: "shop.localhost", path: "/", serviceName: "web", dependencies: ["api"] },
+        { host: "api.localhost", path: "/", serviceName: "api" },
+      ],
     });
   });
   test("falls back for removed Vim launching and invalid presentation fields", () => {

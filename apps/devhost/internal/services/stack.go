@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"os"
 	"os/exec"
@@ -1478,6 +1479,22 @@ func resolveResourceIntervals(config manifest.DevtoolsResourcesConfig) hostusage
 	return intervals
 }
 
+// serviceDependencies lists what name depends on, directly or through another
+// service, sorted so an unchanged manifest yields an unchanged configuration.
+func serviceDependencies(services map[string]ResolvedService, name string) []string {
+	found := map[string]bool{}
+	pending := slices.Clone(services[name].DependsOn)
+	for len(pending) > 0 {
+		dependency := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		if !found[dependency] {
+			found[dependency] = true
+			pending = append(pending, services[dependency].DependsOn...)
+		}
+	}
+	return slices.Sorted(maps.Keys(found))
+}
+
 func collectRoutedServiceIdentities(services map[string]ResolvedService) []devtools.RoutedServiceIdentity {
 	routedServices := []devtools.RoutedServiceIdentity{}
 	for _, service := range services {
@@ -1492,9 +1509,10 @@ func collectRoutedServiceIdentities(services map[string]ResolvedService) []devto
 
 		for _, host := range service.Hosts {
 			routedServices = append(routedServices, devtools.RoutedServiceIdentity{
-				Host:        host,
-				Path:        path,
-				ServiceName: service.Name,
+				Host:         host,
+				Path:         path,
+				ServiceName:  service.Name,
+				Dependencies: serviceDependencies(services, service.Name),
 			})
 		}
 	}

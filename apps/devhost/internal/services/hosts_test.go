@@ -62,6 +62,26 @@ type hostRegistration struct {
 	DevtoolsControlPort   int    `json:"devtoolsControlPort"`
 }
 
+func TestRoutedServicesListTheirWholeDependencyChain(t *testing.T) {
+	services := map[string]ResolvedService{
+		"web":    {Name: "web", Hosts: []string{"web.localhost"}, DependsOn: []string{"api"}},
+		"api":    {Name: "api", Hosts: []string{"api.localhost"}, DependsOn: []string{"db", "queue"}},
+		"queue":  {Name: "queue", DependsOn: []string{"db"}},
+		"db":     {Name: "db"},
+		"sketch": {Name: "sketch", Hosts: []string{"sketch.localhost"}},
+	}
+	want := map[string][]string{"api": {"db", "queue"}, "sketch": nil, "web": {"api", "db", "queue"}}
+	identities := collectRoutedServiceIdentities(services)
+	if len(identities) != len(want) {
+		t.Fatalf("identities = %#v", identities)
+	}
+	for _, identity := range identities {
+		if !slices.Equal(identity.Dependencies, want[identity.ServiceName]) {
+			t.Fatalf("%s dependencies = %v, want %v", identity.ServiceName, identity.Dependencies, want[identity.ServiceName])
+		}
+	}
+}
+
 func TestResolveMultipleHostPorts(t *testing.T) {
 	t.Setenv("DEVHOST_TEST_ALIAS", "alias.localhost")
 	for _, tc := range []struct{ name, config string }{

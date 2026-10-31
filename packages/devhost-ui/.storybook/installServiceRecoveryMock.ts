@@ -21,6 +21,12 @@ type FetchRequestInput = Parameters<typeof fetch>[0];
 type FetchRequestInit = Parameters<typeof fetch>[1];
 type ServiceRecoveryMessage = HealthResponse | ServiceLogUpdateMessage;
 
+/** The service a story's page belongs to. */
+export interface IServiceRecoveryPage {
+  serviceName: string;
+  dependencies?: string[];
+}
+
 export interface IServiceRecoveryMock {
   /** The `api` service exits with code 7 after logging a fatal error. */
   crash: () => void;
@@ -31,8 +37,12 @@ export interface IServiceRecoveryMock {
  * Replaces the injected configuration, `WebSocket`, and `fetch` with a single-service stack whose `api` service
  * can crash and be restarted. The first restart fails; the next one succeeds. With `hasWorktreeFailure`, the stack
  * starts with `api` down after a failed worktree switch, and returning to the configured checkout recovers it.
+ * The page belongs to `pageService`, with the route's hostname and path filled in.
  */
-export function installServiceRecoveryMock(hasWorktreeFailure: boolean): IServiceRecoveryMock {
+export function installServiceRecoveryMock(
+  hasWorktreeFailure: boolean,
+  pageService: IServiceRecoveryPage,
+): IServiceRecoveryMock {
   const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
   const originalWebSocket: unknown = Reflect.get(globalThis, "WebSocket");
   const originalFetch = globalThis.fetch;
@@ -43,6 +53,7 @@ export function installServiceRecoveryMock(hasWorktreeFailure: boolean): IServic
     editorEnabled: false,
     externalToolbarsEnabled: false,
     minimapEnabled: false,
+    routedServices: [{ ...pageService, host: window.location.hostname, path: "/" }],
     statusEnabled: true,
   };
   const connections: IMockWebSocketConnection[] = [];

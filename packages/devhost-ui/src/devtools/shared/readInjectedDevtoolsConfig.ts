@@ -171,11 +171,16 @@ function readRoutedServicesValue(injectedConfig: object): IRoutedServiceIdentity
       return [];
     }
 
+    const dependencies: unknown = Reflect.get(service, "dependencies");
+
     return [
       {
         host,
         path: normalizeRoutedServicePath(path),
         serviceName,
+        ...(Array.isArray(dependencies)
+          ? { dependencies: dependencies.filter((name) => typeof name === "string") }
+          : {}),
       },
     ];
   });

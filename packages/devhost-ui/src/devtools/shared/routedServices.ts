@@ -2,6 +2,8 @@ export interface IRoutedServiceIdentity {
   host: string;
   path: string;
   serviceName: string;
+  /** Every service this one depends on, directly or through another service. */
+  dependencies?: string[];
 }
 
 interface IParsedRoutedServicePath {
@@ -15,12 +17,6 @@ export function normalizeRoutedServicePath(path: string | null | undefined): str
   }
 
   return path;
-}
-
-export function resolveRoutedServiceKeyForUrl(services: IRoutedServiceIdentity[], urlText: string): string | null {
-  const matchedService = resolveRoutedServiceForUrl(services, urlText);
-
-  return matchedService?.serviceName ?? null;
 }
 
 export function resolveRoutedServiceForUrl(

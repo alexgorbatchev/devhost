@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  normalizeRoutedServicePath,
-  resolveRoutedServiceForUrl,
-  resolveRoutedServiceKeyForUrl,
-  type IRoutedServiceIdentity,
-} from "../routedServices";
+import { normalizeRoutedServicePath, resolveRoutedServiceForUrl, type IRoutedServiceIdentity } from "../routedServices";
 
 const routedServices: IRoutedServiceIdentity[] = [
   { host: "app.localhost", path: "/", serviceName: "web" },
@@ -45,8 +40,8 @@ describe("routedServices", () => {
     expect(resolveRoutedServiceForUrl(routedServices, "not-a-url")).toBeNull();
   });
 
-  test("creates stable routed service keys", () => {
-    expect(resolveRoutedServiceKeyForUrl(routedServices, "https://APP.localhost/api/users")).toBe("api");
+  test("matches hostnames regardless of case", () => {
+    expect(resolveRoutedServiceForUrl(routedServices, "https://APP.localhost/api/users")?.serviceName).toBe("api");
   });
 
   test("groups aliases by service while keeping other services separate", () => {
@@ -55,14 +50,14 @@ describe("routedServices", () => {
       { host: "alias.localhost", path: "/", serviceName: "web" },
       { host: "alias.localhost", path: "/api/*", serviceName: "api" },
     ];
-    expect(resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/dashboard")).toBe(
-      resolveRoutedServiceKeyForUrl(services, "https://app.localhost/dashboard"),
+    expect(resolveRoutedServiceForUrl(services, "https://alias.localhost/dashboard")?.serviceName).toBe(
+      resolveRoutedServiceForUrl(services, "https://app.localhost/dashboard")?.serviceName,
     );
-    expect(resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/api/users")).toBe(
-      resolveRoutedServiceKeyForUrl(services, "https://app.localhost/api/users"),
+    expect(resolveRoutedServiceForUrl(services, "https://alias.localhost/api/users")?.serviceName).toBe(
+      resolveRoutedServiceForUrl(services, "https://app.localhost/api/users")?.serviceName,
     );
-    expect(resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/api/users")).not.toBe(
-      resolveRoutedServiceKeyForUrl(services, "https://alias.localhost/dashboard"),
+    expect(resolveRoutedServiceForUrl(services, "https://alias.localhost/api/users")?.serviceName).not.toBe(
+      resolveRoutedServiceForUrl(services, "https://alias.localhost/dashboard")?.serviceName,
     );
   });
 });

@@ -100,7 +100,8 @@ pollInterval = "10m"
 
 [devtools.status]
 # `enabled` controls whether the injected service-status panel is shown (default: true).
-# It also shows exited foreground services in a full-screen log view with a restart button.
+# It also shows a page's exited foreground service, or an exited dependency of that service,
+# in a full-screen log view with a restart button.
 # devhost and sibling services keep running after service exits, including exit code 0.
 enabled = true
 # `position` selects where the status panel is anchored ("top-right", "bottom-right").

@@ -61,6 +61,9 @@ type RoutedServiceIdentity struct {
 	Host        string `json:"host"`
 	Path        string `json:"path"`
 	ServiceName string `json:"serviceName"`
+	// Dependencies holds every service this one depends on, directly or through
+	// another service.
+	Dependencies []string `json:"dependencies,omitempty"`
 }
 
 type ServiceHealth struct {
