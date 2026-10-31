@@ -1,0 +1,31 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416382,
+    "op": "CreateTask",
+    "title": "Align the chat panel vertically with the toolbar popups",
+    "kind": "bug",
+    "description": "The chat panel opens at a different vertical position from the other toolbar popups.\n\nCause: the panels are positioned by unrelated rules.\n- `ToolbarPopover` uses CSS anchor positioning. The panel attaches to its trigger button: above it for a bottom-right toolbar, below it for a top-right toolbar (`shared/components/ToolbarPopover.tsx`).\n- `AgentChatPanel` is hard-coded to `fixed bottom-14` (`features/agentChat/components/AgentChatPanel.tsx`), and its height rules assume that offset.\n\nThe hard-coded offset also ignores the toolbar position, so with a top-right toolbar the chat should still open at the bottom of the viewport while every other popup opens at the top. That follows from the code and has not been checked in a browser.\n\nChange: derive the chat panel vertical position from the same toolbar edge and gap that `ToolbarPopover` uses, for both toolbar positions and for compact and expanded chat. Keep the left and right chat sides working.\n\nDone when the chat panel and a toolbar popup open with matching vertical edges in both toolbar positions, covered by browser-visible story checks rather than class name assertions."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416382,
+    "op": "SetPriority",
+    "priority": "medium"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793416382,
+    "op": "AddLabel",
+    "label": "chat"
+  }
+]
