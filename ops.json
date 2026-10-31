@@ -1,11 +1,10 @@
 [
   {
     "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
+      "name": "git-task-automation",
+      "email": "automation@git-task.local"
     },
     "timestamp": 1793422962,
-    "op": "SetStatus",
-    "status": "done"
+    "op": "ClearAssignee"
   }
 ]
