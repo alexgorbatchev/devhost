@@ -20,12 +20,17 @@ import {
   openSavedChatConversation,
   readChatViewport,
   readOfferedConversations,
+  readSavedChatPanelPosition,
   readSentChatCommands,
+  readToolbarPopupRectangle,
   reportRunningAgents,
+  saveChatPanelPosition,
   acknowledgeChatSend,
   copyChatImage,
 } from "./helpers";
 import { fixture_devhostSession, fixture_reloadSession, fixture_toolSequenceEvents } from "./fixtures";
+import type { IAnnotationPoint } from "../../../visualAnnotations/types";
+import type { DevtoolsPosition } from "../../../../shared/devtoolsConfig";
 import type { RunningAgent } from "../../../../shared/readRunningAgents";
 import {
   devtoolsStoryShadowRootHostTestId,
@@ -48,6 +53,201 @@ const meta: Meta<typeof AgentChatPanel> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const openAgent: RunningAgent = {
+  key: "codex:1",
+  harness: "codex",
+  state: "idle",
+  subdirectory: ".",
+  lastActivity: 1,
+  isOwned: true,
+};
+
+function installPositionedToolbar(position: DevtoolsPosition): VoidFunction {
+  const restore = installChatReloadServer([], "", [], position);
+  reportRunningAgents([openAgent]);
+  return restore;
+}
+
+export const OpensAtTheBottomEdgeOfToolbarPopups: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installPositionedToolbar("bottom-right"),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const popup = await readToolbarPopupRectangle(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    const panel = await canvas.findByRole("complementary", { name: "Agent chat" });
+    expect(panel.getBoundingClientRect().bottom).toBeCloseTo(popup.bottom, 0);
+    await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
+    await canvas.findByRole("button", { name: "Compact Chat" });
+    expect(panel.getBoundingClientRect().bottom).toBeCloseTo(popup.bottom, 0);
+    expect(panel.getBoundingClientRect().top).toBeGreaterThan(0);
+  },
+};
+
+export const OpensAtTheTopEdgeOfToolbarPopups: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installPositionedToolbar("top-right"),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const popup = await readToolbarPopupRectangle(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    const panel = await canvas.findByRole("complementary", { name: "Agent chat" });
+    expect(panel.getBoundingClientRect().top).toBeCloseTo(popup.top, 0);
+    await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
+    await canvas.findByRole("button", { name: "Compact Chat" });
+    expect(panel.getBoundingClientRect().top).toBeCloseTo(popup.top, 0);
+    expect(panel.getBoundingClientRect().bottom).toBeLessThan(window.innerHeight);
+  },
+};
+
+export const FollowsAToolbarThatWraps: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installPositionedToolbar("bottom-right"),
+  globals: { viewport: { value: "chatMobile", isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const popup = await readToolbarPopupRectangle(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    const panel = await canvas.findByRole("complementary", { name: "Agent chat" });
+    expect(panel.getBoundingClientRect().bottom).toBeCloseTo(popup.bottom, 0);
+  },
+};
+
+async function openChatPanel(canvasElement: HTMLElement): Promise<HTMLElement> {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+  return await canvas.findByRole("complementary", { name: "Agent chat" });
+}
+
+async function dragChatHeader(panel: HTMLElement, by: IAnnotationPoint): Promise<void> {
+  const header = panel.querySelector("header");
+  if (header === null) throw new Error("The chat panel has no header.");
+  await nativeUserEvent.dragAndDrop(header, header, {
+    sourcePosition: { x: 120, y: 8 },
+    targetPosition: { x: 120 + by.x, y: 8 + by.y },
+  });
+}
+
+export const DraggingTheHeaderMovesThePanelAndSavesIt: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer([], "", []),
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    const before = panel.getBoundingClientRect();
+    await dragChatHeader(panel, { x: -200, y: -100 });
+    await waitFor(() => expect(panel.getBoundingClientRect().left).toBeCloseTo(before.left - 200, 0));
+    expect(panel.getBoundingClientRect().top).toBeCloseTo(before.top - 100, 0);
+    await waitFor(() => expect(readSavedChatPanelPosition()).toMatchObject({ left: before.left - 200 }));
+  },
+};
+
+export const DraggingFromAHeaderButtonMovesNothing: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer([], "", []),
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    const before = panel.getBoundingClientRect();
+    const expand = within(panel).getByRole("button", { name: "Expand Chat" });
+    await nativeUserEvent.dragAndDrop(expand, panel, { targetPosition: { x: 20, y: 200 } });
+    expect(panel.getBoundingClientRect().left).toBe(before.left);
+    expect(readSavedChatPanelPosition()).toBeNull();
+  },
+};
+
+export const ChoosingInADialogFromTheHeaderMovesNothing: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const panel = await openChatPanel(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat Settings" }));
+    await chooseChatSetting(canvas, "Conversation", "codex · saved-conversation");
+    await userEvent.keyboard("{Escape}");
+    expect(panel.style.left).toBe("");
+    expect(readSavedChatPanelPosition()).toBeNull();
+  },
+};
+
+export const ArrowKeysMoveThePanelAndHomeReturnsIt: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer([], "", []),
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    const before = panel.getBoundingClientRect();
+    within(panel).getByRole("button", { name: "Move Chat Panel" }).focus();
+    await userEvent.keyboard("{ArrowLeft}");
+    await waitFor(() => expect(panel.getBoundingClientRect().left).toBeLessThan(before.left));
+    await waitFor(() => expect(readSavedChatPanelPosition()).not.toBeNull());
+    await userEvent.keyboard("{Home}");
+    await waitFor(() => expect(panel.getBoundingClientRect().left).toBeCloseTo(before.left, 0));
+    await waitFor(() => expect(readSavedChatPanelPosition()).toBeNull());
+  },
+};
+
+export const RestoresTheSavedPositionInsideTheViewport: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => {
+    const restore = installChatReloadServer([], "", []);
+    saveChatPanelPosition({ left: 9000, top: 9000 });
+    return restore;
+  },
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    await waitFor(() => expect(panel.style.left).not.toBe(""));
+    const header = panel.querySelector("header");
+    expect(panel.getBoundingClientRect().right).toBeLessThanOrEqual(document.documentElement.clientWidth);
+    expect(header?.getBoundingClientRect().bottom).toBeLessThanOrEqual(document.documentElement.clientHeight);
+  },
+};
+
+export const MoveChatReturnsADraggedPanelToItsDock: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => {
+    const restore = installChatReloadServer([], "", []);
+    saveChatPanelPosition({ left: 40, top: 40 });
+    return restore;
+  },
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    await waitFor(() => expect(panel.style.left).toBe("40px"));
+    await userEvent.click(within(panel).getByRole("button", { name: "Move Chat To Left" }));
+    await waitFor(() => expect(panel.style.left).toBe(""));
+    expect(within(panel).getByRole("button", { name: "Move Chat To Left" })).toBeVisible();
+    await waitFor(() => expect(readSavedChatPanelPosition()).toBeNull());
+  },
+};
+
+export const ExpandedChatKeepsItsHeightWhereItWasMoved: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => {
+    const restore = installChatReloadServer([], "", []);
+    saveChatPanelPosition({ left: 40, top: 40 });
+    return restore;
+  },
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    await waitFor(() => expect(panel.style.left).toBe("40px"));
+    await userEvent.click(within(panel).getByRole("button", { name: "Expand Chat" }));
+    await waitFor(() => expect(panel.getBoundingClientRect().height).toBeGreaterThan(400));
+    expect(panel.getBoundingClientRect().top).toBeCloseTo(40, 0);
+  },
+};
+
+export const PhonesKeepTheDockedLayout: Story = {
+  render: () => <ChatReloadScene />,
+  globals: { viewport: { value: "chatMobile", isRotated: false } },
+  beforeEach: () => {
+    const restore = installChatReloadServer([], "", []);
+    saveChatPanelPosition({ left: 40, top: 40 });
+    return restore;
+  },
+  play: async ({ canvasElement }) => {
+    const panel = await openChatPanel(canvasElement);
+    expect(panel.style.left).toBe("");
+    expect(within(panel).queryByRole("button", { name: "Move Chat Panel" })).toBeNull();
+  },
+};
 
 export const FollowUpsDuringActiveTurn: Story = {
   render: () => <ChatReloadScene />,

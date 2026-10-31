@@ -411,6 +411,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			StackDirectoryPaths: paths,
 			GetStackServices:    func() ([]statuspage.StackService, error) { return state.directoryServices(lifecycleCtx) },
 			ChatPrompt:          settings.ChatPrompt,
+			ChatPanelFile:       chatPanelFile(manifest.ManifestPath, paths.StateDirectoryPath),
 			OwnsDocumentURL: func(port int, href string) (bool, error) {
 				return caddy.AllowsDevtoolsURL(paths, caddy.DevtoolsRouteOwner{ManifestPath: manifest.ManifestPath, ControlPort: port}, href)
 			},

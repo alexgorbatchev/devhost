@@ -444,3 +444,16 @@ func worktreeTestManifest(root string) ResolvedManifest {
 		},
 	}
 }
+
+func TestChatPanelFileBelongsToOneManifest(t *testing.T) {
+	first := chatPanelFile("/project/devhost.toml", "/state")
+	if first == "" || first != chatPanelFile("/project/devhost.toml", "/state") {
+		t.Fatalf("a manifest must keep its file: %q", first)
+	}
+	if first == chatPanelFile("/other/devhost.toml", "/state") {
+		t.Fatal("two manifests share a chat panel file")
+	}
+	if file := chatPanelFile("", "/state"); file != "" {
+		t.Fatalf("a session without a manifest got %q", file)
+	}
+}

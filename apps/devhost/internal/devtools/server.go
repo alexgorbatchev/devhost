@@ -105,7 +105,9 @@ type StartControlServerOptions struct {
 	StackDirectoryPaths caddy.Paths
 	GetStackServices    func() ([]statuspage.StackService, error)
 	ChatPrompt          string
-	OwnsDocumentURL     func(int, string) (bool, error)
+	// ChatPanelFile saves where the chat panel was dragged to. Empty keeps no position.
+	ChatPanelFile   string
+	OwnsDocumentURL func(int, string) (bool, error)
 	// ListConfigFiles names the files the config editor may change.
 	ListConfigFiles func() ([]ConfigFileRef, error)
 	// CheckConfigFile makes the checks a reload makes, with content in place of the file at path.
@@ -145,6 +147,7 @@ type ControlServer struct {
 	settings          ControlSettings
 	chat              *chatStore
 	agents            *agentScanner
+	chatPanelFile     string
 	homeDirectoryPath string
 	ownsDocumentURL   func(int, string) (bool, error)
 	listConfigFiles   func() ([]ConfigFileRef, error)
@@ -330,8 +333,10 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 	controlServer.chat = newChatStore(controlServer.ctx, options.chatCommand)
 	controlServer.agents = newAgentScanner()
+	controlServer.chatPanelFile = options.ChatPanelFile
 	controlServer.chat.log = controlServer.logChat
 	mux.HandleFunc(agentsPath, controlServer.whileChatEnabled(controlServer.handleAgents))
+	mux.HandleFunc(chatPanelPath, controlServer.whileChatEnabled(controlServer.handleChatPanel))
 	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
 	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
 	mux.HandleFunc(chatSessionsPath+"/", controlServer.whileChatEnabled(controlServer.handleChatSessions))

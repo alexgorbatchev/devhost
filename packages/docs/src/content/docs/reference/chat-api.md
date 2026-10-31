@@ -83,6 +83,10 @@ Sessions belong to the running stack: closing a tab or reloading never ends a tu
 
 The list is ordered by who needs attention: waiting, working, unknown, then idle. A top-level `error` reports a harness that could not be scanned, beside what the others found. Page scripts can read this response, so it carries no transcript paths or native session IDs.
 
+## Panel position
+
+`GET /__devhost__/chat/panel` returns `{position}`, where `position` is `{left, top}` in CSS pixels or `null` for the default place. `PUT` with the same body saves it, and needs an `Origin` like the other chat requests. A position is saved per manifest under devhost's state directory, because browser storage is separate for each hostname. A session without a manifest answers `404` and keeps no position.
+
 ## Event stream and commands
 
 ```text

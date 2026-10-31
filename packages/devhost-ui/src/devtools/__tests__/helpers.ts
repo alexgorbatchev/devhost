@@ -66,6 +66,8 @@ export async function startBuiltDevtoolsHost(chat?: IChatSnapshot): Promise<IBui
           { headers: { "Cache-Control": "no-store" } },
         );
       }
+      if (url.pathname === "/__devhost__/agents") return Response.json({ agents: [] });
+      if (url.pathname === "/__devhost__/chat/panel") return Response.json({ position: null });
       if (url.pathname === "/__devhost__/chat/harnesses")
         return Response.json({
           harnesses: [

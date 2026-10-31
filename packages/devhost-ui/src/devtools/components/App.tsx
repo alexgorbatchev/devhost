@@ -142,6 +142,7 @@ function AppContent(): JSX.Element {
     [settingsStore],
   );
   const runningAgents = useRunningAgents(chatEnabled, chatTarget);
+  const [toolbarEdgeInset, setToolbarEdgeInset] = useState<number | null>(null);
   const hotReloadClient = useHotReloadClient();
   const isHotReloadNoticeDismissed = useStore(settingsStore, (state) => state.chat.isHotReloadNoticeDismissed);
   const [isHotReloadDisableRequested, setIsHotReloadDisableRequested] = useState(false);
@@ -243,6 +244,8 @@ function AppContent(): JSX.Element {
           onRequestedMessageTaken={takeChatRequest}
           trackedRequest={chatTarget === "project" ? hotReloadRequest : null}
           onTrackedRequestSettled={settleHotReloadRequest}
+          toolbarPosition={devtoolsPosition}
+          toolbarEdgeInset={toolbarEdgeInset}
         />
       ) : null}
       {displayedComponentMenu !== null ? (
@@ -291,6 +294,7 @@ function AppContent(): JSX.Element {
           isMinimapVisible={shouldRenderMinimap}
           position={devtoolsPosition}
           stackName={stackName}
+          onEdgeInsetChange={setToolbarEdgeInset}
         >
           {shouldRenderPanel ? (
             <ServiceStatusPanel
