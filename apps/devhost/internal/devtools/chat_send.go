@@ -7,21 +7,25 @@ import (
 	"time"
 )
 
-func (s *chatSession) send(ctx context.Context, command chatCommand) (err error) {
+func (s *chatSession) send(ctx context.Context, command chatCommand) (delivery chatDelivery, err error) {
 	started := time.Now()
 	defer func() { s.logCommand(command, chatCommandOutcome(err), time.Since(started), err) }()
 	images, err := validateChatImages(command.Images)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if command.Text == "" && len(images) == 0 {
-		return fmt.Errorf("message is empty")
+		return "", fmt.Errorf("message is empty")
+	}
+	messageID, err := chatMessageID(command.CommandID)
+	if err != nil {
+		return "", err
 	}
 	s.operation.Lock()
 	defer s.operation.Unlock()
 	info := s.snapshot()
 	if info.Status == "closed" || info.Status == "starting" {
-		return fmt.Errorf("chat session is %s", info.Status)
+		return "", fmt.Errorf("chat session is %s", info.Status)
 	}
 	s.mu.Lock()
 	if command.Model != nil {
@@ -63,7 +67,7 @@ func (s *chatSession) send(ctx context.Context, command chatCommand) (err error)
 		for _, image := range images {
 			input = append(input, map[string]string{"type": "image", "url": image.dataURL})
 		}
-		params := map[string]any{"threadId": info.NativeSessionID, "input": input}
+		params := map[string]any{"threadId": info.NativeSessionID, "input": input, "clientUserMessageId": messageID}
 		if turnID != "" {
 			params["expectedTurnId"] = turnID
 			_, err = s.process.call(ctx, "turn/steer", params)
@@ -85,6 +89,12 @@ func (s *chatSession) send(ctx context.Context, command chatCommand) (err error)
 			params["model"] = model
 			_, err = s.process.call(ctx, "turn/start", params)
 		}
+		// Codex answers when input is queued; the matching userMessage item marks
+		// pickup. A timeout says nothing about the message, and nothing dedupes a retry.
+		delivery = chatDeliveryQueued
+		if errors.Is(err, context.DeadlineExceeded) {
+			delivery, err = chatDeliveryUnconfirmed, nil
+		}
 	} else {
 		var nativeModel any
 		if model != "" {
@@ -101,7 +111,7 @@ func (s *chatSession) send(ctx context.Context, command chatCommand) (err error)
 			content = append(content, map[string]any{"type": "image", "source": map[string]string{"type": "base64", "media_type": image.mediaType, "data": image.data}})
 		}
 		if err == nil {
-			err = s.process.sendUser(ctx, info.NativeSessionID, content)
+			delivery, err = s.process.sendUser(ctx, info.NativeSessionID, messageID, content)
 		}
 	}
 	if err != nil && !wasActive {
@@ -114,5 +124,8 @@ func (s *chatSession) send(ctx context.Context, command chatCommand) (err error)
 		s.broadcastLocked(chatMessage{Type: "state", Session: s.infoCopyLocked()})
 		s.mu.Unlock()
 	}
-	return err
+	if err != nil {
+		return "", err
+	}
+	return delivery, nil
 }

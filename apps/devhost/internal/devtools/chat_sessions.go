@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"slices"
 	"sync"
 	"time"
 )
@@ -35,6 +36,11 @@ type chatSession struct {
 	model           string
 	configuredModel string
 	clients         map[*websocketClient]struct{}
+	// capabilities are what Claude Code advertised in system/init.
+	capabilities []string
+	// hasStateEvents records that session_state_changed owns the status. A result
+	// alone then proves nothing: a queued message can start right after it.
+	hasStateEvents bool
 }
 
 // newChatStore starts native harnesses through command, or through the installed CLIs when command is nil.
@@ -394,12 +400,15 @@ func (s *chatSession) receive(raw json.RawMessage) {
 			s.turnID = params.Turn.ID
 		}
 	}
+	if frame.Type == "system" && frame.Subtype == "init" {
+		s.capabilities = frame.Capabilities
+	}
 	switch {
 	case frame.Method == "turn/started":
 		s.info.Status = "running"
 		s.info.Error = ""
 		s.active = true
-	case frame.Method == "turn/completed", frame.Type == "result":
+	case frame.Method == "turn/completed", frame.Type == "result" && !s.hasStateEvents:
 		s.info.Status = "idle"
 		s.turnID = ""
 		s.active = false
@@ -407,8 +416,12 @@ func (s *chatSession) receive(raw json.RawMessage) {
 	if frame.Type == "system" && frame.Subtype == "session_state_changed" {
 		switch frame.State {
 		case "idle", "running", "requires_action":
-			s.info.Status = frame.State
+			s.hasStateEvents = true
 			s.active = frame.State != "idle"
+			// A failed turn reports idle after its error result; keep the failure.
+			if frame.State != "idle" || s.info.Status != "error" {
+				s.info.Status = frame.State
+			}
 		}
 	}
 	if len(s.pending) > 0 && s.info.Status != "error" {
@@ -526,8 +539,7 @@ func (s *chatSession) execute(ctx context.Context, command chatCommand) (err err
 		s.mu.Unlock()
 		info := s.snapshot()
 		if info.Harness == chatClaude {
-			_, err := s.process.call(ctx, "interrupt", nil)
-			return err
+			return s.interruptClaude(ctx)
 		}
 		s.mu.Lock()
 		turn := s.turnID
@@ -541,7 +553,33 @@ func (s *chatSession) execute(ctx context.Context, command chatCommand) (err err
 	if command.Type != "send" {
 		return fmt.Errorf("unknown chat command")
 	}
-	return s.send(ctx, command)
+	_, err = s.send(ctx, command)
+	return err
+}
+
+// interruptClaude matches Codex, whose interrupt discards pending input: otherwise
+// Claude Code starts a queued message as soon as the turn stops. Where it cannot be
+// cancelled the receipt lists it as still queued. Resending would deliver it twice.
+func (s *chatSession) interruptClaude(ctx context.Context) error {
+	s.mu.Lock()
+	params := map[string]any{}
+	if slices.Contains(s.capabilities, chatClaudeCancelQueued) {
+		params["cancel_queued"] = true
+	}
+	s.mu.Unlock()
+	result, err := s.process.call(ctx, "interrupt", params)
+	if err != nil {
+		return err
+	}
+	var receipt struct {
+		StillQueued []string `json:"still_queued"`
+	}
+	if json.Unmarshal(result, &receipt) == nil && len(receipt.StillQueued) > 0 {
+		s.mu.Lock()
+		s.logLocked("interrupt left messages queued count=%d", len(receipt.StillQueued))
+		s.mu.Unlock()
+	}
+	return nil
 }
 
 func chatCallContext(ctx context.Context) (context.Context, context.CancelFunc) {

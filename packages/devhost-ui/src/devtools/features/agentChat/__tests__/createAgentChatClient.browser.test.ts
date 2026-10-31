@@ -61,14 +61,14 @@ test("waits for the matching server acknowledgement and does not accept stale ac
   expect(accepted).toHaveBeenCalledOnce();
 });
 
-test("rejects unconfirmed sends on disconnect without replaying them after reconnect", async () => {
+test("a send the connection lost is unconfirmed and is not replayed after reconnect", async () => {
   const connection = await attachSession();
   vi.useFakeTimers();
-  const failure = client.send({ text: "Review this" }, "Review this").catch((error: unknown) => error);
+  const receipt = client.send({ text: "Review this" }, "Review this");
   connection.close(1006);
-  expect(await failure).toEqual(
-    new Error("Connection lost before confirming your message. Check the conversation before retrying."),
-  );
+  await expect(receipt).resolves.toMatchObject({ sessionId: session.id });
+  expect(client.getSnapshot().lastSend?.state).toBe("unconfirmed");
+  expect(client.getSnapshot().sendError).toBeNull();
   await vi.advanceTimersByTimeAsync(1_000);
   expect(sockets.connections).toHaveLength(2);
   const reconnected = sockets.connections[1];
@@ -77,19 +77,45 @@ test("rejects unconfirmed sends on disconnect without replaying them after recon
   expect(reconnected.readSentFrames()).toEqual([]);
 });
 
-test("times out a missing send acknowledgement and releases the pending command", async () => {
+test("a missing send acknowledgement becomes unconfirmed and releases the pending command", async () => {
   const connection = await attachSession();
   vi.useFakeTimers();
-  const rejected = vi.fn();
-  const result = client.send({ text: "Review this" }, "Review this").catch(rejected);
+  const settled = vi.fn();
+  const result = client.send({ text: "Review this" }, "Review this").then(settled);
   const sent = z.object({ commandId: z.string() }).parse(JSON.parse(String(connection.readSentFrames()[0])));
   await vi.advanceTimersByTimeAsync(44_999);
-  expect(rejected).not.toHaveBeenCalled();
+  expect(settled).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(1);
   await result;
-  expect(rejected).toHaveBeenCalledWith(
-    new Error("Your message was not confirmed. Check the conversation before retrying."),
-  );
-  connection.send({ type: "command_result", sessionId: session.id, commandId: sent.commandId });
-  expect(rejected).toHaveBeenCalledOnce();
+  expect(settled).toHaveBeenCalledOnce();
+  expect(client.getSnapshot().lastSend).toMatchObject({ commandId: sent.commandId, state: "unconfirmed" });
+  connection.send({ type: "command_result", sessionId: session.id, commandId: sent.commandId, delivery: "queued" });
+  expect(client.getSnapshot().lastSend?.state).toBe("unconfirmed");
+});
+
+test("records the delivery the server reports", async () => {
+  const connection = await attachSession();
+  const receipt = client.send({ text: "Review this" }, "Review this");
+  expect(client.getSnapshot().lastSend?.state).toBe("sending");
+  const sent = z.object({ commandId: z.string() }).parse(JSON.parse(String(connection.readSentFrames()[0])));
+  connection.send({ type: "command_result", sessionId: session.id, commandId: sent.commandId, delivery: "queued" });
+  await expect(receipt).resolves.toEqual({ sessionId: session.id, commandId: sent.commandId });
+  expect(client.getSnapshot().lastSend?.state).toBe("queued");
+});
+
+test("a definite failure rejects and records the failure", async () => {
+  const connection = await attachSession();
+  const receipt = client.send({ text: "Review this" }, "Review this");
+  const sent = z.object({ commandId: z.string() }).parse(JSON.parse(String(connection.readSentFrames()[0])));
+  connection.send({ type: "command_result", sessionId: session.id, commandId: sent.commandId, error: "Refused" });
+  await expect(receipt).rejects.toThrow("Refused");
+  expect(client.getSnapshot().lastSend?.state).toBe("failed");
+});
+
+test("a message that could not be written is a definite failure", async () => {
+  const connection = await attachSession();
+  connection.close(1000);
+  await waitFor(() => expect(client.getSnapshot().isConnected).toBe(false));
+  await expect(client.send({ text: "Review this" }, "Review this")).rejects.toThrow("disconnected");
+  expect(client.getSnapshot().lastSend?.state).toBe("failed");
 });

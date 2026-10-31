@@ -77,25 +77,28 @@ A missing `sessionId` gets `400` and an unknown one `404`, before the upgrade. d
 
 ### Frames from devhost
 
-| `type`           | Content                                                                      |
-| ---------------- | ---------------------------------------------------------------------------- |
-| `snapshot`       | First frame: the session, every retained `event`, and `pendingRequestIds`.   |
-| `event`          | One CLI event: an increasing `sequence` and the unchanged native `payload`.  |
-| `state`          | Session metadata and the current `pendingRequestIds`.                        |
-| `command_result` | `{sessionId, commandId, error?}` for one `send`, on the socket that sent it. |
-| `error`          | A command that failed and could not be matched to a `commandId`.             |
+| `type`           | Content                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `snapshot`       | First frame: the session, every retained `event`, and `pendingRequestIds`.              |
+| `event`          | One CLI event: an increasing `sequence` and the unchanged native `payload`.             |
+| `state`          | Session metadata and the current `pendingRequestIds`.                                   |
+| `command_result` | `{sessionId, commandId, delivery?, error?}` for one `send`, on the socket that sent it. |
+| `error`          | A command that failed and could not be matched to a `commandId`.                        |
 
 ### Commands to devhost
 
 | `type`      | Fields                                                                                   | Effect                                                |
 | ----------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `send`      | `commandId` (non-empty string), `text`, optional `model`, optional `images: [{dataURL}]` | Starts a turn, or adds the message to the active turn |
-| `interrupt` | none                                                                                     | Interrupts the current turn                           |
+| `interrupt` | none                                                                                     | Interrupts the current turn and cancels queued input  |
 | `respond`   | `requestId` (string or number), native `result`                                          | Answers one pending approval or question              |
 
-- A `send` is acknowledged once the CLI accepts or rejects it, not when the turn ends. Acknowledgements are not shared with other browsers or kept in history.
+- A `send` is acknowledged once devhost knows what became of it, not when the turn ends. `error` means it definitely failed. Otherwise `delivery` is `queued` (the CLI has it), `started` (the agent picked it up), or `unconfirmed` (no evidence arrived in time, so the agent may or may not have it). Acknowledgements are not shared with other browsers or kept in history.
+- A `commandId` that is a lowercase UUID becomes the message's native ID, so its progress can be read from `event` frames: `command_lifecycle` frames with that `command_uuid` and the echoed `user` record for Claude Code, and the `userMessage` item with that `clientId` for Codex. A page reloaded mid-turn reads the same frames from `snapshot`.
+- devhost never resends a message. Neither CLI drops a repeat of a message it has already received, so a resend can run twice. Retrying is up to the person using the chat, after checking the conversation.
 - During an active turn, Codex receives the message through `turn/steer` and Claude Code through its streaming input. Model changes then wait for the next turn. If Codex rejects a steer because the turn just ended, devhost starts a new turn with the message.
-- For Claude Code, devhost confirms a send once the CLI echoes the user message back, so a message that later fails still appears in history.
+- For Claude Code, `queued` comes from the `command_lifecycle` frame the CLI writes on receipt, which is an internal, undocumented frame. Its echo of the user message arrives only at pickup, which a long tool or a pending approval can delay by a minute or more, so without that frame a message reads as `unconfirmed` until the echo arrives. For Codex, the response to `turn/start` or `turn/steer` is `queued`, and the `userMessage` item marks pickup.
+- `interrupt` differs by CLI in what happens to queued input. Codex discards it. Claude Code would run it after the turn stops, so devhost asks it to cancel queued input; versions without that ability still run it.
 - `model` set to an empty string returns to the CLI's configured default; leaving it out keeps the session's current model.
 - Sends from one socket are delivered in order. Approvals and interrupts are handled while a send waits for its acknowledgement.
 
@@ -131,7 +134,7 @@ The page stores its chat state in `localStorage`, under keys starting with `devh
 - the selected harness, model, and session,
 - the unsent text, until the send is acknowledged,
 - the conversation's scroll position,
-- whether the hot reload notice was dismissed.
+- whether the hot reload notice was dismissed, and the session and command of a **Disable Reloads** request the agent has not finished.
 
 Each target keeps its own conversation state, so switching to **devhost** and back restores the project's conversation. Invalid or outdated saved data resets to defaults. Transcripts, screenshots, selections, drawings, screen-sharing permission, and approval answers are never stored in the browser.
 

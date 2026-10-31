@@ -17,6 +17,7 @@ type chatAckTestMessage struct {
 	Type      string `json:"type"`
 	SessionID string `json:"sessionId"`
 	CommandID string `json:"commandId"`
+	Delivery  string `json:"delivery"`
 	Error     string `json:"error"`
 }
 
@@ -75,6 +76,9 @@ func TestChatSendAcknowledgesNativeAcceptance(t *testing.T) {
 	message := readChatAckTest(t, conn)
 	if message.Type != "command_result" || message.CommandID != "accepted-send" || message.SessionID != session.snapshot().ID || message.Error != "" {
 		t.Fatalf("native acceptance acknowledgement=%+v", message)
+	}
+	if message.Delivery != string(chatDeliveryQueued) {
+		t.Fatalf("delivery=%q want=%q", message.Delivery, chatDeliveryQueued)
 	}
 	waitChatState(t, session, "requires_action")
 	session.mu.Lock()
