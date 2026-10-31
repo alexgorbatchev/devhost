@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793422962,
-    "op": "ClearAssignee"
+    "op": "AddComment",
+    "text": "Done, by measuring rather than the CSS anchor the code suggested: anchor() does not resolve from chat's top-layer entry, which a host modal can also move out of the tree. DevtoolsToolbar reports its edge through a ResizeObserver, so a wrapped toolbar is followed too."
   }
 ]
