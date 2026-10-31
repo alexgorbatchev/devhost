@@ -5,9 +5,7 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793416160,
-    "op": "RemoveLink",
-    "kind": "relates",
-    "target": "9cd4032f8a8dd8834d754bec497128e92d80b361",
-    "target_repo": null
+    "op": "SetDescription",
+    "description": "agent-watcher finds terminal agents devhost did not start: Claude Code sessions in 0.1 seconds and Codex in 0.7 to 4.8 seconds, with harness, session ID, PID and working directory. devhost can use that to avoid starting an agent beside one that is already working.\n\nWhen no devhost-owned session is running in the project, check the running agents list from DEVHO-9cd4032f before starting one:\n- If a foreign agent is working or waiting in the checkout, name it and let the user choose. Say so when it is waiting for approval.\n- Otherwise start a session.\n\nDetails:\n- Exclude devhost's own sessions by session ID, which devhost already holds.\n- Ignore subagents.\n- Match the working directory against the checkout, including subdirectories, rather than comparing for equality.\n- Treat a live session with unknown state as running, state unknown.\n- Follow the repository rule for multiple concurrent devhost instances."
   }
 ]
