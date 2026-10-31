@@ -50,7 +50,7 @@ If a Vite-style service binds exclusively to IPv6 (`::1`), `devhost`'s default I
   ```
 - _Note_: `devhost` will emit a startup warning if a listener mismatch is detected.
 
-A health-check mismatch ends at the configured timeout and leaves recovery retryable. A failed repository restart stops its group and shows the failing member's error on every member's recovery page. Correct the listener configuration, then retry **Restart**. Removing `bindHost` selects IPv4 loopback, so verify the app accepts IPv4 before using the default.
+A health-check mismatch ends at the configured timeout and leaves recovery retryable. Its recovery page shows the failure while the repository's other services keep running. A failed worktree switch whose restore also fails stops the repository instead and shows the error on every member's recovery page. Correct the listener configuration, then retry **Restart**. Removing `bindHost` selects IPv4 loopback, so verify the app accepts IPv4 before using the default.
 
 ---
 

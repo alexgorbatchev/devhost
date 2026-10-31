@@ -324,7 +324,10 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantGroupFailure := worktreesEnabled && repository.root != ""
+	wantRepositories := 0
+	if worktreesEnabled && repository.root != "" {
+		wantRepositories = 1
+	}
 	originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
 	defer func() {
 		startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals = originalStart, originalRegister, originalUnregister
@@ -397,10 +400,10 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 		if err != nil || len(health.Services) != 1 || health.Services[0].Status || health.Services[0].Restarting {
 			return false
 		}
-		if wantGroupFailure {
-			return len(health.Repositories) == 1 && !health.Repositories[0].Switching && health.Repositories[0].RunningPath == "" && strings.Contains(health.Repositories[0].Error, "code 1")
+		if len(health.Repositories) != wantRepositories || (wantRepositories == 1 && health.Repositories[0].Error != "") {
+			return false
 		}
-		return len(health.Repositories) == 0 && health.Services[0].ExitCode != nil && *health.Services[0].ExitCode == 1
+		return health.Services[0].ExitCode != nil && *health.Services[0].ExitCode == 1
 	})
 	select {
 	case result := <-done:

@@ -20,15 +20,14 @@ import (
 func TestWorktreeRecoveryAfterBindHostMismatch(t *testing.T) {
 	for _, host := range []string{"127.0.0.1", "::1"} {
 		t.Run(host, func(t *testing.T) {
-			f, url, bindFile := startWorktreeRecoveryStack(t, host, readAlternativeBindHost(host), 1000)
+			f, webURL, bindFile := startWorktreeRecoveryStack(t, host, readAlternativeBindHost(host), 1000)
 			route := readRestartRoute(t, filepath.Join(f.paths.RegistrationsDirectoryPath, "api.recovery.localhost_api_2f.json"))
+			url := serverURL(route.DocumentInjectionPort, "/review?example=review")
 			address := net.JoinHostPort(host, fmt.Sprint(route.AppPort))
 			alternative := net.JoinHostPort(readAlternativeBindHost(host), fmt.Sprint(route.AppPort))
 			failure := fmt.Sprintf("Service api did not pass its health check within 1000ms. TCP health check could not connect to %s. A TCP connection to %s succeeded instead. Set services.api.bindHost = %q in your manifest, or configure the app to listen on %s.", address, alternative, readAlternativeBindHost(host), address)
-			assertWorktreeRecoveryFailure(t, f, url, failure)
-			if !f.logs.contains("Stopping repository shop services (api, web) because service api failed to start.") {
-				t.Fatal("startup failure did not explain why sibling services stop")
-			}
+			assertServiceRecoveryFailure(t, f, url, failure)
+			assertRestartResponse(t, webURL, "web")
 			client := &http.Client{Timeout: 5 * time.Second}
 			restart := func() (int, string) {
 				t.Helper()
@@ -54,7 +53,8 @@ func TestWorktreeRecoveryAfterBindHostMismatch(t *testing.T) {
 				if status != http.StatusServiceUnavailable || strings.TrimSpace(body) != failure {
 					t.Fatalf("failed restart = %d %q", status, body)
 				}
-				assertWorktreeRecoveryFailure(t, f, url, failure)
+				assertServiceRecoveryFailure(t, f, url, failure)
+				assertRestartResponse(t, webURL, "web")
 			}
 			if err := os.WriteFile(bindFile, []byte(host), 0600); err != nil {
 				t.Fatal(err)
@@ -66,7 +66,7 @@ func TestWorktreeRecoveryAfterBindHostMismatch(t *testing.T) {
 			if state.Phase != "ready" || state.Message != "" {
 				t.Fatalf("successful restart retained recovery: %#v", state)
 			}
-			assertRestartResponse(t, url, "web")
+			assertRestartResponse(t, webURL, "web")
 			health, err := f.control.GetHealthResponse()
 			if err != nil {
 				t.Fatal(err)
@@ -151,25 +151,27 @@ func startWorktreeRecoveryStack(t *testing.T, host, listenHost string, timeout i
 	return f, serverURL(route.DocumentInjectionPort, "/review?example=review"), bindFile
 }
 
-func assertWorktreeRecoveryFailure(t *testing.T, f *reloadStackFixture, url, failure string) {
+// assertServiceRecoveryFailure checks that api alone is down: its failure leaves the
+// repository usable and web, which shares the repository, running.
+func assertServiceRecoveryFailure(t *testing.T, f *reloadStackFixture, url, failure string) {
 	t.Helper()
 	state := readStartupRecoveryState(t, url)
 	if state.Phase != "unavailable" || !state.CanRestart || state.Message != failure {
-		t.Fatalf("failed repository recovery state = %#v", state)
+		t.Fatalf("failed service recovery state = %#v", state)
 	}
 	if page := readStartupRecoveryPage(t, url); !strings.Contains(html.UnescapeString(page), failure) {
-		t.Fatalf("recovery page hides repository failure: %s", page)
+		t.Fatalf("recovery page hides the service failure: %s", page)
 	}
 	health, err := f.control.GetHealthResponse()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(health.Repositories) != 1 || health.Repositories[0].Switching || health.Repositories[0].Error != failure {
-		t.Fatalf("failed repository health = %#v", health.Repositories)
+	if len(health.Repositories) != 1 || health.Repositories[0].Switching || health.Repositories[0].Error != "" {
+		t.Fatalf("failed service changed its repository: %#v", health.Repositories)
 	}
 	for _, service := range health.Services {
-		if service.Status || service.Restarting {
-			t.Fatalf("failed restart retained active service state: %#v", health.Services)
+		if service.Restarting || service.Status != (service.Name == "web") {
+			t.Fatalf("failed service health = %#v", health.Services)
 		}
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -428,26 +427,6 @@ func (r *stackRuntime) stopGroup(names []string) error {
 	for i := len(names) - 1; i >= 0; i-- {
 		err = appendCleanupError(err, r.stop(names[i]))
 		r.clearRestarting(names[i])
-	}
-	return err
-}
-
-func (r *stackRuntime) failWorktreeStartup(name string, err error) error {
-	for _, repo := range r.worktrees.snapshot() {
-		for _, member := range repo.ServiceNames {
-			if member != name {
-				continue
-			}
-			cliout.Log(r.options.LogWriter, r.manifest.Name, fmt.Sprintf("%v Stopping repository %s services (%s) because service %s failed to start.", err, repo.Name, strings.Join(r.orderedGroup(repo.ServiceNames), ", "), name))
-			err = joinCleanupError(err, r.stopGroup(r.orderedGroup(repo.ServiceNames)))
-			r.manifestMu.Lock()
-			for _, name := range repo.ServiceNames {
-				r.blocked[name] = err.Error()
-			}
-			r.manifestMu.Unlock()
-			r.logFailure(name, err)
-			return nil
-		}
 	}
 	return err
 }

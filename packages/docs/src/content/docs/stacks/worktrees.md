@@ -20,7 +20,7 @@ enabled = false
 
 devhost validates the target first. If its manifest is invalid, the current stack keeps running. Otherwise it stops every managed service, loads the target checkout's manifest and includes, starts the services there, and reloads the page at the same URL. If that URL no longer has a route, the 404 page lists the routes that do. If the new services fail to start, devhost tries to restore the previous checkout.
 
-The services of one repository succeed or fail together. If one fails its health check, they all stop and each one's recovery page shows that error; restarting any of them retries the whole repository.
+If that restore fails too, the repository's services stay stopped, each one's recovery page shows the error, and restarting any of them retries the whole repository. A service that fails during an ordinary `devhost start` stops nothing else: the repository's other services keep running, and **Restart** retries the one that failed.
 
 The stack takes all of the target manifest's settings, including its `name` and its services, which can differ from the checkout you left. The terminal logs the source and target checkout before and after a switch.
 

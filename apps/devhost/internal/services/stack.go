@@ -470,12 +470,6 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 
-	groupedServices := map[string]bool{}
-	for _, repo := range worktrees.snapshot() {
-		for _, name := range repo.ServiceNames {
-			groupedServices[name] = true
-		}
-	}
 	for _, serviceName := range serviceOrder {
 		service, ok := manifest.Services[serviceName]
 		if !ok {
@@ -486,31 +480,19 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		if isManagedService(service) && blocked[serviceName] == "" {
-			if groupedServices[serviceName] {
-				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
-					if lifecycleCtx.Err() != nil {
-						return 0, err
-					}
-					if err := state.failWorktreeStartup(serviceName, err); err != nil {
-						return 0, err
-					}
+			if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
+				if lifecycleCtx.Err() != nil {
+					return 0, err
 				}
-				service = manifest.Services[serviceName]
-			} else {
-				if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
-					if lifecycleCtx.Err() != nil {
-						return 0, err
-					}
-					state.logFailure(serviceName, err)
-					state.startedMu.Lock()
-					started := findStartedService(state.started, serviceName)
-					state.startedMu.Unlock()
-					if started != nil && started.unexpectedExitCode() != nil {
-						state.exits <- serviceExitResult{exitCode: *started.unexpectedExitCode(), serviceName: serviceName}
-					}
+				state.logFailure(serviceName, err)
+				state.startedMu.Lock()
+				started := findStartedService(state.started, serviceName)
+				state.startedMu.Unlock()
+				if started != nil && started.unexpectedExitCode() != nil {
+					state.exits <- serviceExitResult{exitCode: *started.unexpectedExitCode(), serviceName: serviceName}
 				}
-				service = manifest.Services[serviceName]
 			}
+			service = manifest.Services[serviceName]
 		}
 
 		if len(service.Hosts) == 0 || service.Port == nil {
