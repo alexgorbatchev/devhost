@@ -4,39 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "agent-watcher: honor CLAUDE_CONFIG_DIR when finding sessions",
-    "kind": "bug",
-    "description": "`DefaultClaudeSessionDirs` hardcodes `~/.claude/sessions` and never reads `CLAUDE_CONFIG_DIR`, so a relocated config probably hides every session. First confirm that Claude Code writes session files under that directory."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "low"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "agent-watcher"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "timestamp": 1793418422,
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
