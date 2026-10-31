@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Make Stop mean the same thing on both harnesses",
+    "kind": "bug",
+    "description": "Claude Code keeps queued input through an interrupt and runs it afterwards, while Codex discards it. devhost's Stop treats both the same, so stopping Claude Code can start a queued message.\n\nUse `interrupt` with `cancel_queued: true` when `interrupt_cancel_queued_v1` is advertised, and handle the `still_queued` receipt. Do not resend after that receipt, because a resend delivers the message twice. Define what the browser shows for cancelled messages on both harnesses."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "medium"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "chat"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
