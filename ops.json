@@ -5,38 +5,10 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "agent-watcher: expose Claude Code session status",
-    "kind": "task",
-    "description": "A live process does not mean a working agent, but Claude Code records the difference. `~/.claude/sessions/<pid>.json` has a `status` field. In a `claude -p` stream-json run it went `busy`, `waiting` during a pending approval, `busy`, then `idle`. `scanner.SessionDescriptor` reads `Status`, and `discover` then discards it.\n\nChange:\n- Parse `statusUpdatedAt` and `entrypoint`.\n- Carry them through the snapshot API.\n- Map status to working, waiting, idle or unknown.\n\nConstraints:\n- The field is undocumented and was measured on one version, 2.1.310. Unrecognized values map to unknown.\n- `shell` also appears on interactive sessions and its meaning is not established.\n- Headless sessions report `kind: interactive`, so use `entrypoint: sdk-cli` to identify them."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "high"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "agent-watcher"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "op": "AddLink",
+    "kind": "blocks",
+    "target": "fa2305983e15144c9bd72914ceee30431e1c02cc",
+    "target_repo": null,
+    "target_label": null
   }
 ]
