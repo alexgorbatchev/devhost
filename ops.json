@@ -5,38 +5,10 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "agent-watcher: add a one-shot session snapshot API",
-    "kind": "task",
-    "description": "`watcher.Run` is the wrong layer for a page action. With no saved cursors it read the full history of every running session: 75,346 events and 4.7 GB of cumulative allocation in 13 seconds.\n\n`scanner` does the same discovery one-shot: 98 ms and 17.4 MB for Claude Code, and 238 ms and 69.6 MB for a cold Codex scan of 148 rollouts. Calling it directly would make devhost copy the normalization in `discovery.go` for all four harnesses.\n\nAdd a public `Snapshot(ctx, Config)` over `discover` that returns live sessions and needs no cursors, tailers, session tracker or handler. Each result needs harness, version, session ID, PID, working directory, start time, last activity, subagent flag and transcript path."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "high"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "agent-watcher"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "op": "AddLink",
+    "kind": "blocks",
+    "target": "ff00bbcb931e9c624a30c0e831a26feab07ce8aa",
+    "target_repo": null,
+    "target_label": null
   }
 ]
