@@ -4,11 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793415989,
-    "op": "AddLink",
-    "kind": "relates",
-    "target": "1032262755eefeafc33ca9fedf63b15ba7a586d7",
-    "target_repo": null,
-    "target_label": null
+    "timestamp": 1793424106,
+    "op": "SetStatus",
+    "status": "in-progress"
   }
 ]
