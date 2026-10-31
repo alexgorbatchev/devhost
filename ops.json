@@ -5,7 +5,7 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793424383,
-    "op": "AddComment",
-    "text": "All child tickets are done. agent-parser and agent-watcher changes are on main and consumed through pseudo-versions, because those repositories require explicit authorization for releases."
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
