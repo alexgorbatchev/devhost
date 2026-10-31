@@ -5,38 +5,10 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "Stop reporting delivered Claude Code messages as failed",
-    "kind": "bug",
-    "description": "devhost confirms a Claude Code send only when `--replay-user-messages` echoes it, and gives up after 30 seconds (`chatCallContext`, `chat_sessions.go`; the browser gives up at 45 seconds in `createAgentChatClient.ts`). The echo arrives when Claude Code picks the message up, not when it receives it. A message sent during a long tool call took 43.5 seconds to echo, and one sent during a pending approval took 38.4 seconds, so delivered messages are reported as failed. On timeout `exchange` also removes the pending entry (`chat_process.go`), so a late echo confirms nothing.\n\nA resend is not safe. A second UUID delivers the message twice. The same UUID is dropped silently mid-turn, and after completion it is echoed but nothing runs.\n\nChange:\n- When `system/init` advertises `msg_lifecycle_v1`, settle the pending `user:<uuid>` on the `command_lifecycle` `queued` frame for that `command_uuid`.\n- Fail the send on `refused`, `discarded` or `cancelled`.\n- `command_lifecycle` is internal and missing from the SDK message types. Without the capability, a successful write that times out returns a distinct unconfirmed result, keeps the pending entry so a late echo can settle it, and releases the socket send worker.\n- Replace the browser message state with `sending`, `queued`, `started`, `unconfirmed` and `failed`.\n- Tell the user to check the conversation before retrying. Retry only on user action, and restore the draft only on a definite failure.\n\nDone when a message sent during a long tool call or a pending approval shows as queued within a second and never as failed, with Go tests covering both the lifecycle path and the fallback. Go tests must not run the machine's `claude`."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "high"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "chat"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "op": "AddLink",
+    "kind": "blocks",
+    "target": "1032262755eefeafc33ca9fedf63b15ba7a586d7",
+    "target_repo": null,
+    "target_label": null
   }
 ]
