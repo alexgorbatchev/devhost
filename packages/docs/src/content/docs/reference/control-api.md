@@ -27,6 +27,7 @@ Requests that change something, and every WebSocket, must come from the routed p
 - A request body must be `Content-Type: application/json`, or the request gets `415 Unsupported Media Type`.
 - Starting, resuming, or closing a chat session, and the chat WebSocket, also require an `Origin`, so only a page can drive an agent.
 - The config editor routes apply the `Host` rule to reads as well, because they return file contents.
+- Live agent activity answers only at `http://127.0.0.1:<port>`, because application scripts can read anything on a routed hostname.
 
 Buttons on startup and recovery pages follow only the cross-origin rule, because those pages are served on the service's own hostname.
 
@@ -34,24 +35,25 @@ An authenticating proxy in front of devhost still applies its own rules; a sign-
 
 ## HTTP endpoints
 
-| Endpoint                                | Methods       | Purpose                                                                                            |
-| --------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| `/__devhost__/inject.js`                | `GET`         | The toolbar script that page loads include                                                         |
-| `/__devhost__/config.json`              | `GET`         | Instance configuration for the toolbar                                                             |
-| `/__devhost__/restart-service`          | `POST`        | Restart managed services                                                                           |
-| `/__devhost__/restart-stack`            | `POST`        | Restart every managed service with new automatic ports                                             |
-| `/__devhost__/worktrees`                | `GET`, `POST` | Refresh worktree state, or switch the selected checkout                                            |
-| `/__devhost__/react-highlight/cursor`   | `POST`        | Publish an editor cursor position; see [Highlight source locations](../../guides/react-highlight/) |
-| `/__devhost__/config/files`             | `GET`         | The files the config editor can change, with contents                                              |
-| `/__devhost__/config/schema`            | `GET`         | The settings each kind of file accepts                                                             |
-| `/__devhost__/config/validate`          | `POST`        | Check unsaved content with the checks a reload runs                                                |
-| `/__devhost__/config/save`              | `POST`        | Write checked content over the version it was edited from                                          |
-| `/__devhost__/chat/panel`               | `GET`, `PUT`  | The saved chat panel position; see [Panel position](../chat-api/#panel-position)                   |
-| `/__devhost__/chat/harnesses`           | `GET`         | Installed coding agents and their models                                                           |
-| `/__devhost__/chat/sessions`            | `GET`, `POST` | List chat sessions, or start or resume one                                                         |
-| `/__devhost__/chat/sessions/<id>/close` | `POST`        | End a chat session's process                                                                       |
-| `/__devhost__/agents`                   | `GET`         | Agents running in the checkout; see [Running agents](../chat-api/#running-agents)                  |
-| `/__devhost__/redux.js`                 | `GET`         | Store registration module; see [Redux Toolkit and Zustand](../../integrations/redux/)              |
+| Endpoint                                | Methods       | Purpose                                                                                                        |
+| --------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
+| `/__devhost__/inject.js`                | `GET`         | The toolbar script that page loads include                                                                     |
+| `/__devhost__/config.json`              | `GET`         | Instance configuration for the toolbar                                                                         |
+| `/__devhost__/restart-service`          | `POST`        | Restart managed services                                                                                       |
+| `/__devhost__/restart-stack`            | `POST`        | Restart every managed service with new automatic ports                                                         |
+| `/__devhost__/worktrees`                | `GET`, `POST` | Refresh worktree state, or switch the selected checkout                                                        |
+| `/__devhost__/react-highlight/cursor`   | `POST`        | Publish an editor cursor position; see [Highlight source locations](../../guides/react-highlight/)             |
+| `/__devhost__/config/files`             | `GET`         | The files the config editor can change, with contents                                                          |
+| `/__devhost__/config/schema`            | `GET`         | The settings each kind of file accepts                                                                         |
+| `/__devhost__/config/validate`          | `POST`        | Check unsaved content with the checks a reload runs                                                            |
+| `/__devhost__/config/save`              | `POST`        | Write checked content over the version it was edited from                                                      |
+| `/__devhost__/agents/activity`          | `GET`         | Live agent activity, on the control server's own address only; see [Live activity](../chat-api/#live-activity) |
+| `/__devhost__/chat/panel`               | `GET`, `PUT`  | The saved chat panel position; see [Panel position](../chat-api/#panel-position)                               |
+| `/__devhost__/chat/harnesses`           | `GET`         | Installed coding agents and their models                                                                       |
+| `/__devhost__/chat/sessions`            | `GET`, `POST` | List chat sessions, or start or resume one                                                                     |
+| `/__devhost__/chat/sessions/<id>/close` | `POST`        | End a chat session's process                                                                                   |
+| `/__devhost__/agents`                   | `GET`         | Agents running in the checkout; see [Running agents](../chat-api/#running-agents)                              |
+| `/__devhost__/redux.js`                 | `GET`         | Store registration module; see [Redux Toolkit and Zustand](../../integrations/redux/)                          |
 
 The chat endpoints are described in the [Chat API](../chat-api/).
 

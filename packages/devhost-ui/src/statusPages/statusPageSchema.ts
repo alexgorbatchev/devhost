@@ -57,7 +57,7 @@ export const recoverySchema = worktreesSchema.extend({
 });
 
 export const statusPageSchema = z.object({
-  kind: z.enum(["recovery", "not-found", "unavailable", "stacks", "files", "previews"]),
+  kind: z.enum(["recovery", "not-found", "unavailable", "stacks", "files", "previews", "agent-activity"]),
   status: z.number(),
   title: z.string(),
   message: z.string(),

@@ -14,10 +14,12 @@ const STATE_LABELS: Readonly<Record<RunningAgent["state"], string>> = {
 
 interface IRunningAgentsPanelProps {
   agents: readonly RunningAgent[];
+  /** Opens the activity page, on an origin application scripts cannot read. Empty hides the link. */
+  activityURL: string;
 }
 
-/** Lists the agents in this checkout, including ones devhost did not start. The list only reports: it sends nothing. */
-export function RunningAgentsPanel({ agents }: IRunningAgentsPanelProps): JSX.Element | null {
+/** Lists the agents in this checkout, including ones devhost did not start. It only reports: it sends nothing. */
+export function RunningAgentsPanel({ agents, activityURL }: IRunningAgentsPanelProps): JSX.Element | null {
   if (agents.length === 0) return null;
   const isWorking = agents.some((agent) => agent.state === "working");
   return (
@@ -48,6 +50,11 @@ export function RunningAgentsPanel({ agents }: IRunningAgentsPanelProps): JSX.El
           </li>
         ))}
       </ul>
+      {activityURL === "" ? null : (
+        <a className="underline" href={activityURL} rel="noreferrer" target="_blank">
+          Watch Live Activity
+        </a>
+      )}
     </ToolbarPopover>
   );
 }

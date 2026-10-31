@@ -1,6 +1,8 @@
 import { ButtonLink, Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@alexgorbatchev/shadcn";
 import type { ReactElement } from "react";
+import { createAgentActivityStreamURL } from "../createAgentActivityStreamURL";
 import type { IRecoveryClient, StatusPageData } from "../types";
+import { AgentActivityPage } from "./AgentActivityPage";
 import { RecoveryPage } from "./RecoveryPage";
 import { StatusFrame } from "./StatusFrame";
 import { StackDirectoryPage } from "./StackDirectoryPage";
@@ -18,6 +20,14 @@ export function StatusPage({ data, client }: IStatusPageProps): ReactElement {
   if (data.kind === "stacks") return <StackDirectoryPage stacks={data.stacks ?? []} query={data.query ?? ""} />;
   if (data.kind === "files" && data.files) return <FilePage data={data.files} />;
   if (data.kind === "previews") return <PreviewGallery />;
+  if (data.kind === "agent-activity")
+    return (
+      <AgentActivityPage
+        title={data.title}
+        message={data.message}
+        streamURL={createAgentActivityStreamURL(window.location)}
+      />
+    );
   return (
     <StatusFrame
       status={data.status}

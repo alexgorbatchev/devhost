@@ -33,6 +33,7 @@ const storybookInjectedConfig: IInjectedDevtoolsConfig = {
   configEditorEnabled: false,
   homeDirectoryPath: "/home/alex",
   devhostSourceRootPath: "",
+  controlOrigin: "",
   editorEnabled: true,
   externalToolbarsEnabled: true,
   minimapEnabled: true,

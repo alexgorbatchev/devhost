@@ -5,7 +5,8 @@ go 1.26.7
 require github.com/BurntSushi/toml v1.5.0
 
 require (
-	github.com/alexgorbatchev/agent-watcher v1.0.2-0.20261031034628-d9cc3ebc4b03
+	github.com/alexgorbatchev/agent-parser v1.0.2-0.20261031034511-b1bb4e003d79
+	github.com/alexgorbatchev/agent-watcher v1.0.2-0.20261031050843-e58550425ef9
 	github.com/alexgorbatchev/cobra-help-tree/v3 v3.0.0
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/chromedp/cdproto v0.157.8
@@ -23,7 +24,6 @@ require (
 )
 
 require (
-	github.com/alexgorbatchev/agent-parser v1.0.2-0.20261031034511-b1bb4e003d79 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect

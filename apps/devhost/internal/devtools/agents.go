@@ -88,8 +88,8 @@ func readAgentsInCheckout(sessions []watcher.Session, root string, ownedSessionI
 		if session.Subagent || session.CWD == "" {
 			continue
 		}
-		relative, err := filepath.Rel(resolvedRoot, session.CWD)
-		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		relative, isInside := readCheckoutSubdirectory(session.CWD, resolvedRoot)
+		if !isInside {
 			continue
 		}
 		agents = append(agents, runningAgent{
@@ -102,6 +102,27 @@ func readAgentsInCheckout(sessions []watcher.Session, root string, ownedSessionI
 		return cmp.Or(cmp.Compare(agentStateRank(a.State), agentStateRank(b.State)), cmp.Compare(b.LastActivity, a.LastActivity), cmp.Compare(a.Key, b.Key))
 	})
 	return agents
+}
+
+// readCheckoutSubdirectory returns where cwd sits inside root, which must be resolved.
+func readCheckoutSubdirectory(cwd, root string) (string, bool) {
+	relative, err := filepath.Rel(root, cwd)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return relative, true
+}
+
+func isInCheckout(cwd, root string) bool {
+	if cwd == "" {
+		return false
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		resolvedRoot = root
+	}
+	_, isInside := readCheckoutSubdirectory(cwd, resolvedRoot)
+	return isInside
 }
 
 // agentStateRank lists an agent that needs someone first, and a quiet one last.
@@ -152,7 +173,11 @@ func (s *ControlServer) handleAgents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *chatStore) logAgentScanFailure(err error) {
+	s.logLine(fmt.Sprintf("running agents scan failed error=%q", chatLogError(err)))
+}
+
+func (s *chatStore) logLine(line string) {
 	if s.log != nil {
-		s.log(fmt.Sprintf("running agents scan failed error=%q", chatLogError(err)))
+		s.log(line)
 	}
 }

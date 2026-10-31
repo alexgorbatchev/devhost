@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	watcher "github.com/alexgorbatchev/agent-watcher"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/hostusage"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
@@ -147,6 +148,7 @@ type ControlServer struct {
 	settings          ControlSettings
 	chat              *chatStore
 	agents            *agentScanner
+	runAgentWatcher   agentWatcherFunc
 	chatPanelFile     string
 	homeDirectoryPath string
 	ownsDocumentURL   func(int, string) (bool, error)
@@ -216,6 +218,7 @@ type injectedConfig struct {
 	Position                string                  `json:"position"`
 	ProjectRootPath         string                  `json:"projectRootPath"`
 	DevhostSourceRootPath   string                  `json:"devhostSourceRootPath"`
+	ControlOrigin           string                  `json:"controlOrigin"`
 	StackName               string                  `json:"stackName"`
 	EditorEnabled           bool                    `json:"editorEnabled"`
 	ExternalToolbarsEnabled bool                    `json:"externalToolbarsEnabled"`
@@ -333,9 +336,12 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	}
 	controlServer.chat = newChatStore(controlServer.ctx, options.chatCommand)
 	controlServer.agents = newAgentScanner()
+	controlServer.runAgentWatcher = watcher.Run
 	controlServer.chatPanelFile = options.ChatPanelFile
 	controlServer.chat.log = controlServer.logChat
 	mux.HandleFunc(agentsPath, controlServer.whileChatEnabled(controlServer.handleAgents))
+	mux.HandleFunc(agentActivityPath, controlServer.whileChatEnabled(controlServer.handleAgentActivityPage))
+	mux.HandleFunc(agentActivityWebsocketPath, controlServer.whileChatEnabled(controlServer.handleAgentActivityWebsocket))
 	mux.HandleFunc(chatPanelPath, controlServer.whileChatEnabled(controlServer.handleChatPanel))
 	mux.HandleFunc(chatHarnessesPath, controlServer.whileChatEnabled(controlServer.handleChatHarnesses))
 	mux.HandleFunc(chatSessionsPath, controlServer.whileChatEnabled(controlServer.handleChatSessions))
