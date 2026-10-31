@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Correlate Codex sends with clientUserMessageId",
+    "kind": "bug",
+    "description": "Codex has the same ambiguity as Claude Code. A `turn/steer` response means only that input was queued, nothing dedupes a retry, and an interrupt discards pending input. A timeout leaves the outcome unknown.\n\nChange:\n- Send `clientUserMessageId` on `turn/start` and `turn/steer`.\n- Treat the RPC response as queued, and settle as started on the matching userMessage item.\n- Treat an RPC timeout as unconfirmed, using the same browser states as the Claude Code work.\n\nAlso check whether Codex rollouts record `clientUserMessageId`. The 20 most recent rollouts on the test machine do not, but devhost does not send it yet, so that sample proves nothing."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "medium"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "chat"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
