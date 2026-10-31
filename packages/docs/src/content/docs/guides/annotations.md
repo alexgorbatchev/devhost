@@ -28,7 +28,9 @@ The agent works in the checkout the page belongs to. After a [worktree switch](.
 
 ## Talk to the agent
 
-Chat opens compact, showing a working spinner and then the latest reply. **Expand Chat** shows the whole conversation with streamed replies and tool activity, with consecutive tool calls in one collapsible group; **Compact Chat** goes back. The panel can sit on either side of the page, and collapsing it does not stop the agent. The **Chat** button shows a spinner while the agent works or waits for you.
+Chat opens compact, showing a working spinner and then the latest reply. **Expand Chat** shows the whole conversation with streamed replies and tool activity, with consecutive tool calls in one collapsible group; **Compact Chat** goes back. The panel opens at the same edge as the toolbar's popups, on either side of the page, and collapsing it does not stop the agent.
+
+Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts. On phone-sized screens the panel stays docked. The **Chat** button shows a spinner while the agent works or waits for you.
 
 | To                            | Use                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------- |

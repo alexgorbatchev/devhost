@@ -1,4 +1,4 @@
-import { useState, type JSX, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from "react";
 
 import { cn } from "../../../lib/utils";
 import type { DevtoolsPosition } from "../devtoolsConfig";
@@ -10,6 +10,8 @@ interface IDevtoolsToolbarProps {
   isMinimapVisible: boolean;
   position: DevtoolsPosition;
   stackName: string;
+  /** Reports how far the toolbar's segments reach from their viewport edge, where toolbar popups start. */
+  onEdgeInsetChange?: (inset: number) => void;
 }
 
 /**
@@ -19,6 +21,25 @@ interface IDevtoolsToolbarProps {
 export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const toggleLabel: string = `${isCollapsed ? "Expand" : "Collapse"} devhost toolbar`;
+  const edgeReference = useRef<HTMLButtonElement | null>(null);
+  const { onEdgeInsetChange, position } = props;
+  useLayoutEffect(() => {
+    const edge = edgeReference.current;
+    if (edge === null || onEdgeInsetChange === undefined) return;
+    const report = (): void => {
+      const { top, bottom } = edge.getBoundingClientRect();
+      onEdgeInsetChange(position === "top-right" ? bottom : document.documentElement.clientHeight - top);
+    };
+    report();
+    // Segments can wrap onto a second row, and a resize moves the bottom edge without resizing the toolbar.
+    const resizes = new ResizeObserver(report);
+    if (edge.parentElement !== null) resizes.observe(edge.parentElement);
+    window.addEventListener("resize", report);
+    return () => {
+      resizes.disconnect();
+      window.removeEventListener("resize", report);
+    };
+  }, [onEdgeInsetChange, position]);
 
   return (
     <div
@@ -41,6 +62,7 @@ export function DevtoolsToolbar(props: IDevtoolsToolbarProps): JSX.Element {
         role="toolbar"
       >
         <button
+          ref={edgeReference}
           aria-expanded={!isCollapsed}
           aria-label={toggleLabel}
           className="flex min-h-6 max-w-full shrink-0 items-center gap-1 px-1 enabled:hover:bg-secondary"

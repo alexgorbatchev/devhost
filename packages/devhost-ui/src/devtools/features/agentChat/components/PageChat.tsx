@@ -30,6 +30,7 @@ import { ChatTargetToggle } from "./ChatTargetToggle";
 import { PageAnnotationToolbar } from "./PageAnnotationToolbar";
 import { PageContextList } from "./PageContextList";
 import { useTabShare } from "../../visualAnnotations/hooks/useTabShare";
+import type { DevtoolsPosition } from "../../../shared/devtoolsConfig";
 import type { ChatTarget, DevtoolsSettingsStore } from "../../../shared/types";
 import { AnnotationTopLayer } from "../../../shared/components/AnnotationTopLayer";
 import { useScreenshotSelection } from "../../visualAnnotations/hooks/useScreenshotSelection";
@@ -56,6 +57,8 @@ interface IPageChatProps {
   /** A sent request whose outcome the caller is waiting for, which can outlive the page that sent it. */
   trackedRequest?: IChatReceipt | null;
   onTrackedRequestSettled?: () => void;
+  toolbarPosition?: DevtoolsPosition;
+  toolbarEdgeInset?: number | null;
 }
 
 export function PageChat({
@@ -71,6 +74,8 @@ export function PageChat({
   onRequestedMessageTaken,
   trackedRequest,
   onTrackedRequestSettled,
+  toolbarPosition,
+  toolbarEdgeInset,
 }: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
   const screenshotSelection = useScreenshotSelection(sharing.stream);
@@ -255,6 +260,8 @@ export function PageChat({
             sharing={{ ...sharing, shouldIncludeSnapshot, setShouldIncludeSnapshot }}
             chat={chat}
             composerInputRef={composerInputReference}
+            toolbarPosition={toolbarPosition}
+            toolbarEdgeInset={toolbarEdgeInset}
             headerControls={
               onTargetChange ? (
                 <ChatTargetToggle target={target} isDisabled={chat.isPreparing} onTargetChange={onTargetChange} />

@@ -16,6 +16,7 @@ import { ChatQuestionField } from "../../questions/components/ChatQuestionField"
 import { readChatApproval } from "../../readChatApproval";
 import { readChatQuestions } from "../../readChatQuestions";
 import type { FetchFunction } from "../../../../shared/pristineFetch";
+import type { DevtoolsPosition } from "../../../../shared/devtoolsConfig";
 import type { RunningAgent } from "../../../../shared/readRunningAgents";
 import type { ChatTarget } from "../../../../shared/types";
 import { useAgentChat } from "../../hooks/useAgentChat";
@@ -30,6 +31,18 @@ import { fixture_devhostSession, fixture_reloadEvents, fixture_reloadSession } f
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { IAnnotationPoint } from "../../../visualAnnotations/types";
 import { cdp, userEvent as nativeUserEvent } from "vitest/browser";
+import { z } from "zod";
+
+/** Opens a toolbar popup and returns the rectangle it opens at, then closes it. */
+export async function readToolbarPopupRectangle(canvasElement: HTMLElement): Promise<DOMRect> {
+  const canvas = within(canvasElement);
+  await userEvent.click(await canvas.findByRole("button", { name: "Running agents: 1" }));
+  const popup = await canvas.findByRole("region", { name: "Running agents" });
+  await waitFor(() => expect(popup.matches(":popover-open")).toBe(true));
+  const rectangle = popup.getBoundingClientRect();
+  await userEvent.keyboard("{Escape}");
+  return rectangle;
+}
 
 /** Opens the saved session through the same controls as a user. */
 export async function openSavedChatConversation(canvasElement: HTMLElement): Promise<void> {
@@ -79,6 +92,16 @@ let liveChatConnection: IMockWebSocketConnection | null = null;
 let liveChatStatus: IChatSession["status"] = fixture_reloadSession.status;
 let liveChatEvents: IChatEvent[] = [];
 let liveAgents: readonly RunningAgent[] = [];
+let savedChatPanelPosition: unknown = null;
+
+/** The panel position the server holds, which a page restores when it loads. */
+export function saveChatPanelPosition(position: unknown): void {
+  savedChatPanelPosition = position;
+}
+
+export function readSavedChatPanelPosition(): unknown {
+  return savedChatPanelPosition;
+}
 
 /** Sets the running agents the server reports, which take effect on the next list. */
 export function reportRunningAgents(agents: readonly RunningAgent[]): void {
@@ -172,6 +195,7 @@ export function installChatReloadServer(
   events: readonly IChatEvent[] = fixture_reloadEvents,
   devhostSourceRootPath = "",
   initialSessions: readonly IChatSession[] = [fixture_reloadSession],
+  position: DevtoolsPosition = "bottom-right",
 ): VoidFunction {
   const restoreCatalog = installPageChatCatalog();
   const catalogFetch = globalThis.fetch;
@@ -180,6 +204,7 @@ export function installChatReloadServer(
   liveChatEvents = [...events];
   const originalConfig: unknown = Reflect.get(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME);
   Reflect.set(globalThis, DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME, {
+    position,
     projectRootPath: fixture_reloadSession.projectRootPath,
     devhostSourceRootPath,
     chatEnabled: true,
@@ -190,9 +215,15 @@ export function installChatReloadServer(
   });
   const sessions: IChatSession[] = [...initialSessions];
   liveAgents = [];
+  savedChatPanelPosition = null;
   const fetch: FetchFunction = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
     if (url.pathname === "/__devhost__/agents") return Response.json({ agents: liveAgents });
+    if (url.pathname === "/__devhost__/chat/panel") {
+      if (init?.method !== "PUT") return Response.json({ position: savedChatPanelPosition });
+      savedChatPanelPosition = z.object({ position: z.unknown() }).parse(JSON.parse(String(init.body))).position;
+      return new Response(null, { status: 204 });
+    }
     const closing = sessions.findIndex((session) => url.pathname === `/__devhost__/chat/sessions/${session.id}/close`);
     if (closing !== -1 && init?.method === "POST") {
       const closed: IChatSession = { ...sessions[closing], status: "closed" };

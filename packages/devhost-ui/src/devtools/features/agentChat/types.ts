@@ -47,6 +47,14 @@ export type ChatDecision =
   | { kind: "sessions"; sessions: readonly IChatSession[] };
 export type ChatDecisionAnswer = { kind: "start" } | { kind: "cancel" } | { kind: "join"; session: IChatSession };
 export type ChatDecisionHandler = (answer: ChatDecisionAnswer) => void;
+export interface IChatPanelPosition {
+  left: number;
+  top: number;
+}
+export interface IChatPanelSize {
+  width: number;
+  height: number;
+}
 export interface IChatSession {
   id: string;
   harness: ChatHarnessId;

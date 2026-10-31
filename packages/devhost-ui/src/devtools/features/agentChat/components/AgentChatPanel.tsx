@@ -4,9 +4,17 @@ import { lazy, Suspense, useEffect, useState, type JSX, type ReactNode, type Ref
 import { useStore } from "zustand";
 import { cn } from "../../../../lib/utils";
 import { formatChatSessionLabel } from "../formatChatSessionLabel";
+import type { DevtoolsPosition } from "../../../shared/devtoolsConfig";
 import type { IAgentChatController } from "../types";
 import { ApprovalRequests } from "./ApprovalRequests";
-import { ArrowLeftRightIcon, ChevronDownIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react";
+import {
+  ArrowLeftRightIcon,
+  ChevronDownIcon,
+  GripVerticalIcon,
+  Maximize2Icon,
+  Minimize2Icon,
+  XIcon,
+} from "lucide-react";
 import { Icon } from "../../../../components/ui/Icon";
 import { ChatDecisionPrompt } from "./ChatDecisionPrompt";
 import { ChatDeliveryStatus } from "./ChatDeliveryStatus";
@@ -16,6 +24,7 @@ import { ChatComposerActions } from "./ChatComposerActions";
 import { AgentChatContext } from "../AgentChatContext";
 import { TabShareContext, type IChatTabShare } from "../TabShareContext";
 import { AgentChatBody } from "../layouts/AgentChatBody";
+import { useChatPanelPlacement } from "../hooks/useChatPanelPlacement";
 import { useChatScrollPosition } from "../hooks/useChatScrollPosition";
 
 const Thread = lazy(() =>
@@ -32,6 +41,10 @@ interface IAgentChatPanelProps {
   onBusyChange?: (isBusy: boolean) => void;
   children: ReactNode;
   sharing?: IChatTabShare;
+  /** Where the toolbar sits; the panel opens at the same edge and gap as toolbar popups. */
+  toolbarPosition?: DevtoolsPosition;
+  /** How far the toolbar reaches from that edge, null while no toolbar has reported it. */
+  toolbarEdgeInset?: number | null;
 }
 
 export function AgentChatPanel({
@@ -43,6 +56,8 @@ export function AgentChatPanel({
   onBusyChange,
   children,
   sharing,
+  toolbarPosition = "bottom-right",
+  toolbarEdgeInset = null,
 }: IAgentChatPanelProps): JSX.Element {
   const [isExpanded, setIsExpanded] = useState(false);
   const side = useStore(chat.settingsStore, (state) => state.chat.side);
@@ -63,22 +78,50 @@ export function AgentChatPanel({
     onBusyChange?.(isBusy);
     return () => onBusyChange?.(false);
   }, [isBusy, onBusyChange]);
+  const placement = useChatPanelPlacement({ isOpen });
+  const dockedStyle =
+    toolbarEdgeInset === null ? undefined : { [toolbarPosition === "top-right" ? "top" : "bottom"]: toolbarEdgeInset };
   return (
     <aside
+      ref={placement.panelReference}
       data-testid="AgentChatPanel"
       hidden={!isOpen}
       aria-label="Agent chat"
       data-devhost-capture-exclude=""
+      style={placement.panelStyle ?? dockedStyle}
       className={cn(
-        "pointer-events-auto fixed bottom-14 z-(--devhost-z-edge) flex w-[min(448px,calc(100vw-16px))] flex-col overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame",
-        isExpanded
-          ? "top-20 max-sm:top-auto max-sm:h-[65dvh]"
-          : "h-[clamp(260px,calc((100dvh-136px)/3),360px)] max-h-[calc(100dvh-136px)]",
+        "pointer-events-auto fixed z-(--devhost-z-edge) my-1.5 flex w-[min(448px,calc(100vw-16px))] flex-col overflow-hidden rounded-md border border-edge bg-card text-card-foreground shadow-frame",
+        toolbarPosition === "top-right" ? "top-8.5" : "bottom-8.5",
+        !isExpanded && "h-[clamp(260px,calc((100dvh-136px)/3),360px)] max-h-[calc(100dvh-136px)]",
+        isExpanded && placement.isMoved && "h-[calc(100dvh-136px)]",
+        isExpanded &&
+          !placement.isMoved &&
+          (toolbarPosition === "top-right"
+            ? "bottom-20 max-sm:bottom-auto max-sm:h-[65dvh]"
+            : "top-20 max-sm:top-auto max-sm:h-[65dvh]"),
         side === "right" ? "right-2" : "left-2",
         !isOpen && "hidden",
       )}
     >
-      <header className="flex shrink-0 items-center gap-2 border-b border-border p-2">
+      <header
+        ref={placement.headerReference}
+        className={cn(
+          "flex shrink-0 items-center gap-2 border-b border-border p-2",
+          placement.canMove && "cursor-move touch-none select-none",
+        )}
+        onPointerDown={placement.onHeaderPointerDown}
+      >
+        {placement.canMove ? (
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Move Chat Panel"
+            title="Arrow Keys Move Chat, Home Returns It"
+            onKeyDown={placement.onHandleKeyDown}
+          >
+            <Icon glyph={GripVerticalIcon} />
+          </Button>
+        ) : null}
         <h2 className="flex-1 font-semibold">Agent Chat</h2>
         {headerControls}
         <ChatSettings chat={chat} isBusy={isBusy} />
@@ -97,7 +140,11 @@ export function AgentChatPanel({
           variant="ghost"
           aria-label={side === "right" ? "Move Chat To Left" : "Move Chat To Right"}
           title="Move Chat"
-          onClick={() => chat.settingsStore.getState().updateChat({ side: side === "right" ? "left" : "right" })}
+          onClick={() => {
+            // A dragged panel returns to its dock first, so this button always moves it somewhere predictable.
+            if (placement.isMoved) placement.resetPosition();
+            else chat.settingsStore.getState().updateChat({ side: side === "right" ? "left" : "right" });
+          }}
         >
           <Icon glyph={ArrowLeftRightIcon} />
         </Button>

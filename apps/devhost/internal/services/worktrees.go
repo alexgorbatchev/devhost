@@ -451,6 +451,19 @@ func worktreeStateDirectory(manifestPath string, stateDir string) (string, error
 	return filepath.Join(stateDir, "worktrees", worktreeKey(absolutePath)), nil
 }
 
+// chatPanelFile is where a manifest's chat panel position is saved. Each manifest
+// has its own file, so concurrent stacks never overwrite each other's position.
+func chatPanelFile(manifestPath string, stateDir string) string {
+	if manifestPath == "" {
+		return ""
+	}
+	absolutePath, err := filepath.Abs(manifestPath)
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(stateDir, "chat-panels", worktreeKey(absolutePath)+".json")
+}
+
 // forgetWorktreeSelection removes the stack's saved selection, so turning
 // worktrees on keeps the checkout the stack runs instead of restoring a
 // selection from an earlier run, now and at the next start.

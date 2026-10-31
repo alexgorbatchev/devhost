@@ -46,6 +46,7 @@ An authenticating proxy in front of devhost still applies its own rules; a sign-
 | `/__devhost__/config/schema`            | `GET`         | The settings each kind of file accepts                                                             |
 | `/__devhost__/config/validate`          | `POST`        | Check unsaved content with the checks a reload runs                                                |
 | `/__devhost__/config/save`              | `POST`        | Write checked content over the version it was edited from                                          |
+| `/__devhost__/chat/panel`               | `GET`, `PUT`  | The saved chat panel position; see [Panel position](../chat-api/#panel-position)                   |
 | `/__devhost__/chat/harnesses`           | `GET`         | Installed coding agents and their models                                                           |
 | `/__devhost__/chat/sessions`            | `GET`, `POST` | List chat sessions, or start or resume one                                                         |
 | `/__devhost__/chat/sessions/<id>/close` | `POST`        | End a chat session's process                                                                       |
