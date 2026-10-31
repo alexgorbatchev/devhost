@@ -4,39 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793415764,
-    "op": "CreateTask",
-    "title": "Keep the Disable Reloads notice hidden until its request is handled",
-    "kind": "bug",
-    "description": "The notice's requested state lasts only until the next page load, and a working agent is what reloads the page. The notice returns before the agent has acted on the first request, and a second click sends the request again. The first request survives the reload because queued sends keep draining after the socket closes (`chat_server.go`).\n\nWaiting for the turn to end is not a valid rule. After an interrupt, a queued message echoed 2.5 seconds after `result`, so the turn can end with the request still pending.\n\nChange:\n- Persist the request keyed by session ID and command ID.\n- Hide the notice while lifecycle state for that command is `queued` or `started`.\n- Before relying on this, confirm that lifecycle frames reach devhost's journal, so that a reloaded page can derive the state from replay.\n- Add stories for clicking during a running turn and for reloading while the request is queued. The existing stories never click during a running turn."
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetPriority",
-    "priority": "high"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "AddLabel",
-    "label": "chat"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793415764,
-    "op": "SetParent",
-    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
-    "parent_repo": null,
-    "parent_label": null
+    "timestamp": 1793419714,
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
