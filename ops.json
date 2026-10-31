@@ -4,10 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793204745,
-    "op": "CreateTask",
-    "title": "show running agents",
-    "kind": "task",
-    "description": "it would be cool if we had a small icon showing up when there are agents working in the repo with a /loading like animation. clicking it would open the list of agents, we should be able to utilze agent-* libs located here /home/alex/development/workspace/ai/tools"
+    "timestamp": 1793415998,
+    "op": "SetDescription",
+    "description": "it would be cool if we had a small icon showing up when there are agents working in the repo with a /loading like animation. clicking it would open the list of agents, we should be able to utilze agent-* libs located in the workspace under repos/libraries (agent-parser, agent-watcher) and repos/projects/agent-tools"
   }
 ]
