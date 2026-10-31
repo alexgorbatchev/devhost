@@ -5,7 +5,7 @@
       "email": "alex.gorbatchev@gmail.com"
     },
     "timestamp": 1793424077,
-    "op": "AddComment",
-    "text": "Done. Security check result: page scripts can reach this data on any routed hostname, because /__devhost__ shares the application's origin and the control API has no token. So the view is a page on the control server's own 127.0.0.1:<port> origin, which refuses routed hosts and proxied clients; the WebSocket also has the origin check. agent-watcher gained Config.StartAtEnd and Config.SessionFilter (e585504). Real-machine probe filtered to this checkout: 1 lifecycle event and no replay, against the 75,346 events this ticket measured, with 361 MB allocated against 4.7 GB. Known limit: a session resumed after the page opens replays that session's history."
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
