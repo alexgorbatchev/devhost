@@ -4,6 +4,7 @@ import { Button } from "../../../components/ui/Button";
 import { pristineFetch } from "../pristineFetch";
 import { restartStack } from "../restartStack";
 import { InlineNotice } from "./InlineNotice";
+import { reloadPage } from "../reloadPage";
 
 interface IRestartStackButtonProps {
   isDisabled: boolean;
@@ -33,7 +34,7 @@ export function RestartStackButton({
     setErrorMessage(error);
     setIsPending(false);
     onPendingChange(false);
-    if (error === null && document.body.hasAttribute("data-devhost-recovery")) window.location.reload();
+    if (error === null && document.body.hasAttribute("data-devhost-recovery")) reloadPage();
   };
   const handleRestartChanged = async (): Promise<void> => {
     if (onRestartChanged === undefined) return;

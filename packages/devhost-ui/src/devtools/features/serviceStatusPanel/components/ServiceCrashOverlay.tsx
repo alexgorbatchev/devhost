@@ -10,6 +10,7 @@ import { pristineFetch } from "../../../shared/pristineFetch";
 import { restartServices } from "../../../shared/restartServices";
 import { RestartStackButton } from "../../../shared/components/RestartStackButton";
 import type { ServiceHealth, ServiceLogEntry } from "../../../shared/types";
+import { reloadPage } from "../../../shared/reloadPage";
 
 interface IServiceCrashOverlayProps {
   services: ServiceHealth[];
@@ -36,7 +37,7 @@ export function ServiceCrashOverlay({ services, entries }: IServiceCrashOverlayP
     setErrorMessage(error);
     setPendingServices((current) => current.filter((name) => name !== serviceName));
     if (error === null && document.body.hasAttribute("data-devhost-recovery")) {
-      window.location.reload();
+      reloadPage();
     }
   };
 

@@ -56,6 +56,17 @@ With chat on, a page served with hot reloading shows a notice under the toolbar,
 
 The notice means the client loaded, not that it is connected: a Vite server started with `server.ws: false` still shows it. Other tools, and a custom webpack `output.hotUpdateGlobal`, show no notice.
 
+## Reload hold
+
+Agent edits can make a dev server reload the page under you. **Hold Reloads** in the toolbar stops that, and it is on by default. It needs no agent and no change to your project's configuration, and it works with any dev server that reloads through `location.reload()`, including when the server restarts.
+
+When something tries to reload the page, a small **Reload blocked** notice appears beside the toolbar. **Reload** applies it; dismissing it keeps working on the current page, and the next reload raises it again.
+
+- Your browser's own refresh is never held, and neither are devhost's own reloads, such as after switching a worktree.
+- A script's reload looks the same whoever asks for it, so your application's own `location.reload()` is held too, for example after signing out. Use **Reload** on the notice, or turn the hold off.
+- Hot module replacement is not held: components still update in place. To stop that too, use [**Disable Reloads**](#hot-reload-notice).
+- The choice is saved for this project and page origin in this browser. Browsers without the Navigation API have no toggle.
+
 ## Running agents
 
 When coding agents are running in this checkout, the toolbar shows how many, with a spinner while any of them works. It lists Claude Code, Codex, Pi, and OpenCode agents, including ones you started in a terminal. Open it for each agent's harness, state, name, subdirectory, and last activity; the agent chat is talking to is marked **this chat**. Agents working in a subdirectory count, and an agent's own subagents do not.

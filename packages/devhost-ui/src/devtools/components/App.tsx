@@ -21,6 +21,7 @@ import {
 } from "../features/configEditor";
 import { ExternalDevtoolsPanel, useExternalDevtoolsLaunchers } from "../features/externalDevtoolsPanel";
 import { HotReloadNotice, createDisableHotReloadMessage, useHotReloadClient } from "../features/hotReloadNotice";
+import { ReloadBlockedNotice, ReloadHoldToggle, useReloadHold } from "../features/reloadHold";
 import { RunningAgentsPanel, useRunningAgents } from "../features/runningAgents";
 import { LogMinimap, useServiceLogs } from "../features/minimap";
 import { useReactHighlightOverlay } from "../features/reactHighlight";
@@ -148,6 +149,7 @@ function AppContent(): JSX.Element {
       ? ""
       : `${controlOrigin}/__devhost__/agents/activity?${new URLSearchParams({ pageURL: window.location.href, chatTarget })}`;
   const [toolbarEdgeInset, setToolbarEdgeInset] = useState<number | null>(null);
+  const shouldRenderToolbar: boolean = statusEnabled || externalToolbarsEnabled || chatEnabled || configEditorEnabled;
   const hotReloadClient = useHotReloadClient();
   const isHotReloadNoticeDismissed = useStore(settingsStore, (state) => state.chat.isHotReloadNoticeDismissed);
   const [isHotReloadDisableRequested, setIsHotReloadDisableRequested] = useState(false);
@@ -172,6 +174,8 @@ function AppContent(): JSX.Element {
     chatEnabled && !isHotReloadNoticeDismissed && !isHotReloadDisableRequested && hotReloadRequest === null
       ? hotReloadClient
       : null;
+  const isReloadHoldEnabled = useStore(settingsStore, (state) => state.chat.isReloadHoldEnabled);
+  const reloadHold = useReloadHold(shouldRenderToolbar && isReloadHoldEnabled);
   const exitedServices = services.filter(
     (service) =>
       service.managed &&
@@ -226,7 +230,6 @@ function AppContent(): JSX.Element {
   }, [restartServicesShortcut, services, primaryService, setErrorMessage]);
   const shouldRenderPanel: boolean = statusEnabled && (errorMessage !== null || services.length > 0);
   const shouldRenderExternalDevtoolsPanel: boolean = externalToolbarsEnabled && externalDevtoolsLaunchers.length > 0;
-  const shouldRenderToolbar: boolean = statusEnabled || externalToolbarsEnabled || chatEnabled || configEditorEnabled;
   const isConfigurationRejected: boolean = configuration.some((status) => status.error !== undefined);
   const openConfigEditor = useCallback((): void => {
     setIsConfigEditorOpen(true);
@@ -273,12 +276,13 @@ function AppContent(): JSX.Element {
             </>
           }
           readout={
-            isConfigurationRejected || hotReloadNoticeClient !== null ? (
+            isConfigurationRejected || hotReloadNoticeClient !== null || reloadHold.isBlocked ? (
               <>
                 <ConfigRejectionNotice
                   configuration={configuration}
                   onEdit={configEditorEnabled ? openConfigEditor : undefined}
                 />
+                {reloadHold.isBlocked ? <ReloadBlockedNotice onDismiss={reloadHold.dismiss} /> : null}
                 {hotReloadNoticeClient !== null ? (
                   <HotReloadNotice
                     client={hotReloadNoticeClient}
@@ -331,6 +335,14 @@ function AppContent(): JSX.Element {
             <ExternalDevtoolsPanel launchers={externalDevtoolsLaunchers} onToggleLauncher={toggleLauncher} />
           ) : null}
           <RunningAgentsPanel agents={runningAgents} activityURL={agentActivityURL} />
+          {reloadHold.isAvailable ? (
+            <ReloadHoldToggle
+              isEnabled={isReloadHoldEnabled}
+              onToggle={(): void => {
+                settingsStore.getState().updateChat({ isReloadHoldEnabled: !isReloadHoldEnabled });
+              }}
+            />
+          ) : null}
           {chatEnabled ? (
             <ToolbarSegment ariaLabel="Chat">
               <Button

@@ -17,6 +17,7 @@ import { requestWorktrees } from "../requestWorktrees";
 import { startServices } from "../startServices";
 import { markServicesAsUnavailable } from "../markServicesAsUnavailable";
 import { updateInjectedConfig } from "../updateInjectedConfig";
+import { reloadPage } from "../../../shared/reloadPage";
 
 interface IUseServiceHealthResult {
   /** The reloads of each configuration source, with the reason the last one was rejected. */
@@ -101,7 +102,7 @@ export function useServiceHealth(): IUseServiceHealthResult {
   const switchWorktree = useCallback(
     async (repositoryId: string, path: string): Promise<string | null> => {
       const result = await requestWorktrees(pristineFetch, { repositoryId, path });
-      if (result.error === null) window.location.reload();
+      if (result.error === null) reloadPage();
       else await refreshWorktrees();
       return result.error;
     },

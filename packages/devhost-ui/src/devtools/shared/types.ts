@@ -25,6 +25,7 @@ export interface IChatViewSettings {
   sessionId: string | null;
   draft: string;
   isHotReloadNoticeDismissed: boolean;
+  isReloadHoldEnabled: boolean;
   /** A Disable Reloads request still being handled, which outlives the reloads an agent causes. */
   hotReloadRequest: { sessionId: string; commandId: string } | null;
   scroll: IChatScrollPosition | null;
