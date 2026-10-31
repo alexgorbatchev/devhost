@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Warn about agents devhost did not start",
+    "kind": "story",
+    "description": "agent-watcher finds terminal agents devhost did not start: Claude Code sessions in 0.1 seconds and Codex in 0.7 to 4.8 seconds, with harness, session ID, PID and working directory. devhost can use that to avoid starting an agent beside one that is already working.\n\nWhen no devhost-owned session is running in the project, take a snapshot before starting one:\n- If a foreign agent is working or waiting in the checkout, name it and let the user choose. Say so when it is waiting for approval.\n- Otherwise start a session.\n\nDetails:\n- Exclude devhost's own sessions by session ID, which devhost already holds.\n- Ignore subagents.\n- Match the working directory against the checkout, including subdirectories, rather than comparing for equality.\n- Treat a live session with unknown state as running, state unknown.\n- Follow the repository rule for multiple concurrent devhost instances."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "medium"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "chat"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
