@@ -4,8 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793416160,
-    "op": "SetDescription",
-    "description": "Codex has no equivalent of Claude Code's session `status`, so its state in the snapshot starts as unknown plus last activity. Derive working or idle from the end of the rollout, for example an unmatched `task_started`.\n\nRequired by the running agents list in DEVHO-9cd4032f: without it, idle Codex sessions cannot be told from working ones, so the indicator would be wrong for Codex."
+    "timestamp": 1793418422,
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
