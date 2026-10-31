@@ -9,6 +9,7 @@ import {
   InjectedChatScene,
   chooseChatSetting,
   PageChatScene,
+  deliverChatFrame,
   deliverChatReply,
   deliverChatStatus,
   isChatViewportAtBottom,
@@ -228,6 +229,57 @@ export const DisableReloadsAsksTheAgentOnce: Story = {
     expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
     expect(await canvas.findByTestId("HotReloadNotice")).toBeVisible();
+  },
+};
+
+export const DisableReloadsDuringARunningTurnStaysHiddenAcrossReloads: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    deliverChatStatus("running");
+    await canvas.findByText("codex · running");
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    const { commandId } = sentChatText.parse(readSentChatCommands()[0]);
+    acknowledgeChatSend(commandId, undefined, "queued");
+    expect(await canvas.findByTestId("ChatDeliveryStatus")).toHaveTextContent("Queued.");
+
+    // The agent's own edit reloads the page while it still has the request.
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    await canvas.findByText("codex · running");
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
+
+    deliverChatFrame({
+      method: "item/started",
+      params: { item: { type: "userMessage", id: "request", clientId: commandId, content: [] } },
+    });
+    await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
+    await canvas.findByText("codex · running");
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
+    expect(readSentChatCommands()).toHaveLength(0);
+
+    // Only the end of its turn hands the page back: the request is over, and the client is still loaded.
+    deliverChatFrame({ method: "turn/completed", params: { turn: { id: "turn", status: "completed" } } });
+    deliverChatStatus("idle");
+    expect(await canvas.findByTestId("HotReloadNotice")).toBeVisible();
+  },
+};
+
+export const UnconfirmedDisableReloadsIsNotOfferedAgain: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    deliverChatStatus("running");
+    acknowledgeChatSend(sentChatText.parse(readSentChatCommands()[0]).commandId, undefined, "unconfirmed");
+    expect(await canvas.findByTestId("ChatDeliveryStatus")).toHaveTextContent("Check the conversation");
+    expect(canvas.queryByRole("alert")).toBeNull();
+    expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
   },
 };
 

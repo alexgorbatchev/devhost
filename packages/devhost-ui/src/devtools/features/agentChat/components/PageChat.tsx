@@ -20,7 +20,8 @@ import { usePageSelection } from "../../annotationComposer/hooks/usePageSelectio
 import { AnnotationCanvas } from "../../visualAnnotations/components/AnnotationCanvas";
 import { captureAnnotatedTab } from "../../visualAnnotations/captureAnnotatedTab";
 import type { AnnotationShapeKind, IAnnotationShape } from "../../visualAnnotations/types";
-import type { ChatBeforeSend } from "../types";
+import type { ChatBeforeSend, IChatReceipt } from "../types";
+import { isChatRequestSettled } from "../isChatRequestSettled";
 import { preparePageChatSend } from "../preparePageChatSend";
 import { useAgentChat } from "../hooks/useAgentChat";
 import { useChatComposerFocus } from "../hooks/useChatComposerFocus";
@@ -51,7 +52,10 @@ interface IPageChatProps {
   rootReference: RefObject<HTMLDivElement | null>;
   /** A message to send as soon as the conversation is ready. */
   requestedMessage?: string;
-  onRequestedMessageTaken?: (delivery: Promise<boolean>) => void;
+  onRequestedMessageTaken?: (receipt: Promise<IChatReceipt | null>) => void;
+  /** A sent request whose outcome the caller is waiting for, which can outlive the page that sent it. */
+  trackedRequest?: IChatReceipt | null;
+  onTrackedRequestSettled?: () => void;
 }
 
 export function PageChat({
@@ -65,6 +69,8 @@ export function PageChat({
   onTargetChange,
   requestedMessage,
   onRequestedMessageTaken,
+  trackedRequest,
+  onTrackedRequestSettled,
 }: IPageChatProps): JSX.Element {
   const sharing = useTabShare();
   const screenshotSelection = useScreenshotSelection(sharing.stream);
@@ -170,11 +176,15 @@ export function PageChat({
     setShapes((current) => current.filter((shape) => !sentIds.has(shape.id)));
   }, [selectedTargets, removeSelection, shapes]);
   const chat = useAgentChat({ pageURL: sessionPageURL, target, beforeSend, onSent: clearSentContext, settingsStore });
-  const { isCatalogLoading, isConnecting, isPreparing, sendMessage } = chat;
+  const { isCatalogLoading, isConnecting, isPreparing, readDelivery, sendMessage, session, sessions } = chat;
   useEffect(() => {
     if (requestedMessage === undefined || isCatalogLoading || isConnecting || isPreparing) return;
     onRequestedMessageTaken?.(sendMessage(requestedMessage));
   }, [isCatalogLoading, isConnecting, isPreparing, onRequestedMessageTaken, requestedMessage, sendMessage]);
+  useEffect(() => {
+    if (!trackedRequest || isCatalogLoading || isConnecting) return;
+    if (isChatRequestSettled(trackedRequest, sessions, session, readDelivery)) onTrackedRequestSettled?.();
+  }, [isCatalogLoading, isConnecting, onTrackedRequestSettled, readDelivery, session, sessions, trackedRequest]);
   const isContextDisabled = isCapturing || chat.isPreparing;
   const composerInputReference = useChatComposerFocus({ isOpen, contextCount: selectedTargets.length + shapes.length });
   const hasPageMarks: boolean = isSelectionMode || tool !== null || selectedTargets.length > 0 || shapes.length > 0;

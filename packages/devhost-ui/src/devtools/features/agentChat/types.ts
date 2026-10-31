@@ -34,6 +34,8 @@ export interface IChatDeliveries {
   /** Sequence of the last interrupted Codex turn, 0 when there is none. */
   interruptedAt: number;
 }
+/** The state native frames show for a message, undefined while they show nothing. */
+export type ChatDeliveryReader = (commandId: string) => ChatDeliveryState | undefined;
 export interface IChatReceipt {
   sessionId: string;
   commandId: string;
@@ -169,8 +171,7 @@ export interface IAgentChatController {
   sendError: string | null;
   /** The latest message's state, null before the first send of a conversation. */
   deliveryState: ChatDeliveryState | null;
-  /** The state native frames show for a message, undefined while they show nothing. */
-  readDelivery: (commandId: string) => ChatDeliveryState | undefined;
+  readDelivery: ChatDeliveryReader;
   pendingRequests: readonly IChatPendingRequest[];
   events: readonly IChatEvent[];
   refreshCatalog: () => Promise<void>;

@@ -50,7 +50,7 @@ With chat on, a page served with hot reloading shows a notice under the toolbar,
 | Bun     | Bun's development script, absent with `hmr: false`          |
 | webpack | A global starting with `webpackHotUpdate`, the default name |
 
-**Disable Reloads** opens chat and asks your agent, in the **Project** directory, to turn off hot module replacement, automatic page reloads, and server restarts on file changes. It sends without selected elements, drawings, or a screenshot, into the open conversation or a new one, and the agent changes the configuration through its usual approvals. The notice stays hidden until the next page load, and it does not return once the page loads without the client. If the message cannot be delivered, chat shows why and the notice comes back.
+**Disable Reloads** opens chat and asks your agent, in the **Project** directory, to turn off hot module replacement, automatic page reloads, and server restarts on file changes. It sends without selected elements, drawings, or a screenshot, into the open conversation or a new one, and the agent changes the configuration through its usual approvals. The notice stays hidden until the next page load, and through later loads while the agent still has the request, since its own edits can reload the page. It does not return once the page loads without the client. If the message cannot be delivered, chat shows why and the notice comes back.
 
 **Dismiss** hides the notice for this project and page origin in this browser.
 
