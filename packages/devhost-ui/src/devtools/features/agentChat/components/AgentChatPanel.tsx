@@ -7,6 +7,7 @@ import type { IAgentChatController } from "../types";
 import { ApprovalRequests } from "./ApprovalRequests";
 import { ArrowLeftRightIcon, ChevronDownIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react";
 import { Icon } from "../../../../components/ui/Icon";
+import { ChatDeliveryStatus } from "./ChatDeliveryStatus";
 import { ChatSettings } from "./ChatSettings";
 import { ChatUserText } from "./ChatUserText";
 import { ChatComposerActions } from "./ChatComposerActions";
@@ -123,6 +124,7 @@ export function AgentChatPanel({
             {chat.sendError}
           </p>
         ) : null}
+        <ChatDeliveryStatus state={chat.deliveryState} />
         {children}
         {sharing?.error ? (
           <p role="alert" className="p-2 text-destructive">

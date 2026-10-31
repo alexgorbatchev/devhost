@@ -17,6 +17,7 @@ const serverFrame = z.discriminatedUnion("type", [
     sessionId: z.string(),
     commandId: z.string().min(1),
     error: z.string().optional(),
+    delivery: z.enum(["queued", "started", "unconfirmed"]).optional(),
   }),
   z.object({
     type: z.literal("snapshot"),

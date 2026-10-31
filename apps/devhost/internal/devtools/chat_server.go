@@ -217,9 +217,9 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 			command := queued.command
 			session.logCommand(command, "dequeued", time.Since(queued.queuedAt), nil)
 			ctx, cancel := chatCallContext(s.ctx)
-			err := session.execute(ctx, command)
+			delivery, err := session.send(ctx, command)
 			cancel()
-			writeChatCommandResult(client, id, command, err)
+			writeChatCommandResult(client, id, command, delivery, err)
 		}
 	}()
 	defer func() { close(sends); <-done }()
@@ -284,12 +284,12 @@ func (s *ControlServer) handleChatWebsocket(w http.ResponseWriter, r *http.Reque
 		if command.Type == "send" {
 			session.logCommand(command, "rejected", 0, commandErr)
 		}
-		writeChatCommandResult(client, id, command, commandErr)
+		writeChatCommandResult(client, id, command, "", commandErr)
 	}
 }
 
-func writeChatCommandResult(client *websocketClient, id string, command chatCommand, commandErr error) {
-	response := chatMessage{Type: "error", SessionID: id}
+func writeChatCommandResult(client *websocketClient, id string, command chatCommand, delivery chatDelivery, commandErr error) {
+	response := chatMessage{Type: "error", SessionID: id, Delivery: delivery}
 	if command.Type == "send" && command.CommandID != "" {
 		response.Type = "command_result"
 		response.CommandID = command.CommandID

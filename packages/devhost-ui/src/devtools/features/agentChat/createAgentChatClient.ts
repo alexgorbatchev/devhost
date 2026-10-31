@@ -4,13 +4,22 @@ import { openReconnectingWebSocket, type IReconnectingWebSocket } from "../../sh
 import type { ChatTarget, DevtoolsSettingsStore, ILocationHostProtocol } from "../../shared/types";
 import { readChatHarnesses, readChatServerFrame, readChatSession, readChatSessions } from "./readChatServerFrame";
 import { encodeChatCommand } from "./encodeChatCommand";
-import type { ChatCommand, IAgentChatClient, IAgentChatClientState, IChatSession, IChatSessionRequest } from "./types";
+import type {
+  ChatCommand,
+  ChatSentState,
+  IAgentChatClient,
+  IAgentChatClientState,
+  IChatReceipt,
+  IChatSession,
+  IChatSessionRequest,
+} from "./types";
 
 interface IPendingChatSend {
-  resolve: VoidFunction;
+  resolve: (state: ChatSentState) => void;
   reject: (error: Error) => void;
   timeout: ReturnType<typeof setTimeout>;
 }
+const SEND_CONFIRMATION_TIMEOUT_MS = 45_000;
 
 export function createAgentChatClient(
   pageURL: string,
@@ -38,6 +47,7 @@ export function createAgentChatClient(
     isConnecting: false,
     isConnected: false,
     sendError: null,
+    lastSend: null,
     events: [],
     pendingRequestIds: [],
   };
@@ -56,16 +66,17 @@ export function createAgentChatClient(
     for (const listener of listeners) listener();
   };
   const errorText = (error: unknown): string => (error instanceof Error ? error.message : String(error));
-  const settleSend = (commandId: string, error?: string): void => {
+  const settleSend = (commandId: string, state: ChatSentState, error?: string): void => {
     const pending = pendingSends.get(commandId);
     if (!pending) return;
     pendingSends.delete(commandId);
     clearTimeout(pending.timeout);
     if (error !== undefined) pending.reject(new Error(error));
-    else pending.resolve();
+    else pending.resolve(state);
   };
-  const rejectPendingSends = (message: string): void => {
-    for (const commandId of pendingSends.keys()) settleSend(commandId, message);
+  // The server may have the message whatever happened to this connection, so losing it decides nothing.
+  const abandonPendingSends = (): void => {
+    for (const commandId of pendingSends.keys()) settleSend(commandId, "unconfirmed");
   };
   const request = async (path: string, init?: RequestInit): Promise<unknown> => {
     const response = await pristineFetch(path, { ...init, signal: lifetime.signal });
@@ -73,9 +84,7 @@ export function createAgentChatClient(
     return response.status === 204 ? undefined : response.json();
   };
   const detach = (): void => {
-    rejectPendingSends(
-      "The chat connection was replaced before confirming your message. Check the conversation before retrying.",
-    );
+    abandonPendingSends();
     generation += 1;
     stream?.close();
     stream = null;
@@ -88,7 +97,15 @@ export function createAgentChatClient(
     const current = settingsStore.getState();
     if (current.chat.sessionId !== session.id) current.updateChat({ sessionId: session.id, scroll: null });
     const ownGeneration = generation;
-    publish({ session, events: [], pendingRequestIds: [], isConnecting: true, isConnected: false, sendError: null });
+    publish({
+      session,
+      events: [],
+      pendingRequestIds: [],
+      isConnecting: true,
+      isConnected: false,
+      sendError: null,
+      lastSend: null,
+    });
     return new Promise<void>((resolve, reject) => {
       cancelConnection = () => reject(new Error("The chat connection was replaced."));
       const query = scopeQuery();
@@ -102,11 +119,11 @@ export function createAgentChatClient(
             const frame = readChatServerFrame(value);
             if (frame.sessionId && frame.sessionId !== session.id) return;
             if (frame.type === "command_result") {
-              settleSend(frame.commandId, frame.error);
+              settleSend(frame.commandId, frame.delivery ?? "unconfirmed", frame.error);
               return;
             }
             if (frame.type === "error") {
-              rejectPendingSends(frame.error);
+              abandonPendingSends();
               publish({ sendError: frame.error, isConnecting: false });
               reject(new Error(frame.error));
               return;
@@ -130,17 +147,17 @@ export function createAgentChatClient(
               });
             } else publish({ session: frame.session, pendingRequestIds: frame.pendingRequestIds });
           } catch (error) {
-            rejectPendingSends(errorText(error));
+            abandonPendingSends();
             publish({ sendError: errorText(error), isConnecting: false });
             reject(error);
           }
         },
         onDisconnect: () => {
-          rejectPendingSends("Connection lost before confirming your message. Check the conversation before retrying.");
+          abandonPendingSends();
           publish({ isConnected: false, isConnecting: true });
         },
         onEnd: () => {
-          rejectPendingSends("The chat connection closed before confirming your message.");
+          abandonPendingSends();
           publish({ isConnected: false, isConnecting: false });
           reject(new Error("The chat connection closed."));
         },
@@ -267,7 +284,7 @@ export function createAgentChatClient(
         isConnecting: false,
       });
     },
-    async send(prepared, originalText): Promise<void> {
+    async send(prepared, originalText): Promise<IChatReceipt> {
       const commandId = crypto.randomUUID();
       const payload = encodeChatCommand({
         type: "send",
@@ -278,15 +295,24 @@ export function createAgentChatClient(
       });
       if (!state.session || state.session.harness !== state.selectedHarness) await newSession();
       else if (sessionTask) await sessionTask;
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          settleSend(commandId, "Your message was not confirmed. Check the conversation before retrying.");
-        }, 45_000);
-        pendingSends.set(commandId, { resolve, reject, timeout });
-        if (!state.isConnected || !stream?.send(payload)) {
-          settleSend(commandId, "The chat session is disconnected. Reconnect before sending.");
-        }
-      });
+      const sessionId = state.session?.id;
+      if (sessionId === undefined) throw new Error("Chat is no longer mounted.");
+      const afterSequence = state.events.at(-1)?.sequence ?? 0;
+      publish({ lastSend: { commandId, state: "sending", afterSequence } });
+      try {
+        const delivery = await new Promise<ChatSentState>((resolve, reject) => {
+          const timeout = setTimeout(() => settleSend(commandId, "unconfirmed"), SEND_CONFIRMATION_TIMEOUT_MS);
+          pendingSends.set(commandId, { resolve, reject, timeout });
+          if (!state.isConnected || !stream?.send(payload)) {
+            settleSend(commandId, "unconfirmed", "The chat session is disconnected. Reconnect before sending.");
+          }
+        });
+        publish({ lastSend: { commandId, state: delivery, afterSequence } });
+        return { sessionId, commandId };
+      } catch (error) {
+        publish({ lastSend: { commandId, state: "failed", afterSequence } });
+        throw error;
+      }
     },
     interrupt: () => sendCommand({ type: "interrupt" }),
     respond(requestId, result): void {

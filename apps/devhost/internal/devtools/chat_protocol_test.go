@@ -98,6 +98,10 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 				}
 				result = map[string]any{"thread": map[string]any{"id": "codex-session", "cwd": cwd}, "params": params}
 			case "turn/start":
+				write(map[string]any{"type": "fixture_client_id", "id": params["clientUserMessageId"]})
+				if os.Getenv("DEVHOST_CHAT_HOLD_TURN") == "1" {
+					continue
+				}
 				if os.Getenv("DEVHOST_CHAT_BAD_PROTOCOL") == "1" {
 					if _, err := os.Stderr.WriteString(strings.Repeat("fixture diagnostic ", chatDiagnosticLimit)); err != nil {
 						os.Exit(12)
@@ -130,6 +134,7 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 					os.Exit(11)
 				}
 				write(map[string]any{"type": "fixture_steer", "input": params["input"]})
+				write(map[string]any{"type": "fixture_client_id", "id": params["clientUserMessageId"]})
 				result = map[string]any{"turnId": "turn-one"}
 			case "turn/interrupt":
 				write(map[string]any{"method": "turn/completed", "params": map[string]any{"turn": map[string]string{"id": "turn-one", "status": "interrupted"}}})
@@ -155,6 +160,10 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 				result["models"] = []any{map[string]any{"value": "native-claude", "displayName": "Native Claude", "description": "native description", "supportsEffort": true}}
 				response["pending_permission_requests"] = []any{map[string]any{"type": "control_request", "request_id": "inherited", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Read", "input": map[string]string{"file_path": "example.txt"}}}}
 			case "interrupt":
+				write(map[string]any{"type": "fixture_interrupt", "request": json.RawMessage(frame.Request)})
+				if queued := os.Getenv("DEVHOST_CHAT_STILL_QUEUED"); queued != "" {
+					result["still_queued"] = []string{queued}
+				}
 				write(map[string]any{"type": "result", "session_id": "claude-session", "subtype": "success", "result": "interrupted"})
 			case "set_model":
 				write(map[string]any{"type": "fixture_model", "request": json.RawMessage(frame.Request)})
@@ -165,7 +174,11 @@ func TestChatHarnessHelperProcess(t *testing.T) {
 			continue
 		}
 		if frame.Type == "user" {
-			write(map[string]any{"type": "system", "subtype": "init", "session_id": "claude-session"})
+			write(map[string]any{"type": "system", "subtype": "init", "session_id": "claude-session", "capabilities": strings.Fields(os.Getenv("DEVHOST_CHAT_CAPABILITIES"))})
+			if state := os.Getenv("DEVHOST_CHAT_LIFECYCLE"); state != "" {
+				write(map[string]any{"type": "command_lifecycle", "command_uuid": frame.UUID, "state": state, "session_id": "claude-session"})
+				continue
+			}
 			if os.Getenv("DEVHOST_CHAT_DELAY_REPLAY") == "1" {
 				delayedUser = &frame
 				write(map[string]any{"type": "control_request", "request_id": "delivery-approval", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Read", "input": map[string]string{"file_path": "example.txt"}}})

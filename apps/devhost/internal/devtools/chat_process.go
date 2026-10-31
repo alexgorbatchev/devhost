@@ -18,8 +18,9 @@ const chatDiagnosticLimit = 16 * 1024
 
 type chatCommandFactory func(context.Context, string, ...string) *exec.Cmd
 type chatRPCResult struct {
-	value json.RawMessage
-	err   error
+	value    json.RawMessage
+	delivery chatDelivery
+	err      error
 }
 
 type chatNativeError struct {
@@ -52,6 +53,12 @@ func (e *chatInputRejectedError) Error() string {
 	return fmt.Sprintf("Claude rejected the user message: %s", e.result)
 }
 
+type chatInputAbandonedError struct{ state string }
+
+func (e *chatInputAbandonedError) Error() string {
+	return fmt.Sprintf("Claude did not run the user message: %s", e.state)
+}
+
 func startChatProcess(ctx context.Context, harness, cwd string, args []string, command chatCommandFactory, receive func(json.RawMessage)) (*chatProcess, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	executable := "codex"
@@ -60,6 +67,9 @@ func startChatProcess(ctx context.Context, harness, cwd string, args []string, c
 	}
 	cmd := command(ctx, executable, args...)
 	cmd.Dir = cwd
+	if harness == chatClaude {
+		cmd.Env = append(cmd.Environ(), chatClaudeStateEvents)
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) }
 	cmd.WaitDelay = chatProcessGrace
@@ -222,6 +232,38 @@ func (p *chatProcess) exchange(ctx context.Context, key string, request any) (js
 	}
 }
 
+// sendUser hands a message to Claude Code and returns what is known about it. The
+// reply echo arrives only when Claude Code picks the message up, which a long tool
+// or a pending approval can delay past any timeout, so an expired wait is
+// unconfirmed. Its pending entry stays so a late frame can still settle it.
+func (p *chatProcess) sendUser(ctx context.Context, sessionID, uuid string, content []any) (chatDelivery, error) {
+	request := map[string]any{
+		"type": "user", "uuid": uuid, "session_id": sessionID,
+		"message": map[string]any{"role": "user", "content": content}, "parent_tool_use_id": nil,
+	}
+	key := chatUserKey(uuid)
+	response := make(chan chatRPCResult, 1)
+	p.mu.Lock()
+	p.pending[key] = response
+	p.mu.Unlock()
+	if err := p.write(request); err != nil {
+		p.mu.Lock()
+		delete(p.pending, key)
+		p.mu.Unlock()
+		return "", err
+	}
+	select {
+	case result := <-response:
+		return result.delivery, result.err
+	case <-ctx.Done():
+		return chatDeliveryUnconfirmed, nil
+	case <-p.done:
+		return chatDeliveryUnconfirmed, nil
+	}
+}
+
+func chatUserKey(uuid string) string { return "user:" + uuid }
+
 func (p *chatProcess) resolve(raw json.RawMessage) {
 	var frame chatNativeFrame
 	if json.Unmarshal(raw, &frame) != nil {
@@ -232,12 +274,20 @@ func (p *chatProcess) resolve(raw json.RawMessage) {
 		return
 	}
 	if p.harness == chatClaude {
+		// system/init arrives after the first message's lifecycle frames, so a frame is
+		// its own evidence rather than something to gate on msg_lifecycle_v1.
+		if frame.Type == "command_lifecycle" {
+			if result, ok := chatLifecycleResult(frame.State); ok {
+				p.settle(chatUserKey(frame.CommandUUID), result)
+			}
+			return
+		}
 		if frame.Type == "user" && frame.IsReplay && frame.UUID != "" {
-			p.deliver("user:"+frame.UUID, chatRPCResult{value: raw})
+			p.settle(chatUserKey(frame.UUID), chatRPCResult{value: raw, delivery: chatDeliveryStarted})
 			return
 		}
 		if frame.Type == "result" && frame.IsError && frame.UserMessageUUID != "" {
-			p.deliver("user:"+frame.UserMessageUUID, chatRPCResult{err: &chatInputRejectedError{result: frame.Result}})
+			p.settle(chatUserKey(frame.UserMessageUUID), chatRPCResult{err: &chatInputRejectedError{result: frame.Result}})
 			return
 		}
 		if frame.Type != "control_response" {
@@ -270,6 +320,30 @@ func (p *chatProcess) resolve(raw json.RawMessage) {
 		result.err = &chatNativeError{harness: p.harness, payload: errorValue}
 	}
 	p.deliver(key, result)
+}
+
+// chatLifecycleResult maps a command_lifecycle state. The frame is internal to
+// Claude Code, so a state this code does not know settles nothing.
+func chatLifecycleResult(state string) (chatRPCResult, bool) {
+	switch state {
+	case "queued":
+		return chatRPCResult{delivery: chatDeliveryQueued}, true
+	case "started", "completed":
+		return chatRPCResult{delivery: chatDeliveryStarted}, true
+	case "refused", "discarded", "cancelled":
+		return chatRPCResult{err: &chatInputAbandonedError{state: state}}, true
+	default:
+		return chatRPCResult{}, false
+	}
+}
+
+// settle resolves a sent message and drops its entry, which a send that stopped
+// waiting has left behind for this frame.
+func (p *chatProcess) settle(key string, result chatRPCResult) {
+	p.deliver(key, result)
+	p.mu.Lock()
+	delete(p.pending, key)
+	p.mu.Unlock()
 }
 
 func (p *chatProcess) deliver(key string, result chatRPCResult) {

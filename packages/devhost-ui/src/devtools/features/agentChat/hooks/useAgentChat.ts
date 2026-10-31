@@ -10,7 +10,8 @@ import {
 } from "@assistant-ui/react";
 import { createAgentChatClient } from "../createAgentChatClient";
 import { projectChatEvents } from "../projectChatEvents";
-import type { IAgentChatController, IAgentChatOptions } from "../types";
+import { readChatDeliveries, readSendState } from "../readChatDeliveries";
+import type { IAgentChatController, IAgentChatOptions, IChatReceipt } from "../types";
 import { createDevtoolsSettingsStore } from "../../../shared/createDevtoolsSettingsStore";
 import { readInjectedDevtoolsConfig } from "../../../shared/readInjectedDevtoolsConfig";
 
@@ -65,6 +66,11 @@ export function useAgentChat({
     () => projectChatEvents(state.session?.harness ?? state.selectedHarness, state.events, state.pendingRequestIds),
     [state.events, state.pendingRequestIds, state.selectedHarness, state.session?.harness],
   );
+  const deliveries = useMemo(
+    () => readChatDeliveries(state.session?.harness ?? state.selectedHarness, state.events),
+    [state.events, state.selectedHarness, state.session?.harness],
+  );
+  const readDelivery = useCallback((commandId: string) => deliveries.states.get(commandId), [deliveries]);
   useEffect(() => {
     if (!replyBoundary?.isPending) return;
     const status = state.session?.status;
@@ -134,18 +140,17 @@ export function useAgentChat({
     [beforeSend, client, createReplyBoundary, lifetime, onSent, settingsStore, replyBoundary],
   );
   const sendMessage = useCallback(
-    async (text: string): Promise<boolean> => {
+    async (text: string): Promise<IChatReceipt | null> => {
       const previousBoundary = replyBoundary;
       setReplyBoundary(createReplyBoundary());
       setIsPreparing(true);
       client.setSendError(null);
       try {
-        await client.send({ text }, text);
-        return true;
+        return await client.send({ text }, text);
       } catch (error) {
         setReplyBoundary(previousBoundary);
         client.setSendError(error instanceof Error ? error.message : String(error));
-        return false;
+        return null;
       } finally {
         setIsPreparing(false);
       }
@@ -278,6 +283,8 @@ export function useAgentChat({
     isConnecting: state.isConnecting,
     isConnected: state.isConnected,
     sendError: state.sendError,
+    deliveryState: state.lastSend ? readSendState(deliveries, state.lastSend) : null,
+    readDelivery,
     pendingRequests: projection.pendingRequests,
     events: projection.events,
     refreshCatalog: client.refreshCatalog,

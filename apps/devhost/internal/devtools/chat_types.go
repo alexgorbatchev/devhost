@@ -13,6 +13,22 @@ const (
 	chatClaude             = "claude-code"
 	chatTargetProject      = "project"
 	chatTargetDevhost      = "devhost"
+
+	// chatClaudeCancelQueued is the capability that lets an interrupt cancel queued messages.
+	chatClaudeCancelQueued = "interrupt_cancel_queued_v1"
+	// chatClaudeStateEvents makes Claude Code report session_state_changed, which is opt-in.
+	chatClaudeStateEvents = "CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1"
+)
+
+// chatDelivery says what is known about a message the native client was handed.
+// A message with an unknown outcome is unconfirmed rather than failed: the agent
+// may already have it, so a resend could deliver it twice.
+type chatDelivery string
+
+const (
+	chatDeliveryQueued      chatDelivery = "queued"
+	chatDeliveryStarted     chatDelivery = "started"
+	chatDeliveryUnconfirmed chatDelivery = "unconfirmed"
 )
 
 type chatModel struct {
@@ -75,6 +91,7 @@ type chatMessage struct {
 	Sequence          uint64             `json:"sequence,omitempty"`
 	Payload           json.RawMessage    `json:"payload,omitempty"`
 	Error             string             `json:"error,omitempty"`
+	Delivery          chatDelivery       `json:"delivery,omitempty"`
 }
 
 type chatCodexTurn struct {
@@ -87,6 +104,8 @@ type chatCodexTurn struct {
 
 type chatNativeFrame struct {
 	UUID            string          `json:"uuid"`
+	CommandUUID     string          `json:"command_uuid"`
+	Capabilities    []string        `json:"capabilities"`
 	IsReplay        bool            `json:"isReplay"`
 	UserMessageUUID string          `json:"user_message_uuid"`
 	Message         json.RawMessage `json:"message"`
