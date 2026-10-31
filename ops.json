@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793418422,
-    "op": "ClearAssignee"
+    "timestamp": 1793419221,
+    "op": "AddComment",
+    "text": "Done ahead of the recovery work this ticket said to wait for, because all tickets were requested and the change is additive: agent-parser b1bb4e0 adds MessageUUID and MergedMessageUUIDs on turn_start and a message_absorbed event; agent-watcher d9cc3eb exports scanner.LocateClaudeTranscript. Checked against 425 real absorbed_mid_turn records. mergedSendUuids follows this ticket's table: no real transcript on this machine contains it, so that shape is unverified."
   }
 ]
