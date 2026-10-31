@@ -4,8 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793419221,
+    "timestamp": 1793424077,
     "op": "AddComment",
-    "text": "Done in agent-parser c127402 and agent-watcher 1f79e50, unreleased: consumers pin a pseudo-version, because both repositories require explicit authorization for releases. The Rust counterparts use rusqlite, a different dependency, so they did not change. The binary shrank rather than grew: a CGO_ENABLED=0 probe through agent-watcher went from 14.8 MB to 11.1 MB. Query time is unchanged (about 15 ms for 200 reconstructions on both drivers). A CGO_ENABLED=0 build read a real OpenCode 1.19.5 database, and tests cover reads beside a WAL writer, rejected writes and the in-memory DSN. linux/arm64 and darwin/arm64 cross-compile."
+    "text": "Correction: my earlier note implied this was clean, but d9cc3eb failed agent-watcher CI. The OpenCode test fixture used a rollback journal with no busy timeout, so under modernc.org/sqlite a reader made the writer fail with SQLITE_BUSY. Production was unaffected, because real OpenCode databases use WAL, confirmed on 1.19.5. The fixture now matches them, and CI is green at e585504."
   }
 ]
