@@ -16,6 +16,7 @@ import { ChatQuestionField } from "../../questions/components/ChatQuestionField"
 import { readChatApproval } from "../../readChatApproval";
 import { readChatQuestions } from "../../readChatQuestions";
 import type { FetchFunction } from "../../../../shared/pristineFetch";
+import type { RunningAgent } from "../../../../shared/readRunningAgents";
 import type { ChatTarget } from "../../../../shared/types";
 import { useAgentChat } from "../../hooks/useAgentChat";
 import { AgentChatPanel } from "../AgentChatPanel";
@@ -77,6 +78,12 @@ export function isChatViewportAtBottom(viewport: HTMLDivElement): boolean {
 let liveChatConnection: IMockWebSocketConnection | null = null;
 let liveChatStatus: IChatSession["status"] = fixture_reloadSession.status;
 let liveChatEvents: IChatEvent[] = [];
+let liveAgents: readonly RunningAgent[] = [];
+
+/** Sets the running agents the server reports, which take effect on the next list. */
+export function reportRunningAgents(agents: readonly RunningAgent[]): void {
+  liveAgents = agents;
+}
 
 /** Delivers a completed agent reply, `Live reply <sequence>.`, to the saved conversation. */
 export function deliverChatReply(sequence: number): void {
@@ -164,6 +171,7 @@ export function ChatReloadScene(): JSX.Element {
 export function installChatReloadServer(
   events: readonly IChatEvent[] = fixture_reloadEvents,
   devhostSourceRootPath = "",
+  initialSessions: readonly IChatSession[] = [fixture_reloadSession],
 ): VoidFunction {
   const restoreCatalog = installPageChatCatalog();
   const catalogFetch = globalThis.fetch;
@@ -180,9 +188,11 @@ export function installChatReloadServer(
     editorEnabled: false,
     externalToolbarsEnabled: false,
   });
-  const sessions: IChatSession[] = [fixture_reloadSession];
+  const sessions: IChatSession[] = [...initialSessions];
+  liveAgents = [];
   const fetch: FetchFunction = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (url.pathname === "/__devhost__/agents") return Response.json({ agents: liveAgents });
     const closing = sessions.findIndex((session) => url.pathname === `/__devhost__/chat/sessions/${session.id}/close`);
     if (closing !== -1 && init?.method === "POST") {
       const closed: IChatSession = { ...sessions[closing], status: "closed" };
@@ -227,8 +237,11 @@ export function installChatReloadServer(
 }
 
 /** Serves chat on a page with Bun's development script, the hot reload marker that tests can add for real. */
-export function installHotReloadPage(devhostSourceRootPath = ""): VoidFunction {
-  const restoreServer = installChatReloadServer([], devhostSourceRootPath);
+export function installHotReloadPage(
+  devhostSourceRootPath = "",
+  sessions: readonly IChatSession[] = [fixture_reloadSession],
+): VoidFunction {
+  const restoreServer = installChatReloadServer([], devhostSourceRootPath, sessions);
   const script = document.createElement("script");
   script.setAttribute("data-bun-dev-server-script", "");
   document.head.append(script);

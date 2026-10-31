@@ -67,6 +67,22 @@ Listing returns only the sessions of the directory that `pageURL` and the target
 
 Sessions belong to the running stack: closing a tab or reloading never ends a turn, and stopping the stack ends every session. A new session uses the checkout selected at that time; existing sessions keep their directory. Interrupting a turn (below) leaves the session open.
 
+## Running agents
+
+`GET /__devhost__/agents` takes the same `pageURL` and `chatTarget` query as the session list, answers `404` while chat is off, and lists the agents running in that directory, including subdirectories. A scan covers every agent on the machine, so pages within five seconds of each other share one.
+
+| Field          | Content                                                         |
+| -------------- | --------------------------------------------------------------- |
+| `key`          | Identifies the row while the agent runs; not a session ID       |
+| `harness`      | `claude-code`, `codex`, `pi`, or `opencode`                     |
+| `state`        | `working`, `waiting`, `idle`, or `unknown`                      |
+| `name`         | The session's name, when it has one                             |
+| `subdirectory` | Where it runs, relative to the directory; `.` for the directory |
+| `lastActivity` | Unix milliseconds                                               |
+| `isOwned`      | Whether it is a chat session of this stack                      |
+
+The list is ordered by who needs attention: waiting, working, unknown, then idle. A top-level `error` reports a harness that could not be scanned, beside what the others found. Page scripts can read this response, so it carries no transcript paths or native session IDs.
+
 ## Event stream and commands
 
 ```text

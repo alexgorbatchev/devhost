@@ -3,10 +3,15 @@ import { createDevtoolsWebSocketUrl } from "../../shared/createDevtoolsWebSocket
 import { openReconnectingWebSocket, type IReconnectingWebSocket } from "../../shared/openReconnectingWebSocket";
 import type { ChatTarget, DevtoolsSettingsStore, ILocationHostProtocol } from "../../shared/types";
 import { readChatHarnesses, readChatServerFrame, readChatSession, readChatSessions } from "./readChatServerFrame";
+import { readRunningAgents } from "../../shared/readRunningAgents";
 import { encodeChatCommand } from "./encodeChatCommand";
 import type {
   ChatCommand,
+  ChatDecision,
+  ChatDecisionAnswer,
+  ChatDecisionHandler,
   ChatSentState,
+  ChatSessionStatus,
   IAgentChatClient,
   IAgentChatClientState,
   IChatReceipt,
@@ -20,6 +25,7 @@ interface IPendingChatSend {
   timeout: ReturnType<typeof setTimeout>;
 }
 const SEND_CONFIRMATION_TIMEOUT_MS = 45_000;
+const STOPPED_SESSION_STATUSES: readonly ChatSessionStatus[] = ["closed", "error"];
 
 export function createAgentChatClient(
   pageURL: string,
@@ -36,6 +42,7 @@ export function createAgentChatClient(
   let generation = 0;
   let sessionTask: Promise<void> | null = null;
   let cancelConnection: VoidFunction | null = null;
+  let answerDecision: ChatDecisionHandler | null = null;
   let state: IAgentChatClientState = {
     harnesses: [],
     sessions: [],
@@ -48,6 +55,8 @@ export function createAgentChatClient(
     isConnected: false,
     sendError: null,
     lastSend: null,
+    decision: null,
+    joinedSession: null,
     events: [],
     pendingRequestIds: [],
   };
@@ -164,6 +173,26 @@ export function createAgentChatClient(
       });
     });
   };
+  const ask = (decision: ChatDecision): Promise<ChatDecisionAnswer> =>
+    new Promise((resolve) => {
+      answerDecision = resolve;
+      publish({ decision });
+    });
+  const decide = (answer: ChatDecisionAnswer): void => {
+    const resolve = answerDecision;
+    answerDecision = null;
+    publish({ decision: null });
+    resolve?.(answer);
+  };
+  // Starting beside a working agent has two agents editing one checkout, which only the person can accept. Agents
+  // devhost started are not asked about, and the list is advisory: a failed scan must not stop a chat.
+  const canStartSession = async (): Promise<boolean> => {
+    const agents = await readRunningAgents(pageURL, target, lifetime.signal).catch(() => []);
+    if (agents.some((agent) => agent.isOwned)) return true;
+    const foreign = agents.filter((agent) => agent.state !== "idle");
+    if (foreign.length === 0) return true;
+    return (await ask({ kind: "agents", agents: foreign })).kind === "start";
+  };
   const newSession = (resume?: IChatSession): Promise<void> => {
     if (sessionTask) return sessionTask;
     if (resume && !resume.nativeSessionId)
@@ -173,6 +202,7 @@ export function createAgentChatClient(
     const model = harness === state.selectedHarness ? state.selectedModel : "";
     publish({ selectedHarness: harness, selectedModel: model });
     sessionTask = (async (): Promise<void> => {
+      if (!resume && !(await canStartSession())) throw new Error("No conversation was started.");
       const sessionRequest: IChatSessionRequest = {
         harness,
         pageURL,
@@ -201,6 +231,14 @@ export function createAgentChatClient(
         sessionTask = null;
       });
     return sessionTask;
+  };
+  const resumeSession = async (session: IChatSession): Promise<void> => {
+    if (session.status === "closed") return newSession(session);
+    publish({
+      selectedHarness: session.harness,
+      selectedModel: state.selectedHarness === session.harness ? state.selectedModel : "",
+    });
+    if (state.session?.id !== session.id || !state.isConnected) await attach(session);
   };
   const sendCommand = (command: ChatCommand): void => {
     if (!state.isConnected || !stream?.send(encodeChatCommand(command)))
@@ -256,14 +294,22 @@ export function createAgentChatClient(
       publish({ selectedModel: model });
     },
     newSession,
-    resumeSession(session): Promise<void> {
-      if (session.status === "closed") return newSession(session);
-      publish({
-        selectedHarness: session.harness,
-        selectedModel: state.selectedHarness === session.harness ? state.selectedModel : "",
-      });
-      return attach(session);
+    resumeSession,
+    async joinRunningSession(): Promise<void> {
+      publish({ joinedSession: null });
+      const sessions = readChatSessions(await request(`/__devhost__/chat/sessions?${scopeQuery()}`));
+      publish({ sessions });
+      const running = sessions.filter((session) => !STOPPED_SESSION_STATUSES.includes(session.status));
+      if (running.length === 0) return;
+      const answer =
+        running.length === 1
+          ? { kind: "join" as const, session: running[0] }
+          : await ask({ kind: "sessions", sessions: running });
+      if (answer.kind !== "join" || answer.session === undefined) throw new Error("The request was not sent.");
+      await resumeSession(answer.session);
+      publish({ joinedSession: answer.session });
     },
+    decide,
     async closeSession(): Promise<void> {
       const session = state.session;
       if (!session) return;
@@ -322,6 +368,7 @@ export function createAgentChatClient(
     setSendError: (sendError) => publish({ sendError }),
     dispose(): void {
       lifetime.abort();
+      answerDecision?.({ kind: "cancel" });
       detach();
       listeners.clear();
     },

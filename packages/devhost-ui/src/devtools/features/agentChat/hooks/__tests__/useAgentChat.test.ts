@@ -7,6 +7,7 @@ import {
   type IInstalledMockWebSocket,
 } from "../../../../../../test-support/installMockWebSocket";
 import type { IChatSession } from "../../types";
+import { answerAgentList } from "../../../../../../test-support/routeChatRequests";
 import { useAgentChat } from "../useAgentChat";
 
 let mockFetch: IInstalledMockFetch;
@@ -143,6 +144,7 @@ beforeEach(() => {
   for (const key of Object.keys(localStorage).filter((key) => key.startsWith("devhost:settings:")))
     localStorage.removeItem(key);
   mockFetch = installMockFetch();
+  Reflect.set(globalThis, "fetch", answerAgentList(mockFetch.fetch));
   sockets = installMockWebSocket();
   mockFetch.fetch.mockResolvedValueOnce(
     Response.json({

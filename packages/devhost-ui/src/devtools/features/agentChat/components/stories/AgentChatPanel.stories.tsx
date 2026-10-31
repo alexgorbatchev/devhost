@@ -21,10 +21,12 @@ import {
   readChatViewport,
   readOfferedConversations,
   readSentChatCommands,
+  reportRunningAgents,
   acknowledgeChatSend,
   copyChatImage,
 } from "./helpers";
-import { fixture_devhostSession, fixture_toolSequenceEvents } from "./fixtures";
+import { fixture_devhostSession, fixture_reloadSession, fixture_toolSequenceEvents } from "./fixtures";
+import type { RunningAgent } from "../../../../shared/readRunningAgents";
 import {
   devtoolsStoryShadowRootHostTestId,
   readDevtoolsStoryShadowCanvas,
@@ -280,6 +282,106 @@ export const UnconfirmedDisableReloadsIsNotOfferedAgain: Story = {
     expect(await canvas.findByTestId("ChatDeliveryStatus")).toHaveTextContent("Check the conversation");
     expect(canvas.queryByRole("alert")).toBeNull();
     expect(canvas.queryByTestId("HotReloadNotice")).toBeNull();
+  },
+};
+
+export const DisableReloadsJoinsTheOneRunningConversation: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    expect(
+      await canvas.findByText(`Sent to the running conversation codex · ${fixture_reloadSession.id}.`),
+    ).toBeVisible();
+    expect(canvas.queryByRole("alertdialog")).toBeNull();
+  },
+};
+
+export const DisableReloadsAsksWhichConversationWhenSeveralRun: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage("", [fixture_reloadSession, { ...fixture_reloadSession, id: "second" }]),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    const prompt = within(await canvas.findByRole("alertdialog"));
+    expect(prompt.getByText(/Which one should get this request/)).toBeVisible();
+    await userEvent.click(prompt.getByRole("button", { name: "codex · second" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    expect(await canvas.findByText("Sent to the running conversation codex · second.")).toBeVisible();
+  },
+};
+
+export const CancellingTheChoiceSendsNothing: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installHotReloadPage("", [fixture_reloadSession, { ...fixture_reloadSession, id: "second" }]),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Disable Reloads" }));
+    await userEvent.click(within(await canvas.findByRole("alertdialog")).getByRole("button", { name: "Cancel" }));
+    expect(await canvas.findByText("The request was not sent.")).toBeVisible();
+    expect(await canvas.findByTestId("HotReloadNotice")).toBeVisible();
+  },
+};
+
+const foreignAgent: RunningAgent = {
+  key: "claude-code:1",
+  harness: "claude-code",
+  state: "waiting",
+  name: "busy-agent",
+  subdirectory: "packages/ui",
+  lastActivity: 1,
+  isOwned: false,
+};
+
+export const AsksBeforeStartingBesideAnAgentDevhostDidNotStart: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer([], "", []),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    reportRunningAgents([foreignAgent]);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    await userEvent.type(await canvas.findByRole("textbox", { name: "Message input" }), "Fix the heading");
+    await userEvent.click(canvas.getByRole("button", { name: "Send Message" }));
+    const prompt = within(await canvas.findByRole("alertdialog"));
+    expect(prompt.getByText("claude-code (busy-agent) is waiting for approval in packages/ui.")).toBeVisible();
+
+    await userEvent.click(prompt.getByRole("button", { name: "Cancel" }));
+    expect(await canvas.findByText("No conversation was started.")).toBeVisible();
+    expect(canvas.getByRole("textbox", { name: "Message input" })).toHaveValue("Fix the heading");
+
+    await userEvent.click(canvas.getByRole("button", { name: "Send Message" }));
+    await userEvent.click(within(await canvas.findByRole("alertdialog")).getByRole("button", { name: "Start Anyway" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+  },
+};
+
+export const IdleForeignAgentDoesNotInterrupt: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer([], "", []),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    reportRunningAgents([{ ...foreignAgent, state: "idle" }]);
+    await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
+    await userEvent.type(await canvas.findByRole("textbox", { name: "Message input" }), "Fix the heading");
+    await userEvent.click(canvas.getByRole("button", { name: "Send Message" }));
+    await waitFor(() => expect(readSentChatCommands()).toHaveLength(1));
+    expect(canvas.queryByRole("alertdialog")).toBeNull();
+  },
+};
+
+export const RunningAgentsReachTheToolbar: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => {
+    const restore = installChatReloadServer([], "", []);
+    reportRunningAgents([foreignAgent]);
+    return restore;
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Running agents: 1" }));
+    expect(await canvas.findByText(/Waiting for approval · packages\/ui/)).toBeVisible();
   },
 };
 

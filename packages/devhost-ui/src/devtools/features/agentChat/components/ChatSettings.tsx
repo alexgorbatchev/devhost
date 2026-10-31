@@ -19,6 +19,7 @@ import {
 import { RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { useId, type JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
+import { formatChatSessionLabel } from "../formatChatSessionLabel";
 import type { IAgentChatController, IChatSession } from "../types";
 
 interface IChatSettingsProps {
@@ -154,6 +155,6 @@ export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element 
 
 // A closed conversation stays listed: choosing it resumes the native session in a new process.
 function formatConversationLabel(session: IChatSession): string {
-  const label = `${session.harness} · ${session.id}`;
+  const label = formatChatSessionLabel(session);
   return session.status === "closed" ? `${label} · closed` : label;
 }

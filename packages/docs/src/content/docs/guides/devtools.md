@@ -50,11 +50,24 @@ With chat on, a page served with hot reloading shows a notice under the toolbar,
 | Bun     | Bun's development script, absent with `hmr: false`          |
 | webpack | A global starting with `webpackHotUpdate`, the default name |
 
-**Disable Reloads** opens chat and asks your agent, in the **Project** directory, to turn off hot module replacement, automatic page reloads, and server restarts on file changes. It sends without selected elements, drawings, or a screenshot, into the open conversation or a new one, and the agent changes the configuration through its usual approvals. The notice stays hidden until the next page load, and through later loads while the agent still has the request, since its own edits can reload the page. It does not return once the page loads without the client. If the message cannot be delivered, chat shows why and the notice comes back.
+**Disable Reloads** opens chat and asks your agent, in the **Project** directory, to turn off hot module replacement, automatic page reloads, and server restarts on file changes. It sends without selected elements, drawings, or a screenshot, and the agent changes the configuration through its usual approvals. If one conversation is running in the project the request joins it, and chat names it; if several are, chat asks which one, because the request changes shared configuration; with none running it starts one. The notice stays hidden until the next page load, and through later loads while the agent still has the request, since its own edits can reload the page. It does not return once the page loads without the client. If the message cannot be delivered, chat shows why and the notice comes back.
 
 **Dismiss** hides the notice for this project and page origin in this browser.
 
 The notice means the client loaded, not that it is connected: a Vite server started with `server.ws: false` still shows it. Other tools, and a custom webpack `output.hotUpdateGlobal`, show no notice.
+
+## Running agents
+
+When coding agents are running in this checkout, the toolbar shows how many, with a spinner while any of them works. It lists Claude Code, Codex, Pi, and OpenCode agents, including ones you started in a terminal. Open it for each agent's harness, state, name, subdirectory, and last activity; the agent chat is talking to is marked **this chat**. Agents working in a subdirectory count, and an agent's own subagents do not.
+
+| State                  | Meaning                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| Working                | The agent is on a turn                                  |
+| Waiting for approval   | Claude Code is waiting for you to approve something     |
+| Idle                   | The agent's process is running, but it is doing nothing |
+| Running, state unknown | The process is running and its harness records no state |
+
+Codex does not record pending approvals, so a Codex agent waiting for one reads as working. Pi and OpenCode record no state. The list needs `[devtools.chat].enabled`, refreshes every ten seconds while the page is visible, and only reports: it shows no transcripts and cannot send anything to an agent.
 
 ## Services panel
 

@@ -3,16 +3,25 @@ import { afterEach, assert, beforeEach, expect, test, vi } from "vitest";
 import { z } from "zod";
 import { installMockWebSocket, type IInstalledMockWebSocket } from "../../../../../test-support/installMockWebSocket";
 import type { IMockWebSocketConnection } from "../../../../../test-support/createMockWebSocket";
+import { installMockFetch, type IInstalledMockFetch } from "../../../../../test-support/installMockFetch";
+import {
+  answerAgentList,
+  answerChatSessions,
+  failAgentList,
+  readNewest,
+} from "../../../../../test-support/routeChatRequests";
 import { createAgentChatClient } from "../createAgentChatClient";
 import type { IAgentChatClient, IChatSession } from "../types";
 import { createDevtoolsSettingsStore } from "../../../shared/createDevtoolsSettingsStore";
 
 let sockets: IInstalledMockWebSocket;
 let client: IAgentChatClient;
+let network: IInstalledMockFetch;
 const session: IChatSession = { id: "accepted-session", harness: "codex", projectRootPath: "/project", status: "idle" };
 
 beforeEach(() => {
   sockets = installMockWebSocket();
+  network = installMockFetch();
   const storage = new Map<string, string>();
   const settings = createDevtoolsSettingsStore(
     { projectRootPath: "/project", pageURL: "https://app.localhost/page" },
@@ -32,6 +41,7 @@ afterEach(async () => {
   client.dispose();
   await Promise.resolve();
   sockets.restore();
+  network.restore();
   vi.useRealTimers();
 });
 
@@ -118,4 +128,103 @@ test("a message that could not be written is a definite failure", async () => {
   await waitFor(() => expect(client.getSnapshot().isConnected).toBe(false));
   await expect(client.send({ text: "Review this" }, "Review this")).rejects.toThrow("disconnected");
   expect(client.getSnapshot().lastSend?.state).toBe("failed");
+});
+
+const startedSession: IChatSession = { ...session, id: "started-session" };
+
+function serveChat(sessions: readonly IChatSession[], agents: readonly unknown[] = []): void {
+  network.fetch.mockImplementation(answerAgentList(answerChatSessions(sessions, startedSession), agents));
+}
+
+function connectNextSession(connected: IChatSession): void {
+  void waitFor(() => {
+    readNewest(sockets.connections).send({
+      type: "snapshot",
+      sessionId: connected.id,
+      session: connected,
+      events: [],
+      pendingRequestIds: [],
+    });
+  });
+}
+
+test("joining with nothing running leaves the send to start a session", async () => {
+  serveChat([]);
+  await client.joinRunningSession();
+  expect(client.getSnapshot().session).toBeNull();
+  expect(client.getSnapshot().joinedSession).toBeNull();
+});
+
+test("joining ignores sessions that have stopped", async () => {
+  serveChat([
+    { ...session, status: "closed" },
+    { ...session, id: "failed", status: "error" },
+  ]);
+  await client.joinRunningSession();
+  expect(client.getSnapshot().decision).toBeNull();
+  expect(client.getSnapshot().joinedSession).toBeNull();
+});
+
+test("joining attaches the one running session and names it", async () => {
+  serveChat([session]);
+  connectNextSession(session);
+  await client.joinRunningSession();
+  expect(client.getSnapshot().session?.id).toBe(session.id);
+  expect(client.getSnapshot().joinedSession?.id).toBe(session.id);
+});
+
+test("joining the attached session opens no second connection", async () => {
+  await attachSession();
+  serveChat([session]);
+  await client.joinRunningSession();
+  expect(sockets.connections).toHaveLength(1);
+});
+
+test("joining asks when several run, and a cancel sends nothing", async () => {
+  const other: IChatSession = { ...session, id: "other" };
+  serveChat([session, other]);
+  const joined = client.joinRunningSession();
+  await waitFor(() => expect(client.getSnapshot().decision?.kind).toBe("sessions"));
+  client.decide({ kind: "cancel" });
+  await expect(joined).rejects.toThrow("The request was not sent.");
+  expect(client.getSnapshot().decision).toBeNull();
+  expect(sockets.connections).toHaveLength(0);
+});
+
+test("starting asks about a working agent devhost did not start", async () => {
+  serveChat([], [{ key: "k", harness: "codex", state: "working", subdirectory: ".", lastActivity: 1, isOwned: false }]);
+  const started = client.newSession();
+  await waitFor(() => expect(client.getSnapshot().decision?.kind).toBe("agents"));
+  client.decide({ kind: "cancel" });
+  await expect(started).rejects.toThrow("No conversation was started.");
+});
+
+test("starting does not ask when devhost already runs a session here", async () => {
+  serveChat(
+    [],
+    [
+      { key: "a", harness: "codex", state: "working", subdirectory: ".", lastActivity: 1, isOwned: true },
+      { key: "b", harness: "codex", state: "working", subdirectory: ".", lastActivity: 1, isOwned: false },
+    ],
+  );
+  const started = client.newSession();
+  connectNextSession(startedSession);
+  await started;
+  expect(client.getSnapshot().decision).toBeNull();
+});
+
+test("a failed agent scan does not stop a chat from starting", async () => {
+  network.fetch.mockImplementation(failAgentList(answerChatSessions([], startedSession)));
+  const started = client.newSession();
+  connectNextSession(startedSession);
+  await started;
+  expect(client.getSnapshot().session?.id).toBe("started-session");
+});
+
+test("disposing answers a pending decision", async () => {
+  serveChat([session, { ...session, id: "other" }]);
+  const joined = client.joinRunningSession();
+  await waitFor(() => expect(client.getSnapshot().decision?.kind).toBe("sessions"));
+  client.dispose();
+  await expect(joined).rejects.toThrow("The request was not sent.");
 });

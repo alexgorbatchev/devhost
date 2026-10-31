@@ -39,6 +39,8 @@ Chat opens compact, showing a working spinner and then the latest reply. **Expan
 
 You can send more messages while the agent works, including while it waits for an approval. Codex receives them as steering for the current turn, Claude Code as streaming input, and the agent decides when to use them. Sending never approves a pending tool or interrupts the agent. A model change applies from the next turn.
 
+Before starting a conversation, chat checks for [running agents](../devtools/#running-agents) it did not start. If one is working or waiting in this checkout, chat names it and asks, because two agents would edit the same files: **Start Anyway** or **Cancel**, which keeps your draft. An idle agent does not prompt, and neither does one when chat already has a running conversation here. Chat cannot send to an agent it did not start.
+
 Chat says when a message is waiting for the agent to read it. **Delivery unconfirmed** means devhost could not tell whether the agent received it, usually because the connection dropped: look at the conversation before sending it again, because devhost never resends a message and the agent may already have it. Stopping a turn cancels messages still waiting, and chat says so.
 
 Paste a PNG or JPEG into the composer to attach it. A message, with all its images, must fit in 8 MiB; a rejected send puts its text and images back in the composer.
