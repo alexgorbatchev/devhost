@@ -4,17 +4,8 @@
       "name": "Alex Gorbatchev",
       "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793417170,
-    "op": "SetTitle",
-    "title": "agent-parser: replace the WASM SQLite driver with modernc.org/sqlite"
-  },
-  {
-    "author": {
-      "name": "Alex Gorbatchev",
-      "email": "alex.gorbatchev@gmail.com"
-    },
-    "timestamp": 1793417170,
-    "op": "SetDescription",
-    "description": "agent-parser reads OpenCode databases through `github.com/ncruces/go-sqlite3`, which runs SQLite as WASM. Replace it with `modernc.org/sqlite`, a pure Go driver. Do not use a cgo driver: devhost release artifacts are cross-compiled with `CGO_ENABLED=0` (`apps/devhost/scripts/buildReleaseArtifacts.ts`).\n\nThe driver is registered in one place, `opencode.go`, and used through `database/sql`. agent-watcher names the module in `go.mod` for its tests and inherits the runtime dependency through agent-parser, so its `go.mod` and test fixtures change too. devhost has no SQLite dependency today and gains this one when it adopts agent-watcher.\n\nChecked with a throwaway probe of `modernc.org/sqlite` v1.61.0, built with `CGO_ENABLED=0`:\n- The current DSN works unchanged: `mode=ro` rejected a write, and `_pragma` set `busy_timeout` to 5000 and `foreign_keys` on.\n- The driver name changes from `sqlite3` to `sqlite`.\n- It compiles for `linux/amd64`, `linux/arm64` and `darwin/arm64`.\n\nStill to check:\n- `OpenOpencodeDB` also has a `file::memory:?cache=shared` DSN, which the probe did not cover.\n- Reads must stay safe while OpenCode is writing to the database.\n- Binary size will grow. A minimal program using this driver built to 10.0 MB, while the full agent-watcher scanner probe with the WASM driver built to 4.5 MB. Compare real builds, along with startup and query time.\n- Update the `rust` counterpart only if it shares the dependency.\n\nDone when agent-parser and agent-watcher pass their tests on the new driver, `go mod tidy` removes the WASM modules from both, and a `CGO_ENABLED=0` build reads a real OpenCode database."
+    "timestamp": 1793418422,
+    "op": "SetStatus",
+    "status": "done"
   }
 ]
