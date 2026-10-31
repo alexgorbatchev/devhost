@@ -1,0 +1,42 @@
+[
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "CreateTask",
+    "title": "Enable Claude Code session state events",
+    "kind": "bug",
+    "description": "devhost handles `session_state_changed` (`chat_sessions.go`), but nothing in the repository sets `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS`, which the SDK docs say enables it. A queued message that starts after a `result` will likely show the session as idle or errored while the agent is working.\n\nSet the variable for Claude Code sessions, and test a message that starts after a `result`. The behavior is inferred from the docs and code, so confirm it before changing the UI."
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetPriority",
+    "priority": "medium"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "AddLabel",
+    "label": "chat"
+  },
+  {
+    "author": {
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
+    },
+    "timestamp": 1793415764,
+    "op": "SetParent",
+    "parent": "7b64ca51990f7eb2e449c62860c5f0b78e42837f",
+    "parent_repo": null,
+    "parent_label": null
+  }
+]
