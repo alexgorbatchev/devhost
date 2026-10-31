@@ -1,10 +1,11 @@
 [
   {
     "author": {
-      "name": "git-task-automation",
-      "email": "automation@git-task.local"
+      "name": "Alex Gorbatchev",
+      "email": "alex.gorbatchev@gmail.com"
     },
-    "timestamp": 1793419713,
-    "op": "ClearAssignee"
+    "timestamp": 1793419714,
+    "op": "AddComment",
+    "text": "Done. msg_lifecycle_v1 cannot gate this: on 2.1.310 system/init arrives after the first message's lifecycle frames, so a frame counts as its own evidence and the capability is unused. Frame shape, measured: {type: command_lifecycle, command_uuid, state, uuid, session_id}. The browser's command ID is now the native message ID, so replay finds the message."
   }
 ]
