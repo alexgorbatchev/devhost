@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-10-31 14:30
+  last_modified: 2026-11-01 08:47
   status: current
 ---
 
@@ -82,7 +82,7 @@ Stack shutdown preserves the loaded app without opening service-crash recovery. 
 
 The running stack immediately acknowledges its first shutdown signal, before waiting for in-flight startup or reload work. Under `AGENT=1`, Ctrl-C prints `stack-name: Received SIGINT (Ctrl-C) (signal 2); shutting down the stack.` once; SIGHUP and SIGTERM also name the received signal. The stack prints `stack-name: Stopping service <name>...` before signaling each managed foreground service or running a daemon's stop command, and `stack-name: Stopped service <name>.` after its cleanup succeeds. Human mode uses the aligned stack prefix described above for the same messages. `Stack stopped.` confirms service and routing cleanup completed successfully. Child stdout/stderr remains visible during shutdown, and cleanup failures report the affected services. Signal-driven shutdown retains the signal exit codes listed above.
 
-Read the preceding stack log to explain child signal `15` or exit code `143`: devhost prints the startup health failure before sending `SIGTERM (signal 15)` to a foreground service and announces a signal received by the stack before shutdown. Managed startup progress includes the TCP address or HTTP URL, elapsed time, and configured timeout. TCP failures retain the checked address and, when the other loopback address accepted a connection, a concrete `services.<name>.bindHost` hint in terminal and recovery errors. Verify the listener belongs to the app before applying the suggested `bindHost` setting; the probe establishes connectivity only. The mismatch warning appears once per startup attempt; checks continue against the configured target. HTTP failures name the URL and the required 2xx response.
+Read the preceding stack log to explain child signal `15` or exit code `143`: devhost prints the startup health failure before sending `SIGTERM (signal 15)` to a foreground service and announces a signal received by the stack before shutdown. A service killed by a signal from elsewhere has no such line; devhost reports `128` plus the signal number as its exit code, such as `137` for SIGKILL, in the log, the health response, and recovery. Managed startup progress includes the TCP address or HTTP URL, elapsed time, and configured timeout. TCP failures retain the checked address and, when the other loopback address accepted a connection, a concrete `services.<name>.bindHost` hint in terminal and recovery errors. Verify the listener belongs to the app before applying the suggested `bindHost` setting; the probe establishes connectivity only. The mismatch warning appears once per startup attempt; checks continue against the configured target. HTTP failures name the URL and the required 2xx response.
 
 ### Restart With an Updated Executable
 

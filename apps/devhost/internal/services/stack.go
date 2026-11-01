@@ -50,11 +50,7 @@ var readListeningProcessIDs = readListeningProcessIDsForBindHost
 
 var supportedSignals = []os.Signal{syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM}
 
-var signalExitCodes = map[syscall.Signal]int{
-	syscall.SIGINT:  130,
-	syscall.SIGHUP:  129,
-	syscall.SIGTERM: 143,
-}
+const signalExitCodeBase = 128
 
 type StartStackOptions struct {
 	// File sessions own their backend and report unexpected listener failures.
@@ -1384,12 +1380,17 @@ func readSignalExitCode(receivedSignal os.Signal) int {
 		return 1
 	}
 
-	exitCode, ok := signalExitCodes[signalValue]
-	if !ok {
-		return 1
+	return signalExitCodeBase + int(signalValue)
+}
+
+// readProcessExitCode follows the shell convention because ProcessState.ExitCode
+// reports every signaled process as -1, which hides the signal.
+func readProcessExitCode(state *os.ProcessState) int {
+	if status, ok := state.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+		return readSignalExitCode(status.Signal())
 	}
 
-	return exitCode
+	return state.ExitCode()
 }
 
 func collectClaimedHosts(services map[string]ResolvedService) []string {
@@ -1776,13 +1777,10 @@ func sendSignal(command *exec.Cmd, signal os.Signal) {
 }
 
 func (s *startedService) waitForExit() {
-	err := s.cmd.Wait()
-	exitCode := -1
+	_ = s.cmd.Wait() // ProcessState carries the outcome; it is nil only when waiting itself failed.
+	exitCode := 1
 	if s.cmd.ProcessState != nil {
-		exitCode = s.cmd.ProcessState.ExitCode()
-	}
-	if err != nil && s.cmd.ProcessState == nil {
-		exitCode = 1
+		exitCode = readProcessExitCode(s.cmd.ProcessState)
 	}
 
 	s.exitMu.Lock()

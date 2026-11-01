@@ -2270,11 +2270,42 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 	if err := stopStartedService(startedService, 50*time.Millisecond); err != nil {
 		t.Fatalf("stopStartedService(...) error = %v", err)
 	}
-	if startedService.exitCodeValue() != -1 {
-		t.Fatalf("exit code = %d, want signal exit", startedService.exitCodeValue())
+	if startedService.exitCodeValue() != 137 {
+		t.Fatalf("exit code = %d, want 137 for SIGKILL", startedService.exitCodeValue())
 	}
 	if waitForExitWithinGracePeriod(startedService, 50*time.Millisecond) != true {
 		t.Fatal("waitForExitWithinGracePeriod(...) = false, want true for exited process")
+	}
+}
+
+func TestServiceExitCodeFollowsTheShellConvention(t *testing.T) {
+	tests := []struct {
+		name   string
+		script string
+		want   int
+	}{
+		{name: "exit status", script: "exit 3", want: 3},
+		{name: "sigterm", script: "kill -s TERM $$", want: 143},
+		{name: "sigkill", script: "kill -s KILL $$", want: 137},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+				BindHost: "127.0.0.1",
+				Command:  []string{"sh", "-c", tt.script},
+				Cwd:      t.TempDir(),
+				Name:     "worker",
+			}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
+			if err != nil {
+				t.Fatalf("startServiceProcess(...) error = %v", err)
+			}
+			defer startedService.closeContainment()
+
+			startedService.wait()
+			if got := startedService.exitCodeValue(); got != tt.want {
+				t.Fatalf("exit code = %d, want %d", got, tt.want)
+			}
+		})
 	}
 }
 

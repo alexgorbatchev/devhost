@@ -18,7 +18,7 @@ If a service fails to start, fails its health check, exits, or stops answering, 
 - **External services** (`managed = false`) show their status only; recover them outside devhost.
 - **Daemon services** report their health check, not a process exit.
 
-With the toolbar, when the service behind the page you are on exits, or a service it lists in `dependsOn`, directly or through another service, a full-screen recovery view opens with the exit code, logs, and a **Restart** button. It closes once the service recovers. Stopping the stack or restarting a service on purpose does not open it.
+With the toolbar, when the service behind the page you are on exits, or a service it lists in `dependsOn`, directly or through another service, a full-screen recovery view opens with the exit code, logs, and a **Restart** button. A service killed by a signal reports `128` plus the signal number, as a shell does: `137` for `SIGKILL`, `143` for `SIGTERM`. The view closes once the service recovers. Stopping the stack or restarting a service on purpose does not open it.
 
 Any other service that exits leaves the page alone: a Storybook crash does not cover your app. It turns red in the [Services panel](../../guides/devtools/#services-panel), which has its **Restart** button and a link to its hostname, where its logs are.
 

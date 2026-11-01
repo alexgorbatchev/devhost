@@ -112,7 +112,7 @@ When the health check fails on one loopback address but the other answers, devho
 
 ## A tool reports signal 15 or exit code 143
 
-Messages such as `recipe dev was terminated ... by signal 15` or `script "dev" exited with code 143` mean devhost stopped that process. The devhost line just before it says why: a failed health check or a shutdown signal the stack received (`Received ...; shutting down the stack.`).
+Messages such as `recipe dev was terminated ... by signal 15` or `script "dev" exited with code 143` mean devhost stopped that process. The devhost line just before it says why: a failed health check or a shutdown signal the stack received (`Received ...; shutting down the stack.`). Without such a line, something else sent the signal, and devhost reports `exited with code 143`, or `137` for `SIGKILL`, which often means the system ran out of memory.
 
 ## One command runs several dev servers
 
