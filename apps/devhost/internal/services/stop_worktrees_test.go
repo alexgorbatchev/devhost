@@ -51,8 +51,11 @@ func TestPlainStopSuggestsWorktreesWithoutStoppingThem(t *testing.T) {
 }
 
 func TestStopWorktreesRequiresGit(t *testing.T) {
-	err := StopStack(StopStackOptions{ManifestPath: filepath.Join(t.TempDir(), "devhost.toml"), Worktrees: true}, map[string]string{"DEVHOST_STATE_DIR": t.TempDir()}, io.Discard, io.Discard)
-	if err == nil || !strings.Contains(err.Error(), "Git repository") {
+	// A temporary directory can sit inside this checkout, and runGit drops GIT_CEILING_DIRECTORIES,
+	// so the filesystem root is the one place outside every repository.
+	manifestPath := filepath.Join(string(filepath.Separator), "devhost.toml")
+	err := StopStack(StopStackOptions{ManifestPath: manifestPath, Worktrees: true}, map[string]string{"DEVHOST_STATE_DIR": t.TempDir()}, io.Discard, io.Discard)
+	if err == nil || !strings.Contains(err.Error(), "--worktrees requires") {
 		t.Fatalf("error = %v", err)
 	}
 }
