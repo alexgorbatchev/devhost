@@ -6,8 +6,8 @@ github.com/alexgorbatchev/agent-parser v1.0.2-0.20261031034511-b1bb4e003d79 h1:j
 github.com/alexgorbatchev/agent-parser v1.0.2-0.20261031034511-b1bb4e003d79/go.mod h1:80m3jmYekHjN8r0ApKKPJlBVXniXCPV0igSqVhXdLwY=
 github.com/alexgorbatchev/agent-watcher v1.0.2-0.20261031050843-e58550425ef9 h1:58x2yEvddZzI25Ysc6TyU7wQyG6ROW9KzHzO9X8CxoM=
 github.com/alexgorbatchev/agent-watcher v1.0.2-0.20261031050843-e58550425ef9/go.mod h1:Asq1SDtD0SW1tyY/P2/N3EoY93Q/T1bwVyyVkPmtS+E=
-github.com/alexgorbatchev/cobra-help-tree/v3 v3.0.0 h1:t6wvTnWwj2v4Igf3xbR4ZsJtXgSk7t2suPJrzvzyzdI=
-github.com/alexgorbatchev/cobra-help-tree/v3 v3.0.0/go.mod h1:svCW/AgjJrFTC3AIKoyS/cr6Jg/RKggdBlW/Q+JIfak=
+github.com/alexgorbatchev/cobra-help-tree/v4 v4.0.0 h1:lsgP09cFsQq25htGjEYvh8ATiBE7t7R7ECfJBe01QVU=
+github.com/alexgorbatchev/cobra-help-tree/v4 v4.0.0/go.mod h1:iW2OKycMBhufRu+sBuCIqV8uwzqLfLzz24zyP65j/cY=
 github.com/charmbracelet/x/ansi v0.11.9 h1:kIrqLBxtTVbLyyHO2Evoi93EjQo1mylWmpNEsfPxXAM=
 github.com/charmbracelet/x/ansi v0.11.9/go.mod h1:DG/hpOnaI2QJ/KMMqLL2h0KVhluuJLazf8973P+Vy5w=
 github.com/chromedp/cdproto v0.157.8 h1:Tkq0AjsUlC3Z4sJfHBzV/uAAxnTF/AZyuSTjfV/1gvk=

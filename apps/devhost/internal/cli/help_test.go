@@ -234,7 +234,7 @@ func TestParseCommandLineArgumentsAgentHelpListsTheWholeTree(t *testing.T) {
 	}
 }
 
-func TestParseCommandLineArgumentsTrimsHelpToTerminalWidth(t *testing.T) {
+func TestParseCommandLineArgumentsWrapsHelpToTerminalWidth(t *testing.T) {
 	const terminalWidth = 60
 	t.Setenv("AGENT", "0")
 	t.Setenv("COLUMNS", "60")
@@ -269,8 +269,6 @@ func TestParseCommandLineArgumentsTrimsHelpToTerminalWidth(t *testing.T) {
 }
 
 // helpBlockLines returns the lines under heading up to the next blank line.
-// Only these blocks are trimmed by cobra-help-tree; long descriptions and the
-// trailing hint line are printed verbatim.
 func helpBlockLines(help string, heading string) []string {
 	_, afterHeading, found := strings.Cut(help, heading+"\n")
 	if !found {
