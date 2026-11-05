@@ -57,13 +57,24 @@ func TestControlServerSendsResourceUsageOnAttachAndOnEveryReading(t *testing.T) 
 
 	var cpuPercent atomic.Int64
 	cpuPercent.Store(10)
+	readCPU, readDisk := make(chan struct{}), make(chan struct{})
 	controlServer := startResourceUsageControlServer(t, ResourceUsageOptions{
 		Intervals: hostusage.Intervals{CPU: 20 * time.Millisecond, Disk: time.Hour},
 		Readers: hostusage.Readers{
-			CPU: func(context.Context) (hostusage.CPUUsage, error) {
+			CPU: func(ctx context.Context) (hostusage.CPUUsage, error) {
+				select {
+				case <-ctx.Done():
+					return hostusage.CPUUsage{}, ctx.Err()
+				case <-readCPU:
+				}
 				return hostusage.CPUUsage{Percent: float64(cpuPercent.Load()), Cores: 4}, nil
 			},
-			Disk: func(context.Context) (hostusage.SpaceUsage, error) {
+			Disk: func(ctx context.Context) (hostusage.SpaceUsage, error) {
+				select {
+				case <-ctx.Done():
+					return hostusage.SpaceUsage{}, ctx.Err()
+				case <-readDisk:
+				}
 				return hostusage.SpaceUsage{Percent: 40, UsedBytes: 4, TotalBytes: 10}, nil
 			},
 		},
@@ -79,11 +90,19 @@ func TestControlServerSendsResourceUsageOnAttachAndOnEveryReading(t *testing.T) 
 	socket := mustDialWebsocket(t, websocketURL(controlServer.Port(), resourcesWebsocketPath))
 	defer socket.Close()
 	_ = socket.SetReadDeadline(time.Now().Add(5 * time.Second))
-	// The two readouts are first read concurrently, so the page may connect between them.
+	// Attach before either reader completes, then release each first reading.
+	// All three snapshots are valid; their arrival does not depend on scheduling.
+	if message := readWebsocketText(t, socket); message != `{}` {
+		t.Fatalf("resource usage before first reads = %s, want {}", message)
+	}
+	close(readDisk)
+	const partial = `{"disk":{"percent":40,"usedBytes":4,"totalBytes":10}}`
+	if message := readWebsocketText(t, socket); message != partial {
+		t.Fatalf("resource usage after disk read = %s, want %s", message, partial)
+	}
+	close(readCPU)
 	if message := readWebsocketText(t, socket); message != first {
-		if next := readWebsocketText(t, socket); next != first {
-			t.Fatalf("resource usage after both first reads = %s (preceded by %s), want %s", next, message, first)
-		}
+		t.Fatalf("resource usage after both first reads = %s, want %s", message, first)
 	}
 
 	// Unchanged readings are not sent again, so the next message is the changed one.
