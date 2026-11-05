@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-05 05:36
-last_modified: 2026-11-05 06:25
+last_modified: 2026-11-05 07:13
 status: current
 ---
 
@@ -30,4 +30,4 @@ Demo workflow tests use disposable repository fixtures and remove them. Real rec
 
 1. Run `just setup` to prepare dependencies and browser binaries, then run `just check` for all repository gates.
 2. When changing fixture ownership, compare the checkout's `.tmp/`, the caller's temporary directory, the system temporary directory, and the process list before and after `just test`. Account separately for the retained dependencies, media, builds, and coverage reports above.
-3. Exercise a failing command and interrupt a running command through `test-support/runTests.sh`; verify the exit status, removal of that command's directory, and termination of its subprocesses. Never clean an unrelated run to make the audit pass.
+3. Exercise a failing command and interrupt a running command through `test-support/runTests.sh`; verify the exit status, removal of that command's directory, and termination of its subprocesses. Never clean an unrelated run to make the audit pass. The shell regression included in both root commands injects failed signal delivery while retaining real processes and process inspection. It verifies that the runner reports surviving processes and preserves scratch before attempting to join them; it does not reproduce uninterruptible kernel I/O.

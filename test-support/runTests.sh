@@ -66,11 +66,11 @@ cleanup() {
       done
       [[ -n "$groups" ]] || break
     done
-    wait "$TEST_PID" 2>/dev/null || true
     if [[ -n "$groups" ]]; then
       printf 'ERROR: test processes survived shutdown; preserving %s\n' "$RUN_DIRECTORY" >&2
       exit 1
     fi
+    wait "$TEST_PID" 2>/dev/null || true
   fi
   rm -rf -- "$RUN_DIRECTORY" || result=1
   exit "$result"

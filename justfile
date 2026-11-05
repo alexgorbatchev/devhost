@@ -15,6 +15,7 @@ run-ai *args: (devhost::run-ai args)
 
 # Run every workspace test suite
 test:
+    bash test-support/runTests.test.sh
     just devhost test
     just design test
     just ui test
@@ -26,6 +27,7 @@ check:
     @echo 'Running formatting and policy checks...'
     bun typescript-ai-policy check
     @echo 'Formatting and policy checks passed successfully!'
+    bash test-support/runTests.test.sh
     just devhost check
     just design check
     just ui check
