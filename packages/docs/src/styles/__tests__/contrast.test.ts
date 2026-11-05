@@ -1,6 +1,7 @@
+import { tmpdir } from "node:os";
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 
@@ -12,16 +13,17 @@ let browser: Browser;
 let runDirectoryPath: string;
 
 beforeAll(async () => {
-  const parentPath: string = resolve(import.meta.dir, "../../../../../.tmp/docs-contrast-tests");
-
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   runDirectoryPath = await mkdtemp(join(parentPath, "browser-"));
   browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(runDirectoryPath) });
 });
 
 afterAll(async () => {
-  await browser.close();
-  await rm(runDirectoryPath, { recursive: true, force: true });
+  try {
+    await browser?.close();
+  } finally {
+    await rm(runDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 describe("docs contrast", () => {

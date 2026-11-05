@@ -1,3 +1,4 @@
+import { tmpdir } from "node:os";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, expect, it } from "bun:test";
@@ -111,8 +112,7 @@ async function createFilm(name: string, filmTimings: IGuideAudioTimings): Promis
 }
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   directoryPath = await mkdtemp(join(parentPath, "guide-film-"));
   await runCommand([
     "ffmpeg",

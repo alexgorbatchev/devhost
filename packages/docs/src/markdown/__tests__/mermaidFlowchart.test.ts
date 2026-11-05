@@ -1,6 +1,7 @@
+import { tmpdir } from "node:os";
 import assert from "node:assert";
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { Root } from "hast";
 import { toHtml } from "hast-util-to-html";
@@ -26,16 +27,17 @@ let browser: Browser;
 let runDirectoryPath: string;
 
 beforeAll(async () => {
-  const parentPath: string = resolve(import.meta.dir, "../../../../../.tmp/docs-mermaid-tests");
-
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   runDirectoryPath = await mkdtemp(join(parentPath, "browser-"));
   browser = await chromium.launch({ env: await createOwnedBrowserEnvironment(runDirectoryPath) });
 });
 
 afterAll(async () => {
-  await browser.close();
-  await rm(runDirectoryPath, { recursive: true, force: true });
+  try {
+    await browser?.close();
+  } finally {
+    await rm(runDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 async function renderFlowchart(): Promise<string> {

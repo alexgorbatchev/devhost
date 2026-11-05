@@ -46,7 +46,7 @@ func TestStartServiceProcessReportsStartupContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := ResolvedService{Name: "garaje", Cwd: tt.cwd, Command: []string{tt.command}}
-			started, err := startServiceProcess(ResolvedManifest{}, service, processStartOptions{})
+			started, err := startTestServiceProcess(ResolvedManifest{}, service, processStartOptions{})
 			if started != nil || err == nil {
 				t.Fatalf("startServiceProcess = %v, %v; want no process and an error", started, err)
 			}

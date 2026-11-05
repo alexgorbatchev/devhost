@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright";
@@ -11,9 +11,7 @@ import type { ITabCaptureAcceptanceOptions, ITabCaptureAcceptanceProof, ITabCapt
 export async function runTabCaptureAcceptance(
   options: ITabCaptureAcceptanceOptions = {},
 ): Promise<ITabCaptureAcceptanceProof> {
-  const temporaryRoot = join(tmpdir(), "devhost-e2e");
-  await mkdir(temporaryRoot, { recursive: true });
-  const directory = await mkdtemp(join(temporaryRoot, "tab-capture-"));
+  const directory = await mkdtemp(join(tmpdir(), "devhost-tab-capture-"));
   const title = `devhost native tab capture ${crypto.randomUUID()}`;
   try {
     await buildTabCaptureFixture(join(directory, "bundle"));
@@ -24,14 +22,7 @@ export async function runTabCaptureAcceptance(
         headless: true,
         viewport: { width: 1280, height: 800 },
         args: [`--auto-select-tab-capture-source-by-title=${title}`],
-        env: await createOwnedBrowserEnvironment(directory, {
-          ...process.env,
-          CHROME_CONFIG_HOME: join(directory, "chrome-config"),
-          XDG_CACHE_HOME: join(directory, "cache"),
-          XDG_DATA_HOME: join(directory, "data"),
-          XDG_STATE_HOME: join(directory, "state"),
-          XDG_RUNTIME_DIR: join(directory, "runtime"),
-        }),
+        env: await createOwnedBrowserEnvironment(directory),
       });
       try {
         const page = await browser.newPage();

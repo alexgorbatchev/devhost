@@ -1,5 +1,6 @@
-import { mkdir, mkdtemp, rm, utimes } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtemp, rm, utimes } from "node:fs/promises";
+import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, expect, it } from "bun:test";
 import { findPromoRecording } from "../findPromoRecording";
 
@@ -19,8 +20,7 @@ async function createRecording(name: string, files: readonly string[], capturedS
 }
 
 beforeAll(async () => {
-  const demoTestsPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(demoTestsPath, { recursive: true });
+  const demoTestsPath = tmpdir();
   testsPath = await mkdtemp(join(demoTestsPath, "recordings-"));
 });
 

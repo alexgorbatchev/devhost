@@ -1,9 +1,9 @@
+import { tmpdir } from "node:os";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 
 export async function createTestDirectory(): Promise<string> {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/docs-site-links-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   return mkdtemp(join(parentPath, "links-"));
 }
 

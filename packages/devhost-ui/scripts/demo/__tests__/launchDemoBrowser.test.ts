@@ -1,11 +1,11 @@
+import { tmpdir } from "node:os";
 import { expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { stopProcess } from "../stopProcess";
 
 it("lets the recorder finish its own cleanup after SIGINT", async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   const directoryPath = await mkdtemp(join(parentPath, "interrupt-"));
   const subprocess = Bun.spawn([process.execPath, join(import.meta.dir, "fixtures/browserInterrupt.ts")], {
     cwd: directoryPath,

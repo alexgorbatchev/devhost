@@ -3,3 +3,4 @@ export interface IContrastTarget {
   pseudoElement?: "::placeholder";
   useParentBackground?: boolean;
 }
+export type TestProcessSignal = NodeJS.Signals | 0;

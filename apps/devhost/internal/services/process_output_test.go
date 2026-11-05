@@ -34,7 +34,7 @@ func (w *exitGatedWriter) Write(p []byte) (int, error) {
 func TestStartServiceProcessKeepsOutputWrittenBeforeExit(t *testing.T) {
 	stderrWriter := &exitGatedWriter{started: make(chan *startedService, 1)}
 	attemptOutput := &attemptOutputLines{}
-	started, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	started, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -51,7 +51,7 @@ func TestStartServiceProcessKeepsOutputWrittenBeforeExit(t *testing.T) {
 		stdoutWriter:  ioDiscard{},
 	})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 	stderrWriter.started <- started
 	started.wait()

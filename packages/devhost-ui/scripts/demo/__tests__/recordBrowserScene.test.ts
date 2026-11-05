@@ -1,11 +1,11 @@
+import { tmpdir } from "node:os";
 import { expect, it } from "bun:test";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { runCommand } from "../runCommand";
 
 it("records an already loaded page across scenes, keeps the poster frame a scene marks, and rejects a captured reload", async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   const directoryPath = await mkdtemp(join(parentPath, "browser-"));
   await Promise.all(["raw", ".tmp"].map((directory) => mkdir(join(directoryPath, directory))));
   try {

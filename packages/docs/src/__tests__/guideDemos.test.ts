@@ -1,10 +1,10 @@
+import { tmpdir } from "node:os";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { expect, it } from "bun:test";
 
 it("plays the first video and loads English captions for the landing page and every guide, with its poster and usable controls", async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../.tmp/docs-demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   const directoryPath = await mkdtemp(join(parentPath, "browser-"));
   await mkdir(join(directoryPath, ".tmp"));
   try {

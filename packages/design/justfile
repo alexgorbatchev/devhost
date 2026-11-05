@@ -27,11 +27,11 @@ system:
 
 # Run unit tests
 test:
-    bun test
+    bash ../../test-support/runTests.sh bun test
 
 # Check package-local validations (TypeScript and unit tests)
 check: && test
-    bun tsc --noEmit -p tsconfig.json
+    bash ../../test-support/runTests.sh bun tsc --noEmit -p tsconfig.json
 
 # Regenerate tokens.css from src/constants.ts
 write-tokens:

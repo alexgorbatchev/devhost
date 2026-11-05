@@ -10,6 +10,8 @@ Bun + React workspace split into frontend and backend apps, used to exercise `de
 
 ## Local conventions
 
+- The frontend test recipe uses the root `test-support/runTests.sh` for command-owned temporary storage and cancellation cleanup. Preserve that wrapper when changing the test command.
+
 - Keep this package and its sub-workspaces on the repo-root `bun.lock`; do not add package-local lockfiles.
 - `backend/src/index.ts` is the backend Bun server, serving `/api/hello` endpoints on port 3000 (or dynamic assigned port).
 - `frontend/src/index.ts` is the frontend Bun server, serving `frontend/src/index.html` on port 3001 (or dynamic assigned port).

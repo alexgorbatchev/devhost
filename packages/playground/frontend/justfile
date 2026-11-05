@@ -9,7 +9,7 @@ start:
 
 # Run playground frontend tests
 test:
-    bun test
+    bash ../../../test-support/runTests.sh bun test
 
 # Check package-local validations
 check: test

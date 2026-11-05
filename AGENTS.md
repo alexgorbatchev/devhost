@@ -115,7 +115,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Never: build or release `devhost` from the repo root using ad-hoc Go commands; use the documented `apps/devhost/justfile` recipes, root justfile recipes, and runbook.
 - Never: start local docs or Storybook dev servers proactively; the user will start them when needed.
 - Testing exception: agents may start temporary local servers for validation or recording workflows, but must shut them down before the end of the turn.
-- Temporary-file policy exception: generated end-to-end test fixtures, browser profiles, downloads, native dependencies, sockets, and evidence belong under `<os.tmpdir()>/devhost-e2e/`, outside the checkout. Use unique run directories and preserve owned process/directory cleanup. Demo recordings retain `.tmp/demos/`.
+- Test recipes run through `test-support/runTests.sh`, which supplies a unique short `/tmp/dht.XXXXXX` directory as `TMPDIR` and `GOTMPDIR`. This is the temporary-file policy exception for generated test fixtures, browser profiles, downloads, sockets, and evidence: Chromium's Unix sockets cannot use deep checkout paths. Each fixture removes its own directory after stopping and joining its processes; the runner cleans the command directory on exit or cancellation. Reusable native-test dependencies belong in `.cache/test-dependencies/`, never in temporary fixture directories. Demo recordings retain `.tmp/demos/`. See `docs/internal/references/test-artifacts.md` for ownership and validation.
 
 ## References
 

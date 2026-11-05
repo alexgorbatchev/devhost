@@ -1,6 +1,7 @@
+import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, expect, it, mock } from "bun:test";
 import { removePromoRenderCaches } from "../removePromoRenderCaches";
 import type { RemovePromoCache } from "../types";
@@ -13,8 +14,7 @@ function listFiles(): Promise<string[]> {
 }
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   testsPath = await mkdtemp(join(parentPath, "render-caches-"));
 });
 

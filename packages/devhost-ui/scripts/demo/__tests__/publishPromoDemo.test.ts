@@ -1,6 +1,7 @@
+import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { beforeAll, expect, it } from "bun:test";
 import { assertDemoFfmpeg } from "../assertDemoFfmpeg";
 import { publishPromoDemo } from "../publishPromoDemo";
@@ -14,8 +15,7 @@ beforeAll(async () => {
 });
 
 it("publishes the promo's media and a landing-page player whose poster is the end card", async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   const repositoryPath = await mkdtemp(join(parentPath, "publish-promo-"));
   const recordingPath = join(repositoryPath, "recording");
   await mkdir(recordingPath, { recursive: true });

@@ -24,7 +24,7 @@ func TestFileServiceLifecycle(t *testing.T) {
 		if err := os.WriteFile(file, []byte(version), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		started, err := startServiceProcess(ResolvedManifest{}, service, processStartOptions{})
+		started, err := startTestServiceProcess(ResolvedManifest{}, service, processStartOptions{})
 		if err != nil {
 			t.Fatal(err)
 		}

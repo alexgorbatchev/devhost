@@ -1,5 +1,6 @@
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "bun:test";
 import { readFrameBrightness } from "../readFrameBrightness";
 import { runCommand } from "../runCommand";
@@ -7,8 +8,7 @@ import { runCommand } from "../runCommand";
 let directoryPath = "";
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   directoryPath = await mkdtemp(join(parentPath, "brightness-"));
 });
 

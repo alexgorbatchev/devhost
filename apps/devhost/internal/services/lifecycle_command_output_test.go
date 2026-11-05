@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/testenv"
 )
 
 // reapGatedWriter blocks on the first line it receives until the command has been reaped by Cmd.Wait, which is the
@@ -86,7 +88,7 @@ func TestRunServiceCommandKeepsOutputWrittenBeforeExit(t *testing.T) {
 		"HELPER_PID_PATH":     pidPath,
 	})
 	err := runServiceCommand(context.Background(), newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",
-		map[string]string{}, StartStackOptions{ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: stderrWriter}, nil)
+		testenv.InheritIsolation(nil), StartStackOptions{ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: stderrWriter}, nil)
 	if err != nil {
 		t.Fatalf("runServiceCommand(...) error = %v", err)
 	}
@@ -112,7 +114,7 @@ func TestRunServiceCommandReturnsWhenADescendantKeepsTheOutputPipeOpen(t *testin
 	})
 	// A regression here hangs until the `go test` deadline instead of returning.
 	err := runServiceCommand(context.Background(), newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), service, helperCommand(), "daemon start",
-		map[string]string{}, StartStackOptions{ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: &stderr}, nil)
+		testenv.InheritIsolation(nil), StartStackOptions{ServiceStdoutWriter: ioDiscard{}, ServiceStderrWriter: &stderr}, nil)
 	if err != nil {
 		t.Fatalf("runServiceCommand(...) error = %v, want nil for a command that exited successfully", err)
 	}

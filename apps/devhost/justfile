@@ -33,7 +33,7 @@ demo-recovery: build-devtools-bundle
 
 # Run Go tests fresh: live-process integration tests have volatile /proc inputs
 test: build-devtools-bundle
-    go test -count=1 ./...
+    bash ../../test-support/runTests.sh go test -count=1 ./...
 
 # Fail on unformatted Go files, go vet findings, shadowed built-ins such as a variable named error, and module drift
 lint: build-devtools-bundle
@@ -56,7 +56,7 @@ lint-logging:
 
 # Run Go formatting, vetting, module hygiene, and tests
 check: lint test
-    bun test ./scripts/__tests__
+    bash ../../test-support/runTests.sh bun test ./scripts/__tests__
 
 # Build versioned release archives
 build-release-artifacts *args: build-devtools-bundle

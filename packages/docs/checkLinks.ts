@@ -1,4 +1,5 @@
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { checkSiteLinks } from "./src/siteLinks/checkSiteLinks";
 import { describeSiteLinkReport } from "./src/siteLinks/describeSiteLinkReport";
@@ -17,9 +18,7 @@ const sourcePaths = (
 ).flat();
 const texts = await Promise.all(sourcePaths.map((path) => readFile(join(repositoryRootPath, path), "utf8")));
 
-const parentPath = resolve(repositoryRootPath, ".tmp/docs-site-links");
-await mkdir(parentPath, { recursive: true });
-const stagingPath = await mkdtemp(join(parentPath, "site-"));
+const stagingPath = await mkdtemp(join(tmpdir(), "devhost-docs-site-links-"));
 try {
   const report = await checkSiteLinks({
     distPath: join(docsPackagePath, "dist"),

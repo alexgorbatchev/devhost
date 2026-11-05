@@ -1,10 +1,25 @@
-import { expect, it } from "bun:test";
-import { rm } from "node:fs/promises";
+import { afterEach, beforeEach, expect, it } from "bun:test";
+import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createDemoRuntime } from "../createDemoRuntime";
 import { runCommand } from "../runCommand";
 
-const repositoryPath = resolve(import.meta.dir, "../../../../..");
+let repositoryPath: string;
+
+beforeEach(async () => {
+  repositoryPath = await mkdtemp(join(tmpdir(), "devhost-demo-repository-"));
+  await mkdir(join(repositoryPath, "packages"));
+  await symlink(
+    resolve(import.meta.dir, "../../../../../packages/playground"),
+    join(repositoryPath, "packages/playground"),
+    "dir",
+  );
+});
+
+afterEach(async () => {
+  await rm(repositoryPath, { recursive: true, force: true });
+});
 
 it("uses portless HTTPS and separate manifests for recordings on distinct hosts", async () => {
   const first = await createDemoRuntime(repositoryPath, "demo.localhost");

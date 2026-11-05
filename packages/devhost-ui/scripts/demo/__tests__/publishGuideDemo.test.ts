@@ -1,6 +1,7 @@
+import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { beforeAll, expect, it } from "bun:test";
 import { assertDemoFfmpeg } from "../assertDemoFfmpeg";
 import { planGuideFilm } from "../planGuideFilm";
@@ -36,8 +37,7 @@ interface IGuideFixture {
 }
 
 async function createGuide(name: string): Promise<IGuideFixture> {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   const repositoryPath = await mkdtemp(join(parentPath, name));
   const guidePath = join(repositoryPath, "packages/docs/src/content/docs/guides/example.md");
   const recordingPath = join(repositoryPath, "recording");

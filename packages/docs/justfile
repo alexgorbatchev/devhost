@@ -19,22 +19,22 @@ publish-media:
 
 # Run docs unit tests
 test: media
-    bun test
+    bash ../../test-support/runTests.sh bun test
 
 # Build the static docs site
 build: sync media
-    bun astro build
+    bash ../../test-support/runTests.sh bun astro build
 
 # Check package-local validations
 check: test sync
     bun demoMedia.ts verify
-    bun astro check
-    bun astro build
-    bun checkLinks.ts
+    bash ../../test-support/runTests.sh bun astro check
+    bash ../../test-support/runTests.sh bun astro build
+    bash ../../test-support/runTests.sh bun checkLinks.ts
 
 # Check every link on the built site, and every link to it from the README, manifest reference, and skill
 check-links:
-    bun checkLinks.ts
+    bash ../../test-support/runTests.sh bun checkLinks.ts
 
 # Preview built static site
 preview:

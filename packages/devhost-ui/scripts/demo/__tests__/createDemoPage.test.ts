@@ -1,11 +1,11 @@
+import { tmpdir } from "node:os";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { expect, it } from "bun:test";
 import { runCommand } from "../runCommand";
 
 async function captureAtScale(captureScale: number, isInteractive: boolean = false): Promise<unknown> {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   const directoryPath = await mkdtemp(join(parentPath, "capture-scale-"));
   await Promise.all(["raw", ".tmp"].map((directory) => mkdir(join(directoryPath, directory))));
   try {

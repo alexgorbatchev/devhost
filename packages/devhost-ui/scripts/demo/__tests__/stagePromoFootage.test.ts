@@ -1,5 +1,6 @@
+import { tmpdir } from "node:os";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "bun:test";
 import { readMediaInfo } from "../readMediaInfo";
 import { runCommand } from "../runCommand";
@@ -40,8 +41,7 @@ async function writeFrame(projectName: string, videos: string): Promise<string> 
 }
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   directoryPath = await mkdtemp(join(parentPath, "footage-"));
   await mkdir(join(directoryPath, "raw"));
   sources = [await recordSource("long", 6), await recordSource("short", 1)];

@@ -1,5 +1,6 @@
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { afterAll, beforeAll, expect, it, mock } from "bun:test";
 import { generateGuideAudio } from "../generateGuideAudio";
 import { runCommand } from "../runCommand";
@@ -98,8 +99,7 @@ async function readRecordedLines(projectPath: string): Promise<Record<string, st
 }
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   directoryPath = await mkdtemp(join(parentPath, "guide-audio-"));
   const speechPath = join(directoryPath, "speech.mp3");
   await runCommand(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=0.5", speechPath]);

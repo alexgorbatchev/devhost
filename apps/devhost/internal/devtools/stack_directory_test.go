@@ -214,7 +214,7 @@ func TestStackDirectoryInBrowser(t *testing.T) {
 	s, _ := startDirectoryServer(t)
 	chromium := browsertest.Locate(t)
 	run := browsertest.RunDirectory(t, "stack-directory")
-	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(filepath.Join(run, "profile"))...)
+	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(t, filepath.Join(run, "profile"))...)
 	defer stop()
 	browser, closeBrowser := chromedp.NewContext(allocator)
 	defer closeBrowser()

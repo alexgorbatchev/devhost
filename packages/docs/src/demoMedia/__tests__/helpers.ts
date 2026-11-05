@@ -1,5 +1,6 @@
-import { mkdir, mkdtemp } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtemp } from "node:fs/promises";
+import { join } from "node:path";
 import type { IDemoMediaManifest, IDemoMediaPin } from "../types";
 
 export function hash(content: string): string {
@@ -28,7 +29,6 @@ export function createManifest(files: Record<string, string>): IDemoMediaManifes
 }
 
 export async function createTestDirectory(): Promise<string> {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/docs-demo-media-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   return mkdtemp(join(parentPath, "media-"));
 }

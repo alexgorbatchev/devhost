@@ -25,6 +25,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/devtools"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/testenv"
 )
 
 func TestCreateInjectedServiceEnvironment(t *testing.T) {
@@ -1568,7 +1569,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 	firstReadyPath := filepath.Join(t.TempDir(), "first-ready.txt")
 	secondReadyPath := filepath.Join(t.TempDir(), "second-ready.txt")
 
-	firstService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	firstService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
@@ -1577,10 +1578,10 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		Name:       "first",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(first) error = %v", err)
+		t.Fatalf("startTestServiceProcess(first) error = %v", err)
 	}
 
-	secondService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	secondService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
@@ -1589,7 +1590,7 @@ func TestStopStartedServicesStopsRunningServicesGracefully(t *testing.T) {
 		Name:       "second",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(second) error = %v", err)
+		t.Fatalf("startTestServiceProcess(second) error = %v", err)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -1629,7 +1630,7 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		_ = syscall.Kill(childPid, syscall.SIGKILL)
 	})
 
-	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1644,7 +1645,7 @@ func TestStopStartedServiceStopsDescendantProcesses(t *testing.T) {
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -1685,7 +1686,7 @@ func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
 		_ = syscall.Kill(childPid, syscall.SIGKILL)
 	})
 
-	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1700,7 +1701,7 @@ func TestStopStartedServiceStopsDetachedDescendantProcesses(t *testing.T) {
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -1746,7 +1747,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		_ = syscall.Kill(childPid, syscall.SIGKILL)
 	})
 
-	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1762,7 +1763,7 @@ func TestStopStartedServiceStopsDescendantsSpawnedDuringSignalHandling(t *testin
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -1819,7 +1820,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		_, _ = syscall.Wait4(childPID, nil, 0, nil)
 	})
 
-	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -1834,7 +1835,7 @@ func TestStopStartedServiceStopsDetachedDescendantsExitedDuringStartup(t *testin
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -1896,7 +1897,7 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 		_ = syscall.Kill(childPID, syscall.SIGKILL)
 	})
 
-	startedService, err := startServiceProcess(newResolvedManifest(tempDirectory, "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(tempDirectory, "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      tempDirectory,
@@ -1913,7 +1914,7 @@ func TestStopStartedServicePreservesLateExternalPortRespawns(t *testing.T) {
 		PortSource: "fixed",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	stopped := false
@@ -2093,7 +2094,7 @@ func TestStopStartedServiceDoesNotWaitForZombieDescendants(t *testing.T) {
 		_, _ = syscall.Wait4(childPID, nil, 0, nil)
 	})
 
-	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost: "127.0.0.1",
 		Command:  helperCommand(),
 		Cwd:      t.TempDir(),
@@ -2107,7 +2108,7 @@ func TestStopStartedServiceDoesNotWaitForZombieDescendants(t *testing.T) {
 		Name:       "web",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	startTime := time.Now()
@@ -2251,7 +2252,7 @@ func TestStopStartedServicesSignalsInReverseOrder(t *testing.T) {
 
 func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 	readyPath := filepath.Join(t.TempDir(), "ready.txt")
-	startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+	startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 		BindHost:   "127.0.0.1",
 		Command:    helperCommand(),
 		Cwd:        t.TempDir(),
@@ -2260,7 +2261,7 @@ func TestStopStartedServiceEscalatesToSIGKILL(t *testing.T) {
 		Name:       "worker",
 	}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 	if err != nil {
-		t.Fatalf("startServiceProcess(...) error = %v", err)
+		t.Fatalf("startTestServiceProcess(...) error = %v", err)
 	}
 
 	waitForCondition(t, stackChangeTimeout, func() bool {
@@ -2290,14 +2291,14 @@ func TestServiceExitCodeFollowsTheShellConvention(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			startedService, err := startServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
+			startedService, err := startTestServiceProcess(newResolvedManifest(t.TempDir(), "127.0.0.1:20197"), ResolvedService{
 				BindHost: "127.0.0.1",
 				Command:  []string{"sh", "-c", tt.script},
 				Cwd:      t.TempDir(),
 				Name:     "worker",
 			}, processStartOptions{environment: map[string]string{}, stderrWriter: ioDiscard{}, stdoutWriter: ioDiscard{}})
 			if err != nil {
-				t.Fatalf("startServiceProcess(...) error = %v", err)
+				t.Fatalf("startTestServiceProcess(...) error = %v", err)
 			}
 			defer startedService.closeContainment()
 
@@ -2524,10 +2525,19 @@ func (ioDiscard) Write(value []byte) (int, error) {
 // the shared Caddy settings m names, so no test reads the machine's config.
 func startTestStack(t *testing.T, m *ResolvedManifest, order []string, options StartStackOptions) (int, error) {
 	t.Helper()
+	if len(options.Environment) == 0 {
+		options.Environment = readCurrentEnvironment()
+	}
+	options.Environment = testenv.InheritIsolation(options.Environment)
 	if options.ConfigPath == "" {
 		options.ConfigPath = writeTestSharedConfig(t, m.Caddy)
 	}
 	return StartStack(m, order, options)
+}
+
+func startTestServiceProcess(manifest ResolvedManifest, service ResolvedService, options processStartOptions) (*startedService, error) {
+	options.environment = testenv.InheritIsolation(options.environment)
+	return startServiceProcess(manifest, service, options)
 }
 
 // testCaddySettings returns the default shared Caddy settings with the admin

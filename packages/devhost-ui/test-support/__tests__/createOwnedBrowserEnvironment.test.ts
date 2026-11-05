@@ -2,7 +2,7 @@ import { tmpdir } from "node:os";
 import { E2E_TEMPORARY_PATH } from "../../../../test-support/constants";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdtemp, rm, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { createOwnedBrowserEnvironment } from "../../../../test-support/createOwnedBrowserEnvironment";
@@ -11,10 +11,7 @@ const projectTemporaryPath: string = E2E_TEMPORARY_PATH;
 let runDirectoryPath: string;
 
 beforeEach(async () => {
-  const parentPath: string = join(projectTemporaryPath, "owned-browser-environment");
-
-  await mkdir(parentPath, { recursive: true });
-  runDirectoryPath = await mkdtemp(join(parentPath, "run-"));
+  runDirectoryPath = await mkdtemp(join(projectTemporaryPath, "devhost-browser-environment-"));
 });
 
 afterEach(async () => {
@@ -27,6 +24,10 @@ test("gives the browser a home inside the run directory that already has a Downl
   expect(environment.HOME).toBe(join(runDirectoryPath, "home"));
   expect(environment.XDG_CONFIG_HOME).toBe(join(runDirectoryPath, "home", ".config"));
   expect((await stat(join(runDirectoryPath, "home", "Downloads"))).isDirectory()).toBe(true);
+  assert(environment.XDG_RUNTIME_DIR !== undefined);
+  const runtime = await stat(environment.XDG_RUNTIME_DIR);
+  expect(runtime.isDirectory()).toBe(true);
+  expect(runtime.mode & 0o777).toBe(0o700);
 });
 
 test("uses the OS temporary directory for browser-created temporary files", async () => {

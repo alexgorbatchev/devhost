@@ -28,7 +28,7 @@ func TestRecoveryDesignInBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	runDir := browsertest.RunDirectory(t, "recovery-design")
-	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(filepath.Join(runDir, "profile"))...)
+	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(t, filepath.Join(runDir, "profile"))...)
 	defer stop()
 	browser, closeBrowser := chromedp.NewContext(allocator)
 	defer closeBrowser()

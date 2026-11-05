@@ -51,20 +51,33 @@ func Locate(t testing.TB) Browser {
 }
 
 // AllocatorOptions returns the options that start this Chromium headless with its profile at profilePath.
-func (b Browser) AllocatorOptions(profilePath string) []chromedp.ExecAllocatorOption {
-	return append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(b.Path), chromedp.UserDataDir(profilePath), chromedp.NoSandbox)
+func (b Browser) AllocatorOptions(t testing.TB, profilePath string) []chromedp.ExecAllocatorOption {
+	t.Helper()
+	home := filepath.Join(profilePath, "home")
+	runtimeDir := filepath.Join(profilePath, "runtime")
+	for _, directory := range []string{filepath.Join(home, "Downloads"), runtimeDir} {
+		if err := os.MkdirAll(directory, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(b.Path), chromedp.UserDataDir(profilePath), chromedp.NoSandbox, chromedp.Env(
+		"HOME="+home,
+		"CHROME_CONFIG_HOME="+filepath.Join(home, ".config"),
+		"XDG_CONFIG_HOME="+filepath.Join(home, ".config"),
+		"XDG_CACHE_HOME="+filepath.Join(home, ".cache"),
+		"XDG_DATA_HOME="+filepath.Join(home, ".local", "share"),
+		"XDG_STATE_HOME="+filepath.Join(home, ".local", "state"),
+		"XDG_RUNTIME_DIR="+runtimeDir,
+		"PULSE_RUNTIME_PATH="+filepath.Join(runtimeDir, "pulse"),
+	))
 }
 
-// RunDirectory returns a new directory for one test run under <os.TempDir()>/devhost-e2e, where browser profiles and
+// RunDirectory returns a new directory for one test run under os.TempDir(), where browser profiles and
 // generated fixtures live outside the checkout, and removes it when the test ends.
 func RunDirectory(t testing.TB, prefix string) string {
 	t.Helper()
 
-	root := filepath.Join(os.TempDir(), "devhost-e2e")
-	if err := os.MkdirAll(root, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	directory, err := os.MkdirTemp(root, prefix+"-")
+	directory, err := os.MkdirTemp("", "devhost-e2e-"+prefix+"-")
 	if err != nil {
 		t.Fatal(err)
 	}

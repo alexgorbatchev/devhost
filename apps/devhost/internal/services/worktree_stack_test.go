@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -49,9 +50,9 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	m.Devtools = configuration.Devtools
 	configured := m
 	originalStart, originalRegister, originalUnregister := startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals
-	defer func() {
+	t.Cleanup(func() {
 		startDevtoolsControlServer, registerProcessSignals, unregisterProcessSignals = originalStart, originalRegister, originalUnregister
-	}()
+	})
 	controls := make(chan devtools.StartControlServerOptions, 1)
 	logs := &reloadLogs{}
 	signals := make(chan chan<- os.Signal, 1)
@@ -66,27 +67,27 @@ func TestStackSwitchesWholeRepositoryAndRecoversFailedSwitch(t *testing.T) {
 	unregisterProcessSignals = func(chan<- os.Signal) {}
 	launch := func() (devtools.StartControlServerOptions, func()) {
 		done := make(chan error, 1)
+		configPath := writeTestSharedConfig(t, m.Caddy)
 		go func() {
-			_, err := startTestStack(t, &m, m.ServiceOrder, StartStackOptions{CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": state}, LogWriter: logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: time.Second})
+			_, err := startTestStack(t, &m, m.ServiceOrder, StartStackOptions{ConfigPath: configPath, CaddyPaths: paths, Environment: map[string]string{"DEVHOST_STATE_DIR": state}, LogWriter: logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: time.Second})
 			done <- err
 		}()
 		ch := <-signals
+		stop := sync.OnceFunc(func() {
+			ch <- syscall.SIGTERM
+			// StartStack owns the grace period and forced process termination. Join
+			// its routing cleanup too before t.TempDir removes the state directory.
+			if err := <-done; err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(stop)
 		options := <-controls
 		waitForCondition(t, stackChangeTimeout, func() bool {
 			h, _ := options.GetHealthResponse()
 			return len(h.Repositories) == 1 && (h.Repositories[0].RunningPath != "" || h.Repositories[0].Error != "") && options.RestartService(nil) == nil
 		})
-		return options, func() {
-			ch <- syscall.SIGTERM
-			select {
-			case err := <-done:
-				if err != nil {
-					t.Error(err)
-				}
-			case <-time.After(5 * time.Second):
-				t.Error("shutdown timed out")
-			}
-		}
+		return options, stop
 	}
 	options, stop := launch()
 	defer func() {

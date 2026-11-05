@@ -1,5 +1,6 @@
-import { mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { afterAll, beforeAll, beforeEach, expect, it, mock } from "bun:test";
 import { preparePromoRenderer } from "../preparePromoRenderer";
 import type { RunCommand } from "../types";
@@ -19,8 +20,7 @@ function listFiles(directoryPath: string): Promise<string[]> {
 }
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   testsPath = await mkdtemp(join(parentPath, "preflight-"));
 });
 

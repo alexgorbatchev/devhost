@@ -1,6 +1,6 @@
 import { E2E_TEMPORARY_PATH } from "../../../../../../../test-support/constants";
 import assert from "node:assert/strict";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { DevframeViewIframe } from "@devframes/hub";
 import type { DevframeClientContext } from "@devframes/hub/client";
@@ -11,6 +11,7 @@ import tailwindPlugin from "bun-plugin-tailwind";
 import { z } from "zod";
 
 import { createOwnedBrowserEnvironment } from "../../../../../../../test-support/createOwnedBrowserEnvironment";
+import { stopTestProcessGroup } from "../../../../../../../test-support/stopTestProcessGroup";
 
 export type NativeVueHostTest = (hosts: readonly INativeVueHost[], browser: BrowserContext) => Promise<void>;
 
@@ -88,7 +89,7 @@ async function readDevframeVersion(): Promise<string> {
 }
 
 export async function startNativeVueHost(options: INativeVueHostOptions = {}): Promise<INativeVueHost> {
-  const dependenciesPath = resolve(E2E_TEMPORARY_PATH, "vue-native-host");
+  const dependenciesPath = resolve(repositoryRoot, ".cache/test-dependencies/vue-native-host");
   const devframeVersion = await readDevframeVersion();
   await mkdir(dependenciesPath, { recursive: true });
   await Bun.write(
@@ -123,7 +124,23 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
     install.exited,
   ]);
   assert.equal(installExit, 0, installOutput + installError);
-  const rootPath = resolve(dependenciesPath, "runs", crypto.randomUUID());
+  const rootPath = await mkdtemp(resolve(E2E_TEMPORARY_PATH, "devhost-vue-"));
+  let serverProcess: Bun.Subprocess<"ignore", "pipe", "pipe">;
+  try {
+    serverProcess = await startNativeVueServer(rootPath, dependenciesPath, options);
+  } catch (error) {
+    await rm(rootPath, { recursive: true, force: true });
+    throw error;
+  }
+  return waitForNativeVueHost(rootPath, serverProcess);
+}
+
+async function startNativeVueServer(
+  rootPath: string,
+  dependenciesPath: string,
+  options: INativeVueHostOptions,
+): Promise<Bun.Subprocess<"ignore", "pipe", "pipe">> {
+  await symlink(resolve(dependenciesPath, "node_modules"), resolve(rootPath, "node_modules"), "dir");
   const hostRootPath = resolve(rootPath, "host");
   await mkdir(hostRootPath, { recursive: true });
   const fixturePath = resolve(import.meta.dir, "fixtures/vueHost");
@@ -147,7 +164,8 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
   const artifact = bundle.outputs[0];
   assert(artifact);
   await Bun.write(resolve(hostRootPath, "launcher.js"), artifact);
-  const serverProcess = Bun.spawn(["bun", resolve(hostRootPath, "serve.mjs")], {
+  return Bun.spawn(["bun", resolve(hostRootPath, "serve.mjs")], {
+    detached: true,
     cwd: hostRootPath,
     stdout: "pipe",
     stderr: "pipe",
@@ -161,6 +179,12 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
       NATIVE_VUE_VISIBILITY: options.visibility,
     },
   });
+}
+
+async function waitForNativeVueHost(
+  rootPath: string,
+  serverProcess: Bun.Subprocess<"ignore", "pipe", "pipe">,
+): Promise<INativeVueHost> {
   let output = "";
   const { promise: ready, resolve: resolveReady } = Promise.withResolvers<string>();
   const { promise: authorizationCode, resolve: resolveAuthorizationCode } = Promise.withResolvers<string>();
@@ -178,12 +202,17 @@ export async function startNativeVueHost(options: INativeVueHostOptions = {}): P
     }
   };
   const consumed = Promise.all([consume(serverProcess.stdout), consume(serverProcess.stderr)]);
-  const close = async (): Promise<void> => {
-    if (serverProcess.exitCode === null) serverProcess.kill("SIGTERM");
-    await serverProcess.exited;
-    await consumed;
-    await Bun.write(resolve(rootPath, "server.log"), redactNativeOutput(output));
-    await rm(resolve(rootPath, "profile"), { recursive: true, force: true });
+  let closing: Promise<void> | undefined;
+  const close = (): Promise<void> => {
+    closing ??= (async () => {
+      await stopTestProcessGroup(serverProcess);
+      try {
+        await consumed;
+      } finally {
+        await rm(rootPath, { recursive: true, force: true });
+      }
+    })();
+    return closing;
   };
   try {
     const url = await withNativeDeadline(

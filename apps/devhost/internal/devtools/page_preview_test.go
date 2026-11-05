@@ -22,7 +22,7 @@ func TestPagePreviewGalleryInBrowser(t *testing.T) {
 	server := startDevSourceControlServer(t, root)
 	chromium := browsertest.Locate(t)
 	run := browsertest.RunDirectory(t, "page-previews")
-	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(filepath.Join(run, "profile"))...)
+	allocator, stop := chromedp.NewExecAllocator(context.Background(), chromium.AllocatorOptions(t, filepath.Join(run, "profile"))...)
 	defer stop()
 	browser, closeBrowser := chromedp.NewContext(allocator)
 	defer closeBrowser()

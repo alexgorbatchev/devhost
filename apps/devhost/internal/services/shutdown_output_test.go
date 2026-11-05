@@ -214,7 +214,7 @@ func TestPlaygroundStartupFailureKeepsDiagnostics(t *testing.T) {
 			}
 			var output shutdownOutput
 			service := playgroundShutdownService(t, app, port)
-			started, err := startServiceProcess(ResolvedManifest{}, service, processStartOptions{
+			started, err := startTestServiceProcess(ResolvedManifest{}, service, processStartOptions{
 				environment: readCurrentEnvironment(), stdoutWriter: &output, stderrWriter: &output,
 			})
 			if err != nil {
@@ -277,7 +277,7 @@ func TestShutdownProgressGroupsProcessesOfOneService(t *testing.T) {
 			Name: "worker", Cwd: t.TempDir(), Command: helperCommandWithMode("exit-immediately"),
 			Env: map[string]string{"GO_WANT_HELPER_PROCESS": "1"},
 		}
-		started, err := startServiceProcess(ResolvedManifest{}, service, processStartOptions{stdoutWriter: &output, stderrWriter: &output})
+		started, err := startTestServiceProcess(ResolvedManifest{}, service, processStartOptions{stdoutWriter: &output, stderrWriter: &output})
 		if err != nil {
 			t.Fatal(err)
 		}

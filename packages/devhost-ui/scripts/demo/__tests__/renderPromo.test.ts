@@ -1,3 +1,4 @@
+import { tmpdir } from "node:os";
 import { cp, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, expect, it, mock } from "bun:test";
@@ -63,8 +64,7 @@ async function createRecording(name: string): Promise<string> {
 }
 
 beforeAll(async () => {
-  const parentPath = resolve(import.meta.dir, "../../../../../.tmp/demo-tests");
-  await mkdir(parentPath, { recursive: true });
+  const parentPath = tmpdir();
   directoryPath = await mkdtemp(join(parentPath, "promo-"));
   projectSourcePath = join(directoryPath, "project");
   await Bun.write(

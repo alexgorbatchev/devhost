@@ -52,6 +52,8 @@ Run the Go tests:
 just devhost test
 ```
 
+Go and Bun script test recipes use the root `test-support/runTests.sh` for command-owned temporary storage and cancellation cleanup. Service subprocess helpers inherit isolation through `testenv.InheritIsolation`, including when they supply explicit environment overrides. Register shutdown before waiting for readiness, and join worktree-stack shutdown before temporary-directory cleanup.
+
 The recipe runs `go test -count=1 ./...`: the suite exercises live processes, ports, and kernel state, so each invocation runs the tests afresh. Retain this flag. On Linux, process containment polls `/proc`; caching its millions of filesystem observations creates a large input log that Go must validate on later runs. The flag disables test-result caching while retaining the build cache. Signal-driven test helpers publish a readiness file only after installing their signal handler; wait for that handshake before testing shutdown, and register cleanup before waiting. Browser preview acceptance holds initial status responses behind explicit gates to verify disconnected controls start disabled, then waits for enabled controls before clicking after connection. Visibility alone is not readiness. It reports each navigation phase on failure; retain the existing time budget rather than hiding readiness bugs with sleeps or longer deadlines.
 
 Build a standalone executable for the current platform:

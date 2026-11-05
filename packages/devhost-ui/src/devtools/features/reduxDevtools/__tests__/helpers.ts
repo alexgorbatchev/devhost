@@ -1,6 +1,6 @@
 import { E2E_TEMPORARY_PATH } from "../../../../../../../test-support/constants";
 import assert from "node:assert/strict";
-import { mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 import type { BrowserContext, Page } from "playwright";
@@ -13,8 +13,19 @@ import type { registerReduxDevtoolsStore, registerZustandDevtoolsStore } from ".
 const repositoryRoot: string = resolve(import.meta.dir, "../../../../../../..");
 
 export async function withNativeReduxHost(options: INativeReduxHostOptions, run: NativeReduxHostTest): Promise<void> {
-  const rootPath = resolve(E2E_TEMPORARY_PATH, "redux-native-host", crypto.randomUUID());
-  await mkdir(rootPath, { recursive: true });
+  const rootPath = await mkdtemp(resolve(E2E_TEMPORARY_PATH, "devhost-redux-"));
+  try {
+    await runNativeReduxHost(rootPath, options, run);
+  } finally {
+    await rm(rootPath, { recursive: true, force: true });
+  }
+}
+
+async function runNativeReduxHost(
+  rootPath: string,
+  options: INativeReduxHostOptions,
+  run: NativeReduxHostTest,
+): Promise<void> {
   // Run the genuine bundler in its normal process, isolated from Bun's in-test module resolver.
   const build = Bun.spawn(["bun", import.meta.path], {
     stdout: "pipe",
@@ -70,7 +81,7 @@ export async function withNativeReduxHost(options: INativeReduxHostOptions, run:
     await server.stop(true);
   };
   try {
-    const extensionPath = options.isExtensionEnabled ? await loadNativeReduxExtension() : undefined;
+    const extensionPath = options.isExtensionEnabled ? await loadNativeReduxExtension(rootPath) : undefined;
     const browserEnvironment = await createOwnedBrowserEnvironment(rootPath);
     await Bun.write(
       resolve(rootPath, "browser-environment.json"),
@@ -156,25 +167,24 @@ async function buildNativeReduxAssets(rootPath: string): Promise<void> {
   }
 }
 
-async function loadNativeReduxExtension(): Promise<string> {
-  const directoryPath = resolve(E2E_TEMPORARY_PATH, "redux-native-extension-3.2.10");
+async function loadNativeReduxExtension(rootPath: string): Promise<string> {
+  const directoryPath = resolve(repositoryRoot, ".cache/test-dependencies/redux-native-extension-3.2.10");
   await mkdir(directoryPath, { recursive: true });
   const archivePath = resolve(directoryPath, "chrome.zip");
   const archive = Bun.file(archivePath);
-  if (!(await archive.exists())) {
+  const downloadPath = resolve(rootPath, "chrome.zip");
+  if (await archive.exists()) await copyFile(archivePath, downloadPath);
+  if (!(await Bun.file(downloadPath).exists()) || !(await isNativeReduxArchiveValid(downloadPath))) {
     const response = await fetch(
       "https://github.com/reduxjs/redux-devtools/releases/download/remotedev-redux-devtools-extensions%403.2.10/chrome.zip",
     );
     assert(response.ok, `Released extension download failed: ${response.status}`);
-    await Bun.write(archivePath, response);
+    await Bun.write(downloadPath, response);
+    assert(await isNativeReduxArchiveValid(downloadPath), "Released extension checksum does not match");
+    await copyFile(downloadPath, archivePath);
   }
-  const bytes = await Bun.file(archivePath).arrayBuffer();
-  assert.equal(
-    Buffer.from(await crypto.subtle.digest("SHA-256", bytes)).toString("hex"),
-    "4843f267bf99d9324b9f4d5d9e66c029662e18921929a6bc47a83adb241ccc6c",
-  );
-  const extensionPath = resolve(directoryPath, "extension");
-  const extraction = Bun.spawn(["unzip", "-qo", archivePath, "-d", extensionPath], { stdout: "pipe", stderr: "pipe" });
+  const extensionPath = resolve(rootPath, "extension");
+  const extraction = Bun.spawn(["unzip", "-qo", downloadPath, "-d", extensionPath], { stdout: "pipe", stderr: "pipe" });
   const [stdout, stderr, exit] = await Promise.all([
     new Response(extraction.stdout).text(),
     new Response(extraction.stderr).text(),
@@ -182,6 +192,14 @@ async function loadNativeReduxExtension(): Promise<string> {
   ]);
   assert.equal(exit, 0, stdout + stderr);
   return extensionPath;
+}
+
+async function isNativeReduxArchiveValid(archivePath: string): Promise<boolean> {
+  const bytes = await Bun.file(archivePath).arrayBuffer();
+  return (
+    Buffer.from(await crypto.subtle.digest("SHA-256", bytes)).toString("hex") ===
+    "4843f267bf99d9324b9f4d5d9e66c029662e18921929a6bc47a83adb241ccc6c"
+  );
 }
 
 export async function selectReduxStore(page: Page, name: string): Promise<void> {
