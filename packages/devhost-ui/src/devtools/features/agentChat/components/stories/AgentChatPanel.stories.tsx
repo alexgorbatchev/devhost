@@ -405,7 +405,9 @@ export const SequentialToolCallsShareOneGroup: Story = {
     await openSavedChatConversation(canvasElement);
     await canvas.findByText("3 tool calls");
     expect(canvas.queryByText("1 tool call")).toBeNull();
-    expect(await canvas.findByText("Commands finished.")).toBeVisible();
+    // Thread messages fade in from transparent, so wait for the end of the animation.
+    const reply = await canvas.findByText("Commands finished.");
+    await waitFor(() => expect(reply).toBeVisible());
   },
 };
 
