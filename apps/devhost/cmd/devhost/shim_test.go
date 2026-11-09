@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -123,6 +124,23 @@ func TestShimRunsInTheCallingDirectory(t *testing.T) {
 	}
 }
 
+// TestShimIgnoresBashStartupFiles runs the shim while the caller's BASH_ENV
+// names a startup file that puts a failing `go` first on PATH. It sets the
+// process environment, so it cannot run in parallel.
+func TestShimIgnoresBashStartupFiles(t *testing.T) {
+	checkoutPath := createShimFixture(t)
+	hostileDirectoryPath := t.TempDir()
+	writeShimFixtureFile(t, filepath.Join(hostileDirectoryPath, "bin", "go"), "#!/bin/sh\necho 'the startup file chose this go' >&2\nexit 91\n", 0o755)
+	startupFilePath := filepath.Join(hostileDirectoryPath, "startup.sh")
+	writeShimFixtureFile(t, startupFilePath, "export PATH=\""+filepath.Join(hostileDirectoryPath, "bin")+":$PATH\"\n", 0o644)
+
+	t.Setenv("BASH_ENV", startupFilePath)
+
+	if got := shimOutputValue(t, runShim(t, checkoutPath, checkoutPath), "asset"); got != "first" {
+		t.Fatalf("the shim embedded %q, want %q", got, "first")
+	}
+}
+
 // createShimFixture lays out a checkout the shim can build: the real shim beside
 // a module whose command embeds a file, at apps/devhost inside a repository
 // root. It returns the app directory.
@@ -167,6 +185,7 @@ func runShim(t *testing.T, checkoutPath string, callerPath string, arguments ...
 	var stderr bytes.Buffer
 	command := exec.CommandContext(t.Context(), filepath.Join(checkoutPath, shimPath), arguments...)
 	command.Dir = callerPath
+	command.Env = shimEnvironment(os.Environ())
 	command.Stderr = &stderr
 
 	output, err := command.Output()
@@ -175,6 +194,16 @@ func runShim(t *testing.T, checkoutPath string, callerPath string, arguments ...
 	}
 
 	return string(output)
+}
+
+// shimEnvironment is the test's environment without BASH_ENV, the startup file
+// a non-interactive Bash sources. The shim is a Bash script, and a startup file
+// that reorders PATH makes its `go` a different toolchain from the one `go test`
+// chose, which then compiles against the GOROOT `go test` exported and fails.
+func shimEnvironment(environment []string) []string {
+	return slices.DeleteFunc(slices.Clone(environment), func(entry string) bool {
+		return strings.HasPrefix(entry, "BASH_ENV=")
+	})
 }
 
 func shimOutputValue(t *testing.T, output string, key string) string {
