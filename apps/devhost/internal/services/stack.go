@@ -68,6 +68,8 @@ type StartStackOptions struct {
 	ServiceStderrWriter io.Writer
 	ShutdownGracePeriod time.Duration
 	IdleTimeout         time.Duration
+	// Detached startup must pass health and routing before publishing readiness.
+	DetachedLogPath string
 }
 
 type startedService struct {
@@ -328,6 +330,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		ManifestFiles:       stackManifestFiles(options.Configuration),
 		ManifestPath:        manifest.ManifestPath,
 		StackName:           manifest.Name,
+		LogPath:             options.DetachedLogPath,
 		StacksDirectoryPath: paths.StacksDirectoryPath,
 	}); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
@@ -475,9 +478,12 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			return 0, joinCleanupError(fmt.Errorf("unknown service: %s", serviceName), cleanupError)
 		}
 
+		if options.DetachedLogPath != "" && blocked[serviceName] != "" {
+			return 0, fmt.Errorf("service %s cannot start: %s", serviceName, blocked[serviceName])
+		}
 		if isManagedService(service) && blocked[serviceName] == "" {
 			if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
-				if lifecycleCtx.Err() != nil {
+				if lifecycleCtx.Err() != nil || options.DetachedLogPath != "" {
 					return 0, err
 				}
 				state.logFailure(serviceName, err)
@@ -491,6 +497,11 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			service = manifest.Services[serviceName]
 		}
 
+		if options.DetachedLogPath != "" && !isManagedService(service) {
+			if err := waitForStartupHealth(lifecycleCtx, service, startupHealthOptions{stackName: manifest.Name, logWriter: options.LogWriter}); err != nil {
+				return 0, err
+			}
+		}
 		if len(service.Hosts) == 0 || service.Port == nil {
 			continue
 		}
@@ -535,12 +546,19 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 	defer func() { returnedError = errors.Join(returnedError, configWatch.close()) }()
 	configEvents := configWatch.events
-	state.operationMu.Lock()
-	state.ready = true
-	state.operationMu.Unlock()
 	state.manifestMu.Lock()
 	state.startupComplete = true
 	state.manifestMu.Unlock()
+	// Keep browser mutations out of the final readiness snapshot.
+	state.operationMu.Lock()
+	state.ready = true
+	if options.DetachedLogPath != "" {
+		err = state.publishDetachedReady(lifecycleCtx, paths)
+	}
+	state.operationMu.Unlock()
+	if err != nil {
+		return 0, err
+	}
 	var reloadResults, configResults <-chan error
 	defer func() {
 		cancelLifecycle()

@@ -51,7 +51,23 @@ On start, devhost:
 
 The shared Caddy must already be running; see [Prepare Caddy](../managed-caddy/#prepare-caddy).
 
-A service that exits or fails its health check does not stop the stack. Its hostname shows the error and recent logs with a **Restart** button; see [Restarts and recovery](../../stacks/recovery/).
+During foreground startup, or after a detached stack is ready, a service that exits or fails its health check does not stop the stack. Its hostname shows the error and recent logs with a **Restart** button; see [Restarts and recovery](../../stacks/recovery/).
+
+## Keep a stack running after the terminal closes
+
+On Linux and macOS, use detached startup for a stack that must outlive a shell or an agent session:
+
+```bash
+devhost start --detach
+# Or start only the services you need:
+devhost start --detach web
+```
+
+The command waits for the selected services' health checks and route registration, then prints their URLs, the stack PID, and its log path before exiting successfully. The supervisor runs in a separate session and process group, reads from `/dev/null`, and appends stdout and stderr to a private per-manifest file under the [state directory](../../reference/cli/#environment-variables)'s `logs/` folder. Follow the printed path with `tail -f` to read ongoing output.
+
+If startup fails or a health check times out, the command prints the current attempt's log tail and exits nonzero after stopping its services and removing its routes and registration. Shared Caddy and externally managed services remain running. The overall startup budget adds two minutes for setup to the selected services' health and automatic-port retry budgets. Once startup succeeds, ordinary [service recovery](../../stacks/recovery/) and [idle shutdown](#stop-automatically-when-idle) apply.
+
+Repeating `--detach` for the same manifest, including through a symlink, reports the existing stack and exits successfully. It does not change the running service selection. Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual. `--detach` has no short flag: `-d` still means `--debug`.
 
 ## Service commands and working directories
 

@@ -20,6 +20,9 @@ func TestParseCommandLineArguments(t *testing.T) {
 		wantError   string
 		comparePath bool
 	}{
+		{name: "detach and debug remain distinct", rawArgs: []string{"start", "--detach", "-d", "web"}, want: CommandLineArguments{Kind: KindStart, Detach: true, Debug: true, Services: []string{"web"}}},
+		{name: "detach false", rawArgs: []string{"start", "--detach=false"}, want: CommandLineArguments{Kind: KindStart}},
+		{name: "detach rejected on stop", rawArgs: []string{"stop", "--detach"}, wantError: "unknown option: --detach"},
 		{name: "restart all stacks", rawArgs: []string{"stack", "restart", "--all"}, want: CommandLineArguments{Kind: KindStackRestart, All: true}},
 		{name: "restart manifest", rawArgs: []string{"stack", "restart", "-m", manifestPath}, want: CommandLineArguments{Kind: KindStackRestart, ManifestPath: &manifestPath}, comparePath: true},
 		{name: "restart conflicting scope", rawArgs: []string{"stack", "restart", "--all", "-m", manifestPath}, wantError: "--all and --manifest (or DEVHOST_MANIFEST) are mutually exclusive"},
@@ -345,7 +348,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, err)
 			}
 
-			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || got.Worktrees != tc.want.Worktrees || got.All != tc.want.All || got.Query != tc.want.Query || !slices.Equal(got.Services, tc.want.Services) {
+			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.Detach != tc.want.Detach || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || got.Worktrees != tc.want.Worktrees || got.All != tc.want.All || got.Query != tc.want.Query || !slices.Equal(got.Services, tc.want.Services) {
 				t.Fatalf("ParseCommandLineArguments(%q) = %#v, want %#v", tc.rawArgs, got, tc.want)
 			}
 
@@ -404,4 +407,21 @@ func TestParseCommandLineArgumentsPointsAtTheHelpOfTheCommandThatFailed(t *testi
 
 func pointerToString(value string) *string {
 	return &value
+}
+
+func TestDetachHasNoShortFlag(t *testing.T) {
+	root, err := newRootCommand(&CommandLineArguments{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, _, err := root.Find([]string{"start"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := start.Flags().Lookup("detach").Shorthand; got != "" {
+		t.Fatalf("detach shorthand = %q", got)
+	}
+	if got := start.Flags().Lookup("debug").Shorthand; got != "d" {
+		t.Fatalf("debug shorthand = %q", got)
+	}
 }

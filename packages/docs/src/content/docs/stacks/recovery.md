@@ -2,7 +2,9 @@
 title: "Restarts and recovery"
 ---
 
-A service that crashes, times out, or returns errors never takes the stack down with it. Its hostname shows what went wrong, with recent logs and a restart button, and the other services keep running.
+During foreground startup, and after any stack is ready, a service that crashes, times out, or returns errors does not take the stack down with it. Its hostname shows what went wrong, with recent logs and a restart button, and the other services keep running.
+
+[Detached startup](../../guides/stack-lifecycle/#keep-a-stack-running-after-the-terminal-closes) instead stops the attempted stack if initial health or routing fails.
 
 ## Startup pages
 

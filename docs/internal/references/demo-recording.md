@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-14 09:08
+last_modified: 2026-11-14 09:51
 status: current
 ---
 
@@ -143,6 +143,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 | Feature                                                                                                                                                                        | Documented in                                                                                                                  | Shown in                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Detached startup with readiness, retained logs, failure cleanup, and idempotent manifest ownership                                                                             | `guides/stack-lifecycle.md`, "Keep a stack running after the terminal closes"                                                  | **No demo**                                      |
 | Find running stacks by URL or partial name; stop every worktree of one repository                                                                                              | `guides/stack-lifecycle.md`, "Stop a stack started elsewhere", "Stop every worktree of a repository"                           | **No demo**                                      |
 | Single-column compact React/shadcn stack directory with aligned service/status/URL columns, expandable TOML, filtering, and exited-owner exclusion                             | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`, "Hostnames and DNS"                   | **No demo**                                      |
 | Customize the shared running-stack directory hostname and opt in to remote read access                                                                                         | `guides/shared-managed-caddy-settings.md`, "Choose the stack directory hostname"                                               | **No demo**                                      |

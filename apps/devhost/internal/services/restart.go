@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -180,6 +181,13 @@ func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdo
 		return err
 	}
 	defer input.Close() // Closing the parent's copy leaves the child's input intact.
+	// A detached supervisor records the new log after replacement. The original
+	// environment comes from the OS and may retain its initial private marker.
+	for i, entry := range launch.environment {
+		if strings.HasPrefix(entry, DetachedLogEnvironment+"=") {
+			launch.environment[i] = DetachedLogEnvironment + "=" + launch.log.Name()
+		}
+	}
 	args := append([]string{executable}, launch.args...)
 	child, err := os.StartProcess(executable, args, &os.ProcAttr{
 		Dir: launch.directory, Env: launch.environment,

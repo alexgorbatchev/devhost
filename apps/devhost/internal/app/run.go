@@ -152,11 +152,19 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			idleTimeout = parsed
 		}
 
+		if arguments.Detach {
+			return runDetachedStart(arguments, resolvedManifest, cwd, stdout, stderr)
+		}
+
+		environment := readEnvironment()
+		detachedLog := environment[services.DetachedLogEnvironment]
+		delete(environment, services.DetachedLogEnvironment)
 		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name), "devhost", "caddy"}, serviceOrder...)
 		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, logNames)
 		startOptions := services.StartStackOptions{
 			Configuration:       &validatedManifest,
-			Environment:         readEnvironment(),
+			Environment:         environment,
+			DetachedLogPath:     detachedLog,
 			LogWriter:           serviceStdout,
 			ServiceStdoutWriter: serviceStdout,
 			ServiceStderrWriter: serviceStderr,

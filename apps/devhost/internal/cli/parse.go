@@ -79,6 +79,7 @@ type CommandLineArguments struct {
 	Action       CaddyLifecycleAction
 	SSHTarget    string
 	Debug        bool
+	Detach       bool
 	IdleTimeout  string
 	// Services names the services or groups devhost start was asked for; empty means all services.
 	Services []string
@@ -184,7 +185,8 @@ func printedVersion(command *cobra.Command) bool {
 
 type startOptions struct {
 	ManifestOptions
-	Debug       bool     `descr:"Show Caddy's output while the stack runs." name:"debug"`
+	Debug       bool     `descr:"Show Caddy's output while the stack runs." name:"debug" short:"d"`
+	Detach      bool     `descr:"Run in the background; wait until the stack is ready." name:"detach"`
 	IdleTimeout string   `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
 	Services    []string `descr:"Services or groups; omit to start every service." name:"service" optional:"true" positional:"true"`
 }
@@ -253,6 +255,7 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 				Kind:         KindStart,
 				ManifestPath: options.ManifestPath,
 				Debug:        options.Debug,
+				Detach:       options.Detach,
 				IdleTimeout:  options.IdleTimeout,
 				Services:     options.Services,
 			}

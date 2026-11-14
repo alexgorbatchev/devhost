@@ -91,7 +91,7 @@ Replace `0.0.2` with the real release version.
 The `Publish release binaries` workflow does the following:
 
 - checks out the full repository history
-- installs Bun `1.3.11` and Go from `apps/devhost/go.mod`
+- installs the Bun version pinned in `package.json` and Go from `apps/devhost/go.mod`
 - derives `RELEASE_VERSION` from the tag name
 - verifies `apps/devhost/metadata.json` matches the tag version
 - installs dependencies with `bun install --frozen-lockfile`

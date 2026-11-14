@@ -9,7 +9,7 @@ Stop juggling `localhost:3000`, `localhost:4000`, and a terminal tab per service
 ## Why devhost
 
 - **Real hostnames, real HTTPS.** Give each service its own trusted `https://` hostname, with path routes and aliases, through one shared proxy. No DNS setup for `.localhost` names.
-- **One command for the whole stack.** `devhost start` launches services in dependency order and waits until each is healthy. Name one app and it starts just that app and what it needs.
+- **One command for the whole stack.** `devhost start` launches services in dependency order; add [`--detach`](https://alexgorbatchev.github.io/devhost/guides/stack-lifecycle/#keep-a-stack-running-after-the-terminal-closes) to return after readiness and keep the stack running when the terminal closes. Name one app to start it and its dependencies.
 - **Crashes don't take you down.** A failing service shows its error and logs right at its URL, with a **Restart** button. Everything else keeps running.
 - **Edit config live.** Save `devhost.toml` and only the affected services restart. A typo never kills the stack.
 - **Devtools in your page.** An optional toolbar with service status, live logs, restarts, Git worktree switching, and your React, Redux, TanStack, Vue, and Jotai devtools in one place.

@@ -13,6 +13,9 @@ import (
 // registrations exist only for the hostnames and fixed ports a stack holds;
 // this record exists for every stack, so one that holds neither is known too.
 type stackRecord struct {
+	Ready              bool     `json:"ready,omitempty"`
+	URLs               []string `json:"urls,omitempty"`
+	LogPath            string   `json:"logPath,omitempty"`
 	ControlPort        int      `json:"controlPort,omitempty"`
 	ManifestFiles      []string `json:"manifestFiles,omitempty"`
 	CreatedAt          string   `json:"createdAt"`
@@ -23,6 +26,9 @@ type stackRecord struct {
 }
 
 type stackRecordJSON struct {
+	Ready              bool     `json:"ready"`
+	URLs               []string `json:"urls"`
+	LogPath            string   `json:"logPath"`
 	ControlPort        int      `json:"controlPort"`
 	ManifestFiles      []string `json:"manifestFiles"`
 	CreatedAt          *string  `json:"createdAt"`
@@ -33,6 +39,7 @@ type stackRecordJSON struct {
 }
 
 type RegisterStackOptions struct {
+	LogPath             string
 	ControlPort         int
 	ManifestFiles       []string
 	ManifestPath        string
@@ -55,6 +62,7 @@ func registerStack(options RegisterStackOptions) error {
 	}
 
 	record := stackRecord{
+		LogPath:            options.LogPath,
 		ControlPort:        options.ControlPort,
 		CreatedAt:          formatRouteMutationTimestamp(routeMutationNow()),
 		ManifestPath:       options.ManifestPath,
@@ -67,6 +75,21 @@ func registerStack(options RegisterStackOptions) error {
 		return err
 	}
 	record.ManifestFiles = files
+	// Hot reload refreshes the manifest reservation under this same PID. Keep
+	// the completed startup handshake and retained log identity across updates.
+	previousData, err := os.ReadFile(getStackRecordPath(options.StacksDirectoryPath))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err == nil {
+		previous, err := parseStackRecord(previousData)
+		if err != nil {
+			return err
+		}
+		if previous.OwnerPID == record.OwnerPID && previous.OwnerStartIdentity == record.OwnerStartIdentity && previous.ManifestPath == record.ManifestPath {
+			record.Ready, record.URLs, record.LogPath = previous.Ready, previous.URLs, previous.LogPath
+		}
+	}
 	if err := checkManifestOverlap(options.StacksDirectoryPath, record); err != nil {
 		return err
 	}
@@ -163,6 +186,7 @@ func parseStackRecord(recordText []byte) (stackRecord, error) {
 
 	record := stackRecord{ControlPort: value.ControlPort, CreatedAt: *value.CreatedAt, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID, StackName: *value.StackName}
 	record.ManifestFiles = value.ManifestFiles
+	record.Ready, record.URLs, record.LogPath = value.Ready, value.URLs, value.LogPath
 	if value.OwnerStartIdentity != nil {
 		record.OwnerStartIdentity = *value.OwnerStartIdentity
 	}

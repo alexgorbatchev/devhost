@@ -50,7 +50,11 @@ func WaitForServiceHealth(ctx context.Context, options WaitForServiceHealthOptio
 }
 
 func CheckServiceHealth(health ResolvedHealthConfig) bool {
-	return checkServiceHealth(context.Background(), health, healthDependencies{
+	return probeServiceHealth(context.Background(), health)
+}
+
+func probeServiceHealth(ctx context.Context, health ResolvedHealthConfig) bool {
+	return checkServiceHealth(ctx, health, healthDependencies{
 		canConnectToPort:    canConnectToPort,
 		isReadyHTTPEndpoint: isReadyHTTPEndpoint,
 	})

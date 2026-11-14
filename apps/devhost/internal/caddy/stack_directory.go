@@ -32,6 +32,9 @@ func ReadStackDirectoryHostname(paths Paths) (string, error) {
 
 // LiveStack identifies a running stack and its private loopback control server.
 type LiveStack struct {
+	Ready        bool
+	URLs         []string
+	LogPath      string
 	Name         string
 	PID          int
 	ManifestPath string
@@ -75,7 +78,7 @@ func ReadLiveStacks(paths Paths) ([]LiveStack, error) {
 			return nil, fmt.Errorf("read stack %s: %w", entry.Name(), err)
 		}
 		if routeMutationIsOwnerAlive(r.OwnerPID, r.OwnerStartIdentity) {
-			stacks = append(stacks, LiveStack{Name: r.StackName, PID: r.OwnerPID, ManifestPath: r.ManifestPath, StartedAt: r.CreatedAt, ControlPort: r.ControlPort, record: r})
+			stacks = append(stacks, LiveStack{Ready: r.Ready, URLs: r.URLs, LogPath: r.LogPath, Name: r.StackName, PID: r.OwnerPID, ManifestPath: r.ManifestPath, StartedAt: r.CreatedAt, ControlPort: r.ControlPort, record: r})
 		}
 	}
 	slices.SortFunc(stacks, func(a, b LiveStack) int {
