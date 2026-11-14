@@ -110,5 +110,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install native Caddy
+        run: brew install caddy
+
       - name: Run Go checks
-        run: just devhost check
+        run: |
+          bash test-support/runTests.test.sh
+          just devhost check

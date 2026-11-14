@@ -55,6 +55,26 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+# Exercise the same logical/physical split as macOS /tmp with a real symlink.
+mkdir -- "$FIXTURE/physical"
+ln -s -- "$FIXTURE/physical" "$FIXTURE/logical"
+cat > "$FIXTURE/logical-temp.bash" <<'BASH'
+mktemp() { command mktemp -d "${RUNNER_TEMP_ALIAS:?}/dht.XXXXXX"; }
+BASH
+RUNNER_TEMP_ALIAS="$FIXTURE/logical" BASH_ENV="$FIXTURE/logical-temp.bash" \
+  bash "$ROOT/test-support/runTests.sh" bash -ec '
+    physical=$(cd -- "$TMPDIR" && pwd -P)
+    [[ "$TMPDIR" == "$physical" ]]
+    [[ "$GOTMPDIR" == "$physical" && "$DEVHOST_TEST_RUN_ID" == "$physical" ]]
+    [[ "$CHROME_CONFIG_HOME" == "$physical/chrome-config" ]]
+    [[ "$XDG_RUNTIME_DIR" == "$physical/runtime" && "$PULSE_RUNTIME_PATH" == "$physical/runtime/pulse" ]]
+    printf "%s\n" "$TMPDIR" > "$1"
+  ' bash "$FIXTURE/canonical-root"
+read -r RUN_DIRECTORY < "$FIXTURE/canonical-root"
+[[ ! -e "$RUN_DIRECTORY" ]]
+RUN_DIRECTORY=
+printf 'PASS: exported test paths use the physical directory and cleanup removes it\n'
+
 # Fail signal delivery while retaining real processes and real ps inspection.
 # This exercises a surviving child without requiring uninterruptible kernel I/O.
 printf 'kill() { return 1; }\n' > "$FIXTURE/no-signal.bash"
@@ -71,7 +91,8 @@ done
   read -r CHILD_PID
   read -r RUN_DIRECTORY
 } < "$FIXTURE/ready"
-[[ "$CHILD_PID" =~ ^[0-9]+$ && "$RUN_DIRECTORY" == /tmp/dht.* ]]
+SYSTEM_TMP=$(cd /tmp && pwd -P)
+[[ "$CHILD_PID" =~ ^[0-9]+$ && "$RUN_DIRECTORY" == "$SYSTEM_TMP"/dht.* ]]
 /bin/kill -TERM "$RUNNER_PID"
 
 # A failed shutdown must finish before the still-running child's 60-second sleep.

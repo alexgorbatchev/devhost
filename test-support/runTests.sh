@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Use a short command-owned path: Chromium's Unix sockets cannot use deep checkouts.
 RUN_DIRECTORY=$(mktemp -d "/tmp/dht.XXXXXX")
+RUN_DIRECTORY=$(cd -- "$RUN_DIRECTORY" && pwd -P)
 TEST_PID=
 
 # The inherited marker finds detached helpers even after a test panic reparents

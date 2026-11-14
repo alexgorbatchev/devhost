@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-05 05:36
-last_modified: 2026-11-05 07:13
+last_modified: 2026-11-14 10:20
 status: current
 ---
 
@@ -10,7 +10,7 @@ This reference describes temporary storage and process cleanup for contributors 
 
 ## Command and fixture lifetimes
 
-The workspace test recipes, design type-check, and docs build, type-check, and link-check commands invoke `test-support/runTests.sh`. Each invocation creates a unique short `/tmp/dht.XXXXXX` directory and exports it as `TMPDIR` and `GOTMPDIR`. The short path accommodates Chromium's Unix-domain sockets even when the checkout or the caller's temporary directory has a long path. Validation also keeps Node's temporary compile cache and the link checker's staging files inside that command directory.
+The workspace test recipes, design type-check, and docs build, type-check, and link-check commands invoke `test-support/runTests.sh`. Each invocation creates a unique short `/tmp/dht.XXXXXX` directory, resolves it to its physical path, and exports that path as `TMPDIR` and `GOTMPDIR`. On macOS this is `/private/tmp/dht.XXXXXX`, so subprocesses and tests compare the same path despite the `/tmp` symlink. The short path accommodates Chromium's Unix-domain sockets even when the checkout or the caller's temporary directory has a long path. Validation also keeps Node's temporary compile cache and the link checker's staging files inside that command directory.
 
 Tests create unique children directly beneath `os.tmpdir()` or through Go's `t.TempDir()`. Each fixture stops and joins its servers and browsers before removing its directory, including when setup or assertions fail. The runner identifies process groups through ancestry and the inherited `DEVHOST_TEST_RUN_ID`, including detached helpers reparented after a test timeout or panic. It repeatedly discovers owned processes during shutdown, allows five seconds for graceful termination, then kills survivors. It removes its directory only after verifying shutdown; failed process inspection or surviving processes preserve the directory and fail the command. It preserves the command's exit status otherwise and handles HUP, INT, and TERM. It does not remove the caller's temporary directory or other runs' files.
 
@@ -30,4 +30,4 @@ Demo workflow tests use disposable repository fixtures and remove them. Real rec
 
 1. Run `just setup` to prepare dependencies and browser binaries, then run `just check` for all repository gates.
 2. When changing fixture ownership, compare the checkout's `.tmp/`, the caller's temporary directory, the system temporary directory, and the process list before and after `just test`. Account separately for the retained dependencies, media, builds, and coverage reports above.
-3. Exercise a failing command and interrupt a running command through `test-support/runTests.sh`; verify the exit status, removal of that command's directory, and termination of its subprocesses. Never clean an unrelated run to make the audit pass. The shell regression included in both root commands injects failed signal delivery while retaining real processes and process inspection. It verifies that the runner reports surviving processes and preserves scratch before attempting to join them; it does not reproduce uninterruptible kernel I/O.
+3. Exercise a failing command and interrupt a running command through `test-support/runTests.sh`; verify the exit status, removal of that command's directory, and termination of its subprocesses. Never clean an unrelated run to make the audit pass. The shell regression included in both root commands allocates a real directory through a symlink and checks that exported paths are physical and cleanup removes the directory. It also injects failed signal delivery while retaining real processes and process inspection, verifying that the runner reports surviving processes and preserves scratch before attempting to join them; it does not reproduce uninterruptible kernel I/O.
