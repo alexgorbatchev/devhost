@@ -6,17 +6,17 @@ Your stacks share one Caddy. Turn on plain HTTP and choose its ports.
 00:05.212 --> 00:09.113
 The shared Caddy settings turn on plain HTTP and set both ports.
 
-00:09.563 --> 00:10.863
+00:10.612 --> 00:11.912
 Start the stack.
 
-00:11.313 --> 00:14.007
+00:12.362 --> 00:15.056
 The HTTPS address now uses the port you set.
 
-00:14.457 --> 00:16.779
+00:15.722 --> 00:18.044
 The service answers over HTTPS.
 
-00:17.857 --> 00:20.458
+00:20.442 --> 00:23.043
 The same service answers over plain HTTP.
 
-00:23.137 --> 00:24.159
+00:26.362 --> 00:27.384
 Stop the stack.

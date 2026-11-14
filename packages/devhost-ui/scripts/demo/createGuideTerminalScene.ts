@@ -164,7 +164,7 @@ export function createGuideTerminalScene(slug: string, port: number): IGuideTerm
           "httpsPort = {{ env.DEVHOST_DEMO_HTTPS_PORT }}",
         ],
         steps: [
-          { command: 'cat "$DEVHOST_CONFIG_DIR/config.toml"', waitPattern: "^httpsPort = ", holdMs: 4_000 },
+          { command: 'cat "$DEVHOST_CONFIG_DIR/config.toml"', waitPattern: "(?m)^httpsPort = ", holdMs: 4_000 },
           start,
           logs,
           {

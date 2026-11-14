@@ -6,14 +6,14 @@ devhost hands each service its port, its hostname, and your own variables.
 00:05.444 --> 00:07.998
 This service declares two variables of its own.
 
-00:08.924 --> 00:10.039
+00:09.884 --> 00:10.999
 Start the stack.
 
-00:10.489 --> 00:13.600
+00:11.449 --> 00:14.560
 devhost assigns a free port and starts the service.
 
-00:14.050 --> 00:18.183
+00:15.010 --> 00:19.143
 The service received its port, bind host, hostname, and your message.
 
-00:19.130 --> 00:20.245
+00:20.810 --> 00:21.925
 Stop the stack.

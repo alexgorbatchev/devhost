@@ -6,17 +6,17 @@ One proxy. Local HTTPS hostnames. Route each service by path.
 00:06.233 --> 00:09.577
 Two services share one hostname, split by path.
 
-00:10.033 --> 00:11.055
+00:10.873 --> 00:11.895
 Start the stack.
 
-00:11.505 --> 00:15.267
+00:12.345 --> 00:16.107
 devhost starts both and publishes an HTTPS address for each.
 
-00:15.716 --> 00:18.224
+00:16.556 --> 00:19.064
 The hostname alone reaches the web service.
 
-00:21.036 --> 00:23.497
+00:22.156 --> 00:24.617
 The API path reaches the API service.
 
-00:25.876 --> 00:28.012
+00:26.836 --> 00:28.972
 One command stops both services.

@@ -15,8 +15,8 @@ devhost runs the start command and waits for the health check.
 00:14.131 --> 00:16.871
 The daemon answers on its HTTPS hostname.
 
-00:19.451 --> 00:22.052
+00:20.131 --> 00:22.732
 Stopping the stack runs the daemon's stop command.
 
-00:22.502 --> 00:24.360
+00:23.182 --> 00:25.040
 The daemon is no longer running.

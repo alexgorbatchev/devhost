@@ -6,29 +6,29 @@ Save a broken manifest and the running stack stays up. Fix it, save again.
 00:05.630 --> 00:07.441
 A stack with one service.
 
-00:08.830 --> 00:09.852
+00:09.932 --> 00:10.954
 Start the stack.
 
-00:10.302 --> 00:11.556
+00:11.404 --> 00:12.658
 The service is running.
 
-00:13.342 --> 00:15.014
+00:14.696 --> 00:16.368
 Now save an invalid port.
 
-00:15.464 --> 00:17.925
+00:16.818 --> 00:19.279
 devhost rejects the reload and says why.
 
-00:19.984 --> 00:21.934
+00:21.869 --> 00:23.819
 The running stack still answers.
 
-00:24.144 --> 00:25.909
+00:27.480 --> 00:29.245
 Save a corrected manifest.
 
-00:26.358 --> 00:28.123
+00:29.695 --> 00:31.460
 This time the reload is applied.
 
-00:29.918 --> 00:32.286
+00:33.960 --> 00:36.328
 The service shows the new configuration.
 
-00:34.358 --> 00:35.519
+00:38.861 --> 00:40.022
 Stop the stack.

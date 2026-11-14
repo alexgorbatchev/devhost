@@ -9,14 +9,14 @@ The root manifest declares no services. It includes each package's manifest.
 00:10.306 --> 00:12.535
 Each package declares its own service.
 
-00:14.426 --> 00:15.541
+00:14.826 --> 00:15.941
 Start from the root.
 
-00:15.990 --> 00:18.173
+00:16.390 --> 00:18.573
 devhost merges them into one stack.
 
-00:18.790 --> 00:21.809
+00:19.950 --> 00:22.969
 The merged stack answers on its HTTPS hostname.
 
-00:24.230 --> 00:25.530
+00:25.910 --> 00:27.210
 And it stops as one.

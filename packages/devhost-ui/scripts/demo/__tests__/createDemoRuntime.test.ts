@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createDemoRuntime } from "../createDemoRuntime";
@@ -84,5 +84,29 @@ it("provides isolated usable Git worktrees for the recorded picker", async () =>
     expect(parsed).toMatchObject({ services: { api: { cwd: "backend" }, web: { cwd: "frontend" } } });
   } finally {
     await rm(runtime.directoryPath, { recursive: true, force: true });
+  }
+});
+
+it("keeps the recording CLI ahead of installed tools when a Bash launcher inherits startup hooks", async () => {
+  const installedBin = join(repositoryPath, "installed-bin");
+  await mkdir(installedBin);
+  const installed = join(installedBin, "devhost");
+  await Bun.write(installed, "#!/bin/sh\nprintf installed\n");
+  await chmod(installed, 0o755);
+  const startup = join(repositoryPath, "startup.bash");
+  await Bun.write(startup, `export PATH="${installedBin}:$PATH"\n`);
+  const original = process.env;
+  process.env = { ...original, BASH_ENV: startup };
+  try {
+    const runtime = await createDemoRuntime(repositoryPath, "demo.localhost");
+    const recorded = join(runtime.directoryPath, "bin/devhost");
+    await Bun.write(recorded, "#!/bin/sh\nprintf recording\n");
+    await chmod(recorded, 0o755);
+    const launcher = join(runtime.directoryPath, "launcher");
+    await Bun.write(launcher, "#!/usr/bin/env bash\nexec devhost\n");
+    await chmod(launcher, 0o755);
+    expect(await runCommand([launcher], { cwd: runtime.directoryPath, env: runtime.env })).toBe("recording");
+  } finally {
+    process.env = original;
   }
 });

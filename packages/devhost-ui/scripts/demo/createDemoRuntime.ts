@@ -29,6 +29,8 @@ export async function createDemoRuntime(repositoryPath: string, host: string): P
     PATH: `${join(directoryPath, "bin")}:${process.env.PATH ?? ""}`,
     VHS_PUBLISH: "false",
   };
+  // Shell launchers must preserve the recording binaries at the front of PATH.
+  delete env.BASH_ENV;
   delete env.DEVHOST_DEV_SOURCE_DIR;
   delete env.DEVHOST_IDLE_TIMEOUT;
   const runtime: IDemoRuntime = {

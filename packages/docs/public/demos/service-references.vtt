@@ -6,14 +6,14 @@ Point one service at another, even when its port is assigned at start.
 00:04.422 --> 00:07.673
 The API address is a reference, not a fixed port.
 
-00:08.123 --> 00:09.284
+00:08.982 --> 00:10.143
 Start the stack.
 
-00:09.734 --> 00:13.124
+00:10.593 --> 00:13.983
 devhost fills in the API's port and starts the API first.
 
-00:13.574 --> 00:16.314
+00:14.433 --> 00:17.173
 The web service called the API at the resolved address.
 
-00:18.574 --> 00:20.710
+00:19.593 --> 00:21.729
 One command stops both services.

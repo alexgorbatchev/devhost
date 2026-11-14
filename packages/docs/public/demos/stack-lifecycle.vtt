@@ -6,14 +6,14 @@ Start dependencies first. Stop the whole stack with one command.
 00:04.144 --> 00:06.280
 The web service depends on the API.
 
-00:07.744 --> 00:09.184
+00:08.744 --> 00:10.184
 Start the stack.
 
-00:09.634 --> 00:12.978
+00:10.634 --> 00:13.978
 devhost starts the API first, then the web service.
 
-00:13.427 --> 00:16.074
+00:14.427 --> 00:17.074
 The web service answers on its HTTPS hostname.
 
-00:18.867 --> 00:20.678
+00:20.067 --> 00:21.878
 Stopping takes one command.
