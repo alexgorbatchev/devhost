@@ -61,6 +61,9 @@ jobs:
       - name: Install Playwright Browsers
         run: just ui install-browser
 
+      - name: Install test tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg unzip xvfb
+
       - name: Verify package
         env:
           CI: "false"

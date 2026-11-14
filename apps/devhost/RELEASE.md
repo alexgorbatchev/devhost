@@ -24,6 +24,8 @@ just devhost build-release-artifacts
 
 The preflight is not optional. The publish workflow repeats the same validations before attaching binaries to the GitHub Release.
 
+Native media and headed-browser tests require FFmpeg (including `ffprobe`), unzip, and Xvfb on Linux. The hosted release runner installs these tools before `just check`, matching hosted CI.
+
 `just check` includes the Go logging-boundary analyzer (`go tool logpolicy ./...`) through `just devhost lint`. Resolve its findings through `internal/cliout` before release; `just devhost lint-logging` runs that check alone.
 
 ## Local standalone executable
@@ -96,6 +98,7 @@ The `Publish release binaries` workflow does the following:
 - verifies `apps/devhost/metadata.json` matches the tag version
 - installs dependencies with `bun install --frozen-lockfile`
 - installs Playwright Chromium with `just ui install-browser`
+- installs FFmpeg, unzip, and Xvfb for native media and headed-browser tests
 - runs `just check`
 - builds versioned release archives with `just devhost build-release-artifacts`
 - creates a GitHub Release for the tag if one does not already exist

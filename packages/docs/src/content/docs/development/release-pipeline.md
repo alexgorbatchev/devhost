@@ -50,7 +50,7 @@ The diagram has three stages. The films are made and published by hand, and only
 
 ### Binaries
 
-Pushing a tag such as `v0.0.2` starts `.github/workflows/publish.yml`. The workflow fails unless the tag matches the version in `apps/devhost/metadata.json`. It runs `just check`, builds the release archives, creates the GitHub release for the tag, and uploads the archives to it.
+Pushing a tag such as `v0.0.2` starts `.github/workflows/publish.yml`. The workflow fails unless the tag matches the version in `apps/devhost/metadata.json`. The hosted Linux runner installs Playwright Chromium, FFmpeg (including `ffprobe`), unzip, and Xvfb for the native media and headed-browser tests. It then runs `just check`, builds the release archives, creates the GitHub release for the tag, and uploads the archives to it.
 
 The Go checks include `logpolicy`, a type-aware analyzer that enforces the shared `internal/cliout` output boundary. Run `just devhost lint-logging` to check it alone. Diagnostics use the shared logger; machine-readable command results, child logs, HTTP responses, and file contents retain their separate output contracts.
 
