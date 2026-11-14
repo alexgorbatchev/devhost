@@ -27,7 +27,8 @@ func TestNativeCaddyStartupDiagnostics(t *testing.T) {
 				t.Fatal(err)
 			}
 			if occupied {
-				listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", ports[1]))
+				// Darwin allows loopback and wildcard listeners to coexist; occupy Caddy's wildcard address.
+				listener, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%d", ports[1]))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -45,7 +46,7 @@ func TestNativeCaddyStartupDiagnostics(t *testing.T) {
 			result := RunCommand([]string{executable, "start", "--pidfile", paths.PidFilePath, "--config", paths.CaddyfilePath, "--adapter", "caddyfile"}, RunCommandOptions{Background: true, WorkingDir: paths.CaddyDirectoryPath})
 			if occupied {
 				if result.Success || !strings.Contains(string(result.Stderr), "address already in use") {
-					t.Fatalf("missing listener failure: %+v", result)
+					t.Fatalf("missing listener failure: success=%t stdout=%s stderr=%s", result.Success, result.Stdout, result.Stderr)
 				}
 			} else {
 				if !result.Success || !strings.Contains(string(result.Stdout), "Successfully started Caddy") {
