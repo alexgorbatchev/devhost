@@ -141,7 +141,8 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 			if _, err := ApplyManagedCaddySettings(paths, settings, RouteCommandOutputWriters{}); err != nil {
 				t.Fatal(err)
 			}
-			request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://127.0.0.1:%d/?q=api", settings.HTTPSPort), nil)
+			// Exercise remote access through the non-loopback interface at both ends.
+			request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s:%d/?q=api", address, settings.HTTPSPort), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -27,8 +27,8 @@ func TestNativeCaddyStartupDiagnostics(t *testing.T) {
 				t.Fatal(err)
 			}
 			if occupied {
-				// Darwin allows loopback and wildcard listeners to coexist; occupy Caddy's wildcard address.
-				listener, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%d", ports[1]))
+				// Match Caddy's tcp wildcard listener, including Go's dual-stack selection.
+				listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", ports[1]))
 				if err != nil {
 					t.Fatal(err)
 				}
