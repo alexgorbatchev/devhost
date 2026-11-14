@@ -4,9 +4,11 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-11-01 08:47
+  last_modified: 2026-11-14 08:57
   status: current
 ---
+
+Resolve a service's relative `watch` paths from its `cwd`, including services loaded through `includes`. For `cwd = "apps/playground"`, use `watch = ["../../packages/connector/src/"]` to watch a sibling package. Absolute watch paths stay absolute. A path outside the root manifest directory prints a warning and remains watched when it exists.
 
 ## Manifest file serving
 

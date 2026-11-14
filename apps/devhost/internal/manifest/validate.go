@@ -300,18 +300,6 @@ func validateService(
 	servicePath := "services." + serviceName
 	allowKeys(value, "services.*", servicePath, schemaIssues)
 
-	watch := []string{}
-	if watchValues, ok := readOptionalStringArray(value, servicePath, "watch", schemaIssues); ok {
-		for _, p := range watchValues {
-			resolvedPath := filepath.Clean(filepath.Join(manifestDirectoryPath, p))
-			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
-			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
-				cliout.WriteWarning(os.Stderr, fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath))
-			}
-			watch = append(watch, p)
-		}
-	}
-
 	managed, hasManaged := readOptionalBool(value, servicePath, "managed", schemaIssues)
 	if !hasManaged {
 		managed = true
@@ -393,6 +381,18 @@ func validateService(
 	resolvedCwd := resolveConstrainedPath(fmt.Sprintf("services.%s.cwd", serviceName), cwd, manifestDirectoryPath, validationIssues)
 	if hasServe {
 		resolvedCwd = serve
+	}
+
+	watch := []string{}
+	if watchValues, ok := readOptionalStringArray(value, servicePath, "watch", schemaIssues); ok {
+		for _, p := range watchValues {
+			resolvedPath := ResolveWatchPath(resolvedCwd, p)
+			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
+			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
+				cliout.WriteWarning(os.Stderr, fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath))
+			}
+			watch = append(watch, p)
+		}
 	}
 
 	dependsOn := []string{}

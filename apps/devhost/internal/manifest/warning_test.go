@@ -5,8 +5,48 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestValidateManifestWatchPathsUseServiceCwd(t *testing.T) {
+	root := t.TempDir()
+	tests := []struct {
+		name, cwd, watch string
+		warn             bool
+	}{
+		{name: "sibling inside project", cwd: "apps/playground", watch: "../../packages/connector/src"},
+		{name: "sibling outside project", cwd: "apps/playground", watch: "../../../shared", warn: true},
+		{name: "absolute inside project", cwd: "apps/playground", watch: filepath.Join(root, "packages", "connector", "src")},
+		{name: "absolute outside project", cwd: "apps/playground", watch: t.TempDir(), warn: true},
+		{name: "absolute cwd outside project", cwd: t.TempDir(), watch: "src", warn: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := captureStderr(t, func() {
+				_, err := ValidateManifest(filepath.Join(root, "devhost.toml"), RawManifest{value: map[string]any{
+					"name": "shop",
+					"services": map[string]any{"web": map[string]any{
+						"command": []any{"server"},
+						"health":  map[string]any{"process": true},
+						"cwd":     tc.cwd,
+						"watch":   []any{tc.watch},
+					}},
+				}})
+				if err != nil {
+					t.Fatal(err)
+				}
+			})
+			if tc.warn {
+				if !strings.Contains(got, "resolves outside the manifest directory") {
+					t.Fatalf("missing watch warning: %q", got)
+				}
+			} else if got != "" {
+				t.Fatalf("unexpected watch warning: %q", got)
+			}
+		})
+	}
+}
 
 func TestValidateManifestWarnsAboutAWatchPathOutsideTheManifestDirectory(t *testing.T) {
 	manifestDirectoryPath := t.TempDir()
@@ -55,8 +95,11 @@ func captureStderr(t *testing.T, run func()) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer reader.Close()
+	defer writer.Close()
 
 	original := os.Stderr
+	defer func() { os.Stderr = original }()
 	os.Stderr = writer
 	run()
 	os.Stderr = original

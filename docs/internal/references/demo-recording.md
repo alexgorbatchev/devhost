@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-10-28 10:06
+last_modified: 2026-11-14 08:57
 status: current
 ---
 
@@ -175,6 +175,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Service references with `{{ services.<name>.<property> }}`                                                                                       | `guides/service-references.md`                                                                                                                    | `service-references` step-1 to step-4    |
 | Health checks with automatic ports                                                                                                               | `guides/service-references.md`, "Health checks with automatic ports"                                                                              | No demo                                  |
 | Manifest includes                                                                                                                                | `guides/manifest-includes.md`                                                                                                                     | `manifest-includes` step-1 to step-6     |
+| Cwd-relative watch paths in root and included manifests; warnings for paths outside the root manifest directory                                  | `reference/manifest.md`, `guides/manifest-includes.md`, "Paths in included manifests"                                                             | No demo                                  |
 | Running an included manifest on its own                                                                                                          | `guides/manifest-includes.md`, "Run a package on its own"                                                                                         | No demo                                  |
 | Reject overlapping root and included manifests at startup and reload; startup error prefix, home-path shortening, and context-aware stop command | `guides/manifest-includes.md`, "Run a package on its own"; `guides/troubleshooting.md`, "Manifest already in use"                                 | No demo                                  |
 

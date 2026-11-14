@@ -216,43 +216,7 @@ func rewritePaths(rootManifestDir, subManifestDir string, value any) any {
 					continue
 				}
 			}
-			if k == "watch" {
-				if arr, ok := v.([]any); ok {
-					newArr := make([]any, len(arr))
-					for i, elem := range arr {
-						if str, ok := elem.(string); ok && !filepath.IsAbs(str) && !strings.Contains(str, "{{") {
-							absPath := filepath.Join(subManifestDir, str)
-							relPath, err := filepath.Rel(rootManifestDir, absPath)
-							if err == nil {
-								newArr[i] = relPath
-							} else {
-								newArr[i] = absPath
-							}
-						} else {
-							newArr[i] = elem
-						}
-					}
-					result[k] = newArr
-					continue
-				} else if arr, ok := v.([]string); ok {
-					newArr := make([]any, len(arr))
-					for i, elem := range arr {
-						if !filepath.IsAbs(elem) && !strings.Contains(elem, "{{") {
-							absPath := filepath.Join(subManifestDir, elem)
-							relPath, err := filepath.Rel(rootManifestDir, absPath)
-							if err == nil {
-								newArr[i] = relPath
-							} else {
-								newArr[i] = absPath
-							}
-						} else {
-							newArr[i] = elem
-						}
-					}
-					result[k] = newArr
-					continue
-				}
-			}
+
 			result[k] = rewritePaths(rootManifestDir, subManifestDir, v)
 		}
 		return result

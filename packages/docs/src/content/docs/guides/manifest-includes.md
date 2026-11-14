@@ -44,6 +44,8 @@ Paths in an included manifest are relative to that manifest's own directory, as 
 - A service without `cwd` runs in its manifest's directory, `apps/api` above.
 - A relative `cwd` resolves from there too, and relative `watch` paths from the service's `cwd`, so `watch = ["src/"]` watches `apps/api/src/`.
 
+With `cwd = "src"` and `watch = ["."]`, the same service watches `apps/api/src/`, whether run on its own or included by the root.
+
 ## Start one app of the monorepo
 
 The merged stack holds every service of every package, usually more than one task needs. From the root, name what you are working on:

@@ -7,8 +7,79 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/fsnotify/fsnotify"
 )
+
+func TestWatchManagerResolvesSiblingPathsFromManifestServiceCwd(t *testing.T) {
+	for _, mode := range []string{"root", "included cwd", "included default cwd"} {
+		t.Run(mode, func(t *testing.T) {
+			tracker := NewDirtyTracker()
+			events := make(chan string, 10)
+			w := NewWatchManager(tracker, func(name string) { events <- name }, nil, nil)
+			defer w.StopAll()
+			previous := ""
+			// Reloading from a different checkout must move the sibling watch too.
+			for range 2 {
+				root := t.TempDir()
+				watched := filepath.Join(root, "packages", "connector", "src")
+				for _, dir := range []string{filepath.Join(root, "apps", "playground"), watched} {
+					if err := os.MkdirAll(dir, 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				path := filepath.Join(root, "devhost.toml")
+				service := "[services.web]\ncommand = ['server']\nwatch = ['../../packages/connector/src/']\nhealth.process = true\n"
+				if mode == "root" {
+					if err := os.WriteFile(path, []byte("name = 'watch-test'\n"+service+"cwd = 'apps/playground'\n"), 0o600); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					if err := os.WriteFile(path, []byte("name = 'watch-test'\nincludes = ['apps/playground/devhost.toml']\n"), 0o600); err != nil {
+						t.Fatal(err)
+					}
+					if mode == "included cwd" {
+						service += "cwd = '../playground'\n"
+					}
+					if err := os.WriteFile(filepath.Join(root, "apps", "playground", "devhost.toml"), []byte(service), 0o600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				raw, err := manifest.ReadManifest(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				validated, err := manifest.ValidateManifest(path, raw)
+				if err != nil {
+					t.Fatal(err)
+				}
+				web := validated.Services["web"]
+				if err := w.StartWatching("web", web.Watch, web.Cwd); err != nil {
+					t.Fatal(err)
+				}
+				if !w.IsWatchingPath("web", watched) {
+					t.Fatalf("sibling path %q is not watched", watched)
+				}
+				if previous != "" && w.IsWatchingPath("web", previous) {
+					t.Fatal("previous checkout is still watched")
+				}
+				tracker.SetDirty("web", false)
+				if err := os.WriteFile(filepath.Join(watched, "source.ts"), []byte("export const changed = true;"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				select {
+				case name := <-events:
+					if name != "web" || !tracker.IsDirty("web") {
+						t.Fatalf("watch event = %q, dirty = %v", name, tracker.IsDirty("web"))
+					}
+				case <-time.After(time.Second):
+					t.Fatal("sibling change did not mark service dirty")
+				}
+				previous = watched
+			}
+		})
+	}
+}
 
 func TestDirtyTracker(t *testing.T) {
 	tracker := NewDirtyTracker()

@@ -460,7 +460,7 @@ func TestReadManifestWithIncludes(t *testing.T) {
 		t.Fatal("missing services table")
 	}
 
-	// Verify app1 service (relative path rewriting for cwd and watch)
+	// Verify app1 service (cwd is rebased; watch stays relative to cwd)
 	app1Service, ok := services["app1-service"].(map[string]any)
 	if !ok {
 		t.Fatal("missing app1-service")
@@ -471,12 +471,12 @@ func TestReadManifestWithIncludes(t *testing.T) {
 		t.Fatalf("app1-service cwd = %q, want %q", app1Service["cwd"], wantCwd)
 	}
 
-	// watch "src/" under packages/app1 must be rewritten
+	// watch remains relative to the service cwd.
 	watchArr, ok := app1Service["watch"].([]any)
 	if !ok || len(watchArr) != 1 {
 		t.Fatalf("app1-service watch = %#v, want array with 1 element", app1Service["watch"])
 	}
-	wantWatch := filepath.Join("packages", "app1", "src")
+	wantWatch := "src/"
 	if watchArr[0] != wantWatch {
 		t.Fatalf("app1-service watch[0] = %q, want %q", watchArr[0], wantWatch)
 	}

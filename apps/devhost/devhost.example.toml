@@ -331,6 +331,8 @@ host = "hello.local.test"
 dependsOn = ["api"]
 # `watch` lists paths to watch for file changes; relative paths use the service cwd.
 # Relative watches follow a selected worktree; absolute watch paths remain unchanged.
+# Included services use the same cwd-relative rule. A watch outside the root manifest
+# directory prints a warning; it remains active when the path exists.
 # - string array (e.g. ["src/"]): when files change, the service is marked `changed` in the devtools toolbar.
 # - Folders are watched recursively; node_modules, .git, .workspaces, and .tmp are ignored.
 # - Changes are debounced by 200ms.

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -190,11 +191,7 @@ func (wm *WatchManager) StartWatching(serviceName string, watchPaths []string, b
 	}
 
 	for _, p := range watchPaths {
-		absPath := p
-		if !filepath.IsAbs(p) {
-			absPath = filepath.Join(baseDir, p)
-		}
-		absPath = filepath.Clean(absPath)
+		absPath := manifest.ResolveWatchPath(baseDir, p)
 		info, err := os.Stat(absPath)
 		if err != nil {
 			wm.writeLog(cliout.Warning(fmt.Sprintf("watch path %q for service %s does not exist", absPath, serviceName)))
