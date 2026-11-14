@@ -11,7 +11,7 @@ test:
 
 # Print the line coverage of the three test runs of the last `test` as one table; fail below the floor
 coverage:
-    bun scripts/lineCoverage/reportCoverage.ts --minimum-line-coverage 82 .cache/coverage/unit/lcov.info .cache/coverage/browser/lcov.info .cache/coverage/stories/lcov.info
+    bun scripts/lineCoverage/reportCoverage.ts --minimum-line-coverage 90 .cache/coverage/unit/lcov.info .cache/coverage/browser/lcov.info .cache/coverage/stories/lcov.info
 
 # Run the hook and `*.browser.test.ts` tests in Chromium, optionally limited to matching paths
 test-browser *args:
