@@ -21,6 +21,23 @@ export const fixture_markdownPage: FilePageData = {
   entries: [],
 };
 
+export const fixture_frontMatterMarkdownPage: FilePageData = {
+  ...fixture_markdownPage,
+  source:
+    "---\ncreated_on: 2026-11-15 07:44\nlast_modified: 2026-11-15 09:30\nstatus: current\n---\n\n# Notes\n\nIntroduction.\n\n---\n\nAfter the break.\n",
+};
+
+export const fixture_nestedFrontMatterMarkdownPage: FilePageData = {
+  ...fixture_markdownPage,
+  source:
+    "---\ntitle: Release notes\ntags:\n  - cli\n  - docs\nowner:\n  name: Ada\n  teams: [core, docs]\nsteps:\n  - name: build\n  - name: test\nreviewer:\n---\n\n# Notes\n",
+};
+
+export const fixture_invalidFrontMatterMarkdownPage: FilePageData = {
+  ...fixture_markdownPage,
+  source: "---\ntitle: [unclosed\nstatus: current\n---\n\n# Notes\n",
+};
+
 export const fixture_directoryStack: DirectoryStack = {
   name: "shop",
   pid: 123,

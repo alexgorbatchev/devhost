@@ -20,7 +20,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"first.md", "second.md"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("# Heading\n\n**bold** <script>window.pwned = true</script>\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n- [x] Done\n\n~~old~~\n\n[bad](javascript:alert(1))"), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("---\ncreated_on: 2026-11-15T00:00:00Z\nstatus: active\n---\n\n# Heading\n\n**bold** <script>window.pwned = true</script>\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n- [x] Done\n\n~~old~~\n\n[bad](javascript:alert(1))"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -55,7 +55,8 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			if err := chromedp.Do(ctx, chromedp.WaitVisible(chromedp.CSS("#rendered h1"))); err != nil {
 				t.Fatal(err)
 			}
-			safe, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#rendered table') !== null && document.querySelector('#rendered input[type=checkbox]').checked && document.querySelector('#rendered del').textContent === 'old' && document.querySelector('#rendered script') === null && !document.querySelector('#rendered a').getAttribute('href') && window.pwned === undefined`))
+			// The leading front matter renders as a key/value table, before the document's only heading.
+			safe, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#rendered').firstElementChild.matches('table[aria-label="Front matter"]') && document.querySelector('#rendered thead th').textContent === 'created_on' && document.querySelector('#rendered tbody td:last-child').textContent === 'active' && document.querySelectorAll('#rendered h1, #rendered h2').length === 1 && document.querySelector('#rendered table') !== null && document.querySelector('#rendered input[type=checkbox]').checked && document.querySelector('#rendered del').textContent === 'old' && document.querySelector('#rendered script') === null && !document.querySelector('#rendered a').getAttribute('href') && window.pwned === undefined`))
 			if err != nil || !safe {
 				t.Fatalf("Markdown rendering or sanitization failed: %v", err)
 			}
@@ -68,7 +69,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			if err := chromedp.Do(ctx, chromedp.WaitVisible(chromedp.CSS("#source"))); err != nil {
 				t.Fatal(err)
 			}
-			ok, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#source').textContent.includes('**bold**') && document.querySelector('#toggle-source').textContent === 'Show rendered' && !document.querySelector('#toggle-source').hasAttribute('aria-pressed') && getComputedStyle(document.querySelector('#rendered')).display === 'none' && window.pwned === undefined`))
+			ok, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#source').textContent.includes('status: active') && document.querySelector('#source').textContent.includes('**bold**') && document.querySelector('#toggle-source').textContent === 'Show rendered' && !document.querySelector('#toggle-source').hasAttribute('aria-pressed') && getComputedStyle(document.querySelector('#rendered')).display === 'none' && window.pwned === undefined`))
 			if err != nil || !ok {
 				t.Fatalf("source view is incorrect: %v %v", ok, err)
 			}

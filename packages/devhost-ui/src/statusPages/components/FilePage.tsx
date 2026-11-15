@@ -10,10 +10,16 @@ import {
 import { ArrowUpRightIcon, CodeIcon } from "lucide-react";
 import type { ReactElement } from "react";
 import Markdown from "react-markdown";
+import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import { useMarkdownSource } from "../hooks/useMarkdownSource";
+import { renderFrontMatter } from "../renderFrontMatter";
 import type { FilePageData } from "../types";
 import { FileBreadcrumbs } from "./FileBreadcrumbs";
+
+const remarkPlugins = [remarkFrontmatter, remarkGfm];
+// `remark-frontmatter` parses a leading YAML block into a `yaml` node, which rendering would otherwise drop.
+const remarkRehypeOptions = { handlers: { yaml: renderFrontMatter } };
 
 interface IFilePageProps {
   data: FilePageData;
@@ -39,7 +45,7 @@ export function FilePage({ data }: IFilePageProps): ReactElement {
       {data.markdown ? (
         <article className="markdown-body min-w-0">
           <div id="rendered" hidden={isSource}>
-            <Markdown remarkPlugins={[remarkGfm]} skipHtml>
+            <Markdown remarkPlugins={remarkPlugins} remarkRehypeOptions={remarkRehypeOptions} skipHtml>
               {data.source}
             </Markdown>
           </div>

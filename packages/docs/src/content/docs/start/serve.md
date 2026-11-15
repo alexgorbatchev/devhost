@@ -15,7 +15,7 @@ The first command serves the current directory; `--dir` picks another one, relat
 
 - A folder serves `index.html`, then `index.md`, then `README.md`, then `readme.md`, and otherwise shows a clickable listing confined to the served folder.
 - Files are read on every request, so a reload shows edits and new files.
-- Markdown files (`.md`, any case) render as GitHub Flavored Markdown, without raw HTML or unsafe links. **Show source** switches to the raw text and **Show rendered** switches back; the choice is remembered for that hostname.
+- Markdown files (`.md`, any case) render as GitHub Flavored Markdown, without raw HTML or unsafe links. A YAML front matter block at the start of the file (between `---` lines) renders as a table above the content, as on GitHub: keys in the header row, values below, nested mappings as nested tables and lists joined with commas. Front matter that is not a valid YAML mapping shows as a YAML code block. **Show source** switches to the raw text and **Show rendered** switches back; the choice is remembered for that hostname.
 - A breadcrumb above each listing and Markdown page links to its parent folders; **devhost** returns to the served root.
 - Listings and Markdown use the same React/shadcn interface as devhost's other built-in pages. An empty folder shows an empty state; JavaScript is required for rendered Markdown and its source toggle. Without JavaScript, the page still exposes escaped source text or directory links.
 - Files support `GET`, `HEAD`, and byte ranges.
