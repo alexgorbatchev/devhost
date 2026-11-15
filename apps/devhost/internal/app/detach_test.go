@@ -20,7 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sys/unix"
+
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
@@ -78,12 +81,32 @@ process = true
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		var output strings.Builder
-		if code := Run([]string{"stop", "--manifest", f.manifest}, f.directory, &output, &output); code != 0 {
-			t.Errorf("cleanup: %s", output.String())
+		// Stop every stack the test left by the manifest path it recorded, so a
+		// test that fails before its own stop leaves no process behind.
+		stacks, err := caddy.ReadLiveStacks(caddy.CreateManagedCaddyPaths(f.state))
+		if err != nil {
+			t.Errorf("cleanup: %v", err)
+		}
+		for _, stack := range stacks {
+			var output strings.Builder
+			if code := Run([]string{"stop", "--manifest", stack.ManifestPath}, f.directory, &output, &output); code != 0 {
+				t.Errorf("cleanup: %s", output.String())
+			}
 		}
 	})
 	return f
+}
+
+// started is what a detached start prints after starting stack.
+func (f *detachedFixture) started(t *testing.T, stack caddy.LiveStack) string {
+	t.Helper()
+	return fmt.Sprintf("devhost: Started %s (PID %d).\ndevhost: https://detached-test.localhost\ndevhost: Log: %s\n", stack.Name, stack.PID, cliout.FoldPaths(f.logPath(t)))
+}
+
+// alreadyRunning is what a detached start prints when stack already runs.
+func (f *detachedFixture) alreadyRunning(t *testing.T, stack caddy.LiveStack) string {
+	t.Helper()
+	return fmt.Sprintf("devhost: Already running %s (PID %d).\ndevhost: Log: %s\n", stack.Name, stack.PID, cliout.FoldPaths(f.logPath(t)))
 }
 
 func (f *detachedFixture) run(t *testing.T, args ...string) string {
@@ -156,28 +179,36 @@ func TestDetachedStartWaitsForHealthAndSupportsConcurrentIdempotence(t *testing.
 	if stack.Ready {
 		t.Fatal("unhealthy stack marked ready")
 	}
-	// The log descriptor and session belong to the supervisor, not the caller.
+	// The log descriptor, session, and process group belong to the supervisor,
+	// not the caller.
+	if session, err := unix.Getsid(stack.PID); err != nil || session != stack.PID {
+		t.Fatalf("session = %d, err = %v", session, err)
+	}
 	if group, err := syscall.Getpgid(stack.PID); err != nil || group != stack.PID {
 		t.Fatalf("process group = %d, err = %v", group, err)
 	}
 	callers.Add(1)
 	go start()
 	f.healthy.Store(true)
-	outputs := ""
+	var outputs []string
 	for range 2 {
 		select {
 		case result := <-results:
 			if result.code != 0 {
 				t.Fatalf("start = %+v", result)
 			}
-			outputs += result.output
+			outputs = append(outputs, result.output)
 		case <-time.After(15 * time.Second):
 			t.Fatal("start did not complete")
 		}
 	}
 	stack = f.stack(t)
-	if !stack.Ready || stack.LogPath == "" || !strings.Contains(outputs, "Started detached-test") || !strings.Contains(outputs, "Already running detached-test") || !strings.Contains(outputs, "https://detached-test.localhost") {
-		t.Fatalf("stack = %+v, output = %s", stack, outputs)
+	if !stack.Ready || stack.LogPath != f.logPath(t) {
+		t.Fatalf("stack = %+v, want ready with the log %s", stack, f.logPath(t))
+	}
+	slices.Sort(outputs)
+	if want := []string{f.alreadyRunning(t, stack), f.started(t, stack)}; !slices.Equal(outputs, want) {
+		t.Fatalf("outputs = %q, want %q", outputs, want)
 	}
 	if info, err := os.Stat(stack.LogPath); err != nil || info.Mode().Perm() != 0o600 {
 		t.Fatalf("log permissions: %v, %v", info, err)
@@ -189,13 +220,59 @@ func TestDetachedStartWaitsForHealthAndSupportsConcurrentIdempotence(t *testing.
 	if err := os.Symlink(f.manifest, alias); err != nil {
 		t.Fatal(err)
 	}
-	if got := f.run(t, "start", "--detach", "--manifest", alias, "web"); !strings.Contains(got, "Already running") {
-		t.Fatal(got)
+	if got, want := f.run(t, "start", "--detach", "--manifest", alias, "web"), f.alreadyRunning(t, stack); got != want {
+		t.Fatalf("output = %q, want %q", got, want)
 	}
 	if after := f.stack(t); after.PID != stack.PID {
 		t.Fatal("idempotence replaced supervisor")
 	}
 	f.run(t, "stop")
+	assertDetachedStopped(t, f)
+}
+
+// Every command that names a stack's manifest finds the stack through any
+// path to that file, however the path that started it was spelled.
+func TestDetachedStackIsFoundThroughEveryPathToItsManifest(t *testing.T) {
+	f := newDetachedFixture(t, 10000)
+	f.healthy.Store(true)
+	links := t.TempDir()
+	// A manifest is always named devhost.toml, so the file alias gets a
+	// directory of its own.
+	alias := filepath.Join(links, "alias", "devhost.toml")
+	if err := os.Mkdir(filepath.Dir(alias), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(f.manifest, alias); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(f.directory, filepath.Join(links, "linked")); err != nil {
+		t.Fatal(err)
+	}
+	other := filepath.Join(links, "linked", "devhost.toml")
+
+	started := f.run(t, "start", "--detach", "--manifest", alias, "web")
+	stack := f.stack(t)
+	if want := f.started(t, stack); started != want {
+		t.Fatalf("output = %q, want %q", started, want)
+	}
+	if stack.ManifestPath != alias {
+		t.Fatalf("stack manifest = %s, want the path it was started with, %s", stack.ManifestPath, alias)
+	}
+	if got, want := f.run(t, "start", "--detach", "--manifest", other, "web"), f.alreadyRunning(t, stack); got != want {
+		t.Fatalf("output = %q, want %q", got, want)
+	}
+	if got, want := f.run(t, "stack", "find", other), fmt.Sprintf("%d\t%s\n", stack.PID, alias); got != want {
+		t.Fatalf("stack find = %q, want %q", got, want)
+	}
+	f.run(t, "stack", "restart", "--manifest", other)
+	replacement := f.stack(t)
+	if replacement.PID == stack.PID {
+		t.Fatalf("stack restart left PID %d running", stack.PID)
+	}
+	waitForServiceStatus(t, replacement, "web", "Running")
+	if got, want := f.run(t, "stop", "--manifest", other), "Process "+strconv.Itoa(replacement.PID)+" stopped cleanly."; !strings.Contains(got, want) {
+		t.Fatalf("stop = %q, want %q", got, want)
+	}
 	assertDetachedStopped(t, f)
 }
 
@@ -378,7 +455,7 @@ func TestDetachedStackSurvivesCallingProcessGroup(t *testing.T) {
 	defer log.Close()
 	parent := exec.Command(os.Args[0], "-test.run=TestDetachedParentHelper", "--")
 	parent.Dir = f.directory
-	parent.Env = append(os.Environ(), "DEVHOST_DETACHED_PARENT=1")
+	parent.Env = append(os.Environ(), "DEVHOST_DETACHED_PARENT="+f.manifest)
 	parent.Stdout, parent.Stderr = log, log
 	parent.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := parent.Start(); err != nil {
@@ -399,10 +476,10 @@ func TestDetachedStackSurvivesCallingProcessGroup(t *testing.T) {
 	if !stack.Alive() {
 		t.Fatal("detached supervisor died with parent process group")
 	}
-	if got := f.run(t, "start", "--detach", "web"); !strings.Contains(got, "Already running") {
-		t.Fatal(got)
+	if got, want := f.run(t, "start", "--detach", "--manifest", f.manifest, "web"), f.alreadyRunning(t, stack); got != want {
+		t.Fatalf("output = %q, want %q", got, want)
 	}
-	f.run(t, "stop")
+	f.run(t, "stop", "--manifest", f.manifest)
 	assertDetachedStopped(t, f)
 }
 
@@ -425,15 +502,18 @@ func assertDetachedStopped(t *testing.T, f *detachedFixture) {
 	}
 }
 
+// TestDetachedParentHelper starts the manifest that DEVHOST_DETACHED_PARENT
+// names, so the stack records the path the test uses.
 func TestDetachedParentHelper(t *testing.T) {
-	if os.Getenv("DEVHOST_DETACHED_PARENT") != "1" {
+	manifest := os.Getenv("DEVHOST_DETACHED_PARENT")
+	if manifest == "" {
 		return
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if code := Run([]string{"start", "--detach", "web"}, cwd, os.Stdout, os.Stderr); code != 0 {
+	if code := Run([]string{"start", "--detach", "--manifest", manifest, "web"}, cwd, os.Stdout, os.Stderr); code != 0 {
 		os.Exit(code)
 	}
 	if err := os.WriteFile("parent-ready", nil, 0o600); err != nil {

@@ -19,6 +19,10 @@ func TestMain(m *testing.M) {
 		os.Exit(Run(os.Args[1:], cwd, os.Stdout, os.Stderr))
 	}
 
+	if err := testenv.UsePhysicalTempDir(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	removeHome, err := testenv.IsolateHome()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

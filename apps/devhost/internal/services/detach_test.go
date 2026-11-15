@@ -6,7 +6,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
@@ -36,5 +39,53 @@ func TestDetachedStartRejectsUnsupportedPlatforms(t *testing.T) {
 		"devhost | [INFO] Run devhost start without --detach and keep its terminal open.\n"
 	if output.String() != want {
 		t.Fatalf("failure line = %q, want %q", output.String(), want)
+	}
+}
+
+// A second start of a manifest, through any path to that file, waits for the
+// start already running instead of launching a supervisor of its own: a
+// supervisor that has registered but is not ready yet can still fail.
+func TestDetachedStartsOfOneManifestTakeTurns(t *testing.T) {
+	first := newDetachFixture(t, "stop")
+	firstSignals := make(chan os.Signal, 1)
+	first.options.Signals = firstSignals
+	firstResult := first.start(context.Background())
+	firstReturned := false
+	t.Cleanup(func() {
+		// A test that fails early cancels the first start, which stops its
+		// supervisor, before the fixture's cleanup removes the helper's files.
+		if !firstReturned {
+			firstSignals <- syscall.SIGINT
+			_ = receiveDetachResult(t, firstResult) // The test already failed.
+		}
+	})
+	// The first start holds the manifest's lock from before it launches its
+	// supervisor until it returns.
+	pid := first.waitForFile(t, "pid")
+
+	alias := filepath.Join(t.TempDir(), "alias.toml")
+	if err := os.Symlink(first.options.Manifest.ManifestPath, alias); err != nil {
+		t.Fatal(err)
+	}
+	second := first.options
+	second.Manifest.ManifestPath = alias
+	second.Signals = nil
+	second.Stdout, second.Stderr = &bytes.Buffer{}, &bytes.Buffer{}
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+	err := StartDetachedStack(ctx, second)
+	want := "another start of this manifest did not finish within "
+	if err == nil || !strings.HasPrefix(err.Error(), want) || !strings.HasSuffix(err.Error(), "; full log: "+first.logPath) {
+		t.Fatalf("second start error = %v, want %q and the log %s", err, want, first.logPath)
+	}
+	if got := first.waitForFile(t, "pid"); got != pid {
+		t.Fatalf("the second start launched supervisor PID %s beside PID %s", got, pid)
+	}
+
+	firstSignals <- syscall.SIGINT
+	err = receiveDetachResult(t, firstResult)
+	firstReturned = true
+	if want := "received SIGINT (Ctrl-C) (signal 2) before the stack was ready; full log: " + first.logPath; err == nil || err.Error() != want {
+		t.Fatalf("first start error = %v, want %q", err, want)
 	}
 }
