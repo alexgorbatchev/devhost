@@ -277,7 +277,17 @@ Services panel.
 Without --manifest, devhost uses the nearest devhost.toml in
 the current folder or a parent folder. Hostnames must
 already point to this machine; *.localhost names need no
-DNS setup.`
+DNS setup.
+
+With --detach (Linux and macOS), the stack runs in a
+session of its own and appends its output to a log in the
+devhost state folder. The command waits until every
+started service passes its health check and its routes are
+registered, then prints the stack PID, its URLs, and the
+log file. A failed start, a timeout, Ctrl-C, or SIGTERM
+stops the stack; the command prints the end of the log and
+the cause, and exits 1. When a stack from this manifest
+already runs, it reports that stack and exits 0.`
 
 const stopDescription = `Stop the running stack for this project.
 

@@ -10,7 +10,7 @@ title: "Run a stack"
 </video>
 <!-- /guide-demo -->
 
-A stack is everything one `devhost.toml` describes, started with one command and stopped with another. This page covers starting, stopping, and starting only the part of a stack you need.
+A stack is everything one `devhost.toml` describes, started with one command and stopped with another. This page covers starting a stack in your terminal or detached from it, stopping it, and starting only the part of a stack you need.
 
 ## Start a stack
 
@@ -63,13 +63,24 @@ devhost start --detach
 devhost start --detach web
 ```
 
-The command waits for the selected services' health checks and route registration, then prints their URLs, the stack PID, and its log path before exiting successfully. The supervisor runs in a separate session and process group, reads from `/dev/null`, and appends stdout and stderr to a private per-manifest file under the [state directory](../../reference/cli/#environment-variables)'s `logs/` folder. Follow the printed path with `tail -f` to read ongoing output.
+The command waits until every started service, external ones included, passes its health check and its routes are registered. It then prints the stack's name and PID, one line per URL, and the stack's log file, and exits `0`:
 
-If startup fails, times out, or you press Ctrl-C (or send SIGTERM) while the command waits, the stack stops its services and removes its routes and registration. The command waits for that cleanup, prints the current attempt's log tail, and exits nonzero. Its last line names the cause, such as the service that did not become ready, the startup timeout, the signal, or why the stack could not be launched, and points to the full log. Shared Caddy and externally managed services remain running. The overall startup budget adds two minutes for setup to the selected services' health and automatic-port retry budgets. Once startup succeeds, ordinary [service recovery](../../stacks/recovery/) and [idle shutdown](#stop-automatically-when-idle) apply.
+```text
+devhost | Started hello (PID 48211).
+devhost | https://api.hello.localhost
+devhost | https://hello.localhost
+devhost | Log: ~/.local/state/devhost/logs/stack-<sha256>.log
+```
 
-The wait for cleanup lasts at most a minute plus 20 seconds per started service, and a second Ctrl-C ends it sooner. The command then reports the stack's PID as still stopping and exits; the stack finishes its cleanup on its own, and `devhost stack list` shows when it has.
+The stack runs in a session and process group of its own and reads from `/dev/null`, so closing the terminal or ending the calling process group leaves it running. Its output goes to that log, one private file per manifest in the [state directory](../../reference/cli/#files-and-directories), and every detached start of the manifest appends to it. Follow it with `tail -f` on the printed path.
 
-Repeating `--detach` for the same manifest, including through a symlink, reports the existing stack and exits successfully. It does not change the running service selection. Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual; they too find the stack through any path to its manifest. `--detach` has no short flag: `-d` still means `--debug`.
+If a started service fails to launch, fails its health check, or exits before the stack is ready, devhost stops the stack and removes its routes and registration. It does the same when startup runs out of time, and when you press Ctrl-C, send `SIGTERM`, or close the terminal while the command waits. The command waits for that cleanup, prints up to the last 30 lines this start wrote to the log, and exits `1`. Its last line names the cause and the full log; [Terminal output](../../reference/output/#detached-start) lists the causes. Shared Caddy and externally managed services keep running. Once startup succeeds, ordinary [service recovery](../../stacks/recovery/) and [idle shutdown](#stop-automatically-when-idle) apply.
+
+Startup has two minutes, plus each started service's health-check `timeout` and 10 seconds; a service with `port = "auto"` gets that four times, once for each port it can try. The wait for cleanup lasts at most a minute plus 20 seconds per started service, and a second Ctrl-C ends it sooner. The command then reports the stack's PID as still stopping and exits; the stack finishes its cleanup on its own, and `devhost stack list` shows when it has.
+
+Repeating `--detach` while a stack from the same manifest runs starts nothing, even through a symlink or when that stack was started in the foreground: the command prints `Already running hello (PID 48211).` and the stack's log, when it has one, and exits `0`. It does not change the running service selection. A repeat made while another detached start of the manifest is still starting waits for that start to finish first. Other overlaps fail a detached start as they fail a foreground one: a manifest it shares with another stack through `includes`, or a hostname or fixed port another stack holds. The log tail shows which.
+
+Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual; they too find the stack through any path to its manifest. `--detach` has no short flag: `-d` still means `--debug`.
 
 ## Service commands and working directories
 

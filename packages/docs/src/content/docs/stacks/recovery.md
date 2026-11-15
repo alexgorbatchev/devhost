@@ -4,7 +4,7 @@ title: "Restarts and recovery"
 
 During foreground startup, and after any stack is ready, a service that crashes, times out, or returns errors does not take the stack down with it. Its hostname shows what went wrong, with recent logs and a restart button, and the other services keep running.
 
-[Detached startup](../../guides/stack-lifecycle/#keep-a-stack-running-after-the-terminal-closes) instead stops the attempted stack if initial health or routing fails.
+[Detached startup](../../guides/stack-lifecycle/#keep-a-stack-running-after-the-terminal-closes) is the exception: while `devhost start --detach` waits, a started service that fails to launch, fails its health check, or exits stops the attempted stack, and the command reports why. Once the command reports the stack ready, and after `devhost stack restart` replaces a detached stack, recovery works as described here.
 
 ## Startup pages
 
