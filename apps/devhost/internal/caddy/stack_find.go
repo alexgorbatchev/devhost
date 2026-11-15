@@ -32,7 +32,7 @@ func FindLiveStackOwners(paths Paths, query, directory string) ([]StackOwner, er
 		return strings.Contains(strings.ToLower(owner.host), lower) ||
 			strings.Contains(strings.ToLower(owner.name), lower) ||
 			strings.Contains(strings.ToLower(owner.ManifestPath), lower) ||
-			(manifest != "" && strings.EqualFold(ManifestIdentity(owner.ManifestPath), manifest))
+			(manifest != "" && ManifestIdentity(owner.ManifestPath) == manifest)
 	})
 }
 
