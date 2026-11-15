@@ -22,19 +22,20 @@ func createServeCommand(result *CommandLineArguments) boa.CmdT[serveOptions] {
 			cmd.MarkFlagsMutuallyExclusive("dir", "port")
 			return cmd.MarkFlagDirname("dir")
 		},
-		Long: `Serve files or an existing local HTTP port without a manifest.
-Use --dir for files or --port for a service on 127.0.0.1.
-With neither option, serve the current directory.
---dir and --port are mutually exclusive.
+		Long: `Serve files or an existing local HTTP port without a
+manifest. Use --dir for files or --port for a service on
+127.0.0.1. With neither option, serve the current
+directory. --dir and --port are mutually exclusive.
 
 --domain is required; the hostname must point here.
 Caddy starts automatically if needed and stays running
 after Ctrl+C removes this session's routes.
 An existing service keeps running after the session stops.
 
-Directories show index.html, then index.md, then a listing.
-Markdown uses GitHub styling with a remembered source toggle.
-Hidden files and symlinks outside the directory are excluded.`,
+Directories show index.html, index.md, README.md, or
+readme.md, else a listing. Markdown uses GitHub styling
+with a remembered source toggle. Hidden files and symlinks
+outside the directory are excluded.`,
 		RunFuncE: func(options *serveOptions, cmd *cobra.Command, _ []string) error {
 			if !manifest.IsValidHost(options.Domain) {
 				return fmt.Errorf("--domain requires a hostname without scheme, port, or path, e.g. notes.localhost")

@@ -269,9 +269,10 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 const startDescription = `Start every service in devhost.toml behind local HTTPS
 hostnames. Routes are removed when the stack exits.
 
-Name services or groups from [groups] to start their services,
-what they depend on, and the services marked alwaysStart.
-The rest can be started later from the Services panel.
+Name services or groups from [groups] to start their
+services, what they depend on, and the services marked
+alwaysStart. The rest can be started later from the
+Services panel.
 
 Without --manifest, devhost uses the nearest devhost.toml in
 the current folder or a parent folder. Hostnames must
@@ -410,12 +411,14 @@ Capture each process's arguments, working directory, and
 environment before stopping it. Replacements run in the
 background, with closed input and private log files whose
 paths are printed. Saved worktree choices are restored;
-services started later in the UI follow the launch selection.
+services started later in the UI follow the launch
+selection.
 
-Stacks stop gracefully, one at a time. A stack still stopping
-after 15 seconds is left alone and reported as a failure.
-The shared Caddy stays running. A successful restart means
-the new control server registered; services may be starting.`
+Stacks stop gracefully, one at a time. A stack still
+stopping after 15 seconds is left alone and reported as a
+failure. The shared Caddy stays running. A successful
+restart means the new control server registered; services
+may be starting.`
 
 func createCaddyCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{

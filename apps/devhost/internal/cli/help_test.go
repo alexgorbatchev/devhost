@@ -5,6 +5,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/spf13/cobra"
+
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/version"
 )
 
@@ -263,6 +265,30 @@ func TestParseCommandLineArgumentsWrapsHelpToTerminalWidth(t *testing.T) {
 				if width := utf8.RuneCountInString(line); width > terminalWidth {
 					t.Fatalf("%q %s line is %d columns wide, want at most %d: %q", screen.rawArgs, heading, width, terminalWidth, line)
 				}
+			}
+		}
+	}
+}
+
+// Help prints long descriptions verbatim, so a line wider than a 60-column
+// terminal wraps mid-sentence there.
+func TestLongDescriptionsFitSixtyColumns(t *testing.T) {
+	const terminalWidth = 60
+	root, err := newRootCommand(&CommandLineArguments{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commands := []*cobra.Command{root}
+	for len(commands) > 0 {
+		command := commands[0]
+		commands = append(commands[1:], command.Commands()...)
+		// cobra and the help library write the completion, help, and skill text.
+		if printedSkill(command) || command.Name() == cobraCompletionCommandName || ranShellCompletion(command) || command.Name() == "help" {
+			continue
+		}
+		for line := range strings.SplitSeq(command.Long, "\n") {
+			if width := utf8.RuneCountInString(line); width > terminalWidth {
+				t.Errorf("%q long description line is %d columns wide, want at most %d: %q", command.CommandPath(), width, terminalWidth, line)
 			}
 		}
 	}
