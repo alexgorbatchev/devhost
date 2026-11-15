@@ -217,7 +217,13 @@ func TestDetachedStartFailureNamesItsCauseAndLog(t *testing.T) {
 				defer cancel()
 			}
 			result := f.start(ctx)
-			pid := f.waitForFile(t, "pid")
+			// The helper's PID is awaited only where the test needs it: a helper
+			// that the readiness timeout stops before its signal handler is in
+			// place exits without writing one.
+			pid := ""
+			if len(tt.signals) > 0 || strings.Contains(tt.want, "%d") {
+				pid = f.waitForFile(t, "pid")
+			}
 			for index, received := range tt.signals {
 				if index > 0 {
 					// The caller signaled the helper and now waits for its cleanup.
@@ -246,6 +252,13 @@ func TestDetachedStartFailureNamesItsCauseAndLog(t *testing.T) {
 				// The helper keeps running until its release, so its PID is still its own.
 				if !processExists(id) {
 					t.Fatal("the caller stopped the supervisor instead of leaving its cleanup to it")
+				}
+			}
+			if strings.HasPrefix(tt.mode, "record") {
+				// A supervisor that recorded a failed service stops itself; the
+				// caller has no reason to signal it.
+				if _, err := os.Stat(filepath.Join(f.directory, "terminated")); !errors.Is(err, os.ErrNotExist) {
+					t.Fatalf("the caller signaled a supervisor that was already stopping: %v", err)
 				}
 			}
 			if _, err := os.Stat(detachedFailurePath(f.logPath)); !errors.Is(err, os.ErrNotExist) {

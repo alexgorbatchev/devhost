@@ -340,14 +340,18 @@ func TestDetachedSupervisorKeepsLaunchMetadataFromCaddyAndGit(t *testing.T) {
 		t.Fatal(err)
 	}
 	record := filepath.Join(f.directory, "subprocesses.env")
-	recordEnvironment := "#!/bin/sh\n{ echo \"ran $(basename \"$0\")\"; env | grep '^DEVHOST_INTERNAL_'; } >> '" + record + "'\n"
+	// Each run records its parent, so the test tells the supervisors' runs from
+	// those of the commands the test itself runs.
+	recordEnvironment := "#!/bin/sh\n{ echo \"ran $(basename \"$0\") $PPID\"; env | grep '^DEVHOST_INTERNAL_'; } >> '" + record + "'\n"
 	writeExecutable(t, caddy.CreateManagedCaddyPaths(f.state).ExecutablePath, recordEnvironment+"exit 0\n")
 	tools := t.TempDir()
 	writeExecutable(t, filepath.Join(tools, "git"), recordEnvironment+"echo 'fatal: not a git repository' >&2\nexit 128\n")
 	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 	f.run(t, "start", "--detach", "web")
+	first := f.stack(t)
 	f.run(t, "stack", "restart")
-	waitForServiceStatus(t, f.stack(t), "web", "Running")
+	replacement := f.stack(t)
+	waitForServiceStatus(t, replacement, "web", "Running")
 	f.run(t, "stop")
 	assertDetachedStopped(t, f)
 	data, err = os.ReadFile(record)
@@ -355,9 +359,17 @@ func TestDetachedSupervisorKeepsLaunchMetadataFromCaddyAndGit(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
-	for _, ran := range []string{"ran caddy", "ran git"} {
-		if !slices.Contains(lines, ran) {
-			t.Fatalf("%q missing from subprocess record %q", ran, lines)
+	for _, ran := range []string{"caddy", "git"} {
+		supervised := func(line string) bool {
+			for _, pid := range []int{first.PID, replacement.PID} {
+				if line == fmt.Sprintf("ran %s %d", ran, pid) {
+					return true
+				}
+			}
+			return false
+		}
+		if !slices.ContainsFunc(lines, supervised) {
+			t.Fatalf("no supervisor ran %s: subprocess record %q", ran, lines)
 		}
 	}
 	var inherited []string
