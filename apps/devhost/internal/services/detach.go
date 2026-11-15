@@ -1,6 +1,7 @@
 package services
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -77,14 +78,16 @@ type DetachedStartOptions struct {
 	// cleanupTimeout bounds the wait for a failed supervisor's cleanup. Zero is
 	// detachedCleanupTimeout of the manifest.
 	cleanupTimeout time.Duration
+	// goos is the operating system the start runs on. Empty is runtime.GOOS.
+	goos string
 }
 
 // StartDetachedStack serializes callers for one canonical manifest. The child
 // owns normal stack cleanup; its existing ownership record carries readiness.
 // Every failure after the log path is known names its cause and that log.
 func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		return fmt.Errorf("--detach is supported only on Linux and macOS")
+	if err := checkDetachPlatform(cmp.Or(options.goos, runtime.GOOS)); err != nil {
+		return err
 	}
 	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(options.Environment)
 	if err != nil {
@@ -167,6 +170,18 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 		logOffset:      info.Size(),
 		stderr:         options.Stderr,
 	})
+}
+
+// checkDetachPlatform rejects --detach where devhost cannot start a stack in a
+// session of its own. Devhost releases for Linux and macOS.
+func checkDetachPlatform(goos string) error {
+	if goos == "linux" || goos == "darwin" {
+		return nil
+	}
+	return &cliout.Failure{
+		Err:  fmt.Errorf("devhost start --detach runs on Linux and macOS, not %s", goos),
+		Hint: "Run devhost start without --detach and keep its terminal open.",
+	}
 }
 
 type detachedFailureOptions struct {
