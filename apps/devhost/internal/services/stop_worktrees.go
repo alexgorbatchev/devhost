@@ -9,9 +9,12 @@ import (
 
 // Root manifests determine repository membership, not included manifests or
 // service cwd values: a shared dependency must not widen the stop scope.
-// manifestPath is a caddy.ManifestIdentity, so a stack started through another
-// path to the same file is the manifest's own.
+// manifestPath is absolute and as named. A stack started through another path
+// to the same file is the manifest's own, but the repository is the one the
+// path is in, as it is for every other stack: a manifest linked from another
+// repository does not move the scope there.
 func selectStacksToStop(manifestPath string, worktrees bool, owners []caddy.StackOwner) ([]caddy.StackOwner, int, error) {
+	identity := caddy.ManifestIdentity(manifestPath)
 	repository, err := discoverGitRepository(filepath.Dir(manifestPath))
 	if worktrees {
 		if err != nil {
@@ -24,7 +27,7 @@ func selectStacksToStop(manifestPath string, worktrees bool, owners []caddy.Stac
 	var targets []caddy.StackOwner
 	siblings := 0
 	for _, owner := range owners {
-		exact := caddy.ManifestIdentity(owner.ManifestPath) == manifestPath
+		exact := caddy.ManifestIdentity(owner.ManifestPath) == identity
 		if exact {
 			targets = append(targets, owner)
 			continue

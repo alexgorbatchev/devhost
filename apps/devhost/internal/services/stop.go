@@ -45,7 +45,7 @@ func stopStack(options StopStackOptions, environment map[string]string, gracePer
 		return fmt.Errorf("scan claim directories for manifest process IDs: %w", err)
 	}
 
-	targets, siblings, err := selectStacksToStop(caddy.ManifestIdentity(absoluteTargetManifestPath), options.Worktrees, owners)
+	targets, siblings, err := selectStacksToStop(absoluteTargetManifestPath, options.Worktrees, owners)
 	if err != nil {
 		return err
 	}
