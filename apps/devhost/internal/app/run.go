@@ -157,14 +157,13 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		environment := readEnvironment()
-		detachedLog := environment[services.DetachedLogEnvironment]
-		delete(environment, services.DetachedLogEnvironment)
+		launch := services.TakeLaunchMetadata(environment)
 		logNames := append([]string{strings.TrimSpace(resolvedManifest.Name), "devhost", "caddy"}, serviceOrder...)
 		serviceStdout, serviceStderr := cliout.ServiceOutputWriters(stdout, stderr, logNames)
 		startOptions := services.StartStackOptions{
 			Configuration:       &validatedManifest,
 			Environment:         environment,
-			DetachedLogPath:     detachedLog,
+			Launch:              launch,
 			LogWriter:           serviceStdout,
 			ServiceStdoutWriter: serviceStdout,
 			ServiceStderrWriter: serviceStderr,

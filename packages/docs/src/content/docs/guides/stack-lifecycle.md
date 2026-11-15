@@ -229,6 +229,8 @@ The command captures every selected process's arguments, working directory, and 
 
 Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or signal a standalone session's PID, to stop its replacement.
 
+A replacement starts like a foreground stack, even when it replaces a stack started with `--detach`: no command waits for its readiness, so a service that fails its health check goes to [recovery](../../stacks/recovery/) while the rest of the stack keeps running. A detached stack's replacement records its new log path, which `devhost start --detach` then reports.
+
 Shutdown has a 15-second grace period. A stack that is still stopping is reported as a failure and gets no replacement; it is not force-killed. A replacement has 30 seconds to register its control server; registration confirms the supervisor started, while its services may still be starting. A registration timeout leaves the replacement running and prints its PID and log path. Failures return a nonzero exit code while the command attempts the remaining captured stacks. Shared Caddy stays running.
 
 ## Stop automatically when idle

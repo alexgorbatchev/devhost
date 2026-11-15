@@ -20,10 +20,43 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
-// DetachedLogEnvironment is private launch metadata. The supervisor removes it
-// from service environments; stack restart replaces it with its new log path.
+// DetachedLogEnvironment and StackLogEnvironment are private launch metadata,
+// which TakeLaunchMetadata removes before the stack starts anything. devhost
+// start --detach names its supervisor's log in DetachedLogEnvironment, which
+// also makes startup strict. stack restart names a replacement's log in
+// StackLogEnvironment: nothing waits for a replacement's readiness, so it
+// starts like a foreground stack and keeps failed services recoverable.
 const DetachedLogEnvironment = "DEVHOST_INTERNAL_DETACHED_LOG"
+const StackLogEnvironment = "DEVHOST_INTERNAL_STACK_LOG"
 const detachedPollInterval = 50 * time.Millisecond
+
+var launchEnvironment = []string{DetachedLogEnvironment, StackLogEnvironment}
+
+// LaunchMetadata is what devhost tells a supervisor it launches.
+type LaunchMetadata struct {
+	// LogPath names the file the supervisor's output goes to, which the stack
+	// record reports.
+	LogPath string
+	// Detached is set for the supervisor of devhost start --detach. Its startup
+	// ends the stack when a service fails to start or pass health, and publishes
+	// readiness only after health and routing succeed.
+	Detached bool
+}
+
+// TakeLaunchMetadata reads devhost's private launch variables and removes them
+// from environment and from this process's environment, so neither the
+// services nor the caddy and git commands the stack runs inherit them.
+func TakeLaunchMetadata(environment map[string]string) LaunchMetadata {
+	metadata := LaunchMetadata{LogPath: environment[StackLogEnvironment]}
+	if path := environment[DetachedLogEnvironment]; path != "" {
+		metadata = LaunchMetadata{LogPath: path, Detached: true}
+	}
+	for _, name := range launchEnvironment {
+		delete(environment, name)
+		_ = os.Unsetenv(name) // Unsetenv fails only for an invalid name.
+	}
+	return metadata
+}
 
 type detachedProcess struct {
 	command *exec.Cmd

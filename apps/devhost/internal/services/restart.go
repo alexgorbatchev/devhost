@@ -165,6 +165,27 @@ func captureStackLaunch(stack caddy.LiveStack) (stackLaunch, error) {
 	return stackLaunch{stack: stack, args: args[1:], directory: directory, environment: environment}, nil
 }
 
+// replaceLaunchLog drops the private launch variables from a captured
+// environment, which the OS reports as the supervisor started with them. A
+// supervisor that recorded a log has its replacement record the new one, but
+// never in strict detached startup: no command waits for the replacement's
+// readiness, so a service that fails must stay recoverable.
+func replaceLaunchLog(environment []string, logPath string) []string {
+	recorded := false
+	environment = slices.DeleteFunc(slices.Clone(environment), func(entry string) bool {
+		name, _, _ := strings.Cut(entry, "=")
+		if slices.Contains(launchEnvironment, name) {
+			recorded = true
+			return true
+		}
+		return false
+	})
+	if recorded {
+		environment = append(environment, StackLogEnvironment+"="+logPath)
+	}
+	return environment
+}
+
 func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdout io.Writer) error {
 	if err := launch.stack.Signal(paths, syscall.SIGTERM); err != nil {
 		return err
@@ -181,16 +202,9 @@ func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdo
 		return err
 	}
 	defer input.Close() // Closing the parent's copy leaves the child's input intact.
-	// A detached supervisor records the new log after replacement. The original
-	// environment comes from the OS and may retain its initial private marker.
-	for i, entry := range launch.environment {
-		if strings.HasPrefix(entry, DetachedLogEnvironment+"=") {
-			launch.environment[i] = DetachedLogEnvironment + "=" + launch.log.Name()
-		}
-	}
 	args := append([]string{executable}, launch.args...)
 	child, err := os.StartProcess(executable, args, &os.ProcAttr{
-		Dir: launch.directory, Env: launch.environment,
+		Dir: launch.directory, Env: replaceLaunchLog(launch.environment, launch.log.Name()),
 		Files: []*os.File{input, launch.log, launch.log},
 		Sys:   &syscall.SysProcAttr{Setsid: true},
 	})

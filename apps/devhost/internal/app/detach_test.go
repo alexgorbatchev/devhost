@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +22,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/statuspage"
 )
 
 type detachedFixture struct {
@@ -195,16 +198,151 @@ func TestDetachedRestartPreservesSelectionAndUpdatesLog(t *testing.T) {
 	if replacement.PID == first.PID || replacement.LogPath == first.LogPath || replacement.LogPath == "" {
 		t.Fatalf("replacement = %+v", replacement)
 	}
-	deadline := time.Now().Add(10 * time.Second)
-	for !replacement.Ready {
-		if time.Now().After(deadline) {
-			t.Fatal("replacement did not become ready")
-		}
-		time.Sleep(20 * time.Millisecond)
-		replacement = f.stack(t)
+	waitForServiceStatus(t, replacement, "web", "Running")
+	if statuses := readServiceStatuses(t, replacement); statuses["unselected"] != "Not started" {
+		t.Fatalf("replacement statuses = %v, want the launch selection", statuses)
 	}
 	f.run(t, "stop")
 	assertDetachedStopped(t, f)
+}
+
+// A replacement starts like a foreground stack: nothing waits for its
+// readiness, so a service that fails health must not end the stack.
+func TestDetachedRestartKeepsAFailingServiceRecoverable(t *testing.T) {
+	f := newDetachedFixture(t, 1000)
+	f.healthy.Store(true)
+	f.run(t, "start", "--detach", "web")
+	f.healthy.Store(false)
+	f.run(t, "stack", "restart")
+	replacement := f.stack(t)
+	waitForServiceStatus(t, replacement, "web", "Failed")
+	f.healthy.Store(true)
+	restartService(t, replacement, "web")
+	waitForServiceStatus(t, replacement, "web", "Running")
+	if after := f.stack(t); after.PID != replacement.PID {
+		t.Fatalf("supervisor changed from PID %d to %d", replacement.PID, after.PID)
+	}
+	f.run(t, "stop")
+	assertDetachedStopped(t, f)
+}
+
+// Caddy and Git inherit the supervisor's process environment, so the private
+// launch variables must be gone from it, not only from service environments.
+func TestDetachedSupervisorKeepsLaunchMetadataFromCaddyAndGit(t *testing.T) {
+	f := newDetachedFixture(t, 10000)
+	f.healthy.Store(true)
+	data, err := os.ReadFile(f.manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Worktree discovery runs git for each service directory.
+	if err := os.WriteFile(f.manifest, []byte(strings.Replace(string(data), "enabled = false", "enabled = true", 1)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	record := filepath.Join(f.directory, "subprocesses.env")
+	recordEnvironment := "#!/bin/sh\n{ echo \"ran $(basename \"$0\")\"; env | grep '^DEVHOST_INTERNAL_'; } >> '" + record + "'\n"
+	writeExecutable(t, caddy.CreateManagedCaddyPaths(f.state).ExecutablePath, recordEnvironment+"exit 0\n")
+	tools := t.TempDir()
+	writeExecutable(t, filepath.Join(tools, "git"), recordEnvironment+"echo 'fatal: not a git repository' >&2\nexit 128\n")
+	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
+	f.run(t, "start", "--detach", "web")
+	f.run(t, "stack", "restart")
+	waitForServiceStatus(t, f.stack(t), "web", "Running")
+	f.run(t, "stop")
+	assertDetachedStopped(t, f)
+	data, err = os.ReadFile(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for _, ran := range []string{"ran caddy", "ran git"} {
+		if !slices.Contains(lines, ran) {
+			t.Fatalf("%q missing from subprocess record %q", ran, lines)
+		}
+	}
+	var inherited []string
+	for _, line := range lines {
+		if name, _, _ := strings.Cut(line, "="); !strings.HasPrefix(line, "ran ") && !slices.Contains(inherited, name) {
+			inherited = append(inherited, name)
+		}
+	}
+	if len(inherited) > 0 {
+		t.Fatalf("caddy or git inherited %v", inherited)
+	}
+}
+
+// readServiceStatuses reads each service's status from the stack's control
+// server, which answers only while the supervisor runs.
+func readServiceStatuses(t *testing.T, stack caddy.LiveStack) map[string]string {
+	t.Helper()
+	statuses, err := requestServiceStatuses(stack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return statuses
+}
+
+func requestServiceStatuses(stack caddy.LiveStack) (map[string]string, error) {
+	response, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/__devhost__/stacks/self", stack.ControlPort))
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	var snapshot statuspage.Stack
+	if err := json.NewDecoder(response.Body).Decode(&snapshot); err != nil {
+		return nil, err
+	}
+	statuses := map[string]string{}
+	for _, service := range snapshot.Services {
+		statuses[service.Name] = service.Status
+	}
+	return statuses, nil
+}
+
+// waitForServiceStatus fails as soon as the supervisor exits, rather than
+// waiting out the deadline.
+func waitForServiceStatus(t *testing.T, stack caddy.LiveStack, service, status string) {
+	t.Helper()
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		statuses, err := requestServiceStatuses(stack)
+		if err == nil && statuses[service] == status {
+			return
+		}
+		if !stack.Alive() {
+			t.Fatalf("stack PID %d exited before %s became %s", stack.PID, service, status)
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%s did not become %s: statuses %v, err %v", service, status, statuses, err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+// restartService presses a recovery page's Restart button. The stack refuses
+// it while startup is finishing, so that refusal is retried.
+func restartService(t *testing.T, stack caddy.LiveStack, service string) {
+	t.Helper()
+	url := fmt.Sprintf("http://127.0.0.1:%d/__devhost__/restart-service", stack.ControlPort)
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		response, err := http.Post(url, "application/json", strings.NewReader(fmt.Sprintf(`{"serviceName":%q}`, service)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(response.Body)
+		_ = response.Body.Close() // The body was read in full.
+		if err != nil {
+			t.Fatal(err)
+		}
+		if response.StatusCode == http.StatusOK {
+			return
+		}
+		if !strings.Contains(string(body), "still starting") || time.Now().After(deadline) {
+			t.Fatalf("restart %s = %d: %s", service, response.StatusCode, body)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }
 
 func TestDetachedStackSurvivesCallingProcessGroup(t *testing.T) {
@@ -286,7 +424,7 @@ func TestDetachedServiceHelper(t *testing.T) {
 		return
 	}
 	directory := os.Getenv("DEVHOST_DETACHED_DIRECTORY")
-	if os.Getenv(services.DetachedLogEnvironment) != "" {
+	if os.Getenv(services.DetachedLogEnvironment) != "" || os.Getenv(services.StackLogEnvironment) != "" {
 		t.Fatal("private startup metadata leaked to service")
 	}
 	signals := make(chan os.Signal, 1)
