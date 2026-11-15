@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -549,10 +550,159 @@ func TestDetachedServiceHelper(t *testing.T) {
 		t.Fatal(err)
 	}
 	<-signals
+	if os.Getenv("DEVHOST_DETACHED_SLOW_STOP") == "1" {
+		// Stops once the test releases it. The supervisor's grace period, or this
+		// helper's lifetime, ends a service that a failed test never released.
+		if err := os.WriteFile(filepath.Join(directory, "stopping"), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		for lifetime := time.Now().Add(30 * time.Second); time.Now().Before(lifetime); time.Sleep(10 * time.Millisecond) {
+			if _, err := os.Stat(filepath.Join(directory, "release-stop")); err == nil {
+				break
+			}
+		}
+	}
 	if err := os.WriteFile(filepath.Join(directory, "stopped"), nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	os.Exit(0)
+}
+
+// A failed start whose command stopped waiting for the cleanup leaves its stack
+// registered until that cleanup ends. Starting the manifest again then waits
+// for that stack and starts a fresh one, instead of reporting a stack that is
+// about to disappear as running.
+func TestDetachedStartAfterAnAbandonedCleanupStartsAFreshStack(t *testing.T) {
+	f := newDetachedFixture(t, 200)
+	data, err := os.ReadFile(f.manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// web, which fails its health check, starts after slow, which passes its own
+	// and stops only once the test releases it. A service that fails health is
+	// stopped within its own start, so the stack's cleanup is what stops slow.
+	slow := fmt.Sprintf("[services.slow]\ncommand = %q\n[services.slow.health]\nprocess = true\n"+
+		"[services.slow.env]\nDEVHOST_DETACHED_SERVICE = \"1\"\nDEVHOST_DETACHED_DIRECTORY = %q\nDEVHOST_DETACHED_SLOW_STOP = \"1\"\n",
+		os.Args[0]+" -test.run=TestDetachedServiceHelper --", f.directory)
+	content := strings.Replace(string(data), "[services.web]\n", "[services.web]\ndependsOn = [\"slow\"]\n", 1) + slow
+	if err := os.WriteFile(f.manifest, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	log, err := os.Create(filepath.Join(f.directory, "caller.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer log.Close()
+	caller := exec.Command(os.Args[0], "start", "--detach", "web")
+	caller.Dir, caller.Env = f.directory, os.Environ()
+	caller.Stdout, caller.Stderr = log, log
+	if err := caller.Start(); err != nil {
+		t.Fatal(err)
+	}
+	var waitErr error
+	exited := make(chan struct{})
+	go func() { waitErr = caller.Wait(); close(exited) }()
+	t.Cleanup(func() {
+		select {
+		case <-exited:
+		default:
+			_ = caller.Process.Signal(syscall.SIGTERM) // Ends the command's wait; it may have exited since.
+			<-exited
+		}
+	})
+	release := func() {
+		if err := os.WriteFile(filepath.Join(f.directory, "release-stop"), nil, 0o600); err != nil {
+			t.Error(err)
+		}
+	}
+	t.Cleanup(release) // Runs first, so the stacks the fixture stops can stop.
+
+	// web failed its health check and the stack's cleanup is stopping slow.
+	waitForFile(t, filepath.Join(f.directory, "stopping"))
+	failed := f.stack(t)
+	// A signal either cancels the start or, once the command waits for the
+	// cleanup, ends that wait; either way the command reports the stack as
+	// still stopping.
+	for returned := false; !returned; {
+		if err := caller.Process.Signal(syscall.SIGINT); err != nil {
+			t.Fatal(err)
+		}
+		select {
+		case <-exited:
+			returned = true
+			if waitErr == nil {
+				t.Fatal("the failed start succeeded")
+			}
+		case <-time.After(200 * time.Millisecond):
+		}
+	}
+	output, err := os.ReadFile(log.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.assertDetachedFailure(t, string(output), fmt.Sprintf("service web did not become ready; the stack (PID %d) is still stopping", failed.PID))
+	if !failed.Alive() {
+		t.Fatal("the failed stack stopped before its service was released")
+	}
+
+	f.healthy.Store(true)
+	type result struct {
+		code   int
+		output string
+	}
+	results := make(chan result, 1)
+	go func() {
+		var output strings.Builder
+		code := Run([]string{"start", "--detach", "web"}, f.directory, &output, &output)
+		results <- result{code, output.String()}
+	}()
+	// Release the failed stack's service only once the new start holds the
+	// manifest's lock, so it has seen the failed stack. A start that returns
+	// before then did not wait for it.
+	var started result
+	returned := false
+	for deadline := time.Now().Add(10 * time.Second); !returned && !f.startLockHeld(t); time.Sleep(10 * time.Millisecond) {
+		select {
+		case started = <-results:
+			returned = true
+		default:
+			if time.Now().After(deadline) {
+				t.Fatal("the new start did not take the manifest's lock")
+			}
+		}
+	}
+	release()
+	if !returned {
+		select {
+		case started = <-results:
+		case <-time.After(30 * time.Second):
+			t.Fatal("the new start did not return")
+		}
+	}
+	stack := f.stack(t)
+	if started.code != 0 || started.output != f.started(t, stack) || stack.PID == failed.PID {
+		t.Fatalf("new start = %d %q, want a fresh stack in place of PID %d, got %+v", started.code, started.output, failed.PID, stack)
+	}
+	f.run(t, "stop")
+	assertDetachedStopped(t, f)
+}
+
+// startLockHeld reports whether a detached start holds the manifest's lock.
+func (f *detachedFixture) startLockHeld(t *testing.T) bool {
+	t.Helper()
+	file, err := os.OpenFile(strings.TrimSuffix(f.logPath(t), ".log")+".lock", os.O_RDWR, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close() // Releases the lock when this probe took it.
+	err = unix.Flock(int(file.Fd()), unix.LOCK_EX|unix.LOCK_NB)
+	if errors.Is(err, unix.EWOULDBLOCK) {
+		return true
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return false
 }
 
 func TestDetachedCancellationCleansAttempt(t *testing.T) {

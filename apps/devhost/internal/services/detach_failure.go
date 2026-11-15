@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 )
 
@@ -87,7 +88,7 @@ func readDetachedFailure(path string) *serviceNotReadyError {
 // the manifest, so no other caller reads or writes this record meanwhile.
 func removeDetachedFailure(path string) error {
 	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("remove the previous detached startup failure: %w", err)
+		return err
 	}
 	return nil
 }
@@ -102,7 +103,35 @@ func detachedFailure(cause error, logPath string, hint string) error {
 	}
 	return &cliout.Failure{
 		Err:     fmt.Errorf("%w; full log: %s", cause, logPath),
-		Summary: cause.Error(),
+		Summary: describeForPerson(cause),
 		Hint:    read,
 	}
+}
+
+// stillStopping adds to cause that the supervisor (PID pid) is still stopping,
+// for a person as well as an agent.
+func stillStopping(cause error, pid int) error {
+	suffix := fmt.Sprintf("; the stack (PID %d) is still stopping", pid)
+	return &cliout.Failure{Err: fmt.Errorf("%w%s", cause, suffix), Summary: describeForPerson(cause) + suffix}
+}
+
+// describeForPerson is cause without the system error a person cannot act on,
+// when cause carries a summary.
+func describeForPerson(cause error) string {
+	var failure *cliout.Failure
+	if errors.As(cause, &failure) && failure.Summary != "" {
+		return failure.Summary
+	}
+	return cause.Error()
+}
+
+// detachedSetupFailure is a failure to prepare the start, before the supervisor
+// has logged anything. An agent reads the step and the system's error; a person
+// reads the step and a hint.
+func detachedSetupFailure(step string, err error, hint string) error {
+	return &cliout.Failure{Err: fmt.Errorf("%s: %w", step, err), Summary: step, Hint: hint}
+}
+
+func stateDirectoryHint(paths caddy.Paths) string {
+	return "Check that you can read and write devhost's state directory, " + paths.StateDirectoryPath + "."
 }

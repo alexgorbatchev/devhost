@@ -22,8 +22,9 @@ func runDetachedStart(arguments cli.CommandLineArguments, manifest services.Reso
 	}
 	args = append(args, "--")
 	args = append(args, arguments.Services...)
-	// The first signal stops the start; a later one stops waiting for the
-	// supervisor's cleanup, so a slow cleanup never holds the terminal.
+	// A signal before the stack is ready stops the start; one received while
+	// the command waits for a failed supervisor's cleanup ends that wait, so a
+	// slow cleanup never holds the terminal.
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM)
 	defer signal.Stop(signals)

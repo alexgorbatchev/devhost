@@ -69,9 +69,10 @@ type DetachedStartOptions struct {
 	Arguments   []string
 	Directory   string
 	Environment map[string]string
-	// Signals delivers the signals that cancel the start. The first one stops
-	// the supervisor; a later one ends the wait for its cleanup, which the
-	// supervisor then finishes on its own.
+	// Signals delivers the signals that cancel the start. One received before
+	// the stack is ready stops the supervisor; one received while the caller
+	// waits for a failed supervisor's cleanup ends that wait, and the supervisor
+	// finishes its cleanup on its own.
 	Signals <-chan os.Signal
 	Stdout  io.Writer
 	Stderr  io.Writer
@@ -84,7 +85,8 @@ type DetachedStartOptions struct {
 
 // StartDetachedStack serializes callers for one canonical manifest. The child
 // owns normal stack cleanup; its existing ownership record carries readiness.
-// Every failure after the log path is known names its cause and that log.
+// A failure while preparing the start names the step that failed; every later
+// failure names its cause and the log.
 func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error {
 	if err := checkDetachPlatform(cmp.Or(options.goos, runtime.GOOS)); err != nil {
 		return err
@@ -97,13 +99,13 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 	canonical := caddy.ManifestIdentity(options.Manifest.ManifestPath)
 	directory := filepath.Join(paths.StateDirectoryPath, "logs")
 	if err := os.MkdirAll(directory, 0o700); err != nil {
-		return err
+		return detachedSetupFailure("the stack log directory could not be created", err, stateDirectoryHint(paths))
 	}
 	stem := fmt.Sprintf("stack-%x", sha256.Sum256([]byte(canonical)))
 	logPath := filepath.Join(directory, stem+".log")
 	lock, err := os.OpenFile(filepath.Join(directory, stem+".lock"), os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
-		return err
+		return detachedSetupFailure("the start lock could not be opened", err, stateDirectoryHint(paths))
 	}
 	defer lock.Close() // Closing releases this caller's lock without unlink races.
 	limit := detachedStartupTimeout(options.Manifest)
@@ -116,27 +118,27 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 	if err := attempt.lock(lock); err != nil {
 		return detachedFailure(err, logPath, "")
 	}
-	if existing, err := findDetachedStack(paths, canonical); err != nil {
+	if existing, err := attempt.awaitEarlierStart(paths, canonical, logPath); err != nil {
 		return err
 	} else if existing != nil {
 		return reportDetachedStack(options.Stdout, *existing, true)
 	}
 	failurePath := detachedFailurePath(logPath)
 	if err := removeDetachedFailure(failurePath); err != nil {
-		return err
+		return detachedSetupFailure("the failure record of the previous start could not be removed", err, stateDirectoryHint(paths))
 	}
 	log, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
-		return err
+		return detachedSetupFailure("the stack log could not be opened", err, stateDirectoryHint(paths))
 	}
 	defer log.Close() // The child retains its own append-only descriptors.
 	info, err := log.Stat()
 	if err != nil {
-		return err
+		return detachedSetupFailure("the stack log could not be read", err, stateDirectoryHint(paths))
 	}
 	executable, err := os.Executable()
 	if err != nil {
-		return err
+		return detachedSetupFailure("devhost could not find its own executable", err, "Run devhost start without --detach and keep its terminal open.")
 	}
 	child := exec.Command(executable, options.Arguments...)
 	child.Dir = options.Directory
@@ -219,13 +221,12 @@ func finishDetachedFailure(cause error, options detachedFailureOptions) error {
 		// A service failed before the supervisor heard of the timeout or signal.
 		cause = failure
 	}
-	// A supervisor still failing can write its record after this; the next start
-	// removes it before launching, and fails if it cannot.
+	// A supervisor still stopping can write its record after this; the next start
+	// waits until it has stopped, and removes the record before launching.
 	_ = removeDetachedFailure(failurePath)
 	writeDetachedLogTail(options.stderr, options.logPath, options.logOffset)
 	if !stopped {
-		cause = fmt.Errorf("%w; the stack (PID %d) is still stopping", cause, child.Pid)
-		return detachedFailure(cause, options.logPath, "Run \"devhost stack list\" to see when it has stopped.")
+		return detachedFailure(stillStopping(cause, child.Pid), options.logPath, "Run \"devhost stack list\" to see when it has stopped.")
 	}
 	return detachedFailure(cause, options.logPath, "")
 }
@@ -283,11 +284,44 @@ func (a detachedAttempt) lock(file *os.File) error {
 		if !errors.Is(err, unix.EWOULDBLOCK) && !errors.Is(err, unix.EINTR) {
 			return fmt.Errorf("locking the detached start failed: %w", err)
 		}
+		if err := a.pause(ticker); err != nil {
+			return err
+		}
+	}
+}
+
+// pause waits one poll while another start of the manifest is unsettled. It
+// returns why the wait ends instead: the deadline or a signal.
+func (a detachedAttempt) pause(ticker *time.Ticker) error {
+	if a.ctx.Err() == nil {
 		select {
 		case <-a.ctx.Done():
 		case received := <-a.signals:
 			return fmt.Errorf("received %s while another start of this manifest was running", describeShutdownSignal(received))
 		case <-ticker.C:
+			return nil
+		}
+	}
+	return a.ended("another start of this manifest did not finish")
+}
+
+// awaitEarlierStart returns the running stack of the manifest, or nil when
+// none runs. A stack that this manifest's detached log names and that is not
+// ready belongs to an earlier start whose command stopped waiting for it or
+// died: it can still fail, and a failed one stays registered until the end of
+// its cleanup. The caller holds the start lock, so it waits until that stack is
+// ready, and reports it, or gone, and launches its own. Neither a restart
+// replacement nor a foreground stack is waited for: neither records this log.
+func (a detachedAttempt) awaitEarlierStart(paths caddy.Paths, canonical, logPath string) (*caddy.LiveStack, error) {
+	ticker := time.NewTicker(detachedPollInterval)
+	defer ticker.Stop()
+	for {
+		stack, err := findDetachedStack(paths, canonical)
+		if err != nil || stack == nil || stack.Ready || stack.LogPath != logPath {
+			return stack, err
+		}
+		if err := a.pause(ticker); err != nil {
+			return nil, detachedFailure(err, logPath, "")
 		}
 	}
 }
@@ -295,7 +329,7 @@ func (a detachedAttempt) lock(file *os.File) error {
 func findDetachedStack(paths caddy.Paths, canonical string) (*caddy.LiveStack, error) {
 	stacks, err := caddy.ReadLiveStacks(paths)
 	if err != nil {
-		return nil, fmt.Errorf("reading the running stacks failed: %w", err)
+		return nil, detachedSetupFailure("the running stacks could not be read", err, stateDirectoryHint(paths))
 	}
 	for _, stack := range stacks {
 		if caddy.ManifestIdentity(stack.ManifestPath) == canonical {

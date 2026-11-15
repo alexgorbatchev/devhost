@@ -17,6 +17,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/testenv"
 )
@@ -28,7 +29,9 @@ const detachHelperDirectoryVariable = "DEVHOST_TEST_DETACH_DIRECTORY"
 const detachHelperLifetime = 30 * time.Second
 
 // runDetachHelper stands in for the supervisor of devhost start --detach. The
-// mode names what it does: "exit" exits with code 3; "record" records a failed
+// mode names what it does: "exit" exits with code 3; "register" registers the
+// stack of the manifest in its directory, unregistering when it exits, and
+// marks it ready once the test writes a ready file; "record" records a failed
 // web service; "stop" exits on SIGTERM; "ignore" notes SIGTERM and keeps
 // running, as a supervisor whose cleanup hangs. Modes combine with "+". Every
 // helper exits once the test writes its release file, and says so.
@@ -44,11 +47,35 @@ func runDetachHelper(mode string) (code int) {
 	if err := writeHelperFile(directory, "pid", strconv.Itoa(os.Getpid())); err != nil {
 		return 2
 	}
+	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(map[string]string{"DEVHOST_STATE_DIR": os.Getenv("DEVHOST_STATE_DIR")})
+	if err != nil {
+		return 8
+	}
+	// unready is a registered stack the test has not yet marked ready.
+	unready := false
 	steps := strings.Split(mode, "+")
 	for _, step := range steps {
 		switch step {
 		case "exit":
 			return 3
+		case "register":
+			if err := caddy.RegisterStack(caddy.RegisterStackOptions{
+				LogPath:             os.Getenv(DetachedLogEnvironment),
+				ManifestPath:        filepath.Join(directory, "devhost.toml"),
+				StackName:           "detach-failure",
+				StacksDirectoryPath: paths.StacksDirectoryPath,
+			}); err != nil {
+				return 9
+			}
+			unready = true
+			if err := writeHelperFile(directory, "registered", ""); err != nil {
+				return 12
+			}
+			defer func() {
+				if err := caddy.UnregisterStack(paths.StacksDirectoryPath); err != nil {
+					code = 10
+				}
+			}()
 		case "record":
 			if err := recordDetachedFailure(os.Getenv(DetachedLogEnvironment), "web"); err != nil {
 				return 4
@@ -70,6 +97,12 @@ func runDetachHelper(mode string) (code int) {
 		case <-release.C:
 			if _, err := os.Stat(filepath.Join(directory, "release")); err == nil {
 				return 0
+			}
+			if _, err := os.Stat(filepath.Join(directory, "ready")); err == nil && unready {
+				if err := caddy.SetStackReady(paths, nil); err != nil {
+					return 11
+				}
+				unready = false
 			}
 		case <-deadline:
 			return 6
@@ -277,6 +310,92 @@ func TestDetachedStartLaunchErrorNamesTheLog(t *testing.T) {
 	err := StartDetachedStack(context.Background(), f.options)
 	if err == nil || !strings.HasPrefix(err.Error(), "the stack supervisor could not be launched: ") || !strings.HasSuffix(err.Error(), "; full log: "+f.logPath) {
 		t.Fatalf("error = %v", err)
+	}
+}
+
+// A failure to prepare the start names the step for a person and adds the
+// system's error for an agent; nothing has been logged, so the hint points to
+// the state directory.
+func TestDetachedStartPreparationFailureNamesTheStep(t *testing.T) {
+	tests := []struct {
+		name string
+		// plant makes the step fail in the fixture's state directory.
+		plant func(t *testing.T, f *detachFixture)
+		step  string
+	}{
+		{"log directory", func(t *testing.T, f *detachFixture) { writeTestFile(t, filepath.Dir(f.logPath)) }, "the stack log directory could not be created"},
+		{"lock", func(t *testing.T, f *detachFixture) { mkdirTest(t, strings.TrimSuffix(f.logPath, ".log")+".lock") }, "the start lock could not be opened"},
+		{"running stacks", func(t *testing.T, f *detachFixture) { writeDamagedStackRecord(t, f) }, "the running stacks could not be read"},
+		{"failure record", func(t *testing.T, f *detachFixture) {
+			mkdirTest(t, filepath.Join(detachedFailurePath(f.logPath), "entry"))
+		}, "the failure record of the previous start could not be removed"},
+		{"log", func(t *testing.T, f *detachFixture) { mkdirTest(t, f.logPath) }, "the stack log could not be opened"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newDetachFixture(t, "exit")
+			tt.plant(t, f)
+			err := StartDetachedStack(context.Background(), f.options)
+			if err == nil || !strings.HasPrefix(err.Error(), tt.step+": ") || strings.Contains(err.Error(), "full log") {
+				t.Fatalf("error = %v, want %q and the system's error", err, tt.step)
+			}
+			if _, err := os.Stat(filepath.Join(f.directory, "pid")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatal("a supervisor started although the start could not be prepared")
+			}
+			t.Setenv("AGENT", "0")
+			var output bytes.Buffer
+			cliout.WriteFailure(&output, err)
+			state := f.options.Environment["DEVHOST_STATE_DIR"]
+			want := "devhost | [ERROR] " + tt.step + "\ndevhost | [INFO] Check that you can read and write devhost's state directory, " + cliout.FoldPaths(state) + ".\n"
+			if output.String() != want {
+				t.Fatalf("failure lines = %q, want %q", output.String(), want)
+			}
+		})
+	}
+}
+
+// A damaged record of another stack ends a start that is waiting for its own
+// stack, and the person reads the step without the parser's error.
+func TestDetachedStartFailsWhenTheRunningStacksCannotBeReadWhileWaiting(t *testing.T) {
+	f := newDetachFixture(t, "stop")
+	result := f.start(context.Background())
+	f.waitForFile(t, "pid")
+	writeDamagedStackRecord(t, f)
+	err := receiveDetachResult(t, result)
+	if err == nil || !strings.HasPrefix(err.Error(), "the running stacks could not be read: ") || !strings.HasSuffix(err.Error(), "; full log: "+f.logPath) {
+		t.Fatalf("error = %v", err)
+	}
+	t.Setenv("AGENT", "0")
+	var output bytes.Buffer
+	cliout.WriteFailure(&output, err)
+	if !strings.HasPrefix(output.String(), "devhost | [ERROR] the running stacks could not be read\n") {
+		t.Fatalf("failure lines = %q", output.String())
+	}
+}
+
+func writeDamagedStackRecord(t *testing.T, f *detachFixture) {
+	t.Helper()
+	directory := caddy.CreateManagedCaddyPaths(f.options.Environment["DEVHOST_STATE_DIR"]).StacksDirectoryPath
+	if err := os.MkdirAll(directory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(directory, "damaged.json"), []byte("{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mkdirTest(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o700); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// writeTestFile writes an empty file where the start expects a directory.
+func writeTestFile(t *testing.T, path string) {
+	t.Helper()
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -62,20 +62,21 @@ Caddy's full log stays in `<state>/caddy/caddy.runtime.log`; see [Files and dire
 
 `devhost start --detach` prints its own lines with the `devhost` label, not the manifest's name; the stack's output goes to its log. When the stack is ready, or already running, it writes to stdout and exits `0`:
 
-| Line                                                  | Meaning                                                                                                                                                                                  |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Started hello (PID 48211).`                          | The stack is ready: every started service passed its health check and its routes are registered. One line per URL follows, such as `https://hello.localhost`, in dependency order.       |
-| `Already running hello (PID 48211).`                  | A stack from the same manifest was already running, so nothing was started.                                                                                                              |
-| `Log: ~/.local/state/devhost/logs/stack-<sha256>.log` | The file the stack's output is appended to; see [Files and directories](../cli/#files-and-directories). Left out when the running stack was started in the foreground, which has no log. |
+| Line                                                  | Meaning                                                                                                                                                                                                     |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Started hello (PID 48211).`                          | The stack is ready: every started service passed its health check and its routes are registered. One line per URL follows, such as `https://hello.localhost`, in the order the manifest lists the services. |
+| `Already running hello (PID 48211).`                  | A stack from the same manifest was already running, so nothing was started.                                                                                                                                 |
+| `Log: ~/.local/state/devhost/logs/stack-<sha256>.log` | The file the stack's output is appended to; see [Files and directories](../cli/#files-and-directories). Left out when the running stack was started in the foreground, which has no log.                    |
 
-A failed start writes to stderr and exits `1`. It prints `Startup log tail:` and up to the last 30 lines this start wrote to the log, as the stack wrote them, then a failure line that names the cause and the full log:
+A failed start writes to stderr and exits `1`. Its last line names the cause and the full log. When the command launched a stack that then failed or that it stopped, it first prints `Startup log tail:` and up to the last 30 lines this start wrote to the log, as the stack wrote them. The first `[ERROR]` line below is the stack's own, from the log; the last two are the command's:
 
 ```console
 $ devhost start --detach
 devhost | Startup log tail:
 api     | listening on :4000
-hello   | Service api did not pass its health check within 30s. HTTP health check requires a 2xx response from http://127.0.0.1:4000/healthz. …
-devhost | [ERROR] Service api did not pass its health check within 30s. …
+hello   | Waiting for service api to pass its HTTP health check on http://127.0.0.1:4000/healthz (elapsed: 2s; timeout: 3s)...
+hello   | Service api did not pass its health check within 3000ms. HTTP health check requires a 2xx response from http://127.0.0.1:4000/healthz. Check the app's startup logs and services.api.health.http. Stopping service api because its startup health check failed; sending SIGTERM (signal 15).
+devhost | [ERROR] Service api did not pass its health check within 3000ms. HTTP health check requires a 2xx response from http://127.0.0.1:4000/healthz. Check the app's startup logs and services.api.health.http.
 devhost | [ERROR] service api did not become ready
 devhost | [INFO] Read the full log in ~/.local/state/devhost/logs/stack-<sha256>.log.
 ```
@@ -86,18 +87,20 @@ With `AGENT=1` the last line holds the cause and the log together:
 devhost: ERR: service api did not become ready; full log: ~/.local/state/devhost/logs/stack-<sha256>.log
 ```
 
-| Cause                                                                                                                   | Meaning                                                                                                                                                                           |
-| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `service api did not become ready`                                                                                      | A started service failed to launch, failed its health check, or exited before the stack was ready. The log tail shows its error.                                                  |
-| `the stack exited before it was ready (exit code 1)`                                                                    | The stack stopped before any service failed, for example because another stack holds one of its manifests, hostnames, or fixed ports. The log tail shows why.                     |
-| `the stack was not ready within 2m40s`                                                                                  | Startup ran out of time; see [Keep a stack running after the terminal closes](../../guides/stack-lifecycle/#keep-a-stack-running-after-the-terminal-closes) for how long it gets. |
-| `received SIGINT (Ctrl-C) (signal 2) before the stack was ready`                                                        | You pressed Ctrl-C while the command waited. `SIGTERM` and `SIGHUP`, which closing the terminal sends, name themselves the same way.                                              |
-| `another start of this manifest did not finish within …`, `received … while another start of this manifest was running` | The command ran out of time, or got a signal, while it waited for another detached start of the same manifest to finish.                                                          |
-| `the stack supervisor could not be launched: …`                                                                         | devhost could not run its own executable in the background.                                                                                                                       |
+| Cause                                                                                                                   | Meaning                                                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `service api did not become ready`                                                                                      | A started service failed to launch, failed its health check, or exited before the stack was ready. The log tail shows its error.                                                                                                            |
+| `the stack exited before it was ready (exit code 1)`                                                                    | The stack stopped before any service failed, for example because another stack holds one of its manifests, hostnames, or fixed ports. The log tail shows why.                                                                               |
+| `the stack was not ready within 2m40s`                                                                                  | Startup ran out of time; see [Keep a stack running after the terminal closes](../../guides/stack-lifecycle/#keep-a-stack-running-after-the-terminal-closes) for how long it gets.                                                           |
+| `received SIGINT (Ctrl-C) (signal 2) before the stack was ready`                                                        | You pressed Ctrl-C while the command waited. `SIGTERM` and `SIGHUP`, which closing the terminal sends, name themselves the same way.                                                                                                        |
+| `another start of this manifest did not finish within …`, `received … while another start of this manifest was running` | The command ran out of time, or got a signal, while it waited for another detached start of the same manifest: one still starting, or a failed one whose stack was still stopping. This start launched no stack, so no log tail is printed. |
+| `the stack supervisor could not be launched: …`                                                                         | devhost could not run its own executable in the background. No log tail is printed.                                                                                                                                                         |
 
-When the stack's cleanup takes longer than the command waits for it, or a second signal ends that wait, the cause ends with `; the stack (PID 48211) is still stopping`, and the hint for people adds `Run "devhost stack list" to see when it has stopped.`
+When the stack's cleanup takes longer than the command waits for it, or a signal received during that wait ends it (after a signal canceled the start, that takes another one), the cause ends with `; the stack (PID 48211) is still stopping`, and the hint for people adds `Run "devhost stack list" to see when it has stopped.` Starting the manifest again waits until that stack has stopped.
 
-On systems other than Linux and macOS the command fails at once with `devhost start --detach runs on Linux and macOS, not <system>` and suggests running `devhost start` without `--detach`.
+When devhost cannot prepare the start in its state directory, the command fails before it launches anything, so there is no log tail. The cause names the step: `the stack log directory could not be created`, `the start lock could not be opened`, `the running stacks could not be read`, `the failure record of the previous start could not be removed`, `the stack log could not be opened`, or `the stack log could not be read`. People get a hint naming the state directory; with `AGENT=1` the line adds the system's error, such as `the stack log could not be opened: open …/stack-<sha256>.log: permission denied`. `devhost could not find its own executable` also fails before anything is launched; its hint suggests running `devhost start` without `--detach`.
+
+On systems other than Linux and macOS the command fails at once with `devhost start --detach runs on Linux and macOS, not <system>`. For people, an `[INFO]` hint suggests running `devhost start` without `--detach`.
 
 ## Messages worth knowing
 
