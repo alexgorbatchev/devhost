@@ -18,7 +18,7 @@ func (r *stackRuntime) publishDetachedReady(ctx context.Context, paths caddy.Pat
 	r.startedMu.Unlock()
 	for _, started := range startedServices {
 		if err := throwIfExited(started.ReadExitCode, started.service.Name); err != nil {
-			return err
+			return &serviceNotReadyError{service: started.service.Name, err: err}
 		}
 	}
 	var urls []string
@@ -28,7 +28,7 @@ func (r *stackRuntime) publishDetachedReady(ctx context.Context, paths caddy.Pat
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			return fmt.Errorf("service %s became unhealthy before detached startup completed", name)
+			return &serviceNotReadyError{service: name, err: fmt.Errorf("service %s became unhealthy before detached startup completed", name)}
 		}
 		urls = append(urls, readServiceURLs(service, r.manifest.Caddy.HTTPSPort)...)
 	}

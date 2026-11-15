@@ -1,6 +1,7 @@
 package app
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -94,6 +95,27 @@ func (f *detachedFixture) run(t *testing.T, args ...string) string {
 	return output.String()
 }
 
+// logPath is the log every detached start of the fixture's manifest appends to.
+func (f *detachedFixture) logPath(t *testing.T) string {
+	t.Helper()
+	canonical, err := filepath.EvalSymlinks(f.manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(f.state, "logs", fmt.Sprintf("stack-%x.log", sha256.Sum256([]byte(canonical))))
+}
+
+// assertDetachedFailure checks the line a failed detached start ends with: its
+// cause and the full log, with no raw Go error text.
+func (f *detachedFixture) assertDetachedFailure(t *testing.T, output, cause string) {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	want := "devhost: ERR: " + cause + "; full log: " + f.logPath(t)
+	if got := lines[len(lines)-1]; got != want {
+		t.Fatalf("last line = %q, want %q; output:\n%s", got, want, output)
+	}
+}
+
 func (f *detachedFixture) stack(t *testing.T) caddy.LiveStack {
 	t.Helper()
 	stacks, err := caddy.ReadLiveStacks(caddy.CreateManagedCaddyPaths(f.state))
@@ -184,6 +206,7 @@ func TestDetachedFailureCleansServicesRoutesAndRegistration(t *testing.T) {
 	if code == 0 || !strings.Contains(output.String(), "Startup log tail:") || !strings.Contains(output.String(), "health check") || !strings.Contains(output.String(), "detached child output") {
 		t.Fatalf("code %d: %s", code, output.String())
 	}
+	f.assertDetachedFailure(t, output.String(), "service web did not become ready")
 	assertDetachedStopped(t, f)
 	waitForFile(t, filepath.Join(f.directory, "stopped"))
 }
@@ -467,9 +490,10 @@ func TestDetachedCancellationCleansAttempt(t *testing.T) {
 	}
 	assertDetachedStopped(t, f)
 	data, err := os.ReadFile(log.Name())
-	if err != nil || !strings.Contains(string(data), "context canceled") || !strings.Contains(string(data), "Startup log tail:") {
+	if err != nil || !strings.Contains(string(data), "Startup log tail:") {
 		t.Fatalf("log %s, err %v", data, err)
 	}
+	f.assertDetachedFailure(t, string(data), "received SIGTERM (signal 15) before the stack was ready")
 }
 
 func TestDetachedLogsAppendAcrossStarts(t *testing.T) {
@@ -488,12 +512,13 @@ func TestDetachedLogsAppendAcrossStarts(t *testing.T) {
 }
 
 func TestDetachedLaunchErrorAndExternalHealthFailureLeaveNoStack(t *testing.T) {
-	for _, service := range []string{
-		"[services.broken]\ncommand = [\"/nonexistent/devhost-test-command\"]\nhealth = { process = true }\n",
-		"[services.external]\nmanaged = false\nport = %d\nhealth = { http = %q, timeout = 100, interval = 20 }\n",
+	for _, tt := range []struct{ name, service string }{
+		{"broken", "[services.broken]\ncommand = [\"/nonexistent/devhost-test-command\"]\nhealth = { process = true }\n"},
+		{"external", "[services.external]\nmanaged = false\nport = %d\nhealth = { http = %q, timeout = 100, interval = 20 }\n"},
 	} {
-		t.Run(strings.Split(service, "\n")[0], func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			f := newDetachedFixture(t, 1000)
+			service := tt.service
 			if strings.Contains(service, "%q") {
 				service = fmt.Sprintf(service, nettest.ReservePort(t), f.health.URL)
 			}
@@ -504,6 +529,7 @@ func TestDetachedLaunchErrorAndExternalHealthFailureLeaveNoStack(t *testing.T) {
 			if code := Run([]string{"start", "--detach"}, f.directory, &output, &output); code == 0 || !strings.Contains(output.String(), "Startup log tail:") {
 				t.Fatalf("code %d: %s", code, output.String())
 			}
+			f.assertDetachedFailure(t, output.String(), "service "+tt.name+" did not become ready")
 			assertDetachedStopped(t, f)
 		})
 	}

@@ -61,7 +61,6 @@ func TakeLaunchMetadata(environment map[string]string) LaunchMetadata {
 type detachedProcess struct {
 	command *exec.Cmd
 	done    chan struct{}
-	err     error
 }
 
 type DetachedStartOptions struct {
@@ -69,12 +68,20 @@ type DetachedStartOptions struct {
 	Arguments   []string
 	Directory   string
 	Environment map[string]string
-	Stdout      io.Writer
-	Stderr      io.Writer
+	// Signals delivers the signals that cancel the start. The first one stops
+	// the supervisor; a later one ends the wait for its cleanup, which the
+	// supervisor then finishes on its own.
+	Signals <-chan os.Signal
+	Stdout  io.Writer
+	Stderr  io.Writer
+	// cleanupTimeout bounds the wait for a failed supervisor's cleanup. Zero is
+	// detachedCleanupTimeout of the manifest.
+	cleanupTimeout time.Duration
 }
 
 // StartDetachedStack serializes callers for one canonical manifest. The child
 // owns normal stack cleanup; its existing ownership record carries readiness.
+// Every failure after the log path is known names its cause and that log.
 func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		return fmt.Errorf("--detach is supported only on Linux and macOS")
@@ -96,22 +103,32 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 		return err
 	}
 	stem := fmt.Sprintf("stack-%x", sha256.Sum256([]byte(canonical)))
+	logPath := filepath.Join(directory, stem+".log")
 	lock, err := os.OpenFile(filepath.Join(directory, stem+".lock"), os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return err
 	}
 	defer lock.Close() // Closing releases this caller's lock without unlink races.
-	ctx, cancel := context.WithTimeout(ctx, detachedStartupTimeout(options.Manifest))
+	limit := detachedStartupTimeout(options.Manifest)
+	if deadline, ok := ctx.Deadline(); ok {
+		limit = min(limit, time.Until(deadline))
+	}
+	ctx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
-	if err := lockDetachedStart(ctx, lock); err != nil {
-		return err
+	attempt := detachedAttempt{ctx: ctx, signals: options.Signals, limit: limit}
+	if err := attempt.lock(lock); err != nil {
+		return detachedFailure(err, logPath, "")
 	}
 	if existing, err := findDetachedStack(paths, canonical); err != nil {
 		return err
 	} else if existing != nil {
 		return reportDetachedStack(options.Stdout, *existing, true)
 	}
-	log, err := os.OpenFile(filepath.Join(directory, stem+".log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	failurePath := detachedFailurePath(logPath)
+	if err := removeDetachedFailure(failurePath); err != nil {
+		return err
+	}
+	log, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
@@ -126,34 +143,82 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 	}
 	child := exec.Command(executable, options.Arguments...)
 	child.Dir = options.Directory
-	child.Env = createChildEnvironment(options.Environment, map[string]string{DetachedLogEnvironment: log.Name()})
+	child.Env = createChildEnvironment(options.Environment, map[string]string{DetachedLogEnvironment: logPath})
 	// A nil Stdin is /dev/null. Direct files prevent exec.Cmd from leaving a
 	// forwarding goroutine attached to the calling terminal.
 	child.Stdout, child.Stderr = log, log
 	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := child.Start(); err != nil {
-		return err
+		return detachedFailure(fmt.Errorf("the stack supervisor could not be launched: %w", err), logPath, "")
 	}
 	process := &detachedProcess{command: child, done: make(chan struct{})}
 	go func() {
-		process.err = child.Wait()
+		_ = child.Wait() // ProcessState describes the exit.
 		close(process.done)
 	}()
-	stack, err := process.waitReady(ctx, paths, canonical)
+	stack, err := attempt.waitReady(process, paths, canonical, failurePath)
 	if err == nil {
 		err = reportDetachedStack(options.Stdout, stack, false)
 		if err == nil {
 			return nil
 		}
+		err = fmt.Errorf("reporting the started stack failed: %w", err)
 	}
-	// Signal only this child, never whichever process now owns the manifest.
-	// Wait for the supervisor's deferred cleanup before returning a failure.
-	if signalErr := child.Process.Signal(syscall.SIGTERM); signalErr != nil && !errors.Is(signalErr, os.ErrProcessDone) {
-		err = errors.Join(err, signalErr)
+	return finishDetachedFailure(err, detachedFailureOptions{
+		process:        process,
+		signals:        options.Signals,
+		cleanupTimeout: options.cleanupTimeout,
+		manifest:       options.Manifest,
+		logPath:        logPath,
+		logOffset:      info.Size(),
+		stderr:         options.Stderr,
+	})
+}
+
+type detachedFailureOptions struct {
+	process        *detachedProcess
+	signals        <-chan os.Signal
+	cleanupTimeout time.Duration
+	manifest       ResolvedManifest
+	logPath        string
+	logOffset      int64
+	stderr         io.Writer
+}
+
+// finishDetachedFailure stops the supervisor this caller launched, waits a
+// bounded time for its own cleanup, prints its log tail, and returns the line
+// the command ends with.
+func finishDetachedFailure(cause error, options detachedFailureOptions) error {
+	failurePath := detachedFailurePath(options.logPath)
+	child := options.process.command.Process
+	var notReady *serviceNotReadyError
+	if !errors.As(cause, &notReady) {
+		// Signal only this child, never whichever process now owns the manifest.
+		// A supervisor that recorded a failure is already stopping itself.
+		if err := child.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			cause = fmt.Errorf("%w; signaling the stack failed: %v", cause, err)
+		}
 	}
-	<-process.done
-	writeDetachedLogTail(options.Stderr, log.Name(), info.Size())
-	return fmt.Errorf("detached startup failed (log: %s): %w", log.Name(), err)
+	// The supervisor's cleanup stops its services and removes its routes and
+	// claims; it is never killed, so nothing it started is left behind.
+	cleanupTimeout := options.cleanupTimeout
+	if cleanupTimeout <= 0 {
+		cleanupTimeout = detachedCleanupTimeout(options.manifest)
+	}
+	stopped := options.process.waitStopped(options.signals, cleanupTimeout)
+	if failure := readDetachedFailure(failurePath); failure != nil && notReady == nil {
+		// A service failed before the supervisor heard of the timeout or signal.
+		cause = failure
+	}
+	// A supervisor still failing can write its record after this; the next start
+	// removes it before launching, and fails if it cannot.
+	_ = removeDetachedFailure(failurePath)
+	writeDetachedLogTail(options.stderr, options.logPath, options.logOffset)
+	if !stopped {
+		cause = fmt.Errorf("%w; the stack (PID %d) is still stopping", cause, child.Pid)
+		return detachedFailure(cause, options.logPath, "Run \"devhost stack list\" to see when it has stopped.")
+	}
+	return detachedFailure(cause, options.logPath, "")
 }
 
 func detachedStartupTimeout(manifest ResolvedManifest) time.Duration {
@@ -170,23 +235,49 @@ func detachedStartupTimeout(manifest ResolvedManifest) time.Duration {
 	return timeout
 }
 
-func lockDetachedStart(ctx context.Context, file *os.File) error {
+// detachedCleanupTimeout bounds the wait for a failed supervisor's cleanup. Each
+// service gets a grace period to stop and another after SIGKILL; routes, claims,
+// and daemon stop commands get a minute beside them.
+func detachedCleanupTimeout(manifest ResolvedManifest) time.Duration {
+	return time.Minute + time.Duration(len(manifest.Services))*2*shutdownGracePeriod
+}
+
+// detachedAttempt is one caller's wait for a detached start. Its context
+// carries the startup deadline, limit after the start; signals are the
+// caller's.
+type detachedAttempt struct {
+	ctx     context.Context
+	signals <-chan os.Signal
+	limit   time.Duration
+}
+
+// ended says why the attempt's context is done: its deadline passed before
+// what was awaited happened, or the caller canceled it.
+func (a detachedAttempt) ended(awaited string) error {
+	if errors.Is(a.ctx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("%s within %s", awaited, a.limit.Round(time.Millisecond))
+	}
+	return errors.New("the start was canceled before the stack was ready")
+}
+
+func (a detachedAttempt) lock(file *os.File) error {
 	ticker := time.NewTicker(detachedPollInterval)
 	defer ticker.Stop()
 	for {
-		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("waiting for detached startup lock: %w", err)
+		if a.ctx.Err() != nil {
+			return a.ended("another start of this manifest did not finish")
 		}
 		err := unix.Flock(int(file.Fd()), unix.LOCK_EX|unix.LOCK_NB)
 		if err == nil {
 			return nil
 		}
 		if !errors.Is(err, unix.EWOULDBLOCK) && !errors.Is(err, unix.EINTR) {
-			return err
+			return fmt.Errorf("locking the detached start failed: %w", err)
 		}
 		select {
-		case <-ctx.Done():
-			return fmt.Errorf("waiting for detached startup lock: %w", ctx.Err())
+		case <-a.ctx.Done():
+		case received := <-a.signals:
+			return fmt.Errorf("received %s while another start of this manifest was running", describeShutdownSignal(received))
 		case <-ticker.C:
 		}
 	}
@@ -195,7 +286,7 @@ func lockDetachedStart(ctx context.Context, file *os.File) error {
 func findDetachedStack(paths caddy.Paths, canonical string) (*caddy.LiveStack, error) {
 	stacks, err := caddy.ReadLiveStacks(paths)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading the running stacks failed: %w", err)
 	}
 	for _, stack := range stacks {
 		path, err := filepath.EvalSymlinks(stack.ManifestPath)
@@ -209,19 +300,23 @@ func findDetachedStack(paths caddy.Paths, canonical string) (*caddy.LiveStack, e
 	return nil, nil
 }
 
-func (p *detachedProcess) waitReady(ctx context.Context, paths caddy.Paths, canonical string) (caddy.LiveStack, error) {
+// waitReady returns the supervisor's stack once it is ready, or why it is not:
+// a service it recorded, its exit, the deadline, or a signal.
+func (a detachedAttempt) waitReady(p *detachedProcess, paths caddy.Paths, canonical, failurePath string) (caddy.LiveStack, error) {
 	ticker := time.NewTicker(detachedPollInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-p.done:
-			if p.err == nil {
-				return caddy.LiveStack{}, fmt.Errorf("supervisor exited before becoming ready")
-			}
-			return caddy.LiveStack{}, p.err
-		case <-ctx.Done():
-			return caddy.LiveStack{}, ctx.Err()
+			return caddy.LiveStack{}, p.exitCause(failurePath)
+		case <-a.ctx.Done():
+			return caddy.LiveStack{}, a.ended("the stack was not ready")
+		case received := <-a.signals:
+			return caddy.LiveStack{}, fmt.Errorf("received %s before the stack was ready", describeShutdownSignal(received))
 		case <-ticker.C:
+			if failure := readDetachedFailure(failurePath); failure != nil {
+				return caddy.LiveStack{}, failure
+			}
 			stack, err := findDetachedStack(paths, canonical)
 			if err != nil {
 				return caddy.LiveStack{}, err
@@ -230,6 +325,34 @@ func (p *detachedProcess) waitReady(ctx context.Context, paths caddy.Paths, cano
 				return *stack, nil
 			}
 		}
+	}
+}
+
+// exitCause describes a supervisor that exited before it was ready.
+func (p *detachedProcess) exitCause(failurePath string) error {
+	if failure := readDetachedFailure(failurePath); failure != nil {
+		return failure
+	}
+	return fmt.Errorf("the stack exited before it was ready (exit code %d)", readProcessExitCode(p.command.ProcessState))
+}
+
+// waitStopped waits for a failed supervisor's own cleanup. The timeout or a
+// signal ends the wait without stopping the supervisor, so it still removes
+// everything it started; waitStopped reports whether it exited.
+func (p *detachedProcess) waitStopped(signals <-chan os.Signal, timeout time.Duration) bool {
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case <-p.done:
+		return true
+	case <-signals:
+	case <-timer.C:
+	}
+	select {
+	case <-p.done:
+		return true
+	default:
+		return false
 	}
 }
 

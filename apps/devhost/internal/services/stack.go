@@ -469,6 +469,19 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	if err := routes.replace(*manifest); err != nil {
 		return 0, joinCleanupError(err, cleanupError)
 	}
+	if options.Launch.Detached {
+		// Runs before the cleanup, so the waiting caller can name the service even
+		// when it stops waiting for that cleanup.
+		defer func() {
+			var notReady *serviceNotReadyError
+			if !errors.As(returnedError, &notReady) {
+				return
+			}
+			if err := recordDetachedFailure(options.Launch.LogPath, notReady.service); err != nil {
+				cliout.Log(options.LogWriter, state.stackName(), cliout.Warning(err.Error()))
+			}
+		}()
+	}
 
 	for _, serviceName := range serviceOrder {
 		service, ok := manifest.Services[serviceName]
@@ -480,12 +493,15 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 
 		if options.Launch.Detached && blocked[serviceName] != "" {
-			return 0, fmt.Errorf("service %s cannot start: %s", serviceName, blocked[serviceName])
+			return 0, &serviceNotReadyError{service: serviceName, err: fmt.Errorf("service %s cannot start: %s", serviceName, blocked[serviceName])}
 		}
 		if isManagedService(service) && blocked[serviceName] == "" {
 			if err := state.start(lifecycleCtx, serviceName, runtimeStartOptions{RefreshRoute: true, AllowPortReassignment: true}); err != nil {
-				if lifecycleCtx.Err() != nil || options.Launch.Detached {
+				if lifecycleCtx.Err() != nil {
 					return 0, err
+				}
+				if options.Launch.Detached {
+					return 0, &serviceNotReadyError{service: serviceName, err: err}
 				}
 				state.logFailure(serviceName, err)
 				state.startedMu.Lock()
@@ -500,7 +516,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 
 		if options.Launch.Detached && !isManagedService(service) {
 			if err := waitForStartupHealth(lifecycleCtx, service, startupHealthOptions{stackName: manifest.Name, logWriter: options.LogWriter}); err != nil {
-				return 0, err
+				if lifecycleCtx.Err() != nil {
+					return 0, err
+				}
+				return 0, &serviceNotReadyError{service: serviceName, err: err}
 			}
 		}
 		if len(service.Hosts) == 0 || service.Port == nil {
