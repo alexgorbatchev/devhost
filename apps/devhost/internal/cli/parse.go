@@ -368,7 +368,7 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 			boa.CmdT[stackFindOptions]{
 				Use:   "find",
 				Short: "Print the PID and manifest of matching running stacks",
-				Long:  "Find running stacks by URL, hostname, stack name, or manifest path.\nURLs match their hostname exactly; other queries match case-insensitive\nsubstrings. Print every match once as PID, tab, absolute manifest path.\nNo matches produces empty output and succeeds.",
+				Long:  "Find running stacks by URL, hostname, stack name, or\nmanifest path. URLs match their hostname exactly; other\nqueries match case-insensitive substrings. A path to a\nmanifest file, relative to the current directory unless\nabsolute, also matches the stack started from that file\nthrough any symbolic link. Print every match once as PID,\ntab, absolute manifest path. No matches produces empty\noutput and succeeds.",
 				RunFunc: func(params *stackFindOptions, _ *cobra.Command, _ []string) {
 					*result = CommandLineArguments{Kind: KindStackFind, Query: params.Query}
 				},

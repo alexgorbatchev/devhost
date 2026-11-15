@@ -75,7 +75,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		var stacks []caddy.StackOwner
 		var err error
 		if arguments.Kind == cli.KindStackFind {
-			stacks, err = services.FindRunningStacks(arguments.Query, readEnvironment())
+			stacks, err = services.FindRunningStacks(arguments.Query, cwd, readEnvironment())
 		} else {
 			stacks, err = services.ListRunningStacks(readEnvironment())
 		}

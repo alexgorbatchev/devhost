@@ -69,7 +69,7 @@ If startup fails, times out, or you press Ctrl-C (or send SIGTERM) while the com
 
 The wait for cleanup lasts at most a minute plus 20 seconds per started service, and a second Ctrl-C ends it sooner. The command then reports the stack's PID as still stopping and exits; the stack finishes its cleanup on its own, and `devhost stack list` shows when it has.
 
-Repeating `--detach` for the same manifest, including through a symlink, reports the existing stack and exits successfully. It does not change the running service selection. Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual. `--detach` has no short flag: `-d` still means `--debug`.
+Repeating `--detach` for the same manifest, including through a symlink, reports the existing stack and exits successfully. It does not change the running service selection. Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual; they too find the stack through any path to its manifest. `--detach` has no short flag: `-d` still means `--debug`.
 
 ## Service commands and working directories
 
@@ -200,11 +200,12 @@ devhost stop --manifest "$(devhost stack list | fzf | cut -f2)"
 devhost stop --manifest "$(devhost stack list | cut -f2 | grep my-project)"
 ```
 
-To find the stack behind a URL, hostname, stack name, or path, use `devhost stack find`. A URL matches its hostname exactly; anything else matches part of a hostname, stack name, or manifest path, ignoring case:
+To find the stack behind a URL, hostname, stack name, or path, use `devhost stack find`. A URL matches its hostname exactly; anything else matches part of a hostname, stack name, or manifest path, ignoring case. A path to a manifest file, relative to the current directory unless absolute, also finds the stack started from that file through a symlink:
 
 ```bash
 devhost stack find https://app.localhost
 devhost stack find app
+devhost stack find ./devhost.toml
 ```
 
 It prints matches in the same format and prints nothing, successfully, when nothing matches.

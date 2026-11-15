@@ -64,7 +64,8 @@ func RestartStacks(options RestartStacksOptions, environment map[string]string, 
 		return err
 	}
 	if !options.All {
-		stacks = slices.DeleteFunc(stacks, func(s caddy.LiveStack) bool { return s.ManifestPath != options.ManifestPath })
+		manifest := caddy.ManifestIdentity(options.ManifestPath)
+		stacks = slices.DeleteFunc(stacks, func(s caddy.LiveStack) bool { return caddy.ManifestIdentity(s.ManifestPath) != manifest })
 	}
 	if len(stacks) == 0 {
 		return cliout.WriteLog(stdout, "devhost", "No running stacks to restart.")

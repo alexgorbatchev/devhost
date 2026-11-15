@@ -24,10 +24,13 @@ func ListRunningStacks(environment map[string]string) ([]caddy.StackOwner, error
 	return owners, nil
 }
 
-func FindRunningStacks(query string, environment map[string]string) ([]caddy.StackOwner, error) {
+// FindRunningStacks returns the running stacks that match query, in the order
+// of ListRunningStacks. A relative manifest path in query names a file in
+// directory.
+func FindRunningStacks(query, directory string, environment map[string]string) ([]caddy.StackOwner, error) {
 	paths, err := caddy.CreateManagedCaddyPathsFromEnvironment(environment)
 	if err != nil {
 		return nil, fmt.Errorf("resolve caddy paths from environment: %w", err)
 	}
-	return caddy.FindLiveStackOwners(paths, query)
+	return caddy.FindLiveStackOwners(paths, query, directory)
 }

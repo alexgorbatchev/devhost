@@ -45,7 +45,7 @@ func stopStack(options StopStackOptions, environment map[string]string, gracePer
 		return fmt.Errorf("scan claim directories for manifest process IDs: %w", err)
 	}
 
-	targets, siblings, err := selectStacksToStop(absoluteTargetManifestPath, options.Worktrees, owners)
+	targets, siblings, err := selectStacksToStop(caddy.ManifestIdentity(absoluteTargetManifestPath), options.Worktrees, owners)
 	if err != nil {
 		return err
 	}
@@ -83,19 +83,6 @@ func stopStack(options StopStackOptions, environment map[string]string, gracePer
 	}
 
 	return nil
-}
-
-// resolveRecordedManifestPath returns the absolute form of the manifest path a
-// stack recorded. A stack records an absolute path; one started by a devhost
-// that recorded the path as it was typed is matched from the directory it was
-// started in.
-func resolveRecordedManifestPath(recordedPath string) string {
-	absolutePath, err := filepath.Abs(recordedPath)
-	if err != nil {
-		return filepath.Clean(recordedPath)
-	}
-
-	return filepath.Clean(absolutePath)
 }
 
 func stopProcess(pid int, gracePeriod time.Duration, stdout io.Writer, stderr io.Writer) error {

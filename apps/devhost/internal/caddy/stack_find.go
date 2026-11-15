@@ -3,13 +3,17 @@ package caddy
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
 // FindLiveStackOwners searches recorded stack names, manifests, and hostnames.
 // A URL identifies a hostname; its path, port, query, and fragment are ignored.
-func FindLiveStackOwners(paths Paths, query string) ([]StackOwner, error) {
-	query = strings.ToLower(strings.TrimSpace(query))
+// A query that names a manifest file, relative to directory when it is not
+// absolute, also matches the stack of that file however its path was spelled.
+func FindLiveStackOwners(paths Paths, query, directory string) ([]StackOwner, error) {
+	query = strings.TrimSpace(query)
 	if query == "" {
 		return nil, fmt.Errorf("stack query must not be empty")
 	}
@@ -22,9 +26,26 @@ func FindLiveStackOwners(paths Paths, query string) ([]StackOwner, error) {
 			return strings.EqualFold(owner.host, u.Hostname())
 		})
 	}
+	manifest := namedManifest(query, directory)
+	lower := strings.ToLower(query)
 	return readLiveStackOwners(paths, func(owner recordedOwner) bool {
-		return strings.Contains(strings.ToLower(owner.host), query) ||
-			strings.Contains(strings.ToLower(owner.name), query) ||
-			strings.Contains(strings.ToLower(owner.ManifestPath), query)
+		return strings.Contains(strings.ToLower(owner.host), lower) ||
+			strings.Contains(strings.ToLower(owner.name), lower) ||
+			strings.Contains(strings.ToLower(owner.ManifestPath), lower) ||
+			(manifest != "" && strings.EqualFold(ManifestIdentity(owner.ManifestPath), manifest))
 	})
+}
+
+// namedManifest returns the identity of the file query names, or "" when it
+// names no file.
+func namedManifest(query, directory string) string {
+	path := query
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(directory, path)
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return ""
+	}
+	return ManifestIdentity(path)
 }

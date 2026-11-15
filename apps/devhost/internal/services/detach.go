@@ -90,14 +90,8 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 	if err != nil {
 		return err
 	}
-	canonical, err := filepath.EvalSymlinks(options.Manifest.ManifestPath)
-	if err != nil {
-		return err
-	}
-	canonical, err = filepath.Abs(canonical)
-	if err != nil {
-		return err
-	}
+	// Every path to the manifest shares one lock, log, and running stack.
+	canonical := caddy.ManifestIdentity(options.Manifest.ManifestPath)
 	directory := filepath.Join(paths.StateDirectoryPath, "logs")
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return err
@@ -289,11 +283,7 @@ func findDetachedStack(paths caddy.Paths, canonical string) (*caddy.LiveStack, e
 		return nil, fmt.Errorf("reading the running stacks failed: %w", err)
 	}
 	for _, stack := range stacks {
-		path, err := filepath.EvalSymlinks(stack.ManifestPath)
-		if err != nil {
-			path = filepath.Clean(stack.ManifestPath)
-		}
-		if path == canonical {
+		if caddy.ManifestIdentity(stack.ManifestPath) == canonical {
 			return &stack, nil
 		}
 	}

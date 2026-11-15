@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
 )
 
 // An unreachable grace period, for a stack expected to stop when asked.
@@ -184,6 +186,65 @@ func TestStopStackResolvesARelativeManifestPath(t *testing.T) {
 
 	if err := stack.Wait(); err != nil {
 		t.Fatalf("stack Wait() error = %v, want a clean exit", err)
+	}
+}
+
+// devhost stop finds a stack through any path to its manifest, as a detached
+// start does, including a manifest deleted while its stack runs.
+func TestStopStackFindsTheStackThroughSymbolicLinks(t *testing.T) {
+	tests := []struct {
+		name string
+		// recorded and requested name a path the stack recorded and the path
+		// devhost stop is given: "manifest", "file alias", or "directory alias".
+		recorded, requested string
+		deleted             bool
+	}{
+		{name: "started directly, stopped through a file alias", recorded: "manifest", requested: "file alias"},
+		{name: "started through a file alias, stopped directly", recorded: "file alias", requested: "manifest"},
+		{name: "started and stopped through different aliases", recorded: "file alias", requested: "directory alias"},
+		{name: "deleted manifest stopped through a directory alias", recorded: "manifest", requested: "directory alias", deleted: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stateDirectoryPath := t.TempDir()
+			environment := map[string]string{"DEVHOST_STATE_DIR": stateDirectoryPath}
+			manifestPath := filepath.Join(t.TempDir(), "project", "devhost.toml")
+			if err := os.MkdirAll(filepath.Dir(manifestPath), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(manifestPath, nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			links := t.TempDir()
+			paths := map[string]string{
+				"manifest":        manifestPath,
+				"file alias":      filepath.Join(links, "alias.toml"),
+				"directory alias": filepath.Join(links, "project", "devhost.toml"),
+			}
+			if err := os.Symlink(manifestPath, paths["file alias"]); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(filepath.Dir(manifestPath), filepath.Dir(paths["directory alias"])); err != nil {
+				t.Fatal(err)
+			}
+			stack := startStackOwner(t, stateDirectoryPath, stackOwnerOptions{ManifestPath: paths[tt.recorded], Port: nettest.ReservePort(t), Behavior: stackOwnerStopsOnRequest})
+			if tt.deleted {
+				if err := os.Remove(manifestPath); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			var stdout strings.Builder
+			if err := stopStack(StopStackOptions{ManifestPath: paths[tt.requested]}, environment, unreachableGracePeriod, &stdout, &strings.Builder{}); err != nil {
+				t.Fatalf("stopStack() unexpected error = %v", err)
+			}
+			if want := "Process " + strconv.Itoa(stack.Process.Pid) + " stopped cleanly."; !strings.Contains(stdout.String(), want) {
+				t.Fatalf("stopStack() stdout = %q, want %q", stdout.String(), want)
+			}
+			if err := stack.Wait(); err != nil {
+				t.Fatalf("stack Wait() error = %v, want a clean exit", err)
+			}
+		})
 	}
 }
 
