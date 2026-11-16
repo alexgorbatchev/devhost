@@ -1,3 +1,9 @@
+---
+created_on: 2026-04-15 13:04
+last_modified: 2026-11-15 17:13
+status: current
+---
+
 # `apps/devhost` binary release runbook
 
 ## Target
@@ -41,13 +47,13 @@ This first refreshes the embedded injected devtools assets under `internal/devto
 The asset build explicitly selects production mode and embeds the static entry, lazy terminal chunks, separate font subsets, terminal stylesheet, and precompressed gzip representations. Obsolete generated assets are removed from production builds. Instance configuration is served separately and is not baked into the static entry.
 The generated binary is the same Go runtime that ships in the release archives.
 
-To use that local build through an existing dotfiles installation, run from the repository root:
+To use a local development build through a configured dotfiles project, run from the repository root:
 
 ```sh
 just dev-bootstrap
 ```
 
-This builds the current checkout and replaces the installed payload referenced by `~/.dotfiles/.generated/bin/devhost`, retaining the shim and reporting the destination. Pass a different dotfiles directory as the optional argument. The command requires an existing installation and a shim with a literal, absolute `TOOL_EXECUTABLE` path. Temporary files under the target's `.tmp/` are removed after the atomic replacement; the target and temporary directory must be on the same filesystem. The build reports `999.0.0-dev.<short git SHA>`; a subsequent dotfiles update can overwrite it. Plain `just devhost compile` and release builds retain the metadata version.
+This builds the current checkout and registers a protected development copy with dotfiles, preserving the managed release payload. See [Use a protected development build](../../packages/docs/src/content/docs/development/building.md#use-a-protected-development-build) for prerequisites, selecting a different dotfiles project, and returning to managed releases. The build reports `999.0.0-dev.<short git SHA>`; plain `just devhost compile` and release builds retain the metadata version.
 
 ## Local release artifacts
 
