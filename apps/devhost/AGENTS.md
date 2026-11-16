@@ -27,14 +27,14 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 ## Development workflow
 
-From the repository root, build and replace the installed payload used by the dotfiles-managed `devhost` shim:
+From the repository root, build and register a protected development override for the dotfiles-managed `devhost` shim:
 
 ```bash
 just dev-bootstrap
 just dev-bootstrap /path/to/dotfiles
 ```
 
-The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev.<short git SHA>` version override and a `build-source-directory` override naming this checkout, reads the existing `.generated/bin/devhost` shim's literal `TOOL_EXECUTABLE` path, and atomically replaces that installed payload while retaining the shim. Dotfiles must already have installed `devhost`. Temporary files live under the target's `.tmp/`; a later dotfiles update can replace this development build. Plain `just devhost compile` retains the metadata version.
+The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev.<short git SHA>` version override and a `build-source-directory` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just devhost compile` retains the metadata version.
 
 Run the app from source in the current directory with agent-facing output (`AGENT=1`); `just devhost run` is the human-mode equivalent:
 

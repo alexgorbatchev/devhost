@@ -16,11 +16,15 @@ just devhost compile
 
 To run devhost from source without installing it, use `just cli <args>`, or `just run-ai <args>` for agent output. Both run in the directory you call them from. `just run` starts the repository's own development stack.
 
+## Use a protected development build
+
+Run `just dev-bootstrap` to build and register devhost in `~/.dotfiles`, or pass a different dotfiles project with `just dev-bootstrap /path/to/dotfiles`. The project must declare devhost and the dotfiles CLI on PATH must support `tool dev use`. Dotfiles copies the build into its configured development store, keeps the release payload unchanged, and preserves the development override during updates and cleanup. Run `dotfiles tool dev off devhost` from that project to return to managed releases.
+
 ## Iterate on the toolbar
 
 A development build serves the toolbar from its source checkout and rebuilds it when you reload a page, so UI changes show up without rebuilding devhost or restarting the stack.
 
-1. Use a development build. `just run`, `just cli`, `just run-ai`, and `just dev-bootstrap` (which replaces the `devhost` your dotfiles install) all record the checkout they were built from. For any other build, set `DEVHOST_DEV_SOURCE_DIR` to the checkout's root; a relative path resolves from the manifest's directory, and the variable wins over a recorded checkout.
+1. Use a development build. `just run`, `just cli`, `just run-ai`, and `just dev-bootstrap` (which activates the protected development build in dotfiles) all record the checkout they were built from. For any other build, set `DEVHOST_DEV_SOURCE_DIR` to the checkout's root; a relative path resolves from the manifest's directory, and the variable wins over a recorded checkout.
 2. Edit files under `packages/devhost-ui/src/devtools/` and reload the page.
 3. When those files are newer than the built bundle, devhost rebuilds it, one build at a time, and serves it uncached. Tabs that loaded an earlier build keep working.
 4. A failed build shows a `DEVHOST COMPILATION ERROR` banner on the page with the details; the next reload tries again.

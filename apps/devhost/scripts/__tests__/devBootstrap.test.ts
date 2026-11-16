@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, readdir, rm, stat, symlink } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { devBootstrap } from "../devBootstrap";
 
@@ -7,110 +7,124 @@ let directoryPath: string;
 let dotfilesPath: string;
 let binaryPath: string;
 let sourcePath: string;
-let shimPath: string;
+let developmentPath: string;
+let previousPath: string;
 
 beforeEach(async () => {
   const temporaryRootPath = resolve(import.meta.dir, "../../../..", ".tmp");
   await mkdir(temporaryRootPath, { recursive: true });
   directoryPath = await mkdtemp(join(temporaryRootPath, "dev-bootstrap-"));
   dotfilesPath = join(directoryPath, "dotfiles with spaces");
-  binaryPath = join(dotfilesPath, ".generated/binaries/devhost/v0.0.9/devhost");
-  sourcePath = join(directoryPath, "build/devhost");
-  shimPath = join(dotfilesPath, ".generated/bin/devhost");
-  await Bun.write(binaryPath, "old binary");
-  await Bun.write(sourcePath, "new binary");
-  await Bun.write(shimPath, `#!/bin/sh\nTOOL_EXECUTABLE="${binaryPath}"\nexec "$TOOL_EXECUTABLE" "$@"\n`);
+  binaryPath = join(dotfilesPath, ".generated/binaries/devhost/v1/devhost");
+  developmentPath = join(dotfilesPath, ".state/custom-dev-tools/devhost");
+  sourcePath = join(directoryPath, "build with spaces/devhost");
+  await Bun.write(binaryPath, "managed release");
+  await Bun.write(sourcePath, "#!/bin/sh\nprintf '999.0.0-dev.test\\n'\n");
+  await chmod(sourcePath, 0o755);
+  await Bun.write(join(dotfilesPath, ".generated/bin/devhost"), `TOOL_EXECUTABLE="${binaryPath}"\n`);
+  const cliPath = join(directoryPath, "commands/dotfiles");
+  await Bun.write(
+    cliPath,
+    `#!${process.execPath}
+const args = process.argv.slice(2);
+const root = process.cwd();
+if (args.includes("--help")) {
+  console.log(await Bun.file(root + "/help").text());
+  process.exit(0);
+}
+if (args[0] === "tool" && args[1] === "dev" && args[2] === "use") {
+  if (await Bun.file(root + "/fail-use").exists()) {
+    console.error("registration refused");
+    process.exit(1);
+  }
+  await Bun.write(root + "/invocation.json", JSON.stringify({ args, cwd: root }));
+  const source = args[args.indexOf("--bin") + 1].slice("devhost=".length);
+  await Bun.write(root + "/.state/custom-dev-tools/devhost", Bun.file(source));
+  const { chmod } = await import("node:fs/promises");
+  await chmod(root + "/.state/custom-dev-tools/devhost", 0o755);
+} else if (args[0] === "tool" && args[1] === "which" && args.includes("--bin")) {
+  console.log(root + "/.state/custom-dev-tools/devhost");
+} else {
+  console.error("unexpected command");
+  process.exit(1);
+}
+`,
+  );
+  await chmod(cliPath, 0o755);
+  await Bun.write(join(dotfilesPath, "help"), "Usage: tool dev use <tool> --bin name=source");
+  previousPath = process.env.PATH ?? "";
+  process.env.PATH = join(directoryPath, "commands") + ":" + (previousPath ?? "");
 });
 
 afterEach(async () => {
+  process.env.PATH = previousPath;
   await rm(directoryPath, { recursive: true, force: true });
 });
 
 describe("devBootstrap", () => {
-  it("builds and installs a binary stamped with the checkout's development version", async () => {
+  it("builds and registers a binary stamped with the checkout's development version", async () => {
     const repositoryPath = resolve(import.meta.dir, "../../../..");
     const revision = Bun.spawn(["git", "rev-parse", "--short", "HEAD"], { cwd: repositoryPath });
     const revisionText = (await new Response(revision.stdout).text()).trim();
     expect(await revision.exited).toBe(0);
     const bootstrap = Bun.spawn(["just", "dev-bootstrap", dotfilesPath], {
       cwd: repositoryPath,
+      env: process.env,
       stdout: "pipe",
       stderr: "inherit",
     });
     await new Response(bootstrap.stdout).text();
     expect(await bootstrap.exited).toBe(0);
-    const installed = Bun.spawn([binaryPath, "--version"]);
+    expect(await Bun.file(binaryPath).text()).toBe("managed release");
+    const installed = Bun.spawn([developmentPath, "--version"]);
     expect(await new Response(installed.stdout).text()).toBe(`999.0.0-dev.${revisionText}\n`);
     expect(await installed.exited).toBe(0);
-    // This test compiles devhost. With an empty Go build cache (a new toolchain, a fresh runner) the build alone
-    // outlasts the default five seconds.
   }, 120_000);
 
-  it("replaces the shim's versioned payload, preserves the shim, and leaves an executable", async () => {
-    const shimText = await Bun.file(shimPath).text();
-    expect(await devBootstrap(sourcePath, dotfilesPath)).toBe(binaryPath);
-    expect(await Bun.file(binaryPath).text()).toBe("new binary");
-    expect(await Bun.file(shimPath).text()).toBe(shimText);
-    expect((await stat(binaryPath)).mode & 0o777).toBe(0o755);
-    expect(await readdir(resolve(binaryPath, ".."))).toEqual(["devhost"]);
-    expect(await readdir(join(dotfilesPath, ".tmp"))).toEqual([]);
+  it("registers the build and resolves its configured development path without overwriting the release", async () => {
+    expect(await devBootstrap(sourcePath, dotfilesPath)).toBe(developmentPath);
+    expect(await Bun.file(binaryPath).text()).toBe("managed release");
+    expect(await Bun.file(developmentPath).text()).toBe(await Bun.file(sourcePath).text());
+    const invocation = await Bun.file(join(dotfilesPath, "invocation.json")).json();
+    expect(invocation.cwd).toBe(dotfilesPath);
+    expect(invocation.args).toEqual([
+      "tool",
+      "dev",
+      "use",
+      "devhost",
+      "--bin",
+      "devhost=" + sourcePath,
+      "--source-repo",
+      resolve(import.meta.dir, "../../../.."),
+      "--version",
+      "999.0.0-dev.test",
+    ]);
   });
 
-  it("replaces a symlink's payload without replacing the link", async () => {
-    const linkPath = join(dotfilesPath, ".generated/binaries/devhost/current/devhost");
-    await mkdir(resolve(linkPath, ".."), { recursive: true });
-    await symlink(binaryPath, linkPath);
-    await Bun.write(shimPath, `TOOL_EXECUTABLE="${linkPath}"\n`);
-    expect(await devBootstrap(sourcePath, dotfilesPath)).toBe(binaryPath);
-    expect(await Bun.file(linkPath).text()).toBe("new binary");
+  it("works before any release payload or shim exists", async () => {
+    await rm(join(dotfilesPath, ".generated"), { recursive: true });
+    expect(await devBootstrap(sourcePath, dotfilesPath)).toBe(developmentPath);
+    expect(await Bun.file(developmentPath).exists()).toBe(true);
   });
 
-  it("preserves the installed binary when the build output is missing", async () => {
+  it("requires a dotfiles CLI with development override support", async () => {
+    await Bun.write(join(dotfilesPath, "help"), "Usage: tool");
+    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow("Update dotfiles");
+    expect(await Bun.file(binaryPath).text()).toBe("managed release");
+    expect(await Bun.file(join(dotfilesPath, "invocation.json")).exists()).toBe(false);
+  });
+
+  it("reports failed registration without falling back to replacing the release", async () => {
+    await Bun.write(join(dotfilesPath, "fail-use"), "");
+    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow("registration refused");
+    expect(await Bun.file(binaryPath).text()).toBe("managed release");
+    expect(await Bun.file(developmentPath).exists()).toBe(false);
+  });
+
+  it("rejects missing and empty build output before registration", async () => {
     await expect(devBootstrap(join(directoryPath, "missing"), dotfilesPath)).rejects.toThrow();
-    expect(await Bun.file(binaryPath).text()).toBe("old binary");
-    expect(await readdir(resolve(binaryPath, ".."))).toEqual(["devhost"]);
-  });
-
-  it("rejects an empty build output", async () => {
     await Bun.write(sourcePath, "");
-    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow("Build output is empty.");
-    expect(await Bun.file(binaryPath).text()).toBe("old binary");
-  });
-
-  it("rejects a missing installed payload", async () => {
-    await Bun.file(binaryPath).delete();
-    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow();
-    expect(await Bun.file(binaryPath).exists()).toBe(false);
-  });
-
-  it("rejects shell expressions without executing the shim", async () => {
-    await Bun.write(shimPath, 'TOOL_EXECUTABLE="$(touch sentinel)"\n');
-    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow(
-      "Devhost shim must contain one literal, absolute TOOL_EXECUTABLE path.",
-    );
-    expect(await Bun.file(binaryPath).text()).toBe("old binary");
-  });
-
-  it("rejects payloads outside the selected dotfiles directory", async () => {
-    await Bun.write(shimPath, `TOOL_EXECUTABLE="${sourcePath}"\n`);
-    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow(
-      "Devhost payload must be inside the dotfiles binaries directory.",
-    );
-    expect(await Bun.file(sourcePath).text()).toBe("new binary");
-  });
-
-  it("rejects multiple executable assignments", async () => {
-    await Bun.write(shimPath, `TOOL_EXECUTABLE="${binaryPath}"\nTOOL_EXECUTABLE="${binaryPath}"\n`);
-    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow(
-      "Devhost shim must contain one literal, absolute TOOL_EXECUTABLE path.",
-    );
-  });
-
-  it("cleans temporary files and preserves the target when replacement fails", async () => {
-    await Bun.file(binaryPath).delete();
-    await mkdir(binaryPath);
-    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow();
-    expect((await stat(binaryPath)).isDirectory()).toBe(true);
-    expect(await readdir(join(dotfilesPath, ".tmp"))).toEqual([]);
+    await expect(devBootstrap(sourcePath, dotfilesPath)).rejects.toThrow("Build output is empty");
+    expect(await Bun.file(join(dotfilesPath, "invocation.json")).exists()).toBe(false);
   });
 });

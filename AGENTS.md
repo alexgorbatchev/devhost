@@ -16,7 +16,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Run `devhost` Go tests only: `just devhost test`
 - Build `devhost` release tarballs: `just devhost build-release-artifacts`
 - Build the current-platform `devhost` binary: `just devhost compile`
-- Build and replace the `devhost` binary used by the `~/.dotfiles` shim, stamped `999.0.0-dev.<short git SHA>` and with this checkout as its source, so it serves the devtools UI from the checkout and chat can target it: `just dev-bootstrap` (or `just dev-bootstrap /path/to/dotfiles`)
+- Build and register a protected `devhost` development override in `~/.dotfiles`, stamped `999.0.0-dev.<short git SHA>` and with this checkout as its source, so it serves the devtools UI from the checkout and chat can target it: `just dev-bootstrap` (or `just dev-bootstrap /path/to/dotfiles`). Requires a dotfiles CLI with `tool dev use` support; see the app's development workflow for returning to managed releases.
 - Check the shared design tokens package: `just design check`
 - Regenerate `packages/design/tokens.css` after editing `packages/design/src/constants.ts`: `just design write-tokens`
 - Check the injected devtools UI package: `just ui check`

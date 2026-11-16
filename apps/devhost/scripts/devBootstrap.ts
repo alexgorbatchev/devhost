@@ -1,55 +1,60 @@
-import { chmod, mkdir, mkdtemp, realpath, rename, rm } from "node:fs/promises";
-import { isAbsolute, join, sep } from "node:path";
+import { realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+
+async function runCommand(command: string[], directoryPath: string): Promise<string> {
+  const child = Bun.spawn(command, { cwd: directoryPath, env: process.env, stdout: "pipe", stderr: "pipe" });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  if (exitCode !== 0) {
+    throw new Error(`${command[0]} failed: ${stderr.trim() || stdout.trim() || `exit ${exitCode}`}`);
+  }
+  return stdout.trim();
+}
 
 export async function devBootstrap(sourcePath: string, dotfilesPath: string): Promise<string> {
   const dotfilesDirectoryPath = await realpath(dotfilesPath);
-  const shimPath = join(dotfilesDirectoryPath, ".generated/bin/devhost");
-  const shimText = await Bun.file(shimPath).text();
-  const assignments = [...shimText.matchAll(/^TOOL_EXECUTABLE=.*$/gm)];
-  const payloadPath = /^TOOL_EXECUTABLE="([^"$`\\\r\n]+)"\r?$/m.exec(shimText)?.[1];
-
-  if (assignments.length !== 1 || payloadPath === undefined || !isAbsolute(payloadPath)) {
-    throw new Error("Devhost shim must contain one literal, absolute TOOL_EXECUTABLE path.");
+  try {
+    const help = await runCommand(["dotfiles", "tool", "dev", "use", "--help"], dotfilesDirectoryPath);
+    if (!help.includes("--bin")) {
+      throw new Error("tool dev use --bin is unavailable");
+    }
+  } catch (error) {
+    throw new Error("Update dotfiles to a version supporting 'tool dev use' before bootstrapping.", { cause: error });
   }
 
-  const destinationPath = await realpath(payloadPath);
-  const binariesDirectoryPath = await realpath(join(dotfilesDirectoryPath, ".generated/binaries"));
-
-  if (!destinationPath.startsWith(binariesDirectoryPath + sep)) {
-    throw new Error("Devhost payload must be inside the dotfiles binaries directory.");
-  }
-
-  const sourceFile = Bun.file(sourcePath);
-  const sourceBytes = await sourceFile.bytes();
-
-  if (sourceBytes.length === 0) {
+  const sourceBinaryPath = await realpath(sourcePath);
+  if (Bun.file(sourceBinaryPath).size === 0) {
     throw new Error("Build output is empty.");
   }
-
-  const temporaryRootPath = join(dotfilesDirectoryPath, ".tmp");
-  await mkdir(temporaryRootPath, { recursive: true });
-  const temporaryDirectoryPath = await mkdtemp(join(temporaryRootPath, "devhost-bootstrap-"));
-  const temporaryBinaryPath = join(temporaryDirectoryPath, "devhost");
-
-  try {
-    await Bun.write(temporaryBinaryPath, sourceBytes);
-    await chmod(temporaryBinaryPath, 0o755);
-    await rename(temporaryBinaryPath, destinationPath);
-  } finally {
-    await rm(temporaryDirectoryPath, { recursive: true, force: true });
-  }
-
-  return destinationPath;
+  const sourceRepositoryPath = await realpath(fileURLToPath(new URL("../../../", import.meta.url)));
+  const version = await runCommand([sourceBinaryPath, "--version"], sourceRepositoryPath);
+  await runCommand(
+    [
+      "dotfiles",
+      "tool",
+      "dev",
+      "use",
+      "devhost",
+      "--bin",
+      "devhost=" + sourceBinaryPath,
+      "--source-repo",
+      sourceRepositoryPath,
+      "--version",
+      version,
+    ],
+    dotfilesDirectoryPath,
+  );
+  return runCommand(["dotfiles", "tool", "which", "devhost", "--bin"], dotfilesDirectoryPath);
 }
 
 if (import.meta.main) {
   const dotfilesPath = Bun.env.dotfiles_dir;
-
   if (dotfilesPath === undefined) {
     throw new Error("Run this script through just dev-bootstrap.");
   }
-
   const destinationPath = await devBootstrap(fileURLToPath(new URL("../bin/devhost", import.meta.url)), dotfilesPath);
-  console.log(`Installed local devhost build at ${destinationPath}`);
+  console.log(`Registered local devhost build at ${destinationPath}`);
 }

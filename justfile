@@ -39,7 +39,7 @@ fix:
     bun --bun oxfmt --write .
     gofmt -w apps/devhost
 
-# Build and replace the devhost payload used by the dotfiles shim
+# Build and register a protected devhost development override
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
     revision="$(git rev-parse --short HEAD)" && just --justfile apps/devhost/justfile --set build-version "999.0.0-dev.$revision" --set build-source-directory "{{ justfile_directory() }}" compile
     bun run ./apps/devhost/scripts/devBootstrap.ts
