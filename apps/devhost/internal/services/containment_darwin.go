@@ -4,38 +4,31 @@ package services
 
 import (
 	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
+
+	"golang.org/x/sys/unix"
 )
 
 func prepareServiceContainment() error {
 	return nil
 }
 
+// readProcessSnapshot reads the process table in-process through the kern.proc.all sysctl, the source `ps` reads.
+// Shutdown polls it often, so it must not start a command.
 func readProcessSnapshot() (map[int][]int, error) {
-	command := exec.Command("ps", "ax", "-o", "pid=", "-o", "ppid=")
-	output, err := command.Output()
+	processes, err := unix.SysctlKinfoProcSlice("kern.proc.all")
 	if err != nil {
 		return nil, fmt.Errorf("read process table: %w", err)
 	}
 
 	childrenByParent := map[int][]int{}
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) != 2 {
+	for _, process := range processes {
+		pid := int(process.Proc.P_pid)
+		// PID 0 is the kernel, which the table lists as its own child; `ps ax` leaves it out.
+		if pid == 0 {
 			continue
 		}
 
-		pid, err := strconv.Atoi(fields[0])
-		if err != nil {
-			continue
-		}
-		parentPID, err := strconv.Atoi(fields[1])
-		if err != nil {
-			continue
-		}
-
+		parentPID := int(process.Eproc.Ppid)
 		childrenByParent[parentPID] = append(childrenByParent[parentPID], pid)
 	}
 
