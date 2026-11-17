@@ -741,10 +741,18 @@ func TestDetachedCancellationCleansAttempt(t *testing.T) {
 func TestDetachedLogsAppendAcrossStarts(t *testing.T) {
 	f := newDetachedFixture(t, 10000)
 	f.healthy.Store(true)
+	// The health endpoint answers before the service runs, so readiness does not mean the service has printed
+	// anything. Each start waits for the started file the service writes after its output line.
+	started := filepath.Join(f.directory, "started")
 	f.run(t, "start", "--detach", "web")
+	waitForFile(t, started)
 	first := f.stack(t)
 	f.run(t, "stop")
+	if err := os.Remove(started); err != nil {
+		t.Fatal(err)
+	}
 	f.run(t, "start", "--detach", "web")
+	waitForFile(t, started)
 	second := f.stack(t)
 	f.run(t, "stop")
 	data, err := os.ReadFile(first.LogPath)
