@@ -1,6 +1,12 @@
 # Remote previews
 
-Use this workflow when a user needs to open a development stack through a public gateway from a phone or another network. Start through devhost with `--remote`; the gateway and machine configuration are prerequisites.
+Use this workflow when a user needs to review a development app from a phone, away from the development machine, or on another network. Prefer the enrolled machine where the agent is working, whether laptop or devbox. The viewer needs only a browser and gateway login; the serving machine must remain awake and online.
+
+## Choose and enroll the machine
+
+Inspect existing machine configuration and the repository's established host convention before choosing where to run. Reuse an existing gateway. For initial setup, follow the public [relay, laptop, and devbox walkthrough](https://alexgorbatchev.github.io/devhost/stacks/remote-previews/): it configures the shared relay, separate credentials and ports for both machines, protected public routes, and both client configurations. Example ports and domains are placeholders, not existing allocations.
+
+Obtain enrollment settings from the gateway's configuration or operator. Give each machine its own credential, assigned reverse port, and public suffix; the relay endpoint and fingerprint are shared. Do not reuse another machine's credential or invent an unused port. If enrollment is unavailable, identify the missing settings and use an already enrolled host when authorized and suitable; continue independent application work. A local-only URL does not satisfy a remote preview request.
 
 ## Machine configuration
 
@@ -13,16 +19,16 @@ Read the machine's `config.toml`, selected through `DEVHOST_CONFIG_DIR`, `XDG_CO
 - `domainSuffix`: this machine's public suffix, including its leading dot or hyphen.
 - `localSuffix`: the manifest suffix to replace, defaulting to `.localhost`.
 
-The gateway operator supplies the settings and credential. Each machine has a separate credential, reverse port, and public suffix. Preserve existing `[caddy]` settings. Stop active remote stacks before changing `[remote]`, then restart them; active remote stacks reject those changes while project manifest reloads and shared Caddy listener changes remain available.
+Preserve existing `[caddy]` settings. Stop active remote stacks before changing `[remote]`, then restart them; active remote stacks reject those changes while project manifest reloads and shared Caddy listener changes remain available.
 
 For `localSuffix = ".localhost"` and `domainSuffix = "--laptop--preview.example.com"`, `web.localhost` becomes `web--laptop--preview.example.com`. Use flat labels for a single-level wildcard certificate. Every routed hostname ends in the configured local suffix or already uses the public suffix. Public hosts are resolved before service commands and environment templates; direct service `url` references continue to use their local listeners.
 
 ## Run and verify
 
-1. Discover the repository's services, existing manifest, host convention, and health checks using the usual devhost workflow.
-2. Ensure shared Caddy is running, then run `devhost start --remote --detach [service-or-group...]` with the repository's required environment.
-3. Read the printed HTTPS URLs and log path. Readiness covers services, routes, and a connected relay. Verify the URL through the public gateway, including its browser authentication and expected page content, before giving it to the user.
-4. Use `devhost stop` and `devhost stack restart` normally. Repeat detached startup in the same access mode to report the existing stack. Stop a local stack before starting it in remote mode, and vice versa.
+1. Discover the repository's services, existing manifest, host convention, and health checks using the usual devhost workflow. Match `[remote].localSuffix` to the manifest's resolved host suffix. If the repository selects it through an environment variable, supply the matching value; devhost does not load repository dotenv files itself.
+2. Ensure shared Caddy is running, then run `AGENT=1 devhost start --remote --detach [service-or-group...]` with the repository's required environment. Use the existing repository wrapper when it forwards arguments. A wrapper that already accepts flags needs no change; use an existing argument-forwarding entrypoint when a narrower recipe accepts none. Loading `[remote]` alone does not make ordinary starts remote.
+3. Read the printed HTTPS URLs and log path. Readiness covers services, routes, and a connected relay. Verify the requested page through the public gateway, including browser authentication and expected content; check WebSockets when the preview depends on them. Return the verified URL from output, including its route path, rather than constructing one or sharing a loopback/local-only URL. If authentication prevents verification, report that precise gap instead of claiming the preview is verified.
+4. To recover the URLs, repeat detached startup with the same manifest, environment, selection, and remote mode; it reports the running stack and URLs. `devhost stack list` reports processes and manifests, not preview URLs. Stop a local stack before starting it in remote mode, and vice versa. Use `devhost stop` and `devhost stack restart` normally.
 
 One connector per state directory serves all active remote stacks and forwards only their active hosts. Service selection, reloads, and worktree switches update the allowlist. Stopping the final remote stack removes the connector. Restart a remote stack to recover an unexpectedly exited connector. After upgrading devhost, stop all remote stacks before restarting them to replace the shared worker. Network changes trigger reconnects with stable URLs; open requests and WebSockets can require a reconnect, and the machine must stay awake to serve requests.
 

@@ -2,9 +2,11 @@
 title: "Remote previews"
 ---
 
-Run `devhost start --remote --detach` to give a stack public HTTPS URLs through an outbound relay. The development machine can sit behind NAT or move between networks. A viewer needs a browser and whatever login your gateway requires; neither a VPN nor a local devhost certificate is needed on the viewing device.
+Your agent builds a web app on your laptop or devbox. You open the link on your phone, sign in, and try the actual app—even from a train. Remote previews turn a development server into a regular HTTPS link you can open wherever you have internet.
 
-Remote previews require a configured gateway. devhost connects to an existing [Chisel](https://github.com/jpillora/chisel) relay; it does not provision a public service or DNS. A gateway reachable through an existing Cloudflare Tunnel works without a public IP on your development machine or home network.
+There is no VPN to install on your phone, no router port to open, and no public IP needed at home or on the laptop. You can review changes while the agent keeps working, without deploying each revision. A laptop can move between Wi-Fi networks: devhost reconnects and keeps the same URL. The machine serving the app must stay awake and online.
+
+Set up one shared gateway and enroll each development machine once. After that, `devhost start --remote --detach` starts the app and prints its preview URL. This guide sets up the gateway, **the laptop, and the devbox** shown below, using your Cloudflare-managed domain and an always-on Docker host you already own. No rented VPS is required. devhost uses a [Chisel](https://github.com/jpillora/chisel) relay and Cloudflare Tunnel to carry the connections; it does not create the gateway or DNS records for you.
 
 ## How the connection works
 
@@ -30,7 +32,15 @@ Arrows follow a **browser request**, not new inbound connections. The lab's `clo
 
 This example runs the relay and Cloudflare connector together on an always-on Linux Docker host. It uses a domain managed by Cloudflare, a remotely managed Cloudflare Tunnel, and Cloudflare Access for browser login. Substitute your domain for `example.com`. Docker Compose and OpenSSL must be available on the host.
 
-Already have an authenticated gateway and a Cloudflare Tunnel? Run only the `relay` service, attach it to your gateway's existing Docker network, and configure the [same two routes](#configure-public-routes) there. Preserve your existing authentication and tunnel configuration.
+Run this section on the **always-on lab host**, then [configure both development machines](#configure-a-machine), then [start a preview on each](#start-and-stop-previews). The lab host may also be your devbox; the relay container and the devbox's devhost installation still need their respective setup.
+
+| Where              | What you set up                                    | Address in this example                                 |
+| ------------------ | -------------------------------------------------- | ------------------------------------------------------- |
+| Always-on lab host | Relay and Cloudflare connector with Docker Compose | `relay.example.com` → relay port `8080`                 |
+| Laptop             | devhost, Caddy, and the laptop credential          | `web--laptop--preview.example.com` → relay port `18081` |
+| Devbox             | devhost, Caddy, and the devbox credential          | `web--devbox--preview.example.com` → relay port `18082` |
+
+Already have an authenticated gateway and a Cloudflare Tunnel? Run only the `relay` service, attach it to your gateway's existing Docker network, and configure the [same three routes](#configure-public-routes) there. Preserve your existing authentication and tunnel configuration.
 
 ### Create the Compose file
 
@@ -88,25 +98,25 @@ services:
 
 Compose creates a shared network where `cloudflared` can resolve `relay`. There is deliberately no `ports` section: `8080` and each machine's reverse listener remain inside Docker. Both containers run as the user who owns the private files. The Cloudflare image must support [`--token-file`](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/run-parameters/), available since version 2025.4.0; use a maintained pinned version when updating it.
 
-### Create the relay identity and machine credential
+### Create the relay identity and machine credentials
 
 Generate the relay's persistent key **once**:
 
 ```bash
 docker compose run --rm --no-deps relay server --keygen - > relay/server.key
 chmod 600 relay/server.key
-openssl rand -hex 32
 ```
 
-Use the random password printed by OpenSSL in `relay/users.json`:
+Run `openssl rand -hex 32` twice to generate **two different passwords**, one for the laptop and one for the devbox. Save them in your password manager, then substitute them in `relay/users.json`:
 
 ```json
 {
-  "laptop:REPLACE_WITH_RANDOM_PASSWORD": ["^R:0\\.0\\.0\\.0:18081$"]
+  "laptop:REPLACE_WITH_LAPTOP_PASSWORD": ["^R:0\\.0\\.0\\.0:18081$"],
+  "devbox:REPLACE_WITH_DEVBOX_PASSWORD": ["^R:0\\.0\\.0\\.0:18082$"]
 }
 ```
 
-This [Chisel authorization rule](https://github.com/jpillora/chisel/tree/v1.12.0#authentication) permits that machine to open only `0.0.0.0:18081` inside the relay container. Keep the anchors and JSON escaping. Do not use an empty auth file or a wildcard rule.
+These [Chisel authorization rules](https://github.com/jpillora/chisel/tree/v1.12.0#authentication) let the laptop open only `0.0.0.0:18081` and the devbox only `0.0.0.0:18082` inside the relay container. Keep the anchors and JSON escaping. Do not use an empty auth file, a wildcard rule, or the same credential on both machines.
 
 ```bash
 chmod 600 relay/users.json
@@ -114,20 +124,21 @@ docker compose up -d relay
 docker compose logs relay
 ```
 
-Copy the complete value after `Fingerprint` from the startup log for the machine configuration below. Keep the trailing `=` if present; do not add a `SHA256:` prefix. Back up `server.key` and `users.json` securely. Replacing the key changes the fingerprint and disconnects machines that trust the old identity.
+Copy the complete value after `Fingerprint` from the startup log. **Both machines use this same fingerprint** and relay URL, but different credentials and ports. Keep the trailing `=` if present; do not add a `SHA256:` prefix. Back up `server.key` and `users.json` securely. Replacing the key changes the fingerprint and disconnects machines that trust the old identity.
 
 ### Configure public routes
 
 1. In Cloudflare Zero Trust, [create a remotely managed tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/get-started/create-remote-tunnel/) with connector type **cloudflared**. Save only its tunnel token in `relay/tunnel-token`, using a local editor. Do not put the full install command, the token, or the machine password in `compose.yaml`.
-2. Before publishing the preview hostname, [create a self-hosted Access application](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/) for `web--laptop--preview.example.com`. Add an **Allow** policy for the identities that may preview your work, and configure a login method. Preview access includes development tools, so avoid an everyone or bypass policy.
+2. Before publishing the preview hostnames, [create a self-hosted Access application](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/) covering **both** `web--laptop--preview.example.com` and `web--devbox--preview.example.com`. You can add both public hostnames to one application or create one application per hostname. Add an **Allow** policy for the identities that may preview your work, and configure a login method. Preview access includes development tools, so avoid an everyone or bypass policy.
 3. Add these published application routes to the tunnel. Leave **HTTP Host Header** unset so requests retain their public hostname.
 
 | Public hostname                    | Service type | Service URL   | Authentication            |
 | ---------------------------------- | ------------ | ------------- | ------------------------- |
 | `relay.example.com`                | HTTP         | `relay:8080`  | Chisel machine credential |
 | `web--laptop--preview.example.com` | HTTP         | `relay:18081` | Access browser login      |
+| `web--devbox--preview.example.com` | HTTP         | `relay:18082` | Access browser login      |
 
-Do not put an interactive Access login on `relay.example.com`: the devhost connector cannot answer it. The relay authenticates that endpoint itself. Leave WebSockets enabled for both routes. Cloudflare's dashboard creates the corresponding DNS records when adding published routes; if managing DNS separately, use [proxied CNAMEs to the tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/dns/). No record should point at your laptop or home IP.
+Do not put an interactive Access login on `relay.example.com`: the devhost connector cannot answer it. The relay authenticates that endpoint itself. Leave WebSockets enabled for all three routes. Cloudflare's dashboard creates the corresponding DNS records when adding published routes; if managing DNS separately, use [proxied CNAMEs to the tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/dns/). No record should point at your laptop or home IP.
 
 Start the Cloudflare connector:
 
@@ -142,9 +153,9 @@ The Cloudflare dashboard should show the tunnel connected. A preview route may r
 
 ### Add apps or another machine
 
-The example publishes one app, `web.localhost`. For another app on the same laptop, add its exact public hostname to the tunnel and Access application, still targeting `relay:18081`.
+The example publishes `web.localhost` separately on the laptop and devbox. For another app, add its exact public hostname to the tunnel and Access application, targeting `relay:18081` for the laptop or `relay:18082` for the devbox.
 
-For a devbox, add a separate `devbox:password` entry to `users.json` with rule `^R:0\\.0\\.0\\.0:18082$`, assign `remotePort = 18082` and `domainSuffix = "--devbox--preview.example.com"` in that machine's configuration, and route its preview hostnames to `relay:18082`. Both machines use the same relay endpoint and fingerprint. Restart the relay after changing credentials; this also revokes established sessions and briefly reconnects other machines.
+For a third machine, allocate another unused reverse port, a new credential restricted to that port, and a distinct public suffix. Add its protected hostname routes and machine configuration using the same steps below. Restart the relay after changing credentials; this also revokes established sessions and briefly reconnects other machines.
 
 For automatic routing of arbitrary app names, send wildcard DNS and tunnel traffic through an existing gateway that matches each machine's hostname suffix and forwards it to the assigned port. DNS and Cloudflare Tunnel accept `*.example.com`, **not** `*--laptop--preview.example.com`. A broad wildcard must not override other apps or bypass their authentication; keep `relay.example.com` routed to port `8080`. Exact hostname routes are the simplest standalone setup.
 
@@ -152,7 +163,19 @@ For automatic routing of arbitrary app names, send wildcard DNS and tunnel traff
 
 ## Configure a machine
 
-Add `[remote]` to the machine's [`config.toml`](../../reference/cli/#files-and-directories). Keep it out of project manifests so the same checkout works on different machines.
+Complete this section **once on the laptop and once on the devbox**. [Install devhost](../../start/install/) on each machine. If Caddy is not already installed, run `devhost caddy download` on each too. On Linux, run `devhost caddy privileged-ports` if port `443` permission has not been configured. You do not need a separate Chisel installation on these machines; devhost includes its connector.
+
+On each machine, create the configuration directory:
+
+```bash
+DEVHOST_MACHINE_CONFIG="${DEVHOST_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/devhost}"
+mkdir -p "$DEVHOST_MACHINE_CONFIG"
+chmod 700 "$DEVHOST_MACHINE_CONFIG"
+```
+
+Edit `config.toml` in that directory. Add the appropriate `[remote]` block below, preserving existing settings such as `[caddy]`; replace an existing `[remote]` block instead of adding a second one. Keep these settings out of project manifests so the same checkout works on different machines.
+
+### On the laptop
 
 ```toml
 [remote]
@@ -164,9 +187,33 @@ domainSuffix = "--laptop--preview.example.com"
 localSuffix = ".localhost"
 ```
 
-The gateway administrator supplies the endpoint, full base64 SHA-256 Chisel fingerprint, assigned reverse port, public hostname suffix, and a separate credential for each machine. Store the supplied `username:password` in `relay.auth` beside `config.toml`, with permissions `0600`. An absolute credential path works too. Credentials stay out of the TOML editor, process arguments, and project files.
+Create `relay.auth` beside `config.toml` using a local editor. Its single line is `laptop:` followed by the **laptop password** from the relay's `users.json`.
 
-For the Compose example, `relay.auth` contains `laptop:` followed by the password you put in `users.json`, on one line. Replace the fingerprint placeholder with the value from `docker compose logs relay`.
+### On the devbox
+
+```toml
+[remote]
+serverURL = "https://relay.example.com"
+credentialFile = "relay.auth"
+fingerprint = "REPLACE_WITH_THE_RELAY_SHA256_FINGERPRINT"
+remotePort = 18082
+domainSuffix = "--devbox--preview.example.com"
+localSuffix = ".localhost"
+```
+
+Create this machine's own `relay.auth` beside its `config.toml`. Its single line is `devbox:` followed by the **devbox password** from `users.json`. Do not copy the laptop's credential file onto the devbox.
+
+### Finish on both machines
+
+Replace the fingerprint placeholder in both configurations with the value from `docker compose logs relay`, and substitute your actual domain in `serverURL` and `domainSuffix`. On each machine, make its credential file private:
+
+```bash
+chmod 600 "$DEVHOST_MACHINE_CONFIG/relay.auth"
+```
+
+If someone else operates the gateway, obtain the endpoint, fingerprint, assigned port, suffix, and credential from them. An absolute credential path works too. Credentials stay out of the TOML editor, process arguments, and project files.
+
+Both examples expect manifest hosts ending in `.localhost`. If the repository uses a machine-specific suffix through an environment variable, set `localSuffix` to that actual suffix, or export the repository's suffix variable as `.localhost` when starting. The names must match; configuring remote access does not change the repository's environment variables.
 
 | Setting          | Meaning                                                                                                                                     |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -177,24 +224,47 @@ For the Compose example, `relay.auth` contains `laptop:` followed by the passwor
 | `domainSuffix`   | Public suffix assigned to this machine, including its leading dot or hyphen.                                                                |
 | `localSuffix`    | Suffix to replace in manifest hostnames. Defaults to `.localhost`.                                                                          |
 
-For this configuration, `web.localhost` becomes `web--laptop--preview.example.com`. The public hostname is selected before service commands and environment templates resolve, so `host` references and `DEVHOST_HOST` describe the hostname the browser uses. Direct service references such as `{{ services.api.url }}` continue to address the local service.
+`web.localhost` becomes `web--laptop--preview.example.com` on the laptop and `web--devbox--preview.example.com` on the devbox. The public hostname is selected before service commands and environment templates resolve, so `host` references and `DEVHOST_HOST` describe the hostname the browser uses. Direct service references such as `{{ services.api.url }}` continue to address the local service.
 
 Use flat labels when the gateway certificate covers `*.example.com`: `web--laptop--preview.example.com` fits that wildcard; `web.app--laptop--preview.example.com` needs deeper certificate coverage. Hostnames must end in the configured local suffix or already use the public suffix. Every machine needs its own public suffix, reverse port, and credential.
 
 ## Start and stop previews
 
-Start shared Caddy as usual, then opt a stack into remote access:
+On **each machine**, open a repository with a `devhost.toml` that routes a service at `web.localhost`. For a standalone connectivity check, create an empty directory on each machine with these two files:
+
+```toml title="devhost.toml"
+name = "remote-preview-demo"
+
+[services.web]
+serve = "public"
+host = "web.localhost"
+```
+
+```html title="public/index.html"
+<!doctype html>
+<title>Remote preview</title>
+<h1>Remote preview works</h1>
+```
+
+Create the `public` directory before saving the HTML file. From beside `devhost.toml`, start shared Caddy, then opt the stack into remote access:
 
 ```bash
 devhost caddy start
 devhost start --remote --detach
 ```
 
-Service selections work too: `devhost start --remote --detach web`. The command prints public HTTPS URLs only for routed services that started. Unrouted dependencies remain available to their local consumers.
+Run those commands on **both the laptop and the devbox**. Service selections work too: `devhost start --remote --detach web`. The command prints public HTTPS URLs only for routed services that started. Unrouted dependencies remain available to their local consumers.
+
+| Started on | Expected preview URL with the example domain |
+| ---------- | -------------------------------------------- |
+| Laptop     | `https://web--laptop--preview.example.com`   |
+| Devbox     | `https://web--devbox--preview.example.com`   |
+
+Copy the URLs printed by devhost; they reflect your actual domain, service names, and route paths. Configuring `[remote]` alone does not enable remote mode: include `--remote` on startup. A repository wrapper such as `just run` needs to forward that flag; if it already forwards arguments, no justfile change is needed.
 
 Detached startup waits for service health, registered routes, and the relay connection. That confirms the connector is ready; verify the printed URL separately to check public DNS, gateway routing, certificates, and browser login. Repeating the command reports the existing remote stack and its URLs. Switching a running stack between local and remote mode requires stopping it first.
 
-For the Compose example, start a stack with a routed service whose manifest host is `web.localhost`. Open `https://web--laptop--preview.example.com` from your phone on mobile data: it should ask for browser login, then show the app. Check in a private browser window that anonymous visitors cannot see the app. If it uses HMR or live devtools, check those after login too; a working HTML response alone does not verify WebSockets.
+Open **both printed URLs** from your phone on mobile data: sign in when prompted, then confirm each shows the expected app (or “Remote preview works” for the sample). Check each in a private browser window to confirm anonymous visitors cannot see it. If your app uses HMR or live devtools, check those after login too; a working HTML response alone does not verify WebSockets. Disconnect the laptop's Wi-Fi and reconnect on another network, then reopen its same URL after the connector reconnects. The devbox preview should remain available throughout.
 
 Use `devhost stop` and `devhost stack restart` normally. Manifest reloads, service selection, and worktree switches update the remote host allowlist along with the stack. Several remote stacks in one state directory share one connector; stopping one leaves the others reachable. Stopping the last removes the connector. Only hosts belonging to active remote stacks are forwarded.
 
