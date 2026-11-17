@@ -6,7 +6,7 @@ Use this workflow when a user needs to review a development app from a phone, aw
 
 Inspect existing machine configuration and the repository's established host convention before choosing where to run. Reuse an existing gateway. For initial setup, follow the public [relay, laptop, and devbox walkthrough](https://alexgorbatchev.github.io/devhost/stacks/remote-previews/): it configures the shared relay, separate credentials and ports for both machines, protected public routes, and both client configurations. Example ports and domains are placeholders, not existing allocations.
 
-Obtain enrollment settings from the gateway's configuration or operator. Give each machine its own credential, assigned reverse port, and public suffix; the relay endpoint and fingerprint are shared. Do not reuse another machine's credential or invent an unused port. If enrollment is unavailable, identify the missing settings and use an already enrolled host when authorized and suitable; continue independent application work. A local-only URL does not satisfy a remote preview request.
+Obtain enrollment settings from the gateway's configuration or operator. Give each machine its own credential, assigned reverse port, and public suffix; the relay endpoint and fingerprint are shared. Use only this machine's enrolled credential and operator-allocated port. If enrollment is unavailable, identify the missing settings and use an already enrolled host when authorized and suitable; continue independent application work. A local-only URL does not satisfy a remote preview request.
 
 ## Machine configuration
 

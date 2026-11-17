@@ -55,6 +55,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 ## Workspace map
 
 - `apps/devhost/` — Go CLI app; follow `apps/devhost/AGENTS.md`
+- `skills/devhost/` — distributed operator skill; follow the skill rules in `apps/devhost/AGENTS.md` and run `just devhost check` for its CLI contract tests after edits
 - `packages/design/` — shared `--dh-*` design tokens and design references; follow `packages/design/AGENTS.md`
 - `packages/devhost-ui/` — injected browser UI package; follow `packages/devhost-ui/AGENTS.md`
 - `packages/docs/` — public Astro docs site; follow `packages/docs/AGENTS.md`

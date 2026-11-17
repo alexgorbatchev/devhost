@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-11-17 06:07
+  last_modified: 2026-11-17 06:22
   status: current
 ---
 
@@ -74,7 +74,7 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 
 ### Remote previews
 
-When the user needs to review an app from a phone, away from the development machine, or on another network, read [remote previews](references/remote-previews.md) before choosing the host or starting the stack. Use the enrolled laptop or devbox where the work runs and start with `--remote --detach`; machine configuration alone does not enable remote mode. Read the actual HTTPS URLs from successful startup output, verify the requested page through the public gateway, and return that URL. Do not infer it from a local hostname. The reference covers enrollment, repository wrappers, authentication, mode changes, reconnects, and recovery.
+When the user needs to review an app from a phone, away from the development machine, or on another network, read [remote previews](references/remote-previews.md) before choosing the host or starting the stack. Use the enrolled laptop or devbox where the work runs and start with `--remote --detach`; machine configuration alone does not enable remote mode. Read the actual HTTPS URLs from successful startup output, verify the requested page through the public gateway, and return that URL. Startup output is the authority for the public URL. The reference covers enrollment, repository wrappers, authentication, mode changes, reconnects, and recovery.
 
 ### First Run
 
