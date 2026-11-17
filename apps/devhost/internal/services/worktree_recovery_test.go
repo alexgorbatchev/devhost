@@ -96,7 +96,7 @@ func TestShutdownCancelsWorktreeBindHostHealthWait(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(strings.Replace(string(configuration), "port = \"auto\"", fmt.Sprintf("port = %d", api.AppPort), 1)), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(strings.Replace(string(configuration), "health.timeout = 60000", "health.timeout = 60001", 1)), 0600); err != nil {
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
@@ -141,6 +141,7 @@ func startWorktreeRecoveryStack(t *testing.T, host, listenHost string, timeout i
 		t.Fatal(err)
 	}
 	api := strings.Replace(reloadServiceBody("api", "api", "api.recovery.localhost"), "command = ", fmt.Sprintf("cwd = %q\nbindHost = %q\nhealth.timeout = %d\ncommand = ", filepath.Join(root, "api"), host, timeout), 1)
+	api = strings.Replace(api, `port = "auto"`, fmt.Sprintf("port = %d", port), 1)
 	api += fmt.Sprintf("BIND_HOST_FILE = %q\n", bindFile)
 	web := strings.Replace(reloadServiceBody("web", "web", "web.recovery.localhost"), "command = ", fmt.Sprintf("cwd = %q\ndependsOn = [\"api\"]\ncommand = ", filepath.Join(root, "web")), 1)
 	f := startReloadStackConfiguration(t, api+web, true)
