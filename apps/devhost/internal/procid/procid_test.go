@@ -3,6 +3,8 @@
 package procid
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"testing"
@@ -71,7 +73,9 @@ func TestStartIdentityOfAnExitedProcess(t *testing.T) {
 		t.Fatalf("run a process to completion: %v", err)
 	}
 
-	if identity, err := StartIdentity(command.Process.Pid); err == nil {
-		t.Fatalf("StartIdentity(exited process) = %q, want an error", identity)
+	// Callers judge an owner stale only on this error; any other error keeps a
+	// process that has exited counted as alive.
+	if identity, err := StartIdentity(command.Process.Pid); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("StartIdentity(exited process) = %q, %v, want an error wrapping fs.ErrNotExist", identity, err)
 	}
 }
