@@ -22,7 +22,7 @@ func TestRemoteConfigEditorCompletions(t *testing.T) {
 	if !slices.Contains(schema.Tables[""], "remote") {
 		t.Fatal("machine config completion is missing the remote table")
 	}
-	want := []string{"serverURL", "credentialFile", "fingerprint", "remotePort", "domainSuffix", "localSuffix"}
+	want := []string{"serverURL", "credentialFile", "fingerprint", "remotePort", "domainSuffix"}
 	if !slices.Equal(schema.Tables["remote"], want) {
 		t.Fatalf("remote setting completions = %v, want %v", schema.Tables["remote"], want)
 	}
@@ -35,12 +35,12 @@ func TestParseRemoteConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Remote == nil || got.Remote.ServerURL != "https://relay.example.com" || got.Remote.LocalSuffix != ".localhost" || got.Remote.DomainSuffix != "--laptop--preview.example.com" || got.Remote.RemotePort != 18081 || got.Remote.CredentialFile != filepath.Join(filepath.Dir(path), "relay.auth") {
+	if got.Remote == nil || got.Remote.ServerURL != "https://relay.example.com" || got.Remote.DomainSuffix != "--laptop--preview.example.com" || got.Remote.RemotePort != 18081 || got.Remote.CredentialFile != filepath.Join(filepath.Dir(path), "relay.auth") {
 		t.Fatalf("remote settings = %#v", got.Remote)
 	}
 
-	got, err = Parse(path, []byte(strings.ReplaceAll(validRemoteConfig, `credentialFile = "relay.auth"`, `credentialFile = "/private/relay.auth"`)+"localSuffix = \" --Workstation.Example.COM \"\n"))
-	if err != nil || got.Remote.LocalSuffix != "--workstation.example.com" || got.Remote.CredentialFile != "/private/relay.auth" {
+	got, err = Parse(path, []byte(strings.ReplaceAll(validRemoteConfig, `credentialFile = "relay.auth"`, `credentialFile = "/private/relay.auth"`)))
+	if err != nil || got.Remote.CredentialFile != "/private/relay.auth" {
 		t.Fatalf("custom remote settings = %#v, %v", got.Remote, err)
 	}
 
@@ -105,5 +105,35 @@ func TestRelayURLValidation(t *testing.T) {
 				t.Fatalf("validRelayURL(%q) = %v", tc.url, got)
 			}
 		})
+	}
+}
+
+func TestLocalDomainSuffixAndRemovedRemoteSetting(t *testing.T) {
+	for _, tc := range []struct{ source, want, failure string }{
+		{"", ".localhost", ""},
+		{`domainSuffix = " --Devbox.Example.COM "`, "--devbox.example.com", ""},
+		{`domainSuffix = ".test"`, ".test", ""},
+		{`domainSuffix = ""`, "", "domainSuffix"},
+		{`domainSuffix = "example.com"`, "", "domainSuffix"},
+		{`domainSuffix = "--machine"`, "", "domainSuffix"},
+		{validRemoteConfig + `localSuffix = ".localhost"`, "", "remote.localSuffix was removed"},
+	} {
+		got, err := Parse("config.toml", []byte(tc.source))
+		if tc.failure != "" {
+			if err == nil || !strings.Contains(err.Error(), tc.failure) {
+				t.Errorf("%q: %v", tc.source, err)
+			}
+			continue
+		}
+		if err != nil || got.DomainSuffix != tc.want {
+			t.Errorf("%q: suffix %q, error %v", tc.source, got.DomainSuffix, err)
+		}
+	}
+	got, err := Read(filepath.Join(t.TempDir(), "missing.toml"))
+	if err != nil || got.DomainSuffix != ".localhost" {
+		t.Fatalf("missing config: %#v, %v", got, err)
+	}
+	if !slices.Contains(ReadSchema().Tables[""], "domainSuffix") {
+		t.Fatal("editor is missing the local suffix")
 	}
 }

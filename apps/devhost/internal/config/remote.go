@@ -13,15 +13,12 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/remote"
 )
 
-const defaultLocalSuffix = ".localhost"
-
 type remoteContents struct {
-	ServerURL      string  `toml:"serverURL"`
-	CredentialFile string  `toml:"credentialFile"`
-	Fingerprint    string  `toml:"fingerprint"`
-	RemotePort     int     `toml:"remotePort"`
-	DomainSuffix   string  `toml:"domainSuffix"`
-	LocalSuffix    *string `toml:"localSuffix"`
+	ServerURL      string `toml:"serverURL"`
+	CredentialFile string `toml:"credentialFile"`
+	Fingerprint    string `toml:"fingerprint"`
+	RemotePort     int    `toml:"remotePort"`
+	DomainSuffix   string `toml:"domainSuffix"`
 }
 
 func readRemote(path string, contents remoteContents) (remote.Settings, []string) {
@@ -31,10 +28,6 @@ func readRemote(path string, contents remoteContents) (remote.Settings, []string
 		Fingerprint:    strings.TrimSpace(contents.Fingerprint),
 		RemotePort:     contents.RemotePort,
 		DomainSuffix:   strings.ToLower(strings.TrimSpace(contents.DomainSuffix)),
-		LocalSuffix:    defaultLocalSuffix,
-	}
-	if contents.LocalSuffix != nil {
-		settings.LocalSuffix = strings.ToLower(strings.TrimSpace(*contents.LocalSuffix))
 	}
 	var issues []string
 	if !validRelayURL(settings.ServerURL) {
@@ -52,12 +45,8 @@ func readRemote(path string, contents remoteContents) (remote.Settings, []string
 	if settings.RemotePort < 1 || settings.RemotePort > 65535 {
 		issues = append(issues, "remote.remotePort must be an integer between 1 and 65535.")
 	}
-	for _, entry := range []struct{ name, value string }{
-		{"domainSuffix", settings.DomainSuffix}, {"localSuffix", settings.LocalSuffix},
-	} {
-		if !validHostSuffix(entry.value) {
-			issues = append(issues, "remote."+entry.name+" must be a hostname suffix beginning with a dot or hyphen.")
-		}
+	if !validHostSuffix(settings.DomainSuffix) {
+		issues = append(issues, "remote.domainSuffix must be a hostname suffix beginning with a dot or hyphen.")
 	}
 	return settings, issues
 }

@@ -31,7 +31,7 @@ name = "project"
 
 [services.design]
 serve = "packages/design"
-host = "design.localhost"
+host = "design"
 alwaysStart = true
 ```
 

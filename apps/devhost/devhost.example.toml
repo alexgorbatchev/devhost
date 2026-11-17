@@ -1,7 +1,8 @@
 # devhost example manifest
 #
-# This file is meant to be read as documentation first and copied second.
-# Copy it to `devhost.toml` in your project root to use it.
+# Give your project one repeatable start command, stable HTTPS routes, and health checks.
+# Use this annotated reference to choose the services and settings your stack needs.
+# Copy the relevant sections into `devhost.toml`; adapt commands and paths to your project.
 # While a stack runs, saving this file or one of its includes hot-reloads it, and files that
 # start or stop matching an include glob are picked up. Invalid edits leave the stack running.
 # Every setting reloads, including name, killZombies, devtools, and worktrees.enabled;
@@ -53,7 +54,7 @@
 # `name` labels the stack in logs and devtools. Saving a new name renames the running stack;
 # the stack is identified by the path of its root manifest.
 # You can interpolate environment variables in string values, for example:
-# `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}.localhost"`.
+# `name = "{{ env.USER }}-stack"` or `host = "devhost-{{ env.USER }}"`.
 name = "hello-stack"
 
 # `killZombies` controls whether devhost kills processes left by an earlier run of this
@@ -256,7 +257,7 @@ restartServices = "alt+ctrl+r"
 # Static files can run as a native managed service instead of a child command:
 # [services.design]
 # serve = "packages/design"
-# host = "design.localhost"
+# host = "design"
 # alwaysStart = true
 # `serve` resolves relative to its declaring manifest, defaults to an automatic port,
 # and uses the same confined file browser and Markdown rendering as `devhost serve`.
@@ -313,8 +314,12 @@ bindHost = "127.0.0.1"
 # Every hostname routes to the same service process, port, and path.
 # The first hostname is used for `DEVHOST_HOST`, `{{ services.<name>.host }}`,
 # and the devtools service link. Startup logs list every routed URL.
-host = "hello.local.test"
-# host = ["hello.local.test", "alias.local.test"]
+# Short DNS labels keep this manifest portable across machines.
+# Local routing appends top-level machine domainSuffix (default .localhost).
+# Configured [remote] selects its public suffix automatically; --local selects local routing.
+# Remote mode requires single labels; explicit full hostnames are local-only.
+host = "hello"
+# host = ["hello", "alias"]
 # `proxyLocalOrigin` rewrites Host, and an Origin that matches the public hostname, to the
 # service's local address, for dev servers such as Bun HTML/HMR that reject public hostnames.
 # The local address is this service's bindHost (wildcards become loopback) and port, so the
@@ -323,8 +328,8 @@ host = "hello.local.test"
 # proxyLocalOrigin = true
 # `path` sets a subpath for mounting (e.g. "/api/*"). Defaults to `"/"`.
 # Use same-host composition only within one manifest, for example:
-# - `services.web.host = "hello.local.test"`, `services.web.path = "/"`
-# - `services.api.host = "hello.local.test"`, `services.api.path = "/api/*"`
+# - `services.web.host = "hello"`, `services.web.path = "/"`
+# - `services.api.host = "hello"`, `services.api.path = "/api/*"`
 # path = "/api/*"
 # `dependsOn` declares services that must start before this service.
 # `devhost start web` starts this service and everything it reaches through `dependsOn`.
@@ -343,11 +348,11 @@ watch = ["src/"]
 [services.web.env]
 # `env` adds app-specific environment variables for this managed service.
 NODE_ENV = "development"
-PUBLIC_API_ORIGIN = "https://api.hello.local.test"
+PUBLIC_API_ORIGIN = "https://{{ services.api.host }}"
 
 [services.api]
 # A routed backend with explicit HTTP health and IPv6 loopback binding.
-# This example uses its own hostname, but it could also share `hello.local.test`
+# This example uses its own hostname, but it could also share the label `hello`
 # under a distinct path such as `path = "/api/*"`.
 #
 # Docker-backed variant:
@@ -359,7 +364,7 @@ command = ["bun", "run", "api:dev"]
 cwd = "./api"
 port = 4000
 bindHost = "::1"
-host = "api.hello.local.test"
+host = "api-hello"
 dependsOn = ["db"]
 
 [services.api.env]
@@ -393,7 +398,7 @@ retries = 20
 managed = false
 dependsOn = ["api"]
 port = 4100
-host = "preview.hello.local.test"
+host = "preview-hello"
 # Fixed-port unmanaged services still get the default TCP health check on `127.0.0.1:4100`.
 # Add an explicit `[services.preview.health]` block if you want custom TCP or HTTP health instead.
 
@@ -401,7 +406,7 @@ host = "preview.hello.local.test"
 # A managed daemon lifecycle service.
 # Use this when devhost should own start/stop, but the service backgrounds itself instead of staying as one foreground child.
 port = 8025
-host = "mail.hello.local.test"
+host = "mail-hello"
 
 [services.mailpit.lifecycle]
 # `mode = "daemon"` switches from the default foreground `command` model to explicit lifecycle commands.

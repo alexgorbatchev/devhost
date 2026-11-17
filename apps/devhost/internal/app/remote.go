@@ -14,10 +14,7 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/services"
 )
 
-func resolveStartManifest(value manifest.Manifest, requested []string, useRemote bool) (services.ResolvedManifest, error) {
-	if !useRemote {
-		return services.ResolveRequestedServicePorts(value, requested)
-	}
+func resolveStartManifest(value manifest.Manifest, requested []string, useRemote, useLocal bool) (services.ResolvedManifest, error) {
 	path, err := config.Path(readEnvironment())
 	if err != nil {
 		return services.ResolvedManifest{}, err
@@ -25,6 +22,9 @@ func resolveStartManifest(value manifest.Manifest, requested []string, useRemote
 	shared, err := config.Read(path)
 	if err != nil {
 		return services.ResolvedManifest{}, err
+	}
+	if useLocal || (!useRemote && shared.Remote == nil) {
+		return services.ResolveLocalServicePorts(value, requested, shared.DomainSuffix)
 	}
 	if shared.Remote == nil {
 		return services.ResolvedManifest{}, &cliout.Failure{

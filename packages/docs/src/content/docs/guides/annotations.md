@@ -10,11 +10,11 @@ title: "Chat with a coding agent"
 </video>
 <!-- /guide-demo -->
 
+Ask your coding agent to change the app while showing it exactly what you mean: select page elements, draw over them, or attach a screenshot. **Chat** in the toolbar sends that context and your message to your installed Codex or Claude Code CLI, working in your project.
+
 :::note[Video coverage]
 The film shows the earlier terminal-based annotation workflow. Browser chat, drawing, and tab sharing below have no film yet.
 :::
-
-**Chat** in the toolbar runs your installed Codex or Claude Code CLI against your project. Point at elements on the page, draw over it, or attach a screenshot, and the agent gets that context with your message.
 
 ## Set up
 

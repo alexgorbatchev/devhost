@@ -2,7 +2,7 @@
 title: "Control API"
 ---
 
-The devtools toolbar talks to its stack through HTTP and WebSocket routes under `/__devhost__/` on the app's own hostname. This page documents those routes for integrations and scripts. They exist only while at least one devtools feature is on.
+Read stack status, control services, and connect your own tooling to a running app. The toolbar uses these HTTP and WebSocket routes under `/__devhost__/` on the app’s hostname. They exist only while at least one devtools feature is on.
 
 ## Request routing
 

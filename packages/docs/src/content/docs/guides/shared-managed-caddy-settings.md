@@ -10,7 +10,7 @@ title: "Proxy ports and listeners"
 </video>
 <!-- /guide-demo -->
 
-Every stack on a machine shares one Caddy, so its ports and listeners are machine settings. They live in the `[caddy]` table of the devhost config file, `config.toml`, not in any project's manifest.
+Choose which ports and network interfaces serve all your projects from one machine-wide configuration. Every stack shares one Caddy; its listeners live in the `[caddy]` table of `config.toml`, separate from project manifests.
 
 ## Where the file lives
 
@@ -21,6 +21,21 @@ The first location that applies:
 3. `~/.config/devhost/config.toml` (on every platform, including macOS)
 
 The file is optional; without it every setting keeps its default. You can also edit it from the browser with the [config editor](../devtools/#config-editor), which creates it when it is missing.
+
+## Local hostname suffix
+
+Keep project hosts portable with labels such as `host = "web"`. The top-level machine setting `domainSuffix` is a string, defaults to `.localhost`, and constructs local URLs such as `https://web.localhost`. To use a custom local development domain:
+
+```toml
+domainSuffix = "--devbox.example.com"
+
+[caddy]
+httpsPort = 443
+```
+
+This makes `web` resolve to `web--devbox.example.com` for local routing; configure DNS to point that name at this machine. Full hostnames remain valid for local-only routing. A configured `[remote]` selects its own public suffix automatically; `devhost start --local` explicitly selects the local suffix. See [Remote previews](../../stacks/remote-previews/) for enrollment and migration from `remote.localSuffix`.
+
+A dotfiles manager can own this file and link it into the selected config directory. Its repository layout is your choice; explicit `DEVHOST_CONFIG_DIR` and `XDG_CONFIG_HOME` overrides retain the precedence above. Credentials and enrollment belong to each machine, separate from project manifests.
 
 ## Settings
 
@@ -70,7 +85,7 @@ Ports below 1024 need privileges on Linux. `devhost caddy privileged-ports` gran
 
 ## Changing settings while stacks run
 
-Every running stack watches the config file. When you save it:
+Every running stack watches the config file. The Caddy settings below reload live; changes to active routing settings (`domainSuffix` and `[remote]`) require stopping the affected stacks and starting them again. When you save Caddy settings:
 
 - Caddy moves to the new settings in one reload, including a new `adminAddress`.
 - Services, routes, terminals, and chat sessions keep running.

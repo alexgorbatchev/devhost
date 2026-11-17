@@ -67,6 +67,6 @@ Everything else keeps running throughout, including chat sessions and connected 
 ## Related changes that are not hot reload
 
 - **Source files.** A service's `watch` paths mark it **changed** in the toolbar when files change; restart it with **Restart Changed** or the shortcut. See [Devtools](../../guides/devtools/#services-panel).
-- **`config.toml`.** The machine-wide Caddy settings reload on their own; see [Proxy ports and listeners](../../guides/shared-managed-caddy-settings/#changing-settings-while-stacks-run).
+- **`config.toml`.** The machine-wide Caddy settings reload on their own. Active routing settings (`domainSuffix` and `[remote]`) require stop/start; see [Proxy ports and listeners](../../guides/shared-managed-caddy-settings/#changing-settings-while-stacks-run).
 - **The config editor** saves through this same reload and reports when it finishes; see [Config editor](../../guides/devtools/#config-editor).
 - **The services you started with.** Hot reload keeps the command-line selection; stop and start the stack to change it.

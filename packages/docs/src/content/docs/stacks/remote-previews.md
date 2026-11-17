@@ -6,7 +6,7 @@ Your agent builds a web app on your laptop or devbox. You open the link on your 
 
 There is no VPN to install on your phone, no router port to open, and no public IP needed at home or on the laptop. You can review changes while the agent keeps working, without deploying each revision. A laptop can move between Wi-Fi networks: devhost reconnects and keeps the same URL. The machine serving the app must stay awake and online.
 
-Set up one shared gateway and enroll each development machine once. After that, `devhost start --remote --detach` starts the app and prints its preview URL. This guide sets up the gateway, **the laptop, and the devbox** shown below, using your Cloudflare-managed domain and an always-on Docker host you already own. No rented VPS is required. devhost uses a [Chisel](https://github.com/jpillora/chisel) relay and Cloudflare Tunnel to carry the connections; it does not create the gateway or DNS records for you.
+Set up one shared gateway and enroll each development machine once. After that, `devhost start --detach` starts the app and prints its preview URL. This guide sets up the gateway, **the laptop, and the devbox** shown below, using your Cloudflare-managed domain and an always-on Docker host you already own. No rented VPS is required. devhost uses a [Chisel](https://github.com/jpillora/chisel) relay and Cloudflare Tunnel to carry the connections; it does not create the gateway or DNS records for you.
 
 ## How the connection works
 
@@ -153,7 +153,7 @@ The Cloudflare dashboard should show the tunnel connected. A preview route may r
 
 ### Add apps or another machine
 
-The example publishes `web.localhost` separately on the laptop and devbox. For another app, add its exact public hostname to the tunnel and Access application, targeting `relay:18081` for the laptop or `relay:18082` for the devbox.
+The example publishes the service label `web` separately on the laptop and devbox. For another app, add its exact public hostname to the tunnel and Access application, targeting `relay:18081` for the laptop or `relay:18082` for the devbox.
 
 For a third machine, allocate another unused reverse port, a new credential restricted to that port, and a distinct public suffix. Add its protected hostname routes and machine configuration using the same steps below. Restart the relay after changing credentials; this also revokes established sessions and briefly reconnects other machines.
 
@@ -184,7 +184,6 @@ credentialFile = "relay.auth"
 fingerprint = "REPLACE_WITH_THE_RELAY_SHA256_FINGERPRINT"
 remotePort = 18081
 domainSuffix = "--laptop--preview.example.com"
-localSuffix = ".localhost"
 ```
 
 Create `relay.auth` beside `config.toml` using a local editor. Its single line is `laptop:` followed by the **laptop password** from the relay's `users.json`.
@@ -198,7 +197,6 @@ credentialFile = "relay.auth"
 fingerprint = "REPLACE_WITH_THE_RELAY_SHA256_FINGERPRINT"
 remotePort = 18082
 domainSuffix = "--devbox--preview.example.com"
-localSuffix = ".localhost"
 ```
 
 Create this machine's own `relay.auth` beside its `config.toml`. Its single line is `devbox:` followed by the **devbox password** from `users.json`. Do not copy the laptop's credential file onto the devbox.
@@ -213,7 +211,7 @@ chmod 600 "$DEVHOST_MACHINE_CONFIG/relay.auth"
 
 If someone else operates the gateway, obtain the endpoint, fingerprint, assigned port, suffix, and credential from them. An absolute credential path works too. Credentials stay out of the TOML editor, process arguments, and project files.
 
-Both examples expect manifest hosts ending in `.localhost`. If the repository uses a machine-specific suffix through an environment variable, set `localSuffix` to that actual suffix, or export the repository's suffix variable as `.localhost` when starting. The names must match; configuring remote access does not change the repository's environment variables.
+Keep service identity in the project: use `host = "web"` or aliases such as `host = ["web", "admin"]`. Machine configuration supplies the suffix. You can manage that configuration through your dotfiles or another configuration tool; devhost still reads the location selected above. Each machine needs its own enrollment and credential.
 
 | Setting          | Meaning                                                                                                                                     |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -222,22 +220,36 @@ Both examples expect manifest hosts ending in `.localhost`. If the repository us
 | `fingerprint`    | Complete base64 SHA-256 fingerprint of the relay's persistent Chisel key. The connector verifies it in addition to HTTPS.                   |
 | `remotePort`     | Reverse listener allocated to this machine, from 1 through 65535.                                                                           |
 | `domainSuffix`   | Public suffix assigned to this machine, including its leading dot or hyphen.                                                                |
-| `localSuffix`    | Suffix to replace in manifest hostnames. Defaults to `.localhost`.                                                                          |
 
-`web.localhost` becomes `web--laptop--preview.example.com` on the laptop and `web--devbox--preview.example.com` on the devbox. The public hostname is selected before service commands and environment templates resolve, so `host` references and `DEVHOST_HOST` describe the hostname the browser uses. Direct service references such as `{{ services.api.url }}` continue to address the local service.
+`web` becomes `web--laptop--preview.example.com` on the laptop and `web--devbox--preview.example.com` on the devbox. The public hostname is selected before service commands and environment templates resolve, so `host` references and `DEVHOST_HOST` describe the hostname the browser uses. Direct service references such as `{{ services.api.url }}` continue to address the local service.
 
-Use flat labels when the gateway certificate covers `*.example.com`: `web--laptop--preview.example.com` fits that wildcard; `web.app--laptop--preview.example.com` needs deeper certificate coverage. Hostnames must end in the configured local suffix or already use the public suffix. Every machine needs its own public suffix, reverse port, and credential.
+Use flat labels when the gateway certificate covers `*.example.com`: `web--laptop--preview.example.com` fits that wildcard; `web.app--laptop--preview.example.com` needs deeper certificate coverage. Remote mode requires a single DNS label and rejects dotted, full, and already-public hostnames. Every machine needs its own public suffix, reverse port, and credential.
+
+## Migrate full hostnames to portable labels
+
+Replace `host = "web.localhost"` with `host = "web"` in the project manifest, including aliases. Remote mode rejects full hostnames rather than stripping a suffix. Explicit full hostnames remain valid for local-only routing with `--local`.
+
+Remove `remote.localSuffix` from machine configuration. For the default local URL `web.localhost`, no replacement setting is needed. If this machine needs a custom local suffix, place `domainSuffix` **before any table header**, at the top level of `config.toml`:
+
+```toml
+domainSuffix = "--devbox.example.com"
+
+[remote]
+# Keep this machine's relay settings here.
+```
+
+Then `devhost start --local` resolves `web` to `web--devbox.example.com`; ordinary startup uses `[remote].domainSuffix` when enrolled. DNS for a custom local suffix must resolve to the development machine. Stop running stacks before changing routing configuration.
 
 ## Start and stop previews
 
-On **each machine**, open a repository with a `devhost.toml` that routes a service at `web.localhost`. For a standalone connectivity check, create an empty directory on each machine with these two files:
+On **each machine**, open a repository with a `devhost.toml` that routes a service with `host = "web"`. For a standalone connectivity check, create an empty directory on each machine with these two files:
 
 ```toml title="devhost.toml"
 name = "remote-preview-demo"
 
 [services.web]
 serve = "public"
-host = "web.localhost"
+host = "web"
 ```
 
 ```html title="public/index.html"
@@ -246,21 +258,21 @@ host = "web.localhost"
 <h1>Remote preview works</h1>
 ```
 
-Create the `public` directory before saving the HTML file. From beside `devhost.toml`, start shared Caddy, then opt the stack into remote access:
+Create the `public` directory before saving the HTML file. From beside `devhost.toml`, start shared Caddy, then start the stack:
 
 ```bash
 devhost caddy start
-devhost start --remote --detach
+devhost start --detach
 ```
 
-Run those commands on **both the laptop and the devbox**. Service selections work too: `devhost start --remote --detach web`. The command prints public HTTPS URLs only for routed services that started. Unrouted dependencies remain available to their local consumers.
+Run those commands on **both the laptop and the devbox**. Service selections work too: `devhost start --detach web`. The command prints public HTTPS URLs only for routed services that started. Unrouted dependencies remain available to their local consumers.
 
 | Started on | Expected preview URL with the example domain |
 | ---------- | -------------------------------------------- |
 | Laptop     | `https://web--laptop--preview.example.com`   |
 | Devbox     | `https://web--devbox--preview.example.com`   |
 
-Copy the URLs printed by devhost; they reflect your actual domain, service names, and route paths. Configuring `[remote]` alone does not enable remote mode: include `--remote` on startup. A repository wrapper such as `just run` needs to forward that flag; if it already forwards arguments, no justfile change is needed.
+Copy the URLs printed by devhost; they reflect your actual domain, service names, and route paths. A configured `[remote]` selects remote routing automatically; without it, startup uses local routing. Existing `just run` wrappers need no new remote flag. Use `--remote` (`-r`) to require enrollment explicitly, or `--local` (`-l`) to force local routing; the two flags are mutually exclusive. Invalid configuration or a failed relay connection stops startup with an error, without silently falling back to local URLs.
 
 Detached startup waits for service health, registered routes, and the relay connection. That confirms the connector is ready; verify the printed URL separately to check public DNS, gateway routing, certificates, and browser login. Repeating the command reports the existing remote stack and its URLs. Switching a running stack between local and remote mode requires stopping it first.
 
@@ -272,7 +284,7 @@ If the connector process itself exits unexpectedly, restart a remote stack to la
 
 The connector retries after network interruptions. The public URL stays the same after reconnecting, while open requests and WebSockets may need to reconnect. A sleeping or offline development machine cannot serve its apps. Gateway WebSocket support is required for the tunnel, HMR, and live devtools connections.
 
-Stop the remote stacks before changing `[remote]`, then start them again. Changes to these settings are rejected while a remote stack is running. Project manifest reloads and shared Caddy listener changes remain supported.
+Stop affected stacks before changing machine routing settings (`domainSuffix` or `[remote]`), then start them again. Active routing settings cannot change through hot reload. Detached starts, manifest reloads, and stack restarts preserve the selected mode and suffix. Project manifest reloads and shared Caddy listener changes remain supported.
 
 ## Gateway requirements
 
@@ -290,4 +302,4 @@ The connector preserves the incoming hostname when proxying to local Caddy and v
 
 If startup fails, read the printed stack log and the connector log under `<state>/remote/`. Check the credential file permissions, full fingerprint, assigned port, gateway reverse-forwarding permission, and WebSocket support. A browser login response on the connector endpoint is a routing error.
 
-If the connector starts but the URL fails, check the gateway's hostname rule, DNS, certificate coverage, and browser authentication. If a local-only stack was already running, stop it and restart with `--remote`; repeating a detached start does not change its access mode.
+If the connector starts but the URL fails, check the gateway's hostname rule, DNS, certificate coverage, and browser authentication. If a local-only stack was already running, stop it and start it again using the configured relay; repeating a detached start does not change its access mode.

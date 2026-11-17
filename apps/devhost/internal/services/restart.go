@@ -163,7 +163,7 @@ func captureStackLaunch(stack caddy.LiveStack) (stackLaunch, error) {
 	if !stack.Alive() {
 		return stackLaunch{}, fmt.Errorf("stack process changed during capture")
 	}
-	return stackLaunch{stack: stack, args: args[1:], directory: directory, environment: environment}, nil
+	return stackLaunch{stack: stack, args: preserveLaunchMode(args[1:], stack.Remote), directory: directory, environment: environment}, nil
 }
 
 // replaceLaunchLog drops the private launch variables from a captured
@@ -233,4 +233,21 @@ func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdo
 		}
 		time.Sleep(restartPollInterval)
 	}
+}
+
+// preserveLaunchMode freezes the recorded mode even if machine enrollment changed.
+func preserveLaunchMode(args []string, remoteMode bool) []string {
+	if len(args) == 0 || args[0] != "start" {
+		return slices.Clone(args)
+	}
+	index := slices.Index(args, "--")
+	if index < 0 {
+		index = len(args)
+	}
+	flags := []string{fmt.Sprintf("--remote=%t", remoteMode), fmt.Sprintf("--local=%t", !remoteMode)}
+	start := index
+	if index >= 2 && strings.HasPrefix(args[index-2], "--remote=") && strings.HasPrefix(args[index-1], "--local=") {
+		start -= 2
+	}
+	return slices.Replace(slices.Clone(args), start, index, flags...)
 }

@@ -10,7 +10,7 @@ title: "Docker and external services"
 </video>
 <!-- /guide-demo -->
 
-devhost can give a Docker container, or any server something else runs, an HTTPS hostname. It routes to a port published on this machine; it cannot reach container names or addresses inside a Docker network.
+Open a container-backed app at a stable HTTPS URL alongside the rest of your stack. devhost can route to a Docker container or any server another tool runs, using a port published on this machine; Docker-internal names and addresses are outside that route.
 
 ## Route a container that Docker runs
 
@@ -20,7 +20,7 @@ Publish the container's port on the host, for example `ports: ["4100:4100"]` in 
 [services.preview]
 managed = false
 port = 4100
-host = "preview.hello.localhost"
+host = "preview-hello"
 ```
 
 devhost claims the hostname and port, waits until the port accepts connections, and routes to it. It never starts, stops, or restarts the container.
@@ -41,7 +41,7 @@ health = { process = true }
 managed = false
 dependsOn = ["infra"]
 port = 4100
-host = "preview.hello.localhost"
+host = "preview-hello"
 ```
 
 ## Let devhost run Compose
@@ -52,7 +52,7 @@ When devhost should start and stop the container itself, make it an ordinary ser
 [services.api]
 command = ["docker", "compose", "up", "--build", "api"]
 port = 4000
-host = "api.hello.localhost"
+host = "api-hello"
 health = { http = "http://127.0.0.1:4000/healthz" }
 ```
 

@@ -10,7 +10,7 @@ title: "Environment variables"
 </video>
 <!-- /guide-demo -->
 
-devhost passes each service its port, its hostname, and the ports of the other services, alongside any variables you set yourself. You can also read your own environment inside the manifest.
+Give each service the addresses and settings it needs without hardcoding ports that change between runs. devhost supplies its port, hostname, and sibling service ports alongside variables you set; manifest templates can also read your environment.
 
 ## Set variables for a service
 
@@ -53,7 +53,7 @@ name = "{{ env.USER }}-stack"
 [services.web]
 command = ["bun", "run", "dev"]
 port = "auto"
-host = "web-{{ env.USER }}.localhost"
+host = "web-{{ env.USER }}"
 ```
 
 - A name starts with a letter or underscore, followed by letters, digits, or underscores.

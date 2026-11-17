@@ -136,7 +136,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, orderError)
 		}
 
-		resolvedManifest, resolveError := resolveStartManifest(validatedManifest, arguments.Services, arguments.Remote)
+		resolvedManifest, resolveError := resolveStartManifest(validatedManifest, arguments.Services, arguments.Remote, arguments.Local)
 		if resolveError != nil {
 			return fail(stderr, resolveError)
 		}

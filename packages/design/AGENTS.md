@@ -15,7 +15,7 @@ Single source of the devhost design tokens (colors, radii, host markers, termina
 
 - `just design test` and the TypeScript check use the root `test-support/runTests.sh` for command-owned temporary storage, including Node's compile cache, and cancellation cleanup. Preserve that wrapper when changing those commands.
 
-- The root `devhost.toml` serves this package at `https://devhost-design.localhost/` with the shared `DEVHOST_DEV_EXT` suffix override. Its `alwaysStart` native `serve` service stays available with every service selection. Use `/references/design-system.html`, `/references/devtools.html`, or `/references/docs.html` for the references, with live `tokens.css` loading.
+- The root `devhost.toml` serves this package with short host `devhost-design`: `https://devhost-design.localhost/` by default locally, or the URL printed for the configured machine suffix or relay. Its `alwaysStart` native `serve` service stays available with every service selection. Use `/references/design-system.html`, `/references/devtools.html`, or `/references/docs.html` for the references, with live `tokens.css` loading.
 
 - `src/constants.ts` is the source of truth. `DESIGN_TOKENS` renders into `tokens.css` as `--dh-*` custom properties; `TERMINAL_PALETTES` feeds xterm, which takes literal colors.
 - `tokens.css` is generated and committed so CSS `@import` and the `file://` design references can load it without a build step. Never edit it by hand.

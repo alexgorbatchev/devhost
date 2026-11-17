@@ -10,7 +10,7 @@ title: "Route apps over HTTPS"
 </video>
 <!-- /guide-demo -->
 
-devhost routes every service with a `host` through one shared [Caddy](https://caddyserver.com/) server, which serves it over HTTPS on that hostname.
+Use stable HTTPS URLs for your apps instead of remembering ports, and test cookies and authentication callbacks over HTTPS. devhost routes services with a `host` through one shared [Caddy](https://caddyserver.com/) server on the machine.
 
 ## Prepare Caddy
 
@@ -52,7 +52,7 @@ Give a service a `host` and the `port` it listens on:
 [services.web]
 command = ["bun", "run", "dev"]
 port = 3000
-host = "app.localhost"
+host = "app"
 ```
 
 `https://app.localhost` now reaches `127.0.0.1:3000`. Startup prints every URL, such as `web (primary): https://app.localhost`.
@@ -65,12 +65,12 @@ Services in one manifest can split a hostname by path. A request goes to the mos
 [services.web]
 command = ["bun", "run", "web:dev"]
 port = 3000
-host = "app.localhost"
+host = "app"
 
 [services.api]
 command = ["bun", "run", "api:dev"]
 port = 4000
-host = "app.localhost"
+host = "app"
 path = "/api/*"
 ```
 
@@ -84,7 +84,7 @@ Set `host` to an array to route several hostnames to one service:
 [services.web]
 command = ["bun", "run", "dev"]
 port = 3000
-host = ["app.localhost", "alias.localhost"]
+host = ["app", "alias"]
 ```
 
 - Every hostname uses the same port and `path`.
@@ -99,7 +99,7 @@ Some dev servers, such as Bun's HTML/HMR server, reject requests addressed to a 
 [services.web]
 command = ["bun", "src/index.ts"]
 port = "auto"
-host = "app.localhost"
+host = "app"
 proxyLocalOrigin = true
 ```
 
@@ -112,11 +112,13 @@ The server then sees its own local address, such as `127.0.0.1:41234`, in the `H
 
 ## Hostnames and DNS
 
-devhost routes hostnames; it does not create DNS records. A hostname must already resolve to the machine running devhost.
+Use portable service labels such as `host = "app"`. Local routing appends the machine’s top-level `domainSuffix` (default `.localhost`); enrolled machines automatically use [remote preview routing](../../stacks/remote-previews/) unless started with `--local`. devhost resolves labels before service templates.
 
-- **`.localhost` names**, such as `app.localhost` and `api.app.localhost`, resolve to the local machine everywhere and need no setup. Use them unless you need a real domain.
+devhost routes hostnames; it does not create DNS records. For local routing, a hostname must resolve to the development machine. For remote previews, DNS points to the gateway.
+
+- **`.localhost` names**, such as `app.localhost` and `api-app.localhost`, resolve to the local machine everywhere and need no setup. Use them unless you need a real domain.
 - **Other names** need `A`/`AAAA` records pointing at `127.0.0.1`/`::1`, a wildcard DNS record, or `/etc/hosts` entries (exact names only).
-- **Other devices**, such as a phone, cannot use `.localhost`, which always means the device itself. Route a hostname that resolves to the dev machine's network address. Caddy listens on all interfaces by default, and the device has to trust Caddy's certificate authority.
+- **Other devices**, such as a phone, cannot use `.localhost`, which always means the device itself. Use [remote previews](../../stacks/remote-previews/) for access from other networks. For direct LAN access, route a hostname that resolves to the dev machine’s network address. Caddy listens on all interfaces by default, and the device has to trust Caddy's certificate authority.
 
 The hostname selected by `[caddy].stackDirectoryHost` in the shared `config.toml` (default `devhost.localhost`) is reserved for the [running-stack directory](../stack-lifecycle/#running-stacks-in-the-browser), so no service can use it. That page accepts local clients by default; `[caddy].stackDirectoryAllowRemote = true` in `config.toml` enables reading it from other devices.
 

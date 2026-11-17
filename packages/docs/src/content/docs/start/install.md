@@ -2,7 +2,7 @@
 title: "Install"
 ---
 
-devhost is a single binary. Download it, put it on your `PATH`, and prepare Caddy once per machine.
+Get your first development stack running on stable HTTPS URLs. Install the devhost binary on your `PATH`, then prepare its shared Caddy proxy once per machine.
 
 ## Download the binary
 

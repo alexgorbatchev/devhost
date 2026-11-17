@@ -16,7 +16,6 @@ type Settings struct {
 	Fingerprint    string `json:"fingerprint"`
 	RemotePort     int    `json:"remotePort"`
 	DomainSuffix   string `json:"domainSuffix"`
-	LocalSuffix    string `json:"localSuffix"`
 }
 
 // Backend names the machine's Caddy listener, independently of public HTTPS.

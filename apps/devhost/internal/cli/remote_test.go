@@ -38,3 +38,15 @@ func TestRemoteFlagIsScopedToStart(t *testing.T) {
 		}
 	}
 }
+
+func TestLocalStartAndConflictingModes(t *testing.T) {
+	for _, flag := range []string{"--local", "-l"} {
+		got, err := ParseCommandLineArguments([]string{"start", flag, "--detach", "web"}, io.Discard, io.Discard)
+		if err != nil || !got.Local || got.Remote || !got.Detach || len(got.Services) != 1 || got.Services[0] != "web" {
+			t.Fatalf("local start %s: %#v, %v", flag, got, err)
+		}
+	}
+	if _, err := ParseCommandLineArguments([]string{"start", "--local", "--remote"}, io.Discard, io.Discard); err == nil || !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Fatalf("conflicting modes: %v", err)
+	}
+}

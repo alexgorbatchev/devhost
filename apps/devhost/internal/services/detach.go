@@ -124,7 +124,7 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 		if existing.Remote != (options.Manifest.Remote != nil) {
 			return &cliout.Failure{
 				Err:  fmt.Errorf("the running stack uses a different remote preview mode"),
-				Hint: "Stop this stack with devhost stop, then start it again with the requested --remote setting.",
+				Hint: "Stop this stack with devhost stop, then start it again with --local or the configured relay mode.",
 			}
 		}
 		return reportDetachedStack(options.Stdout, *existing, true)

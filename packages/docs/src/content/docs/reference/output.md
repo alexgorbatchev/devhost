@@ -2,7 +2,7 @@
 title: "Terminal output"
 ---
 
-devhost writes for people by default and for agents and scripts when `AGENT=1` is set. Both modes print the same information with the same exit codes; only the layout differs.
+Identify which service produced a message and give scripts predictable output without terminal decoration. devhost writes for people by default and for agents and scripts with `AGENT=1`; both modes carry the same information and exit codes.
 
 ## Stack logs
 
@@ -68,7 +68,7 @@ Caddy's full log stays in `<state>/caddy/caddy.runtime.log`; see [Files and dire
 | `Already running hello (PID 48211).`                  | A stack from the same manifest was already running in the requested local or remote mode, so nothing was started.                                                                                           |
 | `Log: ~/.local/state/devhost/logs/stack-<sha256>.log` | The file the stack's output is appended to; see [Files and directories](../cli/#files-and-directories). Left out when the running stack was started in the foreground, which has no log.                    |
 
-With [`--remote`](../../stacks/remote-previews/), readiness also requires a connected relay, and both a new start and an already-running remote stack print public HTTPS URLs. This does not verify public DNS or gateway authentication. A repeat requesting a different local or remote mode fails and asks you to stop the existing stack first.
+With [remote routing](../../stacks/remote-previews/) selected automatically by machine configuration or explicitly with `--remote`, readiness also requires a connected relay, and both a new start and an already-running remote stack print public HTTPS URLs. This does not verify public DNS or gateway authentication. A repeat requesting a different local or remote mode fails and asks you to stop the existing stack first.
 
 A failed start writes to stderr and exits `1`. Its last line names the cause and the full log. When the command launched a stack that then failed or that it stopped, it first prints `Startup log tail:` and up to the last 30 lines this start wrote to the log, as the stack wrote them. The first `[ERROR]` line below is the stack's own, from the log; the last two are the command's:
 

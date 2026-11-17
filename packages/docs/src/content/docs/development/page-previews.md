@@ -2,7 +2,7 @@
 title: "Preview standalone pages"
 ---
 
-devhost renders its own pages for unknown hostnames, starting and crashed services, app errors, folder listings, and Markdown. A source checkout can show all of them at once, without breaking anything.
+Check error pages, recovery controls, and file listings without crashing a real service. The page gallery renders devhost’s built-in pages together from a source checkout.
 
 ## The page gallery
 
@@ -29,11 +29,7 @@ The gallery exists only in a development build (see [Build from source](../build
 
 ## Hostnames for the development stack
 
-The development manifests build every hostname from a prefix plus `DEVHOST_DEV_EXT`. The tracked `.envrc` sets it to `.localhost`; to use another suffix, export it in the ignored `.envrc.local`, including the leading dot, and reload direnv:
-
-```sh
-export DEVHOST_DEV_EXT='.example.test'
-```
+The development manifests use short service labels. For local routing, the machine’s top-level `domainSuffix` defaults to `.localhost`; use `devhost start --local` (or forward `--local` through the repository wrapper) on a machine enrolled for remote previews. Configure a different local suffix in the [machine config](../../guides/shared-managed-caddy-settings/#local-hostname-suffix), then stop and start the stack. Read the printed URL before opening the gallery.
 
 ## A real startup failure
 

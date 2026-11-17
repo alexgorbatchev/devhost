@@ -13,6 +13,7 @@ func TestManifestHostForms(t *testing.T) {
 		host      string
 		wantError string
 	}{
+		{name: "portable labels", host: `["web", "web-alias"]`},
 		{name: "single", host: `"app.localhost"`},
 		{name: "array", host: `["app.localhost", "alias.localhost"]`},
 		{name: "one element array", host: `["app.localhost"]`},
@@ -66,6 +67,24 @@ func TestManifestChecksEveryHostPath(t *testing.T) {
 			}
 			if tc.wantError && !strings.Contains(err.Error(), "overlaps another routed service") {
 				t.Fatalf("error = %v", err)
+			}
+		})
+	}
+}
+
+func TestHostDNSLength(t *testing.T) {
+	for _, tc := range []struct {
+		name, host string
+		valid      bool
+	}{
+		{name: "maximum label", host: strings.Repeat("a", 63) + ".example.com", valid: true},
+		{name: "oversized label", host: strings.Repeat("a", 64) + ".example.com"},
+		{name: "maximum hostname", host: strings.Repeat(strings.Repeat("a", 63)+".", 3) + strings.Repeat("b", 61), valid: true},
+		{name: "oversized hostname", host: strings.Repeat(strings.Repeat("a", 63)+".", 3) + strings.Repeat("b", 62)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsValidHost(tc.host); got != tc.valid {
+				t.Fatalf("hostname validity = %v, want %v", got, tc.valid)
 			}
 		})
 	}

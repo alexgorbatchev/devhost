@@ -6,19 +6,20 @@ When configuring `devhost.toml` for Vite, Storybook, or other modern frontend de
 
 ## 1. Vite Security: "Allowed Hosts" (`server.allowedHosts`)
 
-Since Vite v6, the dev server enforces host validation by default to protect against DNS rebinding attacks. When requests are proxied via custom `devhost` domains (e.g. `*.localhost` or `devhost.localhost`), Vite will block the connection.
+Vite allows `localhost`, `.localhost` subdomains, and IP addresses by default. Add the resolved public hostname when using a custom local suffix or remote preview domain. See [Vite’s host validation settings](https://vite.dev/config/server-options#server-allowedhosts).
 
 ### For Storybook (Vite-based)
 
-Storybook's Vite builder provides an `allowedHosts` config option. To support routing custom domains:
+Storybook validates requests through [`core.allowedHosts`](https://storybook.js.org/docs/api/main-config/main-config-core#allowedhosts); its Vite builder also uses Vite's `server.allowedHosts`. To support routing custom domains:
 
 1. In `devhost.toml`, pass the allowed domains as an environment variable to the Storybook service:
    ```toml
    [services.storybook.env]
-   __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "devhost{{ env.DEVHOST_DEV_EXT }}"
+   __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ services.storybook.host }}"
    ```
-2. Ensure `.storybook/main.ts` parses this environment variable and merges it into Storybook's `core.allowedHosts` and Vite's `server.allowedHosts` inside the `viteFinal` hook:
+2. Parse the environment variable into `storybookAllowedHosts` in `.storybook/main.ts`, splitting comma-separated values and trimming empty entries. Set `core.allowedHosts` on the Storybook configuration and merge the same list into Vite's `server.allowedHosts` in `viteFinal`. With `mergeConfig` imported from `vite`, these configuration properties are:
    ```typescript
+   core: { allowedHosts: storybookAllowedHosts },
    viteFinal(existingConfig) {
      if (storybookAllowedHosts.length === 0) return existingConfig;
      return mergeConfig(existingConfig, {
@@ -29,7 +30,7 @@ Storybook's Vite builder provides an `allowedHosts` config option. To support ro
 
 ### For Astro or other general Vite Apps
 
-- Configure `server.allowedHosts: true` (or specify explicit hosts) in your local application dev config to allow the devhost routed proxy (as done in `packages/docs/astro.config.mjs` with `server.allowedHosts: true`).
+- Configure an explicit `server.allowedHosts` list containing the resolved devhost hostname, or use Vite’s `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` environment variable as above. Allowing every hostname with `true` exposes the server to DNS rebinding.
 
 ---
 

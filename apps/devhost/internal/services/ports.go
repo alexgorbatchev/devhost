@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/remote"
 )
@@ -35,6 +36,7 @@ type ResolvedManifest struct {
 	// config. Remote URLs use the public HTTPS port instead of this local port.
 	Caddy                 caddy.ManagedCaddyGlobalSettings
 	Remote                *remote.Settings
+	DomainSuffix          string
 	Devtools              manifest.DevtoolsConfig
 	Worktrees             manifest.WorktreesConfig
 	ManifestDirectoryPath string
@@ -99,6 +101,11 @@ func ResolveRequestedServicePorts(value manifest.Manifest, requested []string) (
 	return resolveServicePorts(value, portResolutionOptions{Requested: requested})
 }
 
+// ResolveLocalServicePorts expands portable host labels with the machine suffix.
+func ResolveLocalServicePorts(value manifest.Manifest, requested []string, domainSuffix string) (ResolvedManifest, error) {
+	return resolveServicePorts(value, portResolutionOptions{Requested: requested, DomainSuffix: domainSuffix})
+}
+
 // ResolveRemoteServicePorts selects public hostnames before resolving service
 // references in commands, origins, and health checks.
 func ResolveRemoteServicePorts(value manifest.Manifest, requested []string, settings remote.Settings) (ResolvedManifest, error) {
@@ -113,20 +120,26 @@ func ResolveRemoteServicePorts(value manifest.Manifest, requested []string, sett
 }
 
 type portResolutionOptions struct {
-	Requested []string
-	Preserved map[string]int
-	Excluded  map[string]map[int]struct{}
-	Remote    *remote.Settings
+	Requested    []string
+	Preserved    map[string]int
+	Excluded     map[string]map[int]struct{}
+	Remote       *remote.Settings
+	DomainSuffix string
 }
 
 func resolveServicePorts(value manifest.Manifest, options portResolutionOptions) (ResolvedManifest, error) {
 	configuration := value
+	if options.DomainSuffix == "" {
+		options.DomainSuffix = config.DefaultDomainSuffix
+	}
+	var err error
 	if options.Remote != nil {
-		var err error
 		value, err = remoteManifestHosts(value, *options.Remote)
-		if err != nil {
-			return ResolvedManifest{}, err
-		}
+	} else {
+		value, err = resolveManifestHosts(value, options.DomainSuffix, false)
+	}
+	if err != nil {
+		return ResolvedManifest{}, err
 	}
 	preserved := options.Preserved
 	excludedPortsByHost := collectFixedPorts(value.Services)
@@ -247,6 +260,7 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 		configuration: &configuration,
 		requested:     slices.Clone(options.Requested),
 		Remote:        options.Remote,
+		DomainSuffix:  options.DomainSuffix,
 
 		Devtools:              value.Devtools,
 		Worktrees:             value.Worktrees,

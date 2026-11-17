@@ -3,7 +3,7 @@ name = "devhost"
 [services.design]
 alwaysStart = true
 serve = "packages/design"
-host = "devhost-design{{ env.DEVHOST_DEV_EXT }}"
+host = "devhost-design"
 
 [devtools.shortcuts]
 restartServices = "alt+ctrl+r"
@@ -13,7 +13,7 @@ primary = true
 command = ["sh", "-c", "exec ./node_modules/.bin/storybook dev --ci --port \"$PORT\""]
 cwd = "packages/devhost-ui"
 port = "auto"
-host = "devhost-storybook{{ env.DEVHOST_DEV_EXT }}"
+host = "devhost-storybook"
 
 [services.storybook.env]
 __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ services.storybook.host }}"
@@ -22,7 +22,7 @@ __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS = "{{ services.storybook.host }}"
 command = ["just", "run"]
 cwd = "packages/playground/backend"
 port = "auto"
-host = "devhost-playground{{ env.DEVHOST_DEV_EXT }}"
+host = "playground"
 path = "/api/*"
 
 [services.playground-frontend]
@@ -30,7 +30,7 @@ command = ["just", "run"]
 cwd = "packages/playground/frontend"
 bindHost = "127.0.0.1"
 port = "auto"
-host = "playground{{ env.DEVHOST_DEV_EXT }}"
+host = "playground"
 path = "/"
 # Bun HTML/HMR requires Host and Origin to use bindHost plus the assigned port.
 proxyLocalOrigin = true
@@ -45,7 +45,7 @@ alwaysStart = true
 command = ["just", "archify", "run"]
 port = "auto"
 bindHost = "127.0.0.1"
-host = "devhost-archify{{ env.DEVHOST_DEV_EXT }}"
+host = "devhost-archify"
 
 [services.archify.health]
 http = "/"

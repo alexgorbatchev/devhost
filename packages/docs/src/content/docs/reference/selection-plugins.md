@@ -2,7 +2,7 @@
 title: "Selection plugins"
 ---
 
-When you select an element for chat, devhost's built-in selector picks a DOM element under the pointer. A selection plugin replaces that choice on your page: for example, to select a whole chart instead of one of its SVG paths, or to point at items drawn on a canvas.
+Let users send a whole chart or a canvas object to chat instead of an incidental DOM node. A selection plugin replaces devhost’s default element-under-the-pointer choice with the meaningful object your page defines.
 
 ## Register a plugin
 

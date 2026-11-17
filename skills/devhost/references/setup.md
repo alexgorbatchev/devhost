@@ -1,6 +1,6 @@
 ---
 created_on: 2026-06-26 21:23
-last_modified: 2026-10-25 11:13
+last_modified: 2026-11-17 06:55
 status: current
 ---
 
@@ -29,23 +29,17 @@ Before proposing any manifest shape, inspect the repository to answer these ques
 - Docker or Compose files (when present).
 - Environment examples (`.env.example`) and app config files that declare ports or bind hosts.
 
-_If discovery does not produce enough confidence to assign a command, port, health check, or manifest location, stop and ask the user instead of inventing values._
+Resolve commands, ports, health checks, and manifest placement from this evidence. Ask only for consequential missing information and continue independent discovery while it is pending.
 
 ---
 
-## 2. Base Domain Prompt
+## 2. Portable service names
 
-The user chooses the routed hostnames. Ask one short question before writing any `host = ...` fields. Recommend `*.localhost` as the default suggestion because it is the safest zero-config choice.
+Read the machine configuration before choosing routing. Reuse the repository's established app labels, or derive distinct labels from the discovered project and service names. Write short DNS labels such as `host = "shop"` and `host = "shop-api"`; services sharing one browser origin use the same label with different paths. Give `host` to routed services alone; background services stay without one.
 
-Use a prompt in this shape:
+The machine's top-level `domainSuffix` defaults to `.localhost` for local routing. A configured `[remote]` selects remote routing automatically and appends its own `domainSuffix`; read [remote previews](remote-previews.md) before configuring or using it. `--local` selects local routing on an enrolled machine. Resolve machine-specific suffixes in the environment's configuration source so the manifest stays portable.
 
-> Which base domain should I use for routed services? Recommended default: a `*.localhost` domain such as `app.localhost` or `hello.localhost`.
-
-### After the user answers:
-
-- If there is one routed app, use the base domain directly for the primary service.
-- If there are multiple routed HTTP services, derive clear names from the base domain such as `api.<base-domain>` or `admin.<base-domain>` unless the user asked for path-based composition instead.
-- Give `host` to routed services alone; background services stay without one.
+Use an explicitly requested full hostname for local-only routing. Ask about the domain only when a requested DNS choice is unresolved; existing machine settings and accepted user choices supply that decision for ordinary setup. Remote routing requires short labels and reports dotted values as configuration errors.
 
 ---
 
@@ -55,6 +49,7 @@ When writing the finalized manifest:
 
 - Place `devhost.toml` at the discovered manifest location.
 - Keep comments minimal unless the user explicitly asks for an annotated file.
+- Ensure shared Caddy is running with `devhost caddy start`, start through the repository's established wrapper when available, and verify the routed page at the URL printed by devhost before sharing it.
 - Explain any assumptions that still remain.
 - Name any unresolved gaps before claiming the manifest is ready.
 
@@ -78,7 +73,7 @@ Start the shared proxy with `devhost caddy start` before launching stacks, and s
 
 Set the proxy's listeners in the devhost config file, which every stack on the machine shares: `config.toml` in `$DEVHOST_CONFIG_DIR`, else in `$XDG_CONFIG_HOME/devhost`, else in `~/.config/devhost`. Its `[caddy]` table takes `adminAddress` (default `"127.0.0.1:20197"`), `bindHost` (`"127.0.0.1"`, `"0.0.0.0"`, `"::1"`, or `"::"`; default `"0.0.0.0"`), `http` (default `false`), `httpPort` (default `80`), `httpsPort` (default `443`), `stackDirectoryHost` (hostname string, default `"devhost.localhost"`), and `stackDirectoryAllowRemote` (bool, default `false`). The stack directory follows this hostname and HTTPS port, and serves HTTP on `httpPort` when `http = true`; saving a new hostname moves it. Enable `stackDirectoryAllowRemote` for other devices to read URLs and raw configuration files without authentication; read-only and same-origin checks remain enforced, and the per-stack snapshot stays local-only. A hostname owned by a running project is rejected. A missing file uses the defaults; unknown keys, out-of-range ports, and an empty admin address are rejected. A manifest `[caddy]` table is rejected with an error naming the config file.
 
-`devhost caddy start` starts the proxy with the config file's settings, and each stack applies them when it starts. Every running stack watches the file: saving it moves the proxy with one reload sent to the admin address it runs, so `adminAddress` changes like any port, and each stack prints its service URLs again. Services, routes, and sessions keep running. An invalid file, or settings Caddy rejects, prints `shared Caddy settings rejected` with the reason and leaves the proxy on the settings it runs; check for that line before reporting a change applied.
+`devhost caddy start` starts the proxy with the config file's settings, and each stack applies them when it starts. Every running stack watches the file: saving `[caddy]` settings moves the proxy with one reload sent to the admin address it runs, so `adminAddress` changes like any port, and each stack prints its service URLs again. Services, routes, and sessions keep running. An invalid file, or settings Caddy rejects, prints `shared Caddy settings rejected` with the reason and leaves the proxy on the settings it runs; check for that line before reporting a change applied.
 
 The proxy keeps its settings when the last route is removed. `devhost caddy stop` and `devhost caddy trust` reach it through the admin address it runs.
 
@@ -90,7 +85,7 @@ Save service changes to the active checkout's manifest or an included manifest w
 
 Define app-owned selections under `[groups]` in included manifests, such as `app = ["app-frontend"]`, and run `devhost start app` from the root. Groups merge alongside services. Each group contains a non-empty array of service names from the merged manifest, with dependencies supplied by `dependsOn`. Group names match service naming rules, are unique across includes, and are distinct from service names. Nested groups and unknown members are rejected. Selected groups use their current membership on reload; removing a selected group removes its selection while other requested names and `alwaysStart` services remain. Stack restarts retain the requested names.
 
-Every setting reloads: `name`, `killZombies`, devtools settings, including chat and page selection, and `[worktrees].enabled` apply without restarting devhost or its services. Set `[devtools.chat].prompt` to replace the default worktree, validation, local-main merge, and cleanup instructions, or to an empty string to omit them. The next send in an existing conversation receives the reloaded prompt. Running chat sessions keep running when chat is turned off, and reappear when it is turned back on. Turning worktrees on keeps the running checkout and forgets a selection an earlier run saved; turning them off while another checkout runs switches back to the root checkout, whose manifest then applies. Changing `devtools.idleTimeout` takes effect unless `--idle-timeout` is set.
+Every manifest setting reloads: `name`, `killZombies`, devtools settings, including chat and page selection, and `[worktrees].enabled` apply without restarting devhost or its services. Set `[devtools.chat].prompt` to replace the default worktree, validation, local-main merge, and cleanup instructions, or to an empty string to omit them. The next send in an existing conversation receives the reloaded prompt. Running chat sessions keep running when chat is turned off, and reappear when it is turned back on. Turning worktrees on keeps the running checkout and forgets a selection an earlier run saved; turning them off while another checkout runs switches back to the root checkout, whose manifest then applies. Changing `devtools.idleTimeout` takes effect unless `--idle-timeout` is set.
 
 Expect affected services, their dependents, and affected repository groups to restart in dependency order after stopping in reverse order. Compatible automatic ports and saved checkout selections are retained. Changing ports exported through `DEVHOST_PORT_*` can restart otherwise unchanged services. Existing chat sessions and control connections remain available.
 

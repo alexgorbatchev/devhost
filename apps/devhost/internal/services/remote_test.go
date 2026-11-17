@@ -16,8 +16,8 @@ func TestRemoteHostSelectionPrecedesTemplatesAndSurvivesResolution(t *testing.T)
 	settings := remote.Settings{DomainSuffix: "--laptop.preview.example.com"}
 	port := nettest.ReservePort(t)
 	configuration := manifest.Manifest{ManifestPath: "/project/devhost.toml", ServiceOrder: []string{"web", "api", "worker"}, Services: map[string]manifest.ValidatedService{
-		"web":    {Name: "web", Hosts: []string{"app.localhost", "alias.localhost"}, Path: copyStringPointer("/*"), BindHost: "127.0.0.1", Port: &manifest.PortConfig{Auto: true}, Command: []string{"server", "--host", "{{ services.web.host }}"}},
-		"api":    {Name: "api", Hosts: []string{"app.localhost"}, Path: copyStringPointer("/api/*"), BindHost: "127.0.0.1", Port: &manifest.PortConfig{Number: port}, Env: map[string]string{"PUBLIC_ORIGIN": "https://{{ services.web.host }}"}, Command: []string{"api"}},
+		"web":    {Name: "web", Hosts: []string{"app", "alias"}, Path: copyStringPointer("/"), BindHost: "127.0.0.1", Port: &manifest.PortConfig{Auto: true}, Command: []string{"server", "--host", "{{ services.web.host }}"}},
+		"api":    {Name: "api", Hosts: []string{"app"}, Path: copyStringPointer("/api/*"), BindHost: "127.0.0.1", Port: &manifest.PortConfig{Number: port}, Env: map[string]string{"PUBLIC_ORIGIN": "https://{{ services.web.host }}"}, Command: []string{"api"}},
 		"worker": {Name: "worker", Command: []string{"worker"}, Health: &manifest.HealthConfig{Process: true}, Env: map[string]string{"PUBLIC_ORIGIN": "https://{{ services.web.host }}"}},
 	}}
 	resolved, err := ResolveRemoteServicePorts(configuration, []string{"web", "api"}, settings)
@@ -38,7 +38,7 @@ func TestRemoteHostSelectionPrecedesTemplatesAndSurvivesResolution(t *testing.T)
 		}
 	}
 	verify(t, resolved)
-	if configuration.Services["web"].Hosts[0] != "app.localhost" || resolved.configuration.Services["web"].Hosts[0] != "app.localhost" {
+	if configuration.Services["web"].Hosts[0] != "app" || resolved.configuration.Services["web"].Hosts[0] != "app" {
 		t.Fatal("remote resolution mutated the accepted local configuration")
 	}
 	for _, tc := range []struct {
@@ -65,16 +65,16 @@ func TestRemoteHostSelectionPrecedesTemplatesAndSurvivesResolution(t *testing.T)
 
 func TestRemoteManifestHostValidation(t *testing.T) {
 	for _, tc := range []struct {
-		name, host, localSuffix, want, failure string
+		name, host, want, failure string
 	}{
-		{name: "default suffix", host: "app.localhost", want: "app--machine.example.com"},
-		{name: "machine suffix", host: "app--local.example.com", localSuffix: "--local.example.com", want: "app--machine.example.com"},
-		{name: "already public", host: "app--machine.example.com", want: "app--machine.example.com"},
-		{name: "foreign hostname", host: "app.other.example.com", failure: "must end with remote.localSuffix"},
+		{name: "short label", host: "app", want: "app--machine.example.com"},
+		{name: "local domain", host: "app.localhost", failure: "single DNS label"},
+		{name: "already public", host: "app--machine.example.com", failure: "single DNS label"},
+		{name: "foreign hostname", host: "app.other.example.com", failure: "single DNS label"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := manifest.Manifest{Services: map[string]manifest.ValidatedService{"web": {Hosts: []string{tc.host}, Path: copyStringPointer("/*")}}}
-			got, err := remoteManifestHosts(m, remote.Settings{DomainSuffix: "--machine.example.com", LocalSuffix: tc.localSuffix})
+			got, err := remoteManifestHosts(m, remote.Settings{DomainSuffix: "--machine.example.com"})
 			if tc.failure != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.failure) {
 					t.Fatalf("error = %v, want %s", err, tc.failure)
@@ -87,10 +87,10 @@ func TestRemoteManifestHostValidation(t *testing.T) {
 		})
 	}
 	m := manifest.Manifest{Services: map[string]manifest.ValidatedService{
-		"first":  {Hosts: []string{"app.localhost"}, Path: copyStringPointer("/*")},
-		"second": {Hosts: []string{"app--machine.example.com"}, Path: copyStringPointer("/*")},
+		"first":  {Hosts: []string{"app"}, Path: copyStringPointer("/*")},
+		"second": {Hosts: []string{"app"}, Path: copyStringPointer("/*")},
 	}}
-	if _, err := remoteManifestHosts(m, remote.Settings{DomainSuffix: "--machine.example.com"}); err == nil || !strings.Contains(err.Error(), "duplicated") {
+	if _, err := remoteManifestHosts(m, remote.Settings{DomainSuffix: "--machine.example.com"}); err == nil || !strings.Contains(err.Error(), "overlaps") {
 		t.Fatalf("colliding remote origins accepted: %v", err)
 	}
 	if _, err := ResolveRemoteServicePorts(manifest.Manifest{}, nil, remote.Settings{DomainSuffix: "--machine.example.com"}); err == nil || !strings.Contains(err.Error(), "at least one selected service") {
@@ -129,5 +129,21 @@ func TestRemoteSettingsChangesRequireRestart(t *testing.T) {
 		if err := r.checkRemoteSettings(next); err == nil || !strings.Contains(err.Error(), "stop all remote stacks") {
 			t.Fatalf("changed settings accepted: %v", err)
 		}
+	}
+}
+
+func TestRemotePortableLabelContract(t *testing.T) {
+	for _, host := range []string{"web", "web.localhost"} {
+		t.Run(host, func(t *testing.T) {
+			value := manifest.Manifest{Services: map[string]manifest.ValidatedService{"web": {Hosts: []string{host}}}}
+			got, err := remoteManifestHosts(value, remote.Settings{DomainSuffix: ".preview.example.com"})
+			if host == "web" {
+				if err != nil || got.Services["web"].Hosts[0] != "web.preview.example.com" {
+					t.Fatalf("portable host: %#v, %v", got, err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), "single DNS label") {
+				t.Fatalf("legacy hostname: %v", err)
+			}
+		})
 	}
 }

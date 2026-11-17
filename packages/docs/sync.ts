@@ -51,7 +51,7 @@ function syncManifestReference(): void {
   const manifestReferenceContents: string = fs.readFileSync(manifestReferenceSourcePath, "utf8");
   const manifestReferencePagePath: string = path.join(docsContentPath, "reference/devhost-example.md");
   const manifestReferencePageBody: string = [
-    "The canonical manifest reference is generated from `apps/devhost/devhost.example.toml`.",
+    "Configure a repeatable development stack with HTTPS routes, service dependencies, and health checks. Copy the sections you need from this annotated manifest and adapt commands and paths to your project.",
     "",
     "```toml",
     manifestReferenceContents.trimEnd(),

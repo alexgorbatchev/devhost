@@ -10,7 +10,7 @@ title: "Troubleshooting"
 </video>
 <!-- /guide-demo -->
 
-Each section starts from what you see and ends with the fix.
+Get a stalled stack, rejected route, or broken browser connection working again. Start with the symptom below; each section explains what to check and how to recover.
 
 ## Manifest changes rejected
 
@@ -105,7 +105,7 @@ When the health check fails on one loopback address but the other answers, devho
   command = ["bun", "run", "dev"]
   port = 5173
   bindHost = "::1"
-  host = "app.localhost"
+  host = "app"
   ```
 
 `bindHost` tells devhost where to connect and check health; it does not reconfigure your app. A mismatch ends in a health-check timeout (30 seconds by default) and a recovery page; fix the listener, then press **Restart**.
@@ -125,7 +125,7 @@ Split them into separate services, which is the better fix. To keep the wrapper,
 command = ["bun", "run", "dev"]
 port = 5173
 injectPort = false
-host = "app.localhost"
+host = "app"
 ```
 
 ## A page through a tunnel or proxy is blank

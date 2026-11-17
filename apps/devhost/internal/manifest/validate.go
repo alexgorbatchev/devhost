@@ -433,7 +433,7 @@ func validateService(
 	}
 	seenHosts := map[string]struct{}{}
 	for i, host := range hosts {
-		if !IsValidHost(host) {
+		if !IsValidHost(host) && !IsValidHostLabel(host) {
 			*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.host must be a valid hostname, received: %s", serviceName, host))
 		}
 		host = strings.ToLower(host)
@@ -454,7 +454,7 @@ func validateService(
 		if validatedPath != nil {
 			for _, host := range hosts {
 				existingPaths := routedPathsByHost[host]
-				if conflictingPath := readConflictingRoutePath(existingPaths, *validatedPath); conflictingPath != "" {
+				if conflictingPath := ReadConflictingRoutePath(existingPaths, *validatedPath); conflictingPath != "" {
 					*validationIssues = append(*validationIssues, fmt.Sprintf("services.%s.path overlaps another routed service on host %s: %s", serviceName, host, conflictingPath))
 				}
 				routedPathsByHost[host] = append(existingPaths, *validatedPath)
@@ -638,7 +638,8 @@ func validateRoutePath(serviceName string, rawPath string, validationIssues *[]s
 	return &normalizedPath
 }
 
-func readConflictingRoutePath(existingPaths []string, candidatePath string) string {
+// ReadConflictingRoutePath finds a conflicting path on one resolved hostname.
+func ReadConflictingRoutePath(existingPaths []string, candidatePath string) string {
 	for _, existingPath := range existingPaths {
 		if doRoutePathsConflict(existingPath, candidatePath) {
 			return existingPath
@@ -1076,7 +1077,20 @@ func readInteger(rawValue any) (int, bool) {
 
 // IsValidHost accepts the hostnames supported by devhost's HTTPS routes.
 func IsValidHost(host string) bool {
+	if len(host) > 253 {
+		return false
+	}
+	for label := range strings.SplitSeq(host, ".") {
+		if len(label) > 63 {
+			return false
+		}
+	}
 	return host == "localhost" || hostPattern.MatchString(host)
+}
+
+// IsValidHostLabel accepts one DNS label for portable service hostnames.
+func IsValidHostLabel(host string) bool {
+	return len(host) > 0 && len(host) <= 63 && !strings.Contains(host, ".") && hostPattern.MatchString(host+".test")
 }
 
 func contains(values []string, value string) bool {

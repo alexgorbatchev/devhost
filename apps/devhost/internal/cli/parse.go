@@ -81,6 +81,7 @@ type CommandLineArguments struct {
 	SSHTarget            string
 	Debug                bool
 	Detach               bool
+	Local                bool
 	Remote               bool
 	RemoteStateDirectory string
 	IdleTimeout          string
@@ -191,7 +192,8 @@ type startOptions struct {
 	ManifestOptions
 	Debug       bool     `descr:"Show Caddy's output while the stack runs." name:"debug" short:"d"`
 	Detach      bool     `descr:"Run in the background; wait until the stack is ready." name:"detach"`
-	Remote      bool     `descr:"Expose this stack through the configured remote preview relay." name:"remote"`
+	Local       bool     `descr:"Use local routing even when a remote relay is configured." name:"local" short:"l"`
+	Remote      bool     `descr:"Require the configured remote preview relay." name:"remote"`
 	IdleTimeout string   `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
 	Services    []string `descr:"Services or groups; omit to start every service." name:"service" optional:"true" positional:"true"`
 }
@@ -252,6 +254,9 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 		Short: "Start the services in devhost.toml",
 		Long:  startDescription,
 		RunFuncE: func(options *startOptions, _ *cobra.Command, _ []string) error {
+			if options.Local && options.Remote {
+				return fmt.Errorf("--local and --remote are mutually exclusive")
+			}
 			if err := validateManifestPath(options.ManifestPath); err != nil {
 				return err
 			}
@@ -261,6 +266,7 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 				ManifestPath: options.ManifestPath,
 				Debug:        options.Debug,
 				Detach:       options.Detach,
+				Local:        options.Local,
 				Remote:       options.Remote,
 				IdleTimeout:  options.IdleTimeout,
 				Services:     options.Services,
@@ -272,8 +278,9 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 
 // Long descriptions are printed verbatim, so their lines are kept short enough
 // not to wrap in a 60-column terminal.
-const startDescription = `Start every service in devhost.toml behind local HTTPS
-hostnames. Routes are removed when the stack exits.
+const startDescription = `Start every service in devhost.toml with HTTPS previews.
+A configured relay makes previews reachable remotely;
+otherwise routing stays local. Routes end with the stack.
 
 Name services or groups from [groups] to start their
 services, what they depend on, and the services marked
@@ -285,10 +292,14 @@ the current folder or a parent folder. Hostnames must
 already point to this machine for local starts;
 *.localhost names need no DNS setup.
 
-With --remote, use the relay and public hostname suffix
-from [remote] in the machine config.toml. The connector
-reconnects after network changes while this machine stays
-awake. Configure browser authentication at the relay.
+The machine config chooses the hostname suffix. Remote
+previews require short host labels such as "web". Local
+labels use domainSuffix, which defaults to .localhost.
+
+Use --local to opt out of a configured relay, or --remote
+to require one. The connector reconnects after network
+changes while this machine stays awake. Configure browser
+authentication at the relay.
 
 With --detach (Linux and macOS), the stack runs in a
 session of its own and appends its output to a log in the

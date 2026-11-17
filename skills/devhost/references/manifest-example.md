@@ -1,6 +1,6 @@
 # Full Manifest Example
 
-Below is a complete, production-grade `devhost.toml` manifest illustrating every available feature, configuration table, environment placeholder, routing schema, and health check type in detail.
+Use these examples to configure a repeatable development stack with service dependencies, HTTPS routes, and health checks. Select the sections the project needs and adapt commands and paths. Short host labels use the machine’s selected routing suffix.
 
 ```toml
 # Service changes and include-file additions/removals reload while devhost runs.
@@ -118,7 +118,7 @@ restartServices = "alt+ctrl+r"
 # Native file service: an automatic port and the stack lifecycle.
 # [services.design]
 # serve = "packages/design"
-# host = "design.localhost"
+# host = "design"
 # alwaysStart = true
 
 [services.web]
@@ -139,8 +139,12 @@ bindHost = "127.0.0.1"
 # `host` accepts one hostname or a non-empty array of unique hostnames.
 # All domains share the service process, port, and path.
 # The first supplies DEVHOST_HOST, services.<name>.host references, and the devtools link.
-host = "hello.local.test"
-# host = ["hello.local.test", "alias.local.test"]
+# Short DNS labels keep this manifest portable across machines.
+# Local routing appends top-level machine domainSuffix (default .localhost).
+# Configured [remote] selects its public suffix automatically; --local selects local routing.
+# Remote mode requires single labels; explicit full hostnames are local-only.
+host = "hello"
+# host = ["hello", "alias"]
 # Enable only for dev servers requiring local Host/Origin, such as Bun HTML/HMR.
 # Requires host; defaults to false. Foreign/opaque/duplicate origins receive 403.
 # X-Forwarded-Host stays public; documents, assets, and WebSockets follow auto ports.
@@ -160,7 +164,7 @@ watch = ["src/"]
 
 [services.web.env]
 NODE_ENV = "development"
-PUBLIC_API_ORIGIN = "https://api.hello.local.test"
+PUBLIC_API_ORIGIN = "https://{{ services.api.host }}"
 
 [services.api]
 # A routed backend with explicit HTTP health and IPv6 loopback binding.
@@ -168,7 +172,7 @@ command = ["bun", "run", "api:dev"]
 cwd = "./api"
 port = 4000
 bindHost = "::1"
-host = "api.hello.local.test"
+host = "api-hello"
 dependsOn = ["db"]
 
 [services.api.env]
@@ -190,12 +194,12 @@ retries = 20
 managed = false
 dependsOn = ["api"]
 port = 4100
-host = "preview.hello.local.test"
+host = "preview-hello"
 
 [services.mailpit]
 # A managed daemon lifecycle service.
 port = 8025
-host = "mail.hello.local.test"
+host = "mail-hello"
 
 [services.mailpit.lifecycle]
 # `mode = "daemon"` switches from foreground command model to start/stop controls.

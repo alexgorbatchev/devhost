@@ -51,7 +51,7 @@ func (r *stackRuntime) checkConfigFile(path string, content []byte) error {
 		if err != nil {
 			return err
 		}
-		return r.checkRemoteSettings(shared.Remote)
+		return r.checkRoutingSettings(shared)
 	}
 	if r.configured == nil {
 		return fmt.Errorf("the stack runs without a manifest")

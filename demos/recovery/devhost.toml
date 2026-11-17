@@ -27,7 +27,7 @@ command = [
   "printf 'Recovery demo: deliberately leaving port %s closed. Restart repeats this failure.\\n' \"$PORT\"; exec sleep 86400",
 ]
 port = "auto"
-host = "recovery{{ env.DEVHOST_DEV_EXT }}"
+host = "recovery"
 
 [services.unhealthy.health]
 interval = 200

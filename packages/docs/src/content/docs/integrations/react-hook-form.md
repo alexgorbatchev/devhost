@@ -2,7 +2,7 @@
 title: "React Hook Form"
 ---
 
-devhost adds a **Form 1**, **Form 2**, … toolbar entry for each React Hook Form `DevTool` panel on your page and hides the panels' floating launchers.
+Inspect your forms from the devhost toolbar without a separate floating launcher for each form. devhost adds a **Form 1**, **Form 2**, … entry for each React Hook Form `DevTool` panel on the page.
 
 ## Requirements
 

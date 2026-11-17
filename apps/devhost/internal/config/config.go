@@ -23,15 +23,20 @@ import (
 
 const fileName = "config.toml"
 
+// DefaultDomainSuffix gives local host labels their default HTTPS hostname.
+const DefaultDomainSuffix = ".localhost"
+
 // Config holds the settings every stack on the machine shares.
 type Config struct {
-	Caddy  caddy.ManagedCaddyGlobalSettings
-	Remote *remote.Settings
+	DomainSuffix string
+	Caddy        caddy.ManagedCaddyGlobalSettings
+	Remote       *remote.Settings
 }
 
 type fileContents struct {
-	Caddy  *caddyContents  `toml:"caddy"`
-	Remote *remoteContents `toml:"remote"`
+	DomainSuffix *string         `toml:"domainSuffix"`
+	Caddy        *caddyContents  `toml:"caddy"`
+	Remote       *remoteContents `toml:"remote"`
 }
 
 type caddyContents struct {
@@ -77,7 +82,7 @@ func resolvePath(environment map[string]string, home string) (string, error) {
 func Read(path string) (Config, error) {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
-		return Config{Caddy: caddy.DefaultManagedCaddyGlobalSettings()}, nil
+		return Config{DomainSuffix: DefaultDomainSuffix, Caddy: caddy.DefaultManagedCaddyGlobalSettings()}, nil
 	}
 	if err != nil {
 		return Config{}, fmt.Errorf("read devhost config %s: %w", path, err)
@@ -98,7 +103,7 @@ func (e *ValidationError) Error() string {
 // Parse validates content as the config file at path, which names the file in
 // errors, so content that is not saved yet can be checked.
 func Parse(path string, content []byte) (Config, error) {
-	result := Config{Caddy: caddy.DefaultManagedCaddyGlobalSettings()}
+	result := Config{DomainSuffix: DefaultDomainSuffix, Caddy: caddy.DefaultManagedCaddyGlobalSettings()}
 	var contents fileContents
 	metadata, err := toml.Decode(string(content), &contents)
 	if err != nil {
@@ -107,9 +112,19 @@ func Parse(path string, content []byte) (Config, error) {
 
 	issues := []string{}
 	for _, key := range metadata.Undecoded() {
-		issues = append(issues, unrecognizedKeyPrefix+strconv.Quote(key.String()))
+		if key.String() == "remote.localSuffix" {
+			issues = append(issues, "remote.localSuffix was removed; use single DNS labels such as host = \"web\" in manifests and top-level domainSuffix for local routing.")
+		} else {
+			issues = append(issues, unrecognizedKeyPrefix+strconv.Quote(key.String()))
+		}
 	}
 	sort.Strings(issues)
+	if contents.DomainSuffix != nil {
+		result.DomainSuffix = strings.ToLower(strings.TrimSpace(*contents.DomainSuffix))
+		if !validHostSuffix(result.DomainSuffix) {
+			issues = append(issues, "domainSuffix must be a hostname suffix beginning with a dot or hyphen.")
+		}
+	}
 	if contents.Caddy != nil {
 		issues = append(issues, applyCaddy(*contents.Caddy, &result.Caddy)...)
 	}

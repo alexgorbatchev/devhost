@@ -10,14 +10,14 @@ title: "Background daemons"
 </video>
 <!-- /guide-demo -->
 
-Some services run in the background: they fork into a daemon, re-exec into detached workers, or are controlled through `start` and `stop` commands rather than staying in the foreground. devhost cannot supervise those through a `command`. Give it the commands instead with daemon mode.
+Start and stop a background daemon with the rest of your stack, even when it detaches from the command that launched it. Daemon mode gives devhost explicit start, stop, and optional status commands for services it cannot supervise as foreground children.
 
 ## Configure a daemon
 
 ```toml
 [services.mailpit]
 port = 8025
-host = "mail.hello.localhost"
+host = "mail-hello"
 health = { http = "http://127.0.0.1:8025/api/v1/info" }
 
 [services.mailpit.lifecycle]

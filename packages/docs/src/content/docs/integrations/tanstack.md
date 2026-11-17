@@ -2,7 +2,7 @@
 title: "TanStack devtools"
 ---
 
-devhost puts **Query**, **Router**, and **TanStack** toggles in its toolbar for the TanStack devtools your app mounts, and hides their floating launcher buttons. The panels stay TanStack's own.
+Inspect queries, routes, and other TanStack state from the devhost toolbar. **Query**, **Router**, and **TanStack** toggles open the devtools your app mounts, replacing their floating launchers while keeping TanStack’s own panels.
 
 ## Requirements
 

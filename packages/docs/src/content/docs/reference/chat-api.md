@@ -2,7 +2,9 @@
 title: "Chat API"
 ---
 
-The toolbar's chat drives the installed Codex CLI through its app-server protocol and Claude Code through its stream-json protocol. devhost adds no model service and stores no API keys: each CLI keeps its own sign-in, permissions, settings, and environment. This page documents the routes the chat uses; for using chat, see [Chat with a coding agent](../../guides/annotations/).
+Build an integration that starts conversations, streams replies, or supplies page context to your installed coding agent. This reference documents the HTTP and WebSocket routes used by browser chat; for the toolbar workflow, see [Chat with a coding agent](../../guides/annotations/).
+
+The toolbar drives Codex CLI through its app-server protocol and Claude Code through its stream-json protocol. Each CLI keeps its own sign-in, permissions, settings, and environment; devhost adds no model service and stores no API keys.
 
 All routes live on the page's own hostname and follow the [Control API security rules](../control-api/#security-model).
 

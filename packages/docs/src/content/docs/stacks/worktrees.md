@@ -2,7 +2,7 @@
 title: "Git worktrees"
 ---
 
-When your services run from a Git repository, the toolbar's **Worktrees** button switches the whole stack to another checkout of that repository, such as a linked worktree for a feature branch, and restarts it there.
+Try another branch in the browser without manually stopping and relaunching every service. The toolbar’s **Worktrees** button switches a repository’s services to another checkout, such as a linked feature worktree, and restarts them there.
 
 Worktree switching is on by default and needs `git` on your `PATH`. To turn it off:
 

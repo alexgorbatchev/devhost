@@ -2,7 +2,7 @@
 title: "Vue DevTools"
 ---
 
-devhost adds a **Vue** toolbar entry that opens and closes the Vue DevTools panel in your Vite DevTools dock. Components, live state, page selection, and settings stay in Vue's own panel.
+Inspect Vue components and live state without hunting for another launcher. The **Vue** entry in devhost opens and closes Vue DevTools in your Vite DevTools dock; page selection and settings remain in Vue’s own panel.
 
 ## Requirements
 

@@ -68,7 +68,7 @@ func (r *stackRuntime) applySharedConfig(ctx context.Context, path string, w *ma
 	if err != nil {
 		return err
 	}
-	if err := r.checkRemoteSettings(shared.Remote); err != nil {
+	if err := r.checkRoutingSettings(shared); err != nil {
 		return err
 	}
 	previous := *r.manifest

@@ -213,7 +213,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	if err != nil {
 		return 0, err
 	}
-	if err := state.checkRemoteSettings(shared.Remote); err != nil {
+	if err := state.checkRoutingSettings(shared); err != nil {
 		return 0, err
 	}
 	processSignals := make(chan os.Signal, 1)

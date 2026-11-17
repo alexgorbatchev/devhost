@@ -10,11 +10,11 @@ title: "Highlight source locations"
 </video>
 <!-- /guide-demo -->
 
+React Highlight outlines the elements on the page that a source location renders, such as the JSX under your editor's cursor. An editor plugin or script publishes the location; devhost draws the outline in every open page of the stack. To go the other way, from the page to your editor, use [Alt + right-click](../devtools/#open-component-source).
+
 :::note[Video coverage]
 The film shows a Neovim launcher that devhost no longer ships. The cursor transport below is what an editor integration uses today.
 :::
-
-React Highlight outlines the elements on the page that a source location renders, such as the JSX under your editor's cursor. An editor plugin or script publishes the location; devhost draws the outline in every open page of the stack. To go the other way, from the page to your editor, use [Alt + right-click](../devtools/#open-component-source).
 
 ## Publish a location
 

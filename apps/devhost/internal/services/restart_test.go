@@ -163,7 +163,17 @@ func TestRestartStacksPreservesLaunchAndScope(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if string(before) != string(after) {
+				var beforeLaunch, afterLaunch restartTrace
+				if err := json.Unmarshal(before, &beforeLaunch); err != nil {
+					t.Fatal(err)
+				}
+				if err := json.Unmarshal(after, &afterLaunch); err != nil {
+					t.Fatal(err)
+				}
+				if original.ManifestPath != "" {
+					beforeLaunch.Args = append(beforeLaunch.Args, "--remote=false", "--local=true")
+				}
+				if !slices.Equal(beforeLaunch.Args, afterLaunch.Args) || beforeLaunch.Directory != afterLaunch.Directory || beforeLaunch.Value != afterLaunch.Value {
 					t.Fatalf("launch changed: %s => %s", before, after)
 				}
 				if !strings.Contains(output.String(), fmt.Sprintf("PID %d", stack.PID)) {
@@ -207,5 +217,24 @@ func TestRestartCaptureFailureLeavesAllStacksRunning(t *testing.T) {
 	}
 	if slices.ContainsFunc(entries, func(e os.DirEntry) bool { return strings.HasPrefix(e.Name(), "restart-") }) {
 		t.Fatal("failed capture left scratch logs")
+	}
+}
+
+func TestRestartPreservesResolvedModeBeforeServiceSeparator(t *testing.T) {
+	for _, tc := range []struct {
+		args, want []string
+		remote     bool
+	}{
+		{[]string{"start", "--", "web"}, []string{"start", "--remote=false", "--local=true", "--", "web"}, false},
+		{[]string{"start", "web"}, []string{"start", "web", "--remote=true", "--local=false"}, true},
+		{[]string{"serve", "--domain", "web.localhost"}, []string{"serve", "--domain", "web.localhost"}, false},
+	} {
+		got := preserveLaunchMode(tc.args, tc.remote)
+		if !slices.Equal(got, tc.want) {
+			t.Fatalf("launch arguments %v, want %v", got, tc.want)
+		}
+		if again := preserveLaunchMode(got, tc.remote); !slices.Equal(again, got) {
+			t.Fatalf("repeated restarts grew launch arguments: %v", again)
+		}
 	}
 }

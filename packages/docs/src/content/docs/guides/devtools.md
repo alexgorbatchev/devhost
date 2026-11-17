@@ -10,7 +10,7 @@ title: "The devtools toolbar"
 </video>
 <!-- /guide-demo -->
 
-devhost can add a small toolbar to every page of your app: service status and restarts, live logs, a chat with your coding agent, Git worktree switching, and host resource usage. Routing works the same with or without it.
+Check service health, read logs, restart a process, or ask your coding agent for a change without leaving the app. devhost’s optional toolbar brings those controls, Git worktree switching, and host resource usage into the page. Routing works the same with or without it.
 
 ## Turn it on or off
 

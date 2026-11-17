@@ -10,7 +10,7 @@ title: "Connect services"
 </video>
 <!-- /guide-demo -->
 
-A service reference, `{{ services.<name>.<property> }}`, fills in another service's address when the stack starts. One service can point at another even when that one's port is assigned at startup with `port = "auto"`.
+Connect services without copying port numbers into several configurations, including ports assigned at startup with `port = "auto"`. A service reference, `{{ services.<name>.<property> }}`, fills in another service’s address when the stack starts.
 
 ## Point one service at another
 

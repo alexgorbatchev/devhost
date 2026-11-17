@@ -84,7 +84,7 @@ func optionsFor(t *testing.T, backendURL string) Options {
 	return Options{
 		StateDirectory: dir, ManifestPath: filepath.Join(dir, "devhost.toml"), Hosts: []string{testHost},
 		Settings: Settings{ServerURL: endpoint, CredentialFile: credentials, Fingerprint: server.GetFingerprint(), RemotePort: remotePort,
-			DomainSuffix: "--laptop.preview.example.com", LocalSuffix: ".localhost"},
+			DomainSuffix: "--laptop.preview.example.com"},
 		Backend: Backend{Scheme: "http", Address: strings.TrimPrefix(backendURL, "http://")},
 	}
 }

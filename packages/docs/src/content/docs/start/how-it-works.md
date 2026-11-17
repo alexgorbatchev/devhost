@@ -2,7 +2,7 @@
 title: "How devhost works"
 ---
 
-devhost runs your development services and puts each one behind a real HTTPS hostname, such as `https://app.localhost`, instead of `localhost:3000`. This page explains the moving parts and the words the rest of the docs use.
+devhost runs your development services and puts each one behind a real HTTPS hostname, such as `https://app.localhost`, instead of `localhost:3000`. You can use the same project manifest on a laptop or devbox: machine settings choose local or remote preview URLs. This page explains how the pieces fit together.
 
 ## The pieces
 
@@ -20,7 +20,7 @@ flowchart TD
     caddy -- "/__devhost__/*" --> control
     caddy -- "page loads" --> injector --> web
     caddy -- "assets, fetches, WebSockets" --> web
-    caddy -- "api.app.localhost" --> api
+    caddy -- "api-app.localhost" --> api
 ```
 
 1. **The manifest.** `devhost.toml` lists your services: the command that starts each one, its port, its hostname, and what it depends on.
@@ -28,7 +28,9 @@ flowchart TD
 3. **Managed Caddy.** One [Caddy](https://caddyserver.com/) server on your machine terminates HTTPS for every stack. Each stack adds routes for its hostnames while it runs and removes them when it stops.
 4. **Devtools (optional).** When a browser loads a page, devhost injects a small toolbar with service status, logs, restarts, and a chat with your coding agent. Everything else goes straight to your app, so assets, HMR, and WebSockets behave as usual.
 
-devhost does not manage DNS, containers, or your browser. Your hostnames must already resolve to this machine; names under `.localhost` do so without any setup.
+Use short service labels such as `host = "app"`. For local routing, the machine’s top-level `domainSuffix` defaults to `.localhost`. A configured `[remote]` automatically selects [remote previews](../../stacks/remote-previews/) instead; `--local` forces local routing. Hostnames resolve before service templates, so commands and environment variables get the selected name.
+
+devhost does not manage DNS, containers, or your browser. Local hostnames must resolve to this machine; names under `.localhost` do so without setup. Remote preview DNS points to the gateway.
 
 ## Words used in these docs
 

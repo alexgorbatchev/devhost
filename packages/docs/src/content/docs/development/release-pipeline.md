@@ -2,7 +2,7 @@
 title: "Release pipeline"
 ---
 
-A `devhost` release publishes two things from one Git tag: the binaries and this documentation site. The site is deployed only by a release, so it describes the released version and not unreleased work on `main`.
+Ship binaries and documentation that describe the same version. A `devhost` release publishes both from one Git tag; a normal push to `main` runs checks without deploying the site.
 
 The guide videos and the promo on the landing page follow a separate, manual track. No workflow records or renders video. A release downloads the videos that were published earlier and checks each against the hash pinned in the repository.
 

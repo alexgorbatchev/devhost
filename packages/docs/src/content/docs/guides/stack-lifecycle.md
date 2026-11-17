@@ -22,13 +22,13 @@ name = "hello"
 [services.web]
 command = ["bun", "run", "web:dev"]
 port = 3000
-host = "hello.localhost"
+host = "hello"
 dependsOn = ["api"]
 
 [services.api]
 command = ["bun", "run", "api:dev"]
 port = 4000
-host = "api.hello.localhost"
+host = "api-hello"
 health = { http = "/healthz" }
 ```
 
@@ -67,7 +67,7 @@ The command waits until every started service, external ones included, passes it
 
 ```text
 devhost | Started hello (PID 48211).
-devhost | https://api.hello.localhost
+devhost | https://api-hello.localhost
 devhost | https://hello.localhost
 devhost | Log: ~/.local/state/devhost/logs/stack-<sha256>.log
 ```
@@ -80,7 +80,7 @@ Startup has two minutes, plus each started service's health-check `timeout` and 
 
 Repeating `--detach` while a stack from the same manifest runs in the same local or remote mode starts nothing, even through a symlink or when that stack was started in the foreground: the command prints `Already running hello (PID 48211).` and the stack's log, when it has one, and exits `0`. It does not change the running service selection. A repeat made while another detached start of the manifest is still starting waits for that start to finish first, and a repeat made while a failed start's stack is still stopping waits for it to stop, then starts a new stack. Other overlaps fail a detached start as they fail a foreground one: a manifest it shares with another stack through `includes`, or a hostname or fixed port another stack holds. The log tail shows which.
 
-For browser access away from the development machine, use [`devhost start --remote --detach`](../../stacks/remote-previews/). Remote startup also waits for the relay connection and prints public URLs. Switching between local and remote mode requires stopping the existing stack first.
+For browser access away from the development machine, [enroll the machine](../../stacks/remote-previews/), then use `devhost start --detach`; `[remote]` selects relay routing automatically. Use `--local` to keep a run local or `--remote` to require enrollment explicitly. Remote startup also waits for the relay connection and prints public URLs. Switching between local and remote mode requires stopping the existing stack first.
 
 Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual; they too find the stack through any path to its manifest. `--detach` has no short flag: `-d` still means `--debug`.
 
@@ -126,19 +126,19 @@ dependsOn = ["db"]
 [services.web]
 command = ["bun", "run", "web:dev"]
 port = "auto"
-host = "web.acme.localhost"
+host = "web-acme"
 dependsOn = ["api"]
 
 [services.admin]
 command = ["bun", "run", "admin:dev"]
 port = "auto"
-host = "admin.acme.localhost"
+host = "admin-acme"
 dependsOn = ["api"]
 
 [services.docs]
 command = ["bun", "run", "docs:dev"]
 port = "auto"
-host = "docs.acme.localhost"
+host = "docs-acme"
 ```
 
 | Command                   | Starts                       | Not started           |

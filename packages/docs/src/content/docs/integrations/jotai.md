@@ -2,7 +2,7 @@
 title: "Jotai"
 ---
 
-devhost adds a **Jotai 1**, **Jotai 2**, … toolbar entry for each Jotai DevTools panel on your page and hides the panels' floating launchers. Atom viewing and time travel stay in Jotai's panel.
+Inspect atoms and time-travel through state changes from the same toolbar you use to control the stack. devhost adds a **Jotai 1**, **Jotai 2**, … entry for each Jotai DevTools panel and hides its floating launcher; inspection stays in Jotai’s own panel.
 
 ## Requirements
 

@@ -31,14 +31,14 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Download the pinned guide videos a checkout lacks: `just docs media` (`just docs run`, `test`, and `build` run it first).
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
 - Start the root devhost stack locally: `just run`
-- View contributor architecture diagrams at `https://devhost-archify.localhost/` while the stack runs (`DEVHOST_DEV_EXT` supplies the shared suffix override). Regenerate them with `ARCHIFY_CLI=/path/to/archify/bin/archify.mjs just archify build`; see `docs/internal/architecture/index.md` for browser prerequisites and maintenance.
+- View contributor architecture diagrams at `https://devhost-archify.localhost/` while the stack runs (the machine config supplies the local or relay suffix). Regenerate them with `ARCHIFY_CLI=/path/to/archify/bin/archify.mjs just archify build`; see `docs/internal/architecture/index.md` for browser prerequisites and maintenance.
 - Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires a source checkout: the one a development build records, which `just run` uses, or `DEVHOST_DEV_SOURCE_DIR`.
-- Preview startup timeout and recovery pages: `just devhost demo-recovery`; configure the shared `DEVHOST_DEV_EXT` suffix through `.envrc.local` (the tracked `.envrc` defaults to `.localhost`) and reload direnv.
+- Preview startup timeout and recovery pages: `just devhost demo-recovery`; open the URL printed by devhost; the machine config supplies the local or relay suffix.
 - Start the docs site locally: `just docs` (or `just docs run`)
 - Open the injected devtools UI design reference (`packages/design/references/devtools.html`) in the default browser: `just design devtools`
 - Open the docs site design reference (`packages/design/references/docs.html`) in the default browser: `just design docs`
 - Open the general design reference document (`packages/design/references/design-system.html`) in the default browser: `just design system`
-- Browse the design package while the root stack runs: `https://devhost-design.localhost/` (uses `DEVHOST_DEV_EXT` for the hostname suffix). Open `/references/design-system.html` for the general reference; the root lists package files. The manifest's native `serve` service starts with every service selection.
+- Browse the design package while the root stack runs: `https://devhost-design.localhost/` (local default; use the printed URL when a machine suffix or relay is configured). Open `/references/design-system.html` for the general reference; the root lists package files. The manifest's native `serve` service starts with every service selection.
 
 ## Documentation policy
 
@@ -62,7 +62,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 
 ## Shared gotchas
 
-- The development manifests compose service hostnames with `DEVHOST_DEV_EXT`. Root `.envrc` exports defaults, then loads ignored `.envrc.local` shell customizations with `source_env_if_exists`; use `export` assignments there to override the defaults. Reload direnv after editing these files. Devhost itself reads the exported environment and does not load dotenv files.
+- Development manifests use short host labels. Machine config `domainSuffix` supplies local routing (default `.localhost`); `[remote].domainSuffix` supplies relay routing, selected automatically when configured. Use `--local` for a local-only run. Stop/start an affected stack after changing its routing settings. Root `.envrc` adds the built binary to PATH and loads ignored `.envrc.local` shell customizations; hostname settings belong in machine config.
 
 - Root `package.json` owns the shared TypeScript AI policy tooling and the shared `oxfmt` / `oxlint` configs. Keep workspace-local copies out unless the workspaces genuinely diverge.
 - Root `just check` runs `typescript-ai-policy check` first (wrapping the shared `oxfmt` / `oxlint` enforcement and excluding `packages/playground/**`), then delegates to package-specific checks.

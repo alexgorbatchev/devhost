@@ -24,23 +24,23 @@ name = "shop"
 [services.web]
 command = ["bun", "run", "dev"]
 port = 3000
-host = "shop.localhost"
+host = "shop"
 dependsOn = ["api"]
 
 [services.api]
 command = ["bun", "run", "api"]
 port = 4000
-host = "api.shop.localhost"
+host = "api-shop"
 health = { http = "/healthz" }
 ```
 
 ```text
 $ devhost start
 shop    | web (primary): https://shop.localhost
-shop    | api: https://api.shop.localhost
+shop    | api: https://api-shop.localhost
 ```
 
-That's the stack: the API starts first, the web app once the API is healthy, both on HTTPS.
+That's the stack: the API starts first, the web app once the API is healthy, both on HTTPS. These are the default local URLs; an enrolled machine automatically prints its [remote preview URLs](https://alexgorbatchev.github.io/devhost/stacks/remote-previews/) instead. The same short service labels work on either machine.
 
 ## Install
 

@@ -38,6 +38,7 @@ func resolveStackRestartPorts(next manifest.Manifest, current ResolvedManifest, 
 // the shared Caddy settings it runs: a manifest does not set them.
 func resolveRunningServicePorts(next manifest.Manifest, current ResolvedManifest, options portResolutionOptions) (ResolvedManifest, error) {
 	options.Remote = current.Remote
+	options.DomainSuffix = current.DomainSuffix
 	resolved, err := resolveServicePorts(next, options)
 	resolved.Caddy = current.Caddy
 	return resolved, err

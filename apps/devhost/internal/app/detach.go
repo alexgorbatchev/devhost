@@ -17,8 +17,10 @@ func runDetachedStart(arguments cli.CommandLineArguments, manifest services.Reso
 	if arguments.Debug {
 		args = append(args, "--debug")
 	}
-	if arguments.Remote {
+	if manifest.Remote != nil {
 		args = append(args, "--remote")
+	} else {
+		args = append(args, "--local")
 	}
 	if arguments.IdleTimeout != "" {
 		args = append(args, "--idle-timeout", arguments.IdleTimeout)
