@@ -31,7 +31,9 @@ let browser: Browser | undefined;
 let displayServer: Subprocess | undefined;
 try {
   const env = await createOwnedBrowserEnvironment(process.cwd());
-  if (process.argv[3] === "true") {
+  // A headed operator window. Linux opens it on an Xvfb display of its own, so the test needs no desktop session;
+  // macOS has no Xvfb and opens it on the desktop, as an operator recording there does.
+  if (process.argv[3] === "true" && process.platform === "linux") {
     displayServer = Bun.spawn(["Xvfb", "-displayfd", "1", "-screen", "0", "3200x1800x24", "-nolisten", "tcp"], {
       stdout: "pipe",
       stderr: "ignore",
@@ -42,8 +44,8 @@ try {
     reader.releaseLock();
     assert(/^\d+$/.test(display), "Xvfb did not announce its owned display");
     env.DISPLAY = `:${display}`;
-    env.DEVHOST_DEMO_INTERACTIVE = "1";
   }
+  if (process.argv[3] === "true") env.DEVHOST_DEMO_INTERACTIVE = "1";
   // The test that runs this script gives it a working directory of its own. The Xvfb display has no GPU.
   browser = await launchDemoBrowser(env, captureScale, displayServer === undefined);
   const page = await createDemoPage(browser, runtime, captureScale);

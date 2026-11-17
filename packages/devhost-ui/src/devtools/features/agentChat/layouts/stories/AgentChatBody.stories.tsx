@@ -52,7 +52,7 @@ export const InjectedComposerSpacing: Story = {
     await expect(composer).toHaveValue("Inspect this page");
     await expect(send).toBeEnabled();
     await waitFor(() => expect(composer.getBoundingClientRect().top).toBeCloseTo(initialBounds.top, 0));
-    await nativeUserEvent.keyboard("{Control>}a{/Control}{Backspace}");
+    await nativeUserEvent.keyboard("{ControlOrMeta>}a{/ControlOrMeta}{Backspace}");
     await expect(composer).toHaveValue("");
     await expect(send).toBeDisabled();
     await waitFor(() => expect(composer.getBoundingClientRect().top).toBeCloseTo(initialBounds.top, 0));

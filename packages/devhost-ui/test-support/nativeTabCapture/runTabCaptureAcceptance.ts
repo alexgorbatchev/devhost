@@ -21,7 +21,11 @@ export async function runTabCaptureAcceptance(
         channel: "chromium",
         headless: true,
         viewport: { width: 1280, height: 800 },
-        args: [`--auto-select-tab-capture-source-by-title=${title}`],
+        // Tab capture hands the page YUV video frames whose chroma is shared by neighboring pixels, so a thin stroke
+        // takes some color from the page around it. Software capture, the path a machine without a GPU takes, does
+        // that the same way on every platform; GPU capture on macOS converts differently and moves the annotation
+        // stroke further from its color than the comparison allows.
+        args: [`--auto-select-tab-capture-source-by-title=${title}`, "--disable-gpu"],
         env: await createOwnedBrowserEnvironment(directory),
       });
       try {
