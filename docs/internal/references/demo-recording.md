@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-15 00:54
+last_modified: 2026-11-16 16:30
 status: current
 ---
 
@@ -48,7 +48,7 @@ The recorder captures terminal startup, the log minimap, toolbar and worktree pi
 
 The promo selects real recordings rather than recreating the interface. The existing published promo and guide narration still describe the retired Pi/Vim workflows. Before rendering replacement annotation or React Highlight films, update the narration, regenerate the affected audio with billing authorization, and inspect the promo's agent frame. No new film has been recorded or approved for these flows.
 
-Every promo render also writes the copy the docs landing page shows: a web encode, the end card's last frame as poster, and the captions as `packages/docs/public/demos/promo.{mp4,webp,vtt}`, plus the player block `packages/docs/src/promoDemo.html`. `packages/docs/sync.ts` opens the landing page with that block. Publish and commit them as for a guide film: see [Where guide videos are stored](#where-guide-videos-are-stored).
+Every promo render also writes the copy the docs landing page shows: a web encode, the end card's last frame as poster, and the captions as `packages/docs/public/demos/promo.{mp4,webp,vtt}`, plus the player block `packages/docs/src/promoDemo.html`. It also writes the README's preview, `packages/docs/public/demos/promo-preview.webp`: the whole film as a silent animated WebP that loops, at 960 pixels wide and 10 fps, because GitHub removes a video from a README but shows an animated image. The README links the preview to the docs site, and `packages/docs/sync.ts` replaces the README's `promo-preview` block with the player block on the landing page. Publish and commit them as for a guide film: see [Where guide videos are stored](#where-guide-videos-are-stored).
 
 To render the promo again without capturing, reuse the footage of an earlier run:
 

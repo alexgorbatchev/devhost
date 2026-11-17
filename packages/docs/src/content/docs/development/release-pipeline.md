@@ -75,6 +75,8 @@ New videos need a Linux host with the recording tools, an operator to approve th
 1. `just demo audio-guides` generates the narration of changed lines.
 2. `just demo guides` records each guide and renders its film. `just demo record` does the same for the promo.
 3. After the films are reviewed, `just docs publish-media` uploads them and rewrites their pins.
-4. The pins, posters, captions, and guide pages are committed together.
+4. The pins, posters, captions, guide pages, and the README's preview of the promo are committed together.
+
+The README opens with that preview, a silent animated WebP that loops, because GitHub does not play video in a README. GitHub loads it from `main`, so a new preview shows on the repository page as soon as it is pushed, while the docs site changes only with the next release.
 
 A change to the interface does not update a video. When a release changes what a guide shows, the film has to be recorded again before the tag is pushed; otherwise the release ships the earlier video beside the new text.

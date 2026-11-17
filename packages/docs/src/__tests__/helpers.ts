@@ -14,7 +14,7 @@ const server = Bun.serve({
   fetch: async (request): Promise<Response> => {
     const path = new URL(request.url).pathname;
     if (path === "/devhost/") {
-      // The landing page opens with the block a promo render wrote; `sync.ts` puts it before the README's text.
+      // The landing page shows the block a promo render wrote; `sync.ts` puts it where the README shows its preview.
       const block = await Bun.file(join(packagePath, "src/promoDemo.html")).text();
       return new Response(
         `<!doctype html><html><head><title>devhost</title></head><body><main>${block}</main></body></html>`,

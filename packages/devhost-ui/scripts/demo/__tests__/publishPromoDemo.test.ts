@@ -7,6 +7,7 @@ import { assertDemoFfmpeg } from "../assertDemoFfmpeg";
 import { publishPromoDemo } from "../publishPromoDemo";
 import { runCommand } from "../runCommand";
 import { createColorFilm } from "./fixtures/createColorFilm";
+import { readAnimation } from "./fixtures/readAnimation";
 import { readPosterColor } from "./fixtures/readPosterColor";
 
 // These tests encode with the same FFmpeg the films use; a build that cannot fails here with the reason.
@@ -14,7 +15,7 @@ beforeAll(async () => {
   await assertDemoFfmpeg(runCommand);
 });
 
-it("publishes the promo's media and a landing-page player whose poster is the end card", async () => {
+it("publishes the promo's media, its looping README preview, and a landing-page player whose poster is the end card", async () => {
   const parentPath = tmpdir();
   const repositoryPath = await mkdtemp(join(parentPath, "publish-promo-"));
   const recordingPath = join(repositoryPath, "recording");
@@ -84,6 +85,20 @@ it("publishes the promo's media and a landing-page player whose poster is the en
     expect(await Bun.file(join(publishedPath, "promo.vtt")).text()).toBe(
       "WEBVTT\n\n00:00.000 --> 00:01.000\nWhich port?\n",
     );
+    // The README opens with the whole film as a silent image that loops, at half its width.
+    const preview = await readAnimation(join(publishedPath, "promo-preview.webp"), repositoryPath);
+    expect({ width: preview.width, height: preview.height, repetitionCount: preview.repetitionCount }).toEqual({
+      width: 960,
+      height: 540,
+      repetitionCount: Infinity,
+    });
+    expect(preview.duration).toBeCloseTo(4, 1);
+    expect(
+      [preview.colors.at(0), preview.colors.at(-1)].map((color) => color?.map((channel) => Math.round(channel / 255))),
+    ).toEqual([
+      [1, 0, 0],
+      [0, 0, 1],
+    ]);
   } finally {
     await rm(repositoryPath, { recursive: true, force: true });
   }

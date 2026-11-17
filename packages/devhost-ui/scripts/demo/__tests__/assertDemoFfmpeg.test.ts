@@ -49,7 +49,7 @@ it("names each missing encoder and filter, and the build that has them, before a
   const run = createRunner(plainEncoders, plainFilters);
 
   await expect(assertDemoFfmpeg(run)).rejects.toThrow(
-    "The ffmpeg on PATH lacks the libwebp encoder and the subtitles filter (libass), which the demo films need. " +
+    "The ffmpeg on PATH lacks the libwebp encoder, the libwebp_anim encoder, and the subtitles filter (libass), which the demo films need. " +
       "Use an FFmpeg build with libwebp, libx264, and libass: on macOS, Homebrew's ffmpeg-full, with " +
       '"$(brew --prefix ffmpeg-full)/bin" ahead of other ffmpeg installs on PATH.',
   );
@@ -58,5 +58,13 @@ it("names each missing encoder and filter, and the build that has them, before a
 it("does not count an encoder whose name only begins with a required one", async () => {
   const run = createRunner(plainEncoders.replace("libx264 ", "libx264xyz "), fullFilters);
 
-  await expect(assertDemoFfmpeg(run)).rejects.toThrow("lacks the libwebp encoder and the libx264 encoder, which");
+  await expect(assertDemoFfmpeg(run)).rejects.toThrow(
+    "lacks the libwebp encoder, the libwebp_anim encoder, and the libx264 encoder, which",
+  );
+});
+
+it("requires the animated WebP encoder the README preview is written with", async () => {
+  const run = createRunner(fullEncoders.replace(" V....D libwebp_anim ", " V....D libwebp_other "), fullFilters);
+
+  await expect(assertDemoFfmpeg(run)).rejects.toThrow("lacks the libwebp_anim encoder, which the demo films need");
 });

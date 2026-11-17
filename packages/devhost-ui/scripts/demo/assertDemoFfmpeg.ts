@@ -1,7 +1,8 @@
 import type { RunCommand } from "./types";
 
-// What the films ask FFmpeg for: the WebP poster, the H.264 and AAC web encode, and burned-in clip captions.
-const requiredEncoders = ["libwebp", "libx264", "aac"];
+// What the films ask FFmpeg for: the WebP poster, the README's animated WebP preview, the H.264 and AAC web encode,
+// and burned-in clip captions.
+const requiredEncoders = ["libwebp", "libwebp_anim", "libx264", "aac"];
 const requiredFilters = [{ name: "subtitles", library: "libass" }];
 
 // Reads the names `ffmpeg -encoders` or `ffmpeg -filters` lists: the word after the flags column of each entry.

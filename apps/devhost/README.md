@@ -2,6 +2,14 @@
 
 **Your dev stack, on real HTTPS hostnames, with one command.** `devhost` starts every service your app needs, puts each one on a hostname like `https://app.localhost`, and keeps the whole thing running while you break things.
 
+<!-- promo-preview -->
+
+[![devhost in 37 seconds: a local app on an HTTPS hostname, a stack started with devhost start, in-page devtools, and an Alt-click annotation that a coding agent turns into a source edit](https://raw.githubusercontent.com/alexgorbatchev/devhost/main/packages/docs/public/demos/promo-preview.webp)](https://alexgorbatchev.github.io/devhost/)
+
+A silent preview. [Watch it with narration and captions](https://alexgorbatchev.github.io/devhost/) on the documentation site.
+
+<!-- /promo-preview -->
+
 Stop juggling `localhost:3000`, `localhost:4000`, and a terminal tab per service. Auth callbacks, cookies, CORS, and service-to-service URLs behave the way they do in production.
 
 [Documentation](https://alexgorbatchev.github.io/devhost/) · [Install](https://alexgorbatchev.github.io/devhost/start/install/) · [How it works](https://alexgorbatchev.github.io/devhost/start/how-it-works/)
