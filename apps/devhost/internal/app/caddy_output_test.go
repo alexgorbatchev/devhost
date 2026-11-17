@@ -24,13 +24,15 @@ func TestCaddyCommandOutput(t *testing.T) {
 				state := t.TempDir()
 				t.Setenv("DEVHOST_STATE_DIR", state)
 				useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
-				bin := t.TempDir()
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+				executablePath := caddy.CreateManagedCaddyPaths(state).ExecutablePath
+				if err := os.MkdirAll(filepath.Dir(executablePath), 0o755); err != nil {
+					t.Fatal(err)
+				}
 				script := "#!/bin/sh\nprintf 'started\\nsecond line'\nprintf 'diagnostic\\n' >&2\n"
 				if failed {
 					script = "#!/bin/sh\nprintf 'listen tcp 127.0.0.1:443: bind: permission denied\\n' >&2\nexit 1\n"
 				}
-				writeExecutable(t, filepath.Join(bin, "caddy"), script)
+				writeExecutable(t, executablePath, script)
 				var stdout, stderr strings.Builder
 				code := Run([]string{"caddy", "start"}, state, &stdout, &stderr)
 				if failed {
@@ -80,10 +82,8 @@ func TestCaddyTrustOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	useSharedCaddyAdmin(t, caddytest.StartAdminServer(t))
-	bin := t.TempDir()
-	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	promptPath := filepath.Join(t.TempDir(), "prompt")
-	writeExecutable(t, filepath.Join(bin, "caddy"), strings.Join([]string{
+	writeExecutable(t, paths.ExecutablePath, strings.Join([]string{
 		"#!/bin/sh",
 		`printf '%s' "$SUDO_PROMPT" > '` + promptPath + `'`,
 		`printf '2026/10/19 23:31:49.199\tINFO\tnot NSS security databases found\n' >&2`,

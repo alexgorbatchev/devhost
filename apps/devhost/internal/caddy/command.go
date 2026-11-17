@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"testing"
 )
 
 type CommandResult struct {
@@ -86,13 +87,20 @@ func CreateManagedCaddyExecutablePath(paths Paths, runtimeOS string) string {
 	return filepath.Join(paths.CaddyDirectoryPath, "caddy")
 }
 
+// ResolveManagedCaddyExecutablePath returns the managed Caddy executable, or the caddy on PATH when none is installed.
+// A test binary never gets the caddy on PATH: on a developer machine that is the Caddy every devhost stack shares, and
+// a test without a managed executable would load its own configuration into it. The command then fails instead.
 func ResolveManagedCaddyExecutablePath(paths Paths, runtimeOS string, stat func(string) (os.FileInfo, error)) string {
+	return resolveManagedCaddyExecutablePath(paths, runtimeOS, stat, !testing.Testing())
+}
+
+func resolveManagedCaddyExecutablePath(paths Paths, runtimeOS string, stat func(string) (os.FileInfo, error), usePath bool) string {
 	if stat == nil {
 		stat = os.Stat
 	}
 
 	executablePath := CreateManagedCaddyExecutablePath(paths, runtimeOS)
-	if _, err := stat(executablePath); err == nil {
+	if _, err := stat(executablePath); err == nil || !usePath {
 		return executablePath
 	}
 

@@ -126,13 +126,13 @@ func testServeSession(t *testing.T, mode string) {
 		}
 		done <- result{code, err}
 	}()
+	// No deadline: a test that gave up here would leave the stack running, with nothing left to stop it, while cleanup
+	// removes its directories.
 	var signalChannel chan<- os.Signal
 	select {
 	case signalChannel = <-signals:
 	case got := <-done:
 		t.Fatalf("exited before signals: %#v", got)
-	case <-time.After(10 * time.Second):
-		t.Fatal("startup timed out")
 	}
 	t.Cleanup(func() {
 		signalChannel <- syscall.SIGINT

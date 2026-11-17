@@ -312,7 +312,10 @@ func testStartupCrashRecovery(t *testing.T, worktreesEnabled, inRepository bool)
 			"GO_WANT_HELPER_PROCESS": "1",
 			"DEVHOST_HELPER_MODE":    "exit-1",
 		},
-		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 50, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: 200},
+		// The startup must fail because the service exits, never because its health check runs out of time first: a
+		// loaded machine can take longer than any short timeout to launch the helper. Startup notices the exit at the
+		// next health interval.
+		Health:     ResolvedHealthConfig{Host: stringPointer("127.0.0.1"), Interval: 50, Kind: "tcp", Port: intPointer(servicePort), Retries: 0, Timeout: int(time.Hour / time.Millisecond)},
 		Hosts:      []string{"cleanup.localhost"},
 		InjectPort: true,
 		Name:       "web",

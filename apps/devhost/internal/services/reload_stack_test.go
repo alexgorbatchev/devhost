@@ -120,40 +120,55 @@ func startReloadStackRequested(t *testing.T, body string, worktreesEnabled bool,
 	}
 	registerProcessSignals = func(ch chan<- os.Signal) { signals <- ch }
 	unregisterProcessSignals = func(chan<- os.Signal) {}
-	done := make(chan error, 1)
+	exited := make(chan struct{})
+	var stackErr error
 	go func() {
-		_, err := StartStack(&m, order, StartStackOptions{Configuration: &configured, CaddyPaths: f.paths, ConfigPath: f.configPath, Environment: readCurrentEnvironment(), LogWriter: f.logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
-		done <- err
+		_, stackErr = StartStack(&m, order, StartStackOptions{Configuration: &configured, CaddyPaths: f.paths, ConfigPath: f.configPath, Environment: readCurrentEnvironment(), LogWriter: f.logs, ServiceStdoutWriter: io.Discard, ServiceStderrWriter: io.Discard, ShutdownGracePeriod: 100 * time.Millisecond})
+		close(exited)
 	}()
-	var ch chan<- os.Signal
-	select {
-	case ch = <-signals:
-	case err := <-done:
-		t.Fatalf("startup: %v", err)
-	case <-time.After(5 * time.Second):
-		t.Fatal("startup timed out")
+	// awaitSignals waits until the stack takes signals, as it does early in startup, and reports false when the stack
+	// returned first. Startup has no deadline of its own: on a loaded machine its Git and process work can take longer
+	// than any fixed wait, and a test that gave up would leave the stack running.
+	var processSignals chan<- os.Signal
+	awaitSignals := func() bool {
+		if processSignals != nil {
+			return true
+		}
+		select {
+		case processSignals = <-signals:
+			return true
+		case <-exited:
+			return false
+		}
 	}
-	f.signalStop = sync.OnceFunc(func() { ch <- syscall.SIGTERM })
+	startupFailed := false
+	f.signalStop = sync.OnceFunc(func() {
+		if awaitSignals() {
+			processSignals <- syscall.SIGTERM
+		}
+	})
+	// Registered before any wait, so a test that fails during startup still stops the stack and waits for it to
+	// return before cleanup removes its directories. A stack left running there recreates them from default
+	// settings: the config file it would read is gone.
 	f.stop = sync.OnceFunc(func() {
 		caddytest.WriteExecutable(t, f.paths.ExecutablePath)
 		f.signalStop()
-		select {
-		case err := <-done:
-			if err != nil {
-				t.Error(err)
-			}
-		case <-time.After(10 * time.Second):
-			t.Error("shutdown timed out")
+		<-exited
+		if stackErr != nil && !startupFailed {
+			t.Error(stackErr)
 		}
 	})
 	t.Cleanup(f.stop)
+	if !awaitSignals() {
+		startupFailed = true
+		t.Fatalf("startup: %v", stackErr)
+	}
 	select {
 	case f.control = <-controls:
 		f.controlPort = <-ports
-	case err := <-done:
-		t.Fatalf("startup: %v", err)
-	case <-time.After(5 * time.Second):
-		t.Fatal("control startup timed out")
+	case <-exited:
+		startupFailed = true
+		t.Fatalf("startup: %v", stackErr)
 	}
 	waitForCondition(t, stackChangeTimeout, func() bool { return f.control.RestartService(nil) == nil })
 	return f

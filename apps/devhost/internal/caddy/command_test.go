@@ -1,9 +1,11 @@
 package caddy
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -20,10 +22,42 @@ func TestResolveManagedCaddyExecutablePath(t *testing.T) {
 		t.Fatalf("ResolveManagedCaddyExecutablePath(...) = %q, want %q", got, filepath.Join("/tmp/caddy", "caddy"))
 	}
 
-	if got := ResolveManagedCaddyExecutablePath(paths, "linux", func(string) (os.FileInfo, error) {
-		return nil, os.ErrNotExist
-	}); got != "caddy" {
-		t.Fatalf("ResolveManagedCaddyExecutablePath(...) = %q, want %q", got, "caddy")
+	missing := func(string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+	if got := resolveManagedCaddyExecutablePath(paths, "linux", missing, true); got != "caddy" {
+		t.Fatalf("resolveManagedCaddyExecutablePath(..., true) = %q, want the caddy on PATH", got)
+	}
+	if got := resolveManagedCaddyExecutablePath(paths, "linux", missing, false); got != filepath.Join("/tmp/caddy", "caddy") {
+		t.Fatalf("resolveManagedCaddyExecutablePath(..., false) = %q, want the missing managed executable", got)
+	}
+	if got := ResolveManagedCaddyExecutablePath(paths, "linux", missing); got != filepath.Join("/tmp/caddy", "caddy") {
+		t.Fatalf("ResolveManagedCaddyExecutablePath(...) in a test binary = %q, want the missing managed executable", got)
+	}
+}
+
+// Every devhost stack on a machine shares its Caddy. A test whose managed executable was gone once fell back to the
+// caddy on PATH, which loaded the test's configuration into that Caddy and left every stack on the machine without
+// routes.
+func TestTestBinariesNeverRunTheCaddyOnPath(t *testing.T) {
+	directory := t.TempDir()
+	ranPath := filepath.Join(t.TempDir(), "ran")
+	script := fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$*\" > %q\n", ranPath)
+	if err := os.WriteFile(filepath.Join(directory, "caddy"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", directory+string(os.PathListSeparator)+os.Getenv("PATH"))
+	// The Caddy directory exists, as route changes create it, but holds no managed executable.
+	paths := CreateManagedCaddyPaths(t.TempDir())
+	if err := os.MkdirAll(paths.CaddyDirectoryPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	result := RunManagedCaddyCommand(paths, []string{"reload"}, ManagedCaddyCommandOptions{AdminAddress: DefaultManagedCaddyAdminAddress}, ManagedCaddyCommandDependencies{})
+
+	if arguments, err := os.ReadFile(ranPath); err == nil {
+		t.Fatalf("the test ran the caddy on PATH with %s", arguments)
+	}
+	if result.Success || !strings.Contains(string(result.Stderr), paths.ExecutablePath) {
+		t.Fatalf("RunManagedCaddyCommand(...) = %+v, want a failure naming the missing %s", result, paths.ExecutablePath)
 	}
 }
 

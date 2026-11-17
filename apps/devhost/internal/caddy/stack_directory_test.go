@@ -36,6 +36,10 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 	if err := EnsureManagedCaddyConfig(paths, settings, runtime.GOOS); err != nil {
 		t.Fatal(err)
 	}
+	// Route changes run the managed executable; test binaries never fall back to the caddy on PATH.
+	if err := os.Symlink(executable, paths.ExecutablePath); err != nil {
+		t.Fatal(err)
+	}
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		port := settings.HTTPSPort
 		if r.Header.Get("X-Forwarded-Proto") == "http" {
