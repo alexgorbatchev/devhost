@@ -247,6 +247,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 			return rollback(err)
 		}
 	}
+	if err := r.updateRemote(ctx, *r.manifest); err != nil {
+		return rollback(err)
+	}
 	r.configured = &next
 	r.removeRetiredServices()
 	r.finishReloadWorktrees()
@@ -261,6 +264,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	cleanupErr := r.releaseClaimsExcept(collectClaimedHosts(r.manifest.Services), manifestFixedPortClaims(*r.manifest))
 	isReservationFinished = true
 	cleanupErr = errors.Join(cleanupErr, finishReservation(true))
+	if r.manifest.Remote != nil || r.options.Launch.Detached {
+		cleanupErr = errors.Join(cleanupErr, r.publishStackURLs(r.routes.paths))
+	}
 	// Announce the change only once it is complete, so whoever acts on the line finds the retired hosts, ports,
 	// and manifest inputs released.
 	cliout.Log(r.options.LogWriter, r.manifest.Name, change.message)
@@ -350,6 +356,9 @@ func (r *stackRuntime) recoverReload(ctx context.Context, previous ResolvedManif
 	}
 	names = reloadOrder(order, affected)
 	err := r.routes.replace(*r.manifest)
+	if err == nil {
+		err = r.updateRemote(ctx, *r.manifest)
+	}
 	if err != nil {
 		err = errors.Join(err, r.stopReloadServices(names))
 		r.manifestMu.Lock()

@@ -2,8 +2,8 @@ package caddy
 
 import "os"
 
-// SetStackReady completes the detached-start handshake in the existing atomic
-// ownership record, after the supervisor has checked health and routing.
+// SetStackReady publishes readiness and current URLs in the atomic ownership
+// record for detached startup and remote previews.
 func SetStackReady(paths Paths, urls []string) error {
 	return withStackRecordsLock(paths.StacksDirectoryPath, func() error {
 		data, err := os.ReadFile(getStackRecordPath(paths.StacksDirectoryPath))

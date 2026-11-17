@@ -57,6 +57,7 @@ export default defineConfig({
           label: "Stacks",
           items: [
             "guides/stack-lifecycle",
+            "stacks/remote-previews",
             "stacks/hot-reload",
             "stacks/recovery",
             "stacks/worktrees",

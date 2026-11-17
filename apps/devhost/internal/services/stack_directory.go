@@ -19,13 +19,12 @@ func (r *stackRuntime) directoryServices(ctx context.Context) ([]statuspage.Stac
 	r.startedMu.Lock()
 	started := append([]*startedService{}, r.started...)
 	r.startedMu.Unlock()
-	port := m.Caddy.HTTPSPort
 	settings, ok, err := caddy.ReadAppliedManagedCaddySettings(r.routes.paths)
 	if err != nil {
 		return nil, err
 	}
 	if ok {
-		port = settings.HTTPSPort
+		m.Caddy = settings
 	}
 	services := make([]statuspage.StackService, 0, len(m.Services))
 	for _, name := range orderedManifestServiceNames(m) {
@@ -44,7 +43,7 @@ func (r *stackRuntime) directoryServices(ctx context.Context) ([]statuspage.Stac
 		case !isManagedService(service):
 			status = "External"
 		}
-		services = append(services, statuspage.StackService{Name: name, Directory: service.Cwd, URLs: readServiceURLs(service, port), Status: status})
+		services = append(services, statuspage.StackService{Name: name, Directory: service.Cwd, URLs: m.serviceURLs(service), Status: status})
 	}
 	for _, name := range stoppedServiceNames(m) {
 		services = append(services, statuspage.StackService{Name: name, Directory: m.Stopped[name].Cwd, Status: "Not started"})

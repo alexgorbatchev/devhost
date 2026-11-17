@@ -20,8 +20,9 @@ type Schema struct {
 func ReadSchema() Schema {
 	return Schema{
 		Tables: map[string][]string{
-			"":      readTOMLKeys(reflect.TypeFor[fileContents]()),
-			"caddy": readTOMLKeys(reflect.TypeFor[caddyContents]()),
+			"":       readTOMLKeys(reflect.TypeFor[fileContents]()),
+			"caddy":  readTOMLKeys(reflect.TypeFor[caddyContents]()),
+			"remote": readTOMLKeys(reflect.TypeFor[remoteContents]()),
 		},
 		Values: map[string][]string{
 			"caddy.bindHost": slices.Clone(caddy.SupportedManagedCaddyBindHosts),

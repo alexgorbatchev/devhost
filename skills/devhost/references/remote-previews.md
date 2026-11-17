@@ -1,0 +1,35 @@
+# Remote previews
+
+Use this workflow when a user needs to open a development stack through a public gateway from a phone or another network. Start through devhost with `--remote`; the gateway and machine configuration are prerequisites.
+
+## Machine configuration
+
+Read the machine's `config.toml`, selected through `DEVHOST_CONFIG_DIR`, `XDG_CONFIG_HOME`, or `~/.config/devhost/`. `[remote]` contains:
+
+- `serverURL`: HTTPS Chisel endpoint supporting WebSockets. HTTP is restricted to loopback testing.
+- `credentialFile`: a private `0600` file containing the supplied `username:password`; relative paths resolve beside the config file. Keep credentials in this file and handle it as a secret.
+- `fingerprint`: the complete base64 SHA-256 fingerprint of the relay's persistent key.
+- `remotePort`: this machine's assigned reverse listener, from 1 through 65535.
+- `domainSuffix`: this machine's public suffix, including its leading dot or hyphen.
+- `localSuffix`: the manifest suffix to replace, defaulting to `.localhost`.
+
+The gateway operator supplies the settings and credential. Each machine has a separate credential, reverse port, and public suffix. Preserve existing `[caddy]` settings. Stop active remote stacks before changing `[remote]`, then restart them; active remote stacks reject those changes while project manifest reloads and shared Caddy listener changes remain available.
+
+For `localSuffix = ".localhost"` and `domainSuffix = "--laptop--preview.example.com"`, `web.localhost` becomes `web--laptop--preview.example.com`. Use flat labels for a single-level wildcard certificate. Every routed hostname ends in the configured local suffix or already uses the public suffix. Public hosts are resolved before service commands and environment templates; direct service `url` references continue to use their local listeners.
+
+## Run and verify
+
+1. Discover the repository's services, existing manifest, host convention, and health checks using the usual devhost workflow.
+2. Ensure shared Caddy is running, then run `devhost start --remote --detach [service-or-group...]` with the repository's required environment.
+3. Read the printed HTTPS URLs and log path. Readiness covers services, routes, and a connected relay. Verify the URL through the public gateway, including its browser authentication and expected page content, before giving it to the user.
+4. Use `devhost stop` and `devhost stack restart` normally. Repeat detached startup in the same access mode to report the existing stack. Stop a local stack before starting it in remote mode, and vice versa.
+
+One connector per state directory serves all active remote stacks and forwards only their active hosts. Service selection, reloads, and worktree switches update the allowlist. Stopping the final remote stack removes the connector. Restart a remote stack to recover an unexpectedly exited connector. After upgrading devhost, stop all remote stacks before restarting them to replace the shared worker. Network changes trigger reconnects with stable URLs; open requests and WebSockets can require a reconnect, and the machine must stay awake to serve requests.
+
+## Gateway and access boundary
+
+Use a compatible Chisel server with a persistent key and reverse forwarding enabled. devhost embeds Chisel 1.12.0. The machine credential is restricted to its exact reverse listener, such as `^R:0\.0\.0\.0:18081$`. The gateway reaches that listener on its private network, routes the machine's hostname suffix to it, and preserves Host and WebSocket upgrades.
+
+Keep the connector endpoint on machine authentication and preview routes on browser authentication. Preview access includes development tools such as terminals and restart controls. Remote requests to edit machine configuration are rejected. The connector verifies local Caddy TLS with its root certificate; the viewing browser sees the gateway's public certificate.
+
+Read the public [remote preview reference](https://alexgorbatchev.github.io/devhost/stacks/remote-previews/) for setup details and troubleshooting.

@@ -13,6 +13,7 @@ import (
 // registrations exist only for the hostnames and fixed ports a stack holds;
 // this record exists for every stack, so one that holds neither is known too.
 type stackRecord struct {
+	Remote             bool     `json:"remote,omitempty"`
 	Ready              bool     `json:"ready,omitempty"`
 	URLs               []string `json:"urls,omitempty"`
 	LogPath            string   `json:"logPath,omitempty"`
@@ -26,6 +27,7 @@ type stackRecord struct {
 }
 
 type stackRecordJSON struct {
+	Remote             bool     `json:"remote"`
 	Ready              bool     `json:"ready"`
 	URLs               []string `json:"urls"`
 	LogPath            string   `json:"logPath"`
@@ -39,6 +41,7 @@ type stackRecordJSON struct {
 }
 
 type RegisterStackOptions struct {
+	Remote              bool
 	LogPath             string
 	ControlPort         int
 	ManifestFiles       []string
@@ -62,6 +65,7 @@ func registerStack(options RegisterStackOptions) error {
 	}
 
 	record := stackRecord{
+		Remote:             options.Remote,
 		LogPath:            options.LogPath,
 		ControlPort:        options.ControlPort,
 		CreatedAt:          formatRouteMutationTimestamp(routeMutationNow()),
@@ -186,6 +190,7 @@ func parseStackRecord(recordText []byte) (stackRecord, error) {
 
 	record := stackRecord{ControlPort: value.ControlPort, CreatedAt: *value.CreatedAt, ManifestPath: *value.ManifestPath, OwnerPID: *value.OwnerPID, StackName: *value.StackName}
 	record.ManifestFiles = value.ManifestFiles
+	record.Remote = value.Remote
 	record.Ready, record.URLs, record.LogPath = value.Ready, value.URLs, value.LogPath
 	if value.OwnerStartIdentity != nil {
 		record.OwnerStartIdentity = *value.OwnerStartIdentity

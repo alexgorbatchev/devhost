@@ -213,6 +213,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	if err != nil {
 		return 0, err
 	}
+	if err := state.checkRemoteSettings(shared.Remote); err != nil {
+		return 0, err
+	}
 	processSignals := make(chan os.Signal, 1)
 	registerProcessSignals(processSignals)
 	defer unregisterProcessSignals(processSignals)
@@ -250,6 +253,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		state.shuttingDown = true
 		wasReady := state.ready
 		state.operationMu.Unlock()
+		if state.remoteLease != nil {
+			cleanupError = appendCleanupError(cleanupError, state.remoteLease.Close())
+		}
 		if watchManager != nil {
 			watchManager.StopAll()
 		}
@@ -328,6 +334,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		return 0, joinCleanupError(err, cleanupError)
 	}
 	if err := caddy.RegisterStack(caddy.RegisterStackOptions{
+		Remote:              manifest.Remote != nil,
 		ManifestFiles:       stackManifestFiles(options.Configuration),
 		ManifestPath:        manifest.ManifestPath,
 		StackName:           manifest.Name,
@@ -541,6 +548,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		}
 		worktrees.finish(repo.ID, groupError)
 	}
+	if err := state.acquireRemote(lifecycleCtx); err != nil {
+		return 0, err
+	}
 	LogServiceURLs(*manifest, options.LogWriter)
 	logStoppedServices(*manifest, options.LogWriter)
 
@@ -574,6 +584,8 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	state.ready = true
 	if options.Launch.Detached {
 		err = state.publishDetachedReady(lifecycleCtx, paths)
+	} else if manifest.Remote != nil {
+		err = state.publishStackURLs(paths)
 	}
 	state.operationMu.Unlock()
 	if err != nil {
@@ -604,7 +616,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 			configEvents = nil
 			go func() {
 				if err == nil {
-					err = state.applySharedConfig(configPath, configWatch)
+					err = state.applySharedConfig(lifecycleCtx, configPath, configWatch)
 				}
 				completed <- err
 			}()
@@ -727,7 +739,7 @@ func LogServiceURLs(manifest ResolvedManifest, writer io.Writer) {
 		if service.Name == manifest.PrimaryService {
 			displayName = fmt.Sprintf("%s (primary)", service.Name)
 		}
-		for _, serviceURL := range readServiceURLs(service, manifest.Caddy.HTTPSPort) {
+		for _, serviceURL := range manifest.serviceURLs(service) {
 			cliout.Log(writer, manifest.Name, fmt.Sprintf("%s: %s", displayName, serviceURL))
 		}
 	}
@@ -1605,7 +1617,7 @@ func collectServicesHealth(manifest ResolvedManifest, startedServices []*started
 			Managed:    managed,
 			Name:       service.Name,
 			Status:     status,
-			URL:        readManagedServiceURL(service, manifest.Caddy.HTTPSPort),
+			URL:        readManagedServiceURL(service, manifest.publicHTTPSPort()),
 			Dirty:      dirty,
 			Restarting: restarting,
 			ExitCode:   exitCode,

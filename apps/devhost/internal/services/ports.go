@@ -8,6 +8,7 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/remote"
 )
 
 const (
@@ -30,9 +31,10 @@ type ResolvedManifest struct {
 	// requested holds the service or group names given to devhost start and services started
 	// since; empty means every service runs.
 	requested []string
-	// Caddy holds the listener settings the shared managed Caddy runs, which
-	// service URLs use. The devhost config file sets them, not the manifest.
+	// Caddy holds the shared managed Caddy listener settings from the machine
+	// config. Remote URLs use the public HTTPS port instead of this local port.
 	Caddy                 caddy.ManagedCaddyGlobalSettings
+	Remote                *remote.Settings
 	Devtools              manifest.DevtoolsConfig
 	Worktrees             manifest.WorktreesConfig
 	ManifestDirectoryPath string
@@ -97,13 +99,35 @@ func ResolveRequestedServicePorts(value manifest.Manifest, requested []string) (
 	return resolveServicePorts(value, portResolutionOptions{Requested: requested})
 }
 
+// ResolveRemoteServicePorts selects public hostnames before resolving service
+// references in commands, origins, and health checks.
+func ResolveRemoteServicePorts(value manifest.Manifest, requested []string, settings remote.Settings) (ResolvedManifest, error) {
+	resolved, err := resolveServicePorts(value, portResolutionOptions{Requested: requested, Remote: &settings})
+	if err != nil {
+		return ResolvedManifest{}, err
+	}
+	if len(collectClaimedHosts(resolved.Services)) == 0 {
+		return ResolvedManifest{}, fmt.Errorf("remote previews require at least one selected service with a routed hostname")
+	}
+	return resolved, nil
+}
+
 type portResolutionOptions struct {
 	Requested []string
 	Preserved map[string]int
 	Excluded  map[string]map[int]struct{}
+	Remote    *remote.Settings
 }
 
 func resolveServicePorts(value manifest.Manifest, options portResolutionOptions) (ResolvedManifest, error) {
+	configuration := value
+	if options.Remote != nil {
+		var err error
+		value, err = remoteManifestHosts(value, *options.Remote)
+		if err != nil {
+			return ResolvedManifest{}, err
+		}
+	}
 	preserved := options.Preserved
 	excludedPortsByHost := collectFixedPorts(value.Services)
 	for host, ports := range options.Excluded {
@@ -220,8 +244,9 @@ func resolveServicePorts(value manifest.Manifest, options portResolutionOptions)
 	}
 
 	return ResolvedManifest{
-		configuration: &value,
+		configuration: &configuration,
 		requested:     slices.Clone(options.Requested),
+		Remote:        options.Remote,
 
 		Devtools:              value.Devtools,
 		Worktrees:             value.Worktrees,

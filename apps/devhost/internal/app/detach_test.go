@@ -540,6 +540,14 @@ func TestDetachedServiceHelper(t *testing.T) {
 		return
 	}
 	directory := os.Getenv("DEVHOST_DETACHED_DIRECTORY")
+	if expected := os.Getenv("DEVHOST_TEST_REMOTE_ORIGIN"); expected != "" {
+		if got := os.Getenv("DEVHOST_HOST"); got != expected {
+			t.Fatalf("DEVHOST_HOST = %s, want remote origin %s", got, expected)
+		}
+		if err := os.WriteFile(filepath.Join(directory, "remote-origin"), []byte(expected), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if os.Getenv(services.DetachedLogEnvironment) != "" || os.Getenv(services.StackLogEnvironment) != "" {
 		t.Fatal("private startup metadata leaked to service")
 	}

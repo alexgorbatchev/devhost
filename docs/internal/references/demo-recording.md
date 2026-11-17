@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-15 00:54
+last_modified: 2026-11-17 04:16
 status: current
 ---
 
@@ -143,6 +143,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 
 | Feature                                                                                                                                                                        | Documented in                                                                                                                              | Shown in                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Remote previews through an authenticated outbound relay, canonical public hosts, shared machine connector, and network reconnects                                              | `stacks/remote-previews.md`; `reference/cli.md`; `reference/output.md`, "Detached start"                                                   | **No demo**                                      |
 | Detached startup with readiness, retained logs, failure cleanup with named causes, and an idempotent repeat through any path to the manifest                                   | `guides/stack-lifecycle.md`, "Keep a stack running after the terminal closes"; `reference/output.md`, "Detached start"; `reference/cli.md` | **No demo**                                      |
 | Find running stacks by URL, partial name, or manifest path through symlinks; stop every worktree of one repository                                                             | `guides/stack-lifecycle.md`, "Stop a stack started elsewhere", "Stop every worktree of a repository"                                       | **No demo**                                      |
 | Single-column compact React/shadcn stack directory with aligned service/status/URL columns, expandable TOML, filtering, and exited-owner exclusion                             | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`, "Hostnames and DNS"                               | **No demo**                                      |

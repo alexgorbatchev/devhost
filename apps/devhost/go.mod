@@ -15,15 +15,18 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/consul/sdk v0.18.2
+	github.com/jpillora/chisel v1.12.0
 	github.com/lucasb-eyer/go-colorful v1.4.1
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/sys v0.49.0
-	golang.org/x/term v0.45.0
+	golang.org/x/term v0.47.0
 	golang.org/x/tools v0.52.0
 )
 
 require (
+	github.com/andrew-d/go-termutil v0.0.0-20150726205930-009166a695a2 // indirect
+	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
@@ -31,6 +34,10 @@ require (
 	github.com/go-json-experiment/json v0.0.0-20260213210345-44df1a37e875 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/jpillora/ansi v1.0.3 // indirect
+	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/jpillora/requestlog v1.0.0 // indirect
+	github.com/jpillora/sizestr v1.0.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
@@ -40,9 +47,13 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
+	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/mod v0.42.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect

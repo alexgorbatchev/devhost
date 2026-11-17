@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -54,7 +56,7 @@ func sharedConfigInputs(path string) manifest.Inputs {
 // Caddy to the file's listener settings, unless another stack already did, and
 // points this stack's service URLs at them. A file that is invalid, or that
 // Caddy rejects, leaves Caddy and the stack on the settings they run.
-func (r *stackRuntime) applySharedConfig(path string, w *manifestWatcher) error {
+func (r *stackRuntime) applySharedConfig(ctx context.Context, path string, w *manifestWatcher) error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()
 	// The config directory may have been created since the last save; watch the
@@ -66,8 +68,18 @@ func (r *stackRuntime) applySharedConfig(path string, w *manifestWatcher) error 
 	if err != nil {
 		return err
 	}
+	if err := r.checkRemoteSettings(shared.Remote); err != nil {
+		return err
+	}
+	previous := *r.manifest
 	if _, err := caddy.ApplyManagedCaddySettings(r.routes.paths, shared.Caddy, r.options.CaddyOutputWriters); err != nil {
 		return fmt.Errorf("apply the devhost config file %s: %w", path, err)
+	}
+	candidate := previous
+	candidate.Caddy = shared.Caddy
+	if err := r.updateRemote(ctx, candidate); err != nil {
+		_, restoreErr := caddy.ApplyManagedCaddySettings(r.routes.paths, previous.Caddy, r.options.CaddyOutputWriters)
+		return errors.Join(err, restoreErr)
 	}
 	r.manifestMu.Lock()
 	changed := r.manifest.Caddy != shared.Caddy
@@ -76,6 +88,11 @@ func (r *stackRuntime) applySharedConfig(path string, w *manifestWatcher) error 
 	r.manifestMu.Unlock()
 	if !changed {
 		return nil
+	}
+	if r.manifest.Remote != nil || r.options.Launch.Detached {
+		if err := r.publishStackURLs(r.routes.paths); err != nil {
+			return err
+		}
 	}
 	r.publish()
 	cliout.Log(r.options.LogWriter, r.manifest.Name, "Applied the shared Caddy settings from "+path+".")

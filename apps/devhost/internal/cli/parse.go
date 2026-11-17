@@ -34,6 +34,7 @@ const (
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
 	KindCaddyTrustRemote   Kind = "caddy-trust-remote"
+	KindRemoteWorker       Kind = "remote-worker"
 )
 
 type CaddyLifecycleAction string
@@ -71,16 +72,18 @@ const (
 )
 
 type CommandLineArguments struct {
-	Kind         Kind
-	Directory    string
-	Port         int
-	Domain       string
-	ManifestPath *string
-	Action       CaddyLifecycleAction
-	SSHTarget    string
-	Debug        bool
-	Detach       bool
-	IdleTimeout  string
+	Kind                 Kind
+	Directory            string
+	Port                 int
+	Domain               string
+	ManifestPath         *string
+	Action               CaddyLifecycleAction
+	SSHTarget            string
+	Debug                bool
+	Detach               bool
+	Remote               bool
+	RemoteStateDirectory string
+	IdleTimeout          string
 	// Services names the services or groups devhost start was asked for; empty means all services.
 	Services []string
 	// Startable limits devhost service list to the services that start only when named.
@@ -143,6 +146,7 @@ func newRootCommand(result *CommandLineArguments, rawArguments []string) (*cobra
 	if err != nil {
 		return nil, fmt.Errorf("building command line: %w", err)
 	}
+	rootCommand.AddCommand(createRemoteWorkerCommand(result))
 
 	if err := installHelp(rootCommand, result); err != nil {
 		return nil, fmt.Errorf("installing help screens: %w", err)
@@ -187,6 +191,7 @@ type startOptions struct {
 	ManifestOptions
 	Debug       bool     `descr:"Show Caddy's output while the stack runs." name:"debug" short:"d"`
 	Detach      bool     `descr:"Run in the background; wait until the stack is ready." name:"detach"`
+	Remote      bool     `descr:"Expose this stack through the configured remote preview relay." name:"remote"`
 	IdleTimeout string   `descr:"Stop the stack after this long without traffic, e.g. 30s or 1m." env:"DEVHOST_IDLE_TIMEOUT" name:"idle-timeout" optional:"true"`
 	Services    []string `descr:"Services or groups; omit to start every service." name:"service" optional:"true" positional:"true"`
 }
@@ -256,6 +261,7 @@ func createStartCommand(result *CommandLineArguments) boa.CmdT[startOptions] {
 				ManifestPath: options.ManifestPath,
 				Debug:        options.Debug,
 				Detach:       options.Detach,
+				Remote:       options.Remote,
 				IdleTimeout:  options.IdleTimeout,
 				Services:     options.Services,
 			}
@@ -276,8 +282,13 @@ Services panel.
 
 Without --manifest, devhost uses the nearest devhost.toml in
 the current folder or a parent folder. Hostnames must
-already point to this machine; *.localhost names need no
-DNS setup.
+already point to this machine for local starts;
+*.localhost names need no DNS setup.
+
+With --remote, use the relay and public hostname suffix
+from [remote] in the machine config.toml. The connector
+reconnects after network changes while this machine stays
+awake. Configure browser authentication at the relay.
 
 With --detach (Linux and macOS), the stack runs in a
 session of its own and appends its output to a log in the
@@ -287,7 +298,9 @@ registered, then prints the stack PID, its URLs, and the
 log file. A failed start, a timeout, Ctrl-C, or SIGTERM
 stops the stack; the command prints the end of the log and
 the cause, and exits 1. When a stack from this manifest
-already runs, it reports that stack and exits 0.`
+already runs in the same mode, it reports that stack and
+exits 0. Remote starts also wait for the relay connection;
+this does not verify public DNS or browser authentication.`
 
 const stopDescription = `Stop the running stack for this project.
 

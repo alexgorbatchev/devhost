@@ -18,17 +18,20 @@ import (
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/choices"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/remote"
 )
 
 const fileName = "config.toml"
 
 // Config holds the settings every stack on the machine shares.
 type Config struct {
-	Caddy caddy.ManagedCaddyGlobalSettings
+	Caddy  caddy.ManagedCaddyGlobalSettings
+	Remote *remote.Settings
 }
 
 type fileContents struct {
-	Caddy *caddyContents `toml:"caddy"`
+	Caddy  *caddyContents  `toml:"caddy"`
+	Remote *remoteContents `toml:"remote"`
 }
 
 type caddyContents struct {
@@ -109,6 +112,11 @@ func Parse(path string, content []byte) (Config, error) {
 	sort.Strings(issues)
 	if contents.Caddy != nil {
 		issues = append(issues, applyCaddy(*contents.Caddy, &result.Caddy)...)
+	}
+	if contents.Remote != nil {
+		settings, remoteIssues := readRemote(path, *contents.Remote)
+		result.Remote = &settings
+		issues = append(issues, remoteIssues...)
 	}
 	if len(issues) > 0 {
 		return Config{}, &ValidationError{Path: path, Issues: issues}

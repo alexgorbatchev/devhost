@@ -22,6 +22,7 @@ func (r *stackRuntime) registerManifestFiles(files []string) error {
 	}
 	r.controlMu.RUnlock()
 	return caddy.RegisterStack(caddy.RegisterStackOptions{
+		Remote:              r.manifest.Remote != nil,
 		ControlPort:         port,
 		ManifestPath:        r.manifest.ManifestPath,
 		ManifestFiles:       files,

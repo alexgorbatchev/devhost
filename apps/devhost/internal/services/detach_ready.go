@@ -21,7 +21,6 @@ func (r *stackRuntime) publishDetachedReady(ctx context.Context, paths caddy.Pat
 			return &serviceNotReadyError{service: started.service.Name, err: err}
 		}
 	}
-	var urls []string
 	for _, name := range orderedManifestServiceNames(*r.manifest) {
 		service := r.manifest.Services[name]
 		if !probeServiceHealth(ctx, service.Health) {
@@ -30,7 +29,14 @@ func (r *stackRuntime) publishDetachedReady(ctx context.Context, paths caddy.Pat
 			}
 			return &serviceNotReadyError{service: name, err: fmt.Errorf("service %s became unhealthy before detached startup completed", name)}
 		}
-		urls = append(urls, readServiceURLs(service, r.manifest.Caddy.HTTPSPort)...)
+	}
+	return r.publishStackURLs(paths)
+}
+
+func (r *stackRuntime) publishStackURLs(paths caddy.Paths) error {
+	var urls []string
+	for _, name := range orderedManifestServiceNames(*r.manifest) {
+		urls = append(urls, r.manifest.serviceURLs(r.manifest.Services[name])...)
 	}
 	return caddy.SetStackReady(paths, urls)
 }

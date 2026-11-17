@@ -88,6 +88,26 @@ func TestRegisterStackRecordsTheStackItRuns(t *testing.T) {
 	}
 }
 
+func TestRemoteStackMetadataSurvivesManifestReservation(t *testing.T) {
+	paths := newManagedCaddyPaths(t)
+	options := RegisterStackOptions{Remote: true, ManifestPath: identityTestManifestPath, StackName: "remote", StacksDirectoryPath: paths.StacksDirectoryPath}
+	if err := RegisterStack(options); err != nil {
+		t.Fatal(err)
+	}
+	urls := []string{"https://app.preview.example.com"}
+	if err := SetStackReady(paths, urls); err != nil {
+		t.Fatal(err)
+	}
+	options.ManifestFiles = []string{identityTestManifestPath}
+	if err := RegisterStack(options); err != nil {
+		t.Fatal(err)
+	}
+	stacks, err := ReadLiveStacks(paths)
+	if err != nil || len(stacks) != 1 || !stacks[0].Remote || !stacks[0].Ready || !slices.Equal(stacks[0].URLs, urls) {
+		t.Fatalf("remote stack after reservation = %#v, error %v", stacks, err)
+	}
+}
+
 func TestCleanupStaleStackRecordsRemovesTheRecordsOfStacksThatExited(t *testing.T) {
 	// A running process this test owns: the owner of one record, and the unrelated
 	// process that got the PID of the owner of another.

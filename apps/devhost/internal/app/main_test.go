@@ -10,7 +10,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Native detached/restart tests re-exec this binary with actual CLI arguments.
-	if os.Getenv("DEVHOST_TEST_CLI") == "1" && len(os.Args) > 1 && (os.Args[1] == "start" || os.Args[1] == "stop" || os.Args[1] == "stack") {
+	if os.Getenv("DEVHOST_TEST_CLI") == "1" && len(os.Args) > 1 && (os.Args[1] == "start" || os.Args[1] == "stop" || os.Args[1] == "stack" || os.Args[1] == "_remote-worker") {
 		cwd, err := os.Getwd()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)

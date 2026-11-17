@@ -121,6 +121,12 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 	if existing, err := attempt.awaitEarlierStart(paths, canonical, logPath); err != nil {
 		return err
 	} else if existing != nil {
+		if existing.Remote != (options.Manifest.Remote != nil) {
+			return &cliout.Failure{
+				Err:  fmt.Errorf("the running stack uses a different remote preview mode"),
+				Hint: "Stop this stack with devhost stop, then start it again with the requested --remote setting.",
+			}
+		}
 		return reportDetachedStack(options.Stdout, *existing, true)
 	}
 	failurePath := detachedFailurePath(logPath)
@@ -310,14 +316,14 @@ func (a detachedAttempt) pause(ticker *time.Ticker) error {
 // ready belongs to an earlier start whose command stopped waiting for it or
 // died: it can still fail, and a failed one stays registered until the end of
 // its cleanup. The caller holds the start lock, so it waits until that stack is
-// ready, and reports it, or gone, and launches its own. Neither a restart
-// replacement nor a foreground stack is waited for: neither records this log.
+// ready, and reports it, or gone, and launches its own. Remote stacks also
+// publish readiness outside detached startup, so wait for their connector.
 func (a detachedAttempt) awaitEarlierStart(paths caddy.Paths, canonical, logPath string) (*caddy.LiveStack, error) {
 	ticker := time.NewTicker(detachedPollInterval)
 	defer ticker.Stop()
 	for {
 		stack, err := findDetachedStack(paths, canonical)
-		if err != nil || stack == nil || stack.Ready || stack.LogPath != logPath {
+		if err != nil || stack == nil || stack.Ready || (!stack.Remote && stack.LogPath != logPath) {
 			return stack, err
 		}
 		if err := a.pause(ticker); err != nil {
@@ -403,7 +409,7 @@ func reportDetachedStack(writer io.Writer, stack caddy.LiveStack, existing bool)
 	if err := cliout.WriteLog(writer, "devhost", fmt.Sprintf("%s %s (PID %d).", state, stack.Name, stack.PID)); err != nil {
 		return err
 	}
-	if !existing {
+	if !existing || stack.Remote {
 		for _, url := range stack.URLs {
 			if err := cliout.WriteLog(writer, "devhost", url); err != nil {
 				return err

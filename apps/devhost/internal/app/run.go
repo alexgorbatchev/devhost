@@ -27,6 +27,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	}
 
 	switch arguments.Kind {
+	case cli.KindRemoteWorker:
+		return runRemoteWorker(arguments.RemoteStateDirectory, stderr)
 	case cli.KindServe:
 		directory := arguments.Directory
 		if directory == "" {
@@ -134,7 +136,7 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, orderError)
 		}
 
-		resolvedManifest, resolveError := services.ResolveRequestedServicePorts(validatedManifest, arguments.Services)
+		resolvedManifest, resolveError := resolveStartManifest(validatedManifest, arguments.Services, arguments.Remote)
 		if resolveError != nil {
 			return fail(stderr, resolveError)
 		}
