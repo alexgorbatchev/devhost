@@ -46,7 +46,7 @@ dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
 
 # Start the root devhost stack using machine routing
 run: devhost::build-devtools-bundle
-    apps/devhost/scripts/runFromSource.sh start --manifest devhost.toml
+    apps/devhost/scripts/runFromSource.sh start --detach --manifest devhost.toml
 
 # Clean all node_modules directories across the repository
 clean:

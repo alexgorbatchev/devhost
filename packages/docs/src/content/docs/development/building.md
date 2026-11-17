@@ -14,7 +14,7 @@ just devhost compile
 
 `just setup` installs the workspace dependencies and Go modules and builds the embedded toolbar. `just devhost compile` rebuilds the toolbar and writes a binary for your platform to `apps/devhost/bin/devhost`, stamped with the version in `apps/devhost/metadata.json`.
 
-To run devhost from source without installing it, use `just cli <args>`, or `just run-ai <args>` for agent output. Both run in the directory you call them from. `just run` starts the repository's own development stack.
+To run devhost from source without installing it, use `just cli <args>`, or `just run-ai <args>` for agent output. Both run in the directory you call them from. `just run` starts the repository's development stack in the background and waits for it to become ready. Run `just cli stop` from the repository root to stop it.
 
 ## Use a protected development build
 

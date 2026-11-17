@@ -30,7 +30,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Generate the guide films' ElevenLabs narration: `just demo audio-guides` (or `just demo audio-guides <guide-slug>`). A line whose request is unchanged keeps its take; append `retake` after the guide to speak the selected lines again. This needs `ELEVENLABS_API_KEY` and bills that account.
 - Download the pinned guide videos a checkout lacks: `just docs media` (`just docs run`, `test`, and `build` run it first).
 - Upload reviewed guide videos to the `media` release and pin them: `just docs publish-media`. This needs the GitHub CLI signed in with write access; commit the rewritten `packages/docs/demo-media.json`.
-- Start the root devhost stack locally: `just run`
+- Start the root devhost stack in the background: `just run`. Stop it with `just cli stop` from the repository root.
 - View contributor architecture diagrams at `https://devhost-archify.localhost/` while the stack runs (the machine config supplies the local or relay suffix). Regenerate them with `ARCHIFY_CLI=/path/to/archify/bin/archify.mjs just archify build`; see `docs/internal/architecture/index.md` for browser prerequisites and maintenance.
 - Preview standalone 404, recovery, error, directory, and Markdown pages while that stack runs: open `/__devhost__/pages/` on a root-routed development domain. The gallery requires a source checkout: the one a development build records, which `just run` uses, or `DEVHOST_DEV_SOURCE_DIR`.
 - Preview startup timeout and recovery pages: `just devhost demo-recovery`; open the URL printed by devhost; the machine config supplies the local or relay suffix.
