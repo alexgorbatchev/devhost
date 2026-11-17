@@ -111,6 +111,51 @@ func TestRouteMutationsUseTheRunningSettings(t *testing.T) {
 	assertFileContains(t, paths.CaddyfilePath, "admin 127.0.0.1:22003")
 }
 
+// Without the applied-settings record no managed Caddy of this state directory runs: a start writes the record and a
+// stop removes it. A route change must then leave Caddy alone, as the stack directory sync does, because a reload
+// would reach whatever Caddy answers on the default admin address with this state directory's Caddyfile. The next
+// start renders every route for its own settings, so registrations and host files still change.
+func TestRouteChangesWithoutAppliedSettingsReloadNothing(t *testing.T) {
+	withRouteMutationTestHooks(t, routeMutationTestHooks{now: time.Now(), processID: 4321})
+	stopped := ManagedCaddyGlobalSettings{AdminAddress: "127.0.0.1:22004", BindHost: "127.0.0.1", HTTPPort: 80, HTTPSPort: 443}
+	paths := newManagedCaddyPathsWithSettings(t, stopped)
+	if err := removeAppliedManagedCaddySettings(paths); err != nil {
+		t.Fatal(err)
+	}
+	original := routeMutationRunManagedCaddyCommand
+	t.Cleanup(func() { routeMutationRunManagedCaddyCommand = original })
+	var reloads []string
+	routeMutationRunManagedCaddyCommand = func(_ Paths, _ []string, options ManagedCaddyCommandOptions) CommandResult {
+		reloads = append(reloads, options.AdminAddress)
+		return CommandResult{Success: true}
+	}
+	route := ActivateRouteOptions{AppBindHost: "127.0.0.1", AppPort: 3000, Host: "app.localhost", Path: "/", ServiceName: "web"}
+	registrationPath := getRouteRegistrationPath(route.ServiceName, route.Host, route.Path, paths.RoutesDirectoryPath)
+
+	if err := ActivateRoute(route, "/project/devhost.toml", paths.RoutesDirectoryPath); err != nil {
+		t.Fatalf("ActivateRoute(...) error = %v", err)
+	}
+	if _, err := os.Stat(registrationPath); err != nil {
+		t.Fatalf("ActivateRoute(...) did not register the route: %v", err)
+	}
+	assertFileContains(t, getHostRoutePath(route.Host, paths.RoutesDirectoryPath), "https://app.localhost {")
+	if err := SyncManagedHostRoute(route.Host, paths.RoutesDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+		t.Fatalf("SyncManagedHostRoute(...) error = %v", err)
+	}
+	if err := UnregisterRoute(route.ServiceName, route.Host, route.Path, "/project/devhost.toml", paths.RegistrationsDirectoryPath, RouteCommandOutputWriters{}); err != nil {
+		t.Fatalf("UnregisterRoute(...) error = %v", err)
+	}
+	if _, err := os.Stat(registrationPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("UnregisterRoute(...) left the registration: %v", err)
+	}
+	if len(reloads) != 0 {
+		t.Fatalf("route changes without a running managed Caddy reloaded admin addresses %v, want none", reloads)
+	}
+	if _, ok, err := ReadAppliedManagedCaddySettings(paths); err != nil || ok {
+		t.Fatalf("route changes recorded applied settings: %v, %v", ok, err)
+	}
+}
+
 func TestSharedCaddyChangesHoldTheRouteLock(t *testing.T) {
 	withRouteMutationTestHooks(t, routeMutationTestHooks{now: time.Now(), processID: 4321})
 	paths := newManagedCaddyPaths(t)

@@ -132,6 +132,8 @@ Every project can run its own stack at once. They share Caddy under these rules:
 
 Stopping a stack removes only its routes. Caddy keeps running with its settings, even with no routes left.
 
+`devhost caddy stop` while stacks still run leaves them running without a proxy. Their route changes are kept, never sent to another Caddy, and `devhost caddy start` serves every route that is still registered.
+
 ## Caddy settings
 
 Caddy's ports, bind address, admin address, and plain-HTTP listener are machine settings in `config.toml`, not in a manifest. See [Proxy ports and listeners](../shared-managed-caddy-settings/).

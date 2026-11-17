@@ -437,7 +437,7 @@ func UnregisterRoute(
 		if registration.OwnerPID != routeMutationProcessID() || registration.ManifestPath != manifestPath {
 			return nil
 		}
-		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		settings, running, err := readRouteSettings(paths)
 		if err != nil {
 			return err
 		}
@@ -451,22 +451,28 @@ func UnregisterRoute(
 		if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings); err != nil {
 			return err
 		}
+		if !running {
+			return nil
+		}
 
 		return reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, outputWriters)
 	})
 }
 
 // SyncManagedHostRoute renders host from its current registrations and
-// reloads the managed Caddy.
+// reloads the managed Caddy, when one runs.
 func SyncManagedHostRoute(host string, routesDirectoryPath string, outputWriters RouteCommandOutputWriters) error {
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	return withRouteMutationLock(paths, func() error {
-		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		settings, running, err := readRouteSettings(paths)
 		if err != nil {
 			return err
 		}
 		if err := syncHostRoute(host, routesDirectoryPath, settings); err != nil {
 			return err
+		}
+		if !running {
+			return nil
 		}
 
 		return reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, outputWriters)

@@ -25,7 +25,8 @@ func ActivateRoutes(options []ActivateRouteOptions, manifestPath string, routesD
 // ReplaceRoutes publishes additions, updates, and removals with one reload.
 // Rollback touches only these registrations and retains other stacks' routes.
 // Routes render for the listener settings Caddy runs, which only
-// ApplyManagedCaddySettings changes.
+// ApplyManagedCaddySettings changes. Without a running managed Caddy the
+// routes are only recorded, for its next start.
 func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string, routesDirectoryPath string) error {
 	affected := append(append([]ActivateRouteOptions{}, options...), previous...)
 	if len(affected) == 0 {
@@ -33,15 +34,15 @@ func ReplaceRoutes(previous, options []ActivateRouteOptions, manifestPath string
 	}
 	paths := CreateManagedCaddyPathsForRoutesDirectory(routesDirectoryPath)
 	return withRouteMutationLock(paths, func() error {
-		settings, err := readRunningSettings(paths, DefaultManagedCaddyGlobalSettings())
+		settings, running, err := readRouteSettings(paths)
 		if err != nil {
 			return err
 		}
-		return replaceRoutesLocked(previous, options, affected, manifestPath, routesDirectoryPath, settings)
+		return replaceRoutesLocked(previous, options, affected, manifestPath, routesDirectoryPath, settings, running)
 	})
 }
 
-func replaceRoutesLocked(previous, options, affected []ActivateRouteOptions, manifestPath string, routesDirectoryPath string, settings ManagedCaddyGlobalSettings) error {
+func replaceRoutesLocked(previous, options, affected []ActivateRouteOptions, manifestPath string, routesDirectoryPath string, settings ManagedCaddyGlobalSettings, running bool) error {
 	snapshots, err := snapshotRouteRegistrations(affected, routesDirectoryPath)
 	if err != nil {
 		return err
@@ -106,6 +107,9 @@ func replaceRoutesLocked(previous, options, affected []ActivateRouteOptions, man
 	}
 	if err := syncManagedCaddyNotFoundSite(routesDirectoryPath, settings); err != nil {
 		return rollback(err)
+	}
+	if !running {
+		return nil
 	}
 	reloadAttempted = true
 	if err := reloadManagedCaddy(settings.AdminAddress, routesDirectoryPath, affected[0].CaddyOutputWriters); err != nil {

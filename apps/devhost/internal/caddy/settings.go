@@ -50,6 +50,20 @@ func readRunningSettings(paths Paths, fallback ManagedCaddyGlobalSettings) (Mana
 	return fallback, nil
 }
 
+// readRouteSettings returns the settings route changes render, and whether a
+// managed Caddy of this state directory runs them. Without a record none runs:
+// routes render for the defaults, the next start renders every route again for
+// its own settings, and the caller must not reload, as a reload would reach
+// whatever Caddy answers on the default admin address.
+func readRouteSettings(paths Paths) (settings ManagedCaddyGlobalSettings, running bool, err error) {
+	settings, running, err = ReadAppliedManagedCaddySettings(paths)
+	if err != nil || running {
+		return settings, running, err
+	}
+
+	return DefaultManagedCaddyGlobalSettings(), false, nil
+}
+
 func writeAppliedManagedCaddySettings(paths Paths, settings ManagedCaddyGlobalSettings) error {
 	text, err := json.MarshalIndent(appliedSettingsJSON(settings), "", "  ")
 	if err != nil {

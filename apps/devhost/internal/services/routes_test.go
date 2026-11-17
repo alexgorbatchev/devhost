@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
@@ -51,10 +50,7 @@ func TestStackRoutesNameTheAccessLogAfterTheStackIdentity(t *testing.T) {
 func TestStackRoutesRestoresDocumentBackendOnReloadFailure(t *testing.T) {
 	paths := caddy.CreateManagedCaddyPaths(t.TempDir())
 	admin := caddytest.StartAdminServer(t)
-	caddytest.WriteExecutable(t, paths.ExecutablePath)
-	if err := caddy.EnsureManagedCaddyConfig(paths, testCaddySettings(admin), runtime.GOOS); err != nil {
-		t.Fatal(err)
-	}
+	runTestCaddy(t, paths, testCaddySettings(admin))
 	m := newResolvedManifest(t.TempDir(), admin)
 	routes := stackRoutes{manifest: m, paths: paths, runtime: &stackRuntime{manifest: &m}, documentServers: map[string]*devtools.DocumentInjectionServer{}, active: map[string]caddy.ActivateRouteOptions{}}
 	backend := func(text string) *httptest.Server {
