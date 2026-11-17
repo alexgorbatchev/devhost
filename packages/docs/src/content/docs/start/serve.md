@@ -59,10 +59,10 @@ Use a [manifest](../../guides/stack-lifecycle/) instead when you want devhost to
 | `--dir`          | Folder to serve. Defaults to the current directory.                                                                |
 | `--port`, `-p`   | Port of a running HTTP server on `127.0.0.1`, from `1` to `65535`. Cannot be combined with `--dir`.                |
 
-`devhost serve` ignores any `devhost.toml`, including one named by `DEVHOST_MANIFEST`, and writes nothing into the served folder.
+`devhost serve` ignores any `devhost.toml`, including one named by `DEVHOST_MANIFEST`, and writes nothing into the served folder. It always uses local routing, even when `config.toml` configures a [relay](../../stacks/remote-previews/): `--domain` is used exactly as given, without `domainSuffix`, and the relay never forwards it. To preview a folder through a relay, [serve it in a stack](#serve-a-folder-in-a-stack) under a single-label `host`.
 
 ## HTTPS and stopping
 
 `devhost serve` starts the shared Caddy when it is not running. The first time, devhost installs Caddy's local certificate authority, which can ask for your password; see [Route apps over HTTPS](../../guides/managed-caddy/#prepare-caddy).
 
-The session runs in the foreground. **Ctrl-C** removes its route and stops the file server; Caddy and any server you routed keep running. A hostname held by another session or stack is rejected, so give concurrent sessions different hostnames. `devhost stack list` shows only manifest-backed stacks: stop a serve session from its terminal.
+The session runs in the foreground. **Ctrl-C** removes its route and stops the file server; Caddy and any server you routed keep running. A hostname held by another session or stack is rejected, so give concurrent sessions different hostnames. `devhost stack list` shows only manifest-backed stacks: stop a serve session from its terminal. After [`devhost stack restart`](../../guides/stack-lifecycle/#restart-after-upgrading-devhost), the replacement runs in the background; signal the PID the restart printed to stop it.
