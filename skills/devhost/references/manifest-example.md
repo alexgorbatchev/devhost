@@ -158,7 +158,7 @@ dependsOn = ["api"]
 # other services (default: false). Set it on shared infrastructure such as a database.
 # alwaysStart = true
 # Relative watch paths use the service cwd and follow its selected worktree.
-# Included services use the same cwd-relative rule. Paths outside the root manifest directory warn.
+# Included services use the same cwd-relative rule. Paths outside both the root manifest directory and the service cwd warn.
 # Absolute watch paths stay absolute. Changes mark the service dirty in the UI.
 watch = ["src/"]
 

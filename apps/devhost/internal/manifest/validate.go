@@ -387,9 +387,9 @@ func validateService(
 	if watchValues, ok := readOptionalStringArray(value, servicePath, "watch", schemaIssues); ok {
 		for _, p := range watchValues {
 			resolvedPath := ResolveWatchPath(resolvedCwd, p)
-			relativePath, err := filepath.Rel(manifestDirectoryPath, resolvedPath)
-			if err != nil || relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
-				cliout.WriteWarning(os.Stderr, fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q", serviceName, p, manifestDirectoryPath))
+			// A service whose cwd is another directory, such as a sibling repository, watches its own files there.
+			if !isWithinDirectory(manifestDirectoryPath, resolvedPath) && !isWithinDirectory(resolvedCwd, resolvedPath) {
+				cliout.WriteWarning(os.Stderr, fmt.Sprintf("services.%s.watch path %q resolves outside the manifest directory %q and the service cwd %q", serviceName, p, manifestDirectoryPath, resolvedCwd))
 			}
 			watch = append(watch, p)
 		}
@@ -559,6 +559,12 @@ func readPrimaryFallbackService(serviceOrder []string, serviceNames []string) st
 	}
 
 	return serviceNames[0]
+}
+
+// isWithinDirectory reports whether path is directory itself or lies beneath it.
+func isWithinDirectory(directory, path string) bool {
+	relativePath, err := filepath.Rel(directory, path)
+	return err == nil && relativePath != ".." && !strings.HasPrefix(relativePath, ".."+string(filepath.Separator))
 }
 
 func resolveConstrainedPath(fieldPath string, candidatePath string, manifestDirectoryPath string, validationIssues *[]string) string {

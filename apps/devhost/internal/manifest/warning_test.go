@@ -11,6 +11,7 @@ import (
 
 func TestValidateManifestWatchPathsUseServiceCwd(t *testing.T) {
 	root := t.TempDir()
+	sibling := t.TempDir()
 	tests := []struct {
 		name, cwd, watch string
 		warn             bool
@@ -19,7 +20,10 @@ func TestValidateManifestWatchPathsUseServiceCwd(t *testing.T) {
 		{name: "sibling outside project", cwd: "apps/playground", watch: "../../../shared", warn: true},
 		{name: "absolute inside project", cwd: "apps/playground", watch: filepath.Join(root, "packages", "connector", "src")},
 		{name: "absolute outside project", cwd: "apps/playground", watch: t.TempDir(), warn: true},
-		{name: "absolute cwd outside project", cwd: t.TempDir(), watch: "src", warn: true},
+		// A service run from another directory, such as a sibling repository, watches its own files there.
+		{name: "inside an absolute cwd outside project", cwd: sibling, watch: "src"},
+		{name: "absolute path inside an absolute cwd outside project", cwd: sibling, watch: filepath.Join(sibling, "cmd")},
+		{name: "outside both an absolute cwd and the project", cwd: sibling, watch: "../elsewhere", warn: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -50,7 +54,12 @@ func TestValidateManifestWatchPathsUseServiceCwd(t *testing.T) {
 
 func TestValidateManifestWarnsAboutAWatchPathOutsideTheManifestDirectory(t *testing.T) {
 	manifestDirectoryPath := t.TempDir()
-	message := fmt.Sprintf("services.web.watch path %q resolves outside the manifest directory %q\n", "../shared", manifestDirectoryPath)
+	message := fmt.Sprintf(
+		"services.web.watch path %q resolves outside the manifest directory %q and the service cwd %q\n",
+		"../shared",
+		manifestDirectoryPath,
+		manifestDirectoryPath,
+	)
 
 	tests := []struct {
 		name  string
