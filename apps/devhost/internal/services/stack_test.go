@@ -2513,6 +2513,14 @@ func TestServiceHelperProcess(t *testing.T) {
 		runStderrThenSpawnStderrHolderAndExitHelper()
 	case "wait-for-termination":
 		runWaitForTerminationHelper()
+	case "log-signals":
+		runLogSignalsHelper()
+	case "start-detached-sleeper-and-wait":
+		runStartDetachedSleeperAndWaitHelper()
+	case "launch-daemon-and-wait":
+		runLaunchDaemonAndWaitHelper()
+	case "start-daemon-and-exit-on-release":
+		runStartDaemonAndExitOnReleaseHelper()
 	default:
 		os.Exit(2)
 	}

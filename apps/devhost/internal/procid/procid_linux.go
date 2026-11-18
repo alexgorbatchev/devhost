@@ -81,14 +81,21 @@ var readBootID = sync.OnceValues(func() (string, error) {
 // runs and that no later process with the same PID has. The error of a process
 // that does not exist wraps fs.ErrNotExist.
 func StartIdentity(pid int) (string, error) {
-	bootID, err := readBootID()
-	if err != nil {
-		return "", fmt.Errorf("read boot id: %w", err)
-	}
-
 	stat, err := ReadStat(pid)
 	if err != nil {
 		return "", err
+	}
+
+	return StartIdentityOf(stat)
+}
+
+// StartIdentityOf returns the start identity of the process a stat line
+// already read describes, so a reader of every process's stat line gets each
+// identity without reading the process again.
+func StartIdentityOf(stat Stat) (string, error) {
+	bootID, err := readBootID()
+	if err != nil {
+		return "", fmt.Errorf("read boot id: %w", err)
 	}
 
 	return bootID + ":" + strconv.FormatUint(stat.StartTicks, 10), nil
