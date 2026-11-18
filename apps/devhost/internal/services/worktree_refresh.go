@@ -3,8 +3,12 @@ package services
 import "fmt"
 
 // refreshWorktrees reconciles checkout availability with the running groups.
-// It shares the lifecycle lock with restarts and switches, so a refresh cannot
-// stop a group while another operation is moving it to a healthy checkout.
+// It stops a repository's services only when the checkout they run is gone:
+// deleted, no longer registered with Git, or part of another repository. A
+// problem in that checkout's manifest belongs to hot reload, which keeps the
+// accepted manifest running. The refresh shares the lifecycle lock with
+// restarts and switches, so it cannot stop a group while another operation is
+// moving it to a healthy checkout.
 func (r *stackRuntime) refreshWorktrees() error {
 	r.operationMu.Lock()
 	defer r.operationMu.Unlock()

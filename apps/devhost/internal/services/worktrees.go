@@ -222,6 +222,17 @@ func (g *worktreeGroup) refresh() error {
 		if entry.Reason != "" {
 			continue
 		}
+		if entry.Path == g.view.RunningPath {
+			// Hot reload owns the manifest of the checkout the stack runs: it rejects an invalid edit and keeps the
+			// accepted manifest running. Judge that checkout only by whether it is still part of this repository,
+			// because refreshWorktrees stops the repository's services when it is not.
+			if err := g.belongs(entry.Path); err != nil {
+				entry.Reason = err.Error()
+			} else {
+				entry.Available = true
+			}
+			continue
+		}
 		directories, err := g.directories(entry.Path)
 		if err != nil {
 			entry.Reason = err.Error()
@@ -249,13 +260,21 @@ func (g *worktreeGroup) refresh() error {
 	return nil
 }
 
-func (g *worktreeGroup) directories(root string) ([]devtools.WorktreeDirectory, error) {
+// belongs reports why root is no longer a checkout of this repository: it is gone, or Git places it elsewhere.
+func (g *worktreeGroup) belongs(root string) error {
 	repo, err := discoverGitRepository(root)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if repo.root != root || repo.commonDir != g.repository.commonDir {
-		return nil, fmt.Errorf("Checkout %s no longer belongs to this repository.", root)
+		return fmt.Errorf("Checkout %s no longer belongs to this repository.", root)
+	}
+	return nil
+}
+
+func (g *worktreeGroup) directories(root string) ([]devtools.WorktreeDirectory, error) {
+	if err := g.belongs(root); err != nil {
+		return nil, err
 	}
 	next, err := g.configuration(root)
 	if err != nil {
