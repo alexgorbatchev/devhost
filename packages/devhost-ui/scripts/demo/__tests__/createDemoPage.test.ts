@@ -4,24 +4,23 @@ import { join } from "node:path";
 import { expect, it } from "bun:test";
 import { runCommand } from "../runCommand";
 
-async function captureAtScale(captureScale: number, isInteractive: boolean = false): Promise<unknown> {
+async function runFixture(fixtureName: string, fixtureArguments: string[] = []): Promise<unknown> {
   const parentPath = tmpdir();
   const directoryPath = await mkdtemp(join(parentPath, "capture-scale-"));
   await Promise.all(["raw", ".tmp"].map((directory) => mkdir(join(directoryPath, directory))));
   try {
     const output = await runCommand(
-      [
-        process.execPath,
-        join(import.meta.dir, "fixtures/captureAtScale.ts"),
-        String(captureScale),
-        String(isInteractive),
-      ],
+      [process.execPath, join(import.meta.dir, "fixtures", fixtureName), ...fixtureArguments],
       { cwd: directoryPath, env: { ...process.env, TMPDIR: ".tmp" }, timeoutMs: 25_000 },
     );
     return JSON.parse(output);
   } finally {
     await rm(directoryPath, { recursive: true, force: true });
   }
+}
+
+async function captureAtScale(captureScale: number, isInteractive: boolean = false): Promise<unknown> {
+  return await runFixture("captureAtScale.ts", [String(captureScale), String(isInteractive)]);
 }
 
 it("records two device pixels per CSS pixel at capture scale 2 without changing the page layout", async () => {
@@ -35,6 +34,13 @@ it("records the page at its CSS size at capture scale 1", async () => {
   expect(await captureAtScale(1)).toEqual({
     video: { width: 1280, height: 720 },
     page: { width: 1280, height: 720, devicePixelRatio: 1 },
+  });
+}, 30_000);
+
+it("sizes the contents again when a window manager puts back the size the window appeared with", async () => {
+  expect(await runFixture("sizeUnderWindowManager.ts")).toEqual({
+    reverts: 1,
+    page: { width: 1280, height: 720, devicePixelRatio: 2 },
   });
 }, 30_000);
 

@@ -1,8 +1,58 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import type { Browser, Page } from "playwright";
+import type { Browser, CDPSession, Page } from "playwright";
 import { viewport } from "./constants";
 import type { IDemoRuntime } from "./types";
+
+const contentsSizeAttempts = 4;
+const contentsSizeAttemptMs = 3_000;
+const contentsSizeTotalMs = 15_000;
+// How long the requested size must hold before the window counts as sized. A window manager that puts a new window
+// back to the size it read when the window appeared does so shortly after the recorder resizes it.
+const contentsSizeSettleMs = 1_000;
+
+// Requests the capture size for the browser contents until the page reports it and keeps it. A window manager can
+// re-apply an earlier size after the request: AeroSpace restores the size it read on detection when it floats a
+// window. A resize away from the requested size, or no matching size within an attempt, starts the next request.
+// Running out of attempts or time returns, and the caller's size guard reports the window's actual size.
+async function fitContentsSize(page: Page, session: CDPSession): Promise<void> {
+  const { windowId } = await session.send("Browser.getWindowForTarget");
+  const deadline = performance.now() + contentsSizeTotalMs;
+  for (let attempt = 0; attempt < contentsSizeAttempts; attempt += 1) {
+    const remainingMs = deadline - performance.now();
+    if (remainingMs <= 0) return;
+    await session.send("Browser.setContentsSize", { windowId, ...viewport });
+    const isHeld = await page.evaluate(
+      ({ width, height, settleMs, timeoutMs }) =>
+        new Promise<boolean>((resolve) => {
+          const observation = new AbortController();
+          let settleTimer: ReturnType<typeof setTimeout> | undefined;
+          let hasMatched = false;
+          const finish = (isSized: boolean): void => {
+            observation.abort();
+            clearTimeout(settleTimer);
+            resolve(isSized);
+          };
+          const observe = (): void => {
+            clearTimeout(settleTimer);
+            if (innerWidth === width && innerHeight === height) {
+              hasMatched = true;
+              settleTimer = setTimeout(() => finish(true), settleMs);
+            } else if (hasMatched) {
+              finish(false);
+            }
+          };
+          AbortSignal.timeout(timeoutMs).addEventListener("abort", () => finish(false), {
+            signal: observation.signal,
+          });
+          addEventListener("resize", observe, { signal: observation.signal });
+          observe();
+        }),
+      { ...viewport, settleMs: contentsSizeSettleMs, timeoutMs: Math.min(contentsSizeAttemptMs, remainingMs) },
+    );
+    if (isHeld) return;
+  }
+}
 
 export async function createDemoPage(browser: Browser, runtime: IDemoRuntime, captureScale: number = 1): Promise<Page> {
   const context = await browser.newContext({
@@ -26,9 +76,7 @@ export async function createDemoPage(browser: Browser, runtime: IDemoRuntime, ca
       // Size actual browser contents: headed window decorations are outside the captured viewport.
       const session = await context.newCDPSession(page);
       try {
-        const { windowId } = await session.send("Browser.getWindowForTarget");
-        await session.send("Browser.setContentsSize", { windowId, ...viewport });
-        await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
+        await fitContentsSize(page, session);
       } finally {
         await session.detach();
       }
