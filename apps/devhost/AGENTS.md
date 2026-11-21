@@ -34,7 +34,7 @@ just dev-bootstrap
 just dev-bootstrap /path/to/dotfiles
 ```
 
-The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev.<short git SHA>` version override and a `build-source-directory` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just devhost compile` retains the metadata version.
+The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) version override and a `build-source-directory` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just devhost compile` retains the metadata version.
 
 Run the app from source in the current directory with agent-facing output (`AGENT=1`); `just devhost run` is the human-mode equivalent:
 

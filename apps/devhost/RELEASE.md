@@ -53,7 +53,7 @@ To use a local development build through a configured dotfiles project, run from
 just dev-bootstrap
 ```
 
-This builds the current checkout and registers a protected development copy with dotfiles, preserving the managed release payload. See [Use a protected development build](../../packages/docs/src/content/docs/development/building.md#use-a-protected-development-build) for prerequisites, selecting a different dotfiles project, and returning to managed releases. The build reports `999.0.0-dev.<short git SHA>`; plain `just devhost compile` and release builds retain the metadata version.
+This builds the current checkout and registers a protected development copy with dotfiles, preserving the managed release payload. See [Use a protected development build](../../packages/docs/src/content/docs/development/building.md#use-a-protected-development-build) for prerequisites, selecting a different dotfiles project, and returning to managed releases. The build reports `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`); plain `just devhost compile` and release builds retain the metadata version.
 
 ## Local release artifacts
 
