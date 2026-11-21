@@ -34,7 +34,7 @@ Keep every service of one repository pointing into the same checkout: its `cwd` 
 
 ## Checkouts you cannot pick
 
-- **unavailable**: the checkout's manifest is missing or invalid, or a service directory is missing. Click the badge for the reason.
+- **unavailable**: the checkout's manifest is missing or invalid, or a service directory is missing. Click the badge for the reason. The checkout the stack runs is never unavailable for these reasons: [hot reload](../hot-reload/#when-an-edit-is-rejected) checks its manifest, and an edit it rejects leaves the services running.
 - **in use**: another running stack uses that checkout's manifest. Click the badge to see that stack's name, PID, and manifest. **Open stack** opens one of its pages on Caddy's current HTTPS port, and **Stop stack** stops it so you can switch.
 - Repositories with an external service (`managed = false`) cannot switch at all, and say why.
 
@@ -44,7 +44,7 @@ The fork icon on **Worktrees** turns red when the selected checkout is unavailab
 
 devhost looks for added and deleted worktrees when you open the picker or press **Refresh**. Deleting a worktree the stack does not use restarts nothing.
 
-If the running checkout was deleted, devhost stops only that repository's services and shows a recovery error. Pick an available checkout to bring them back; devhost does not fall back to another checkout by itself. Until then, editor links and new chat conversations for that repository are blocked. Other repositories keep running.
+If the running checkout was deleted or Git no longer lists it, devhost stops only that repository's services and shows a recovery error. Nothing else a refresh finds stops a service. Pick an available checkout to bring them back; devhost does not fall back to another checkout by itself. Until then, editor links and new chat conversations for that repository are blocked. Other repositories keep running.
 
 ## What follows the selected checkout
 
