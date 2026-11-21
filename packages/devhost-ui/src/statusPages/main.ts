@@ -1,3 +1,4 @@
+import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { jsx } from "react/jsx-runtime";
 import { StatusPage } from "./components/StatusPage";
@@ -10,5 +11,12 @@ if (root && payload) {
   const data = statusPageSchema.parse(JSON.parse(payload.textContent ?? ""));
   const client = createRecoveryClient(location.href, window.fetch.bind(window), () => location.replace(location.href));
   // Imperative document bootstrap, following renderDevtools; the component owns all JSX.
-  createRoot(root).render(jsx(StatusPage, { data, client }));
+  const statusRoot = createRoot(root);
+  const render = () => statusRoot.render(jsx(StatusPage, { data, client }));
+  if (data.files?.markdown) {
+    // Commit the chosen Markdown view before yielding to the browser for its first paint.
+    flushSync(render);
+  } else {
+    render();
+  }
 }

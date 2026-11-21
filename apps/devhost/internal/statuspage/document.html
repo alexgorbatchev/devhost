@@ -17,19 +17,26 @@
   </head>
   <body data-devhost-recovery="{{.Page.Kind}}">
     <div id="devhost-status">
+      {{if and .Page.Files .Page.Files.Markdown}}
+      <noscript>
+        <main>
+          <p>devhost · {{.Page.Status}}</p>
+          <h1>{{.Page.Title}}</h1>
+          <pre><code>{{.Page.Files.Source}}</code></pre>
+        </main>
+      </noscript>
+      {{else}}
       <main>
         <p>devhost · {{.Page.Status}}</p>
         <h1>{{.Page.Title}}</h1>
         <p>{{.Page.Message}}</p>
-        {{with .Page.Files}} {{if .Markdown}}
-        <pre><code>{{.Source}}</code></pre>
-        {{else}}
+        {{with .Page.Files}}
         <ul>
           {{range .Entries}}
           <li><a href="{{.Href}}">{{.Name}}</a></li>
           {{end}}
         </ul>
-        {{end}} {{end}} {{if eq .Page.Kind "not-found"}}
+        {{end}} {{if eq .Page.Kind "not-found"}}
         <h2>Active hostnames</h2>
         <ul>
           {{range .Page.Routes}}
@@ -65,6 +72,7 @@
         </details>
         {{end}}
       </main>
+      {{end}}
     </div>
     <script id="devhost-status-data" type="application/json">
       {{.Page}}

@@ -35,3 +35,8 @@
   --borderColor-accent-emphasis: var(--dh-accent);
   font-family: inherit;
 }
+
+/* Preflight removes list markers. Restore the browser defaults beneath GitHub's list rules. */
+:where(.markdown-body ul, .markdown-body ol) {
+  list-style-type: revert;
+}

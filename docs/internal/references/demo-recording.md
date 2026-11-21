@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-17 06:42
+last_modified: 2026-11-20 17:08
 status: current
 ---
 
@@ -149,7 +149,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Single-column compact React/shadcn stack directory with aligned service/status/URL columns, expandable TOML, filtering, and exited-owner exclusion                                          | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`, "Hostnames and DNS"                               | **No demo**                                      |
 | Customize the shared running-stack directory hostname and opt in to remote read access                                                                                                      | `guides/shared-managed-caddy-settings.md`, "Choose the stack directory hostname"                                                           | **No demo**                                      |
 | Restart running supervisors and serve sessions with the updated executable                                                                                                                  | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"                                                                             | **No demo**                                      |
-| Serve files or a port without a manifest; shared React/shadcn file browser confined to its root, index/README fallback, breadcrumbs, Markdown source view, and preview gallery              | `start/serve.md`, `development/page-previews.md`                                                                                           | **No demo**                                      |
+| Serve files or a port without a manifest; confined file browser, index/README fallback, breadcrumbs, Markdown first paint and list markers, and preview gallery                             | `start/serve.md`, `development/page-previews.md`                                                                                           | **No demo**                                      |
 | Native manifest `serve` services with automatic ports and the stack service lifecycle                                                                                                       | `start/serve.md`, "Serve a folder in a stack"                                                                                              | **No demo**                                      |
 | Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                                                                                                                          | `guides/shared-managed-caddy-settings.md`, "Settings"                                                                                      | No demo                                          |
 | Prefixed, screened Caddy diagnostics and actionable startup failures                                                                                                                        | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `reference/output.md`, "Caddy's lines"                                | No demo                                          |

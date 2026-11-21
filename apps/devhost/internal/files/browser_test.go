@@ -2,9 +2,11 @@ package files
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +22,7 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"first.md", "second.md"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("---\ncreated_on: 2026-11-15T00:00:00Z\nstatus: active\n---\n\n# Heading\n\n**bold** <script>window.pwned = true</script>\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n- [x] Done\n\n~~old~~\n\n[bad](javascript:alert(1))"), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("---\ncreated_on: 2026-11-15T00:00:00Z\nstatus: active\n---\n\n# Heading\n\n**bold** <script>window.pwned = true</script>\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n- Bullet\n\n1. Number\n\n- [x] Done\n\n~~old~~\n\n[bad](javascript:alert(1))"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -33,7 +35,23 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	server := httptest.NewServer(h)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := httptest.NewRecorder()
+		h.ServeHTTP(response, r)
+		w.Header().Set("Content-Type", response.Header().Get("Content-Type"))
+		w.WriteHeader(response.Code)
+		// Sample the DOM on both sides of the inline bootstrap. These probes
+		// catch a visible fallback or an async mount without paint timing races.
+		body := strings.Replace(response.Body.String(), `<script id="devhost-status-data"`,
+			`<script>window.markdownFallbackVisible = Boolean(document.querySelector('#devhost-status').innerText.trim())</script><script id="devhost-status-data"`, 1)
+		body = strings.Replace(body, "</body>", `<script>
+			const expected = localStorage.getItem('devhost.files.markdown.source') === 'true' ? '#source' : '#rendered h1';
+			window.markdownMounted = Boolean(document.querySelector(expected)?.getClientRects().length);
+		</script></body>`, 1)
+		if _, err := w.Write([]byte(body)); err != nil {
+			t.Error(err)
+		}
+	}))
 	t.Cleanup(server.Close)
 	visit := func(restarted bool) {
 		t.Helper()
@@ -51,6 +69,14 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 		if err := chromedp.Do(ctx, chromedp.Navigate(server.URL+"/first.md"), chromedp.WaitVisible(chromedp.CSS("#toggle-source"))); err != nil {
 			t.Fatal(err)
 		}
+		assertInitialView := func() {
+			t.Helper()
+			ok, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`window.markdownFallbackVisible === false && window.markdownMounted === true`))
+			if err != nil || !ok {
+				t.Fatalf("Markdown must mount the selected view without a visible fallback: %v", err)
+			}
+		}
+		assertInitialView()
 		if !restarted {
 			if err := chromedp.Do(ctx, chromedp.WaitVisible(chromedp.CSS("#rendered h1"))); err != nil {
 				t.Fatal(err)
@@ -59,6 +85,10 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 			safe, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`document.querySelector('#rendered').firstElementChild.matches('table[aria-label="Front matter"]') && document.querySelector('#rendered thead th').textContent === 'created_on' && document.querySelector('#rendered tbody td:last-child').textContent === 'active' && document.querySelectorAll('#rendered h1, #rendered h2').length === 1 && document.querySelector('#rendered table') !== null && document.querySelector('#rendered input[type=checkbox]').checked && document.querySelector('#rendered del').textContent === 'old' && document.querySelector('#rendered script') === null && !document.querySelector('#rendered a').getAttribute('href') && window.pwned === undefined`))
 			if err != nil || !safe {
 				t.Fatalf("Markdown rendering or sanitization failed: %v", err)
+			}
+			markers, err := chromedp.Run(ctx, chromedp.Evaluate[string](`Array.from(document.querySelectorAll('#rendered li'), item => getComputedStyle(item).listStyleType).join(', ')`))
+			if err != nil || markers != "disc, decimal, none" {
+				t.Fatalf("Markdown list markers = %q, want bullets, numbers, and checkboxes: %v", markers, err)
 			}
 			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("#toggle-source"))); err != nil {
 				t.Fatal(err)
@@ -84,10 +114,12 @@ func TestMarkdownSourcePreferenceInBrowser(t *testing.T) {
 		if err := chromedp.Do(ctx, chromedp.Reload()); err != nil {
 			t.Fatal(err)
 		}
+		assertInitialView()
 		assertSource()
 		if err := chromedp.Do(ctx, chromedp.Navigate(server.URL+"/second.md")); err != nil {
 			t.Fatal(err)
 		}
+		assertInitialView()
 		assertSource()
 		if restarted {
 			if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("#toggle-source")), chromedp.Reload(), chromedp.WaitVisible(chromedp.CSS("#rendered h1"))); err != nil {
