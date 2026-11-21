@@ -25,6 +25,18 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 - Do not leave docs, README, or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
 
+## Rust port
+
+The experimental Cargo package lives in `apps/devhost/rust/`. Build or run it through its manifest to keep its binary separate from the Go development executable.
+
+Run its focused CLI integration tests with line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):
+
+```bash
+cargo llvm-cov --manifest-path apps/devhost/rust/Cargo.toml --locked --fail-under-lines 90 --fail-under-functions 90
+```
+
+Compare ported features against the Go revision and record evidence as described in [Go baseline for the Rust port](../../docs/internal/references/rust-port-parity.md).
+
 ## Development workflow
 
 From the repository root, build and register a protected development override for the dotfiles-managed `devhost` shim:

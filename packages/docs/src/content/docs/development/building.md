@@ -16,6 +16,16 @@ just devhost compile
 
 To run devhost from source without installing it, use `just cli <args>`, or `just run-ai <args>` for agent output. Both run in the directory you call them from. `just run` starts the repository's development stack in the background and waits for it to become ready. Run `just cli stop` from the repository root to stop it.
 
+## Try the Rust port
+
+From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run the experimental CLI:
+
+```bash
+cargo run --locked --manifest-path apps/devhost/rust/Cargo.toml -- --help
+```
+
+The Rust CLI currently provides help, `--version`, and `skill`. Set `AGENT=1` for agent-oriented help. Use the Go binary for running stacks and serving files.
+
 ## Use a protected development build
 
 Run `just dev-bootstrap` to build and register devhost in `~/.dotfiles`, or pass a different dotfiles project with `just dev-bootstrap /path/to/dotfiles`. The project must declare devhost and the dotfiles CLI on PATH must support `tool dev use`. Dotfiles copies the build into its configured development store, keeps the release payload unchanged, and preserves the development override during updates and cleanup. Run `dotfiles tool dev off devhost` from that project to return to managed releases.

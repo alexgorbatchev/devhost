@@ -1,0 +1,15 @@
+[package]
+name = "devhost-rust"
+version = "0.0.14"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+license = "MIT"
+
+[[bin]]
+name = "devhost"
+path = "src/main.rs"
+
+[dependencies]
+clap = "4.6.7"
+cli-command-kit = { git = "https://github.com/alexgorbatchev/cli-command-kit-rust.git", rev = "dead4a60e08c7a84bc77ef329b220bfecd57627b" }
