@@ -25,6 +25,13 @@ func StartIdentity(pid int) (string, error) {
 		return "", fmt.Errorf("read process %d: %w", pid, fs.ErrNotExist)
 	}
 
-	startTime := processes[0].Proc.P_starttime
-	return fmt.Sprintf("%d.%06d", startTime.Sec, startTime.Usec), nil
+	return StartIdentityOf(&processes[0]), nil
+}
+
+// StartIdentityOf returns the start identity of a process the kernel already
+// described, such as an entry of the kern.proc.all table, so a reader of the
+// whole table gets each identity without reading every process again.
+func StartIdentityOf(process *unix.KinfoProc) string {
+	startTime := process.Proc.P_starttime
+	return fmt.Sprintf("%d.%06d", startTime.Sec, startTime.Usec)
 }

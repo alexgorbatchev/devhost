@@ -38,16 +38,22 @@ func processIsLive(pid int) bool {
 		return false
 	}
 
-	return stat.State != 'Z' && stat.State != 'X' && stat.State != 'x'
+	return !hasExitedState(stat.State)
 }
 
-func readProcessSnapshot() (map[int][]int, error) {
+// hasExitedState reports a process state of a process that has exited: a zombie ('Z'), or one its parent is
+// collecting ('X', which kernels from 2.6.33 to 3.13 also reported as 'x').
+func hasExitedState(state byte) bool {
+	return state == 'Z' || state == 'X' || state == 'x'
+}
+
+func readProcessSnapshot() (processSnapshot, error) {
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
-		return nil, fmt.Errorf("read /proc: %w", err)
+		return processSnapshot{}, fmt.Errorf("read /proc: %w", err)
 	}
 
-	childrenByParent := map[int][]int{}
+	snapshot := newProcessSnapshot()
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -60,13 +66,43 @@ func readProcessSnapshot() (map[int][]int, error) {
 
 		stat, err := procid.ReadStat(pid)
 		if err != nil {
+			// The process exited after the directory was read.
 			continue
 		}
 
-		childrenByParent[stat.ParentPID] = append(childrenByParent[stat.ParentPID], pid)
+		process, err := newProcessRecord(stat)
+		if err != nil {
+			return processSnapshot{}, err
+		}
+		snapshot.add(pid, process)
 	}
 
-	return childrenByParent, nil
+	return snapshot, nil
+}
+
+// readProcessRecord reads the one process that has pid, as readProcessSnapshot lists it. ok is false when no process
+// has the PID or its stat line cannot be read.
+func readProcessRecord(pid int) (processRecord, bool) {
+	stat, err := procid.ReadStat(pid)
+	if err != nil {
+		return processRecord{}, false
+	}
+
+	process, err := newProcessRecord(stat)
+	if err != nil {
+		return processRecord{}, false
+	}
+
+	return process, true
+}
+
+func newProcessRecord(stat procid.Stat) (processRecord, error) {
+	identity, err := procid.StartIdentityOf(stat)
+	if err != nil {
+		return processRecord{}, err
+	}
+
+	return processRecord{parentPID: stat.ParentPID, startIdentity: identity, exited: hasExitedState(stat.State)}, nil
 }
 
 func collectPlatformContainmentRootPIDs(childrenByParent map[int][]int, serviceToken string) []int {

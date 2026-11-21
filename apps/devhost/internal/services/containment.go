@@ -1,6 +1,7 @@
 package services
 
 import (
+	"maps"
 	"os"
 	"os/exec"
 	"sort"
@@ -23,7 +24,24 @@ type serviceContainment struct {
 	tracker      *processTreeTracker
 }
 
-type processSnapshotReader func() (map[int][]int, error)
+// processRecord is what a reading of the process table holds about one process.
+type processRecord struct {
+	parentPID int
+	// startIdentity tells this process from a later one given the same PID (see internal/procid). It is empty on a
+	// platform without one, where a PID is taken to name the same process for as long as some process has it.
+	startIdentity string
+	// exited marks a zombie: a process that has exited and waits for its parent to collect it. It runs no more, and
+	// its PID is not given to another process until it is collected.
+	exited bool
+}
+
+// processSnapshot is one reading of the whole process table.
+type processSnapshot struct {
+	processes        map[int]processRecord
+	childrenByParent map[int][]int
+}
+
+type processSnapshotReader func() (processSnapshot, error)
 
 type processTreeMonitor struct {
 	pollInterval time.Duration
@@ -37,14 +55,33 @@ type processTreeMonitor struct {
 	wg        sync.WaitGroup
 }
 
+// processTreeTracker follows the processes of one service: those a snapshot lists under its root process, and on
+// Linux those that carry its containment token. A PID names a process only while it runs, and the system gives it to
+// another process later, so the tracker records each process with its start identity and signals a PID only while
+// the process that has it still has that identity.
 type processTreeTracker struct {
-	rootPID      int
+	rootPID int
+	// rootIdentity is the start identity the root process had when its tracker started. Once the root has exited, a
+	// later process given its PID belongs to something else, and so do that process's children.
+	rootIdentity string
 	serviceToken string
 	monitor      *processTreeMonitor
 
 	closeOnce sync.Once
 	mu        sync.Mutex
-	tracked   map[int]struct{}
+	// tracked holds each process a snapshot has listed in the service's tree, by PID, with the start identity it had
+	// then. It keeps a process that has left the tree, such as a daemon that launchd adopted when its parent exited,
+	// for as long as that process runs, and drops the entry once the PID is free or names a later process.
+	tracked map[int]string
+}
+
+func newProcessSnapshot() processSnapshot {
+	return processSnapshot{processes: map[int]processRecord{}, childrenByParent: map[int][]int{}}
+}
+
+func (s processSnapshot) add(pid int, process processRecord) {
+	s.processes[pid] = process
+	s.childrenByParent[process.parentPID] = append(s.childrenByParent[process.parentPID], pid)
 }
 
 func newProcessTreeMonitor(pollInterval time.Duration, readSnapshot processSnapshotReader) *processTreeMonitor {
@@ -111,11 +148,33 @@ func (c *serviceContainment) signalTrackedDescendants(signal os.Signal) {
 		return
 	}
 
-	for _, pid := range c.tracker.liveDescendantPIDs() {
-		if err := syscall.Kill(pid, signalValue); err != nil && err != syscall.ESRCH {
-			continue
-		}
+	for pid, identity := range c.tracker.trackedProcesses() {
+		signalTrackedProcess(pid, identity, signalValue)
 	}
+}
+
+// signalTrackedProcess sends signal to pid only while it names the process that was tracked with identity. The
+// identity is read again right before the signal: the process may have exited since the snapshot that listed it last,
+// and the system then gives its PID to an unrelated process.
+func signalTrackedProcess(pid int, identity string, signal syscall.Signal) {
+	if !processMatches(pid, identity) {
+		return
+	}
+
+	// The process has just exited, or devhost may not signal it. Either way the shutdown checks it again, and reports
+	// it if it keeps running.
+	_ = syscall.Kill(pid, signal)
+}
+
+// processMatches reports whether pid still names the process that had identity, and that process has not exited.
+// A process that cannot be read is not one devhost can verify, so it matches nothing.
+func processMatches(pid int, identity string) bool {
+	if pid <= 0 {
+		return false
+	}
+
+	process, ok := readProcessRecord(pid)
+	return ok && !process.exited && process.startIdentity == identity
 }
 
 func (m *processTreeMonitor) close() {
@@ -126,21 +185,28 @@ func (m *processTreeMonitor) close() {
 }
 
 func (m *processTreeMonitor) startTracker(rootPID int, serviceToken string) (*processTreeTracker, error) {
+	m.refreshMu.Lock()
+	snapshot, err := m.readSnapshot()
+	if err != nil {
+		m.refreshMu.Unlock()
+		return nil, err
+	}
+
+	// The root is a child of this process that is collected only after its tracker has started, so the table lists
+	// it with the identity it started with, even when it has already exited.
 	tracker := &processTreeTracker{
 		rootPID:      rootPID,
+		rootIdentity: snapshot.processes[rootPID].startIdentity,
 		serviceToken: serviceToken,
 		monitor:      m,
-		tracked:      map[int]struct{}{},
+		tracked:      map[int]string{},
 	}
+	tracker.applySnapshot(snapshot)
+	m.refreshMu.Unlock()
 
 	m.mu.Lock()
 	m.trackers[tracker] = struct{}{}
 	m.mu.Unlock()
-
-	if err := m.refreshTracker(tracker); err != nil {
-		m.unregisterTracker(tracker)
-		return nil, err
-	}
 
 	return tracker, nil
 }
@@ -178,13 +244,13 @@ func (m *processTreeMonitor) refreshTrackersBySet(trackers []*processTreeTracker
 	m.refreshMu.Lock()
 	defer m.refreshMu.Unlock()
 
-	childrenByParent, err := m.readSnapshot()
+	snapshot, err := m.readSnapshot()
 	if err != nil {
 		return err
 	}
 
 	for _, tracker := range trackers {
-		tracker.applySnapshot(childrenByParent)
+		tracker.applySnapshot(snapshot)
 	}
 
 	return nil
@@ -214,19 +280,17 @@ func (t *processTreeTracker) close() {
 	})
 }
 
+// liveDescendantPIDs refreshes the tracker and returns the tracked processes that still run. It reads each one again,
+// because the refresh can fail and a process can exit after it.
 func (t *processTreeTracker) liveDescendantPIDs() []int {
 	_ = t.refresh()
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	live := []int{}
-	for pid := range t.tracked {
-		if pid == t.rootPID {
-			delete(t.tracked, pid)
-			continue
-		}
-		if !processExists(pid) {
+	live := make([]int, 0, len(t.tracked))
+	for pid, identity := range t.tracked {
+		if !processMatches(pid, identity) {
 			delete(t.tracked, pid)
 			continue
 		}
@@ -237,6 +301,14 @@ func (t *processTreeTracker) liveDescendantPIDs() []int {
 	return live
 }
 
+// trackedProcesses returns a copy of the tracked processes: each PID with the start identity it was tracked with.
+func (t *processTreeTracker) trackedProcesses() map[int]string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	return maps.Clone(t.tracked)
+}
+
 func (t *processTreeTracker) refresh() error {
 	if t == nil || t.monitor == nil {
 		return nil
@@ -245,18 +317,35 @@ func (t *processTreeTracker) refresh() error {
 	return t.monitor.refreshTracker(t)
 }
 
-func (t *processTreeTracker) applySnapshot(childrenByParent map[int][]int) {
-	descendants := collectDescendantPIDs(childrenByParent, t.rootPID)
-	for _, pid := range collectPlatformContainmentRootPIDs(childrenByParent, t.serviceToken) {
+// applySnapshot tracks every process the snapshot lists in the service's tree, and drops each tracked process the
+// snapshot shows has gone: its PID is no longer listed, is listed as exited, or names a process that started later.
+func (t *processTreeTracker) applySnapshot(snapshot processSnapshot) {
+	descendants := []int{}
+	if root, ok := snapshot.processes[t.rootPID]; ok && root.startIdentity == t.rootIdentity {
+		descendants = collectDescendantPIDs(snapshot.childrenByParent, t.rootPID)
+	}
+	for _, pid := range collectPlatformContainmentRootPIDs(snapshot.childrenByParent, t.serviceToken) {
 		descendants = append(descendants, pid)
-		descendants = append(descendants, collectDescendantPIDs(childrenByParent, pid)...)
+		descendants = append(descendants, collectDescendantPIDs(snapshot.childrenByParent, pid)...)
 	}
 
 	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	for _, pid := range descendants {
-		t.tracked[pid] = struct{}{}
+		identity := snapshot.processes[pid].startIdentity
+		if pid == t.rootPID && identity == t.rootIdentity {
+			// The root is signalled through its process group, and its exit is read from its exit status.
+			continue
+		}
+		t.tracked[pid] = identity
 	}
-	t.mu.Unlock()
+
+	for pid, identity := range t.tracked {
+		if process, ok := snapshot.processes[pid]; !ok || process.exited || process.startIdentity != identity {
+			delete(t.tracked, pid)
+		}
+	}
 }
 
 func collectDescendantPIDs(childrenByParent map[int][]int, rootPID int) []int {

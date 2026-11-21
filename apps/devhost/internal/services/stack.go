@@ -1938,16 +1938,16 @@ func (s *startedService) handleLateListeners() {
 	s.shutdownMu.Unlock()
 
 	listenerPIDs := s.ownedListenerPIDs()
-	if len(listenerPIDs) == 0 {
+	if len(listenerPIDs) == 0 || s.containment == nil {
 		return
 	}
 
+	// The root has exited, so every listener it owns is a tracked descendant. Reading the listeners can take long
+	// enough for one to exit, so each is signalled only while its PID still names the tracked process.
+	tracked := s.containment.tracker.trackedProcesses()
 	for _, pid := range listenerPIDs {
-		if pid == os.Getpid() {
-			continue
-		}
-		if err := syscall.Kill(pid, signalValue); err != nil && err != syscall.ESRCH {
-			continue
+		if identity, ok := tracked[pid]; ok {
+			signalTrackedProcess(pid, identity, signalValue)
 		}
 	}
 }

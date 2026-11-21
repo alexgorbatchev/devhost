@@ -287,6 +287,7 @@ Stopping is best-effort and depends on the platform:
 
 - On Linux, devhost tracks every process a service starts, including orphaned ones.
 - On macOS and elsewhere, it finds descendants by walking the process tree, which can miss a process that detached.
+- On Linux and macOS, devhost checks each tracked process's start time before it signals it. Once a process exits, the system can give its PID to an unrelated program; devhost neither signals that program nor waits for it. Other platforms go by PID alone.
 - On every platform, after a service with a port stops, devhost watches that port for 2 seconds and stops any process it started that binds it again. A restart therefore takes about 2 seconds longer. Outside Linux this needs `lsof`.
 
 A service that daemonizes or detaches itself cannot be stopped this way; use [daemon mode](../managed-daemon-style-services/). If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.

@@ -13,14 +13,16 @@ func prepareServiceContainment() error {
 	return nil
 }
 
-func readProcessSnapshot() (map[int][]int, error) {
+// readProcessSnapshot reads the process table through `ps`. This platform has no start identity devhost can read
+// (see internal/procid), so every record leaves it empty and the tracker tells processes apart by PID alone.
+func readProcessSnapshot() (processSnapshot, error) {
 	command := exec.Command("ps", "ax", "-o", "pid=", "-o", "ppid=")
 	output, err := command.Output()
 	if err != nil {
-		return nil, fmt.Errorf("read process table: %w", err)
+		return processSnapshot{}, fmt.Errorf("read process table: %w", err)
 	}
 
-	childrenByParent := map[int][]int{}
+	snapshot := newProcessSnapshot()
 	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) != 2 {
@@ -36,10 +38,10 @@ func readProcessSnapshot() (map[int][]int, error) {
 			continue
 		}
 
-		childrenByParent[parentPID] = append(childrenByParent[parentPID], pid)
+		snapshot.add(pid, processRecord{parentPID: parentPID})
 	}
 
-	return childrenByParent, nil
+	return snapshot, nil
 }
 
 func collectPlatformContainmentRootPIDs(_ map[int][]int, _ string) []int {
