@@ -8,9 +8,13 @@ use std::{
 use clap::{Arg, ArgAction, Command, error::ErrorKind, value_parser};
 use cli_command_kit::{HelpOptions, Mode, SkillSource, display_message, setup, write_skill};
 
+mod caddy;
+mod config;
 mod machine;
 mod manifest;
 mod paths;
+mod procid;
+mod statuspage;
 
 struct Failure {
     message: String,
@@ -71,6 +75,13 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                     Err(message) => write_failure(mode, message.into())?,
                 });
             }
+            Some(("caddy", caddy)) if caddy.subcommand_name() == Some("stop") => {
+                let result = caddy::stop(mode, &mut io::stderr().lock());
+                return Ok(match result {
+                    Ok(()) => ExitCode::SUCCESS,
+                    Err(message) => write_failure(mode, message.into())?,
+                });
+            }
             Some((name @ ("service" | "caddy"), _)) => {
                 if let Some(command) = root.find_subcommand_mut(name) {
                     command.write_help(&mut stdout)?;
@@ -100,6 +111,7 @@ fn caddy_command() -> Command {
     Command::new("caddy")
         .about("Set up and control the shared HTTPS proxy")
         .subcommand(Command::new("print-root-cert").about("Print Caddy's root certificate"))
+        .subcommand(Command::new("stop").about("Stop the managed Caddy process"))
 }
 
 fn service_command() -> Command {
