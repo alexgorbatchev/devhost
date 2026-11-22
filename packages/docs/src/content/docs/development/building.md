@@ -24,7 +24,9 @@ From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run
 cargo run --locked --manifest-path apps/devhost/rust/Cargo.toml -- --help
 ```
 
-The Rust CLI currently provides help, `--version`, and `skill`. Set `AGENT=1` for agent-oriented help. Use the Go binary for running stacks and serving files.
+The Rust CLI provides help, `--version`, `skill`, and `service list` for single-file manifests. Pass `--startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
+
+Set `AGENT=1` for agent-oriented help. Use the Go binary for manifests with includes, running stacks, and serving files.
 
 ## Use a protected development build
 
