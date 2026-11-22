@@ -66,10 +66,10 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                 return list_services(list, mode, &mut stdout);
             }
             Some(("caddy", caddy)) if caddy.subcommand_name() == Some("print-root-cert") => {
-                    return Ok(match machine::print_root_certificate(&mut stdout) {
+                return Ok(match machine::print_root_certificate(&mut stdout) {
                     Ok(()) => ExitCode::SUCCESS,
                     Err(message) => write_failure(mode, message.into())?,
-                    });
+                });
             }
             Some((name @ ("service" | "caddy"), _)) => {
                 if let Some(command) = root.find_subcommand_mut(name) {
@@ -159,8 +159,12 @@ fn write_failure(mode: Mode, failure: Failure) -> io::Result<ExitCode> {
         ),
     };
     let mut stderr = io::stderr().lock();
-    for line in display_message(message).lines() {
-        writeln!(stderr, "{prefix} {label} {line}")?;
+    for (index, line) in display_message(message).lines().enumerate() {
+        if index == 0 {
+            writeln!(stderr, "{prefix} {label} {line}")?;
+        } else {
+            writeln!(stderr, "{prefix} {line}")?;
+        }
     }
     if mode == Mode::Human
         && let Some(hint) = failure.hint

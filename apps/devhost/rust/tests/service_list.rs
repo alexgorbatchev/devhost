@@ -103,9 +103,11 @@ fn reports_invalid_manifest_input() {
     for (input, message) in [
         ("[", "Failed to parse"),
         (
-            "includes = ['child.toml']",
-            "currently supports single-file manifests",
+            "includes = 123",
+            "includes must be a string or string array",
         ),
+        ("includes = [123]", "includes must contain only strings"),
+        ("includes = '[invalid'", "syntax error in pattern"),
         ("[services.web]", "non-empty string"),
         ("name = 'sample'", "services must be an object"),
         ("name = 'sample'\n[services]", "at least one service"),
@@ -156,6 +158,87 @@ fn locates_manifest_syntax_errors() {
                 path.display()
             )
         );
+    }
+}
+
+#[test]
+fn lists_nested_includes_once_and_interpolates_environment_values() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path();
+    fs::create_dir(root.join("parts")).unwrap();
+    fs::write(
+        root.join("devhost.toml"),
+        "name = '{{ env. NO_COLOR }}'\nincludes = ['parts/**.toml', 'parts/child.toml', 'missing/*.toml']\n[services.web]\ncommand = ['web']\nport = 3300\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("parts/child.toml"),
+        "includes = '../devhost.toml'\n[services.api]\ncommand = ['{{env.NO_COLOR}}', '{{service.web.port}}']\nport = 3301\nalwaysStart = true\n[groups]\nbackend = ['api', 'web']\n",
+    )
+    .unwrap();
+    assert_eq!(stdout(list(root, &[], None, true)), "api\nweb\n");
+    assert_eq!(stdout(list(root, &["-s"], None, true)), "web\n");
+}
+
+#[test]
+fn reports_include_conflicts_and_sorted_missing_variables() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path();
+    fs::write(
+        root.join("devhost.toml"),
+        "name = 'sample'\nincludes = 'child.toml'\n[services.web]\ncommand = ['{{env.DEVHOST_TEST_UNSET_Z}}']\nport = 3300\n",
+    )
+    .unwrap();
+    let child = root.join("child.toml");
+    fs::write(&child, "[services.web]\n").unwrap();
+    assert!(
+        stderr(list(root, &[], None, true)).contains("service \"web\" is defined multiple times")
+    );
+    fs::write(
+        &child,
+        "[services.api]\ncommand = ['{{env.DEVHOST_TEST_UNSET_A}}', '{{env.DEVHOST_TEST_UNSET_Z}}']\nport = 3301\n",
+    )
+    .unwrap();
+    assert!(
+        stderr(list(root, &[], None, true)).contains(
+            "undefined environment variables: DEVHOST_TEST_UNSET_A, DEVHOST_TEST_UNSET_Z"
+        )
+    );
+}
+
+#[test]
+fn validates_included_group_members_in_both_output_modes() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path();
+    fs::write(
+        root.join("devhost.toml"),
+        "name = 'sample'\nincludes = 'child.toml'\n[services.web]\ncommand = ['web']\nport = 3300\n",
+    )
+    .unwrap();
+    fs::write(root.join("child.toml"), "[groups]\nbackend = ['missing']\n").unwrap();
+    assert_eq!(
+        stderr(list(root, &[], None, true)),
+        "devhost: ERR: Manifest validation failed:\ndevhost: groups.backend references an unknown service: missing\n"
+    );
+    assert_eq!(
+        stderr(list(root, &[], None, false)),
+        "devhost | [ERROR] Manifest validation failed:\ndevhost | groups.backend references an unknown service: missing\n"
+    );
+    let child = root.join("child.toml");
+    for (content, error) in [
+        ("[groups]\nbackend = []", "must contain at least one string"),
+        (
+            "[groups]\nbackend = [1]",
+            "must contain only non-empty strings",
+        ),
+        ("[groups]\nbackend = 'web'", "must be a string array"),
+        ("[groups]\nUPPER = ['web']", "has an invalid name"),
+        ("[groups]\nweb = ['web']", "conflicts with a service name"),
+        ("groups = 1", "must be a table"),
+        ("[annotation]", "Unrecognized key in included manifest"),
+    ] {
+        fs::write(&child, content).unwrap();
+        assert!(stderr(list(root, &[], None, true)).contains(error));
     }
 }
 

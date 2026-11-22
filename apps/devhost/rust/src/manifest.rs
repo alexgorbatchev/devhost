@@ -1,13 +1,11 @@
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use toml::{Table, Value};
 
 use crate::{Failure, paths::clean};
 
 mod diagnostics;
+mod includes;
 
 const NAME: &str = "devhost.toml";
 
@@ -17,31 +15,7 @@ pub(crate) fn service_names(
     startable_only: bool,
 ) -> Result<Vec<String>, Failure> {
     let path = resolve(cwd, explicit)?;
-    let text = fs::read_to_string(&path).map_err(|error| {
-        if error.kind() == io::ErrorKind::NotFound {
-            Failure {
-                message: format!(
-                    "read manifest {}: open {}: no such file or directory",
-                    path.display(),
-                    path.display()
-                ),
-                summary: Some(format!("manifest file not found: {}", path.display())),
-                hint: Some("Check the path given with --manifest or DEVHOST_MANIFEST."),
-            }
-        } else {
-            format!("read manifest {}: {error}", path.display()).into()
-        }
-    })?;
-    let manifest: Table = text
-        .parse()
-        .map_err(|error| diagnostics::parse_error(&path, &text, &error))?;
-
-    if manifest.contains_key("includes") {
-        return Err("The Rust CLI currently supports single-file manifests."
-            .to_owned()
-            .into());
-    }
-
+    let manifest = includes::read(&path)?;
     list_services(&manifest, startable_only).map_err(Into::into)
 }
 
@@ -103,10 +77,7 @@ fn list_services(manifest: &Table, startable_only: bool) -> Result<Vec<String>, 
         let service = value.as_table().ok_or_else(|| {
             format!("Manifest schema is invalid:\nservices.{name} must be an object.")
         })?;
-        let mut characters = name.bytes();
-        if !characters.next().is_some_and(|c| c.is_ascii_lowercase())
-            || !characters.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
-        {
+        if !valid_name(name) {
             return Err(format!(
                 "Manifest validation failed:\nservices.{name} has an invalid name."
             ));
@@ -124,6 +95,68 @@ fn list_services(manifest: &Table, startable_only: bool) -> Result<Vec<String>, 
             names.push(name.clone());
         }
     }
+    validate_groups(manifest, services)?;
     names.sort_unstable();
     Ok(names)
+}
+
+fn valid_name(name: &str) -> bool {
+    let mut characters = name.bytes();
+    characters
+        .next()
+        .is_some_and(|byte| byte.is_ascii_lowercase())
+        && characters.all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+}
+
+fn validate_groups(manifest: &Table, services: &Table) -> Result<(), String> {
+    let Some(groups) = manifest.get("groups") else {
+        return Ok(());
+    };
+    let groups = groups
+        .as_table()
+        .ok_or("Manifest schema is invalid:\ngroups must be an object.")?;
+    let mut schema = Vec::new();
+    let mut invalid = Vec::new();
+    for (name, members) in groups {
+        let key = format!("groups.{name}");
+        if !valid_name(name) {
+            invalid.push(format!("{key} has an invalid name."));
+        }
+        if services.contains_key(name) {
+            invalid.push(format!("{key} conflicts with a service name."));
+        }
+        match members.as_array() {
+            None => schema.push(format!("{key} must be a string array.")),
+            Some(items) if items.is_empty() => {
+                schema.push(format!("{key} must contain at least one string."));
+            }
+            Some(items) => {
+                if items
+                    .iter()
+                    .any(|item| item.as_str().is_none_or(|name| name.trim().is_empty()))
+                {
+                    schema.push(format!("{key} must contain only non-empty strings."));
+                    continue;
+                }
+                for member in items.iter().filter_map(Value::as_str) {
+                    if !services.contains_key(member) {
+                        invalid.push(format!("{key} references an unknown service: {member}"));
+                    }
+                }
+            }
+        }
+    }
+    if !schema.is_empty() {
+        return Err(format!(
+            "Manifest schema is invalid:\n{}",
+            schema.join("\n")
+        ));
+    }
+    if !invalid.is_empty() {
+        return Err(format!(
+            "Manifest validation failed:\n{}",
+            invalid.join("\n")
+        ));
+    }
+    Ok(())
 }
