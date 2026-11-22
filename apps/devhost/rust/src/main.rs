@@ -8,7 +8,25 @@ use std::{
 use clap::{Arg, ArgAction, Command, error::ErrorKind, value_parser};
 use cli_command_kit::{HelpOptions, Mode, SkillSource, display_message, setup, write_skill};
 
+mod machine;
 mod manifest;
+mod paths;
+
+struct Failure {
+    message: String,
+    summary: Option<String>,
+    hint: Option<&'static str>,
+}
+
+impl From<String> for Failure {
+    fn from(message: String) -> Self {
+        Self {
+            message,
+            summary: None,
+            hint: None,
+        }
+    }
+}
 
 const VERSION: &str = match option_env!("DEVHOST_BUILD_VERSION") {
     Some(version) => version,
@@ -33,22 +51,37 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                 .help("version for devhost"),
         );
     let mode = Mode::from_env();
-    let mut root = setup(root.subcommand(service_command()), mode, &options)?;
+    let mut root = setup(
+        root.subcommand(service_command())
+            .subcommand(caddy_command()),
+        mode,
+        &options,
+    )?;
     let mut stdout = io::stdout().lock();
 
     match root.try_get_matches_from_mut(std::env::args_os()) {
-        Ok(matches) => {
-            if let Some(("service", service)) = matches.subcommand() {
-                if let Some(("list", list)) = service.subcommand() {
-                    return list_services(list, mode, &mut stdout);
-                }
-                if let Some(command) = root.find_subcommand_mut("service") {
+        Ok(matches) => match matches.subcommand() {
+            Some(("service", service)) if service.subcommand_name() == Some("list") => {
+                let list = service.subcommand_matches("list").expect("list arguments");
+                return list_services(list, mode, &mut stdout);
+            }
+            Some(("caddy", caddy)) if caddy.subcommand_name() == Some("print-root-cert") => {
+                    return Ok(match machine::print_root_certificate(&mut stdout) {
+                    Ok(()) => ExitCode::SUCCESS,
+                    Err(message) => write_failure(mode, message.into())?,
+                    });
+            }
+            Some((name @ ("service" | "caddy"), _)) => {
+                if let Some(command) = root.find_subcommand_mut(name) {
                     command.write_help(&mut stdout)?;
                 }
-            } else if !write_skill(&root, &matches, &options, &mut stdout)? {
-                root.write_help(&mut stdout)?;
             }
-        }
+            _ => {
+                if !write_skill(&root, &matches, &options, &mut stdout)? {
+                    root.write_help(&mut stdout)?;
+                }
+            }
+        },
         Err(error) => match error.kind() {
             ErrorKind::DisplayVersion => writeln!(stdout, "{VERSION}")?,
             ErrorKind::DisplayHelp => write!(stdout, "{error}")?,
@@ -61,6 +94,12 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
 
     stdout.flush()?;
     Ok(ExitCode::SUCCESS)
+}
+
+fn caddy_command() -> Command {
+    Command::new("caddy")
+        .about("Set up and control the shared HTTPS proxy")
+        .subcommand(Command::new("print-root-cert").about("Print Caddy's root certificate"))
 }
 
 fn service_command() -> Command {
@@ -106,27 +145,27 @@ fn list_services(
             stdout.flush()?;
             Ok(ExitCode::SUCCESS)
         }
-        Err(failure) => {
-            let (prefix, label) = match mode {
-                Mode::Agent => ("devhost:", "ERR:"),
-                Mode::Human => ("devhost |", "[ERROR]"),
-            };
-            let message = match mode {
-                Mode::Agent => display_message(&failure.message),
-                Mode::Human => {
-                    display_message(failure.summary.as_deref().unwrap_or(&failure.message))
-                }
-            };
-            let mut stderr = io::stderr().lock();
-            for line in message.lines() {
-                writeln!(stderr, "{prefix} {label} {line}")?;
-            }
-            if mode == Mode::Human
-                && let Some(hint) = failure.hint
-            {
-                writeln!(stderr, "{prefix} [INFO] {hint}")?;
-            }
-            Ok(ExitCode::FAILURE)
-        }
+        Err(failure) => Ok(write_failure(mode, failure)?),
     }
+}
+
+fn write_failure(mode: Mode, failure: Failure) -> io::Result<ExitCode> {
+    let (prefix, label, message) = match mode {
+        Mode::Agent => ("devhost:", "ERR:", failure.message.as_str()),
+        Mode::Human => (
+            "devhost |",
+            "[ERROR]",
+            failure.summary.as_deref().unwrap_or(&failure.message),
+        ),
+    };
+    let mut stderr = io::stderr().lock();
+    for line in display_message(message).lines() {
+        writeln!(stderr, "{prefix} {label} {line}")?;
+    }
+    if mode == Mode::Human
+        && let Some(hint) = failure.hint
+    {
+        writeln!(stderr, "{prefix} [INFO] {hint}")?;
+    }
+    Ok(ExitCode::FAILURE)
 }

@@ -1,29 +1,15 @@
 use std::{
     fs, io,
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
 };
 
 use toml::{Table, Value};
 
+use crate::{Failure, paths::clean};
+
 mod diagnostics;
 
 const NAME: &str = "devhost.toml";
-
-pub(crate) struct Failure {
-    pub(crate) message: String,
-    pub(crate) summary: Option<String>,
-    pub(crate) hint: Option<&'static str>,
-}
-
-impl From<String> for Failure {
-    fn from(message: String) -> Self {
-        Self {
-            message,
-            summary: None,
-            hint: None,
-        }
-    }
-}
 
 pub(crate) fn service_names(
     cwd: &Path,
@@ -75,17 +61,7 @@ fn resolve(cwd: &Path, explicit: Option<&Path>) -> Result<PathBuf, Failure> {
 
         // Match filepath.Clean before opening the path, including paths that
         // traverse a nonexistent parent or a symlink followed by "..".
-        let mut clean = PathBuf::new();
-        for component in cwd.join(path).components() {
-            match component {
-                Component::ParentDir => {
-                    clean.pop();
-                }
-                Component::CurDir => {}
-                _ => clean.push(component.as_os_str()),
-            }
-        }
-        return Ok(clean);
+        return Ok(clean(&cwd.join(path)));
     }
 
     for directory in cwd.ancestors() {
