@@ -1,0 +1,7 @@
+{"name":"caddy-trust-not-running","args":["caddy","trust"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"config/config.toml":"[caddy]\nadminAddress = '127.0.0.1:0'\n"}}
+{"name":"caddy-trust-not-running-human","args":["caddy","trust"],"env":{"AGENT":"","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"config/config.toml":"[caddy]\nadminAddress = '127.0.0.1:0'\n"}}
+{"name":"caddy-trust-stale-pid","args":["caddy","trust"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"config/config.toml":"[caddy]\nadminAddress = '127.0.0.1:0'\n","state/caddy/caddy.pid":"99999999"}}
+{"name":"caddy-stop-not-running","args":["caddy","stop"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"config/config.toml":"[caddy]\nadminAddress = '127.0.0.1:0'\n"}}
+{"name":"caddy-start-invalid-config","args":["caddy","start"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"config/config.toml":"[caddy]\nbindHost = '10.0.0.1'\n"}}
+{"name":"caddy-trust-invalid-config","args":["caddy","trust"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"config/config.toml":"[caddy]\nhttpsPort = 0\n"}}
+{"name":"caddy-print-root-cert-missing","args":["caddy","print-root-cert"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state"}}

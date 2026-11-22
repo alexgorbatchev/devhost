@@ -8,7 +8,7 @@ mod validation;
 
 const NAME: &str = "devhost.toml";
 
-pub(crate) fn service_names(
+pub fn service_names(
     cwd: &Path,
     explicit: Option<&Path>,
     startable_only: bool,
@@ -49,6 +49,6 @@ fn resolve(cwd: &Path, explicit: Option<&Path>) -> Result<PathBuf, Failure> {
     Err(Failure {
         message: format!("Could not find {NAME} from {} upward.", cwd.display()),
         summary: None,
-        hint: Some("Run devhost from your project folder, or pass --manifest <path>."),
+        hint: Some("Run devhost from your project folder, or pass --manifest <path>.".to_owned()),
     })
 }

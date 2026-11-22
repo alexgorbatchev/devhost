@@ -265,7 +265,7 @@ fn caddy_stop_rejects_invalid_config_and_active_stack_directory_host_claim() {
     fs::write(
         state.join("routes/.registrations/web.localhost-b.json"),
         format!(
-            r#"{{"host":"web.localhost","path":"app/","ownerPid":{pid},"manifestPath":"/tmp/devhost.toml"}}"#
+            r#"{{"host":"web.localhost","path":"/app","ownerPid":{pid},"manifestPath":"/tmp/devhost.toml"}}"#
         ),
     )
     .unwrap();

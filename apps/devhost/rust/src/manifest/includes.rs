@@ -139,7 +139,7 @@ fn read_error(path: &Path, root: &Path, error: io::Error) -> Failure {
             message: format!("read manifest {display}: open {display}: no such file or directory"),
             summary: (path == root).then(|| format!("manifest file not found: {display}")),
             hint: (path == root)
-                .then_some("Check the path given with --manifest or DEVHOST_MANIFEST."),
+                .then(|| "Check the path given with --manifest or DEVHOST_MANIFEST.".to_owned()),
         };
     }
     format!("read manifest {display}: {error}").into()

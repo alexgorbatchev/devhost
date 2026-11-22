@@ -9,12 +9,67 @@ use serde::Deserialize;
 
 use super::path_ctx;
 use crate::{
-    config::CaddySettings,
+    config::{AppliedCaddySettings, CaddySettings},
     procid,
     statuspage::{self, RouteLink},
 };
 
-pub(super) fn prepare_directories(directory: &Path) -> Result<(), String> {
+pub fn read_applied_settings(directory: &Path) -> Result<Option<CaddySettings>, String> {
+    let path = directory.join("applied.json");
+    match fs::read(&path) {
+        Ok(contents) => {
+            let applied: AppliedCaddySettings = path_ctx(
+                serde_json::from_slice(&contents),
+                "parse applied managed Caddy settings",
+                &path,
+            )?;
+            Ok(Some(applied.into()))
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("read applied managed Caddy settings: {error}")),
+    }
+}
+
+pub(crate) fn read_running_settings(
+    directory: &Path,
+    fallback: &CaddySettings,
+) -> Result<CaddySettings, String> {
+    Ok(read_applied_settings(directory)?.unwrap_or_else(|| fallback.clone()))
+}
+
+pub(crate) fn read_route_settings(directory: &Path) -> Result<(CaddySettings, bool), String> {
+    match read_applied_settings(directory)? {
+        Some(settings) => Ok((settings, true)),
+        None => Ok((CaddySettings::default(), false)),
+    }
+}
+
+pub fn write_applied_settings(directory: &Path, settings: &CaddySettings) -> Result<(), String> {
+    let applied = AppliedCaddySettings {
+        admin_address: settings.admin_address.clone(),
+        bind_host: settings.bind_host.clone(),
+        http_enabled: settings.http_enabled,
+        http_port: settings.http_port,
+        https_port: settings.https_port,
+        stack_directory_host: settings.stack_directory_host.clone(),
+        stack_directory_allow_remote: settings.stack_directory_allow_remote,
+    };
+    let text = serde_json::to_string_pretty(&applied).expect("serialize applied Caddy settings");
+    let target = directory.join("applied.json");
+    let temporary = directory.join("applied.json.tmp");
+    path_ctx(
+        fs::write(&temporary, text),
+        "write applied managed Caddy settings",
+        &temporary,
+    )?;
+    path_ctx(
+        fs::rename(&temporary, &target),
+        "record applied managed Caddy settings",
+        &target,
+    )
+}
+
+pub fn prepare_directories(directory: &Path) -> Result<(), String> {
     for name in [
         "",
         "routes",
@@ -54,7 +109,10 @@ pub(super) fn write_caddyfile(directory: &Path, settings: &CaddySettings) -> Res
     )
 }
 
-fn sync_not_found_site(directory: &Path, settings: &CaddySettings) -> Result<(), String> {
+pub(crate) fn sync_not_found_site(
+    directory: &Path,
+    settings: &CaddySettings,
+) -> Result<(), String> {
     let routes_dir = directory.join("routes");
     let links = read_active_route_links(&routes_dir, settings.https_port)?;
     let not_found_dir = directory.join("route-not-found");
@@ -239,7 +297,7 @@ fn read_live_stacks(directory: &Path) -> Result<Vec<LiveStackSummary>, String> {
     Ok(stacks)
 }
 
-fn json_files(directory: &Path, context: &str) -> Result<Vec<PathBuf>, String> {
+pub(crate) fn json_files(directory: &Path, context: &str) -> Result<Vec<PathBuf>, String> {
     let entries = path_ctx(fs::read_dir(directory), context, directory)?;
     let mut files = Vec::new();
     for entry in entries {
@@ -378,22 +436,11 @@ fn route_file_path(host: &str, registration_name: &str, routes_dir: &Path) -> Pa
     routes_dir.join(format!("{stem}.caddy"))
 }
 
-fn normalize_route_path(path: &str) -> String {
-    let trimmed = path.trim();
-    if trimmed.is_empty() || trimmed == "/" {
+pub(crate) fn normalize_route_path(path: &str) -> String {
+    if path == "/" || path == "/*" {
         return "/".to_owned();
     }
-    let with_slash = if trimmed.starts_with('/') {
-        trimmed.to_owned()
-    } else {
-        format!("/{trimmed}")
-    };
-    let trimmed_end = with_slash.trim_end_matches('/');
-    if trimmed_end.is_empty() {
-        "/".to_owned()
-    } else {
-        trimmed_end.to_owned()
-    }
+    path.to_owned()
 }
 
 pub(super) fn encode_path_segment(value: &str) -> String {

@@ -7,30 +7,7 @@ use std::{
 
 use clap::{Arg, ArgAction, Command, error::ErrorKind, value_parser};
 use cli_command_kit::{HelpOptions, Mode, SkillSource, display_message, setup, write_skill};
-
-mod caddy;
-mod config;
-mod machine;
-mod manifest;
-mod paths;
-mod procid;
-mod statuspage;
-
-struct Failure {
-    message: String,
-    summary: Option<String>,
-    hint: Option<&'static str>,
-}
-
-impl From<String> for Failure {
-    fn from(message: String) -> Self {
-        Self {
-            message,
-            summary: None,
-            hint: None,
-        }
-    }
-}
+use devhost_rust::{Failure, caddy, machine, manifest};
 
 const VERSION: &str = match option_env!("DEVHOST_BUILD_VERSION") {
     Some(version) => version,
@@ -69,21 +46,51 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                 let list = service.subcommand_matches("list").expect("list arguments");
                 return list_services(list, mode, &mut stdout);
             }
-            Some(("caddy", caddy)) if caddy.subcommand_name() == Some("print-root-cert") => {
-                return Ok(match machine::print_root_certificate(&mut stdout) {
-                    Ok(()) => ExitCode::SUCCESS,
-                    Err(message) => write_failure(mode, message.into())?,
-                });
-            }
-            Some(("caddy", caddy)) if caddy.subcommand_name() == Some("stop") => {
-                let result = caddy::stop(mode, &mut io::stderr().lock());
-                return Ok(match result {
-                    Ok(()) => ExitCode::SUCCESS,
-                    Err(message) => write_failure(mode, message.into())?,
-                });
-            }
-            Some((name @ ("service" | "caddy"), _)) => {
-                if let Some(command) = root.find_subcommand_mut(name) {
+            Some(("caddy", caddy_matches)) => match caddy_matches.subcommand_name() {
+                Some("print-root-cert") => {
+                    return Ok(match machine::print_root_certificate(&mut stdout) {
+                        Ok(()) => ExitCode::SUCCESS,
+                        Err(message) => write_failure(mode, message.into())?,
+                    });
+                }
+                Some("start") => {
+                    return Ok(finish_caddy(
+                        mode,
+                        caddy::start(mode, &mut io::stderr().lock(), false),
+                    )?);
+                }
+                Some("stop") => {
+                    return Ok(finish_caddy(
+                        mode,
+                        caddy::stop(mode, &mut io::stderr().lock()),
+                    )?);
+                }
+                Some("trust") => {
+                    return Ok(finish_caddy(
+                        mode,
+                        caddy::trust_ca(mode, &mut io::stderr().lock()),
+                    )?);
+                }
+                Some("download") => {
+                    return Ok(finish_caddy(
+                        mode,
+                        caddy::download(mode, &mut io::stderr().lock()),
+                    )?);
+                }
+                Some("privileged-ports") => {
+                    return Ok(finish_caddy(
+                        mode,
+                        caddy::privileged_ports(mode, &mut io::stderr().lock()),
+                    )?);
+                }
+                _ => {
+                    if let Some(command) = root.find_subcommand_mut("caddy") {
+                        command.write_help(&mut stdout)?;
+                    }
+                }
+            },
+            Some(("service", _)) => {
+                if let Some(command) = root.find_subcommand_mut("service") {
                     command.write_help(&mut stdout)?;
                 }
             }
@@ -107,11 +114,29 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
     Ok(ExitCode::SUCCESS)
 }
 
+fn finish_caddy(mode: Mode, result: Result<(), Failure>) -> io::Result<ExitCode> {
+    match result {
+        Ok(()) => Ok(ExitCode::SUCCESS),
+        Err(failure) => write_failure(mode, failure),
+    }
+}
+
 fn caddy_command() -> Command {
     Command::new("caddy")
         .about("Set up and control the shared HTTPS proxy")
+        .long_about("devhost sends every stack through one shared Caddy server.\nDownload and trust it once, then start it before running\na stack.")
+        .subcommand(Command::new("download").about("Download the Caddy server devhost uses"))
         .subcommand(Command::new("print-root-cert").about("Print Caddy's root certificate"))
-        .subcommand(Command::new("stop").about("Stop the managed Caddy process"))
+        .subcommand(
+            Command::new("privileged-ports")
+                .about("Let Caddy listen on low ports without root (Linux)"),
+        )
+        .subcommand(Command::new("start").about("Start the shared Caddy server"))
+        .subcommand(Command::new("stop").about("Stop the shared Caddy server"))
+        .subcommand(
+            Command::new("trust")
+                .about("Trust Caddy's certificate on this machine (asks for your password)"),
+        )
 }
 
 fn service_command() -> Command {
@@ -179,7 +204,7 @@ fn write_failure(mode: Mode, failure: Failure) -> io::Result<ExitCode> {
         }
     }
     if mode == Mode::Human
-        && let Some(hint) = failure.hint
+        && let Some(hint) = failure.hint.as_deref()
     {
         writeln!(stderr, "{prefix} [INFO] {hint}")?;
     }

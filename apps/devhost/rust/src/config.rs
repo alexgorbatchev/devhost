@@ -35,18 +35,18 @@ impl From<AppliedCaddySettings> for CaddySettings {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default, rename_all = "camelCase")]
-pub(crate) struct CaddySettings {
-    pub(crate) admin_address: String,
-    pub(crate) bind_host: String,
-    pub(crate) http_enabled: bool,
-    pub(crate) http_port: u16,
-    pub(crate) https_port: u16,
-    pub(crate) stack_directory_host: String,
-    pub(crate) stack_directory_allow_remote: bool,
+pub struct CaddySettings {
+    pub admin_address: String,
+    pub bind_host: String,
+    pub http_enabled: bool,
+    pub http_port: u16,
+    pub https_port: u16,
+    pub stack_directory_host: String,
+    pub stack_directory_allow_remote: bool,
 }
 
 impl CaddySettings {
-    pub(crate) fn stack_directory_hostname(&self) -> &str {
+    pub fn stack_directory_hostname(&self) -> &str {
         if self.stack_directory_host.is_empty() {
             "devhost.localhost"
         } else {

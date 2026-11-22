@@ -34,7 +34,7 @@ pub(crate) fn state_directory() -> Result<PathBuf, String> {
         })
 }
 
-pub(crate) fn print_root_certificate(stdout: &mut impl Write) -> Result<(), String> {
+pub fn print_root_certificate(stdout: &mut impl Write) -> Result<(), String> {
     let path = clean(&state_directory()?.join(ROOT_CERTIFICATE));
     let certificate = fs::read(&path).map_err(|error| match error.kind() {
         io::ErrorKind::NotFound => format!(
