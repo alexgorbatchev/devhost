@@ -4,6 +4,7 @@ pub mod machine;
 pub mod manifest;
 pub mod paths;
 pub mod procid;
+pub mod services;
 pub mod statuspage;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

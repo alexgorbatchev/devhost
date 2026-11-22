@@ -6,11 +6,15 @@ use std::{
 
 use toml::{Table, Value};
 
-use super::diagnostics;
+use super::{
+    diagnostics,
+    types::{Inputs, RawManifest},
+};
 use crate::{Failure, paths::clean};
 
-pub(super) fn read(root: &Path) -> Result<Table, Failure> {
-    let mut table = load(root, root, &mut HashSet::new())?;
+pub(super) fn read(root: &Path) -> Result<RawManifest, Failure> {
+    let mut inputs = Inputs::default();
+    let (mut table, service_order) = load(root, root, &mut HashSet::new(), &mut inputs)?;
     let mut missing = BTreeSet::new();
     for (_, value) in &mut table {
         interpolate(value, &mut missing);
@@ -23,23 +27,37 @@ pub(super) fn read(root: &Path) -> Result<Table, Failure> {
         )
         .into());
     }
-    Ok(table)
+    Ok(RawManifest {
+        inputs,
+        service_order,
+        table,
+    })
 }
 
-fn load(path: &Path, root: &Path, visited: &mut HashSet<PathBuf>) -> Result<Table, Failure> {
+fn load(
+    path: &Path,
+    root: &Path,
+    visited: &mut HashSet<PathBuf>,
+    inputs: &mut Inputs,
+) -> Result<(Table, Vec<String>), Failure> {
     if !visited.insert(path.to_path_buf()) {
-        return Ok(Table::new());
+        return Ok((Table::new(), Vec::new()));
     }
+    inputs.files.push(path.to_path_buf());
     let text = fs::read_to_string(path).map_err(|error| read_error(path, root, error))?;
     let mut table = text
         .parse::<Table>()
         .map_err(|error| diagnostics::parse_error(path, &text, &error))?;
+    let mut service_order = read_service_order(&text);
     let Some(patterns) = table.get("includes") else {
-        return Ok(table);
+        return Ok((table, service_order));
     };
     let directory = path.parent().unwrap_or(Path::new("."));
     for pattern in include_patterns(patterns)? {
         let full_pattern = clean(&directory.join(&pattern));
+        inputs
+            .patterns
+            .push(full_pattern.to_string_lossy().into_owned());
         let glob_pattern = glob_pattern(&full_pattern.to_string_lossy());
         let paths = glob::glob(&glob_pattern)
             .map_err(|_| format!("invalid glob pattern {pattern:?}: syntax error in pattern"))?;
@@ -47,7 +65,7 @@ fn load(path: &Path, root: &Path, visited: &mut HashSet<PathBuf>) -> Result<Tabl
         paths.sort_unstable();
         for included in paths {
             let included = clean(&included);
-            let mut child = load(&included, root, visited)?;
+            let (mut child, child_order) = load(&included, root, visited, inputs)?;
             if child.contains_key("annotation") {
                 return Err(format!(
                     "annotation Unrecognized key in included manifest {}",
@@ -60,9 +78,39 @@ fn load(path: &Path, root: &Path, visited: &mut HashSet<PathBuf>) -> Result<Tabl
             merge(
                 &mut table, &mut child, "services", "service", path, &included,
             )?;
+            for name in child_order {
+                if !service_order.contains(&name) {
+                    service_order.push(name);
+                }
+            }
         }
     }
-    Ok(table)
+    Ok((table, service_order))
+}
+
+fn read_service_order(text: &str) -> Vec<String> {
+    let mut order = Vec::new();
+    for raw_line in text.lines() {
+        let trimmed = raw_line.trim();
+        let Some(rest) = trimmed.strip_prefix("[services.") else {
+            continue;
+        };
+        let Some((name, suffix)) = rest.split_once(']') else {
+            continue;
+        };
+        if name.is_empty() || name.contains('.') || name.contains(']') {
+            continue;
+        }
+        if !suffix.is_empty()
+            && !(suffix.starts_with(char::is_whitespace) && suffix.trim_start().starts_with('#'))
+        {
+            continue;
+        }
+        if !order.iter().any(|existing| existing == name) {
+            order.push(name.to_owned());
+        }
+    }
+    order
 }
 
 fn prepare_services(child: &mut Table, root: &Path, included: &Path) {
@@ -313,8 +361,10 @@ mod tests {
             ",
         )
         .unwrap();
-        let manifest = read(&root.join("devhost.toml"))
+        let raw = read(&root.join("devhost.toml"))
             .unwrap_or_else(|failure| panic!("{}", failure.message));
+        let manifest = &raw.table;
+        assert_eq!(raw.service_order, vec!["web", "api", "assets", "templated"]);
         let services = &manifest["services"];
         assert_eq!(services["web"]["cwd"].as_str(), Some("frontend"));
         assert_eq!(services["api"]["cwd"].as_str(), Some("parts"));

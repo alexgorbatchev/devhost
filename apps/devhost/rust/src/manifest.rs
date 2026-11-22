@@ -4,21 +4,42 @@ use crate::{Failure, paths::clean};
 
 mod diagnostics;
 mod includes;
-mod validation;
+pub mod types;
+pub mod validation;
+
+pub use types::{
+    DevtoolsConfig, HealthConfig, Inputs, Manifest, PortConfig, ServiceLifecycleConfig,
+    ValidatedService, WorktreesConfig, parse_go_duration, resolve_watch_path,
+};
+pub use validation::{
+    is_valid_host, is_valid_host_label, read_conflicting_route_path, validate_health_http_url,
+};
 
 const NAME: &str = "devhost.toml";
+
+pub fn read_manifest(cwd: &Path, explicit: Option<&Path>) -> Result<Manifest, Failure> {
+    let path = resolve_path(cwd, explicit)?;
+    let raw = includes::read(&path)?;
+    validation::validate(&path, raw).map_err(Into::into)
+}
 
 pub fn service_names(
     cwd: &Path,
     explicit: Option<&Path>,
     startable_only: bool,
 ) -> Result<Vec<String>, Failure> {
-    let path = resolve(cwd, explicit)?;
-    let manifest = includes::read(&path)?;
-    validation::service_names(&path, &manifest, startable_only).map_err(Into::into)
+    let manifest = read_manifest(cwd, explicit)?;
+    let mut names: Vec<String> = manifest
+        .services
+        .values()
+        .filter(|service| !startable_only || !service.always_start)
+        .map(|service| service.name.clone())
+        .collect();
+    names.sort_unstable();
+    Ok(names)
 }
 
-fn resolve(cwd: &Path, explicit: Option<&Path>) -> Result<PathBuf, Failure> {
+pub fn resolve_path(cwd: &Path, explicit: Option<&Path>) -> Result<PathBuf, Failure> {
     if let Some(path) = explicit {
         if !path
             .as_os_str()
