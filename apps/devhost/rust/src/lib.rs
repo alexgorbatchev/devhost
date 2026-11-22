@@ -1,6 +1,8 @@
 pub mod caddy;
 pub mod cliout;
 pub mod config;
+pub mod devtools;
+pub mod files;
 pub mod machine;
 pub mod manifest;
 pub mod paths;

@@ -579,7 +579,10 @@ pub(crate) fn sync_host_route(
     )
 }
 
-fn read_host_registrations(caddy_dir: &Path, host: &str) -> Result<Vec<RouteRegistration>, String> {
+pub(crate) fn read_host_registrations(
+    caddy_dir: &Path,
+    host: &str,
+) -> Result<Vec<RouteRegistration>, String> {
     let registrations_dir = caddy_dir.join("routes/.registrations");
     let mut registrations = Vec::new();
     for path in files::json_files(
