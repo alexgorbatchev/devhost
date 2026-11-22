@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-22 06:06
+last_modified: 2026-11-22 06:13
 status: current
 ---
 
@@ -13,7 +13,7 @@ Use this reference to compare Rust features with the Go implementation and accou
 | Reference                       | Tag or ref    | Full Git SHA                               |
 | ------------------------------- | ------------- | ------------------------------------------ |
 | Published Go release at kickoff | `v0.0.14`     | `f7f89fd1d3adc8f0ed64e013843d0efbbd293713` |
-| Go main reviewed through        | `origin/main` | `02de2dd3783e8abb1564c34ee067f93e064d05aa` |
+| Go main at kickoff              | `origin/main` | `02de2dd3783e8abb1564c34ee067f93e064d05aa` |
 
 The kickoff backlog includes manifest watch paths relative to service working directories, macOS missing-process handling, and the Markdown view at first paint. The range also clarifies serve session and local-routing documentation, changes the repository's `just run` to use the existing detached startup option, and adjusts the demo recorder's window sizing.
 
@@ -45,17 +45,14 @@ Keep case inputs small and focused on the active ticket. Inspect the replay repo
 
 ## Catch up with Go main
 
-From the port worktree, fetch Go main and check the GitHub releases list for a new published CLI release. A Git tag alone does not establish that a release was published.
+From the port worktree, refresh local Git objects and run the drift report. It reads the [reviewed Go SHA](../../../apps/devhost/rust/reviewed-go-sha), queries live Go main and the latest published GitHub release, and lists the untriaged commit SHAs and changed paths. The report itself leaves the checkout and baseline untouched.
 
 ```sh
-git fetch origin main
-git rev-parse origin/main
-reviewed_go=02de2dd3783e8abb1564c34ee067f93e064d05aa
-git merge-base --is-ancestor "$reviewed_go" origin/main
-git log --reverse --format='%H %s' "$reviewed_go..origin/main"
+git fetch origin main --tags
+cargo run --locked --manifest-path apps/devhost/rust/Cargo.toml --bin go-drift
 ```
 
-Set `reviewed_go` to the current reviewed SHA from the table. If the ancestry check fails, find the common ancestor and reconcile the changed history before moving the baseline. Inspect the full diff for each new commit, including docs and tests. Update the affected parity tickets or file a catch-up ticket for behavior already ported, recording the full Go SHA and expected behavior. Record tooling-only changes as reviewed when they do not affect parity. Advance the reviewed SHA after classifying the range. Advance feature verification SHAs only after comparing behavior at the new baseline.
+Exit status 2 means history needs reconciliation before advancing the baseline. Exit status 1 means the report could not run. Inspect the full diff for each new commit, including docs and tests. Update the affected parity tickets or file a catch-up ticket for behavior already ported, recording the full Go SHA and expected behavior. Record tooling-only changes as reviewed when they do not affect parity. Advance `reviewed-go-sha` after classifying the range. Advance feature verification SHAs only after comparing behavior at the new baseline.
 
 ## Owned dependency candidates
 
