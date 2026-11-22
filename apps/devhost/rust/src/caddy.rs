@@ -19,7 +19,67 @@ use crate::{
 pub mod files;
 pub mod output;
 pub mod routes;
+pub mod stacks;
 pub mod trust;
+
+pub fn ensure_managed_caddy_config(
+    directory: &Path,
+    settings: &CaddySettings,
+) -> Result<(), String> {
+    files::prepare_directories(directory)?;
+    let _lock = route_lock(directory)?;
+    let running = files::read_running_settings(directory, settings)?;
+    files::write_config(directory, &running)
+}
+
+pub fn ensure_admin_available(admin_address: &str) -> Result<(), Failure> {
+    let address = resolve_admin_address(admin_address);
+    let url = format!("http://{address}/config/");
+    let agent = ureq::Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(1)))
+        .max_redirects(0)
+        .http_status_as_error(false)
+        .proxy(None)
+        .build()
+        .new_agent();
+    let detail = match agent.get(&url).call() {
+        Ok(response) if response.status().is_success() => return Ok(()),
+        Ok(response) => {
+            let status = response.status();
+            let reason = status.canonical_reason().unwrap_or("");
+            format!("HTTP {} {reason}", status.as_u16())
+                .trim()
+                .to_owned()
+        }
+        Err(error) => error
+            .to_string()
+            .replace(" Is the computer able to access the url?", "")
+            .trim()
+            .to_owned(),
+    };
+    let base = "Caddy admin API is not available. Run 'devhost caddy start' first.";
+    let message = if detail.is_empty() {
+        base.to_owned()
+    } else {
+        format!("{base}\ndetail: {detail}")
+    };
+    Err(Failure {
+        message,
+        summary: Some("Caddy is not available.".to_owned()),
+        hint: Some("Run 'devhost caddy start' first.".to_owned()),
+    })
+}
+
+pub fn root_certificate_trust_warning(directory: &Path) -> Option<String> {
+    let root_cert = directory.join("storage/pki/authorities/local/root.crt");
+    match trust::read_root_certificate_trust(&root_cert) {
+        Ok(trust::RootCertificateTrust::Untrusted) => {
+            Some(trust::UNTRUSTED_ROOT_CERTIFICATE_WARNING.to_owned())
+        }
+        Ok(_) => None,
+        Err(error) => Some(trust::trust_check_warning(&error)),
+    }
+}
 
 const FOREIGN_MANAGED_CADDY_ERROR: &str = "A Caddy admin API is already listening on the devhost-managed address, but it was not started by devhost.";
 
@@ -794,6 +854,26 @@ mod tests {
             String::from_utf8(human_out).unwrap(),
             "devhost | [WARN] careful\n"
         );
+
+        // ensure_managed_caddy_config creates layout, and ensure_admin_available reports HTTP non-2xx.
+        let cfg_dir = fixture.path().join("cfg-caddy");
+        ensure_managed_caddy_config(&cfg_dir, &CaddySettings::default()).unwrap();
+        assert!(cfg_dir.join("Caddyfile").exists());
+        assert!(root_certificate_trust_warning(&caddy_dir).is_some());
+
+        let http_listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let http_port = http_listener.local_addr().unwrap().port();
+        let srv = std::thread::spawn(move || {
+            if let Ok((mut s, _)) = http_listener.accept() {
+                let mut b = [0u8; 256];
+                let _ = std::io::Read::read(&mut s, &mut b);
+                let _ =
+                    s.write_all(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\n\r\n");
+            }
+        });
+        let admin_err = ensure_admin_available(&format!("127.0.0.1:{http_port}")).unwrap_err();
+        srv.join().unwrap();
+        assert!(admin_err.message.contains("503"));
     }
 
     #[test]

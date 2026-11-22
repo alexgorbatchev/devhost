@@ -1,4 +1,5 @@
 pub mod caddy;
+pub mod cliout;
 pub mod config;
 pub mod machine;
 pub mod manifest;

@@ -7,6 +7,7 @@ use std::{
 use url::Url;
 
 use crate::{
+    caddy::ctx,
     config::CaddySettings,
     manifest::{
         DevtoolsConfig, Manifest, ServiceLifecycleConfig, ValidatedService, WorktreesConfig,
@@ -60,6 +61,8 @@ pub struct ResolvedService {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedManifest {
+    pub configuration: Option<Manifest>,
+    pub requested: Vec<String>,
     pub caddy: CaddySettings,
     pub domain_suffix: String,
     pub devtools: DevtoolsConfig,
@@ -321,17 +324,20 @@ pub fn resolve_service_ports(
         service.health = resolve_health_config(raw_service, service.port, &snapshot)?;
         let mut interpolated_env = BTreeMap::new();
         for (k, v) in &service.env {
-            let val = interpolate_service_templates(v, &snapshot)
-                .map_err(|err| format!("service {name:?}: interpolate env {k:?}: {err}"))?;
+            let val = ctx(
+                interpolate_service_templates(v, &snapshot),
+                &format!("service {name:?}: interpolate env {k:?}"),
+            )?;
             interpolated_env.insert(k.clone(), val);
         }
         service.env = interpolated_env;
 
         let mut interpolated_cmd = Vec::with_capacity(service.command.len());
         for part in &service.command {
-            let val = interpolate_service_templates(part, &snapshot).map_err(|err| {
-                format!("service {name:?}: interpolate command arg {part:?}: {err}")
-            })?;
+            let val = ctx(
+                interpolate_service_templates(part, &snapshot),
+                &format!("service {name:?}: interpolate command arg {part:?}"),
+            )?;
             interpolated_cmd.push(val);
         }
         service.command = interpolated_cmd;
@@ -356,6 +362,8 @@ pub fn resolve_service_ports(
     }
 
     Ok(ResolvedManifest {
+        configuration: Some(manifest.clone()),
+        requested: options.requested.clone(),
         caddy: CaddySettings::default(),
         domain_suffix: suffix.to_owned(),
         devtools: manifest.devtools.clone(),
@@ -407,19 +415,16 @@ fn resolve_manifest_hosts(
     Ok(services)
 }
 
-fn reserve_auto_port(bind_host: &str, excluded: &BTreeSet<u16>) -> Result<u16, String> {
+pub(crate) fn reserve_auto_port(bind_host: &str, excluded: &BTreeSet<u16>) -> Result<u16, String> {
     for _ in 0..32 {
         let addr = if bind_host.contains(':') {
             format!("[{bind_host}]:0")
         } else {
             format!("{bind_host}:0")
         };
-        let listener = TcpListener::bind(&addr)
-            .map_err(|error| format!("reserve auto port for {bind_host}: {error}"))?;
-        let port = listener
-            .local_addr()
-            .map_err(|error| format!("reserve auto port for {bind_host}: {error}"))?
-            .port();
+        let port_label = format!("reserve auto port for {bind_host}");
+        let listener = ctx(TcpListener::bind(&addr), &port_label)?;
+        let port = ctx(listener.local_addr(), &port_label)?.port();
         drop(listener);
         if !excluded.contains(&port) {
             return Ok(port);
@@ -484,8 +489,10 @@ fn resolve_health_url(
     raw: &str,
     services: &BTreeMap<String, ResolvedService>,
 ) -> Result<String, String> {
-    let mut resolved = interpolate_service_templates(raw, services)
-        .map_err(|err| format!("services.{name}.health.http: {err}"))?;
+    let mut resolved = ctx(
+        interpolate_service_templates(raw, services),
+        &format!("services.{name}.health.http"),
+    )?;
     if resolved.contains("{{") || resolved.contains("}}") {
         return Err(format!(
             "services.{name}.health.http contains an unresolved URL template: {resolved}"
@@ -493,9 +500,10 @@ fn resolve_health_url(
     }
     if resolved.starts_with('/') && !resolved.starts_with("//") {
         let base = build_service_url(&services[name])?;
-        let joined = base.join(&resolved).map_err(|err| {
-            format!("services.{name}.health.http must be a valid URL path: {err}")
-        })?;
+        let joined = ctx(
+            base.join(&resolved),
+            &format!("services.{name}.health.http must be a valid URL path"),
+        )?;
         resolved = joined.to_string();
     }
     validate_health_http_url(name, &resolved)?;
@@ -511,8 +519,10 @@ pub fn build_service_url(service: &ResolvedService) -> Result<Url, String> {
         "::1" | "::" => "[::1]",
         other => return Err(format!("Unsupported bind host: {other}")),
     };
-    Url::parse(&format!("http://{host}:{port}"))
-        .map_err(|err| format!("build service url for {}: {err}", service.name))
+    ctx(
+        Url::parse(&format!("http://{host}:{port}")),
+        &format!("build service url for {}", service.name),
+    )
 }
 
 pub fn interpolate_service_templates(
@@ -562,11 +572,10 @@ pub fn interpolate_service_templates(
                 }
                 "bindHost" => out.push_str(&target.bind_host),
                 "url" => {
-                    let url = build_service_url(target).map_err(|err| {
-                        format!(
-                            "referenced service {target_name:?} in template {raw_token:?}: {err}"
-                        )
-                    })?;
+                    let url = ctx(
+                        build_service_url(target),
+                        &format!("referenced service {target_name:?} in template {raw_token:?}"),
+                    )?;
                     out.push_str(url.as_str().trim_end_matches('/'));
                 }
                 _ => {

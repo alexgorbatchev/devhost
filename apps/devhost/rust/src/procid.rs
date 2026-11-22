@@ -3,6 +3,14 @@ use std::io;
 use std::{fs, sync::OnceLock};
 
 #[cfg(target_os = "linux")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LinuxStat {
+    pub state: u8,
+    pub parent_pid: i32,
+    pub start_ticks: u64,
+}
+
+#[cfg(target_os = "linux")]
 pub(crate) fn start_identity(pid: i32) -> io::Result<String> {
     if pid <= 0 {
         return Err(io::Error::new(
@@ -24,12 +32,6 @@ pub(crate) fn start_identity(_pid: i32) -> io::Result<String> {
 }
 
 #[cfg(target_os = "linux")]
-struct LinuxStat {
-    state: u8,
-    start_ticks: u64,
-}
-
-#[cfg(target_os = "linux")]
 fn boot_id() -> io::Result<&'static str> {
     static BOOT_ID: OnceLock<Option<String>> = OnceLock::new();
     BOOT_ID
@@ -43,7 +45,7 @@ fn boot_id() -> io::Result<&'static str> {
 }
 
 #[cfg(target_os = "linux")]
-fn read_linux_stat(pid: i32) -> io::Result<LinuxStat> {
+pub(crate) fn read_linux_stat(pid: i32) -> io::Result<LinuxStat> {
     let path = format!("/proc/{pid}/stat");
     let text = fs::read_to_string(&path)?;
     parse_linux_stat(&path, &text)
@@ -64,30 +66,37 @@ fn parse_linux_stat(path: &str, text: &str) -> io::Result<LinuxStat> {
         ));
     }
     let state = fields[0].as_bytes().first().copied().unwrap_or(b'?');
+    let parent_pid = fields[1]
+        .parse::<i32>()
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
     let start_ticks = fields[19]
         .parse::<u64>()
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-    Ok(LinuxStat { state, start_ticks })
+    Ok(LinuxStat {
+        state,
+        parent_pid,
+        start_ticks,
+    })
 }
 
 #[cfg(target_os = "linux")]
-pub(crate) fn is_process_alive(pid: i32) -> bool {
+pub fn is_process_alive(pid: i32) -> bool {
     if pid <= 0 {
         return false;
     }
     match read_linux_stat(pid) {
-        Ok(stat) => stat.state != b'Z' && stat.state != b'X',
+        Ok(stat) => stat.state != b'Z' && stat.state != b'X' && stat.state != b'x',
         Err(error) if error.kind() == io::ErrorKind::NotFound => false,
         Err(_) => true,
     }
 }
 
 #[cfg(not(target_os = "linux"))]
-pub(crate) fn is_process_alive(pid: i32) -> bool {
+pub fn is_process_alive(pid: i32) -> bool {
     pid > 0 && pid == std::process::id() as i32
 }
 
-pub(crate) fn is_record_owner_alive(pid: i32, recorded_identity: &str) -> bool {
+pub fn is_record_owner_alive(pid: i32, recorded_identity: &str) -> bool {
     if !is_process_alive(pid) {
         return false;
     }
@@ -126,16 +135,24 @@ mod tests {
             assert!(
                 parse_linux_stat(
                     "p",
+                    "123 (cmd) S bad 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 42"
+                )
+                .is_err()
+            );
+            assert!(
+                parse_linux_stat(
+                    "p",
                     "123 (cmd) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 bad"
                 )
                 .is_err()
             );
             let parsed = parse_linux_stat(
                 "p",
-                "123 (cmd (x)) Z 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 42",
+                "123 (cmd (x)) Z 7 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 42",
             )
             .unwrap();
             assert_eq!(parsed.state, b'Z');
+            assert_eq!(parsed.parent_pid, 7);
             assert_eq!(parsed.start_ticks, 42);
         }
     }

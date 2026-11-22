@@ -1,4 +1,8 @@
-use std::{fs, io, net::IpAddr, path::Path};
+use std::{
+    fs, io,
+    net::IpAddr,
+    path::{Path, PathBuf},
+};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::{Deserialize, Serialize};
@@ -69,22 +73,33 @@ impl Default for CaddySettings {
     }
 }
 
-pub(crate) struct MachineConfig {
-    pub(crate) caddy: CaddySettings,
+pub struct MachineConfig {
+    pub domain_suffix: String,
+    pub caddy: CaddySettings,
 }
 
-pub(crate) fn read() -> Result<MachineConfig, String> {
-    let path = machine::directory("DEVHOST_CONFIG_DIR")
+pub fn path() -> Result<PathBuf, String> {
+    machine::directory("DEVHOST_CONFIG_DIR")
         .or_else(|| machine::directory("XDG_CONFIG_HOME").map(|root| root.join("devhost")))
         .or_else(|| machine::home_directory().map(|home| home.join(".config/devhost")))
         .map(|directory| clean(&directory.join("config.toml")))
-        .ok_or("could not determine the devhost config directory; set DEVHOST_CONFIG_DIR, XDG_CONFIG_HOME, or HOME")?;
-    let contents = match fs::read_to_string(&path) {
+        .ok_or_else(|| {
+            "could not determine the devhost config directory; set DEVHOST_CONFIG_DIR, XDG_CONFIG_HOME, or HOME".to_owned()
+        })
+}
+
+pub fn read() -> Result<MachineConfig, String> {
+    let config_path = path()?;
+    read_from(&config_path)
+}
+
+pub fn read_from(path: &Path) -> Result<MachineConfig, String> {
+    let contents = match fs::read_to_string(path) {
         Ok(contents) => contents,
         Err(error) if error.kind() == io::ErrorKind::NotFound => String::new(),
         Err(error) => return Err(format!("read devhost config {}: {error}", path.display())),
     };
-    parse(&path, &contents)
+    parse(path, &contents)
 }
 
 fn parse(path: &Path, contents: &str) -> Result<MachineConfig, String> {
@@ -125,12 +140,15 @@ fn parse(path: &Path, contents: &str) -> Result<MachineConfig, String> {
         );
     }
     issues.sort();
-    if let Some(suffix) = root.get("domainSuffix")
-        && !suffix.as_str().is_some_and(valid_suffix)
-    {
-        issues.push(
-            "domainSuffix must be a hostname suffix beginning with a dot or hyphen.".to_owned(),
-        );
+    let mut domain_suffix = ".localhost".to_owned();
+    if let Some(suffix) = root.get("domainSuffix") {
+        if let Some(text) = suffix.as_str().filter(|s| valid_suffix(s)) {
+            domain_suffix = text.trim().to_ascii_lowercase();
+        } else {
+            issues.push(
+                "domainSuffix must be a hostname suffix beginning with a dot or hyphen.".to_owned(),
+            );
+        }
     }
     let mut caddy = CaddySettings::default();
     if let Some(value) = root.get("caddy") {
@@ -148,7 +166,10 @@ fn parse(path: &Path, contents: &str) -> Result<MachineConfig, String> {
         }
     }
     if issues.is_empty() {
-        Ok(MachineConfig { caddy })
+        Ok(MachineConfig {
+            domain_suffix,
+            caddy,
+        })
     } else {
         Err(format!(
             "devhost config {} is invalid:\n{}",

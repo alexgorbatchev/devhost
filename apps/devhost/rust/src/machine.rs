@@ -24,7 +24,7 @@ pub(crate) fn home_directory() -> Option<PathBuf> {
     })
 }
 
-pub(crate) fn state_directory() -> Result<PathBuf, String> {
+pub fn state_directory() -> Result<PathBuf, String> {
     directory("DEVHOST_STATE_DIR")
         .or_else(|| directory("XDG_STATE_HOME").map(|root| root.join("devhost")))
         .or_else(|| home_directory().map(|home| home.join(".local/state/devhost")))

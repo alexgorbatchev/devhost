@@ -447,7 +447,7 @@ pub(super) fn encode_path_segment(value: &str) -> String {
     value.replace(':', "_")
 }
 
-pub(super) fn format_site_address(protocol: &str, port: u16, host: &str) -> String {
+pub(crate) fn format_site_address(protocol: &str, port: u16, host: &str) -> String {
     let default_port = if protocol == "http" { 80 } else { 443 };
     if port == default_port {
         format!("{protocol}://{host}")
@@ -456,7 +456,7 @@ pub(super) fn format_site_address(protocol: &str, port: u16, host: &str) -> Stri
     }
 }
 
-fn create_managed_url(protocol: &str, host: &str, port: u16, path: &str) -> String {
+pub(crate) fn create_managed_url(protocol: &str, host: &str, port: u16, path: &str) -> String {
     let default_port = if protocol == "http" { 80 } else { 443 };
     let authority = if port == default_port {
         host.to_owned()
