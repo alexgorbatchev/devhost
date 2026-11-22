@@ -10,11 +10,17 @@ const MANIFEST: &str = r#"
 name = "sample"
 
 [services.zebra]
+command = ["zebra"]
+port = 3000
 
 [services.bootstrap]
+command = "bootstrap"
+port = 3001
 alwaysStart = true
 
 [services.api]
+command = ["api"]
+port = 3002
 "#;
 
 fn list(cwd: &Path, args: &[&str], manifest: Option<&Path>, agent: bool) -> Output {
@@ -72,7 +78,11 @@ fn explicit_manifest_overrides_environment_and_bypasses_discovery() {
     let fixture = tempdir().unwrap();
     let root = fixture.path();
     let alternate = root.join("alternate-devhost.toml");
-    fs::write(&alternate, "name = 'alternate'\n[services.web]").unwrap();
+    fs::write(
+        &alternate,
+        "name = 'alternate'\n[services.web]\ncommand = ['web']\nport = 3000",
+    )
+    .unwrap();
     fs::write(root.join("devhost.toml"), MANIFEST).unwrap();
 
     assert_eq!(stdout(list(root, &[], Some(&alternate), true)), "web\n");
@@ -113,18 +123,115 @@ fn reports_invalid_manifest_input() {
         ("name = 'sample'\n[services]", "at least one service"),
         (
             "name = 'sample'\n[services]\nweb = 3",
-            "services.web must be an object",
+            "services.web must be a table",
         ),
         ("name = 'sample'\n[services.UPPER]", "invalid name"),
         (
             "name = 'sample'\n[services.web]\nalwaysStart = 1",
-            "Expected a boolean",
+            "must be a boolean",
         ),
     ] {
         fs::write(&path, input).unwrap();
         let error = stderr(list(root, &[], None, true));
         assert!(error.contains(message), "{error}");
     }
+}
+
+#[test]
+fn combines_schema_issues_before_cross_service_validation() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path();
+    let path = root.join("devhost.toml");
+    fs::write(
+        &path,
+        "enabled = false\n[services.web]\nalwaysStart = 21\nport = -1\ndependsOn = ['missing']\n",
+    )
+    .unwrap();
+    assert_eq!(
+        stderr(list(root, &[], None, true)),
+        concat!(
+            "devhost: ERR: Manifest schema is invalid:\n",
+            "devhost: manifest Unrecognized key: \"enabled\"\n",
+            "devhost: name Expected a non-empty string.\n",
+            "devhost: services.web.command must be a non-empty string or string array.\n",
+            "devhost: services.web.alwaysStart must be a boolean.\n",
+            "devhost: services.web.port must be an integer between 1 and 65535 or \"auto\".\n",
+        )
+    );
+    for (settings, expected) in [
+        ("command = ['web']", "must define either port or health"),
+        (
+            "command = []\nport = 3300",
+            "must contain at least one string",
+        ),
+        ("command = ' '\nport = 3300", "Expected a non-empty string"),
+        (
+            "command = ['web']\nport = 3300\ndependsOn = ['missing']",
+            "references an unknown service",
+        ),
+        (
+            "command = ['web']\nport = 3300\ncwd = '../elsewhere'",
+            "must stay within",
+        ),
+        (
+            "managed = false\nport = 'auto'",
+            "must not use port = \"auto\"",
+        ),
+        (
+            "managed = false\ncommand = ['web']\nport = 3300",
+            "must omit command",
+        ),
+        ("serve = ''", "serve Expected a non-empty string"),
+        (
+            "serve = '.'\ncwd = '.'",
+            "must omit cwd when serve is configured",
+        ),
+        (
+            "serve = '.'\nmanaged = false",
+            "serve requires managed = true",
+        ),
+        (
+            "command = ['web']\nport = 3300\ncwd = 1",
+            "cwd must be a string",
+        ),
+        (
+            "command = ['web']\nport = 3300\nlifecycle = 1",
+            "lifecycle must be a table",
+        ),
+        (
+            "command = ['web']\nport = 3300\n[services.web.lifecycle]\nmode = 'invalid'",
+            "mode must be one of",
+        ),
+        (
+            "command = ['web']\nport = 3300\n[services.web.lifecycle]\nstart = ['web']",
+            "only supported when lifecycle.mode",
+        ),
+        (
+            "port = 3300\n[services.web.lifecycle]\nmode = 'daemon'",
+            "lifecycle.start is required",
+        ),
+        (
+            "port = 'auto'\n[services.web.lifecycle]\nmode = 'daemon'\nstart = ['start']\nstop = ['stop']",
+            "must not use port = \"auto\"",
+        ),
+    ] {
+        fs::write(
+            &path,
+            format!("name = 'sample'\n[services.web]\n{settings}"),
+        )
+        .unwrap();
+        let error = stderr(list(root, &[], None, true));
+        assert!(error.contains(expected), "{error}");
+    }
+    fs::write(
+        &path,
+        "name = 'sample'\n[services.assets]\nserve = '.'\n[services.external]\nmanaged = false\nport = 3131\n[services.worker]\nport = 3132\n[services.worker.lifecycle]\nmode = 'daemon'\nstart = ['start']\nstop = ['stop']\n",
+    )
+    .unwrap();
+    assert_eq!(
+        stdout(list(root, &[], None, true)),
+        "assets\nexternal\nworker\n"
+    );
 }
 
 #[test]
