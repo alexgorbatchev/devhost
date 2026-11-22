@@ -60,6 +60,13 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - `packages/devhost-ui/` — injected browser UI package; follow `packages/devhost-ui/AGENTS.md`
 - `packages/docs/` — public Astro docs site; follow `packages/docs/AGENTS.md`
 
+## Rust migration
+
+- Work in the Rust port worktree. Use the [Devhost Rust parity skill](.agents/skills/devhost-rust-parity/SKILL.md) and [parity runbook](docs/internal/references/rust-port-parity.md) for each port ticket.
+- Before implementing a behavior, use Rust Anything to record focused cases from the Go binary built at the ticket's reference SHA. Replay them against `apps/devhost/rust` before closing the ticket. Use the CLI if the MCP server is unavailable.
+- Keep generated recordings in the worktree's ignored `.state/` directory and fixture inputs in source when the ticket needs repeatable cases. Keep generated bridges and Go fallback dispatch out of the Rust crate.
+- Record the Go and Rust revisions and replay results in the ticket. Check Go main for intervening changes that affect the behavior before accepting the result.
+
 ## Shared gotchas
 
 - Development manifests use short host labels. Machine config `domainSuffix` supplies local routing (default `.localhost`); `[remote].domainSuffix` supplies relay routing, selected automatically when configured. Use `--local` for a local-only run. Stop/start an affected stack after changing its routing settings. Root `.envrc` adds the built binary to PATH and loads ignored `.envrc.local` shell customizations; hostname settings belong in machine config.

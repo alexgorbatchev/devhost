@@ -1,0 +1,2 @@
+{"name":"list-all","args":["service","list"],"env":{"AGENT":"1","DEVHOST_MANIFEST":"devhost.toml"},"files":{"devhost.toml":"name = \"sample\"\n[services.web]\ncommand = [\"web\"]\nport = 3000\n[services.bootstrap]\ncommand = [\"bootstrap\"]\nport = 3001\nalwaysStart = true\n"}}
+{"name":"list-startable","args":["service","list","--startable"],"env":{"AGENT":"1","DEVHOST_MANIFEST":"devhost.toml"},"files":{"devhost.toml":"name = \"sample\"\n[services.web]\ncommand = [\"web\"]\nport = 3000\n[services.bootstrap]\ncommand = [\"bootstrap\"]\nport = 3001\nalwaysStart = true\n"}}

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-20 19:52
+last_modified: 2026-11-22 06:06
 status: current
 ---
 
@@ -24,6 +24,24 @@ There are no verified Rust features at kickoff. Record a separate tested Go SHA 
 Use the CLI and output references, the distributed skill, the Go implementation and tests, and the browser control and chat protocol references to identify behavior affected by a slice. Compare the Go and Rust executables on matching inputs with separate configuration, state, ports, temporary directories, and subprocess ownership. Compare the relevant exit codes, output streams, state changes, protocol messages, and cleanup. Normalize variable values such as process IDs and temporary paths only where their exact values are outside the contract. Run platform-dependent comparisons on the applicable platform.
 
 Record the feature, full Go SHA, full Rust SHA, platform, checks and results in the feature's task record. If the Go commit advances before a feature lands, review the intervening changes before accepting the evidence. Compare against a newer Go revision whenever an intervening change affects the feature.
+
+## Record and replay with Rust Anything
+
+Install [Rust Anything v3.3.0](https://github.com/erkamyaman/rust-anything/releases/tag/v3.3.0) from its release archive. Verify the archive against its published SHA-256 and put `rust-anything` on the agent client's `PATH`. From the port worktree, open the `devhost-rust-parity` skill. The worktree declares `rust-anything mcp` in the Codex, Claude Code, and Antigravity project config files. Approve the project server if the client prompts. The CLI works without an agent session.
+
+In a checkout at the Go SHA under test, run `just cli --version` to build the Go oracle at `apps/devhost/bin/source/devhost`. From the Rust worktree, build the Rust binary and point the recording at the absolute path of that Go executable. Keep recordings in a separate scratch directory per slice. This smoke case checks the entire service list and the startable filter.
+
+```sh
+cargo build --manifest-path apps/devhost/rust/Cargo.toml --locked
+mkdir -p .state/rust-anything/service-list
+rust-anything app record .state/rust-anything/service-list \
+  --inputs "$PWD/apps/devhost/rust/tests/service-list.jsonl" --no-traps \
+  --name devhost -- /absolute/path/to/go-checkout/apps/devhost/bin/source/devhost
+rust-anything app replay .state/rust-anything/service-list \
+  --build "$PWD/apps/devhost/rust/target/debug/devhost"
+```
+
+Keep case inputs small and focused on the active ticket. Inspect the replay report under the recording directory's `rust/app-cases/`. Add cases for the new behavior and use `app replay --case` for targeted reruns. Use the same isolated state for recordings and replays that touch files or services. Keep generated source out of the existing Rust crate.
 
 ## Catch up with Go main
 
