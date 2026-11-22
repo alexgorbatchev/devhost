@@ -126,6 +126,40 @@ fn reports_invalid_manifest_input() {
 }
 
 #[test]
+fn locates_manifest_syntax_errors() {
+    let fixture = tempdir().unwrap();
+    let root = fixture.path();
+    let path = root.join("devhost.toml");
+    for (input, message) in [
+        (
+            "name = 'sample'\n[services.web]\nport = 3000\n\n[services.web]\n",
+            "TOML table [services.web] is declared more than once (lines 2 and 5). Merge those settings into a single table instead of repeating the header.",
+        ),
+        (
+            "[services.web]\nport = 3000\nport = 3001\n",
+            "toml: line 3 (last key \"services.web.port\"): Key 'services.web.port' has already been defined.",
+        ),
+        (
+            "name = \"sample\n[services.web]\n",
+            "toml: line 1 (last key \"name\"): strings cannot contain newlines",
+        ),
+        (
+            "name = 'sample'\n[services.web\n",
+            "toml: line 3: expected '.' or ']' to end table name, but got '\\n' instead",
+        ),
+    ] {
+        fs::write(&path, input).unwrap();
+        assert_eq!(
+            stderr(list(root, &[], Some(&path), true)),
+            format!(
+                "devhost: ERR: Failed to parse {}: {message}\n",
+                path.display()
+            )
+        );
+    }
+}
+
+#[test]
 fn service_group_shows_help_without_a_subcommand() {
     let output = Command::new(env!("CARGO_BIN_EXE_devhost"))
         .arg("service")

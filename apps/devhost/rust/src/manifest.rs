@@ -5,6 +5,8 @@ use std::{
 
 use toml::{Table, Value};
 
+mod diagnostics;
+
 const NAME: &str = "devhost.toml";
 
 pub(crate) struct Failure {
@@ -46,7 +48,7 @@ pub(crate) fn service_names(
     })?;
     let manifest: Table = text
         .parse()
-        .map_err(|error| format!("Failed to parse {}: {error}", path.display()))?;
+        .map_err(|error| diagnostics::parse_error(&path, &text, &error))?;
 
     if manifest.contains_key("includes") {
         return Err("The Rust CLI currently supports single-file manifests."
