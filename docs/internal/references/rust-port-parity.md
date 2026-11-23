@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-22 21:20
+last_modified: 2026-11-23 06:35
 status: current
 ---
 
@@ -97,6 +97,34 @@ rollback, unavailable checkout recovery, and disabling worktrees. Failed
 restoration leaves the repository stopped; restarting one member retries its
 whole group. These fixtures own and join their services before removing their
 temporary directories.
+
+## Native control tests
+
+`just rust test --lib devtools::` checks configuration file discovery, schema,
+validation, version conflicts, atomic saves, local-access guards, responsive
+status reads during pending mutations, and health, logs, resources, and editor
+cursor WebSockets. Stream tests check configuration changes and shutdown close
+codes as well as initial messages.
+
+`just rust test --test devtools_assets_injection` checks native document
+injection and recovery-page proxying. The recovery callback owns its own Tokio
+runtime, matching the blocking boundary used by stack supervision.
+
+Record `apps/devhost/rust/tests/stack-info.jsonl` with the Rust Anything workflow
+above to compare command help, manifest errors, and missing-stack diagnostics.
+`just rust test --test stack_commands info::` checks readiness exit codes in both
+output modes, included and symlinked manifest selection, live snapshot overrides,
+control-server failures, and failure-context formatting against an isolated
+loopback server.
+Use isolated live stacks for readiness, service-start, restart, configuration
+save, and browser acceptance comparisons. Check written configuration on disk
+as well as the browser's save result.
+
+`just rust test --test files_live` checks native file-server shutdown and restart,
+including a child paused between fork and exec with an inherited listener.
+Port reservations shut down their sockets before close, and file-server shutdown
+releases the listening socket across inherited descriptors. Close-on-exec alone
+does not release those copies while a child is still preparing to execute.
 
 ## Catch up with Go main
 

@@ -86,6 +86,66 @@ const COMPONENT_EDITORS: &[&str] = &["cursor", "vscode", "vscode-insiders", "web
 const SERVICE_BIND_HOSTS: &[&str] = &["127.0.0.1", "0.0.0.0", "::1", "::"];
 const DEVTOOLS_STATUS_POSITIONS: &[&str] = &["top-right", "bottom-right"];
 const MIN_RESOURCE_POLL_INTERVAL: Duration = Duration::from_millis(250);
+const TOGGLE_KEYS: &[&str] = &["enabled"];
+const CHAT_KEYS: &[&str] = &["enabled", "prompt"];
+const EDITOR_KEYS: &[&str] = &["enabled", "ide"];
+const RESOURCES_KEYS: &[&str] = &["cpu", "disk", "enabled", "memory", "pollInterval"];
+const RESOURCE_KEYS: &[&str] = &["enabled", "pollInterval"];
+const STATUS_KEYS: &[&str] = &["enabled", "position"];
+const SHORTCUT_KEYS: &[&str] = &["restartServices"];
+const LIFECYCLE_KEYS: &[&str] = &["mode", "start", "status", "stop"];
+const LIFECYCLE_MODES: &[&str] = &["foreground", "daemon"];
+
+pub(crate) fn editor_schema() -> serde_json::Value {
+    serde_json::json!({"tables":{
+        "":ROOT_KEYS.iter().filter(|key| **key != "caddy").collect::<Vec<_>>(),
+        "worktrees":TOGGLE_KEYS, "devtools":DEVTOOLS_KEYS,
+        "devtools.annotations":TOGGLE_KEYS, "devtools.chat":CHAT_KEYS,
+        "devtools.configEditor":TOGGLE_KEYS, "devtools.editor":EDITOR_KEYS,
+        "devtools.externalToolbars":TOGGLE_KEYS, "devtools.minimap":TOGGLE_KEYS,
+        "devtools.resources":RESOURCES_KEYS,
+        "devtools.resources.*":RESOURCE_KEYS, "devtools.status":STATUS_KEYS,
+        "devtools.shortcuts":SHORTCUT_KEYS, "services.*":SERVICE_KEYS,
+        "services.*.health":HEALTH_KEYS, "services.*.lifecycle":LIFECYCLE_KEYS
+    },"values":{
+        "devtools.editor.ide":COMPONENT_EDITORS,"devtools.status.position":DEVTOOLS_STATUS_POSITIONS,
+        "services.*.bindHost":SERVICE_BIND_HOSTS,"services.*.lifecycle.mode":LIFECYCLE_MODES
+    }})
+}
+
+pub(crate) fn issue_key_path(issue: &str) -> String {
+    let key = issue.split(' ').next().unwrap_or_default();
+    let root = key.split('.').next().unwrap_or_default();
+    if root != "manifest" && !ROOT_KEYS.contains(&root) {
+        return String::new();
+    }
+    if !root.starts_with(|character: char| character.is_ascii_alphabetic())
+        || !root
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+        || !key.split('.').skip(1).all(|segment| {
+            !segment.is_empty()
+                && segment
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'*'))
+        })
+    {
+        return String::new();
+    }
+    let key = if key == "manifest" { "" } else { key };
+    if let Some((_, unknown)) = issue.rsplit_once(" Unrecognized key: \"")
+        && let Some(unknown) = unknown
+            .strip_suffix('"')
+            .filter(|unknown| !unknown.is_empty() && !unknown.contains('"'))
+    {
+        return if key.is_empty() {
+            unknown.to_owned()
+        } else {
+            format!("{key}.{unknown}")
+        };
+    }
+    key.to_owned()
+}
 
 pub(super) fn validate(path: &Path, raw: RawManifest) -> Result<Manifest, String> {
     let manifest = &raw.table;
@@ -205,7 +265,7 @@ fn validate_worktrees(raw: Option<&Value>, schema: &mut Vec<String>) -> Worktree
         schema.push("worktrees must be a table.".into());
         return cfg;
     };
-    reject_unknown(table, "worktrees", &["enabled"], schema);
+    reject_unknown(table, "worktrees", TOGGLE_KEYS, schema);
     cfg.enabled = read_bool(table, "enabled", "worktrees.enabled", true, schema);
     cfg
 }
@@ -232,7 +292,7 @@ fn validate_devtools(raw: Option<&Value>, schema: &mut Vec<String>) -> DevtoolsC
 
     if let Some(raw_editor) = table.get("editor") {
         if let Some(editor) = raw_editor.as_table() {
-            reject_unknown(editor, "devtools.editor", &["enabled", "ide"], schema);
+            reject_unknown(editor, "devtools.editor", EDITOR_KEYS, schema);
             result.editor.enabled =
                 read_bool(editor, "enabled", "devtools.editor.enabled", true, schema);
             if let Some(ide) = read_optional_string(editor, "ide", "devtools.editor.ide", schema) {
@@ -266,7 +326,7 @@ fn validate_devtools(raw: Option<&Value>, schema: &mut Vec<String>) -> DevtoolsC
 
     if let Some(raw_status) = table.get("status") {
         if let Some(status) = raw_status.as_table() {
-            reject_unknown(status, "devtools.status", &["enabled", "position"], schema);
+            reject_unknown(status, "devtools.status", STATUS_KEYS, schema);
             result.status.enabled =
                 read_bool(status, "enabled", "devtools.status.enabled", true, schema);
             if let Some(pos) =
@@ -288,12 +348,7 @@ fn validate_devtools(raw: Option<&Value>, schema: &mut Vec<String>) -> DevtoolsC
 
     if let Some(raw_shortcuts) = table.get("shortcuts") {
         if let Some(shortcuts) = raw_shortcuts.as_table() {
-            reject_unknown(
-                shortcuts,
-                "devtools.shortcuts",
-                &["restartServices"],
-                schema,
-            );
+            reject_unknown(shortcuts, "devtools.shortcuts", SHORTCUT_KEYS, schema);
             if let Some(restart) = read_optional_string(
                 shortcuts,
                 "restartServices",
@@ -332,7 +387,7 @@ fn validate_devtools_chat(raw: Option<&Value>, schema: &mut Vec<String>) -> Devt
         schema.push("devtools.chat must be a table.".into());
         return result;
     };
-    reject_unknown(table, "devtools.chat", &["enabled", "prompt"], schema);
+    reject_unknown(table, "devtools.chat", CHAT_KEYS, schema);
     result.enabled = read_bool(table, "enabled", "devtools.chat.enabled", true, schema);
     if let Some(prompt) = read_optional_string(table, "prompt", "devtools.chat.prompt", schema) {
         result.prompt = prompt;
@@ -353,12 +408,7 @@ fn validate_devtools_resources(
         schema.push(format!("{path} must be a table."));
         return result;
     };
-    reject_unknown(
-        table,
-        path,
-        &["cpu", "disk", "enabled", "memory", "pollInterval"],
-        schema,
-    );
+    reject_unknown(table, path, RESOURCES_KEYS, schema);
     result.enabled = read_bool(table, "enabled", "devtools.resources.enabled", true, schema);
     if let Some(interval) = read_poll_interval(table, path, schema) {
         result.cpu.poll_interval = interval;
@@ -388,7 +438,7 @@ fn validate_resource_readout(
         schema.push(format!("{path} must be a table."));
         return;
     };
-    reject_unknown(table, path, &["enabled", "pollInterval"], schema);
+    reject_unknown(table, path, RESOURCE_KEYS, schema);
     target.enabled = read_bool(table, "enabled", &format!("{path}.enabled"), true, schema);
     if let Some(interval) = read_poll_interval(table, path, schema) {
         target.poll_interval = interval;
@@ -426,7 +476,7 @@ fn read_devtools_toggle(table: &Table, key: &str, target: &mut bool, schema: &mu
         schema.push(format!("{path} must be a table."));
         return;
     };
-    reject_unknown(sub, &path, &["enabled"], schema);
+    reject_unknown(sub, &path, TOGGLE_KEYS, schema);
     if sub.contains_key("enabled") {
         *target = read_bool(sub, "enabled", &format!("{path}.enabled"), *target, schema);
     }
@@ -813,16 +863,10 @@ fn validate_lifecycle(service: &Table, key: &str, issues: &mut Issues) -> Servic
         issues.schema.push(format!("{path} must be a table."));
         return config;
     };
-    reject_unknown(
-        lifecycle,
-        &path,
-        &["mode", "start", "status", "stop"],
-        &mut issues.schema,
-    );
+    reject_unknown(lifecycle, &path, LIFECYCLE_KEYS, &mut issues.schema);
     if let Some(mode) = lifecycle.get("mode") {
         match mode.as_str() {
-            Some("daemon") => config.mode = "daemon".to_owned(),
-            Some("foreground") => config.mode = "foreground".to_owned(),
+            Some(mode) if LIFECYCLE_MODES.contains(&mode) => config.mode = mode.to_owned(),
             _ => issues
                 .schema
                 .push(format!("{path}.mode must be one of foreground or daemon.")),

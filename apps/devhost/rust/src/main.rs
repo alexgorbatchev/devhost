@@ -119,6 +119,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                     return run_stop(stop_matches, mode);
                 }
                 Some(("stack", stack)) => match stack.subcommand() {
+                    Some(("info", args)) => return run_stack_info(args, mode, &mut stdout),
                     Some(("list", _)) => return list_stacks(None, mode, &mut stdout),
                     Some(("find", args)) => {
                         return list_stacks(
@@ -641,6 +642,7 @@ fn run_stop(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Err
 fn stack_command() -> Command {
     Command::new("stack")
         .about("Inspect the stacks running on this machine")
+        .subcommand(Command::new("info").about("Inspect the current project's running stack and service readiness").arg(manifest_arg()))
         .subcommand(Command::new("list")
             .about("Print the PID and manifest of running stacks")
             .long_about("Print one running stack per line: PID, tab, absolute manifest path.\nWorks from any directory, with identical output in both modes."))
@@ -686,6 +688,64 @@ fn list_stacks(
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => write_failure(mode, message.into())?,
     })
+}
+
+fn run_stack_info(
+    args: &clap::ArgMatches,
+    mode: Mode,
+    stdout: &mut dyn Write,
+) -> Result<ExitCode, Box<dyn Error>> {
+    let explicit = args.get_one::<PathBuf>("manifest").map(PathBuf::as_path);
+    if let Err(failure) = validate_manifest_flag(explicit) {
+        return Ok(write_failure(mode, failure)?);
+    }
+    let cwd = env::current_dir()?;
+    let manifest = match explicit {
+        Some(path) => paths::clean(&cwd.join(path)),
+        None => match manifest::resolve_path(&cwd, None) {
+            Ok(path) => path,
+            Err(mut failure) => {
+                failure
+                    .message
+                    .push_str(" Pass --manifest <path> or set DEVHOST_MANIFEST.");
+                failure.hint = Some(
+                    "Run devhost from your project folder, or pass --manifest <path>.".to_owned(),
+                );
+                return Ok(write_failure(mode, failure)?);
+            }
+        },
+    };
+    let state = match machine::state_directory() {
+        Ok(state) => state,
+        Err(error) => return Ok(write_failure(mode, error.into())?),
+    };
+    match devhost_rust::services::stack_info::read_stack_info(
+        &paths::clean(&state.join("caddy")),
+        &manifest,
+    ) {
+        Ok(info) => {
+            let output = devhost_rust::services::stack_info::format_stack_info(
+                &info,
+                mode,
+                std::time::SystemTime::now(),
+            );
+            if let Err(error) = stdout
+                .write_all(output.as_bytes())
+                .and_then(|_| stdout.flush())
+            {
+                return Ok(write_failure(
+                    mode,
+                    format!("writing stack info: {error}").into(),
+                )?);
+            }
+            Ok(if info.ready {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Err(error) => Ok(write_failure(mode, error)?),
+    }
 }
 
 fn run_stack_restart(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Error>> {

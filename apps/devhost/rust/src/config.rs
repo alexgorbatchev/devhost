@@ -79,6 +79,43 @@ pub struct MachineConfig {
     pub remote: Option<crate::remote::Settings>,
 }
 
+const ROOT_KEYS: &[&str] = &["domainSuffix", "caddy", "remote"];
+const CADDY_KEYS: &[&str] = &[
+    "adminAddress",
+    "bindHost",
+    "http",
+    "httpPort",
+    "httpsPort",
+    "stackDirectoryHost",
+    "stackDirectoryAllowRemote",
+];
+const REMOTE_KEYS: &[&str] = &[
+    "serverURL",
+    "credentialFile",
+    "fingerprint",
+    "remotePort",
+    "domainSuffix",
+];
+const BIND_HOSTS: &[&str] = &["127.0.0.1", "0.0.0.0", "::1", "::"];
+
+pub(crate) fn editor_schema() -> serde_json::Value {
+    serde_json::json!({"tables":{
+        "":ROOT_KEYS, "caddy":CADDY_KEYS, "remote":REMOTE_KEYS
+    },"values":{"caddy.bindHost":BIND_HOSTS}})
+}
+
+pub(crate) fn issue_key_path(issue: &str) -> String {
+    if let Some(quoted) = issue.strip_prefix("Unrecognized key: ") {
+        return serde_json::from_str(quoted).unwrap_or_default();
+    }
+    issue
+        .split_whitespace()
+        .next()
+        .filter(|key| key.starts_with("caddy."))
+        .unwrap_or_default()
+        .to_owned()
+}
+
 pub fn path() -> Result<PathBuf, String> {
     machine::directory("DEVHOST_CONFIG_DIR")
         .or_else(|| machine::directory("XDG_CONFIG_HOME").map(|root| root.join("devhost")))
@@ -103,42 +140,18 @@ pub fn read_from(path: &Path) -> Result<MachineConfig, String> {
     parse(path, &contents)
 }
 
-fn parse(path: &Path, contents: &str) -> Result<MachineConfig, String> {
+pub(crate) fn parse(path: &Path, contents: &str) -> Result<MachineConfig, String> {
     let root: Table = match contents.parse() {
         Ok(root) => root,
         Err(error) => return Err(format!("read devhost config {}: {error}", path.display())),
     };
     let mut issues = Vec::new();
-    unknown_keys(&root, "", &["domainSuffix", "caddy", "remote"], &mut issues);
+    unknown_keys(&root, "", ROOT_KEYS, &mut issues);
     if let Some(caddy) = root.get("caddy").and_then(Value::as_table) {
-        unknown_keys(
-            caddy,
-            "caddy.",
-            &[
-                "adminAddress",
-                "bindHost",
-                "http",
-                "httpPort",
-                "httpsPort",
-                "stackDirectoryHost",
-                "stackDirectoryAllowRemote",
-            ],
-            &mut issues,
-        );
+        unknown_keys(caddy, "caddy.", CADDY_KEYS, &mut issues);
     }
     if let Some(remote) = root.get("remote").and_then(Value::as_table) {
-        unknown_keys(
-            remote,
-            "remote.",
-            &[
-                "serverURL",
-                "credentialFile",
-                "fingerprint",
-                "remotePort",
-                "domainSuffix",
-            ],
-            &mut issues,
-        );
+        unknown_keys(remote, "remote.", REMOTE_KEYS, &mut issues);
     }
     issues.sort();
     let mut domain_suffix = ".localhost".to_owned();
@@ -250,7 +263,7 @@ fn apply_caddy(table: &Table, settings: &mut CaddySettings, issues: &mut Vec<Str
     }
     if let Some(value) = table.get("bindHost") {
         match value.as_str() {
-            Some(host @ ("127.0.0.1" | "0.0.0.0" | "::1" | "::")) => {
+            Some(host) if BIND_HOSTS.contains(&host) => {
                 settings.bind_host = host.to_owned();
             }
             _ => issues

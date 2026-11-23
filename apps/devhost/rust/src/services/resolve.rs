@@ -428,6 +428,7 @@ pub(crate) fn reserve_auto_port(bind_host: &str, excluded: &BTreeSet<u16>) -> Re
         let port_label = format!("reserve auto port for {bind_host}");
         let listener = ctx(TcpListener::bind(&addr), &port_label)?;
         let port = ctx(listener.local_addr(), &port_label)?.port();
+        crate::sockets::shutdown_listener(&listener);
         drop(listener);
         if !excluded.contains(&port) {
             return Ok(port);

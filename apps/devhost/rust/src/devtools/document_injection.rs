@@ -92,11 +92,12 @@ impl DocumentInjectionServer {
                     .route("/", any(handle_proxy))
                     .route("/{*rest}", any(handle_proxy))
                     .with_state(state);
-                let _ = axum::serve(listener, app)
-                    .with_graceful_shutdown(async move {
-                        let _ = shutdown_rx.await;
-                    })
-                    .await;
+                let server = axum::serve(listener, app).into_future();
+                tokio::pin!(server);
+                tokio::select! {
+                    _ = &mut server => {},
+                    _ = shutdown_rx => {},
+                }
             });
         });
 
@@ -142,7 +143,7 @@ async fn handle_proxy(State(state): State<ProxyState>, req: Request<Body>) -> Re
         if has_recovery_action {
             return handle_recovery_control(&state, get_recovery, req).await;
         }
-        let recovery_state = get_recovery();
+        let recovery_state = read_recovery(get_recovery).await;
         if recovery_state.phase != "ready" {
             return serve_recovery_page(
                 req.method(),
@@ -168,7 +169,14 @@ async fn handle_recovery_control(
     };
     match action.as_str() {
         "worktrees" => match state.options.worktrees {
-            Some(ref handler) => handler(req),
+            Some(ref handler) => {
+                let handler = handler.clone();
+                tokio::task::spawn_blocking(move || handler(req))
+                    .await
+                    .unwrap_or_else(|error| {
+                        no_store_error(StatusCode::INTERNAL_SERVER_ERROR, &error.to_string())
+                    })
+            }
             None => no_store_error(StatusCode::NOT_IMPLEMENTED, "Worktrees are not enabled."),
         },
         "status" | "probe" => {
@@ -179,7 +187,7 @@ async fn handle_recovery_control(
                     .insert(header::ALLOW, HeaderValue::from_static("GET"));
                 return resp;
             }
-            let recovery_state = get_recovery();
+            let recovery_state = read_recovery(get_recovery).await;
             if action == "probe" {
                 if recovery_state.phase != "ready" {
                     return serve_recovery_page(
@@ -214,23 +222,32 @@ async fn handle_recovery_control(
                     "Service cannot be restarted right now",
                 );
             };
-            if !get_recovery().can_restart {
+            if !read_recovery(get_recovery).await.can_restart {
                 return no_store_error(
                     StatusCode::CONFLICT,
                     "Service cannot be restarted right now",
                 );
             }
-            match restart() {
-                Ok(()) => Response::builder()
+            let restart = restart.clone();
+            match tokio::task::spawn_blocking(move || restart()).await {
+                Ok(Ok(())) => Response::builder()
                     .status(StatusCode::NO_CONTENT)
                     .header(header::CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
                     .body(Body::empty())
                     .expect("no content"),
-                Err(err) => no_store_error(StatusCode::SERVICE_UNAVAILABLE, &err),
+                Ok(Err(err)) => no_store_error(StatusCode::SERVICE_UNAVAILABLE, &err),
+                Err(err) => no_store_error(StatusCode::SERVICE_UNAVAILABLE, &err.to_string()),
             }
         }
         _ => no_store_error(StatusCode::BAD_REQUEST, "Unknown recovery action"),
     }
+}
+
+async fn read_recovery(reader: &Arc<dyn Fn() -> RecoveryState + Send + Sync>) -> RecoveryState {
+    let reader = reader.clone();
+    tokio::task::spawn_blocking(move || reader())
+        .await
+        .expect("recovery reader")
 }
 
 fn proxy_request<'a>(
@@ -269,7 +286,7 @@ fn proxy_request<'a>(
         let target_uri: Uri = match format!("http://{backend}{path_and_query}").parse() {
             Ok(uri) => uri,
             Err(err) => {
-                return proxy_error_response(state, &method, &req_headers, &err.to_string());
+                return proxy_error_response(state, &method, &req_headers, &err.to_string()).await;
             }
         };
 
@@ -292,7 +309,7 @@ fn proxy_request<'a>(
         let upstream_resp = match state.client.request(upstream_req).await {
             Ok(resp) => resp,
             Err(err) => {
-                return proxy_error_response(state, &method, &req_headers, &err.to_string());
+                return proxy_error_response(state, &method, &req_headers, &err.to_string()).await;
             }
         };
 
@@ -301,7 +318,7 @@ fn proxy_request<'a>(
             && (status == StatusCode::NOT_FOUND || status.is_server_error())
             && (sec_fetch_dest == "document" || recovery_action == "probe")
         {
-            let mut rec = get_recovery();
+            let mut rec = read_recovery(get_recovery).await;
             set_document_recovery_error(&mut rec, status.as_u16());
             let Ok(document) =
                 render_recovery_document(&rec, status.as_u16(), state.options.inject_enabled())
@@ -359,14 +376,14 @@ fn proxy_request<'a>(
     })
 }
 
-fn proxy_error_response(
+async fn proxy_error_response(
     state: &ProxyState,
     method: &Method,
     headers: &HeaderMap,
     err: &str,
 ) -> Response {
     if let Some(ref get_recovery) = state.options.get_recovery {
-        let mut rec = get_recovery();
+        let mut rec = read_recovery(get_recovery).await;
         rec.phase = "unavailable".to_owned();
         rec.title = format!("{} could not load", rec.service);
         rec.message = format!("The service could not return a document: {err}");

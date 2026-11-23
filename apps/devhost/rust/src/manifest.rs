@@ -23,6 +23,15 @@ pub fn read_manifest(cwd: &Path, explicit: Option<&Path>) -> Result<Manifest, Fa
     validation::validate(&path, raw).map_err(Into::into)
 }
 
+pub(crate) fn read_with_override(
+    root: &Path,
+    path: &Path,
+    content: &str,
+) -> Result<Manifest, Failure> {
+    let raw = includes::read_with_override(root, &mut Inputs::default(), Some((path, content)))?;
+    validation::validate(root, raw).map_err(Into::into)
+}
+
 /// Preserve discovered inputs even when a save is incomplete, so a later edit
 /// to a newly included file can recover the accepted running configuration.
 pub(crate) fn read_with_inputs(path: &Path) -> (Result<Manifest, Failure>, Inputs) {

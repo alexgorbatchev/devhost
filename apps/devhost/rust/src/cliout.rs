@@ -10,6 +10,7 @@ use cli_command_kit::Mode;
 use crate::{Failure, paths::clean};
 
 const SERVICE_SEPARATOR: &str = " | ";
+type LogObserver = Arc<dyn Fn(&str, &str, &str) + Send + Sync>;
 
 #[derive(Debug)]
 struct LayoutState {
@@ -19,6 +20,7 @@ struct LayoutState {
 
 #[derive(Clone)]
 pub struct ServiceOutput {
+    observer: Option<LogObserver>,
     layout: Arc<Mutex<LayoutState>>,
     stdout: Arc<Mutex<Box<dyn Write + Send>>>,
     stderr: Arc<Mutex<Box<dyn Write + Send>>>,
@@ -39,6 +41,7 @@ impl ServiceOutput {
             }
         }
         Self {
+            observer: None,
             layout: Arc::new(Mutex::new(LayoutState { mode, width })),
             stdout: Arc::new(Mutex::new(stdout)),
             stderr: Arc::new(Mutex::new(stderr)),
@@ -47,6 +50,11 @@ impl ServiceOutput {
 
     pub fn stdio(mode: Mode, names: &[&str]) -> Self {
         Self::new(mode, Box::new(io::stdout()), Box::new(io::stderr()), names)
+    }
+
+    pub(crate) fn with_observer(mut self, observer: LogObserver) -> Self {
+        self.observer = Some(observer);
+        self
     }
 
     pub fn mode(&self) -> Mode {
@@ -126,6 +134,17 @@ impl ServiceOutput {
         line: &str,
     ) -> io::Result<()> {
         let prefix = self.prefix_for(label);
+        if let Some(observer) = &self.observer {
+            observer(
+                label,
+                if Arc::ptr_eq(target, &self.stderr) {
+                    "stderr"
+                } else {
+                    "stdout"
+                },
+                line,
+            );
+        }
         let mut writer = target.lock().expect("output lock");
         writeln!(writer, "{prefix}{line}")?;
         writer.flush()

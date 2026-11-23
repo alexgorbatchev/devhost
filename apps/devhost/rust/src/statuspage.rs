@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub const PAGE_CSS: &str = include_str!("../../internal/statuspage/dist/statusPages.css");
 const PAGE_SCRIPT: &str = include_str!("../../internal/statuspage/dist/statusPages.js");
@@ -58,15 +58,18 @@ pub struct RecoveryFallback {
     pub repositories: Vec<RecoveryRepoFallback>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct StackService {
     pub name: String,
     pub directory: String,
+    #[serde(deserialize_with = "null_list")]
     pub urls: Vec<String>,
     pub status: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct StackConfig {
     pub path: String,
     pub kind: String,
@@ -74,17 +77,26 @@ pub struct StackConfig {
     pub error: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
 pub struct Stack {
     pub name: String,
     pub pid: i32,
     pub manifest_path: String,
     pub directory: String,
     pub started_at: String,
+    #[serde(deserialize_with = "null_list")]
     pub services: Vec<StackService>,
+    #[serde(deserialize_with = "null_list")]
     pub configs: Vec<StackConfig>,
     pub error: String,
+}
+
+// Go encodes an unpopulated slice as null in cross-supervisor directory replies.
+fn null_list<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Vec<T>, D::Error> {
+    Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

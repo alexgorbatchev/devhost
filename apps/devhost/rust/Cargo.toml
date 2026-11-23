@@ -51,3 +51,7 @@ tower-service = "0.3"
 toml = "1.1"
 ureq = { version = "3", default-features = false, features = ["rustls"] }
 url = "2"
+jiff = { version = "1.0.2", default-features = false, features = ["std"] }
+anstyle-parse = "1"
+unicode-width = "0.2"
+sysinfo = { version = "0.39.6", default-features = false, features = ["system", "disk"] }

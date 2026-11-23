@@ -53,6 +53,8 @@ use crate::{
 };
 use sha2::{Digest, Sha256};
 
+mod documents;
+pub(crate) mod live;
 mod runtime;
 
 pub const MAXIMUM_AUTO_PORT_RETRY_COUNT: usize = 3;
@@ -165,6 +167,8 @@ struct ServiceExitResult {
 }
 
 struct StartedService {
+    started_at: String,
+    exited_at: Arc<Mutex<String>>,
     file_server: Option<super::serve::FileServer>,
     pid: i32,
     service: ResolvedService,
@@ -502,7 +506,32 @@ pub fn start_stack(
             .runtime_control
             .take()
             .unwrap_or_else(|| super::control::RuntimeControl::channel().1);
+        control.live.initialize(manifest);
+        let (dev_source, warning) = crate::devtools::dev_source::load_dev_source_checkout(
+            &environment,
+            &manifest.manifest_directory,
+            None,
+        )?;
+        if let Some(warning) = warning {
+            options.output.log_stdout(&manifest.name, &warning);
+        }
+        control.live.configure(&options.caddy_dir, dev_source);
+        control
+            .live
+            .set_config_path(options.config_path.clone().or_else(|| config::path().ok()));
+        for (name, error) in &blocked {
+            control.live.failed(name, error);
+        }
+        let live_logs = control.live.clone();
+        options.output =
+            options
+                .output
+                .clone()
+                .with_observer(Arc::new(move |name, stream, line| {
+                    live_logs.record_log(name, stream, line)
+                }));
         let control_server = crate::devtools::server::ControlServer::start(control.handle())?;
+        let mut documents = documents::Documents::new(control.handle());
 
         let manifest_files = stack_manifest_files(options.configuration.as_ref());
         if let Err(err) = register_stack(
@@ -599,7 +628,7 @@ pub fn start_stack(
             claimed_hosts.push(host);
         }
 
-        let initial_routes = collect_manifest_routes(manifest);
+        let initial_routes = documents.routes(manifest)?;
         caddy::ctx(
             routes::replace_routes(
                 &options.caddy_dir,
@@ -679,6 +708,7 @@ pub fn start_stack(
                             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                         }
                         options.output.log_stdout(&manifest.name, &err);
+                        control.live.failed(service_name, &err);
                         let _ = stop_daemon_lifecycle_service(
                             manifest,
                             &service,
@@ -695,6 +725,8 @@ pub fn start_stack(
                                 err,
                             ));
                         }
+                    } else {
+                        control.live.ready(service_name);
                     }
                 } else {
                     match start_service_with_retries(
@@ -704,13 +736,14 @@ pub fn start_stack(
                         &options.output,
                         grace_period,
                         ServiceStartContext {
+                            live: Some(&control.live),
                             cancel: &cancel,
                             exit_tx: &exit_tx,
                             ports: PortReassignment::Allowed,
                         },
                     ) {
                         Ok(started) => {
-                            let updated_routes = collect_manifest_routes(manifest);
+                            let updated_routes = documents.routes(manifest)?;
                             if updated_routes != active_routes {
                                 routes::replace_routes(
                                     &options.caddy_dir,
@@ -753,6 +786,7 @@ pub fn start_stack(
                                 ));
                             }
                             options.output.log_stdout(&manifest.name, &message);
+                            control.live.failed(service_name, &message);
                             if let Some(exited) = exited_service {
                                 if let Some(code) = exited.read_exit_code() {
                                     let _ = exit_tx.send(ServiceExitResult {
@@ -766,36 +800,39 @@ pub fn start_stack(
                         }
                     }
                 }
-            } else if launch.detached {
-                match wait_for_startup_health(
-                    &service,
-                    &manifest.name,
-                    &options.output,
-                    &cancel,
-                    || None,
-                ) {
-                    Ok(()) => {}
-                    Err(HealthWaitError::Canceled) => {
-                        if let Some(sig) = check_termination_signal(
-                            &cancel,
-                            options.install_signal_handlers,
-                            &options.output,
-                            &manifest.name,
-                        ) {
-                            return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+            } else {
+                if launch.detached {
+                    match wait_for_startup_health(
+                        &service,
+                        &manifest.name,
+                        &options.output,
+                        &cancel,
+                        || None,
+                    ) {
+                        Ok(()) => {}
+                        Err(HealthWaitError::Canceled) => {
+                            if let Some(sig) = check_termination_signal(
+                                &cancel,
+                                options.install_signal_handlers,
+                                &options.output,
+                                &manifest.name,
+                            ) {
+                                return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+                            }
+                            return Ok(0);
                         }
-                        return Ok(0);
-                    }
-                    Err(HealthWaitError::Failed(err)) => {
-                        return Err(fail_detached_not_ready(
-                            &launch,
-                            &manifest.name,
-                            &options.output,
-                            service_name,
-                            err,
-                        ));
+                        Err(HealthWaitError::Failed(err)) => {
+                            return Err(fail_detached_not_ready(
+                                &launch,
+                                &manifest.name,
+                                &options.output,
+                                service_name,
+                                err,
+                            ));
+                        }
                     }
                 }
+                control.live.ready(service_name);
             }
 
             if let Some(updated) = manifest.services.get(service_name)
@@ -900,9 +937,12 @@ pub fn start_stack(
         }
 
         was_ready = true;
+        control.live.update_manifest(manifest);
+        control.live.finish_startup();
 
         if let Some(worktrees) = &mut worktrees {
             worktrees.finish(&blocked);
+            control.live.repositories(worktrees.snapshot());
         }
 
         if let Some(watch) = &mut manifest_watch {
@@ -926,6 +966,7 @@ pub fn start_stack(
             progress: &mut shutdown_progress,
             control,
             control_port: control_server.port(),
+            documents: &mut documents,
             watches,
             manifest_watch,
             worktrees,
@@ -1077,6 +1118,7 @@ enum PortReassignment {
 }
 
 struct ServiceStartContext<'a> {
+    live: Option<&'a live::LiveState>,
     cancel: &'a AtomicBool,
     exit_tx: &'a Sender<ServiceExitResult>,
     ports: PortReassignment,
@@ -1091,6 +1133,7 @@ fn start_service_with_retries(
     context: ServiceStartContext<'_>,
 ) -> Result<StartedService, StartServiceError> {
     let ServiceStartContext {
+        live,
         cancel,
         exit_tx,
         ports,
@@ -1145,11 +1188,19 @@ fn start_service_with_retries(
             }
         };
 
+        if let Some(live) = live {
+            live.update_manifest(manifest);
+            live.process(&started);
+        }
+
         let exit_state = started.exit_state.clone();
         match wait_for_startup_health(&service, &manifest.name, output, cancel, || {
             *exit_state.0.lock().expect("exit lock")
         }) {
             Ok(()) => {
+                if let Some(live) = live {
+                    live.ready(service_name);
+                }
                 // Spawn exit watcher that forwards unexpected exits after startup.
                 let watch_state = started.exit_state.clone();
                 let watch_name = service.name.clone();
@@ -1176,6 +1227,9 @@ fn start_service_with_retries(
             }
             Err(HealthWaitError::Failed(err)) => {
                 let exited_before = started.read_exit_code().is_some();
+                if !exited_before && let Some(live) = live {
+                    live.detach_process(service_name);
+                }
                 if !exited_before {
                     output.log_stdout(
                         &manifest.name,
@@ -1230,6 +1284,8 @@ fn start_service_process(
         )
         .map_err(|error| format!("start file service {}: {error}", service.name))?;
         return Ok(StartedService {
+            started_at: live::now(),
+            exited_at: server.exited_at.clone(),
             pid: 0,
             service: service.clone(),
             containment: None,
@@ -1311,15 +1367,20 @@ fn start_service_process(
     }
 
     let exit_state = Arc::new((Mutex::new(None), Condvar::new()));
+    let exited_at = Arc::new(Mutex::new(String::new()));
+    let waiter_time = exited_at.clone();
     let waiter_state = exit_state.clone();
     let waiter = thread::spawn(move || {
         let code = wait_child_exit_code(&mut child);
         let (lock, cvar) = &*waiter_state;
+        *waiter_time.lock().expect("exit time") = live::now();
         *lock.lock().expect("exit state lock") = Some(code);
         cvar.notify_all();
     });
 
     Ok(StartedService {
+        started_at: live::now(),
+        exited_at,
         file_server: None,
         pid,
         service: service.clone(),
@@ -1631,7 +1692,7 @@ pub fn validate_assigned_auto_port(service: &ResolvedService) -> Result<(), Stri
     };
     let addr = format_proxy_address(&service.bind_host, port);
     caddy::ctx(
-        TcpListener::bind(&addr).map(|_| ()),
+        TcpListener::bind(&addr).map(|listener| crate::sockets::shutdown_listener(&listener)),
         &format!(
             "service {} could not bind its assigned port {port}; use Restart Stack to recover",
             service.name
@@ -2330,6 +2391,7 @@ process = true
             &output,
             Duration::from_millis(200),
             ServiceStartContext {
+                live: None,
                 cancel: &cancel,
                 exit_tx: &tx,
                 ports: PortReassignment::Allowed,
@@ -2420,6 +2482,8 @@ process = true
         let mut fake_svc = crash_svc.clone();
         fake_svc.port = Some(listen_port);
         let mut fake_started = StartedService {
+            started_at: String::new(),
+            exited_at: Arc::new(Mutex::new(String::new())),
             file_server: None,
             pid: std::process::id() as i32,
             service: fake_svc,

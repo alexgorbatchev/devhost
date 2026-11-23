@@ -282,3 +282,83 @@ fn file_server_shutdown_closes_idle_clients_and_releases_port() {
     let occupied = TcpListener::bind("127.0.0.1:0").unwrap();
     assert!(FileServer::start(root.path(), &occupied.local_addr().unwrap().to_string()).is_err());
 }
+
+#[test]
+fn file_server_restarts_after_closing_an_http_connection() {
+    use std::{
+        io::{Read, Write},
+        net::TcpStream,
+        time::Duration,
+    };
+
+    let root = tempfile::tempdir().unwrap();
+    fs::write(root.path().join("note.txt"), "served content").unwrap();
+    let mut server = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
+    let address = format!("127.0.0.1:{}", server.port());
+    let mut client = TcpStream::connect(&address).unwrap();
+    client
+        .set_read_timeout(Some(Duration::from_secs(2)))
+        .unwrap();
+    client
+        .write_all(b"GET /note.txt HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .unwrap();
+    let mut response = Vec::new();
+    while !response.ends_with(b"served content") {
+        let mut bytes = [0; 4096];
+        let count = client.read(&mut bytes).unwrap();
+        assert_ne!(count, 0, "response ended before the file body");
+        response.extend_from_slice(&bytes[..count]);
+    }
+    server.stop();
+    assert_eq!(client.read(&mut [0]).unwrap(), 0);
+    drop(client);
+    let mut replacement = FileServer::start(root.path(), &address).unwrap();
+    replacement.stop();
+}
+
+#[test]
+fn file_server_restarts_while_a_child_retains_its_inherited_listener() {
+    use std::{io::Write, os::fd::AsRawFd, os::unix::net::UnixStream};
+
+    struct Child {
+        pid: libc::pid_t,
+        release: UnixStream,
+    }
+    impl Drop for Child {
+        fn drop(&mut self) {
+            let _ = self.release.write_all(b"x");
+            // SAFETY: pid identifies this test's child; no other owner waits it.
+            while unsafe { libc::waitpid(self.pid, std::ptr::null_mut(), 0) } < 0 {
+                if std::io::Error::last_os_error().kind() != std::io::ErrorKind::Interrupted {
+                    break;
+                }
+            }
+        }
+    }
+
+    let root = tempfile::tempdir().unwrap();
+    let mut server = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
+    let address = format!("127.0.0.1:{}", server.port());
+    let (release, held) = UnixStream::pair().unwrap();
+    let held_fd = held.as_raw_fd();
+    // SAFETY: the child calls only async-signal-safe syscalls and _exit, never
+    // Rust destructors or runtime code inherited from the multithreaded parent.
+    let pid = unsafe { libc::fork() };
+    assert!(pid >= 0, "fork: {}", std::io::Error::last_os_error());
+    if pid == 0 {
+        let mut byte = [0_u8];
+        // SAFETY: held_fd was valid at fork and remains open in the child;
+        // byte is writable. Alarm bounds the child if the parent terminates.
+        unsafe {
+            libc::alarm(10);
+            libc::read(held_fd, byte.as_mut_ptr().cast(), byte.len());
+            libc::_exit(0);
+        }
+    }
+    let child = Child { pid, release };
+    drop(held);
+    server.stop();
+    let mut replacement = FileServer::start(root.path(), &address).unwrap();
+    replacement.stop();
+    drop(child);
+}

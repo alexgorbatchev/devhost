@@ -9,6 +9,7 @@ pub mod paths;
 pub mod procid;
 pub mod remote;
 pub mod services;
+mod sockets;
 pub mod statuspage;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

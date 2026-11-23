@@ -1,0 +1,3 @@
+{"name":"stack-info-not-running","args":["stack","info"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"devhost.toml":"name='info'\n[services.web]\ncommand=['sleep','30']\nhealth.process=true\n"}}
+{"name":"stack-info-explicit-not-running","args":["stack","info","--manifest","nested/devhost.toml"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"},"files":{"nested/devhost.toml":"name='info'\n[services.web]\ncommand=['sleep','30']\nhealth.process=true\n"}}
+{"name":"stack-info-invalid-filename","args":["stack","info","--manifest","settings.toml"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config"}}

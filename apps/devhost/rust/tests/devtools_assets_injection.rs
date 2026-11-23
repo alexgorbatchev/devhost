@@ -699,7 +699,14 @@ fn document_injection_and_recovery_proxy() {
         backend_host: "127.0.0.1".to_owned(),
         backend_port: upstream.port,
         should_inject: Some(Arc::new(move || inj_clone.load(Ordering::SeqCst))),
-        get_recovery: Some(Arc::new(move || rec_clone.lock().unwrap().clone())),
+        get_recovery: Some(Arc::new(move || {
+            // Runtime status readers may perform their own synchronous async probes.
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async { rec_clone.lock().unwrap().clone() })
+        })),
         restart: Some(Arc::new(move || {
             *rc_clone.lock().unwrap() += 1;
             if rf_clone.load(Ordering::SeqCst) {

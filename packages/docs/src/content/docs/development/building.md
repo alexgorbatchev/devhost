@@ -24,7 +24,7 @@ From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run
 just rust run --help
 ```
 
-The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local and remote `start` and `stop`, `serve`, and `stack list` and `stack find`. On Linux, it also supports stack replacement with `stack restart` and global `restart-all`; see [Restart after upgrading](../../guides/stack-lifecycle/#restart-after-upgrading-devhost) for the command differences. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
+The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local and remote `start` and `stop`, `serve`, and `stack list`, `stack find`, and [`stack info`](../../reference/cli/#stacks). On Linux, it also supports stack replacement with `stack restart` and global `restart-all`; see [Restart after upgrading](../../guides/stack-lifecycle/#restart-after-upgrading-devhost) for the command differences. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
 
 Build its separate executable at `apps/devhost/rust/target/debug/devhost` with `just rust build`. `just rust check` checks formatting, Clippy, and native tests with 90% line and function coverage for first-party Rust sources. Root `just fix` formats the first-party Rust package alongside the other workspaces.
 
@@ -36,7 +36,9 @@ Saved manifest and include changes reload automatically, preserving compatible a
 
 Machine configuration selects [remote previews](../../stacks/remote-previews/) automatically; `--local` uses local routing and `--remote` requires remote configuration. Remote stacks share an authenticated connector, reconnect after relay interruptions, and update their hostnames on manifest reload. Changing remote settings requires stopping and starting the affected stacks. On macOS, `caddy trust-remote` installs another machine's Caddy root certificate as described in the [managed Caddy guide](../../guides/managed-caddy/).
 
-Set `AGENT=1` for agent-oriented help. Use the Go binary for browser controls, including restart shortcuts, while those parts of the port are incomplete.
+The Rust stack serves the browser toolbar with service start and restart controls, health and log streams, host resource readouts, editor highlights, the configuration editor, and the running-stack directory. Worktree selection and switching restart the repository's managed services together. The [Control API](../../reference/control-api/) describes these routes. Agent activity and chat still require the Go binary.
+
+Set `AGENT=1` for agent-oriented help and detailed stack inspection output. Platform verification of the experimental port is still in progress.
 
 ## Use a protected development build
 

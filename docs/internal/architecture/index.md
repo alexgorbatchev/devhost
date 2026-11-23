@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-25 08:30
-last_modified: 2026-11-17 07:02
+last_modified: 2026-11-23 06:35
 status: current
 ---
 
@@ -17,6 +17,8 @@ The dedicated stack directory is also outside that snapshot. Shared Caddy serves
 Native manifest `serve` services are outside the pinned diagram snapshot as well. In current code, `startServiceProcess` delegates these services to `startFileService` in `apps/devhost/internal/services/serve.go`, which runs `internal/files` inside the supervisor instead of spawning a command. The same document proxies, Caddy routes, health checks, and lifecycle operations apply. Each file handler pins its served directory with `os.Root`; stopping a native service closes its listener and file handler. The root stack uses this mode for the design package.
 
 Remote previews are outside the pinned snapshot. Stacks automatically use a configured relay unless started with `--local`. Short host labels receive the machine’s local or relay suffix before service commands resolve. Remote stacks register their active hosts with a shared machine connector in `apps/devhost/internal/remote/`. The connector runs Chisel reverse forwarding through an authenticated outbound WebSocket, accepts only live remote-stack hosts, and proxies to shared Caddy with its local CA verified. The public gateway owns browser authentication and HTTPS; the connector rejects remote machine-configuration writes. Stack cleanup withdraws its lease, and the last lease stops the worker. See [Remote previews](../../../packages/docs/src/content/docs/stacks/remote-previews.md) for configuration and operational boundaries.
+
+The parallel Rust implementation under `apps/devhost/rust/` is outside the pinned Go snapshot. Its supervisor publishes a shared read model in `src/services/stack/live.rs`, which the loopback server in `src/devtools/server.rs` reads without waiting for service mutations. That server owns health, log, resource, and editor cursor streams, configuration editing, recovery controls, and the stack directory. `src/services/stack_info.rs` reads its private snapshot endpoint for `devhost stack info`; `src/services/stack/documents.rs` connects native document injection and recovery to the same live state. The control server owns its runtime, health poller, and resource sampler and joins them during shutdown.
 
 ## Viewing
 

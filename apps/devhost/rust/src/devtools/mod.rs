@@ -1,10 +1,17 @@
 pub mod assets;
+mod config_files;
+#[cfg(test)]
+mod control_tests;
 pub mod dev_source;
+mod directory;
 pub mod document_injection;
 pub mod page_preview;
 pub mod recovery;
 pub mod request_guard;
+mod resource_disk;
+pub(crate) mod resources;
 pub mod server;
+mod streams;
 
 use serde::{Deserialize, Serialize};
 
@@ -148,3 +155,4 @@ pub struct InjectedConfig {
     pub restart_services_shortcut: String,
     pub primary_service: String,
 }
+pub(crate) mod configuration;

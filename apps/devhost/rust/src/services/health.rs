@@ -569,6 +569,9 @@ mod tests {
         drop(tcp_listener);
 
         let retry_health = ResolvedHealthConfig {
+            // No listener can bind port zero: bind assigns a real port instead.
+            // A released ephemeral port can be reused by another concurrent test.
+            port: Some(0),
             retries: 1,
             interval_ms: 20,
             timeout_ms: 1000,

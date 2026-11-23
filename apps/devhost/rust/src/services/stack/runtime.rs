@@ -27,6 +27,7 @@ pub(super) struct Runtime<'a> {
     pub progress: &'a mut ShutdownProgress,
     pub control: RuntimeControl,
     pub control_port: u16,
+    pub documents: &'a mut documents::Documents,
     pub watches: ServiceWatches,
     pub manifest_watch: Option<InputWatch>,
     pub worktrees: Option<Worktrees>,
@@ -96,6 +97,19 @@ impl Runtime<'_> {
             self.watches.poll(&self.manifest.name);
             while let Ok(request) = self.control.requests.try_recv() {
                 match request {
+                    RuntimeRequest::CheckConfig {
+                        path,
+                        content,
+                        result,
+                    } => {
+                        let _ = result.send(self.check_config(&path, &content));
+                    }
+                    RuntimeRequest::Start { names, result } => {
+                        let _ = result.send(self.start_services(&names));
+                    }
+                    RuntimeRequest::RestartStack { result } => {
+                        let _ = result.send(self.restart_stack());
+                    }
                     RuntimeRequest::Restart { names, result } => {
                         let _ = result.send(self.restart(&names));
                     }
@@ -103,6 +117,7 @@ impl Runtime<'_> {
                         let _ = result.send(self.worktree_operation(operation));
                     }
                 }
+                self.publish_live();
                 if self.cancel.load(Ordering::Relaxed) {
                     break;
                 }
@@ -119,6 +134,15 @@ impl Runtime<'_> {
                         self.log(&format!("configuration reload rejected: {error}"));
                     }
                     last_manifest_error = error;
+                    self.control
+                        .live
+                        .configuration_reloaded("manifest", &last_manifest_error);
+                    if let Some(watch) = &self.manifest_watch {
+                        self.control
+                            .live
+                            .set_config_inputs(watch.inputs.files.clone());
+                    }
+                    self.publish_live();
                     idle.set(self.idle_timeout(), self.manifest, &self.options.output);
                 }
             }
@@ -141,6 +165,10 @@ impl Runtime<'_> {
                         self.log(&format!("shared Caddy settings rejected: {error}"));
                     }
                     last_config_error = error;
+                    self.control
+                        .live
+                        .configuration_reloaded("config", &last_config_error);
+                    self.publish_live();
                 }
             }
             if let Some(timeout) = idle.expired() {
@@ -157,6 +185,71 @@ impl Runtime<'_> {
 
     fn log(&self, message: &str) {
         self.options.output.log_stdout(&self.manifest.name, message);
+    }
+
+    fn check_config(&self, path: &Path, content: &str) -> Result<(), String> {
+        if self
+            .options
+            .config_path
+            .clone()
+            .or_else(|| config::path().ok())
+            .as_deref()
+            == Some(path)
+        {
+            let shared = config::parse(path, content)?;
+            return self.check_routing_settings(&shared);
+        }
+        let configuration = self
+            .manifest
+            .configuration
+            .as_ref()
+            .ok_or("the stack runs without a manifest")?;
+        let next = manifest::read_with_override(&configuration.manifest_path, path, content)
+            .map_err(|error| error.message)?;
+        super::super::resolve::resolve_service_order(&next)?;
+        super::super::resolve::validate_requested_services(&next, &self.manifest.requested)?;
+        let candidate = resolve_service_ports(
+            &next,
+            &PortResolutionOptions {
+                requested: self.manifest.requested.clone(),
+                preserved: self
+                    .manifest
+                    .services
+                    .iter()
+                    .filter_map(|(name, service)| service.port.map(|port| (name.clone(), port)))
+                    .collect(),
+                domain_suffix: self.manifest.domain_suffix.clone(),
+                remote_mode: self.manifest.remote.is_some(),
+                remote: self.manifest.remote.clone(),
+                ..Default::default()
+            },
+        )?;
+        for service in candidate
+            .services
+            .values()
+            .filter(|service| is_managed_service(service))
+        {
+            validate_service_working_directory(service)?;
+        }
+        Ok(())
+    }
+
+    fn publish_live(&self) {
+        self.control.live.update_manifest(self.manifest);
+        if let Some(watch) = &self.manifest_watch {
+            self.control
+                .live
+                .set_config_inputs(watch.inputs.files.clone());
+        }
+        for (name, error) in &self.blocked {
+            self.control.live.failed(name, error);
+        }
+        self.control.live.repositories(
+            self.worktrees
+                .as_ref()
+                .map(Worktrees::snapshot)
+                .unwrap_or_default(),
+        );
     }
 
     fn signal(&mut self, signal: i32) {
@@ -210,6 +303,7 @@ impl Runtime<'_> {
                 return self.recover_worktree(&group);
             }
             self.log(&format!("restarting service: {name}"));
+            self.control.live.starting(name, true);
             self.watches.clear_dirty(name);
             self.stop_group(std::slice::from_ref(name))?;
             self.start_group(std::slice::from_ref(name), PortReassignment::Preserve)?;
@@ -221,6 +315,53 @@ impl Runtime<'_> {
             }
         }
         Ok(())
+    }
+
+    fn start_services(&mut self, names: &[String]) -> Result<(), String> {
+        for name in names {
+            if self.manifest.services.contains_key(name) {
+                return Err(format!("service {name} is already started"));
+            }
+            if !self.manifest.stopped.contains_key(name) {
+                return Err(format!("unknown service: {name}"));
+            }
+        }
+        let configuration = self
+            .manifest
+            .configuration
+            .clone()
+            .ok_or("starting a service requires an accepted manifest")?;
+        let mut requested = self.manifest.requested.clone();
+        requested.extend_from_slice(names);
+        self.apply(
+            configuration,
+            self.manifest.domain_suffix.clone(),
+            self.manifest.caddy.clone(),
+            &format!("started services: {}", names.join(", ")),
+            Change::Start(requested),
+        )?
+        .cleanup
+    }
+
+    fn restart_stack(&mut self) -> Result<(), String> {
+        let configuration = self
+            .manifest
+            .configuration
+            .clone()
+            .ok_or("stack restart requires an accepted manifest")?;
+        if let Some((name, reason)) = self.blocked.iter().next() {
+            return Err(format!(
+                "cannot restart stack: service {name} is stopped: {reason}; select an available worktree first"
+            ));
+        }
+        self.apply(
+            configuration,
+            self.manifest.domain_suffix.clone(),
+            self.manifest.caddy.clone(),
+            "stack restarted with new automatic ports",
+            Change::RestartStack,
+        )?
+        .cleanup
     }
 
     fn recover_worktree(&mut self, names: &[String]) -> Result<(), String> {
@@ -387,6 +528,7 @@ impl Runtime<'_> {
             let worktrees = self.worktrees.as_mut().expect("enabled worktrees");
             let configuration = worktrees.prepare(id, path)?;
             worktrees.select(id, path)?;
+            self.publish_live();
             self.log(&format!(
                 "Switching worktree: {transition}. Restarting stack."
             ));
@@ -477,6 +619,11 @@ impl Runtime<'_> {
 
     fn reload_shared(&mut self, path: &Path, shared: &mut MachineConfig) -> Result<(), String> {
         let next = config::read_from(path)?;
+        self.check_routing_settings(&next)?;
+        self.apply_shared(path, shared, next)
+    }
+
+    fn check_routing_settings(&self, next: &MachineConfig) -> Result<(), String> {
         if self.manifest.remote.is_some() && self.manifest.remote != next.remote {
             return Err("remote settings changed while this stack is running; stop all remote stacks, then start them again to apply the new settings".to_owned());
         }
@@ -486,6 +633,15 @@ impl Runtime<'_> {
         {
             return Err("local domainSuffix changed while this stack is running; stop this stack, then start it again to apply the new suffix".to_owned());
         }
+        Ok(())
+    }
+
+    fn apply_shared(
+        &mut self,
+        path: &Path,
+        shared: &mut MachineConfig,
+        next: MachineConfig,
+    ) -> Result<(), String> {
         routes::apply_managed_settings(
             &self.options.caddy_dir,
             &next.caddy,
@@ -545,6 +701,10 @@ impl Runtime<'_> {
             return Ok(AcceptedChange { cleanup: Ok(()) });
         }
         let previous = self.manifest.clone();
+        let requested = match &change {
+            Change::Start(names) => names.clone(),
+            _ => previous.requested.clone(),
+        };
         let previous_blocked = self.blocked.clone();
         let previous_inputs = self
             .manifest_watch
@@ -552,10 +712,10 @@ impl Runtime<'_> {
             .map(|watch| watch.inputs.clone());
         let previous_order = self.order()?;
         super::super::resolve::resolve_service_order(&configuration)?;
-        super::super::resolve::validate_requested_services(&configuration, &previous.requested)?;
+        super::super::resolve::validate_requested_services(&configuration, &requested)?;
         let mut preserved = BTreeMap::new();
         for (name, service) in &configuration.services {
-            if change == Change::Switch {
+            if matches!(change, Change::Switch | Change::RestartStack) {
                 break;
             }
             if !service.port.is_some_and(|port| port.auto) {
@@ -585,7 +745,7 @@ impl Runtime<'_> {
         let mut candidate = resolve_service_ports(
             &configuration,
             &PortResolutionOptions {
-                requested: previous.requested.clone(),
+                requested,
                 preserved,
                 domain_suffix: suffix,
                 remote_mode: previous.remote.is_some(),
@@ -619,6 +779,15 @@ impl Runtime<'_> {
                     .cloned(),
             );
         }
+        if change == Change::RestartStack {
+            affected.extend(
+                candidate
+                    .services
+                    .iter()
+                    .filter(|(_, service)| is_managed_service(service))
+                    .map(|(name, _)| name.clone()),
+            );
+        }
         loop {
             let before = affected.len();
             for worktrees in self.worktrees.iter().chain(next_worktrees.iter()) {
@@ -648,6 +817,9 @@ impl Runtime<'_> {
             return Err(join_errors(join_errors(error, cleanup), reservation));
         }
         let result = (|| {
+            for name in &old_names {
+                self.control.live.starting(name, false);
+            }
             self.stop_group(&old_names)?;
             *self.manifest = candidate;
             for name in &affected {
@@ -717,6 +889,7 @@ impl Runtime<'_> {
             worktrees.finish(&self.blocked);
         }
         self.worktrees = next_worktrees;
+        self.documents.prune(self.manifest);
         // Routing and services accepted this configuration. Cleanup failures
         // must not restore an old selection over the running checkout.
         let mut failures = Vec::new();
@@ -935,19 +1108,26 @@ impl Runtime<'_> {
             let Some(service) = self.manifest.services.get(name).cloned() else {
                 continue;
             };
+            self.control.live.update_manifest(self.manifest);
+            self.control.live.starting(name, false);
             self.watches.start(&service, &self.manifest.name)?;
             if !is_managed_service(&service) {
+                self.control.live.ready(name);
                 continue;
             }
             if uses_daemon_lifecycle(&service) {
                 self.daemons.push(service);
-                start_daemon_lifecycle_service(
+                if let Err(error) = start_daemon_lifecycle_service(
                     self.manifest,
                     name,
                     self.environment,
                     &self.options.output,
                     self.cancel,
-                )?;
+                ) {
+                    self.control.live.failed(name, &error);
+                    return Err(error);
+                }
+                self.control.live.ready(name);
             } else {
                 match start_service_with_retries(
                     self.manifest,
@@ -956,6 +1136,7 @@ impl Runtime<'_> {
                     &self.options.output,
                     self.grace_period,
                     ServiceStartContext {
+                        live: Some(&self.control.live),
                         cancel: self.cancel,
                         exit_tx: self.exit_tx,
                         ports,
@@ -969,6 +1150,7 @@ impl Runtime<'_> {
                         message,
                         exited_service,
                     }) => {
+                        self.control.live.failed(name, &message);
                         if let Some(started) = exited_service {
                             self.started.push(*started);
                         }
@@ -981,7 +1163,7 @@ impl Runtime<'_> {
     }
 
     fn replace_routes(&mut self) -> Result<(), String> {
-        let next = collect_manifest_routes(self.manifest);
+        let next = self.documents.routes(self.manifest)?;
         routes::replace_routes(
             &self.options.caddy_dir,
             self.routes,
@@ -1000,6 +1182,8 @@ impl Runtime<'_> {
 enum Change {
     Reload,
     Switch,
+    Start(Vec<String>),
+    RestartStack,
 }
 
 fn fixed_ports(manifest: &ResolvedManifest) -> Vec<(String, u16)> {

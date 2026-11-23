@@ -24,6 +24,9 @@ use devhost_rust::{
 };
 use serde_json::{Value, json};
 
+#[path = "stack_commands/info.rs"]
+mod info;
+
 fn binary() -> PathBuf {
     std::env::var_os("DEVHOST_STACK_TEST_BINARY")
         .map(PathBuf::from)

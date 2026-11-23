@@ -6,6 +6,7 @@ pub mod resolve;
 pub mod restart;
 pub mod serve;
 pub mod stack;
+pub mod stack_info;
 pub mod stop;
 mod watch;
 mod worktrees;

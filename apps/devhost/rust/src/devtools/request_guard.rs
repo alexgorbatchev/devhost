@@ -15,28 +15,37 @@ pub fn check_cross_origin(
     method: &Method,
     headers: &HeaderMap,
     host: &str,
-    forwarded_proto: Option<&str>,
+    _forwarded_proto: Option<&str>,
 ) -> Result<(), &'static str> {
-    if matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
-        && !is_websocket_upgrade(headers)
-    {
+    if matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS) {
         return Ok(());
     }
-    if let Some(sec_fetch_site) = headers.get("sec-fetch-site").and_then(|v| v.to_str().ok()) {
+    if let Some(sec_fetch_site) = headers
+        .get("sec-fetch-site")
+        .and_then(|v| v.to_str().ok())
+        .filter(|value| !value.is_empty())
+    {
         return match sec_fetch_site {
             "same-origin" | "none" => Ok(()),
             _ => Err("cross-origin request detected from Sec-Fetch-Site header"),
         };
     }
-    if let Some(origin) = headers.get(header::ORIGIN).and_then(|v| v.to_str().ok()) {
-        let scheme = if forwarded_proto == Some("https") {
-            "https"
-        } else {
-            "http"
-        };
-        let expected_http = format!("http://{host}");
-        let expected = format!("{scheme}://{host}");
-        if !origin.eq_ignore_ascii_case(&expected) && !origin.eq_ignore_ascii_case(&expected_http) {
+    if let Some(origin) = headers
+        .get(header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+        .filter(|value| !value.is_empty())
+    {
+        // Go's CrossOriginProtection compares the authority, irrespective of scheme.
+        // Uri preserves its spelling, including case, for the same comparison.
+        let same_host = origin
+            .parse::<http::Uri>()
+            .ok()
+            .and_then(|uri| {
+                uri.authority()
+                    .map(|authority| authority.as_str().to_owned())
+            })
+            .is_some_and(|authority| authority == host);
+        if !same_host {
             return Err(
                 "cross-origin request detected, and/or browser is out of date: Sec-Fetch-Site is missing, and Origin does not match Host",
             );

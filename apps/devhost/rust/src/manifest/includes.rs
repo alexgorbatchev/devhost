@@ -18,7 +18,15 @@ pub(super) fn read(root: &Path) -> Result<RawManifest, Failure> {
 }
 
 pub(super) fn read_with_inputs(root: &Path, inputs: &mut Inputs) -> Result<RawManifest, Failure> {
-    let (mut table, service_order) = load(root, root, &mut HashSet::new(), inputs)?;
+    read_with_override(root, inputs, None)
+}
+
+pub(super) fn read_with_override(
+    root: &Path,
+    inputs: &mut Inputs,
+    replacement: Option<(&Path, &str)>,
+) -> Result<RawManifest, Failure> {
+    let (mut table, service_order) = load(root, root, &mut HashSet::new(), inputs, replacement)?;
     let mut missing = BTreeSet::new();
     for (_, value) in &mut table {
         interpolate(value, &mut missing);
@@ -43,12 +51,16 @@ fn load(
     root: &Path,
     visited: &mut HashSet<PathBuf>,
     inputs: &mut Inputs,
+    replacement: Option<(&Path, &str)>,
 ) -> Result<(Table, Vec<String>), Failure> {
     if !visited.insert(path.to_path_buf()) {
         return Ok((Table::new(), Vec::new()));
     }
     inputs.files.push(path.to_path_buf());
-    let text = fs::read_to_string(path).map_err(|error| read_error(path, root, error))?;
+    let text = match replacement {
+        Some((target, text)) if target == path => text.to_owned(),
+        _ => fs::read_to_string(path).map_err(|error| read_error(path, root, error))?,
+    };
     let mut table = text
         .parse::<Table>()
         .map_err(|error| diagnostics::parse_error(path, &text, &error))?;
@@ -69,7 +81,7 @@ fn load(
         paths.sort_unstable();
         for included in paths {
             let included = clean(&included);
-            let (mut child, child_order) = load(&included, root, visited, inputs)?;
+            let (mut child, child_order) = load(&included, root, visited, inputs, replacement)?;
             if child.contains_key("annotation") {
                 return Err(format!(
                     "annotation Unrecognized key in included manifest {}",

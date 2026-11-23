@@ -61,6 +61,11 @@ fn free_port() -> u16 {
     loop {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
+        // A concurrent child may retain a forked descriptor until exec.
+        // Shut down the reservation socket before releasing our descriptor.
+        use std::os::fd::AsRawFd;
+        // SAFETY: listener owns this descriptor until the end of this iteration.
+        unsafe { libc::shutdown(listener.as_raw_fd(), libc::SHUT_RDWR) };
         if allocated.insert(port) {
             return port;
         }
@@ -1148,9 +1153,15 @@ retries = 2
     );
     let cancel = Arc::new(AtomicBool::new(false));
     let cancel_bg = cancel.clone();
+    let startup_output = out_buf.clone();
     let stopper = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(600));
+        let failed = wait_until(Duration::from_secs(10), || {
+            startup_output
+                .text()
+                .contains("Stopping service stuck because its startup health check failed")
+        });
         cancel_bg.store(true, Ordering::Relaxed);
+        failed
     });
     let code = start_stack(
         &mut resolved,
@@ -1173,13 +1184,10 @@ retries = 2
         },
     )
     .unwrap();
-    stopper.join().unwrap();
+    let observed_health_failure = stopper.join().unwrap();
     drop(daemon_listener);
     assert_eq!(code, 0);
     let text = out_buf.text();
-    assert!(
-        text.contains("Stopping service stuck because its startup health check failed"),
-        "{text}"
-    );
+    assert!(observed_health_failure, "{text}");
     assert!(err_buf.text().contains("boot"));
 }

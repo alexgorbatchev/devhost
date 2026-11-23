@@ -34,6 +34,7 @@ pub struct FileServer {
     thread: Option<JoinHandle<()>>,
     errors: Option<Receiver<String>>,
     pub(crate) exit_state: Arc<(Mutex<Option<i32>>, Condvar)>,
+    pub(crate) exited_at: Arc<Mutex<String>>,
 }
 
 impl FileServer {
@@ -44,6 +45,9 @@ impl FileServer {
         listener
             .set_nonblocking(true)
             .map_err(|error| format!("start file listener: {error}"))?;
+        let shutdown_listener = listener
+            .try_clone()
+            .map_err(|error| format!("duplicate file listener for shutdown: {error}"))?;
         let port = listener
             .local_addr()
             .map_err(|error| format!("start file listener: {error}"))?
@@ -57,6 +61,8 @@ impl FileServer {
         let (errors_tx, errors) = mpsc::channel();
         let exit_state = Arc::new((Mutex::new(None), Condvar::new()));
         let finished = exit_state.clone();
+        let exited_at = Arc::new(Mutex::new(String::new()));
+        let finished_at = exited_at.clone();
         let thread = thread::spawn(move || {
             let result = runtime.block_on(async move {
                 let listener = tokio::net::TcpListener::from_std(listener)?;
@@ -70,10 +76,12 @@ impl FileServer {
                         }
                     },
                 ));
-                tokio::select! {
+                let result = tokio::select! {
                     result = axum::serve(listener, app) => result,
                     _ = shutdown_rx => Ok(()),
-                }
+                };
+                crate::sockets::shutdown_listener(&shutdown_listener);
+                result
             });
             // Dropping the runtime closes accepted connections too. Waiting for
             // graceful HTTP shutdown would let an idle client hold the session.
@@ -84,6 +92,7 @@ impl FileServer {
             } else {
                 0
             };
+            *finished_at.lock().expect("file server exit timestamp") = super::stack::live::now();
             *finished.0.lock().expect("file server exit state") = Some(code);
             finished.1.notify_all();
         });
@@ -93,6 +102,7 @@ impl FileServer {
             thread: Some(thread),
             errors: Some(errors),
             exit_state,
+            exited_at,
         })
     }
 

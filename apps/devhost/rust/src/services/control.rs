@@ -84,6 +84,18 @@ pub(crate) enum WorktreeOperation {
 }
 
 pub(crate) enum RuntimeRequest {
+    CheckConfig {
+        path: PathBuf,
+        content: String,
+        result: mpsc::Sender<Result<(), String>>,
+    },
+    Start {
+        names: Vec<String>,
+        result: mpsc::Sender<Result<(), String>>,
+    },
+    RestartStack {
+        result: mpsc::Sender<Result<(), String>>,
+    },
     Restart {
         names: Vec<String>,
         result: mpsc::Sender<Result<(), String>>,
@@ -96,6 +108,7 @@ pub(crate) enum RuntimeRequest {
 
 /// The receiving half belongs to exactly one stack loop, which serializes changes.
 pub struct RuntimeControl {
+    pub(crate) live: super::stack::live::LiveState,
     sender: mpsc::Sender<RuntimeRequest>,
     pub(crate) requests: mpsc::Receiver<RuntimeRequest>,
     pub(crate) activity: ActivityTracker,
@@ -104,6 +117,7 @@ pub struct RuntimeControl {
 
 #[derive(Clone)]
 pub struct RuntimeHandle {
+    pub(crate) live: super::stack::live::LiveState,
     requests: mpsc::Sender<RuntimeRequest>,
     pub activity: ActivityTracker,
     dirty: Arc<Mutex<BTreeSet<String>>>,
@@ -114,13 +128,16 @@ impl RuntimeControl {
         let (requests, receiver) = mpsc::channel();
         let activity = ActivityTracker::default();
         let dirty = Arc::new(Mutex::new(BTreeSet::new()));
+        let live = super::stack::live::LiveState::default();
         (
             RuntimeHandle {
+                live: live.clone(),
                 requests: requests.clone(),
                 activity: activity.clone(),
                 dirty: dirty.clone(),
             },
             Self {
+                live,
                 sender: requests,
                 requests: receiver,
                 activity,
@@ -131,6 +148,7 @@ impl RuntimeControl {
 
     pub(crate) fn handle(&self) -> RuntimeHandle {
         RuntimeHandle {
+            live: self.live.clone(),
             requests: self.sender.clone(),
             activity: self.activity.clone(),
             dirty: self.dirty.clone(),
@@ -138,7 +156,47 @@ impl RuntimeControl {
     }
 }
 
+impl Drop for RuntimeControl {
+    fn drop(&mut self) {
+        self.live.events.stopping.send_replace(true);
+    }
+}
+
 impl RuntimeHandle {
+    pub(crate) fn check_config(
+        &self,
+        path: PathBuf,
+        content: String,
+    ) -> Result<mpsc::Receiver<Result<(), String>>, String> {
+        let (result, receiver) = mpsc::channel();
+        self.requests
+            .send(RuntimeRequest::CheckConfig {
+                path,
+                content,
+                result,
+            })
+            .map_err(|_| "devhost is shutting down".to_owned())?;
+        Ok(receiver)
+    }
+    pub fn start_services(
+        &self,
+        names: Vec<String>,
+    ) -> Result<mpsc::Receiver<Result<(), String>>, String> {
+        let (result, receiver) = mpsc::channel();
+        self.requests
+            .send(RuntimeRequest::Start { names, result })
+            .map_err(|_| "devhost is shutting down".to_owned())?;
+        Ok(receiver)
+    }
+
+    pub fn restart_stack(&self) -> Result<mpsc::Receiver<Result<(), String>>, String> {
+        let (result, receiver) = mpsc::channel();
+        self.requests
+            .send(RuntimeRequest::RestartStack { result })
+            .map_err(|_| "devhost is shutting down".to_owned())?;
+        Ok(receiver)
+    }
+
     /// Submit a restart without blocking the caller's async executor.
     pub fn restart_services(
         &self,

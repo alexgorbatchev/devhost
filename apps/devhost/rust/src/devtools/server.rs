@@ -10,6 +10,7 @@ use axum::{
     body::{Body, to_bytes},
     extract::State,
     http::{Method, Request, StatusCode, header},
+    middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::any,
 };
@@ -49,20 +50,68 @@ impl ControlServer {
             tokio::net::TcpListener::from_std(listener).map_err(|error| error.to_string())?
         };
         let (shutdown, stopped) = oneshot::channel();
+        handle.live.set_control_port(port);
+        let store = super::assets::AssetStore::new(
+            handle.live.dev_source(),
+            serde_json::to_vec(&super::configuration::injected_config(&handle))
+                .map_err(|error| error.to_string())?,
+        );
+        let assets = super::assets::asset_routes(store.clone()).layer(
+            middleware::from_fn_with_state((handle.clone(), store), serve_assets),
+        );
         let app = Router::new()
+            .route("/__devhost__/stack-info", any(stack_info))
+            .route("/__devhost__/stacks", any(super::directory::serve))
+            .route("/__devhost__/stacks/self", any(super::directory::serve))
             .route("/__devhost__/restart-service", any(restart_service))
+            .route("/__devhost__/start-service", any(start_service))
+            .route("/__devhost__/restart-stack", any(restart_stack))
             .route("/__devhost__/worktrees", any(worktrees))
-            .with_state(handle);
+            .route("/__devhost__/config/files", any(super::config_files::files))
+            .route(
+                "/__devhost__/config/schema",
+                any(super::config_files::schema),
+            )
+            .route(
+                "/__devhost__/config/validate",
+                any(super::config_files::validate),
+            )
+            .route("/__devhost__/config/save", any(super::config_files::save))
+            .route("/__devhost__/ws/health", any(super::streams::health))
+            .route("/__devhost__/ws/logs", any(super::streams::logs))
+            .route("/__devhost__/ws/resources", any(super::resources::serve))
+            .route(
+                "/__devhost__/react-highlight/cursor",
+                any(super::streams::cursor),
+            )
+            .route(
+                "/__devhost__/ws/react-highlight",
+                any(super::streams::cursor_ws),
+            )
+            .with_state(handle.clone())
+            .merge(assets)
+            .layer(middleware::from_fn_with_state(handle.clone(), json_body));
+        let poller_stop = handle.live.events.stopping.clone();
+        let sampler = super::resources::Sampler::start(handle.clone())?;
         let worker = thread::Builder::new()
             .name("devhost-control".to_owned())
             .spawn(move || {
+                let _sampler = sampler;
                 runtime.block_on(async move {
-                    // Dropping serve also cancels in-flight requests; none may keep
-                    // shutdown waiting for the stack loop that is itself stopping.
-                    tokio::select! {
-                        _ = axum::serve(listener, app).into_future() => {},
-                        _ = stopped => {},
-                    }
+                    let poller = tokio::spawn(super::streams::poll_health(handle.clone()));
+                    let server = axum::serve(listener, app)
+                        .with_graceful_shutdown(async move {
+                            let _ = stopped.await;
+                            handle.live.events.stopping.send_replace(true);
+                        })
+                        .into_future();
+                    tokio::pin!(server);
+                    let mut stopping = poller_stop.subscribe();
+                    tokio::select! { _ = &mut server => {}, _ = stopping.changed() => {
+                        let _ = tokio::time::timeout(Duration::from_millis(250), &mut server).await;
+                    }}
+                    poller.abort();
+                    let _ = poller.await;
                 });
             })
             .map_err(|error| format!("start control worker: {error}"))?;
@@ -98,7 +147,7 @@ struct RestartPayload {
     service_names: Vec<String>,
 }
 
-fn diagnostic(status: StatusCode, message: &str) -> Response {
+pub(super) fn diagnostic(status: StatusCode, message: &str) -> Response {
     (
         status,
         [(header::CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
@@ -107,7 +156,7 @@ fn diagnostic(status: StatusCode, message: &str) -> Response {
         .into_response()
 }
 
-fn guard(request: &Request<Body>) -> Result<(), &'static str> {
+pub(super) fn guard(handle: &RuntimeHandle, request: &Request<Body>) -> Result<(), &'static str> {
     let host = request
         .headers()
         .get(header::HOST)
@@ -117,10 +166,142 @@ fn guard(request: &Request<Body>) -> Result<(), &'static str> {
         .headers()
         .get("x-forwarded-proto")
         .and_then(|value| value.to_str().ok());
-    if !serves_request_host::<fn(u16, &str) -> Result<bool, String>>(host, proto, 0, None) {
+    if !serves_request_host(
+        host,
+        proto,
+        handle.live.control_port(),
+        Some(&|port, href: &str| handle.live.owns_document_url(port, href)),
+    ) {
         return Err("Unrecognized devhost request host.");
     }
     check_cross_origin(request.method(), request.headers(), host, proto)
+}
+
+async fn json_body(
+    State(handle): State<RuntimeHandle>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    use http_body::Body as _;
+    if super::request_guard::is_state_changing_request(request.method(), request.headers())
+        || request.uri().path().starts_with("/__devhost__/config/")
+    {
+        if let Err(error) = guard(&handle, &request) {
+            return diagnostic(StatusCode::FORBIDDEN, error);
+        }
+        if request.body().size_hint().exact() != Some(0)
+            && !super::request_guard::is_json_request(request.headers())
+        {
+            return diagnostic(
+                StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                "Request bodies must be application/json.",
+            );
+        }
+    }
+    next.run(request).await
+}
+
+async fn serve_assets(
+    State((handle, store)): State<(RuntimeHandle, super::assets::AssetStore)>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    if let Err(error) = guard(&handle, &request) {
+        return diagnostic(StatusCode::FORBIDDEN, error);
+    }
+    store.set_config_json(
+        serde_json::to_vec(&super::configuration::injected_config(&handle))
+            .expect("injected configuration"),
+    );
+    next.run(request).await
+}
+
+async fn stack_info(State(handle): State<RuntimeHandle>, request: Request<Body>) -> Response {
+    let result = stack_info_response(handle, request).await;
+    let mut result = result;
+    result.headers_mut().insert(
+        header::CACHE_CONTROL,
+        header::HeaderValue::from_static(CACHE_CONTROL_NO_STORE),
+    );
+    result.headers_mut().insert(
+        header::REFERRER_POLICY,
+        header::HeaderValue::from_static("no-referrer"),
+    );
+    result
+}
+
+async fn stack_info_response(handle: RuntimeHandle, request: Request<Body>) -> Response {
+    if !is_local_client(request.headers()) {
+        return diagnostic(
+            StatusCode::FORBIDDEN,
+            "Stack info is available on this machine only.",
+        );
+    }
+    if !matches!(*request.method(), Method::GET | Method::HEAD) {
+        let mut response = diagnostic(StatusCode::METHOD_NOT_ALLOWED, "Method not allowed");
+        response
+            .headers_mut()
+            .insert(header::ALLOW, header::HeaderValue::from_static("GET, HEAD"));
+        return response;
+    }
+    let host = request
+        .headers()
+        .get(header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    if !serves_request_host::<fn(u16, &str) -> Result<bool, String>>(host, None, 0, None) {
+        return diagnostic(
+            StatusCode::FORBIDDEN,
+            "Stack info is available on the loopback control listener only.",
+        );
+    }
+    let proto = if request
+        .headers()
+        .get("x-forwarded-proto")
+        .is_some_and(|value| value == "https")
+    {
+        "https"
+    } else {
+        "http"
+    };
+    if request
+        .headers()
+        .get(header::ORIGIN)
+        .is_some_and(|origin| origin != format!("{proto}://{host}").as_str())
+    {
+        return diagnostic(StatusCode::FORBIDDEN, "Cross-origin stack info request");
+    }
+    let head = request.method() == Method::HEAD;
+    match tokio::task::spawn_blocking(move || handle.live.snapshot()).await {
+        Ok(Ok(snapshot)) => {
+            if head {
+                ([(header::CONTENT_TYPE, "application/json")], "").into_response()
+            } else {
+                axum::Json(snapshot).into_response()
+            }
+        }
+        Ok(Err(error)) => diagnostic(StatusCode::SERVICE_UNAVAILABLE, &error),
+        Err(error) => diagnostic(StatusCode::SERVICE_UNAVAILABLE, &error.to_string()),
+    }
+}
+
+pub(super) fn is_local_client(headers: &header::HeaderMap) -> bool {
+    // The listener binds loopback; forwarded addresses identify proxied callers.
+    headers.get_all("x-forwarded-for").iter().all(|value| {
+        value.to_str().is_ok_and(|value| {
+            value.split(',').all(|address| {
+                let address = address.trim();
+                address
+                    .parse::<std::net::IpAddr>()
+                    .or_else(|_| {
+                        address
+                            .parse::<std::net::SocketAddr>()
+                            .map(|value| value.ip())
+                    })
+                    .is_ok_and(|address| address.is_loopback())
+            })
+        })
+    })
 }
 
 #[derive(Deserialize)]
@@ -135,7 +316,7 @@ struct WorktreePayload {
 }
 
 async fn worktrees(State(handle): State<RuntimeHandle>, request: Request<Body>) -> Response {
-    if let Err(error) = guard(&request) {
+    if let Err(error) = guard(&handle, &request) {
         return diagnostic(StatusCode::FORBIDDEN, error);
     }
     let read = request.method() == Method::GET;
@@ -214,8 +395,18 @@ async fn worktrees(State(handle): State<RuntimeHandle>, request: Request<Body>) 
     }
 }
 
+pub(crate) fn recovery_worktrees(handle: RuntimeHandle, request: Request<Body>) -> Response {
+    match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime.block_on(worktrees(State(handle), request)),
+        Err(error) => diagnostic(StatusCode::INTERNAL_SERVER_ERROR, &error.to_string()),
+    }
+}
+
 async fn restart_service(State(handle): State<RuntimeHandle>, request: Request<Body>) -> Response {
-    if let Err(error) = guard(&request) {
+    if let Err(error) = guard(&handle, &request) {
         return diagnostic(StatusCode::FORBIDDEN, error);
     }
     if request.method() != Method::POST {
@@ -266,6 +457,64 @@ async fn restart_service(State(handle): State<RuntimeHandle>, request: Request<B
     }
 }
 
+async fn start_service(State(handle): State<RuntimeHandle>, request: Request<Body>) -> Response {
+    if let Err(error) = guard(&handle, &request) {
+        return diagnostic(StatusCode::FORBIDDEN, error);
+    }
+    if request.method() != Method::POST {
+        return diagnostic(StatusCode::METHOD_NOT_ALLOWED, "Method not allowed");
+    }
+    let bytes = match to_bytes(request.into_body(), 1024 * 1024).await {
+        Ok(bytes) => bytes,
+        Err(_) => return diagnostic(StatusCode::BAD_REQUEST, "Invalid start service payload."),
+    };
+    let payload = match serde_json::from_slice::<RestartPayload>(&bytes) {
+        Ok(payload) if !payload.service_names.is_empty() => payload,
+        _ => return diagnostic(StatusCode::BAD_REQUEST, "Invalid start service payload."),
+    };
+    handle.activity.record_activity();
+    mutation_response(handle.start_services(payload.service_names)).await
+}
+
+async fn restart_stack(State(handle): State<RuntimeHandle>, request: Request<Body>) -> Response {
+    if let Err(error) = guard(&handle, &request) {
+        return diagnostic(StatusCode::FORBIDDEN, error);
+    }
+    if request.method() != Method::POST {
+        return diagnostic(StatusCode::METHOD_NOT_ALLOWED, "Method not allowed");
+    }
+    handle.activity.record_activity();
+    mutation_response(handle.restart_stack()).await
+}
+
+async fn mutation_response(
+    result: Result<std::sync::mpsc::Receiver<Result<(), String>>, String>,
+) -> Response {
+    let result = match result {
+        Ok(result) => result,
+        Err(error) => return diagnostic(StatusCode::INTERNAL_SERVER_ERROR, &error),
+    };
+    loop {
+        match result.try_recv() {
+            Ok(Ok(())) => {
+                return (
+                    StatusCode::NO_CONTENT,
+                    [(header::CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+                )
+                    .into_response();
+            }
+            Ok(Err(error)) => return diagnostic(StatusCode::INTERNAL_SERVER_ERROR, &error),
+            Err(TryRecvError::Disconnected) => {
+                return diagnostic(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "devhost is shutting down",
+                );
+            }
+            Err(TryRecvError::Empty) => tokio::time::sleep(Duration::from_millis(10)).await,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,7 +534,7 @@ mod tests {
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();
-        write!(stream, "{method} {path} HTTP/1.1\r\n{headers}Connection: close\r\nContent-Length: {}\r\n\r\n{body}", body.len()).unwrap();
+        write!(stream, "{method} {path} HTTP/1.1\r\n{headers}Content-Type: application/json\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}", body.len()).unwrap();
         let mut response = String::new();
         stream.read_to_string(&mut response).unwrap();
         response
@@ -512,7 +761,7 @@ mod tests {
         let server = ControlServer::start(handle).unwrap();
         let port = server.port();
         let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
-        stream.write_all(b"POST /__devhost__/restart-service HTTP/1.1\r\nHost: localhost\r\nContent-Length: 21\r\n\r\n{\"serviceName\":\"web\"}").unwrap();
+        stream.write_all(b"POST /__devhost__/restart-service HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: 21\r\n\r\n{\"serviceName\":\"web\"}").unwrap();
         let _pending = control
             .requests
             .recv_timeout(Duration::from_secs(5))
