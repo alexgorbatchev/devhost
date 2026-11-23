@@ -15,6 +15,8 @@ use std::{
 };
 
 use cli_command_kit::Mode;
+#[path = "stack_lifecycle/runtime.rs"]
+mod runtime;
 use devhost_rust::{
     caddy::{
         self,
@@ -103,6 +105,7 @@ fn managed_directory_service_serves_live_files_and_releases_routes() {
     );
     let cancel = Arc::new(AtomicBool::new(false));
     let options = StartStackOptions {
+        runtime_control: None,
         serve_session: false,
         runtime_errors: None,
         configuration: Some(validated),
@@ -754,6 +757,7 @@ process = true
         &mut resolved,
         &order,
         StartStackOptions {
+            runtime_control: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),
@@ -982,6 +986,7 @@ process = true
         &mut dummy_manifest,
         &order,
         StartStackOptions {
+            runtime_control: None,
             serve_session: false,
             runtime_errors: None,
             configuration: None,
@@ -1146,6 +1151,7 @@ retries = 2
         &mut resolved,
         &order,
         StartStackOptions {
+            runtime_control: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),

@@ -90,7 +90,14 @@ impl LiveCaddyGuard {
         };
         let mut out = Vec::new();
         caddy::start_in_directory(&caddy_dir, &settings, Mode::Agent, &mut out, true)
-            .expect("start isolated caddy");
+            .unwrap_or_else(|error| {
+                let runtime =
+                    fs::read_to_string(caddy_dir.join("caddy.runtime.log")).unwrap_or_default();
+                panic!(
+                    "start isolated caddy: {error:?}\n{}\n{runtime}",
+                    String::from_utf8_lossy(&out)
+                );
+            });
         Self {
             caddy_dir,
             settings,

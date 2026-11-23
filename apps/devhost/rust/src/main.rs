@@ -256,6 +256,7 @@ fn run_serve(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         domain,
         port,
         StartStackOptions {
+            runtime_control: None,
             serve_session: true,
             runtime_errors: None,
             configuration: None,
@@ -479,6 +480,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         &mut resolved,
         &service_order,
         StartStackOptions {
+            runtime_control: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),

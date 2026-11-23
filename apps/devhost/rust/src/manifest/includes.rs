@@ -14,7 +14,11 @@ use crate::{Failure, paths::clean};
 
 pub(super) fn read(root: &Path) -> Result<RawManifest, Failure> {
     let mut inputs = Inputs::default();
-    let (mut table, service_order) = load(root, root, &mut HashSet::new(), &mut inputs)?;
+    read_with_inputs(root, &mut inputs)
+}
+
+pub(super) fn read_with_inputs(root: &Path, inputs: &mut Inputs) -> Result<RawManifest, Failure> {
+    let (mut table, service_order) = load(root, root, &mut HashSet::new(), inputs)?;
     let mut missing = BTreeSet::new();
     for (_, value) in &mut table {
         interpolate(value, &mut missing);
@@ -28,7 +32,7 @@ pub(super) fn read(root: &Path) -> Result<RawManifest, Failure> {
         .into());
     }
     Ok(RawManifest {
-        inputs,
+        inputs: inputs.clone(),
         service_order,
         table,
     })

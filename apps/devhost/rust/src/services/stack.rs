@@ -51,6 +51,9 @@ use crate::{
         },
     },
 };
+use sha2::{Digest, Sha256};
+
+mod runtime;
 
 pub const MAXIMUM_AUTO_PORT_RETRY_COUNT: usize = 3;
 const MAX_ATTEMPT_OUTPUT_LINES: usize = 50;
@@ -119,6 +122,7 @@ impl From<String> for StartStackError {
 }
 
 pub struct StartStackOptions {
+    pub runtime_control: Option<super::control::RuntimeControl>,
     pub serve_session: bool,
     pub runtime_errors: Option<Receiver<String>>,
     pub configuration: Option<Manifest>,
@@ -157,6 +161,7 @@ impl AttemptOutputLines {
 struct ServiceExitResult {
     service_name: String,
     exit_code: i32,
+    exit_state: Arc<(Mutex<Option<i32>>, Condvar)>,
 }
 
 struct StartedService {
@@ -355,7 +360,7 @@ impl ShutdownProgress {
 pub fn start_stack(
     manifest: &mut ResolvedManifest,
     service_order: &[String],
-    options: StartStackOptions,
+    mut options: StartStackOptions,
 ) -> Result<i32, StartStackError> {
     if service_order.is_empty() {
         return Err("service order is required".to_owned().into());
@@ -366,7 +371,7 @@ pub fn start_stack(
     } else {
         options.environment.clone()
     };
-    let mut launch = options.launch;
+    let mut launch = std::mem::take(&mut options.launch);
     if launch.log_path.is_empty() && !launch.detached {
         launch = take_launch_metadata(&mut environment);
     } else {
@@ -398,7 +403,7 @@ pub fn start_stack(
         let cancel_ref = cancel.clone();
         let stop_ref = stop_signal_forwarder.clone();
         let failure_ref = runtime_failure.clone();
-        let runtime_errors = options.runtime_errors;
+        let runtime_errors = options.runtime_errors.take();
         let install_signal_handlers = options.install_signal_handlers;
         Some(thread::spawn(move || {
             while !stop_ref.load(Ordering::Relaxed) {
@@ -547,6 +552,22 @@ pub fn start_stack(
         )?;
         active_routes = initial_routes;
 
+        let control = options
+            .runtime_control
+            .take()
+            .unwrap_or_else(|| super::control::RuntimeControl::channel().1);
+        let mut watches =
+            super::watch::ServiceWatches::new(control.dirty.clone(), options.output.clone());
+        for service in manifest.services.values() {
+            watches.start(service, &manifest.name)?;
+        }
+        let mut manifest_watch = if options.serve_session {
+            None
+        } else {
+            let (_, inputs) = crate::manifest::read_with_inputs(&manifest.manifest_path);
+            Some(super::watch::InputWatch::new(inputs)?)
+        };
+
         for service_name in service_order {
             if let Some(sig) = check_termination_signal(
                 &cancel,
@@ -606,8 +627,11 @@ pub fn start_stack(
                         &environment,
                         &options.output,
                         grace_period,
-                        &cancel,
-                        &exit_tx,
+                        ServiceStartContext {
+                            cancel: &cancel,
+                            exit_tx: &exit_tx,
+                            ports: PortReassignment::Allowed,
+                        },
                     ) {
                         Ok(started) => {
                             let updated_routes = collect_manifest_routes(manifest);
@@ -658,6 +682,7 @@ pub fn start_stack(
                                     let _ = exit_tx.send(ServiceExitResult {
                                         service_name: service_name.clone(),
                                         exit_code: code,
+                                        exit_state: exited.exit_state.clone(),
                                     });
                                 }
                                 started_services.push(*exited);
@@ -792,20 +817,29 @@ pub fn start_stack(
 
         was_ready = true;
 
-        let idle_deadline = options
-            .idle_timeout
-            .filter(|d| !d.is_zero())
-            .map(|d| (d, Instant::now() + d));
-        wait_for_stack_shutdown(
-            &manifest.name,
-            &options.output,
-            &cancel,
-            options.install_signal_handlers,
-            &exit_rx,
-            idle_deadline,
-            &mut started_services,
-            &mut shutdown_progress,
-        )
+        if let Some(watch) = &mut manifest_watch {
+            watch.check();
+        }
+        runtime::Runtime {
+            manifest,
+            options: &options,
+            environment: &environment,
+            launch: &launch,
+            cancel: &cancel,
+            grace_period,
+            exit_tx: &exit_tx,
+            exit_rx: &exit_rx,
+            started: &mut started_services,
+            daemons: &mut started_daemons,
+            hosts: &mut claimed_hosts,
+            ports: &mut claimed_fixed_ports,
+            routes: &mut active_routes,
+            progress: &mut shutdown_progress,
+            control,
+            watches,
+            manifest_watch,
+        }
+        .run(shared)
     })();
 
     stop_signal_forwarder.store(true, Ordering::SeqCst);
@@ -897,69 +931,6 @@ pub fn start_stack(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn wait_for_stack_shutdown(
-    stack_name: &str,
-    output: &ServiceOutput,
-    cancel: &AtomicBool,
-    install_signals: bool,
-    exit_rx: &Receiver<ServiceExitResult>,
-    idle_deadline: Option<(Duration, Instant)>,
-    started_services: &mut [StartedService],
-    shutdown_progress: &mut ShutdownProgress,
-) -> Result<i32, StartStackError> {
-    loop {
-        while let Ok(result) = exit_rx.try_recv() {
-            output.log_stdout(
-                stack_name,
-                &format!(
-                    "{} exited with code {}; devhost is waiting for a restart.",
-                    result.service_name, result.exit_code
-                ),
-            );
-        }
-        if let Some(sig) = check_termination_signal(cancel, install_signals, output, stack_name) {
-            for started in started_services.iter_mut() {
-                shutdown_progress.stopping(&started.service.name);
-                started.signal(sig);
-            }
-            return Ok(SIGNAL_EXIT_CODE_BASE + sig);
-        }
-        if cancel.load(Ordering::Relaxed) {
-            if let Some(sig) = check_termination_signal(cancel, install_signals, output, stack_name)
-            {
-                for started in started_services.iter_mut() {
-                    shutdown_progress.stopping(&started.service.name);
-                    started.signal(sig);
-                }
-                return Ok(SIGNAL_EXIT_CODE_BASE + sig);
-            }
-            for started in started_services.iter_mut() {
-                shutdown_progress.stopping(&started.service.name);
-                started.signal(libc::SIGTERM);
-            }
-            return Ok(0);
-        }
-        if let Some((timeout, deadline)) = idle_deadline
-            && Instant::now() >= deadline
-        {
-            output.log_stdout(
-                stack_name,
-                &format!(
-                    "Idle timeout of {:?} reached. Automatically shutting down the stack...",
-                    timeout
-                ),
-            );
-            for started in started_services.iter_mut() {
-                shutdown_progress.stopping(&started.service.name);
-                started.signal(libc::SIGTERM);
-            }
-            return Ok(0);
-        }
-        thread::sleep(Duration::from_millis(25));
-    }
-}
-
 fn check_termination_signal(
     cancel: &AtomicBool,
     install_signals: bool,
@@ -1002,15 +973,31 @@ enum StartServiceError {
     },
 }
 
+#[derive(Clone, Copy)]
+enum PortReassignment {
+    Allowed,
+    Preserve,
+}
+
+struct ServiceStartContext<'a> {
+    cancel: &'a AtomicBool,
+    exit_tx: &'a Sender<ServiceExitResult>,
+    ports: PortReassignment,
+}
+
 fn start_service_with_retries(
     manifest: &mut ResolvedManifest,
     service_name: &str,
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
     grace_period: Duration,
-    cancel: &AtomicBool,
-    exit_tx: &Sender<ServiceExitResult>,
+    context: ServiceStartContext<'_>,
 ) -> Result<StartedService, StartServiceError> {
+    let ServiceStartContext {
+        cancel,
+        exit_tx,
+        ports,
+    } = context;
     let mut retry_count = 0usize;
     loop {
         if cancel.load(Ordering::Relaxed) {
@@ -1026,7 +1013,9 @@ fn start_service_with_retries(
             }
         };
         if let Err(err) = validate_assigned_auto_port(&service) {
-            if !should_retry_auto_port_startup(&service, Some(&err), &[], retry_count) {
+            if matches!(ports, PortReassignment::Preserve)
+                || !should_retry_auto_port_startup(&service, Some(&err), &[], retry_count)
+            {
                 return Err(StartServiceError::Failed {
                     message: err,
                     exited_service: None,
@@ -1078,6 +1067,7 @@ fn start_service_with_retries(
                         let _ = tx.send(ServiceExitResult {
                             service_name: watch_name,
                             exit_code: code,
+                            exit_state: watch_state.clone(),
                         });
                     }
                 });
@@ -1105,7 +1095,9 @@ fn start_service_with_retries(
                     });
                 }
                 let lines = attempt_output.snapshot();
-                if should_retry_auto_port_startup(&service, Some(&err), &lines, retry_count) {
+                if matches!(ports, PortReassignment::Allowed)
+                    && should_retry_auto_port_startup(&service, Some(&err), &lines, retry_count)
+                {
                     retry_count += 1;
                     if let Err(e) = reassign_startup_auto_port(manifest, service_name, output) {
                         return Err(StartServiceError::Failed {
@@ -1935,18 +1927,11 @@ fn stack_access_log_name(manifest: &ResolvedManifest) -> String {
     if manifest.manifest_path.as_os_str().is_empty() {
         return manifest.name.clone();
     }
-    // Lightweight deterministic key matching the 12-hex-char prefix format.
-    let key = fnv1a_hex(manifest.manifest_path.to_string_lossy().as_bytes());
+    let key = format!(
+        "{:x}",
+        Sha256::digest(manifest.manifest_path.as_os_str().as_encoded_bytes())
+    );
     format!("stack-{}", &key[..12])
-}
-
-fn fnv1a_hex(bytes: &[u8]) -> String {
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for &b in bytes {
-        hash ^= u64::from(b);
-        hash = hash.wrapping_mul(0x0100_0000_01b3);
-    }
-    format!("{hash:016x}")
 }
 
 fn stack_manifest_files(configuration: Option<&Manifest>) -> Vec<String> {
@@ -2208,8 +2193,11 @@ process = true
             &BTreeMap::new(),
             &output,
             Duration::from_millis(200),
-            &cancel,
-            &tx,
+            ServiceStartContext {
+                cancel: &cancel,
+                exit_tx: &tx,
+                ports: PortReassignment::Allowed,
+            },
         ) {
             Err(StartServiceError::Failed { message, .. }) => message,
             _ => panic!("expected early-exit failure"),

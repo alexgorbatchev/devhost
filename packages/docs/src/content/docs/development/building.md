@@ -30,7 +30,9 @@ On Linux and macOS, `start --detach` waits for local services and routes to beco
 
 Use `serve --domain notes.localhost` to serve the current directory, `--dir` for another directory, or `--port` for an existing local HTTP service. The session starts Caddy when needed and removes its routes on Ctrl+C; Caddy and existing services keep running. Directory indexes, the confined file browser, and Markdown rendering follow the [serve guide](../../start/serve/).
 
-Set `AGENT=1` for agent-oriented help. Use the Go binary for automatic reloads, remote previews, and browser controls while those parts of the port are incomplete.
+Saved manifest and include changes reload automatically, preserving compatible automatic ports and restarting affected services and dependents. A rejected replacement restores the accepted configuration; fixing the file retries it. Saved machine configuration updates shared Caddy settings; changing the local domain suffix requires stopping and starting the stack. The Rust CLI supports `idleTimeout` and `--idle-timeout`, including HTTP activity through Caddy.
+
+Set `AGENT=1` for agent-oriented help. Use the Go binary for remote previews and browser controls, including restart shortcuts, while those parts of the port are incomplete.
 
 ## Use a protected development build
 
