@@ -23,6 +23,7 @@ pub mod output;
 pub mod routes;
 pub mod stacks;
 pub mod trust;
+pub mod trust_remote;
 
 pub fn ensure_managed_caddy_config(
     directory: &Path,

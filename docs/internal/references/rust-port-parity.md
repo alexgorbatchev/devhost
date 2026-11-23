@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-22 06:13
+last_modified: 2026-11-22 19:15
 status: current
 ---
 
@@ -42,6 +42,30 @@ rust-anything app replay .state/rust-anything/service-list \
 ```
 
 Keep case inputs small and focused on the active ticket. Inspect the replay report under the recording directory's `rust/app-cases/`. Add cases for the new behavior and use `app replay --case` for targeted reruns. Use the same isolated state for recordings and replays that touch files or services. Keep generated source out of the existing Rust crate.
+
+## Native remote-preview tests
+
+The remote transport integration suite runs a native Chisel 1.12.0 relay and
+isolated managed Caddy instances. It uses `.cache/test-dependencies/chisel-v1.12.0`
+when available and otherwise builds the pinned Chisel version with Go. Install Go
+before running this suite; the test fixture serializes dependency provisioning.
+It never connects to a production relay or installs a CA in the machine trust
+store.
+
+```sh
+bash test-support/runTests.sh cargo test \
+  --manifest-path apps/devhost/rust/Cargo.toml --locked --test remote_transport
+```
+
+Set `DEVHOST_REMOTE_TEST_BINARY` to the absolute path of the Go oracle to run the
+same CLI scenarios against Go. Native checks cover enrollment, shared connectors,
+route reloads, reconnection, origin and forwarding headers, WebSocket traffic,
+verified backend TLS, slow uploads, keepalives, detached startup, and cleanup.
+
+Makiko 0.2.5 is vendored with generic server global-request support because its
+released API cannot answer the relay's keepalives. The [dependency patch
+notes](../../../apps/devhost/rust/vendor/makiko/DEVHOST-PATCH.md) describe the
+extension and the condition for returning to a registry release.
 
 ## Catch up with Go main
 

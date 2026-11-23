@@ -430,6 +430,7 @@ pub fn start_stack(
     let mut claimed_hosts: Vec<String> = Vec::new();
     let mut claimed_fixed_ports: Vec<(String, u16)> = Vec::new();
     let mut active_routes: Vec<ActivateRouteOptions> = Vec::new();
+    let mut remote_lease = None;
     let mut stack_registered = false;
     let mut was_ready = false;
     let mut shutdown_progress =
@@ -446,7 +447,7 @@ pub fn start_stack(
         if let Err(err) = register_stack(
             &options.caddy_dir,
             &RegisterStackOptions {
-                remote: false,
+                remote: manifest.remote.is_some(),
                 log_path: launch.log_path.clone(),
                 control_port: 0,
                 manifest_files,
@@ -551,6 +552,13 @@ pub fn start_stack(
             "replace stack routes",
         )?;
         active_routes = initial_routes;
+
+        if let Some(remote) = remote_options(manifest, &options.caddy_dir)? {
+            remote_lease = Some(
+                crate::remote::Lease::acquire(&remote, &cancel)
+                    .map_err(|error| format!("start remote previews: {error}"))?,
+            );
+        }
 
         let control = options
             .runtime_control
@@ -813,6 +821,11 @@ pub fn start_stack(
             }
             let urls = collect_manifest_service_urls(manifest);
             caddy::stacks::set_stack_ready(&options.caddy_dir, urls)?;
+        } else if manifest.remote.is_some() {
+            caddy::stacks::set_stack_ready(
+                &options.caddy_dir,
+                collect_manifest_service_urls(manifest),
+            )?;
         }
 
         was_ready = true;
@@ -834,6 +847,7 @@ pub fn start_stack(
             hosts: &mut claimed_hosts,
             ports: &mut claimed_fixed_ports,
             routes: &mut active_routes,
+            remote_lease: &mut remote_lease,
             progress: &mut shutdown_progress,
             control,
             watches,
@@ -853,6 +867,11 @@ pub fn start_stack(
 
     // Centralized cleanup in exact Go order.
     let mut cleanup_errors: Vec<String> = Vec::new();
+    if let Some(lease) = &mut remote_lease
+        && let Err(error) = lease.close()
+    {
+        cleanup_errors.push(error.to_string());
+    }
     for started in &started_services {
         shutdown_progress.stopping(&started.service.name);
     }
@@ -1608,7 +1627,8 @@ pub fn reassign_auto_port(
                 preserved,
                 excluded: BTreeMap::new(),
                 domain_suffix: manifest.domain_suffix.clone(),
-                remote_mode: false,
+                remote_mode: manifest.remote.is_some(),
+                remote: manifest.remote.clone(),
             },
         )?;
         resolved.caddy = manifest.caddy.clone();
@@ -1766,8 +1786,40 @@ fn fail_detached_not_ready(
     StartStackError::Failure(message.into())
 }
 
+fn remote_options(
+    manifest: &ResolvedManifest,
+    caddy_dir: &Path,
+) -> Result<Option<crate::remote::Options>, String> {
+    let Some(settings) = &manifest.remote else {
+        return Ok(None);
+    };
+    let host = routes::resolve_proxy_host(&manifest.caddy.bind_host)?;
+    let state_directory = caddy_dir
+        .parent()
+        .ok_or_else(|| "Caddy directory requires a state directory".to_owned())?
+        .to_owned();
+    Ok(Some(crate::remote::Options {
+        state_directory,
+        manifest_path: manifest.manifest_path.clone(),
+        settings: settings.clone(),
+        hosts: collect_claimed_hosts(&manifest.services),
+        backend: crate::remote::Backend {
+            scheme: "https".to_owned(),
+            address: routes::format_proxy_address(
+                host,
+                if manifest.caddy.https_port == 0 {
+                    443
+                } else {
+                    manifest.caddy.https_port
+                },
+            ),
+            root_certificate_path: caddy_dir.join("storage/pki/authorities/local/root.crt"),
+        },
+    }))
+}
+
 pub fn collect_manifest_service_urls(manifest: &ResolvedManifest) -> Vec<String> {
-    let https_port = if manifest.caddy.https_port == 0 {
+    let https_port = if manifest.remote.is_some() || manifest.caddy.https_port == 0 {
         443
     } else {
         manifest.caddy.https_port
@@ -1775,6 +1827,9 @@ pub fn collect_manifest_service_urls(manifest: &ResolvedManifest) -> Vec<String>
     let mut urls = Vec::new();
     for name in ordered_manifest_service_names(manifest) {
         if let Some(service) = manifest.services.get(&name) {
+            if manifest.remote.is_some() && service.hosts.is_empty() {
+                continue;
+            }
             urls.extend(read_service_urls(service, https_port));
         }
     }
@@ -1782,7 +1837,7 @@ pub fn collect_manifest_service_urls(manifest: &ResolvedManifest) -> Vec<String>
 }
 
 pub fn log_service_urls(manifest: &ResolvedManifest, output: &ServiceOutput) {
-    let https_port = if manifest.caddy.https_port == 0 {
+    let https_port = if manifest.remote.is_some() || manifest.caddy.https_port == 0 {
         443
     } else {
         manifest.caddy.https_port
@@ -1791,6 +1846,9 @@ pub fn log_service_urls(manifest: &ResolvedManifest, output: &ServiceOutput) {
         let Some(service) = manifest.services.get(&service_name) else {
             continue;
         };
+        if manifest.remote.is_some() && service.hosts.is_empty() {
+            continue;
+        }
         let display_name = if service.name == manifest.primary_service {
             format!("{} (primary)", service.name)
         } else {

@@ -76,6 +76,7 @@ impl Default for CaddySettings {
 pub struct MachineConfig {
     pub domain_suffix: String,
     pub caddy: CaddySettings,
+    pub remote: Option<crate::remote::Settings>,
 }
 
 pub fn path() -> Result<PathBuf, String> {
@@ -169,6 +170,30 @@ fn parse(path: &Path, contents: &str) -> Result<MachineConfig, String> {
         Ok(MachineConfig {
             domain_suffix,
             caddy,
+            remote: root.get("remote").and_then(Value::as_table).map(|table| {
+                crate::remote::Settings {
+                    server_url: string(table.get("serverURL")).to_owned(),
+                    credential_file: {
+                        let credential = PathBuf::from(string(table.get("credentialFile")));
+                        if credential.is_absolute() {
+                            credential
+                        } else {
+                            clean(
+                                &path
+                                    .parent()
+                                    .unwrap_or_else(|| Path::new("."))
+                                    .join(credential),
+                            )
+                        }
+                    },
+                    fingerprint: string(table.get("fingerprint")).to_owned(),
+                    remote_port: table
+                        .get("remotePort")
+                        .and_then(port_number)
+                        .expect("validated remote port"),
+                    domain_suffix: string(table.get("domainSuffix")).to_ascii_lowercase(),
+                }
+            }),
         })
     } else {
         Err(format!(

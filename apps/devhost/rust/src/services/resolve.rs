@@ -61,6 +61,7 @@ pub struct ResolvedService {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedManifest {
+    pub remote: Option<crate::remote::Settings>,
     pub configuration: Option<Manifest>,
     pub requested: Vec<String>,
     pub caddy: CaddySettings,
@@ -79,6 +80,7 @@ pub struct ResolvedManifest {
 
 #[derive(Debug, Default, Clone)]
 pub struct PortResolutionOptions {
+    pub remote: Option<crate::remote::Settings>,
     pub requested: Vec<String>,
     pub preserved: BTreeMap<String, u16>,
     pub excluded: BTreeMap<String, BTreeSet<u16>>,
@@ -362,6 +364,7 @@ pub fn resolve_service_ports(
     }
 
     Ok(ResolvedManifest {
+        remote: options.remote.clone(),
         configuration: Some(manifest.clone()),
         requested: options.requested.clone(),
         caddy: CaddySettings::default(),

@@ -405,7 +405,7 @@ pub fn start_detached_stack(options: DetachedStartOptions) -> Result<(), Failure
         limit,
         &signal_src,
     )? {
-        if existing.remote {
+        if existing.remote != options.manifest.remote.is_some() {
             return Err(Failure {
                 message: "the running stack uses a different remote preview mode".to_owned(),
                 summary: None,

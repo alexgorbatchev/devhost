@@ -13,7 +13,6 @@ const SCREENED_CADDY_MESSAGES: &[&str] = &[
     "certificate installed properly in",
     "root certificate trust store installation disabled",
     "Caddyfile input is not formatted",
-    "on-demand TLS is enabled, but no protections are in place",
     "No files matching import glob pattern",
 ];
 

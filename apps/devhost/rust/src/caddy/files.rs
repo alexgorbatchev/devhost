@@ -536,7 +536,7 @@ fn append_fallback(document: &mut String, directory: &Path, protocol: &str, port
     let address = format_site_address(protocol, port, "");
     let root = quote(&directory.join("route-not-found"));
     let tls = if protocol == "https" {
-        "    tls internal {\n        on_demand\n    }\n\n"
+        "    tls internal\n\n"
     } else {
         ""
     };

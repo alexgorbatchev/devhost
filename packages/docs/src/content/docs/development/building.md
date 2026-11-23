@@ -24,15 +24,17 @@ From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run
 cargo run --locked --manifest-path apps/devhost/rust/Cargo.toml -- --help
 ```
 
-The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local `start` and `stop`, and `serve`. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
+The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local and remote `start` and `stop`, and `serve`. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
 
-On Linux and macOS, `start --detach` waits for local services and routes to become ready, prints the supervisor PID, service URLs, and log path, and leaves the stack running. Repeating the command reports the existing stack; `stop` shuts it down. Startup failures print the attempt's log tail and stop its services.
+On Linux and macOS, `start --detach` waits for services, routes, and any configured remote connection to become ready, prints the supervisor PID, service URLs, and log path, and leaves the stack running. Repeating the command reports the existing stack; `stop` shuts it down. Startup failures print the attempt's log tail and stop its services.
 
 Use `serve --domain notes.localhost` to serve the current directory, `--dir` for another directory, or `--port` for an existing local HTTP service. The session starts Caddy when needed and removes its routes on Ctrl+C; Caddy and existing services keep running. Directory indexes, the confined file browser, and Markdown rendering follow the [serve guide](../../start/serve/).
 
 Saved manifest and include changes reload automatically, preserving compatible automatic ports and restarting affected services and dependents. A rejected replacement restores the accepted configuration; fixing the file retries it. Saved machine configuration updates shared Caddy settings; changing the local domain suffix requires stopping and starting the stack. The Rust CLI supports `idleTimeout` and `--idle-timeout`, including HTTP activity through Caddy.
 
-Set `AGENT=1` for agent-oriented help. Use the Go binary for remote previews and browser controls, including restart shortcuts, while those parts of the port are incomplete.
+Machine configuration selects [remote previews](../../stacks/remote-previews/) automatically; `--local` uses local routing and `--remote` requires remote configuration. Remote stacks share an authenticated connector, reconnect after relay interruptions, and update their hostnames on manifest reload. Changing remote settings requires stopping and starting the affected stacks. On macOS, `caddy trust-remote` installs another machine's Caddy root certificate as described in the [managed Caddy guide](../../guides/managed-caddy/).
+
+Set `AGENT=1` for agent-oriented help. Use the Go binary for browser controls, including restart shortcuts, while those parts of the port are incomplete.
 
 ## Use a protected development build
 

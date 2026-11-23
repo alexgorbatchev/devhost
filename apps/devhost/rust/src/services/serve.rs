@@ -187,6 +187,7 @@ fn serve_manifest(directory: PathBuf, domain: &str, port: u16) -> ResolvedManife
         watch: Vec::new(),
     };
     ResolvedManifest {
+        remote: None,
         configuration: None,
         requested: Vec::new(),
         caddy: crate::config::CaddySettings::default(),

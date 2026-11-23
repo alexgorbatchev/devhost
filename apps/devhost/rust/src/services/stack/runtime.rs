@@ -22,6 +22,7 @@ pub(super) struct Runtime<'a> {
     pub hosts: &'a mut Vec<String>,
     pub ports: &'a mut Vec<(String, u16)>,
     pub routes: &'a mut Vec<ActivateRouteOptions>,
+    pub remote_lease: &'a mut Option<crate::remote::Lease>,
     pub progress: &'a mut ShutdownProgress,
     pub control: RuntimeControl,
     pub watches: ServiceWatches,
@@ -238,7 +239,11 @@ impl Runtime<'_> {
 
     fn reload_shared(&mut self, path: &Path, shared: &mut MachineConfig) -> Result<(), String> {
         let next = config::read_from(path)?;
-        if !self.manifest.domain_suffix.is_empty()
+        if self.manifest.remote.is_some() && self.manifest.remote != next.remote {
+            return Err("remote settings changed while this stack is running; stop all remote stacks, then start them again to apply the new settings".to_owned());
+        }
+        if self.manifest.remote.is_none()
+            && !self.manifest.domain_suffix.is_empty()
             && self.manifest.domain_suffix != next.domain_suffix
         {
             return Err("local domainSuffix changed while this stack is running; stop this stack, then start it again to apply the new suffix".to_owned());
@@ -252,12 +257,24 @@ impl Runtime<'_> {
         )
         .map_err(|error| format!("apply the devhost config file {}: {error}", path.display()))?;
         let changed = self.manifest.caddy != next.caddy;
+        let previous = self.manifest.caddy.clone();
         self.manifest.caddy = next.caddy.clone();
+        if let Err(error) = self.update_remote() {
+            self.manifest.caddy = previous;
+            let restore = routes::apply_managed_settings(
+                &self.options.caddy_dir,
+                &self.manifest.caddy,
+                self.options.output.mode(),
+                &mut self.options.output.caddy_stderr_writer(),
+                !self.options.debug_caddy,
+            );
+            return Err(join_errors(error, restore.map(|_| ())));
+        }
         *shared = next;
         if !changed {
             return Ok(());
         }
-        if self.launch.detached {
+        if self.launch.detached || self.manifest.remote.is_some() {
             caddy::stacks::set_stack_ready(
                 &self.options.caddy_dir,
                 collect_manifest_service_urls(self.manifest),
@@ -323,6 +340,8 @@ impl Runtime<'_> {
                 requested: previous.requested.clone(),
                 preserved,
                 domain_suffix: suffix,
+                remote_mode: previous.remote.is_some(),
+                remote: previous.remote.clone(),
                 ..Default::default()
             },
         )?;
@@ -360,7 +379,8 @@ impl Runtime<'_> {
             if self.cancel.load(Ordering::Relaxed) {
                 return Err("configuration reload canceled".to_owned());
             }
-            self.replace_routes()
+            self.replace_routes()?;
+            self.update_remote()
         })();
         if let Err(error) = result {
             let failed_names: Vec<_> = self
@@ -381,6 +401,7 @@ impl Runtime<'_> {
                     self.start_group(&restore, PortReassignment::Preserve),
                 );
                 error = join_errors(error, self.replace_routes());
+                error = join_errors(error, self.update_remote());
             }
             error = join_errors(error, self.release_except(&old_hosts, &old_ports));
             error = join_errors(
@@ -399,7 +420,7 @@ impl Runtime<'_> {
         let ports = fixed_ports(self.manifest);
         self.release_except(&hosts, &ports)?;
         self.register(&configuration, &self.manifest.name)?;
-        if self.launch.detached {
+        if self.launch.detached || self.manifest.remote.is_some() {
             caddy::stacks::set_stack_ready(
                 &self.options.caddy_dir,
                 collect_manifest_service_urls(self.manifest),
@@ -416,7 +437,7 @@ impl Runtime<'_> {
         register_stack(
             &self.options.caddy_dir,
             &RegisterStackOptions {
-                remote: false,
+                remote: self.manifest.remote.is_some(),
                 log_path: self.launch.log_path.clone(),
                 control_port: 0,
                 manifest_files: stack_manifest_files(Some(configuration)),
@@ -428,6 +449,17 @@ impl Runtime<'_> {
             RegisterStackError::Overlap(overlap) => overlap.default_message(),
             RegisterStackError::Other(error) => error,
         })
+    }
+
+    fn update_remote(&mut self) -> Result<(), String> {
+        if let Some(options) = remote_options(self.manifest, &self.options.caddy_dir)?
+            && let Some(lease) = self.remote_lease
+        {
+            lease
+                .update(&options, self.cancel)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(())
     }
 
     fn reserve(

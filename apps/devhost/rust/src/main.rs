@@ -72,84 +72,116 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
             .subcommand(service_command())
             .subcommand(start_command())
             .subcommand(serve_command())
-            .subcommand(stop_command()),
+            .subcommand(stop_command())
+            .subcommand(
+                Command::new("_remote-worker").hide(true).arg(
+                    Arg::new("state-dir")
+                        .long("state-dir")
+                        .required(true)
+                        .value_parser(value_parser!(PathBuf)),
+                ),
+            ),
         mode,
         &options,
     )?;
     let mut stdout = io::stdout().lock();
 
     match root.try_get_matches_from_mut(std::env::args_os()) {
-        Ok(matches) => match matches.subcommand() {
-            Some(("serve", serve_matches)) => {
-                drop(stdout);
-                return run_serve(serve_matches, mode);
-            }
-            Some(("start", start_matches)) => {
-                drop(stdout);
-                return run_start(start_matches, mode);
-            }
-            Some(("stop", stop_matches)) => {
-                drop(stdout);
-                return run_stop(stop_matches, mode);
-            }
-            Some(("service", service)) if service.subcommand_name() == Some("list") => {
-                let list = service.subcommand_matches("list").expect("list arguments");
-                return list_services(list, mode, &mut stdout);
-            }
-            Some(("caddy", caddy_matches)) => match caddy_matches.subcommand_name() {
-                Some("print-root-cert") => {
-                    return Ok(match machine::print_root_certificate(&mut stdout) {
-                        Ok(()) => ExitCode::SUCCESS,
-                        Err(message) => write_failure(mode, message.into())?,
-                    });
+        Ok(matches) => {
+            match matches.subcommand() {
+                Some(("_remote-worker", args)) => {
+                    drop(stdout);
+                    let state = args
+                        .get_one::<PathBuf>("state-dir")
+                        .expect("required state directory");
+                    let runtime = tokio::runtime::Builder::new_multi_thread()
+                        .worker_threads(2)
+                        .enable_all()
+                        .build()?;
+                    runtime.block_on(devhost_rust::remote::worker::run(state))?;
+                    return Ok(ExitCode::SUCCESS);
                 }
-                Some("start") => {
-                    return Ok(finish_caddy(
-                        mode,
-                        caddy::start(mode, &mut io::stderr().lock(), false),
-                    )?);
+                Some(("serve", serve_matches)) => {
+                    drop(stdout);
+                    return run_serve(serve_matches, mode);
                 }
-                Some("stop") => {
-                    return Ok(finish_caddy(
-                        mode,
-                        caddy::stop(mode, &mut io::stderr().lock()),
-                    )?);
+                Some(("start", start_matches)) => {
+                    drop(stdout);
+                    return run_start(start_matches, mode);
                 }
-                Some("trust") => {
-                    return Ok(finish_caddy(
-                        mode,
-                        caddy::trust_ca(mode, &mut io::stderr().lock()),
-                    )?);
+                Some(("stop", stop_matches)) => {
+                    drop(stdout);
+                    return run_stop(stop_matches, mode);
                 }
-                Some("download") => {
-                    return Ok(finish_caddy(
-                        mode,
-                        caddy::download(mode, &mut io::stderr().lock()),
-                    )?);
+                Some(("service", service)) if service.subcommand_name() == Some("list") => {
+                    let list = service.subcommand_matches("list").expect("list arguments");
+                    return list_services(list, mode, &mut stdout);
                 }
-                Some("privileged-ports") => {
-                    return Ok(finish_caddy(
-                        mode,
-                        caddy::privileged_ports(mode, &mut io::stderr().lock()),
-                    )?);
-                }
-                _ => {
-                    if let Some(command) = root.find_subcommand_mut("caddy") {
+                Some(("caddy", caddy_matches)) => match caddy_matches.subcommand_name() {
+                    Some("print-root-cert") => {
+                        return Ok(match machine::print_root_certificate(&mut stdout) {
+                            Ok(()) => ExitCode::SUCCESS,
+                            Err(message) => write_failure(mode, message.into())?,
+                        });
+                    }
+                    Some("start") => {
+                        return Ok(finish_caddy(
+                            mode,
+                            caddy::start(mode, &mut io::stderr().lock(), false),
+                        )?);
+                    }
+                    Some("stop") => {
+                        return Ok(finish_caddy(
+                            mode,
+                            caddy::stop(mode, &mut io::stderr().lock()),
+                        )?);
+                    }
+                    Some("trust") => {
+                        return Ok(finish_caddy(
+                            mode,
+                            caddy::trust_ca(mode, &mut io::stderr().lock()),
+                        )?);
+                    }
+                    Some("trust-remote") => {
+                        let args = caddy_matches
+                            .subcommand_matches("trust-remote")
+                            .expect("trust-remote arguments");
+                        let result = match args.get_one::<String>("ssh-target") {
+                        Some(target) => caddy::trust_remote::trust(target, mode, &mut io::stderr().lock()),
+                        None => Err("Expected an SSH target. Example: devhost caddy trust-remote devbox".to_owned().into()),
+                    };
+                        return Ok(finish_caddy(mode, result)?);
+                    }
+                    Some("download") => {
+                        return Ok(finish_caddy(
+                            mode,
+                            caddy::download(mode, &mut io::stderr().lock()),
+                        )?);
+                    }
+                    Some("privileged-ports") => {
+                        return Ok(finish_caddy(
+                            mode,
+                            caddy::privileged_ports(mode, &mut io::stderr().lock()),
+                        )?);
+                    }
+                    _ => {
+                        if let Some(command) = root.find_subcommand_mut("caddy") {
+                            command.write_help(&mut stdout)?;
+                        }
+                    }
+                },
+                Some(("service", _)) => {
+                    if let Some(command) = root.find_subcommand_mut("service") {
                         command.write_help(&mut stdout)?;
                     }
                 }
-            },
-            Some(("service", _)) => {
-                if let Some(command) = root.find_subcommand_mut("service") {
-                    command.write_help(&mut stdout)?;
+                _ => {
+                    if !write_skill(&root, &matches, &options, &mut stdout)? {
+                        root.write_help(&mut stdout)?;
+                    }
                 }
             }
-            _ => {
-                if !write_skill(&root, &matches, &options, &mut stdout)? {
-                    root.write_help(&mut stdout)?;
-                }
-            }
-        },
+        }
         Err(error) => match error.kind() {
             ErrorKind::DisplayVersion => writeln!(stdout, "{VERSION}")?,
             ErrorKind::DisplayHelp => write!(stdout, "{error}")?,
@@ -362,7 +394,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         Ok(cfg) => cfg,
         Err(err) => return Ok(write_failure(mode, err.into())?),
     };
-    if remote && !local {
+    if remote && shared.remote.is_none() {
         let cfg_path = config::path()
             .map(|p| p.display().to_string())
             .unwrap_or_default();
@@ -379,11 +411,17 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         )?);
     }
 
+    let remote_settings = if local { None } else { shared.remote.clone() };
     let mut resolved = match resolve_service_ports(
         &validated,
         &PortResolutionOptions {
             requested: requested.clone(),
-            domain_suffix: shared.domain_suffix.clone(),
+            domain_suffix: remote_settings.as_ref().map_or_else(
+                || shared.domain_suffix.clone(),
+                |settings| settings.domain_suffix.clone(),
+            ),
+            remote_mode: remote_settings.is_some(),
+            remote: remote_settings.clone(),
             ..PortResolutionOptions::default()
         },
     ) {
@@ -436,7 +474,14 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         if args.get_flag("debug") {
             child_args.push("--debug".to_owned());
         }
-        child_args.push("--local".to_owned());
+        child_args.push(
+            if remote_settings.is_some() {
+                "--remote"
+            } else {
+                "--local"
+            }
+            .to_owned(),
+        );
         if let Some(raw) = raw_idle_timeout {
             child_args.push("--idle-timeout".to_owned());
             child_args.push(raw);
@@ -563,6 +608,9 @@ fn caddy_command() -> Command {
             Command::new("trust")
                 .about("Trust Caddy's certificate on this machine (asks for your password)"),
         )
+        .subcommand(Command::new("trust-remote")
+            .about("Trust a remote machine's Caddy certificate (macOS)")
+            .arg(Arg::new("ssh-target").value_name("ssh-target")))
 }
 
 fn service_command() -> Command {
