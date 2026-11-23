@@ -255,6 +255,14 @@ pub fn read_live_stacks(caddy_dir: &Path) -> Result<Vec<LiveStack>, String> {
 }
 
 pub(crate) fn signal_live_stack(caddy_dir: &Path, stack: &LiveStack) -> Result<(), String> {
+    signal_stack_owner(caddy_dir, stack, libc::SIGTERM)
+}
+
+pub(crate) fn signal_stack_owner(
+    caddy_dir: &Path,
+    stack: &LiveStack,
+    signal: i32,
+) -> Result<(), String> {
     if stack.pid <= 0 || stack.pid == current_pid() {
         return Err("cannot stop this stack".to_owned());
     }
@@ -281,7 +289,7 @@ pub(crate) fn signal_live_stack(caddy_dir: &Path, stack: &LiveStack) -> Result<(
     }
     // SAFETY: the positive, non-self PID and its exact persisted owner were
     // verified under the registry lock. The supervisor owns its service groups.
-    if unsafe { libc::kill(stack.pid, libc::SIGTERM) } != 0 {
+    if unsafe { libc::kill(stack.pid, signal) } != 0 {
         return Err(format!("signal stack: {}", io::Error::last_os_error()));
     }
     Ok(())

@@ -8,3 +8,4 @@ pub mod serve;
 pub mod stack;
 pub mod stop;
 mod watch;
+mod worktrees;

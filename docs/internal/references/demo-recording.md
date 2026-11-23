@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-22 20:25
+last_modified: 2026-11-22 21:25
 status: current
 ---
 
@@ -201,7 +201,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Services panel with restart controls                                                                                                                                     | `guides/devtools.md`, "Services panel"; `stacks/recovery.md`, "Restart services"     | `devtools` overview-2; promo line-4; toolbar reload icon: **No demo** |
 | Worktree picker and worktree search                                                                                                                                      | `stacks/worktrees.md`, "Switch checkouts"                                            | `devtools` overview-3                                                 |
 | Submodule discovery, external owning manifests, red worktree error icon, and occupied checkout Open/Stop stack actions with custom HTTPS ports                           | `stacks/worktrees.md`                                                                | **No demo**                                                           |
-| Service status updates with unavailable checkouts                                                                                                                        | `stacks/worktrees.md`, "Checkouts you cannot pick"                                   | **No demo**                                                           |
+| Service status updates with unavailable checkouts; persisted selection, switch rollback and whole-repository recovery after a failed restoration                         | `stacks/worktrees.md`, "Switch checkouts", "Checkouts you cannot pick"               | **No demo**                                                           |
 | Recovery dialog after the page's service or a dependency exits; stack shutdown preserves the loaded app without flashing recovery and cancels health polling immediately | `stacks/recovery.md`, "When a service fails"; `guides/devtools.md`, "Services panel" | No demo                                                               |
 | Host resource usage                                                                                                                                                      | `guides/devtools.md`, "Host resource usage"                                          | No demo                                                               |
 | Running agents segment listing the agents in the checkout with harness, state, name, subdirectory, and last activity                                                     | `guides/devtools.md`, "Running agents"; `reference/chat-api.md`, "Running agents"    | **No demo**                                                           |

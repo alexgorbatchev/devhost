@@ -1,9 +1,10 @@
 use super::*;
 use crate::manifest::{self, Inputs};
 use crate::services::{
-    control::RuntimeControl,
+    control::{RuntimeControl, RuntimeRequest, WorktreeOperation},
     detach::format_go_duration,
     watch::{InputWatch, ServiceWatches},
+    worktrees::Worktrees,
 };
 
 /// Owns mutation of the accepted stack. Watch callbacks only enqueue events;
@@ -28,6 +29,12 @@ pub(super) struct Runtime<'a> {
     pub control_port: u16,
     pub watches: ServiceWatches,
     pub manifest_watch: Option<InputWatch>,
+    pub worktrees: Option<Worktrees>,
+    pub blocked: BTreeMap<String, String>,
+}
+
+struct AcceptedChange {
+    cleanup: Result<(), String>,
 }
 
 impl Runtime<'_> {
@@ -88,8 +95,14 @@ impl Runtime<'_> {
             }
             self.watches.poll(&self.manifest.name);
             while let Ok(request) = self.control.requests.try_recv() {
-                let result = self.restart(&request.names);
-                let _ = request.result.send(result);
+                match request {
+                    RuntimeRequest::Restart { names, result } => {
+                        let _ = result.send(self.restart(&names));
+                    }
+                    RuntimeRequest::Worktrees { operation, result } => {
+                        let _ = result.send(self.worktree_operation(operation));
+                    }
+                }
                 if self.cancel.load(Ordering::Relaxed) {
                     break;
                 }
@@ -179,6 +192,23 @@ impl Runtime<'_> {
         let names: BTreeSet<_> = names.iter().cloned().collect();
         let order = self.order()?;
         for name in order.iter().filter(|name| names.contains(*name)) {
+            if let Some(repository) = self
+                .worktrees
+                .as_ref()
+                .map(Worktrees::snapshot)
+                .unwrap_or_default()
+                .into_iter()
+                .find(|repository| {
+                    !repository.error.is_empty() && repository.service_names.contains(name)
+                })
+            {
+                let group: Vec<_> = order
+                    .iter()
+                    .filter(|member| repository.service_names.contains(member))
+                    .cloned()
+                    .collect();
+                return self.recover_worktree(&group);
+            }
             self.log(&format!("restarting service: {name}"));
             self.watches.clear_dirty(name);
             self.stop_group(std::slice::from_ref(name))?;
@@ -193,6 +223,194 @@ impl Runtime<'_> {
         Ok(())
     }
 
+    fn recover_worktree(&mut self, names: &[String]) -> Result<(), String> {
+        for name in names {
+            self.watches.clear_dirty(name);
+        }
+        let result = self.stop_group(names).and_then(|_| {
+            for name in names {
+                self.blocked.remove(name);
+            }
+            self.start_group(names, PortReassignment::Preserve)?;
+            self.replace_routes()?;
+            self.update_remote()
+        });
+        let result = result.map_err(|error| join_errors(error, self.stop_group(names)));
+        for name in names {
+            match &result {
+                Ok(()) => {
+                    self.blocked.remove(name);
+                }
+                Err(error) => {
+                    self.blocked.insert(name.clone(), error.clone());
+                }
+            }
+        }
+        self.worktrees
+            .as_mut()
+            .expect("repository recovery")
+            .finish(&self.blocked);
+        result
+    }
+
+    fn worktree_operation(
+        &mut self,
+        operation: WorktreeOperation,
+    ) -> Result<Vec<crate::devtools::WorktreeRepository>, String> {
+        if self.worktrees.is_none() {
+            return Err("Worktrees are disabled.".to_owned());
+        }
+        match operation {
+            WorktreeOperation::Refresh => self.refresh_worktrees()?,
+            WorktreeOperation::Switch {
+                repository_id,
+                path,
+            } => self.switch_worktree(&repository_id, &path)?,
+            WorktreeOperation::StopOwner {
+                repository_id,
+                path,
+                owner_id,
+            } => {
+                let owner = self
+                    .worktrees
+                    .as_mut()
+                    .expect("enabled worktrees")
+                    .occupant(&repository_id, &path, &owner_id)?;
+                if self.cancel.load(Ordering::Relaxed) {
+                    return Err("worktree operation canceled".to_owned());
+                }
+                caddy::stacks::signal_stack_owner(&self.options.caddy_dir, &owner, libc::SIGTERM)?;
+                let mut deadline = Instant::now() + SHUTDOWN_GRACE_PERIOD;
+                let mut forced = false;
+                while owner.is_alive() {
+                    if self.cancel.load(Ordering::Relaxed) {
+                        return Err("worktree operation canceled".to_owned());
+                    }
+                    if Instant::now() >= deadline {
+                        if forced {
+                            return Err("stack did not exit after being force-stopped".to_owned());
+                        }
+                        caddy::stacks::signal_stack_owner(
+                            &self.options.caddy_dir,
+                            &owner,
+                            libc::SIGKILL,
+                        )?;
+                        forced = true;
+                        deadline = Instant::now() + Duration::from_secs(1);
+                    }
+                    thread::sleep(Duration::from_millis(100));
+                }
+                self.worktrees
+                    .as_mut()
+                    .expect("enabled worktrees")
+                    .refresh()?;
+            }
+        }
+        Ok(self
+            .worktrees
+            .as_ref()
+            .map(Worktrees::snapshot)
+            .unwrap_or_default())
+    }
+
+    fn refresh_worktrees(&mut self) -> Result<(), String> {
+        let worktrees = self.worktrees.as_mut().expect("enabled worktrees");
+        worktrees.refresh()?;
+        let repositories = worktrees.snapshot();
+        let mut errors = Vec::new();
+        for repository in repositories {
+            if repository.running_path.is_empty()
+                || repository
+                    .worktrees
+                    .iter()
+                    .any(|entry| entry.path == repository.selected_path && entry.available)
+            {
+                continue;
+            }
+            let error = format!(
+                "Selected checkout {} is unavailable; choose a checkout to recover repository {}.",
+                repository.selected_path, repository.name
+            );
+            let names: Vec<_> = self
+                .order()?
+                .into_iter()
+                .filter(|name| repository.service_names.contains(name))
+                .collect();
+            for name in &names {
+                self.watches.clear_dirty(name);
+            }
+            let error = match self.stop_group(&names) {
+                Ok(()) => error,
+                Err(cleanup) => {
+                    errors.push(cleanup.clone());
+                    format!("{error}\n{cleanup}")
+                }
+            };
+            for name in names {
+                self.blocked.insert(name, error.clone());
+            }
+            self.log(&error);
+        }
+        self.worktrees
+            .as_mut()
+            .expect("enabled worktrees")
+            .finish(&self.blocked);
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors.join("\n"))
+        }
+    }
+
+    fn switch_worktree(&mut self, id: &str, path: &Path) -> Result<(), String> {
+        let previous = self
+            .worktrees
+            .as_ref()
+            .ok_or("Worktrees are disabled.")?
+            .clone();
+        let saved = previous.saved()?;
+        let old_path = previous
+            .snapshot()
+            .into_iter()
+            .find(|repository| repository.id == id)
+            .map(|repository| repository.selected_path)
+            .unwrap_or_default();
+        let transition = format!(
+            "{} -> {}",
+            Path::new(&old_path)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy(),
+            path.file_name().unwrap_or_default().to_string_lossy()
+        );
+        let result = (|| {
+            let worktrees = self.worktrees.as_mut().expect("enabled worktrees");
+            let configuration = worktrees.prepare(id, path)?;
+            worktrees.select(id, path)?;
+            self.log(&format!(
+                "Switching worktree: {transition}. Restarting stack."
+            ));
+            self.apply(
+                configuration,
+                self.manifest.domain_suffix.clone(),
+                self.manifest.caddy.clone(),
+                &format!("worktree switched: {transition}"),
+                Change::Switch,
+            )
+        })();
+        if let Err(error) = result {
+            let error = join_errors(error, previous.restore_saved(saved.as_ref()));
+            self.worktrees = Some(previous);
+            self.worktrees
+                .as_mut()
+                .expect("restored worktrees")
+                .finish(&self.blocked);
+            self.log(&format!("Worktree switch failed: {transition}: {error}"));
+            return Err(error);
+        }
+        result.expect("accepted worktree change").cleanup
+    }
+
     fn order(&self) -> Result<Vec<String>, String> {
         match &self.manifest.configuration {
             Some(configuration) => super::super::resolve::resolve_service_order(configuration),
@@ -201,7 +419,13 @@ impl Runtime<'_> {
     }
 
     fn reload_disk(&mut self) -> Result<(), String> {
-        let (candidate, mut inputs) = manifest::read_with_inputs(&self.manifest.manifest_path);
+        let path = self
+            .manifest
+            .configuration
+            .as_ref()
+            .map(|configuration| &configuration.manifest_path)
+            .unwrap_or(&self.manifest.manifest_path);
+        let (candidate, mut inputs) = manifest::read_with_inputs(path);
         let watch = self
             .manifest_watch
             .as_mut()
@@ -218,6 +442,17 @@ impl Runtime<'_> {
         }
         watch.update(inputs)?;
         let candidate = candidate.map_err(|error| error.message)?;
+        if !candidate.worktrees.enabled
+            && let Some(repository) = self
+                .worktrees
+                .as_ref()
+                .map(Worktrees::snapshot)
+                .unwrap_or_default()
+                .into_iter()
+                .find(|repository| repository.selected_path != repository.configured_path)
+        {
+            return self.switch_worktree(&repository.id, Path::new(&repository.configured_path));
+        }
         let names = candidate
             .inputs
             .files
@@ -235,7 +470,9 @@ impl Runtime<'_> {
             self.manifest.domain_suffix.clone(),
             self.manifest.caddy.clone(),
             &format!("configuration reloaded: {names}"),
-        )
+            Change::Reload,
+        )?
+        .cleanup
     }
 
     fn reload_shared(&mut self, path: &Path, shared: &mut MachineConfig) -> Result<(), String> {
@@ -295,22 +532,32 @@ impl Runtime<'_> {
         suffix: String,
         settings: config::CaddySettings,
         message: &str,
-    ) -> Result<(), String> {
+        change: Change,
+    ) -> Result<AcceptedChange, String> {
         if self.cancel.load(Ordering::Relaxed) {
             return Err("configuration reload canceled".to_owned());
         }
-        if self.manifest.configuration.as_ref() == Some(&configuration)
+        if change == Change::Reload
+            && self.manifest.configuration.as_ref() == Some(&configuration)
             && self.manifest.domain_suffix == suffix
             && self.manifest.caddy == settings
         {
-            return Ok(());
+            return Ok(AcceptedChange { cleanup: Ok(()) });
         }
         let previous = self.manifest.clone();
+        let previous_blocked = self.blocked.clone();
+        let previous_inputs = self
+            .manifest_watch
+            .as_ref()
+            .map(|watch| watch.inputs.clone());
         let previous_order = self.order()?;
         super::super::resolve::resolve_service_order(&configuration)?;
         super::super::resolve::validate_requested_services(&configuration, &previous.requested)?;
         let mut preserved = BTreeMap::new();
         for (name, service) in &configuration.services {
+            if change == Change::Switch {
+                break;
+            }
             if !service.port.is_some_and(|port| port.auto) {
                 continue;
             }
@@ -347,6 +594,14 @@ impl Runtime<'_> {
             },
         )?;
         candidate.caddy = settings;
+        candidate.manifest_path = previous.manifest_path.clone();
+        let state = self
+            .options
+            .caddy_dir
+            .parent()
+            .ok_or("Caddy state directory requires a parent")?
+            .to_owned();
+        let mut next_worktrees = Worktrees::build(&candidate, &state, self.worktrees.as_ref())?;
         for service in candidate
             .services
             .values()
@@ -355,6 +610,25 @@ impl Runtime<'_> {
             validate_service_working_directory(service)?;
         }
         let mut affected = affected_services(&previous, &candidate);
+        if change == Change::Switch {
+            affected.extend(
+                previous
+                    .services
+                    .keys()
+                    .chain(candidate.services.keys())
+                    .cloned(),
+            );
+        }
+        loop {
+            let before = affected.len();
+            for worktrees in self.worktrees.iter().chain(next_worktrees.iter()) {
+                worktrees.expand_affected(&mut affected, &previous);
+            }
+            expand_dependents(&previous, &candidate, &mut affected);
+            if before == affected.len() {
+                break;
+            }
+        }
         let old_names: Vec<_> = previous_order
             .into_iter()
             .filter(|name| affected.contains(name))
@@ -376,12 +650,19 @@ impl Runtime<'_> {
         let result = (|| {
             self.stop_group(&old_names)?;
             *self.manifest = candidate;
+            for name in &affected {
+                self.blocked.remove(name);
+            }
             self.start_reload(&mut affected)?;
             if self.cancel.load(Ordering::Relaxed) {
                 return Err("configuration reload canceled".to_owned());
             }
             self.replace_routes()?;
-            self.update_remote()
+            self.update_remote()?;
+            if let Some(watch) = &mut self.manifest_watch {
+                watch.update(configuration.inputs.clone())?;
+            }
+            Ok::<_, String>(())
         })();
         if let Err(error) = result {
             let failed_names: Vec<_> = self
@@ -391,18 +672,27 @@ impl Runtime<'_> {
                 .collect();
             let mut error = join_errors(error, self.stop_group(&failed_names));
             *self.manifest = previous;
+            self.blocked = previous_blocked;
+            if let (Some(watch), Some(inputs)) = (&mut self.manifest_watch, previous_inputs) {
+                error = join_errors(error, watch.update(inputs));
+            }
             if !self.cancel.load(Ordering::Relaxed) {
                 let restore: Vec<_> = self
                     .order()?
                     .into_iter()
                     .filter(|name| affected.contains(name))
                     .collect();
-                error = join_errors(
-                    error,
-                    self.start_group(&restore, PortReassignment::Preserve),
-                );
-                error = join_errors(error, self.replace_routes());
-                error = join_errors(error, self.update_remote());
+                let restored = self
+                    .start_group(&restore, PortReassignment::Preserve)
+                    .and_then(|_| self.replace_routes())
+                    .and_then(|_| self.update_remote());
+                if let Err(failure) = restored {
+                    let failure = join_errors(failure, self.stop_group(&restore));
+                    for name in restore {
+                        self.blocked.insert(name, failure.clone());
+                    }
+                    error = format!("{error}\nrestore previous services: {failure}");
+                }
             }
             error = join_errors(error, self.release_except(&old_hosts, &old_ports));
             error = join_errors(
@@ -419,19 +709,46 @@ impl Runtime<'_> {
         }
         let hosts = collect_claimed_hosts(&self.manifest.services);
         let ports = fixed_ports(self.manifest);
-        self.release_except(&hosts, &ports)?;
-        self.register(&configuration, &self.manifest.name)?;
-        if self.launch.detached || self.manifest.remote.is_some() {
-            caddy::stacks::set_stack_ready(
+        let newly_enabled = self.worktrees.is_none() && next_worktrees.is_some();
+        for name in &affected {
+            self.blocked.remove(name);
+        }
+        if let Some(worktrees) = &mut next_worktrees {
+            worktrees.finish(&self.blocked);
+        }
+        self.worktrees = next_worktrees;
+        // Routing and services accepted this configuration. Cleanup failures
+        // must not restore an old selection over the running checkout.
+        let mut failures = Vec::new();
+        if let Err(error) = self.release_except(&hosts, &ports) {
+            failures.push(error);
+        }
+        if let Err(error) = self.register(&configuration, &self.manifest.name) {
+            failures.push(error);
+        }
+        if newly_enabled && let Err(error) = Worktrees::forget(&self.manifest.manifest_path, &state)
+        {
+            failures.push(error);
+        }
+        if (self.launch.detached || self.manifest.remote.is_some())
+            && let Err(error) = caddy::stacks::set_stack_ready(
                 &self.options.caddy_dir,
                 collect_manifest_service_urls(self.manifest),
-            )?;
+            )
+        {
+            failures.push(error);
         }
         self.progress.stack_name = self.manifest.name.clone();
         self.log(message);
         log_service_urls(self.manifest, &self.options.output);
         log_stopped_services(self.manifest, &self.options.output);
-        Ok(())
+        Ok(AcceptedChange {
+            cleanup: if failures.is_empty() {
+                Ok(())
+            } else {
+                Err(failures.join("\n"))
+            },
+        })
     }
 
     fn register(&self, configuration: &Manifest, name: &str) -> Result<(), String> {
@@ -609,6 +926,9 @@ impl Runtime<'_> {
 
     fn start_group(&mut self, names: &[String], ports: PortReassignment) -> Result<(), String> {
         for name in names {
+            if self.blocked.contains_key(name) {
+                continue;
+            }
             if self.cancel.load(Ordering::Relaxed) {
                 return Err("configuration reload canceled".to_owned());
             }
@@ -676,6 +996,12 @@ impl Runtime<'_> {
     }
 }
 
+#[derive(PartialEq)]
+enum Change {
+    Reload,
+    Switch,
+}
+
 fn fixed_ports(manifest: &ResolvedManifest) -> Vec<(String, u16)> {
     manifest
         .services
@@ -702,6 +1028,15 @@ fn affected_services(previous: &ResolvedManifest, next: &ResolvedManifest) -> BT
             .filter(|name| !previous.services.contains_key(*name))
             .cloned(),
     );
+    expand_dependents(previous, next, &mut affected);
+    affected
+}
+
+fn expand_dependents(
+    previous: &ResolvedManifest,
+    next: &ResolvedManifest,
+    affected: &mut BTreeSet<String>,
+) {
     loop {
         let before = affected.len();
         for manifest in [previous, next] {
@@ -716,7 +1051,7 @@ fn affected_services(previous: &ResolvedManifest, next: &ResolvedManifest) -> BT
             }
         }
         if before == affected.len() {
-            return affected;
+            return;
         }
     }
 }

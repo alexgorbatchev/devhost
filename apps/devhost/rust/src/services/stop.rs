@@ -1,7 +1,8 @@
 use std::{
     env, fs,
+    io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
     thread,
     time::{Duration, Instant},
 };
@@ -195,14 +196,18 @@ pub fn discover_git_repository(cwd: &Path) -> Result<GitRepository, String> {
 }
 
 pub fn run_git(cwd: &Path, args: &[&str]) -> Result<String, String> {
+    // Drain into owned files while polling: Git output can exceed a pipe's
+    // capacity before it exits, including worktree and remote-ref listings.
+    let mut stdout = ctx(tempfile::tempfile(), "create Git stdout")?;
+    let mut stderr = ctx(tempfile::tempfile(), "create Git stderr")?;
     let mut command = Command::new("git");
     command
         .arg("-C")
         .arg(cwd)
         .args(args)
         .env_clear()
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stdout(ctx(stdout.try_clone(), "capture Git stdout")?)
+        .stderr(ctx(stderr.try_clone(), "capture Git stderr")?);
     for (key, value) in env::vars_os() {
         let key_str = key.to_string_lossy();
         if key_str.starts_with("GIT_") || key_str == "LC_ALL" {
@@ -214,9 +219,9 @@ pub fn run_git(cwd: &Path, args: &[&str]) -> Result<String, String> {
 
     let mut child = path_ctx(command.spawn(), "git in", cwd)?;
     let deadline = Instant::now() + GIT_WORKTREE_TIMEOUT;
-    loop {
+    let status = loop {
         match path_ctx(child.try_wait(), "git in", cwd)? {
-            Some(_) => break,
+            Some(status) => break status,
             None if Instant::now() < deadline => thread::sleep(Duration::from_millis(10)),
             None => {
                 let _ = child.kill();
@@ -224,18 +229,23 @@ pub fn run_git(cwd: &Path, args: &[&str]) -> Result<String, String> {
                 return Err(format!("git in {}: timed out", cwd.display()));
             }
         }
-    }
-    let output = path_ctx(child.wait_with_output(), "git in", cwd)?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
+    };
+    let read = |file: &mut fs::File| -> Result<String, String> {
+        ctx(file.seek(SeekFrom::Start(0)), "rewind Git output")?;
+        let mut text = String::new();
+        ctx(file.read_to_string(&mut text), "read Git output")?;
+        Ok(text)
+    };
+    if !status.success() {
+        let stderr = read(&mut stderr)?;
         return Err(format!(
             "git in {}: {}: {}",
             cwd.display(),
-            output.status,
+            status,
             stderr.trim()
         ));
     }
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = read(&mut stdout)?;
     Ok(stdout.strip_suffix('\n').unwrap_or(&stdout).to_owned())
 }
 

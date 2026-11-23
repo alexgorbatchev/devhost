@@ -1,5 +1,6 @@
 use std::{
     collections::BTreeSet,
+    path::PathBuf,
     sync::{Arc, Mutex, mpsc},
     time::{Duration, Instant},
 };
@@ -69,22 +70,41 @@ impl Drop for ActivityGuard {
     }
 }
 
-pub(crate) struct RestartRequest {
-    pub names: Vec<String>,
-    pub result: mpsc::Sender<Result<(), String>>,
+pub(crate) enum WorktreeOperation {
+    Refresh,
+    Switch {
+        repository_id: String,
+        path: PathBuf,
+    },
+    StopOwner {
+        repository_id: String,
+        path: PathBuf,
+        owner_id: String,
+    },
+}
+
+pub(crate) enum RuntimeRequest {
+    Restart {
+        names: Vec<String>,
+        result: mpsc::Sender<Result<(), String>>,
+    },
+    Worktrees {
+        operation: WorktreeOperation,
+        result: mpsc::Sender<Result<Vec<crate::devtools::WorktreeRepository>, String>>,
+    },
 }
 
 /// The receiving half belongs to exactly one stack loop, which serializes changes.
 pub struct RuntimeControl {
-    sender: mpsc::Sender<RestartRequest>,
-    pub(crate) requests: mpsc::Receiver<RestartRequest>,
+    sender: mpsc::Sender<RuntimeRequest>,
+    pub(crate) requests: mpsc::Receiver<RuntimeRequest>,
     pub(crate) activity: ActivityTracker,
     pub(crate) dirty: Arc<Mutex<BTreeSet<String>>>,
 }
 
 #[derive(Clone)]
 pub struct RuntimeHandle {
-    requests: mpsc::Sender<RestartRequest>,
+    requests: mpsc::Sender<RuntimeRequest>,
     pub activity: ActivityTracker,
     dirty: Arc<Mutex<BTreeSet<String>>>,
 }
@@ -126,7 +146,19 @@ impl RuntimeHandle {
     ) -> Result<mpsc::Receiver<Result<(), String>>, String> {
         let (result, receiver) = mpsc::channel();
         self.requests
-            .send(RestartRequest { names, result })
+            .send(RuntimeRequest::Restart { names, result })
+            .map_err(|_| "devhost is shutting down".to_owned())?;
+        Ok(receiver)
+    }
+
+    pub(crate) fn worktrees(
+        &self,
+        operation: WorktreeOperation,
+    ) -> Result<mpsc::Receiver<Result<Vec<crate::devtools::WorktreeRepository>, String>>, String>
+    {
+        let (result, receiver) = mpsc::channel();
+        self.requests
+            .send(RuntimeRequest::Worktrees { operation, result })
             .map_err(|_| "devhost is shutting down".to_owned())?;
         Ok(receiver)
     }

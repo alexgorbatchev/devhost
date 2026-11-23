@@ -1,5 +1,7 @@
 use super::*;
 use devhost_rust::services::control::{RuntimeControl, RuntimeHandle};
+#[path = "worktrees.rs"]
+mod worktrees;
 
 struct Stack {
     running: RunningFileStack,

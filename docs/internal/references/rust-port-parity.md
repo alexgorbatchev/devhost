@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-22 20:25
+last_modified: 2026-11-22 21:20
 status: current
 ---
 
@@ -83,6 +83,20 @@ fixtures, embedded UI/design assets, or shared test inputs change. `just rust
 check` runs its formatting, Clippy, and 90% line/function coverage gates. Coverage
 uses line-table debug information in a separate instrumented target, preserving
 the normal development target and its incremental state.
+
+## Native worktree tests
+
+`just rust test --lib worktree` exercises real Git repositories, linked
+checkouts, submodules, detached and locked checkouts, default branch discovery,
+external owning manifests, private saved selections, and request validation.
+
+`just rust test --test stack_lifecycle runtime::worktrees` uses isolated native
+Caddy instances and real services to check whole-stack switching, saved
+selection restore, selected-manifest reload, occupied checkout ownership,
+rollback, unavailable checkout recovery, and disabling worktrees. Failed
+restoration leaves the repository stopped; restarting one member retries its
+whole group. These fixtures own and join their services before removing their
+temporary directories.
 
 ## Catch up with Go main
 

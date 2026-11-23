@@ -607,6 +607,45 @@ pub(crate) fn read_host_registrations(
     Ok(registrations)
 }
 
+pub(crate) fn owner_urls(
+    caddy_dir: &Path,
+    pid: i32,
+    identity: &str,
+) -> Result<Vec<String>, String> {
+    let settings = read_running_settings(caddy_dir, &CaddySettings::default())?;
+    let mut urls = BTreeSet::new();
+    for path in files::json_files(
+        &caddy_dir.join("routes/.registrations"),
+        "read managed route registrations",
+    )? {
+        let bytes = match fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+            Err(error) => return path_ctx(Err(error), "read managed route registration", &path),
+        };
+        let record: RouteRegistration = path_ctx(
+            serde_json::from_slice(&bytes),
+            "read managed route registration",
+            &path,
+        )?;
+        if record.owner_pid == pid && record.owner_start_identity == identity {
+            let path = record
+                .path
+                .split('*')
+                .next()
+                .filter(|path| !path.is_empty())
+                .unwrap_or("/");
+            urls.insert(files::create_managed_url(
+                "https",
+                &record.host,
+                settings.https_port,
+                path,
+            ));
+        }
+    }
+    Ok(urls.into_iter().collect())
+}
+
 fn route_priority_weight(path: &str) -> isize {
     if path == "/" {
         return -1;

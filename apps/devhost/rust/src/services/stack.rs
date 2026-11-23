@@ -443,6 +443,61 @@ pub fn start_stack(
         caddy::ensure_managed_caddy_config(&options.caddy_dir, &shared.caddy)?;
         cleanup_stale_stack_records(&options.caddy_dir)?;
 
+        let state = options
+            .caddy_dir
+            .parent()
+            .ok_or_else(|| "Caddy state directory requires a parent".to_owned())?;
+        let mut worktrees = if options.serve_session {
+            None
+        } else {
+            super::worktrees::Worktrees::build(manifest, state, None)?
+        };
+        let mut blocked = BTreeMap::new();
+        let mut initial_order = service_order.to_vec();
+        if let Some(previous) = &mut worktrees {
+            let (configuration, restore_errors) = previous.restore();
+            blocked = restore_errors;
+            if let Some(configuration) = configuration {
+                let restored = (|| {
+                    let order = super::resolve::resolve_service_order(&configuration)?;
+                    let mut next = resolve_service_ports(
+                        &configuration,
+                        &PortResolutionOptions {
+                            requested: manifest.requested.clone(),
+                            domain_suffix: manifest.domain_suffix.clone(),
+                            remote_mode: manifest.remote.is_some(),
+                            remote: manifest.remote.clone(),
+                            ..Default::default()
+                        },
+                    )?;
+                    next.manifest_path = manifest.manifest_path.clone();
+                    next.caddy = manifest.caddy.clone();
+                    let groups = super::worktrees::Worktrees::build(&next, state, Some(previous))?;
+                    Ok::<_, String>((next, order, groups))
+                })();
+                match restored {
+                    Ok((next, order, groups)) => {
+                        *manifest = next;
+                        initial_order = order;
+                        worktrees = groups;
+                    }
+                    Err(error) => {
+                        for repository in previous.snapshot() {
+                            if repository.selected_path != repository.configured_path {
+                                for name in repository.service_names {
+                                    blocked.insert(name, error.clone());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        options.configuration = manifest.configuration.clone();
+        for error in blocked.values().collect::<BTreeSet<_>>() {
+            options.output.log_stdout(&manifest.name, error);
+        }
+
         let control = options
             .runtime_control
             .take()
@@ -569,16 +624,27 @@ pub fn start_stack(
         let mut watches =
             super::watch::ServiceWatches::new(control.dirty.clone(), options.output.clone());
         for service in manifest.services.values() {
+            if blocked.contains_key(&service.name) {
+                continue;
+            }
             watches.start(service, &manifest.name)?;
         }
         let mut manifest_watch = if options.serve_session {
             None
         } else {
-            let (_, inputs) = crate::manifest::read_with_inputs(&manifest.manifest_path);
+            let path = manifest
+                .configuration
+                .as_ref()
+                .map(|configuration| &configuration.manifest_path)
+                .unwrap_or(&manifest.manifest_path);
+            let (_, inputs) = crate::manifest::read_with_inputs(path);
             Some(super::watch::InputWatch::new(inputs)?)
         };
 
-        for service_name in service_order {
+        for service_name in &initial_order {
+            if blocked.contains_key(service_name) {
+                continue;
+            }
             if let Some(sig) = check_termination_signal(
                 &cancel,
                 options.install_signal_handlers,
@@ -781,6 +847,9 @@ pub fn start_stack(
                 }
             }
             for name in ordered_manifest_service_names(manifest) {
+                if blocked.contains_key(&name) {
+                    continue;
+                }
                 let Some(service) = manifest.services.get(&name) else {
                     continue;
                 };
@@ -832,6 +901,10 @@ pub fn start_stack(
 
         was_ready = true;
 
+        if let Some(worktrees) = &mut worktrees {
+            worktrees.finish(&blocked);
+        }
+
         if let Some(watch) = &mut manifest_watch {
             watch.check();
         }
@@ -855,6 +928,8 @@ pub fn start_stack(
             control_port: control_server.port(),
             watches,
             manifest_watch,
+            worktrees,
+            blocked,
         }
         .run(shared)
     })();
