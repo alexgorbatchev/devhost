@@ -108,8 +108,17 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 		"devhost stack restart": {
 			Env: []cobrahelptree.EnvSpec{manifestEnvironmentSpec},
 			Quickstart: []cobrahelptree.QuickstartItem{
-				{Command: "devhost stack restart", Comment: "restart this project's running stack"},
-				{Command: "devhost stack restart --all", Comment: "use the new binary for every running stack"},
+				{Command: "devhost stack restart --all", Comment: "restart the stack found from this directory"},
+				{Command: "devhost stack restart -m path/to/devhost.toml", Comment: "restart the stack for a specific manifest"},
+			},
+		},
+		rootCommandName + " " + restartAllCommandName: {
+			Env: []cobrahelptree.EnvSpec{
+				{Name: "DEVHOST_STATE_DIR", Description: "State directory to scan for running instances"},
+				{Name: "XDG_STATE_HOME", Description: "Parent of the devhost state directory when DEVHOST_STATE_DIR is unset"},
+			},
+			Quickstart: []cobrahelptree.QuickstartItem{
+				{Command: "devhost restart-all", Comment: "replace all running instances in the state directory"},
 			},
 		},
 		caddyCommandPath + " " + trustRemoteCommandName: {

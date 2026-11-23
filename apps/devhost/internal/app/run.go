@@ -69,16 +69,16 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 		}
 
 		return 0
-	case cli.KindStackRestart:
-		var manifestPath string
-		if !arguments.All {
-			manifestPath, err = resolveManifestPath(arguments.ManifestPath, cwd)
+	case cli.KindStackRestart, cli.KindRestartAll:
+		options := services.RestartStacksOptions{All: arguments.Kind == cli.KindRestartAll}
+		if !options.All {
+			options.ManifestPath, err = resolveManifestPath(arguments.ManifestPath, cwd)
 			if err != nil {
 				return fail(stderr, err)
 			}
 		}
 		logStdout, _ := cliout.ServiceOutputWriters(stdout, stderr, []string{"devhost"})
-		if err := services.RestartStacks(services.RestartStacksOptions{ManifestPath: manifestPath, All: arguments.All}, readEnvironment(), logStdout); err != nil {
+		if err := services.RestartStacks(options, readEnvironment(), logStdout); err != nil {
 			return fail(stderr, err)
 		}
 		return 0

@@ -113,7 +113,7 @@ func TestServeCommandDetachedDiscoveryAndCleanup(t *testing.T) {
 		t.Fatal("session did not publish the expected route change")
 		return caddy.LiveStack{}
 	}
-	run("stack", "restart", "--all")
+	run("restart-all")
 	stack = await(func(s caddy.LiveStack) bool {
 		return s.PID != stack.PID && s.Name == stack.Name && s.Ready && slices.Equal(s.URLs, []string{base})
 	})

@@ -248,12 +248,14 @@ This stops every stack whose root manifest is in the current Git repository, inc
 After installing a new devhost executable, replace the running supervisors:
 
 ```bash
-devhost stack restart --all
+devhost restart-all
 ```
 
-This includes manifest stacks and standalone `serve` sessions in the same state directory. To restart only this project's running stack, use `devhost stack restart`; `--manifest path/to/devhost.toml` selects another project. `--all` cannot be combined with `--manifest` or `DEVHOST_MANIFEST`.
+Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables).
 
-The command captures every selected process's arguments, working directory, and environment before stopping any stack. It then stops and relaunches each stack with the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+To restart a single project, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`.
+
+Both commands capture every selected process's arguments, working directory, and environment before stopping any stack. Each relaunch uses the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
 
 Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or `devhost stop --session <name>` for a standalone session, to stop its replacement. Command sessions preserve their generated names.
 

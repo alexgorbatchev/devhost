@@ -39,6 +39,7 @@ func TestParseCommandLineArgumentsRunsShellCompletion(t *testing.T) {
 			wantStdout: []string{
 				"caddy\tSet up and control the shared HTTPS proxy\n",
 				"completion\t",
+				"restart-all\tRestart every stack and serve session in this state directory\n",
 				"stack\tInspect the stacks running on this machine\n",
 				"start\tStart the services in devhost.toml\n",
 				"stop\tStop the running stack for this project\n",
