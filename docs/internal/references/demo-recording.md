@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-23 07:59
+last_modified: 2026-11-23 09:29
 status: current
 ---
 
@@ -193,6 +193,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Multiple hostnames for one service                                    | `guides/managed-caddy.md`, "Multiple hostnames for one service"                 | No demo                                          |
 | Shared Caddy settings in `config.toml`: plain HTTP and listener ports | `guides/shared-managed-caddy-settings.md`                                       | `shared-managed-caddy-settings` step-1 to step-5 |
 | Saving `config.toml` moves the running shared Caddy                   | `guides/shared-managed-caddy-settings.md`, "Changing settings while stacks run" | No demo                                          |
+| Upgraded runtime policy restarts the shared Caddy once on startup     | `guides/managed-caddy.md`, "Hostnames and DNS"                                  | No demo                                          |
 
 ### Devtools
 

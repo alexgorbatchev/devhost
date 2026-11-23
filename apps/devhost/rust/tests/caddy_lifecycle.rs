@@ -23,7 +23,22 @@ fn reserve_port() -> u16 {
     listener.local_addr().unwrap().port()
 }
 
-fn spawn_backend(body: &'static str) -> (u16, Arc<AtomicBool>, thread::JoinHandle<()>) {
+struct Backend {
+    port: u16,
+    stop: Arc<AtomicBool>,
+    handle: Option<thread::JoinHandle<()>>,
+}
+
+impl Drop for Backend {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            handle.join().unwrap();
+        }
+    }
+}
+
+fn spawn_backend(body: &'static str) -> Backend {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -49,7 +64,11 @@ fn spawn_backend(body: &'static str) -> (u16, Arc<AtomicBool>, thread::JoinHandl
             }
         }
     });
-    (port, stop, handle)
+    Backend {
+        port,
+        stop,
+        handle: Some(handle),
+    }
 }
 
 struct LiveCaddyGuard {
@@ -60,7 +79,47 @@ struct LiveCaddyGuard {
 impl Drop for LiveCaddyGuard {
     fn drop(&mut self) {
         let mut sink = Vec::new();
-        let _ = caddy::stop_in_directory(&self.dir, &self.settings, Mode::Agent, &mut sink);
+        if caddy::stop_in_directory(&self.dir, &self.settings, Mode::Agent, &mut sink).is_err() {
+            // A refusal under test must not keep this fixture's native proxy alive.
+            let running = caddy::files::read_applied_settings(&self.dir)
+                .ok()
+                .flatten()
+                .unwrap_or_else(|| self.settings.clone());
+            let _ = Command::new("caddy")
+                .args(["stop", "--address", &running.admin_address])
+                .output();
+        }
+    }
+}
+
+fn tls_connect(settings: &CaddySettings, host: &str) -> std::process::Output {
+    Command::new("openssl")
+        .args([
+            "s_client",
+            "-connect",
+            &format!("127.0.0.1:{}", settings.https_port),
+            "-servername",
+            host,
+            "-brief",
+        ])
+        .stdin(std::process::Stdio::null())
+        .output()
+        .unwrap()
+}
+
+fn wait_for_certificate(settings: &CaddySettings, host: &str) {
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let result = tls_connect(settings, host);
+        if result.status.success() {
+            return;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "TLS {host}: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        thread::sleep(Duration::from_millis(10));
     }
 }
 
@@ -121,12 +180,17 @@ fn two_isolated_live_caddy_instances_route_reload_and_stop_independently() {
 
     // Starting an already running instance succeeds idempotently.
     let mut again = Vec::new();
+    let original_receipt = fs::read(dir_a.join("runtime.json")).unwrap();
     caddy::start_in_directory(&dir_a, &settings_a, Mode::Agent, &mut again, false)
         .unwrap_or_else(|e| panic!("second start failed: {}", e.message));
     assert!(String::from_utf8_lossy(&again).contains("managed caddy is already running with"));
+    assert_eq!(
+        fs::read(dir_a.join("runtime.json")).unwrap(),
+        original_receipt
+    );
 
-    let (backend_a_port, stop_a, handle_a) = spawn_backend("hello-from-a");
-    let (backend_b_port, stop_b, handle_b) = spawn_backend("hello-from-b");
+    let backend_a = spawn_backend("hello-from-a");
+    let backend_b = spawn_backend("hello-from-b");
 
     caddy::routes::claim_host(&dir_a, "web-a.localhost", "/tmp/a/devhost.toml").unwrap();
     caddy::routes::claim_host(&dir_b, "web-b.localhost", "/tmp/b/devhost.toml").unwrap();
@@ -134,7 +198,7 @@ fn two_isolated_live_caddy_instances_route_reload_and_stop_independently() {
     let route_a = ActivateRouteOptions {
         proxy_local_origin: false,
         app_bind_host: "127.0.0.1".to_owned(),
-        app_port: backend_a_port,
+        app_port: backend_a.port,
         devtools_control_port: None,
         document_injection_port: None,
         host: "web-a.localhost".to_owned(),
@@ -145,7 +209,7 @@ fn two_isolated_live_caddy_instances_route_reload_and_stop_independently() {
     let route_b = ActivateRouteOptions {
         proxy_local_origin: false,
         app_bind_host: "127.0.0.1".to_owned(),
-        app_port: backend_b_port,
+        app_port: backend_b.port,
         devtools_control_port: None,
         document_injection_port: None,
         host: "web-b.localhost".to_owned(),
@@ -201,6 +265,205 @@ fn two_isolated_live_caddy_instances_route_reload_and_stop_independently() {
         .unwrap();
     assert_eq!(body_b, "hello-from-b");
 
+    // An unreceipted managed server is upgraded once, even when clients race.
+    let fixed = fs::read_to_string(dir_a.join("Caddyfile")).unwrap();
+    let legacy = fixed.replacen(
+        "    tls internal\n",
+        "    tls internal {\n        on_demand\n    }\n",
+        1,
+    );
+    fs::write(dir_a.join("Caddyfile"), legacy).unwrap();
+    let reload = Command::new("caddy")
+        .args([
+            "reload",
+            "--address",
+            &settings_a.admin_address,
+            "--config",
+            dir_a.join("Caddyfile").to_str().unwrap(),
+            "--adapter",
+            "caddyfile",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        reload.status.success(),
+        "{}",
+        String::from_utf8_lossy(&reload.stderr)
+    );
+    wait_for_certificate(&settings_a, "cached-unknown.example.com");
+    // Restore the fixed policy by reload: the unknown certificate stays cached.
+    caddy::start_in_directory(&dir_a, &settings_a, Mode::Agent, &mut again, true).unwrap();
+    assert!(
+        tls_connect(&settings_a, "cached-unknown.example.com")
+            .status
+            .success()
+    );
+    let root_ca = fs::read(dir_a.join("storage/pki/authorities/local/root.crt")).unwrap();
+    let registration_paths: Vec<_> = fs::read_dir(dir_a.join("routes/.registrations"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    let registrations: Vec<_> = registration_paths
+        .iter()
+        .map(|path| fs::read(path).unwrap())
+        .collect();
+    fs::remove_file(dir_a.join("runtime.json")).unwrap();
+    let logs = thread::scope(|scope| {
+        let starts: Vec<_> = (0..3)
+            .map(|_| {
+                scope.spawn(|| {
+                    let mut output = Vec::new();
+                    caddy::start_in_directory(&dir_a, &settings_a, Mode::Agent, &mut output, true)
+                        .unwrap_or_else(|error| panic!("upgrade failed: {}", error.message));
+                    output
+                })
+            })
+            .collect();
+        starts
+            .into_iter()
+            .map(|start| start.join().unwrap())
+            .collect::<Vec<_>>()
+    });
+    assert_eq!(
+        logs.iter()
+            .filter(|log| String::from_utf8_lossy(log)
+                .contains("Restarting shared Caddy for an updated runtime policy."))
+            .count(),
+        1
+    );
+    let upgraded_receipt = fs::read(dir_a.join("runtime.json")).unwrap();
+    assert_ne!(upgraded_receipt, original_receipt);
+    wait_for_certificate(&settings_a, "web-a.localhost");
+    wait_for_certificate(&settings_a, "stacks-a.localhost");
+    for host in [
+        "cached-unknown.example.com",
+        "fresh-unknown.example.com",
+        "unknown.localhost",
+    ] {
+        assert!(
+            !tls_connect(&settings_a, host).status.success(),
+            "unexpected certificate for {host}"
+        );
+    }
+    assert_eq!(
+        fs::read(dir_a.join("storage/pki/authorities/local/root.crt")).unwrap(),
+        root_ca
+    );
+    for (path, contents) in registration_paths.iter().zip(registrations) {
+        assert_eq!(fs::read(path).unwrap(), contents);
+    }
+    assert_eq!(
+        agent
+            .get(format!("http://127.0.0.1:{}/", settings_a.http_port))
+            .header("Host", "web-a.localhost")
+            .call()
+            .unwrap()
+            .body_mut()
+            .read_to_string()
+            .unwrap(),
+        "hello-from-a"
+    );
+
+    // A stale live PID never authorizes automatically stopping an unrelated process.
+    let pid = fs::read(dir_a.join("caddy.pid")).unwrap();
+    fs::write(dir_a.join("caddy.pid"), std::process::id().to_string()).unwrap();
+    let error =
+        caddy::start_in_directory(&dir_a, &settings_a, Mode::Agent, &mut again, true).unwrap_err();
+    assert!(
+        error.message.contains("refusing automatic restart"),
+        "{}",
+        error.message
+    );
+    fs::write(dir_a.join("caddy.pid"), pid).unwrap();
+    assert_eq!(
+        fs::read(dir_a.join("runtime.json")).unwrap(),
+        upgraded_receipt
+    );
+
+    // An older client refuses every shared route/settings/lifecycle mutation.
+    let mut future: serde_json::Value = serde_json::from_slice(&upgraded_receipt).unwrap();
+    future["restartGeneration"] = 2.into();
+    fs::write(
+        dir_a.join("runtime.json"),
+        serde_json::to_vec(&future).unwrap(),
+    )
+    .unwrap();
+    let config_before = fs::read(dir_a.join("Caddyfile")).unwrap();
+    assert!(
+        caddy::ensure_managed_caddy_config(&dir_a, &settings_a)
+            .unwrap_err()
+            .contains("Upgrade this devhost")
+    );
+    assert!(
+        caddy::start_in_directory(&dir_a, &settings_a, Mode::Agent, &mut again, true)
+            .unwrap_err()
+            .message
+            .contains("restart generation 2")
+    );
+    assert!(
+        caddy::stop_in_directory(&dir_a, &settings_a, Mode::Agent, &mut again)
+            .unwrap_err()
+            .message
+            .contains("restart generation 2")
+    );
+    assert!(
+        caddy::routes::apply_managed_settings(&dir_a, &settings_a, Mode::Agent, &mut again, true)
+            .unwrap_err()
+            .contains("restart generation 2")
+    );
+    assert!(
+        caddy::routes::replace_routes(
+            &dir_a,
+            &[],
+            std::slice::from_ref(&route_a),
+            "/tmp/a/devhost.toml",
+            Mode::Agent,
+            &mut again,
+            true
+        )
+        .unwrap_err()
+        .contains("restart generation 2")
+    );
+    assert_eq!(fs::read(dir_a.join("Caddyfile")).unwrap(), config_before);
+    fs::write(dir_a.join("runtime.json"), &upgraded_receipt).unwrap();
+
+    // Current-generation start reloads through the applied address and retains its PID.
+    let mut moved = settings_a.clone();
+    moved.admin_address = format!("127.0.0.1:{}", reserve_port());
+    caddy::start_in_directory(&dir_a, &moved, Mode::Agent, &mut again, true).unwrap();
+    caddy::ensure_admin_available(&moved.admin_address).unwrap();
+    assert_eq!(
+        fs::read(dir_a.join("runtime.json")).unwrap(),
+        upgraded_receipt
+    );
+    caddy::start_in_directory(&dir_a, &settings_a, Mode::Agent, &mut again, true).unwrap();
+
+    let mut invalid = settings_a.clone();
+    invalid.http_enabled = false;
+    let reject_reload = dir_a.join("caddy");
+    fs::write(
+        &reject_reload,
+        "#!/bin/sh\necho 'reload rejected' >&2\nexit 1\n",
+    )
+    .unwrap();
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&reject_reload, fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    let rejected = caddy::start_in_directory(&dir_a, &invalid, Mode::Agent, &mut again, true);
+    fs::remove_file(reject_reload).unwrap();
+    assert!(
+        rejected
+            .unwrap_err()
+            .message
+            .contains("Caddy reload failed")
+    );
+    assert_eq!(
+        caddy::files::read_applied_settings(&dir_a).unwrap(),
+        Some(settings_a.clone())
+    );
+    assert_eq!(fs::read(dir_a.join("Caddyfile")).unwrap(), config_before);
+
     // Apply unchanged settings is a no-op; applying new stackDirectoryAllowRemote reloads cleanly.
     assert!(
         !caddy::routes::apply_managed_settings(
@@ -230,6 +493,10 @@ fn two_isolated_live_caddy_instances_route_reload_and_stop_independently() {
     caddy::stop_in_directory(&dir_a, &updated_a, Mode::Agent, &mut stop_log_a).unwrap();
     assert!(String::from_utf8_lossy(&stop_log_a).contains("managed caddy stopped."));
     assert!(!dir_a.join("caddy.pid").exists());
+    assert_eq!(
+        fs::read(dir_a.join("runtime.json")).unwrap(),
+        upgraded_receipt
+    );
     assert!(!dir_a.join("applied.json").exists());
 
     let mut stop_log_b = Vec::new();
@@ -239,10 +506,8 @@ fn two_isolated_live_caddy_instances_route_reload_and_stop_independently() {
 
     drop(guard_a);
     drop(guard_b);
-    stop_a.store(true, Ordering::Relaxed);
-    stop_b.store(true, Ordering::Relaxed);
-    handle_a.join().unwrap();
-    handle_b.join().unwrap();
+    drop(backend_a);
+    drop(backend_b);
 }
 
 #[test]

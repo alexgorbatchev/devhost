@@ -66,6 +66,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Work in the Rust port worktree. Use the [Devhost Rust parity skill](.agents/skills/devhost-rust-parity/SKILL.md) and [parity runbook](docs/internal/references/rust-port-parity.md) for each port ticket.
 - Before implementing a behavior, use Rust Anything to record focused cases from the Go binary built at the ticket's reference SHA. Replay them against `apps/devhost/rust` before closing the ticket. Use the CLI if the MCP server is unavailable.
 - Keep generated recordings in the worktree's ignored `.state/` directory and fixture inputs in source when the ticket needs repeatable cases. Keep generated bridges and Go fallback dispatch out of the Rust crate.
+- Keep Caddy restart generations in `apps/devhost/rust/src/caddy/generation.rs` aligned with the Go runtime policy. Advance restart proof only after a healthy fresh process; hold the shared route lock through lifecycle changes and generation checks. Ordinary reloads preserve the receipt.
 - Record the Go and Rust revisions and replay results in the ticket. Check Go main for intervening changes that affect the behavior before accepting the result.
 
 ## Shared gotchas

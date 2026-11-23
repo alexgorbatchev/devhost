@@ -124,7 +124,9 @@ The hostname selected by `[caddy].stackDirectoryHost` in the shared `config.toml
 
 Caddy issues local certificates only for configured service hostnames and the stack-directory hostname. An unknown hostname fails the TLS handshake instead of receiving a certificate or an HTTPS 404 page. When [plain HTTP is enabled](../shared-managed-caddy-settings/), an unknown HTTP hostname still gets a 404 page listing active routes.
 
-After upgrading from a version that issued certificates for unknown hostnames, restart the shared proxy with `devhost caddy stop` followed by `devhost caddy start`. This briefly interrupts HTTPS for every stack using it. A configuration reload stops new unknown-host issuance but can retain previously issued certificates in Caddy's in-memory cache. Restarting clears that cache; certificates stored on disk are not loaded for unconfigured names. The existing CA and its trust remain unchanged.
+After an upgrade that requires a fresh proxy process, `devhost caddy start` or the next stack startup automatically restarts the shared Caddy once. This includes upgrading from versions that issued certificates for unknown hostnames: a configuration reload can retain those certificates in memory, while a restart clears the cache. The restart briefly interrupts proxy connections for every stack, preserves registered routes, and keeps the existing CA and its trust. Ordinary route and listener changes still reload without restarting Caddy. Installing a new devhost binary alone leaves running processes unchanged.
+
+Upgrade and restart older devhost stack processes too: versions predating this mechanism can still generate their previous Caddy configuration. Versions with restart tracking reject shared configuration changes when a newer devhost has already established a runtime policy they cannot support. If devhost cannot verify ownership of an existing proxy, it reports an error and leaves that process running.
 
 ## Several stacks, one Caddy
 

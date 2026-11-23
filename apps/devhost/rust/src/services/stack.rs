@@ -572,7 +572,13 @@ pub fn start_stack(
                 caddy::ensure_admin_available(&shared.caddy.admin_address)?;
                 true
             } else {
-                false
+                caddy::ensure_managed_caddy_runtime(
+                    &options.caddy_dir,
+                    &shared.caddy,
+                    options.output.mode(),
+                    &mut options.output.caddy_stdout_writer(),
+                    !options.debug_caddy,
+                )?
             };
         if !started_caddy
             && let Some(warning) = caddy::root_certificate_trust_warning(&options.caddy_dir)

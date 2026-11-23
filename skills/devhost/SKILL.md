@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-11-23 07:59
+  last_modified: 2026-11-23 09:29
   status: current
 ---
 
@@ -86,7 +86,7 @@ devhost caddy start             # trusts Caddy's certificate once per machine
 devhost start
 ```
 
-Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. The shared Caddy keeps running until `devhost caddy stop`.
+Stop the stack with `devhost stop`, a shutdown signal, or an idle timeout. Stopping a stack leaves the shared Caddy running.
 
 Stack shutdown preserves the loaded app without opening service-crash recovery. Browser health updates stop when shutdown begins, including results from probes already in flight.
 
@@ -102,7 +102,7 @@ For the experimental Rust executable on Linux, use `devhost restart-all` (zero a
 
 Each selected process's arguments, working directory, and environment are captured in memory before any shutdown. Replacements use the executable running the restart command, original launch service selection and flags, saved worktree choices, and files currently on disk. Services started later through the UI follow the launch selection. Replacements run in the background with closed input and private logs under `<state>/restart-<random>/<old-pid>.log`; stdout reports old and new PIDs and log paths with the standard diagnostic prefix. Original foreground commands exit. Stop a manifest replacement with `devhost stop`; signal a serve replacement by its new PID. Every replacement starts like a foreground stack, including one that replaces a `--detach` stack: a service that fails health enters browser recovery while the stack keeps running, and a detached stack's replacement records its new log path for `devhost start --detach` to report.
 
-Graceful shutdown gets 15 seconds; a timeout reports failure and leaves the stopping process without launching another. A replacement gets 30 seconds to publish its control port; success confirms supervisor registration while services may still be starting. A registration timeout leaves that PID running for inspection. Capture failure stops zero stacks. Individual replacement failures are collected while other captured stacks are attempted, then exit `1`; complete success exits `0`. Concurrent restart commands for the same state directory fail rather than overlap. An ancestor of the restart command is rejected during capture; run the command from a separate terminal. Shared Caddy remains running.
+Graceful shutdown gets 15 seconds; a timeout reports failure and leaves the stopping process without launching another. A replacement gets 30 seconds to publish its control port; success confirms supervisor registration while services may still be starting. A registration timeout leaves that PID running for inspection. Capture failure stops zero stacks. Individual replacement failures are collected while other captured stacks are attempted, then exit `1`; complete success exits `0`. Concurrent restart commands for the same state directory fail rather than overlap. An ancestor of the restart command is rejected during capture; run the command from a separate terminal. Replacement startup enforces the [shared Caddy runtime policy](references/setup.md#5-managed-caddy-startup).
 
 ### Browse Running Stacks
 

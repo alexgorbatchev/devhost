@@ -19,6 +19,7 @@ use crate::{
 
 pub mod devtools_origin;
 pub mod files;
+mod generation;
 pub mod output;
 pub mod routes;
 pub mod stacks;
@@ -123,28 +124,55 @@ pub fn start_in_directory(
     output: &mut impl Write,
     quiet: bool,
 ) -> Result<(), Failure> {
-    let running = prepare_lifecycle(directory, settings)?;
+    let (_lock, running) = prepare_lifecycle(directory, settings)?;
     let address = resolve_admin_address(&running.admin_address);
     let pid_path = directory.join("caddy.pid");
     let caddyfile_path = directory.join("Caddyfile");
-    if is_running(address) {
+    let previous = if is_running(address) {
         if !pid_path.exists() {
             return Err(FOREIGN_MANAGED_CADDY_ERROR.to_owned().into());
+        }
+        if !generation::needs_restart(directory)? {
+            reload_settings(directory, settings, &running, mode, output, quiet)?;
+            log_labeled(
+                mode,
+                output,
+                "devhost",
+                &format!(
+                    "managed caddy is already running with {}",
+                    caddyfile_path.display()
+                ),
+            )?;
+            drop(_lock);
+            trust_after_start(
+                directory,
+                resolve_admin_address(&settings.admin_address),
+                mode,
+                output,
+                quiet,
+            )?;
+            return Ok(());
         }
         log_labeled(
             mode,
             output,
             "devhost",
-            &format!(
-                "managed caddy is already running with {}",
-                caddyfile_path.display()
-            ),
+            "Restarting shared Caddy for an updated runtime policy. Proxy connections briefly drop.",
         )?;
-        trust_after_start(directory, address, mode, output, quiet)?;
-        return Ok(());
-    }
+        let previous = generation::read_process(directory)?;
+        stop_locked(directory, &running, mode, output)?;
+        Some(previous)
+    } else {
+        None
+    };
 
-    let result = start_process(directory, settings)?;
+    let result = start_process(directory, settings, previous.as_ref()).unwrap_or_else(|error| {
+        CommandOutput {
+            stdout: Vec::new(),
+            stderr: error.into_bytes(),
+            success: false,
+        }
+    });
     if !result.success {
         let (failure, handled) = start_failure(&result, directory);
         if !handled || mode == Mode::Agent {
@@ -161,7 +189,14 @@ pub fn start_in_directory(
         "devhost",
         &format!("managed caddy started with {}", caddyfile_path.display()),
     )?;
-    trust_after_start(directory, address, mode, output, quiet)?;
+    drop(_lock);
+    trust_after_start(
+        directory,
+        resolve_admin_address(&settings.admin_address),
+        mode,
+        output,
+        quiet,
+    )?;
     Ok(())
 }
 
@@ -177,7 +212,16 @@ pub fn stop_in_directory(
     mode: Mode,
     output: &mut impl Write,
 ) -> Result<(), Failure> {
-    let running = prepare_lifecycle(directory, settings)?;
+    let (_lock, running) = prepare_lifecycle(directory, settings)?;
+    stop_locked(directory, &running, mode, output)
+}
+
+fn stop_locked(
+    directory: &Path,
+    running: &CaddySettings,
+    mode: Mode,
+    output: &mut impl Write,
+) -> Result<(), Failure> {
     let address = resolve_admin_address(&running.admin_address);
     let pid = directory.join("caddy.pid");
     let applied = directory.join("applied.json");
@@ -231,7 +275,8 @@ pub fn trust_in_directory(
     mode: Mode,
     output: &mut impl Write,
 ) -> Result<(), Failure> {
-    let running = prepare_lifecycle(directory, settings)?;
+    let (lock, running) = prepare_lifecycle(directory, settings)?;
+    drop(lock);
     let address = resolve_admin_address(&running.admin_address);
     if !is_running(address) {
         return Err(
@@ -483,16 +528,22 @@ pub(crate) fn reload_managed_caddy(
     Err("Caddy reload failed. Check the Caddy diagnostics above.".to_owned())
 }
 
-fn prepare_lifecycle(directory: &Path, settings: &CaddySettings) -> Result<CaddySettings, String> {
+fn prepare_lifecycle(
+    directory: &Path,
+    settings: &CaddySettings,
+) -> Result<(File, CaddySettings), String> {
     files::prepare_directories(directory)?;
-    let _lock = route_lock(directory)?;
+    let lock = route_lock(directory)?;
     let running = files::read_running_settings(directory, settings)?;
     files::write_config(directory, &running)?;
-    Ok(running)
+    Ok((lock, running))
 }
 
-fn start_process(directory: &Path, settings: &CaddySettings) -> Result<CommandOutput, String> {
-    let _lock = route_lock(directory)?;
+fn start_process(
+    directory: &Path,
+    settings: &CaddySettings,
+    previous: Option<&generation::ManagedProcess>,
+) -> Result<CommandOutput, String> {
     routes::render_managed_settings(directory, settings)?;
     let pid_file = directory.join("caddy.pid");
     let pid_str = pid_file.to_string_lossy().into_owned();
@@ -504,7 +555,18 @@ fn start_process(directory: &Path, settings: &CaddySettings) -> Result<CommandOu
         true,
     )?;
     if result.success {
+        if !is_running(resolve_admin_address(&settings.admin_address)) {
+            return Err("managed Caddy did not become ready after start".to_owned());
+        }
+        let owner = generation::read_process(directory)?;
+        if previous == Some(&owner) {
+            return Err(
+                "managed Caddy did not start a fresh process; runtime policy remains unapplied"
+                    .to_owned(),
+            );
+        }
         files::write_applied_settings(directory, settings)?;
+        generation::record(directory, owner)?;
     }
     Ok(result)
 }
@@ -607,7 +669,46 @@ pub(crate) fn route_lock(directory: &Path) -> Result<File, String> {
         "open managed Caddy routes lock",
     )?;
     ctx(lock.lock(), "lock managed Caddy routes")?;
+    generation::check(directory)?;
     Ok(lock)
+}
+
+fn reload_settings(
+    directory: &Path,
+    settings: &CaddySettings,
+    running: &CaddySettings,
+    mode: Mode,
+    output: &mut impl Write,
+    quiet: bool,
+) -> Result<(), String> {
+    let result = routes::render_managed_settings(directory, settings).and_then(|()| {
+        reload_managed_caddy(directory, &running.admin_address, mode, output, quiet)
+    });
+    if let Err(error) = result {
+        return match routes::render_managed_settings(directory, running) {
+            Ok(()) => Err(error),
+            Err(restore) => Err(format!("{error}\n{restore}")),
+        };
+    }
+    files::write_applied_settings(directory, settings)
+}
+
+pub fn ensure_managed_caddy_runtime(
+    directory: &Path,
+    settings: &CaddySettings,
+    mode: Mode,
+    output: &mut impl Write,
+    quiet: bool,
+) -> Result<bool, Failure> {
+    let restart = {
+        let _lock = route_lock(directory)?;
+        generation::needs_restart(directory)?
+    };
+    if !restart {
+        return Ok(false);
+    }
+    start_in_directory(directory, settings, mode, output, quiet)?;
+    Ok(true)
 }
 
 fn resolve_admin_address(configured: &str) -> &str {
