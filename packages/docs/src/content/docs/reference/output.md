@@ -105,6 +105,32 @@ When devhost cannot prepare the start in its state directory, the command fails 
 
 On systems other than Linux and macOS the command fails at once with `devhost start --detach runs on Linux and macOS, not <system>`. For people, an `[INFO]` hint suggests running `devhost start` without `--detach`.
 
+## Stack info
+
+`devhost stack info` queries the running stack's live state from the manifest directory or any subfolder (or `--manifest <path>`). It works for both foreground and detached stacks, even when every devtools feature is disabled.
+
+For people (`AGENT` unset or `0`), it prints a concise summary header, one aligned row per service with its live state and URLs (or `(no route)`), the last output line below an exited or failed service, and the home-shortened log path for detached stacks:
+
+```text
+Acme Shop · degraded · PID 8519 · detached · up 12m
+web (primary)  ready     https://shop.acme.localhost
+api            exited 1  https://shop.acme.localhost/api/
+  └ fatal: lost connection to the payments database
+worker         ready     (no route)
+Log: ~/.local/state/devhost/logs/stack-<sha256>.log
+```
+
+For agents (`AGENT=1`, `true`, or `yes`), it prints `devhost:` key-value lines with absolute manifest, included manifest, and log paths, the control port, creation time, and per-service state, primary flag, exit code, state timestamp, port, URLs, and last output line for exited or failed services:
+
+```text
+devhost: stack name="Acme Shop" pid=8519 mode=detached ready=false manifest=/abs/devhost.toml manifestFiles=/abs/devhost.toml,/abs/admin/devhost.toml controlPort=41231 log=/abs/stack-<sha256>.log createdAt=2026-11-20T14:01:02Z
+devhost: service name=web state=ready primary=true since=2026-11-20T14:01:05Z port=22250 url=https://shop.acme.localhost
+devhost: service name=api state=exited exitCode=1 since=2026-11-20T14:01:53Z port=22310 url=https://shop.acme.localhost/api/ last="fatal: lost connection to the payments database"
+devhost: service name=worker state=ready since=2026-11-20T14:01:05Z
+```
+
+`devhost stack info` exits `0` after startup completes and every started service is `ready`. Services omitted by a partial start report `not-started` and are excluded from readiness. The command exits `1` while the stack is starting, when a started service is unready, or when it cannot query a running stack for the manifest.
+
 ## Messages worth knowing
 
 | Message                                                         | Meaning                                                                                                                                     |

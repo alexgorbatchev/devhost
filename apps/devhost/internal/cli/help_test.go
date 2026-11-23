@@ -39,6 +39,8 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 				"│  ╰─ list",
 				"├─ skill",
 				"├─ stack",
+				"│  ├─ find <query>",
+				"│  ├─ info",
 				"│  ├─ list",
 				"│  ╰─ restart",
 				"├─ start [service...]",
@@ -81,8 +83,14 @@ func TestParseCommandLineArgumentsRendersTreeHelp(t *testing.T) {
 		{
 			name:        "stack help lists its commands",
 			rawArgs:     []string{"stack"},
-			wantAll:     []string{"devhost stack [flags] [command]", "├─ list", "╰─ restart"},
+			wantAll:     []string{"devhost stack [flags] [command]", "├─ info", "├─ list", "╰─ restart"},
 			wantMissing: []string{"├─ caddy"},
+		},
+		{
+			name:        "stack info help documents manifest and environment",
+			rawArgs:     []string{"stack", "info", "--help"},
+			wantAll:     []string{"devhost stack info", "-m, --manifest", "DEVHOST_MANIFEST", "Quickstart:"},
+			wantMissing: []string{"--all", "--startable", "--detach"},
 		},
 		{
 			name:        "stack list help takes no manifest",
@@ -226,6 +234,7 @@ func TestParseCommandLineArgumentsAgentHelpListsTheWholeTree(t *testing.T) {
 		"  - service: Inspect the services in devhost.toml\n",
 		"    - list: Print the service names in devhost.toml\n",
 		"  - stack: Inspect the stacks running on this machine\n",
+		"    - info: Show the running stack's services, state, and URLs\n",
 		"    - list: Print the PID and manifest of running stacks\n",
 		"  - start [service...]: Start the services in devhost.toml\n",
 		"  - stop: Stop the running stack for this project\n",

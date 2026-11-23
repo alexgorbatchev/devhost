@@ -92,6 +92,9 @@ func registerStack(options RegisterStackOptions) error {
 		}
 		if previous.OwnerPID == record.OwnerPID && previous.OwnerStartIdentity == record.OwnerStartIdentity && previous.ManifestPath == record.ManifestPath {
 			record.Ready, record.URLs, record.LogPath = previous.Ready, previous.URLs, previous.LogPath
+			if previous.CreatedAt != "" {
+				record.CreatedAt = previous.CreatedAt
+			}
 		}
 	}
 	if err := checkManifestOverlap(options.StacksDirectoryPath, record); err != nil {

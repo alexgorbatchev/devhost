@@ -82,6 +82,7 @@ type startedService struct {
 	service        ResolvedService
 	exited         chan struct{}
 	outputWG       sync.WaitGroup
+	startedAt      time.Time
 
 	restartMu               sync.Mutex
 	isRestarting            bool
@@ -89,6 +90,7 @@ type startedService struct {
 	exitMu                  sync.Mutex
 	exitCode                int
 	hasExited               bool
+	exitedAt                time.Time
 	shutdownMu              sync.Mutex
 	shutdownAt              time.Time
 	shutdownWith            syscall.Signal
@@ -163,7 +165,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	}
 	lifecycleCtx, cancelLifecycle := context.WithCancel(context.Background())
 	defer cancelLifecycle()
+	now := time.Now().UTC()
 	state := &stackRuntime{
+		createdAt:     now,
+		stateSince:    map[string]time.Time{},
 		manifestFiles: stackManifestFiles(options.Configuration),
 		starting:      map[string]bool{}, failures: map[string]string{},
 		configured: options.Configuration,
@@ -418,6 +423,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		controlServer, err := startDevtoolsControlServer(devtools.StartControlServerOptions{
 			StackDirectoryPaths: paths,
 			GetStackServices:    func() ([]statuspage.StackService, error) { return state.directoryServices(lifecycleCtx) },
+			GetStackInfo:        state.stackInfo,
 			ChatPrompt:          settings.ChatPrompt,
 			ChatPanelFile:       chatPanelFile(manifest.ManifestPath, paths.StateDirectoryPath),
 			OwnsDocumentURL: func(port int, href string) (bool, error) {
@@ -1208,6 +1214,7 @@ func startServiceProcess(manifest ResolvedManifest, service ResolvedService, opt
 		containment: containment,
 		service:     service,
 		exited:      make(chan struct{}),
+		startedAt:   time.Now().UTC(),
 	}
 
 	startedService.outputWG.Add(2)
@@ -1836,8 +1843,15 @@ func (s *startedService) waitForExit() {
 	s.exitMu.Lock()
 	s.exitCode = exitCode
 	s.hasExited = true
+	s.exitedAt = time.Now().UTC()
 	s.exitMu.Unlock()
 	close(s.exited)
+}
+
+func (s *startedService) readExitedAt() time.Time {
+	s.exitMu.Lock()
+	defer s.exitMu.Unlock()
+	return s.exitedAt
 }
 
 func (s *startedService) wait() {

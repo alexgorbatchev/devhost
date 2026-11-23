@@ -84,6 +84,13 @@ func createHelpCatalog() cobrahelptree.TechCatalog {
 				{Command: stopPickedStackCommand, Comment: "pick one"},
 			},
 		},
+		stackCommandPath + " " + stackInfoCommandName: {
+			Env: []cobrahelptree.EnvSpec{manifestEnvironmentSpec},
+			Quickstart: []cobrahelptree.QuickstartItem{
+				{Command: "devhost stack info", Comment: "inspect this project's running stack"},
+				{Command: "AGENT=1 devhost stack info", Comment: "machine-readable details with paths and ports"},
+			},
+		},
 		stackCommandPath + " " + stackListCommandName: {
 			Quickstart: []cobrahelptree.QuickstartItem{
 				{Command: "devhost stack list", Comment: "PID, tab, manifest per line"},
