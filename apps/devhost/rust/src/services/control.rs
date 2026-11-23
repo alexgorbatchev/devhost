@@ -113,6 +113,7 @@ pub struct RuntimeControl {
     pub(crate) requests: mpsc::Receiver<RuntimeRequest>,
     pub(crate) activity: ActivityTracker,
     pub(crate) dirty: Arc<Mutex<BTreeSet<String>>>,
+    agents: Arc<crate::devtools::agents::Agents>,
 }
 
 #[derive(Clone)]
@@ -121,6 +122,7 @@ pub struct RuntimeHandle {
     requests: mpsc::Sender<RuntimeRequest>,
     pub activity: ActivityTracker,
     dirty: Arc<Mutex<BTreeSet<String>>>,
+    pub(crate) agents: Arc<crate::devtools::agents::Agents>,
 }
 
 impl RuntimeControl {
@@ -129,12 +131,14 @@ impl RuntimeControl {
         let activity = ActivityTracker::default();
         let dirty = Arc::new(Mutex::new(BTreeSet::new()));
         let live = super::stack::live::LiveState::default();
+        let agents = Arc::new(crate::devtools::agents::Agents::default());
         (
             RuntimeHandle {
                 live: live.clone(),
                 requests: requests.clone(),
                 activity: activity.clone(),
                 dirty: dirty.clone(),
+                agents: agents.clone(),
             },
             Self {
                 live,
@@ -142,6 +146,7 @@ impl RuntimeControl {
                 requests: receiver,
                 activity,
                 dirty,
+                agents,
             },
         )
     }
@@ -152,6 +157,7 @@ impl RuntimeControl {
             requests: self.sender.clone(),
             activity: self.activity.clone(),
             dirty: self.dirty.clone(),
+            agents: self.agents.clone(),
         }
     }
 }

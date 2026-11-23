@@ -59,6 +59,20 @@ impl ControlServer {
         let assets = super::assets::asset_routes(store.clone()).layer(
             middleware::from_fn_with_state((handle.clone(), store), serve_assets),
         );
+        let chat = Router::new()
+            .route("/__devhost__/agents", any(super::agents::serve))
+            .route(
+                "/__devhost__/agents/activity",
+                any(super::agent_activity::page),
+            )
+            .route(
+                "/__devhost__/ws/agents/activity",
+                any(super::agent_activity::websocket),
+            )
+            .route_layer(middleware::from_fn_with_state(
+                handle.clone(),
+                while_chat_enabled,
+            ));
         let app = Router::new()
             .route("/__devhost__/stack-info", any(stack_info))
             .route("/__devhost__/stacks", any(super::directory::serve))
@@ -67,6 +81,7 @@ impl ControlServer {
             .route("/__devhost__/start-service", any(start_service))
             .route("/__devhost__/restart-stack", any(restart_stack))
             .route("/__devhost__/worktrees", any(worktrees))
+            .merge(chat)
             .route("/__devhost__/config/files", any(super::config_files::files))
             .route(
                 "/__devhost__/config/schema",
@@ -92,6 +107,7 @@ impl ControlServer {
             .merge(assets)
             .layer(middleware::from_fn_with_state(handle.clone(), json_body));
         let poller_stop = handle.live.events.stopping.clone();
+        let agents = handle.agents.clone();
         let sampler = super::resources::Sampler::start(handle.clone())?;
         let worker = thread::Builder::new()
             .name("devhost-control".to_owned())
@@ -110,6 +126,7 @@ impl ControlServer {
                     tokio::select! { _ = &mut server => {}, _ = stopping.changed() => {
                         let _ = tokio::time::timeout(Duration::from_millis(250), &mut server).await;
                     }}
+                    agents.shutdown().await;
                     poller.abort();
                     let _ = poller.await;
                 });
@@ -197,6 +214,21 @@ async fn json_body(
                 "Request bodies must be application/json.",
             );
         }
+    }
+    next.run(request).await
+}
+
+async fn while_chat_enabled(
+    State(handle): State<RuntimeHandle>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    if !handle
+        .live
+        .manifest()
+        .is_some_and(|manifest| manifest.devtools.chat.enabled)
+    {
+        return diagnostic(StatusCode::NOT_FOUND, "404 page not found");
     }
     next.run(request).await
 }

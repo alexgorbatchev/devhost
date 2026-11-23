@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-23 07:59
+last_modified: 2026-11-23 09:59
 status: current
 ---
 
@@ -126,6 +126,20 @@ Port reservations shut down their sockets before close, and file-server shutdown
 releases the listening socket across inherited descriptors. Close-on-exec alone
 does not release those copies while a child is still preparing to execute.
 
+## Native agent activity tests
+
+`just rust test --lib devtools::` checks shared discovery caching,
+partial scan failures, checkout and subagent filtering, attention ordering,
+request guards, worktree selection, bounded event projection, history suppression,
+and joined watcher shutdown. Activity clients own separate temporary cursor,
+session, and database checkpoint files; shutdown joins each watcher before those
+files are removed.
+
+`just rust test --test stack_commands agents::` starts an isolated native stack
+and checks discovery and activity HTTP/WebSocket contracts against real process
+identity and temporary harness storage. Set `DEVHOST_STACK_TEST_BINARY` to the Go
+oracle executable to run the same scenarios against Go.
+
 ## Native completion and argument tests
 
 `just rust test --test cli` checks completion registration for Bash, Zsh, Fish,
@@ -158,7 +172,15 @@ Exit status 2 means history needs reconciliation before advancing the baseline. 
 | Go dependency        | Existing public Rust repository                                                | Observed revision                          |
 | -------------------- | ------------------------------------------------------------------------------ | ------------------------------------------ |
 | `cobra-help-tree/v4` | [cli-command-kit-rust](https://github.com/alexgorbatchev/cli-command-kit-rust) | `dead4a60e08c7a84bc77ef329b220bfecd57627b` |
-| `agent-watcher`      | [agent-watcher-rust](https://github.com/alexgorbatchev/agent-watcher-rust)     | `9c7532c9950c6fd188374e8ff7266480c558ab7c` |
+| `agent-watcher`      | [agent-watcher-rust](https://github.com/alexgorbatchev/agent-watcher-rust)     | `f5cf3667bb55cc2bb2b01d4079b92511b9f28005` |
 | `agent-parser`       | [agent-parser-rust](https://github.com/alexgorbatchev/agent-parser-rust)       | `2c013b856c26ec215120a2c39973e16381c645dc` |
 
-The revisions identify the public source inspected at kickoff. The watcher already pins the listed parser revision. Verify the APIs and behavior against the Go consumer before selecting Rust dependency versions. Track missing reusable behavior in its owning dependency repository and consume the published revision after verification. Keep Devhost-specific integration in this repository.
+The CLI kit and parser revisions identify the public source inspected at kickoff.
+The watcher revision supplies cached read-only discovery, normalized live state,
+session filtering, and first-scan history suppression. It establishes transcript
+cursors before announcing initial live sessions, preserving events written during
+lifecycle delivery. The watcher pins the listed parser revision. Verify the APIs
+and behavior against the Go consumer before selecting Rust dependency versions.
+Track missing reusable behavior in its owning dependency repository and consume
+the published revision after verification. Keep Devhost-specific integration in
+this repository.

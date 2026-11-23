@@ -43,7 +43,7 @@ pub(crate) fn injected_config(handle: &RuntimeHandle) -> InjectedConfig {
             .dev_source()
             .map(|source| source.root_path().display().to_string())
             .unwrap_or_default(),
-        control_origin: String::new(),
+        control_origin: format!("http://127.0.0.1:{}", handle.live.control_port()),
         stack_name: manifest.name.clone(),
         editor_enabled: features.editor.enabled,
         external_toolbars_enabled: features.external_toolbars_enabled,

@@ -1,3 +1,7 @@
+mod agent_activity;
+pub(crate) mod agents;
+#[cfg(test)]
+mod agents_tests;
 pub mod assets;
 mod config_files;
 #[cfg(test)]
@@ -6,6 +10,7 @@ pub mod dev_source;
 mod directory;
 pub mod document_injection;
 pub mod page_preview;
+mod project_context;
 pub mod recovery;
 pub mod request_guard;
 mod resource_disk;
