@@ -10,6 +10,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - Start the local docs server: `just docs` (or `just docs run`)
 - Check package-local validations: `just docs check`
 - Document experimental Rust commands in `development/building.md` and qualify differences in the owning CLI reference or guide; the published Go CLI remains the default contract.
+- Rust build instructions start with `just setup`; Rust execution and validation recipes refresh generated browser assets before compilation.
 - Build the static site: `just docs build`
 - Preview the production build: `just docs preview`
 - Refresh all guide videos: `just demo guides`; refresh one: `just demo guides <guide-slug>`. See `../../docs/internal/references/demo-recording.md` for recording prerequisites.

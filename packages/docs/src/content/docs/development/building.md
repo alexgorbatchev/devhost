@@ -21,12 +21,13 @@ To run devhost from source without installing it, use `just cli <args>`, or `jus
 From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run the experimental CLI:
 
 ```bash
+just setup
 just rust run --help
 ```
 
 The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local and remote `start` and `stop`, `serve`, and `stack list`, `stack find`, and [`stack info`](../../reference/cli/#stacks). It also supports stack replacement with `stack restart` and global `restart-all` on Linux and macOS; see [Restart after upgrading](../../guides/stack-lifecycle/#restart-after-upgrading-devhost) for the command differences. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
 
-Build its separate executable at `apps/devhost/rust/target/debug/devhost` with `just rust build`. `just rust check` checks formatting, Clippy, and native tests with 90% line and function coverage for first-party Rust sources. Root `just fix` formats the first-party Rust package alongside the other workspaces.
+Build its separate executable at `apps/devhost/rust/target/debug/devhost` with `just rust build`. The Rust run, build, and validation recipes refresh the embedded browser assets, so a fresh checkout needs no manual asset generation after setup. `just rust check` checks formatting, Clippy, and native tests with 90% line and function coverage for first-party Rust sources. Root `just fix` formats the first-party Rust package alongside the other workspaces.
 
 On Linux and macOS, `start --detach` waits for services, routes, and any configured remote connection to become ready, prints the supervisor PID, service URLs, and log path, and leaves the stack running. Repeating the command reports the existing stack; `stop` shuts it down. Startup failures print the attempt's log tail and stop its services.
 

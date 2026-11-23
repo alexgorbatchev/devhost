@@ -1,13 +1,13 @@
 set dotenv-load := false
 
 [default]
-run *args:
+run *args: assets
     cargo run --locked -- {{args}}
 
-run-ai *args:
+run-ai *args: assets
     AGENT=1 cargo run --locked -- {{args}}
 
-test *args:
+test *args: assets
     bash ../../../test-support/runTests.sh cargo test --locked {{args}}
 
 # Every test links this single library package. Cargo tracks its transitive inputs.
@@ -28,13 +28,17 @@ fmt:
 fmt-check:
     cargo fmt --package devhost-rust -- --check
 
-lint:
+lint: assets
     cargo clippy --all-targets --locked -- -D warnings
 
-coverage:
+coverage: assets
     CARGO_PROFILE_DEV_DEBUG=line-tables-only CARGO_PROFILE_TEST_DEBUG=line-tables-only bash ../../../test-support/runTests.sh cargo llvm-cov --locked --fail-under-lines 90 --fail-under-functions 90
 
 check: fmt-check lint coverage
 
-build:
+build: assets
     cargo build --locked
+
+# Keep include_dir! and include_str! inputs available on fresh checkouts.
+assets:
+    just --justfile ../../../justfile devhost build-devtools-bundle
