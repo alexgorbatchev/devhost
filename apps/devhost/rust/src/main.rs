@@ -7,6 +7,7 @@ use std::{
     process::ExitCode,
 };
 
+use clap::builder::{PossibleValuesParser, TypedValueParser};
 use clap::{Arg, ArgAction, Command, error::ErrorKind, value_parser};
 use cli_command_kit::{
     HelpOptions, Mode, QuickstartItem, SkillSource, TechInfo, setup, write_skill,
@@ -32,6 +33,8 @@ const VERSION: &str = match option_env!("DEVHOST_BUILD_VERSION") {
     Some(version) => version,
     None => "dev",
 };
+
+mod completion;
 
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let options = HelpOptions {
@@ -74,26 +77,40 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
             .subcommand(serve_command())
             .subcommand(stop_command())
             .subcommand(stack_command())
+            .subcommand(completion::command())
             .subcommand(
                 Command::new("restart-all")
                     .about("Restart every running stack with the current executable"),
-            )
-            .subcommand(
-                Command::new("_remote-worker").hide(true).arg(
-                    Arg::new("state-dir")
-                        .long("state-dir")
-                        .required(true)
-                        .value_parser(value_parser!(PathBuf)),
-                ),
             ),
         mode,
         &options,
     )?;
+    let completion_root = root.clone();
+    root = root.subcommand(
+        Command::new("_remote-worker").hide(true).arg(
+            Arg::new("state-dir")
+                .long("state-dir")
+                .required(true)
+                .value_parser(value_parser!(PathBuf)),
+        ),
+    );
     let mut stdout = io::stdout().lock();
 
     match root.try_get_matches_from_mut(std::env::args_os()) {
         Ok(matches) => {
             match matches.subcommand() {
+                Some(("completion", args)) => {
+                    if let Some((shell, options)) = args.subcommand() {
+                        completion::write(
+                            completion::shell(shell),
+                            &completion_root,
+                            !options.get_flag("no-descriptions"),
+                            &mut stdout,
+                        )?;
+                    } else if let Some(command) = root.find_subcommand_mut("completion") {
+                        command.write_help(&mut stdout)?;
+                    }
+                }
                 Some(("_remote-worker", args)) => {
                     drop(stdout);
                     let state = args
@@ -245,45 +262,25 @@ fn start_command() -> Command {
         .about("Start the services in devhost.toml")
         .arg(manifest_arg())
         .arg(
-            Arg::new("debug")
-                .long("debug")
+            boolean_arg("debug")
                 .short('d')
-                .action(ArgAction::SetTrue)
                 .help("Show Caddy's output while the stack runs."),
         )
+        .arg(boolean_arg("detach").help("Run in the background; wait until the stack is ready."))
         .arg(
-            Arg::new("detach")
-                .long("detach")
-                .action(ArgAction::SetTrue)
-                .help("Run in the background; wait until the stack is ready."),
-        )
-        .arg(
-            Arg::new("local")
-                .long("local")
+            boolean_arg("local")
                 .short('l')
-                .action(ArgAction::Set)
-                .value_parser(value_parser!(bool))
-                .num_args(0..=1)
-                .require_equals(true)
-                .default_missing_value("true")
-                .default_value("false")
                 .help("Use local routing even when a remote relay is configured."),
         )
         .arg(
-            Arg::new("remote")
-                .long("remote")
-                .action(ArgAction::Set)
-                .value_parser(value_parser!(bool))
-                .num_args(0..=1)
-                .require_equals(true)
-                .default_missing_value("true")
-                .default_value("false")
+            boolean_arg("remote")
+                .short('r')
                 .help("Require the configured remote preview relay."),
         )
         .arg(
-            Arg::new("idle-timeout")
+            nonempty_env(Arg::new("idle-timeout"), "DEVHOST_IDLE_TIMEOUT")
                 .long("idle-timeout")
-                .env("DEVHOST_IDLE_TIMEOUT")
+                .short('i')
                 .value_name("duration")
                 .help("Stop the stack after this long without traffic, e.g. 30s or 1m."),
         )
@@ -296,6 +293,7 @@ fn start_command() -> Command {
 
 fn serve_command() -> Command {
     Command::new("serve")
+        .args_override_self(true)
         .about("Serve a directory or local port over HTTPS")
         .long_about("Serve files or an existing local HTTP port without a\nmanifest. Use --dir for files or --port for a service on\n127.0.0.1. With neither option, serve the current\ndirectory. --dir and --port are mutually exclusive.\n\n--domain is required; the hostname must point here.\nCaddy starts automatically if needed and stays running\nafter Ctrl+C removes this session's routes.\nAn existing service keeps running after the session stops.\n\nDirectories show index.html, index.md, README.md, or\nreadme.md, else a listing. Markdown uses GitHub styling\nwith a remembered source toggle. Hidden files and symlinks\noutside the directory are excluded.")
         .arg(Arg::new("domain").long("domain").short('d').help("Hostname to serve, e.g. notes.localhost (required)."))
@@ -368,24 +366,47 @@ fn run_serve(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
 
 fn stop_command() -> Command {
     Command::new("stop")
+        .args_override_self(true)
         .about("Stop the running stack for this project")
         .arg(manifest_arg())
         .arg(
-            Arg::new("worktrees")
-                .long("worktrees")
-                .action(ArgAction::SetTrue)
+            boolean_arg("worktrees")
+                .short('w')
                 .help("Stop stacks in every worktree of this Git repository."),
         )
 }
 
+fn boolean_arg(name: &'static str) -> Arg {
+    Arg::new(name)
+        .long(name)
+        .action(ArgAction::Set)
+        .num_args(0..=1)
+        .require_equals(true)
+        .default_missing_value("true")
+        .default_value("false")
+        .value_parser(
+            PossibleValuesParser::new([
+                "true", "false", "1", "0", "t", "f", "T", "F", "TRUE", "FALSE", "True", "False",
+            ])
+            .map(|value| matches!(value.as_str(), "true" | "1" | "t" | "T" | "TRUE" | "True")),
+        )
+}
+
 fn manifest_arg() -> Arg {
-    Arg::new("manifest")
+    nonempty_env(Arg::new("manifest"), "DEVHOST_MANIFEST")
         .long("manifest")
         .short('m')
-        .env("DEVHOST_MANIFEST")
         .value_name("path")
         .value_parser(value_parser!(PathBuf))
         .help("Path to the devhost.toml file to use")
+}
+
+fn nonempty_env(arg: Arg, name: &'static str) -> Arg {
+    if env::var_os(name).is_some_and(|value| !value.is_empty()) {
+        arg.env(name)
+    } else {
+        arg
+    }
 }
 
 fn validate_manifest_flag(path: Option<&Path>) -> Result<(), Failure> {
@@ -642,7 +663,7 @@ fn run_stop(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Err
 fn stack_command() -> Command {
     Command::new("stack")
         .about("Inspect the stacks running on this machine")
-        .subcommand(Command::new("info").about("Inspect the current project's running stack and service readiness").arg(manifest_arg()))
+        .subcommand(Command::new("info").args_override_self(true).about("Inspect the current project's running stack and service readiness").arg(manifest_arg()))
         .subcommand(Command::new("list")
             .about("Print the PID and manifest of running stacks")
             .long_about("Print one running stack per line: PID, tab, absolute manifest path.\nWorks from any directory, with identical output in both modes."))
@@ -650,9 +671,10 @@ fn stack_command() -> Command {
             .about("Find running stacks by hostname, URL, name, or manifest")
             .arg(Arg::new("query").required(true)))
         .subcommand(Command::new("restart")
+            .args_override_self(true)
             .about("Restart the running stack for this project")
             .arg(manifest_arg())
-            .arg(Arg::new("all").short('a').long("all").action(ArgAction::SetTrue)
+            .arg(boolean_arg("all").short('a')
                 .help("Restart the current project's whole stack.")))
 }
 
@@ -819,14 +841,13 @@ fn service_command() -> Command {
         .about("Inspect the services in devhost.toml")
         .subcommand(
             Command::new("list")
+                .args_override_self(true)
                 .about("Print the service names in devhost.toml")
                 .arg(manifest_arg())
                 .arg(
-                    Arg::new("startable")
-                        .long("startable")
+                    boolean_arg("startable")
                         .short('s')
-                        .help("List only the services that start when named")
-                        .action(ArgAction::SetTrue),
+                        .help("List only the services that start when named"),
                 ),
         )
 }
@@ -857,4 +878,35 @@ fn write_failure(mode: Mode, failure: Failure) -> io::Result<ExitCode> {
     let mut stderr = io::stderr().lock();
     cliout::write_failure(mode, &mut stderr, &failure)?;
     Ok(ExitCode::FAILURE)
+}
+
+#[cfg(test)]
+mod argument_tests {
+    use super::*;
+
+    #[test]
+    fn short_flags_and_explicit_booleans_use_the_native_parser() {
+        let args = start_command()
+            .try_get_matches_from([
+                "start",
+                "-d=false",
+                "--detach=0",
+                "-l=1",
+                "-r=F",
+                "-i",
+                "30s",
+            ])
+            .unwrap();
+        assert!(!args.get_flag("debug"));
+        assert!(!args.get_flag("detach"));
+        assert!(args.get_flag("local"));
+        assert!(!args.get_flag("remote"));
+        assert_eq!(args.get_one::<String>("idle-timeout").unwrap(), "30s");
+        let args = stop_command().try_get_matches_from(["stop", "-w"]).unwrap();
+        assert!(args.get_flag("worktrees"));
+        let args = stack_command()
+            .try_get_matches_from(["stack", "restart", "-a=false"])
+            .unwrap();
+        assert!(!args.subcommand_matches("restart").unwrap().get_flag("all"));
+    }
 }

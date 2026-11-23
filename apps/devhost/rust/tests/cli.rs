@@ -85,3 +85,151 @@ fn serve_rejects_invalid_domains_ports_and_conflicting_inputs() {
         assert!(!output.stderr.is_empty(), "{args:?}: {output:?}");
     }
 }
+
+#[test]
+fn completion_scripts_and_installation_help_cover_all_shells() {
+    for (shell, registration, installation) in [
+        ("bash", "complete -", "bash-completion/completions/devhost"),
+        ("zsh", "compdef _devhost devhost", "${fpath[1]}/_devhost"),
+        (
+            "fish",
+            "complete -c devhost",
+            "fish/completions/devhost.fish",
+        ),
+        ("powershell", "Register-ArgumentCompleter", "$PROFILE"),
+    ] {
+        let script = stdout(invoke(&["completion", shell], "1", "100"));
+        assert!(
+            script.contains(registration),
+            "{shell}: missing registration"
+        );
+        assert!(!script.contains(ALERT), "{shell}: script polluted by help");
+        assert!(
+            !script.contains("_remote-worker"),
+            "{shell}: private worker leaked"
+        );
+        let help = stdout(invoke(&["completion", shell, "--help"], "0", "100"));
+        assert!(help.contains(installation), "{shell}: {help}");
+        assert!(help.contains("--no-descriptions"), "{shell}: {help}");
+        let no_descriptions = stdout(invoke(
+            &["completion", shell, "--no-descriptions"],
+            "1",
+            "100",
+        ));
+        assert!(no_descriptions.contains(registration));
+        assert!(!no_descriptions.contains("Start the services in devhost.toml"));
+        assert!(!no_descriptions.contains("Path to the devhost.toml file to use"));
+        assert_eq!(script, stdout(invoke(&["completion", shell], "0", "45")));
+    }
+    let group = stdout(invoke(&["completion"], "0", "100"));
+    for shell in ["bash", "zsh", "fish", "powershell"] {
+        assert!(group.contains(shell), "{group}");
+    }
+}
+
+#[test]
+fn invalid_arguments_report_to_stderr_and_point_to_usage() {
+    for args in [
+        vec!["bun"],
+        vec!["caddy", "restart"],
+        vec!["start", "--bogus"],
+        vec!["stop", "--manifest"],
+        vec!["stack", "list", "extra"],
+        vec!["start", "--debug=perhaps"],
+        vec!["completion", "unknown"],
+        vec!["completion", "bash", "extra"],
+        vec!["completion", "fish", "--no-descriptions=perhaps"],
+        vec!["serve", "--port", "oops"],
+    ] {
+        for mode in ["0", "1"] {
+            let output = invoke(&args, mode, "100");
+            assert_eq!(output.status.code(), Some(1), "{args:?}: {output:?}");
+            assert!(output.stdout.is_empty(), "{args:?}: {output:?}");
+            let diagnostic = String::from_utf8(output.stderr).unwrap();
+            assert!(diagnostic.contains("--help"), "{args:?}: {diagnostic}");
+        }
+    }
+}
+
+#[test]
+fn bash_completion_resolves_commands_and_flags_in_a_real_shell() {
+    let temp = tempfile::tempdir().unwrap();
+    let script = temp.path().join("completion.bash");
+    std::fs::write(&script, stdout(invoke(&["completion", "bash"], "1", "100"))).unwrap();
+    for (line, words, index, expected) in [
+        ("devhost ca", "devhost ca", "1", vec!["caddy"]),
+        (
+            "devhost caddy ",
+            "devhost caddy ''",
+            "2",
+            vec!["download", "trust-remote"],
+        ),
+        (
+            "devhost start --",
+            "devhost start --",
+            "2",
+            vec!["--manifest", "--idle-timeout", "--remote"],
+        ),
+    ] {
+        let output = Command::new("bash")
+            .args(["--noprofile", "--norc", "-c"])
+            .arg(format!(
+                "source \"$1\"\nCOMP_WORDS=({words})\nCOMP_CWORD={index}\nCOMP_LINE=$2\nCOMP_POINT=${{#COMP_LINE}}\nread -ra registration <<< \"$(complete -p devhost)\"\n\"${{registration[${{#registration[@]}}-2]}}\" devhost \"${{COMP_WORDS[COMP_CWORD]}}\" \"${{COMP_WORDS[COMP_CWORD-1]}}\"\nprintf '%s\\n' \"${{COMPREPLY[@]}}\""
+            ))
+            .arg("completion-test")
+            .arg(&script)
+            .arg(line)
+            .env_remove("BASH_ENV")
+            .output()
+            .unwrap();
+        let candidates = stdout(output);
+        for candidate in expected {
+            assert!(
+                candidates.lines().any(|line| line == candidate),
+                "{line:?}: {candidates}"
+            );
+        }
+    }
+}
+
+#[test]
+fn boolean_values_and_manifest_precedence_match_cli_contract() {
+    let temp = tempfile::tempdir().unwrap();
+    let manifest = temp.path().join("devhost.toml");
+    std::fs::write(
+        &manifest,
+        "name='cli'\n[services.api]\ncommand=['true']\nhealth.process=true\n[services.worker]\ncommand=['true']\nhealth.process=true\nalwaysStart=true\n",
+    )
+    .unwrap();
+    for (value, expected) in [
+        ("true", "api\n"),
+        ("1", "api\n"),
+        ("T", "api\n"),
+        ("false", "api\nworker\n"),
+        ("0", "api\nworker\n"),
+        ("False", "api\nworker\n"),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_devhost"))
+            .args(["service", "list", "-m"])
+            .arg(&manifest)
+            .arg(format!("--startable={value}"))
+            .env("AGENT", "1")
+            .env("DEVHOST_MANIFEST", "ignored.toml")
+            .output()
+            .unwrap();
+        assert_eq!(stdout(output), expected);
+    }
+    for (args, expected) in [
+        (vec!["--startable", "--startable=false"], "api\nworker\n"),
+        (vec!["--startable=false", "-s"], "api\n"),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_devhost"))
+            .args(["service", "list"])
+            .args(args)
+            .env("AGENT", "1")
+            .env("DEVHOST_MANIFEST", &manifest)
+            .output()
+            .unwrap();
+        assert_eq!(stdout(output), expected);
+    }
+}

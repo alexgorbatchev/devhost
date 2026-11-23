@@ -63,6 +63,8 @@ source <(devhost completion zsh)    # after compinit
 devhost completion fish | source
 ```
 
+In PowerShell, run `devhost completion powershell | Out-String | Invoke-Expression`. Regenerate installed scripts after upgrading devhost so they include the current commands and flags. The experimental Rust CLI supports the same four shell choices and `--no-descriptions`; its scripts and argument diagnostics use clap's native format. Invalid arguments exit `1`, write diagnostics to stderr, and point to command help.
+
 ## Exit codes
 
 | Code                                        | When                                                                                                                                                                                                      |

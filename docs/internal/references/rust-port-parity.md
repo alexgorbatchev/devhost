@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-23 06:35
+last_modified: 2026-11-23 07:59
 status: current
 ---
 
@@ -125,6 +125,22 @@ including a child paused between fork and exec with an inherited listener.
 Port reservations shut down their sockets before close, and file-server shutdown
 releases the listening socket across inherited descriptors. Close-on-exec alone
 does not release those copies while a child is still preparing to execute.
+
+## Native completion and argument tests
+
+`just rust test --test cli` checks completion registration for Bash, Zsh, Fish,
+and PowerShell, installation help, description control, output modes, invalid
+arguments, Boolean values, repeated flags, and manifest precedence. It sources
+the Bash script in a real shell and queries command, subcommand, and flag
+candidates. Record `apps/devhost/rust/tests/cli-precedence.jsonl` with Rust Anything
+to compare manifest selection and Boolean flags with Go.
+
+Rust uses `clap_complete` to generate scripts from its native clap command tree.
+Compare candidates and shell registration behavior; script bytes, Cobra's
+internal completion request commands, and parser diagnostic wording are
+framework-specific. Preserve command names, short flags, exit status, output
+streams, and help guidance. Check the generated scripts in the native shells
+when validating supported platforms.
 
 ## Catch up with Go main
 

@@ -38,6 +38,8 @@ Machine configuration selects [remote previews](../../stacks/remote-previews/) a
 
 The Rust stack serves the browser toolbar with service start and restart controls, health and log streams, host resource readouts, editor highlights, the configuration editor, and the running-stack directory. Worktree selection and switching restart the repository's managed services together. The [Control API](../../reference/control-api/) describes these routes. Agent activity and chat still require the Go binary.
 
+Use `completion bash`, `completion zsh`, `completion fish`, or `completion powershell` to print a [shell completion script](../../reference/cli/#other-commands). Each command's help includes installation instructions. `--no-descriptions` omits completion descriptions.
+
 Set `AGENT=1` for agent-oriented help and detailed stack inspection output. Platform verification of the experimental port is still in progress.
 
 ## Use a protected development build

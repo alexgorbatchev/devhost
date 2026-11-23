@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-11-22 20:25
+  last_modified: 2026-11-23 07:59
   status: current
 ---
 
@@ -51,7 +51,7 @@ Within one devhost state directory, `devhost start` rejects a root or recursivel
 - `devhost caddy trust-remote <ssh-target>`: on macOS, trust the Caddy certificate of another machine. `<ssh-target>` is an SSH host with `devhost` on its `PATH`, such as `devbox` or `user@devbox`. It prints the certificate's SHA-256 fingerprint and installs the certificate into the System keychain.
 - `devhost skill`: print how to install this skill on stdout, identical with and without `AGENT=1`: the Skills CLI command `npx skills add alexgorbatchev/devhost --skill devhost`, then the skill URL `https://github.com/alexgorbatchev/devhost/tree/main/skills/devhost`. The text is built into the binary, so the command works offline and outside a checkout. It takes no arguments or flags of its own and rejects any it is given; a failed write to stdout exits `1`.
 - `devhost help [command]`: print the help of a command, the screen `--help` prints for it.
-- `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions.
+- `devhost completion bash`, `devhost completion fish`, `devhost completion powershell`, `devhost completion zsh`: print a completion script for that shell on stdout. `--no-descriptions` (bool) leaves the command descriptions out of the completions. Use each shell command's `--help` for installation instructions; regenerate installed scripts after upgrading devhost.
 
 `devhost`, `devhost caddy`, `devhost service`, `devhost stack`, and `devhost completion` are groups. Run one without a command to print its help, which lists everything below it.
 
