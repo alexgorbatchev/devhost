@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-22 19:03
+last_modified: 2026-11-22 20:25
 status: current
 ---
 
@@ -148,7 +148,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Find running stacks by URL, partial name, or manifest path through symlinks; stop every worktree of one repository                                                                                   | `guides/stack-lifecycle.md`, "Stop a stack started elsewhere", "Stop every worktree of a repository"                                       | **No demo**                                      |
 | Single-column compact React/shadcn stack directory with aligned service/status/URL columns, expandable TOML, filtering, and exited-owner exclusion                                                   | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`, "Hostnames and DNS"                               | **No demo**                                      |
 | Customize the shared running-stack directory hostname and opt in to remote read access                                                                                                               | `guides/shared-managed-caddy-settings.md`, "Choose the stack directory hostname"                                                           | **No demo**                                      |
-| Restart running supervisors and serve sessions with the updated executable                                                                                                                           | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"                                                                             | **No demo**                                      |
+| Restart running supervisors and serve sessions with the updated executable; experimental Rust global `restart-all` and project-scoped `stack restart --all` on Linux                                 | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"; `reference/cli.md`; `development/building.md`, "Try the Rust port"         | **No demo**                                      |
 | Serve files or a port without a manifest, including the experimental Rust CLI; confined file browser, index/README fallback, breadcrumbs, Markdown first paint and list markers, and preview gallery | `start/serve.md`, `development/page-previews.md`; `development/building.md`, "Try the Rust port"                                           | **No demo**                                      |
 | Native manifest `serve` services with automatic ports and the stack service lifecycle, including the experimental Rust CLI                                                                           | `start/serve.md`, "Serve a folder in a stack"; `development/building.md`, "Try the Rust port"                                              | **No demo**                                      |
 | Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                                                                                                                                   | `guides/shared-managed-caddy-settings.md`, "Settings"                                                                                      | No demo                                          |

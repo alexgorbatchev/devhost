@@ -25,6 +25,7 @@ pub(super) struct Runtime<'a> {
     pub remote_lease: &'a mut Option<crate::remote::Lease>,
     pub progress: &'a mut ShutdownProgress,
     pub control: RuntimeControl,
+    pub control_port: u16,
     pub watches: ServiceWatches,
     pub manifest_watch: Option<InputWatch>,
 }
@@ -439,7 +440,7 @@ impl Runtime<'_> {
             &RegisterStackOptions {
                 remote: self.manifest.remote.is_some(),
                 log_path: self.launch.log_path.clone(),
-                control_port: 0,
+                control_port: self.control_port,
                 manifest_files: stack_manifest_files(Some(configuration)),
                 manifest_path: self.manifest.manifest_path.display().to_string(),
                 stack_name: name.to_owned(),

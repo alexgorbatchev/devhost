@@ -1,4 +1,5 @@
 mod devhost 'apps/devhost/justfile'
+mod rust 'apps/devhost/rust/justfile'
 mod design 'packages/design/justfile'
 mod ui 'packages/devhost-ui/justfile'
 mod docs 'packages/docs/justfile'
@@ -38,6 +39,7 @@ check:
 fix:
     bun --bun oxfmt --write .
     gofmt -w apps/devhost
+    just rust fmt
 
 # Build and register a protected devhost development override
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):

@@ -1,3 +1,5 @@
+mod rust 'rust/justfile'
+
 build-version := `bun -e 'const metadata = await Bun.file("./metadata.json").json(); console.log(metadata.version)'`
 build-version-variable := "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion"
 # Development builds set this to the checkout root; release builds leave it empty.

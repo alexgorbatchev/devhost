@@ -76,6 +76,7 @@ pub(crate) struct RestartRequest {
 
 /// The receiving half belongs to exactly one stack loop, which serializes changes.
 pub struct RuntimeControl {
+    sender: mpsc::Sender<RestartRequest>,
     pub(crate) requests: mpsc::Receiver<RestartRequest>,
     pub(crate) activity: ActivityTracker,
     pub(crate) dirty: Arc<Mutex<BTreeSet<String>>>,
@@ -95,16 +96,25 @@ impl RuntimeControl {
         let dirty = Arc::new(Mutex::new(BTreeSet::new()));
         (
             RuntimeHandle {
-                requests,
+                requests: requests.clone(),
                 activity: activity.clone(),
                 dirty: dirty.clone(),
             },
             Self {
+                sender: requests,
                 requests: receiver,
                 activity,
                 dirty,
             },
         )
+    }
+
+    pub(crate) fn handle(&self) -> RuntimeHandle {
+        RuntimeHandle {
+            requests: self.sender.clone(),
+            activity: self.activity.clone(),
+            dirty: self.dirty.clone(),
+        }
     }
 }
 

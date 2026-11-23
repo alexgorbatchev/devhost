@@ -27,15 +27,15 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 ## Rust port
 
-The experimental Cargo package lives in `apps/devhost/rust/`. Build or run it through its manifest to keep its binary separate from the Go development executable.
+The experimental Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` from the repository root to keep its binary separate from the Go development executable.
 
-Run its focused CLI integration tests with line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):
+Use `just rust test-affected <base>` to select the Rust package from changed source, fixtures, embedded UI/design assets, or shared test inputs. This is one Cargo package; changes with uncertain internal impact select its enclosing package. Use `just rust test <args>` for focused feedback. Run its package gate with formatting, Clippy, and at least 90% line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):
 
 ```bash
-cargo llvm-cov --manifest-path apps/devhost/rust/Cargo.toml --locked --fail-under-lines 90 --fail-under-functions 90
+just rust check
 ```
 
-Compare ported features against the Go revision and record evidence as described in [Go baseline for the Rust port](../../docs/internal/references/rust-port-parity.md).
+Root `just fix` formats first-party Rust with `cargo fmt --package devhost-rust`, preserving vendored dependency formatting. Coverage builds use line-table debug information in their separate instrumented target; normal development builds retain their configured debug information and incremental state. The experimental package has its own checks; root `just check` continues checking the released Go app and browser workspaces. Compare ported features against the Go revision and record evidence as described in [Go baseline for the Rust port](../../docs/internal/references/rust-port-parity.md).
 
 ## Development workflow
 

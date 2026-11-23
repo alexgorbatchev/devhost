@@ -4,6 +4,7 @@ pub mod document_injection;
 pub mod page_preview;
 pub mod recovery;
 pub mod request_guard;
+pub mod server;
 
 use serde::{Deserialize, Serialize};
 

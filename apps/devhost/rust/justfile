@@ -1,0 +1,40 @@
+set dotenv-load := false
+
+[default]
+run *args:
+    cargo run --locked -- {{args}}
+
+run-ai *args:
+    AGENT=1 cargo run --locked -- {{args}}
+
+test *args:
+    bash ../../../test-support/runTests.sh cargo test --locked {{args}}
+
+# Every test links this single library package. Cargo tracks its transitive inputs.
+test-affected base=`git merge-base HEAD origin/main`:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    changed="$(git diff --name-only "{{base}}" -- . ../../../packages/design ../../../packages/devhost-ui ../../../test-support ../../../bun.lock ../../../package.json ../../../patches; git ls-files --others --exclude-standard -- .)"
+    if [[ -z "$changed" ]]; then
+        echo 'No Rust package inputs changed; no tests selected.'
+        exit 0
+    fi
+    echo 'Selected devhost-rust: one Cargo package; source, fixtures, embedded UI/design assets, or shared test inputs changed.'
+    just test
+
+fmt:
+    cargo fmt --package devhost-rust
+
+fmt-check:
+    cargo fmt --package devhost-rust -- --check
+
+lint:
+    cargo clippy --all-targets --locked -- -D warnings
+
+coverage:
+    CARGO_PROFILE_DEV_DEBUG=line-tables-only CARGO_PROFILE_TEST_DEBUG=line-tables-only bash ../../../test-support/runTests.sh cargo llvm-cov --locked --fail-under-lines 90 --fail-under-functions 90
+
+check: fmt-check lint coverage
+
+build:
+    cargo build --locked

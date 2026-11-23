@@ -29,6 +29,7 @@ pub struct LiveStack {
     pub name: String,
     pub pid: i32,
     pub manifest_path: String,
+    pub manifest_files: Vec<String>,
     pub started_at: String,
     pub control_port: u16,
     pub owner_start_identity: String,
@@ -163,6 +164,9 @@ pub fn register_stack(
                 record.ready = previous.ready;
                 record.urls = previous.urls;
                 record.log_path = previous.log_path;
+                if !previous.created_at.is_empty() {
+                    record.created_at = previous.created_at;
+                }
             }
         }
         Err(error) if error.kind() == io::ErrorKind::NotFound => {}
@@ -234,6 +238,7 @@ pub fn read_live_stacks(caddy_dir: &Path) -> Result<Vec<LiveStack>, String> {
                 name: record.stack_name,
                 pid: record.owner_pid,
                 manifest_path: record.manifest_path,
+                manifest_files: record.manifest_files,
                 started_at: record.created_at,
                 control_port: record.control_port,
                 owner_start_identity: record.owner_start_identity,
@@ -249,6 +254,39 @@ pub fn read_live_stacks(caddy_dir: &Path) -> Result<Vec<LiveStack>, String> {
     Ok(stacks)
 }
 
+pub(crate) fn signal_live_stack(caddy_dir: &Path, stack: &LiveStack) -> Result<(), String> {
+    if stack.pid <= 0 || stack.pid == current_pid() {
+        return Err("cannot stop this stack".to_owned());
+    }
+    let stacks_dir = caddy_dir.join("stacks");
+    let _lock = stack_records_lock(&stacks_dir)?;
+    let path = stack_record_path(&stacks_dir, stack.pid);
+    let bytes = fs::read(&path)
+        .map_err(|error| format!("stack registration changed before restart: {error}"))?;
+    let current = path_ctx(parse_stack_record(&bytes), "read stack record", &path)?;
+    if current.owner_pid != stack.pid
+        || current.owner_start_identity != stack.owner_start_identity
+        || current.manifest_path != stack.manifest_path
+        || current.manifest_files != stack.manifest_files
+        || current.created_at != stack.started_at
+    {
+        return Err("stack registration changed before restart".to_owned());
+    }
+    let identity = ctx(
+        procid::start_identity(stack.pid),
+        "read stack process identity",
+    )?;
+    if identity.is_empty() || identity != current.owner_start_identity {
+        return Err("stack process changed before restart".to_owned());
+    }
+    // SAFETY: the positive, non-self PID and its exact persisted owner were
+    // verified under the registry lock. The supervisor owns its service groups.
+    if unsafe { libc::kill(stack.pid, libc::SIGTERM) } != 0 {
+        return Err(format!("signal stack: {}", io::Error::last_os_error()));
+    }
+    Ok(())
+}
+
 pub fn set_stack_ready(caddy_dir: &Path, urls: Vec<String>) -> Result<(), String> {
     let stacks_dir = caddy_dir.join("stacks");
     let _lock = stack_records_lock(&stacks_dir)?;
@@ -261,26 +299,77 @@ pub fn set_stack_ready(caddy_dir: &Path, urls: Vec<String>) -> Result<(), String
 }
 
 pub fn read_live_stack_owners(caddy_dir: &Path) -> Result<Vec<StackOwner>, String> {
+    read_matching_stack_owners(caddy_dir, &|_| true)
+}
+
+pub fn find_live_stack_owners(
+    caddy_dir: &Path,
+    query: &str,
+    directory: &Path,
+) -> Result<Vec<StackOwner>, String> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Err("stack query must not be empty".to_owned());
+    }
+    if query.contains("://") {
+        let parsed = url::Url::parse(query).map_err(|_| invalid_stack_query())?;
+        if !matches!(parsed.scheme(), "http" | "https") || parsed.host_str().is_none() {
+            return Err(invalid_stack_query());
+        }
+        let host = parsed.host_str().expect("validated URL hostname");
+        return read_matching_stack_owners(caddy_dir, &|owner| {
+            owner.host.eq_ignore_ascii_case(host)
+        });
+    }
+    let named = directory.join(query);
+    let manifest = named
+        .metadata()
+        .ok()
+        .filter(|info| !info.is_dir())
+        .map(|_| crate::paths::manifest_identity(&named));
+    let lower = query.to_lowercase();
+    read_matching_stack_owners(caddy_dir, &|owner| {
+        owner.host.to_lowercase().contains(&lower)
+            || owner.name.to_lowercase().contains(&lower)
+            || owner.manifest_path.to_lowercase().contains(&lower)
+            || manifest.as_ref().is_some_and(|named| {
+                crate::paths::manifest_identity(Path::new(&owner.manifest_path)) == *named
+            })
+    })
+}
+
+fn invalid_stack_query() -> String {
+    "stack query must be an HTTP(S) URL, hostname, or name".to_owned()
+}
+
+fn read_matching_stack_owners(
+    caddy_dir: &Path,
+    matches: &dyn Fn(&RecordedOwner) -> bool,
+) -> Result<Vec<StackOwner>, String> {
     let mut owners = BTreeSet::new();
     collect_owners_from_dir(
         &caddy_dir.join("stacks"),
         &mut owners,
         parse_stack_record_owner,
+        matches,
     )?;
     collect_owners_from_dir(
         &caddy_dir.join("routes/.host-claims"),
         &mut owners,
         parse_host_claim_owner,
+        matches,
     )?;
     collect_owners_from_dir(
         &caddy_dir.join("port-claims"),
         &mut owners,
         parse_fixed_port_claim_owner,
+        matches,
     )?;
     collect_owners_from_dir(
         &caddy_dir.join("routes/.registrations"),
         &mut owners,
         parse_route_registration_owner,
+        matches,
     )?;
     Ok(owners.into_iter().collect())
 }
@@ -289,12 +378,15 @@ struct RecordedOwner {
     manifest_path: String,
     pid: i32,
     start_identity: String,
+    host: String,
+    name: String,
 }
 
 fn collect_owners_from_dir(
     dir: &Path,
     owners: &mut BTreeSet<StackOwner>,
     parse: fn(&[u8]) -> Result<RecordedOwner, String>,
+    matches: &dyn Fn(&RecordedOwner) -> bool,
 ) -> Result<(), String> {
     if !dir.exists() {
         return Ok(());
@@ -309,6 +401,7 @@ fn collect_owners_from_dir(
         if recorded.manifest_path.is_empty()
             || recorded.pid <= 0
             || !procid::is_record_owner_alive(recorded.pid, &recorded.start_identity)
+            || !matches(&recorded)
         {
             continue;
         }
@@ -326,6 +419,8 @@ fn parse_stack_record_owner(bytes: &[u8]) -> Result<RecordedOwner, String> {
         manifest_path: record.manifest_path,
         pid: record.owner_pid,
         start_identity: record.owner_start_identity,
+        host: String::new(),
+        name: record.stack_name,
     })
 }
 
@@ -335,6 +430,8 @@ fn parse_host_claim_owner(bytes: &[u8]) -> Result<RecordedOwner, String> {
         manifest_path: record.manifest_path,
         pid: record.owner_pid,
         start_identity: record.owner_start_identity,
+        host: record.host,
+        name: String::new(),
     })
 }
 
@@ -345,6 +442,8 @@ fn parse_fixed_port_claim_owner(bytes: &[u8]) -> Result<RecordedOwner, String> {
         manifest_path: record.manifest_path,
         pid: record.owner_pid,
         start_identity: record.owner_start_identity,
+        host: String::new(),
+        name: String::new(),
     })
 }
 
@@ -354,6 +453,8 @@ fn parse_route_registration_owner(bytes: &[u8]) -> Result<RecordedOwner, String>
             manifest_path: record.manifest_path,
             pid: record.owner_pid,
             start_identity: record.owner_start_identity,
+            host: record.host,
+            name: String::new(),
         });
     }
     // Legacy registrations have no manifestPath and are skipped by caller.
@@ -370,6 +471,8 @@ fn parse_route_registration_owner(bytes: &[u8]) -> Result<RecordedOwner, String>
                 .and_then(serde_json::Value::as_i64)
                 .unwrap_or(0) as i32,
             start_identity: String::new(),
+            host: String::new(),
+            name: String::new(),
         });
     }
     Err("Registration file is malformed.".to_owned())
@@ -475,7 +578,16 @@ fn stack_record_path(stacks_dir: &Path, pid: i32) -> PathBuf {
     stacks_dir.join(format!("{pid}.json"))
 }
 
-fn stack_records_lock(stacks_dir: &Path) -> Result<File, String> {
+struct StackRecordsLock(File);
+
+impl Drop for StackRecordsLock {
+    fn drop(&mut self) {
+        // Release even while another thread's fork still holds the descriptor.
+        let _ = self.0.unlock();
+    }
+}
+
+fn stack_records_lock(stacks_dir: &Path) -> Result<StackRecordsLock, String> {
     let lock_path = PathBuf::from(format!("{}.lock", stacks_dir.display()));
     if let Some(parent) = lock_path.parent() {
         path_ctx(
@@ -497,7 +609,7 @@ fn stack_records_lock(stacks_dir: &Path) -> Result<File, String> {
         &lock_path,
     )?;
     ctx(lock.lock(), "lock stack records")?;
-    Ok(lock)
+    Ok(StackRecordsLock(lock))
 }
 
 #[cfg(test)]

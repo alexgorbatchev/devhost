@@ -73,6 +73,11 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
             .subcommand(start_command())
             .subcommand(serve_command())
             .subcommand(stop_command())
+            .subcommand(stack_command())
+            .subcommand(
+                Command::new("restart-all")
+                    .about("Restart every running stack with the current executable"),
+            )
             .subcommand(
                 Command::new("_remote-worker").hide(true).arg(
                     Arg::new("state-dir")
@@ -112,6 +117,43 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                 Some(("stop", stop_matches)) => {
                     drop(stdout);
                     return run_stop(stop_matches, mode);
+                }
+                Some(("stack", stack)) => match stack.subcommand() {
+                    Some(("list", _)) => return list_stacks(None, mode, &mut stdout),
+                    Some(("find", args)) => {
+                        return list_stacks(
+                            args.get_one::<String>("query").map(String::as_str),
+                            mode,
+                            &mut stdout,
+                        );
+                    }
+                    Some(("restart", args)) => {
+                        drop(stdout);
+                        return run_stack_restart(args, mode);
+                    }
+                    _ => {
+                        if let Some(command) = root.find_subcommand_mut("stack") {
+                            command.write_help(&mut stdout)?;
+                        }
+                    }
+                },
+                Some(("restart-all", _)) => {
+                    drop(stdout);
+                    let state = match machine::state_directory() {
+                        Ok(state) => state,
+                        Err(error) => return Ok(write_failure(mode, error.into())?),
+                    };
+                    let output = cliout::ServiceOutput::stdio(mode, &["devhost"]);
+                    return Ok(
+                        match devhost_rust::services::restart::restart_stacks(
+                            None,
+                            &paths::clean(&state),
+                            &output,
+                        ) {
+                            Ok(()) => ExitCode::SUCCESS,
+                            Err(error) => write_failure(mode, error.into())?,
+                        },
+                    );
                 }
                 Some(("service", service)) if service.subcommand_name() == Some("list") => {
                     let list = service.subcommand_matches("list").expect("list arguments");
@@ -198,6 +240,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
 
 fn start_command() -> Command {
     Command::new("start")
+        .args_override_self(true)
         .about("Start the services in devhost.toml")
         .arg(manifest_arg())
         .arg(
@@ -217,13 +260,23 @@ fn start_command() -> Command {
             Arg::new("local")
                 .long("local")
                 .short('l')
-                .action(ArgAction::SetTrue)
+                .action(ArgAction::Set)
+                .value_parser(value_parser!(bool))
+                .num_args(0..=1)
+                .require_equals(true)
+                .default_missing_value("true")
+                .default_value("false")
                 .help("Use local routing even when a remote relay is configured."),
         )
         .arg(
             Arg::new("remote")
                 .long("remote")
-                .action(ArgAction::SetTrue)
+                .action(ArgAction::Set)
+                .value_parser(value_parser!(bool))
+                .num_args(0..=1)
+                .require_equals(true)
+                .default_missing_value("true")
+                .default_value("false")
                 .help("Require the configured remote preview relay."),
         )
         .arg(
@@ -583,6 +636,94 @@ fn run_stop(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Err
         Ok(()) => Ok(ExitCode::SUCCESS),
         Err(err) => Ok(write_failure(mode, err.into())?),
     }
+}
+
+fn stack_command() -> Command {
+    Command::new("stack")
+        .about("Inspect the stacks running on this machine")
+        .subcommand(Command::new("list")
+            .about("Print the PID and manifest of running stacks")
+            .long_about("Print one running stack per line: PID, tab, absolute manifest path.\nWorks from any directory, with identical output in both modes."))
+        .subcommand(Command::new("find")
+            .about("Find running stacks by hostname, URL, name, or manifest")
+            .arg(Arg::new("query").required(true)))
+        .subcommand(Command::new("restart")
+            .about("Restart the running stack for this project")
+            .arg(manifest_arg())
+            .arg(Arg::new("all").short('a').long("all").action(ArgAction::SetTrue)
+                .help("Restart the current project's whole stack.")))
+}
+
+fn list_stacks(
+    query: Option<&str>,
+    mode: Mode,
+    stdout: &mut dyn Write,
+) -> Result<ExitCode, Box<dyn Error>> {
+    let result = (|| {
+        let state = machine::state_directory()
+            .map_err(|error| format!("resolve caddy paths from environment: {error}"))?;
+        let caddy = paths::clean(&state.join("caddy"));
+        let owners = match query {
+            Some(query) => caddy::stacks::find_live_stack_owners(
+                &caddy,
+                query,
+                &env::current_dir().map_err(|error| error.to_string())?,
+            ),
+            None => caddy::stacks::read_live_stack_owners(&caddy)
+                .map_err(|error| format!("scan record directories for running stacks: {error}")),
+        }?;
+        for owner in owners {
+            // This is the raw TSV contract consumed by stop --manifest, in both
+            // output modes; retain the absolute manifest identity.
+            writeln!(stdout, "{}\t{}", owner.pid, owner.manifest_path)
+                .map_err(|error| format!("write running stacks: {error}"))?;
+        }
+        stdout
+            .flush()
+            .map_err(|error| format!("write running stacks: {error}"))
+    })();
+    Ok(match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(message) => write_failure(mode, message.into())?,
+    })
+}
+
+fn run_stack_restart(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Error>> {
+    let explicit = args.get_one::<PathBuf>("manifest").map(PathBuf::as_path);
+    if let Err(failure) = validate_manifest_flag(explicit) {
+        return Ok(write_failure(mode, failure)?);
+    }
+    if args.get_flag("all") && explicit.is_some() {
+        return Ok(write_failure(
+            mode,
+            "--all and --manifest (or DEVHOST_MANIFEST) are mutually exclusive"
+                .to_owned()
+                .into(),
+        )?);
+    }
+    let cwd = env::current_dir()?;
+    let manifest = match explicit {
+        Some(path) => paths::clean(&cwd.join(path)),
+        None => match manifest::resolve_path(&cwd, None) {
+            Ok(path) => path,
+            Err(failure) => return Ok(write_failure(mode, failure)?),
+        },
+    };
+    let state = match machine::state_directory() {
+        Ok(state) => state,
+        Err(error) => return Ok(write_failure(mode, error.into())?),
+    };
+    let output = cliout::ServiceOutput::stdio(mode, &["devhost"]);
+    Ok(
+        match devhost_rust::services::restart::restart_stacks(
+            Some(&manifest),
+            &paths::clean(&state),
+            &output,
+        ) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => write_failure(mode, error.into())?,
+        },
+    )
 }
 
 fn finish_caddy(mode: Mode, result: Result<(), Failure>) -> io::Result<ExitCode> {

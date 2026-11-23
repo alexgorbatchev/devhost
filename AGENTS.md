@@ -8,7 +8,8 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Ensure Playwright Chromium is available for Storybook workflows: `just ui install-browser`
 - Check the full repo: `just check`
 - Prepare the workspace dependencies and embedded bundle: `just setup`
-- Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`)
+- Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`, first-party Rust formatting through `just rust fmt`)
+- Check the experimental Rust CLI: `just rust check`; run or build it with `just rust run <args>` or `just rust build`. Its package checks remain separate from the released Go CLI checks.
 - Refresh the generated embedded devtools bundle and standalone page scripts and stylesheets: `just devhost build-devtools-bundle`
 - Check `devhost` app-only validations: `just devhost check`
 - Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just cli <args>` is the human-mode equivalent); they forward to `devhost run-ai` and `devhost run`, respectively

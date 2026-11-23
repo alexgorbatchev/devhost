@@ -443,13 +443,19 @@ pub fn start_stack(
         caddy::ensure_managed_caddy_config(&options.caddy_dir, &shared.caddy)?;
         cleanup_stale_stack_records(&options.caddy_dir)?;
 
+        let control = options
+            .runtime_control
+            .take()
+            .unwrap_or_else(|| super::control::RuntimeControl::channel().1);
+        let control_server = crate::devtools::server::ControlServer::start(control.handle())?;
+
         let manifest_files = stack_manifest_files(options.configuration.as_ref());
         if let Err(err) = register_stack(
             &options.caddy_dir,
             &RegisterStackOptions {
                 remote: manifest.remote.is_some(),
                 log_path: launch.log_path.clone(),
-                control_port: 0,
+                control_port: control_server.port(),
                 manifest_files,
                 manifest_path: manifest_path_str.clone(),
                 stack_name: manifest.name.clone(),
@@ -560,10 +566,6 @@ pub fn start_stack(
             );
         }
 
-        let control = options
-            .runtime_control
-            .take()
-            .unwrap_or_else(|| super::control::RuntimeControl::channel().1);
         let mut watches =
             super::watch::ServiceWatches::new(control.dirty.clone(), options.output.clone());
         for service in manifest.services.values() {
@@ -850,6 +852,7 @@ pub fn start_stack(
             remote_lease: &mut remote_lease,
             progress: &mut shutdown_progress,
             control,
+            control_port: control_server.port(),
             watches,
             manifest_watch,
         }

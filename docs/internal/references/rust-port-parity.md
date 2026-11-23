@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-22 19:15
+last_modified: 2026-11-22 20:25
 status: current
 ---
 
@@ -32,7 +32,7 @@ Install [Rust Anything v3.3.0](https://github.com/erkamyaman/rust-anything/relea
 In a checkout at the Go SHA under test, run `just cli --version` to build the Go oracle at `apps/devhost/bin/source/devhost`. From the Rust worktree, build the Rust binary and point the recording at the absolute path of that Go executable. Keep recordings in a separate scratch directory per slice. This smoke case checks the entire service list and the startable filter.
 
 ```sh
-cargo build --manifest-path apps/devhost/rust/Cargo.toml --locked
+just rust build
 mkdir -p .state/rust-anything/service-list
 rust-anything app record .state/rust-anything/service-list \
   --inputs "$PWD/apps/devhost/rust/tests/service-list.jsonl" --no-traps \
@@ -53,8 +53,7 @@ It never connects to a production relay or installs a CA in the machine trust
 store.
 
 ```sh
-bash test-support/runTests.sh cargo test \
-  --manifest-path apps/devhost/rust/Cargo.toml --locked --test remote_transport
+just rust test --test remote_transport
 ```
 
 Set `DEVHOST_REMOTE_TEST_BINARY` to the absolute path of the Go oracle to run the
@@ -66,6 +65,24 @@ Makiko 0.2.5 is vendored with generic server global-request support because its
 released API cannot answer the relay's keepalives. The [dependency patch
 notes](../../../apps/devhost/rust/vendor/makiko/DEVHOST-PATCH.md) describe the
 extension and the condition for returning to a registry release.
+
+## Native stack-command tests
+
+`just rust test --test stack_commands` checks live owner lookup, manifest identity,
+foreground and detached supervisor replacement, launch environment and directory
+preservation, private restart logs, and replacement of file-serving sessions.
+Set `DEVHOST_STACK_TEST_BINARY` to the absolute Go oracle executable to compare
+the same scenarios. The comparison maps Rust's global `restart-all` to Go's older
+`stack restart --all` spelling and excludes the explicitly changed project-scoped
+`--all` scenario. Use a Go revision that preserves registration timestamps across
+unchanged reloads; older versions can refuse a valid global restart while their
+initial manifest check rewrites a registration.
+
+`just rust test-affected <base>` selects this Cargo package when its sources,
+fixtures, embedded UI/design assets, or shared test inputs change. `just rust
+check` runs its formatting, Clippy, and 90% line/function coverage gates. Coverage
+uses line-table debug information in a separate instrumented target, preserving
+the normal development target and its incremental state.
 
 ## Catch up with Go main
 

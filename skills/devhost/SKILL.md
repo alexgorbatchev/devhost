@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, routing
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-11-17 09:35
+  last_modified: 2026-11-22 20:25
   status: current
 ---
 
@@ -97,6 +97,8 @@ Read the preceding stack log to explain child signal `15` or exit code `143`: de
 ### Restart With an Updated Executable
 
 Run `devhost stack restart --all` after installing a new binary to replace every manifest stack and standalone `serve` session in the same state directory. `devhost stack restart` selects the nearest manifest; `--manifest <path>`, `-m <path>` (string), or `DEVHOST_MANIFEST` selects another. `--all`, `-a` (bool, default false) and an explicit or environment manifest are mutually exclusive. The command takes zero positional arguments. Zero running matches succeeds with a diagnostic.
+
+For the experimental Rust executable on Linux, use `devhost restart-all` (zero arguments or flags) for the global operation from any directory. Its `devhost stack restart --all` resolves the current project's root manifest and restarts that whole stack, with the same manifest-option restriction. Rust stack replacement on other platforms remains incomplete; use the Go executable there.
 
 Each selected process's arguments, working directory, and environment are captured in memory before any shutdown. Replacements use the executable running the restart command, original launch service selection and flags, saved worktree choices, and files currently on disk. Services started later through the UI follow the launch selection. Replacements run in the background with closed input and private logs under `<state>/restart-<random>/<old-pid>.log`; stdout reports old and new PIDs and log paths with the standard diagnostic prefix. Original foreground commands exit. Stop a manifest replacement with `devhost stop`; signal a serve replacement by its new PID. Every replacement starts like a foreground stack, including one that replaces a `--detach` stack: a service that fails health enters browser recovery while the stack keeps running, and a detached stack's replacement records its new log path for `devhost start --detach` to report.
 
