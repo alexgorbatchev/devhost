@@ -359,12 +359,30 @@ fn proxy_request<'a>(
         if !state.options.inject_enabled() || !is_html {
             return Response::from_parts(resp_parts, Body::new(resp_body));
         }
-
-        let Ok(bytes) = to_bytes(Body::new(resp_body), 64 * 1024 * 1024).await else {
+        let encoding = resp_parts
+            .headers
+            .get(header::CONTENT_ENCODING)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or("identity")
+            .trim()
+            .to_ascii_lowercase();
+        if !matches!(
+            encoding.as_str(),
+            "identity" | "gzip" | "x-gzip" | "deflate"
+        ) {
+            return Response::from_parts(resp_parts, Body::new(resp_body));
+        }
+        let Ok(bytes) = to_bytes(Body::new(resp_body), usize::MAX).await else {
             return no_store_error(StatusCode::BAD_GATEWAY, "Failed reading upstream HTML body");
         };
-        let text = String::from_utf8_lossy(&bytes);
-        let rewritten = inject_devtools_script(&text);
+        let rewritten =
+            tokio::task::spawn_blocking(move || rewrite_document(&bytes, &encoding)).await;
+        let Ok(Ok(rewritten)) = rewritten else {
+            return no_store_error(
+                StatusCode::BAD_GATEWAY,
+                "Failed decoding upstream HTML body",
+            );
+        };
         resp_parts
             .headers
             .remove(HeaderName::from_static("content-security-policy"));
@@ -372,6 +390,8 @@ fn proxy_request<'a>(
             "content-security-policy-report-only",
         ));
         resp_parts.headers.remove(header::CONTENT_LENGTH);
+        resp_parts.headers.remove(header::ETAG);
+        resp_parts.headers.remove(header::CONTENT_ENCODING);
         Response::from_parts(resp_parts, Body::from(rewritten))
     })
 }
@@ -407,31 +427,37 @@ async fn proxy_error_response(
         .expect("unavailable response")
 }
 
-pub fn inject_devtools_script(document: &str) -> String {
-    let injected_tag = format!(r#"<script type="module" src="{INJECTED_SCRIPT_PATH}"></script>"#);
-    let lower = document.to_ascii_lowercase();
-    let Some(idx) = lower.rfind("</body>") else {
-        return format!("{document}{injected_tag}");
-    };
-    // Preserve exact slicing boundaries only when byte offsets match ASCII lowercase mapping.
-    if lower.len() == document.len() {
-        format!("{}{injected_tag}{}", &document[..idx], &document[idx..])
-    } else {
-        // Rare Unicode case where lowercase changes byte offsets: fall back to case-insensitive char scan.
-        let mut char_idx = None;
-        for (byte_pos, _) in document.char_indices() {
-            if document[byte_pos..].len() >= 7
-                && document[byte_pos..].is_char_boundary(7)
-                && document[byte_pos..byte_pos + 7].eq_ignore_ascii_case("</body>")
-            {
-                char_idx = Some(byte_pos);
-            }
+fn rewrite_document(bytes: &[u8], encoding: &str) -> std::io::Result<Vec<u8>> {
+    use std::io::Read;
+    let mut decoded = Vec::new();
+    match encoding {
+        "gzip" | "x-gzip" => {
+            flate2::read::MultiGzDecoder::new(bytes).read_to_end(&mut decoded)?;
         }
-        match char_idx {
-            Some(pos) => format!("{}{injected_tag}{}", &document[..pos], &document[pos..]),
-            None => format!("{document}{injected_tag}"),
+        "deflate" => {
+            flate2::read::ZlibDecoder::new(bytes).read_to_end(&mut decoded)?;
         }
+        _ => return Ok(inject_script_bytes(bytes)),
     }
+    Ok(inject_script_bytes(&decoded))
+}
+
+fn inject_script_bytes(document: &[u8]) -> Vec<u8> {
+    let injected_tag = format!(r#"<script type="module" src="{INJECTED_SCRIPT_PATH}"></script>"#);
+    let index = document
+        .windows(7)
+        .rposition(|window| window.eq_ignore_ascii_case(b"</body>"))
+        .unwrap_or(document.len());
+    let mut rewritten = Vec::with_capacity(document.len() + injected_tag.len());
+    rewritten.extend_from_slice(&document[..index]);
+    rewritten.extend_from_slice(injected_tag.as_bytes());
+    rewritten.extend_from_slice(&document[index..]);
+    rewritten
+}
+
+pub fn inject_devtools_script(document: &str) -> String {
+    // Both the source string and the ASCII tag are valid UTF-8.
+    String::from_utf8(inject_script_bytes(document.as_bytes())).expect("injection preserves UTF-8")
 }
 
 fn format_host_port(host: &str, port: u16) -> String {

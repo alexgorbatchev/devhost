@@ -147,29 +147,10 @@ fn prepare_services(child: &mut Table, root: &Path, included: &Path) {
                     .entry("cwd")
                     .or_insert_with(|| Value::String(".".into()));
             }
-            rewrite_cwd(service, root_dir, include_dir);
-        }
-    }
-}
-
-fn rewrite_cwd(value: &mut Value, root_dir: &Path, include_dir: &Path) {
-    match value {
-        Value::Table(fields) => {
-            for (key, item) in fields {
-                match item {
-                    Value::String(path) if key == "cwd" => {
-                        rewrite_path(path, root_dir, include_dir)
-                    }
-                    _ => rewrite_cwd(item, root_dir, include_dir),
-                }
+            if let Some(Value::String(cwd)) = fields.get_mut("cwd") {
+                rewrite_path(cwd, root_dir, include_dir);
             }
         }
-        Value::Array(items) => {
-            for item in items {
-                rewrite_cwd(item, root_dir, include_dir);
-            }
-        }
-        _ => {}
     }
 }
 
@@ -384,10 +365,7 @@ mod tests {
         let services = &manifest["services"];
         assert_eq!(services["web"]["cwd"].as_str(), Some("frontend"));
         assert_eq!(services["api"]["cwd"].as_str(), Some("parts"));
-        assert_eq!(
-            services["api"]["env"]["cwd"].as_str(),
-            Path::new("parts").join("cache").to_str()
-        );
+        assert_eq!(services["api"]["env"]["cwd"].as_str(), Some("cache"));
         assert_eq!(services["api"]["watch"][0].as_str(), Some("."));
         assert_eq!(
             services["assets"]["serve"].as_str(),

@@ -3,7 +3,7 @@ use std::{
     fs,
     io::{self, Read, Write},
     net::{TcpListener, TcpStream},
-    os::unix::process::CommandExt,
+    os::unix::{ffi::OsStringExt, process::CommandExt},
     path::{Path, PathBuf},
     process::{Child, Command, ExitStatus, Stdio},
     sync::{
@@ -15,6 +15,8 @@ use std::{
 };
 
 use cli_command_kit::Mode;
+#[path = "stack_lifecycle/compatibility.rs"]
+mod compatibility;
 #[path = "stack_lifecycle/runtime.rs"]
 mod runtime;
 use devhost_rust::{
@@ -278,6 +280,7 @@ fn serve_cli_starts_caddy_ignores_manifests_and_preserves_external_services() {
             command
                 .current_dir(root)
                 .env("AGENT", "1")
+                .env("OPAQUE", std::ffi::OsString::from_vec(vec![0xff]))
                 .env("HOME", root.join("home"))
                 .env("DEVHOST_STATE_DIR", root.join("state"))
                 .env("DEVHOST_CONFIG_DIR", config_path.parent().unwrap())

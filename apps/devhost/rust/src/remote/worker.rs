@@ -71,6 +71,7 @@ async fn serve(dir: PathBuf, owner: Owner) -> io::Result<()> {
     tokio::pin!(connector);
     let mut connector_finished = false;
     let mut connections = JoinSet::new();
+    let mut admin_connections = JoinSet::new();
     let (upgrade_tx, mut upgrades) = mpsc::channel::<proxy::Upgrade>(128);
     let mut ticker = tokio::time::interval(Duration::from_millis(250));
     let publish_dir = dir.clone();
@@ -99,11 +100,11 @@ async fn serve(dir: PathBuf, owner: Owner) -> io::Result<()> {
                 },
                 Err(error) => break Err(error),
             },
-            accepted = admin.accept(), if connections.len() < 128 => match accepted {
+            accepted = admin.accept(), if admin_connections.len() < 32 => match accepted {
                 Ok((socket, _)) => {
                     let ready = ready.clone();
                     let address = address.clone();
-                    connections.spawn(async move {
+                    admin_connections.spawn(async move {
                         let service = service_fn(move |request| readiness(request, address.clone(), ready.clone()));
                         let _ = http1::Builder::new().timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(5)).serve_connection(TokioIo::new(socket), service).await;
                     });
@@ -118,6 +119,7 @@ async fn serve(dir: PathBuf, owner: Owner) -> io::Result<()> {
                 });
             },
             Some(_) = connections.join_next(), if !connections.is_empty() => {},
+            Some(_) = admin_connections.join_next(), if !admin_connections.is_empty() => {},
             _ = ticker.tick() => {
                 let dir = dir.clone();
                 let next = record.clone();
@@ -140,6 +142,7 @@ async fn serve(dir: PathBuf, owner: Owner) -> io::Result<()> {
         let _ = connector.await;
     }
     connections.shutdown().await;
+    admin_connections.shutdown().await;
     result
 }
 

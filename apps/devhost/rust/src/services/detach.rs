@@ -477,6 +477,7 @@ pub fn start_detached_stack(options: DetachedStartOptions) -> Result<(), Failure
         .stdin(Stdio::null())
         .stdout(Stdio::from(log_file))
         .stderr(Stdio::from(stderr_log));
+    crate::environment::inherit_non_unicode(&mut cmd);
     for (k, v) in child_env {
         cmd.env(k, v);
     }

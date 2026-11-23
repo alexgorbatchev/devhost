@@ -48,11 +48,9 @@ pub(in crate::devtools) async fn serve(
         "{:x}",
         Sha256::digest(manifest.manifest_path.as_os_str().as_encoded_bytes())
     );
-    let path = handle
-        .live
-        .caddy_dir()
-        .join("chat-panels")
-        .join(format!("{key}.json"));
+    let caddy_dir = handle.live.caddy_dir();
+    let state_dir = caddy_dir.parent().unwrap_or(&caddy_dir);
+    let path = state_dir.join("chat-panels").join(format!("{key}.json"));
     match *request.method() {
         Method::GET => {
             let result = tokio::task::spawn_blocking(move || match std::fs::read(&path) {

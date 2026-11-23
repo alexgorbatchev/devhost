@@ -20,6 +20,7 @@ pub(super) struct Runtime<'a> {
     pub exit_rx: &'a Receiver<ServiceExitResult>,
     pub started: &'a mut Vec<StartedService>,
     pub daemons: &'a mut Vec<ResolvedService>,
+    pub daemon_output: &'a DaemonOutput,
     pub hosts: &'a mut Vec<String>,
     pub ports: &'a mut Vec<(String, u16)>,
     pub routes: &'a mut Vec<ActivateRouteOptions>,
@@ -263,7 +264,7 @@ impl Runtime<'_> {
         self.options
             .idle_timeout
             .filter(|timeout| !timeout.is_zero())
-            .or_else(|| manifest::parse_go_duration(&self.manifest.devtools.idle_timeout).ok())
+            .or_else(|| manifest::parse_idle_duration(&self.manifest.devtools.idle_timeout).ok())
             .unwrap_or_default()
     }
 
@@ -1060,6 +1061,7 @@ impl Runtime<'_> {
                     &service,
                     self.environment,
                     &self.options.output,
+                    self.daemon_output,
                 ) {
                     errors.push(error);
                     self.daemons.push(service);
@@ -1123,6 +1125,7 @@ impl Runtime<'_> {
                     self.environment,
                     &self.options.output,
                     self.cancel,
+                    self.daemon_output,
                 ) {
                     self.control.live.failed(name, &error);
                     return Err(error);

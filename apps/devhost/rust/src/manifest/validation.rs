@@ -367,7 +367,7 @@ fn validate_devtools(raw: Option<&Value>, schema: &mut Vec<String>) -> DevtoolsC
     }
 
     if let Some(idle) = read_optional_string(table, "idleTimeout", "devtools.idleTimeout", schema) {
-        match parse_go_duration(&idle) {
+        match super::types::parse_idle_duration(&idle) {
             Ok(_) => result.idle_timeout = idle,
             Err(error) => schema.push(format!(
                 "devtools.idleTimeout must be a valid duration: {error}"

@@ -27,7 +27,7 @@ api: listening
 hello: web (primary): https://hello.localhost
 ```
 
-Your services' output is never changed apart from the label.
+Your services' output keeps its content apart from the label. The experimental Rust CLI displays invalid UTF-8 bytes as replacement characters and continues reading subsequent lines.
 
 ## Output for agents
 

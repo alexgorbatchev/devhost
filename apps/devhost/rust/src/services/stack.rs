@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
-    env, fs,
+    fs,
     io::{BufRead, BufReader},
     net::TcpListener,
     os::unix::process::{CommandExt, ExitStatusExt},
@@ -52,6 +52,9 @@ use crate::{
     },
 };
 use sha2::{Digest, Sha256};
+
+mod daemon_output;
+use daemon_output::{CommandOptions, DaemonOutput, Readers};
 
 mod documents;
 pub(crate) mod live;
@@ -431,6 +434,7 @@ pub fn start_stack(
 
     let mut started_services: Vec<StartedService> = Vec::new();
     let mut started_daemons: Vec<ResolvedService> = Vec::new();
+    let daemon_output = DaemonOutput::default();
     let mut claimed_hosts: Vec<String> = Vec::new();
     let mut claimed_fixed_ports: Vec<(String, u16)> = Vec::new();
     let mut active_routes: Vec<ActivateRouteOptions> = Vec::new();
@@ -704,6 +708,7 @@ pub fn start_stack(
                         &environment,
                         &options.output,
                         &cancel,
+                        &daemon_output,
                     ) {
                         if let Some(sig) = check_termination_signal(
                             &cancel,
@@ -720,6 +725,7 @@ pub fn start_stack(
                             &service,
                             &environment,
                             &options.output,
+                            &daemon_output,
                         );
                         started_daemons.retain(|s| s.name != service.name);
                         if launch.detached {
@@ -965,6 +971,7 @@ pub fn start_stack(
             exit_rx: &exit_rx,
             started: &mut started_services,
             daemons: &mut started_daemons,
+            daemon_output: &daemon_output,
             hosts: &mut claimed_hosts,
             ports: &mut claimed_fixed_ports,
             routes: &mut active_routes,
@@ -1005,9 +1012,13 @@ pub fn start_stack(
     {
         cleanup_errors.push(err);
     }
-    if let Err(err) =
-        stop_daemon_lifecycle_services(manifest, &started_daemons, &environment, &options.output)
-    {
+    if let Err(err) = stop_daemon_lifecycle_services(
+        manifest,
+        &started_daemons,
+        &environment,
+        &options.output,
+        &daemon_output,
+    ) {
         cleanup_errors.push(err);
     }
 
@@ -1320,6 +1331,7 @@ fn start_service_process(
         .stderr(Stdio::piped())
         .process_group(0);
 
+    crate::environment::inherit_non_unicode(&mut cmd);
     let child_env = create_child_environment(
         environment,
         &service.env,
@@ -1408,13 +1420,14 @@ fn pipe_reader_lines<R: std::io::Read>(
     attempt_output: &AttemptOutputLines,
 ) {
     let mut buf_reader = BufReader::new(reader);
-    let mut line = String::new();
+    let mut line = Vec::new();
     loop {
         line.clear();
-        match buf_reader.read_line(&mut line) {
+        match buf_reader.read_until(b'\n', &mut line) {
             Ok(0) => break,
             Ok(_) => {
-                let text = line.trim_end_matches(&['\r', '\n'][..]);
+                let text = String::from_utf8_lossy(&line);
+                let text = text.trim_end_matches(&['\r', '\n'][..]);
                 attempt_output.append(format!("[{service_name}] {text}"));
                 if is_stderr {
                     output.write_child_stderr(service_name, text);
@@ -1514,11 +1527,13 @@ fn start_daemon_lifecycle_service(
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
     cancel: &AtomicBool,
+    daemon_output: &DaemonOutput,
 ) -> Result<(), String> {
     let Some(service) = manifest.services.get(service_name) else {
         return Err(format!("unknown service: {service_name}"));
     };
-    let running = read_daemon_lifecycle_status(manifest, service, environment, output)?;
+    let running =
+        read_daemon_lifecycle_status(manifest, service, environment, output, Some(cancel))?;
     if !running {
         run_service_command(
             manifest,
@@ -1527,6 +1542,10 @@ fn start_daemon_lifecycle_service(
             "daemon start",
             environment,
             output,
+            CommandOptions {
+                cancel: Some(cancel),
+                keep_output: Some(daemon_output),
+            },
         )?;
     }
     match wait_for_startup_health(service, &manifest.name, output, cancel, || None) {
@@ -1541,24 +1560,31 @@ fn stop_daemon_lifecycle_service(
     service: &ResolvedService,
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
+    daemon_output: &DaemonOutput,
 ) -> Result<(), String> {
     if !uses_daemon_lifecycle(service) {
         return Ok(());
     }
     if !service.lifecycle.status.is_empty() {
-        let running = read_daemon_lifecycle_status(manifest, service, environment, output)?;
+        let running = read_daemon_lifecycle_status(manifest, service, environment, output, None)?;
         if !running {
+            daemon_output.stop(&service.name);
             return Ok(());
         }
     }
-    run_service_command(
+    let result = run_service_command(
         manifest,
         service,
         &service.lifecycle.stop,
         "daemon stop",
         environment,
         output,
-    )
+        CommandOptions::default(),
+    );
+    if result.is_ok() {
+        daemon_output.stop(&service.name);
+    }
+    result
 }
 
 fn stop_daemon_lifecycle_services(
@@ -1566,12 +1592,14 @@ fn stop_daemon_lifecycle_services(
     daemons: &[ResolvedService],
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
+    daemon_output: &DaemonOutput,
 ) -> Result<(), String> {
     let mut progress = ShutdownProgress::new(output.clone(), manifest.name.clone());
     let mut errors = Vec::new();
     for service in daemons.iter().rev() {
         progress.stopping(&service.name);
-        let result = stop_daemon_lifecycle_service(manifest, service, environment, output);
+        let result =
+            stop_daemon_lifecycle_service(manifest, service, environment, output, daemon_output);
         progress.stopped(&service.name, result.as_ref().err().map(String::as_str));
         if let Err(err) = result {
             errors.push(err);
@@ -1589,6 +1617,7 @@ fn read_daemon_lifecycle_status(
     service: &ResolvedService,
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
+    cancel: Option<&AtomicBool>,
 ) -> Result<bool, String> {
     if service.lifecycle.status.is_empty() {
         return Ok(false);
@@ -1600,6 +1629,10 @@ fn read_daemon_lifecycle_status(
         "daemon status",
         environment,
         output,
+        CommandOptions {
+            cancel,
+            keep_output: None,
+        },
     )
 }
 
@@ -1610,6 +1643,7 @@ fn run_service_command(
     command_label: &str,
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
+    options: CommandOptions<'_>,
 ) -> Result<(), String> {
     if run_service_command_status(
         manifest,
@@ -1618,6 +1652,7 @@ fn run_service_command(
         command_label,
         environment,
         output,
+        options,
     )? {
         Ok(())
     } else {
@@ -1635,6 +1670,7 @@ fn run_service_command_status(
     command_label: &str,
     environment: &BTreeMap<String, String>,
     output: &ServiceOutput,
+    options: CommandOptions<'_>,
 ) -> Result<bool, String> {
     if command_args.is_empty() {
         return Err(format!(
@@ -1650,6 +1686,7 @@ fn run_service_command_status(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .process_group(0);
+    crate::environment::inherit_non_unicode(&mut cmd);
     for (key, value) in create_child_environment(
         environment,
         &service.env,
@@ -1663,28 +1700,50 @@ fn run_service_command_status(
         &format!("start service {} {command_label} command", service.name),
     )?;
     let attempt = Arc::new(AttemptOutputLines::default());
-    let mut threads = Vec::new();
+    let mut readers = Readers::default();
     if let Some(pipe) = child.stdout.take() {
-        let out = output.clone();
-        let name = service.name.clone();
-        let att = attempt.clone();
-        threads.push(thread::spawn(move || {
-            pipe_reader_lines(pipe, &name, &out, false, &att);
-        }));
+        readers.spawn(
+            pipe,
+            service.name.clone(),
+            output.clone(),
+            false,
+            attempt.clone(),
+        );
     }
     if let Some(pipe) = child.stderr.take() {
-        let out = output.clone();
-        let name = service.name.clone();
-        threads.push(thread::spawn(move || {
-            pipe_reader_lines(pipe, &name, &out, true, &attempt);
-        }));
+        readers.spawn(pipe, service.name.clone(), output.clone(), true, attempt);
     }
-    let status = caddy::ctx(
-        child.wait(),
-        &format!("wait for service {} {command_label} command", service.name),
-    )?;
-    for handle in threads {
-        let _ = handle.join();
+    let mut canceled_at = None;
+    let status = loop {
+        if let Some(status) = caddy::ctx(
+            child.try_wait(),
+            &format!("wait for service {} {command_label} command", service.name),
+        )? {
+            break status;
+        }
+        if options
+            .cancel
+            .is_some_and(|cancel| cancel.load(Ordering::Acquire))
+        {
+            let since = canceled_at.get_or_insert_with(|| {
+                send_signal_to_group(child.id() as i32, libc::SIGTERM);
+                Instant::now()
+            });
+            if since.elapsed() >= SHUTDOWN_GRACE_PERIOD {
+                send_signal_to_group(child.id() as i32, libc::SIGKILL);
+            }
+        }
+        thread::sleep(SHUTDOWN_POLL_INTERVAL);
+    };
+    if let Some(owner) = options.keep_output {
+        owner.retain(&service.name, readers);
+    } else {
+        // Let short-lived command output drain before canceling any inherited pipe.
+        thread::sleep(Duration::from_millis(25));
+        drop(readers);
+    }
+    if canceled_at.is_some() {
+        return Err("canceled".to_owned());
     }
     Ok(status.success())
 }
@@ -2160,7 +2219,7 @@ fn uses_daemon_lifecycle(service: &ResolvedService) -> bool {
 }
 
 fn read_current_environment() -> BTreeMap<String, String> {
-    env::vars().collect()
+    crate::environment::unicode()
 }
 
 fn format_pid_list(pids: &[i32]) -> String {
@@ -2452,6 +2511,7 @@ process = true
                 &BTreeMap::new(),
                 &output,
                 &cancel,
+                &DaemonOutput::default(),
             )
             .unwrap_err()
             .contains("daemon start command")
@@ -2463,6 +2523,7 @@ process = true
                 &[bad_daemon],
                 &BTreeMap::new(),
                 &output,
+                &DaemonOutput::default(),
             )
             .unwrap_err()
             .contains("daemon stop command")
@@ -2479,6 +2540,7 @@ process = true
                 "daemon start",
                 &BTreeMap::new(),
                 &output,
+                CommandOptions::default(),
             )
             .unwrap_err()
             .contains("command is empty")

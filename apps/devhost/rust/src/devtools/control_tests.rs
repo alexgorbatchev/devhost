@@ -115,6 +115,39 @@ fn http(
 }
 
 #[test]
+fn configuration_editor_creates_private_machine_config_directory_on_first_save() {
+    use std::os::unix::fs::PermissionsExt;
+    let mut fixture = Fixture::new();
+    let path = fixture.root.path().join("new/config/devhost/config.toml");
+    fixture.handle.live.set_config_path(Some(path.clone()));
+    let worker = fixture.validate_candidates();
+    let (status, saved) = fixture.json(
+        "config/save",
+        json!({"path":path,"content":"domainSuffix='localhost'\n","baseVersion":""}),
+    );
+    assert_eq!(status, 200, "{saved}");
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        "domainSuffix='localhost'\n"
+    );
+    assert_eq!(
+        fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    for directory in ["new", "new/config", "new/config/devhost"] {
+        assert_eq!(
+            fs::metadata(fixture.root.path().join(directory))
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o700
+        );
+    }
+    worker.join().unwrap();
+}
+
+#[test]
 fn configuration_editor_checks_versions_validation_permissions_and_disabled_state() {
     let mut fixture = Fixture::new();
     let worker = fixture.validate_candidates();
@@ -670,13 +703,15 @@ fn configuration_file_replacement_preserves_symlink_and_permissions() {
     assert!(super::config_files::read_file(directory.clone(), "config").is_err());
     assert!(super::config_files::write_file(&directory, b"replacement").is_err());
     assert!(directory.is_dir());
-    assert!(
-        super::config_files::write_file(&root.path().join("absent/config.toml"), b"replacement")
-            .is_err()
+    super::config_files::write_file(&root.path().join("absent/config.toml"), b"replacement")
+        .unwrap();
+    assert_eq!(
+        fs::read(root.path().join("absent/config.toml")).unwrap(),
+        b"replacement"
     );
     assert_eq!(
         fs::read_dir(root.path()).unwrap().count(),
-        if cfg!(unix) { 3 } else { 2 }
+        if cfg!(unix) { 4 } else { 3 }
     );
 }
 

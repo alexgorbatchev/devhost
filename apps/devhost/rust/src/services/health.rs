@@ -361,7 +361,7 @@ fn probe_http_cancelable(url: &str, timeout: Duration, cancel: &AtomicBool) -> O
                     return false;
                 };
                 let client = Client::builder(TokioExecutor::new())
-                    .build(connector.https_only().enable_http1().build());
+                    .build(connector.https_only().enable_http1().enable_http2().build());
                 client.request(request).await
             } else {
                 let client = Client::builder(TokioExecutor::new()).build_http::<Empty<Bytes>>();

@@ -634,6 +634,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "cli-command-kit",
+ "flate2",
  "futures-util",
  "getrandom 0.3.4",
  "glob",

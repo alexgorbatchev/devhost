@@ -293,9 +293,29 @@ pub fn parse_go_duration(raw: &str) -> Result<Duration, String> {
     Ok(Duration::from_nanos(total_nanos.round() as u64))
 }
 
+pub fn parse_idle_duration(raw: &str) -> Result<Duration, String> {
+    if let Some(magnitude) = raw.strip_prefix('-') {
+        parse_go_duration(magnitude).map(|_| Duration::ZERO)
+    } else {
+        parse_go_duration(raw)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn negative_idle_durations_disable_shutdown_without_relaxing_other_timeouts() {
+        for raw in ["-1s", "-1m30s", "-0", "0"] {
+            assert_eq!(parse_idle_duration(raw).unwrap(), Duration::ZERO);
+        }
+        assert_eq!(parse_idle_duration("1s").unwrap(), Duration::from_secs(1));
+        for raw in ["-", "-bad", "--1s"] {
+            assert!(parse_idle_duration(raw).is_err());
+        }
+        assert!(parse_go_duration("-1s").is_err());
+    }
 
     #[test]
     fn parses_go_durations_and_rejects_invalid_values() {

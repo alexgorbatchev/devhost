@@ -66,6 +66,7 @@ timeout = 60000
 
 - The path is relative to the service itself, not to its public `path` on Caddy.
 - A health check is ready on any `2xx` response.
+- HTTPS health checks support HTTP/1.1 and HTTP/2, including services that accept only HTTP/2.
 - A full URL can use references too: `http = "http://127.0.0.1:{{ services.api.port }}/health"`. It must point at `127.0.0.1`, `localhost`, or `::1`.
 - A health table uses at most one of `tcp`, `http`, or `process`. A `tcp` target is a fixed port number. Without a service `port`, a health table must choose one.
 

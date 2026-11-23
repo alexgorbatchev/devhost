@@ -9,7 +9,7 @@ pub mod validation;
 
 pub use types::{
     DevtoolsConfig, HealthConfig, Inputs, Manifest, PortConfig, ServiceLifecycleConfig,
-    ValidatedService, WorktreesConfig, parse_go_duration, resolve_watch_path,
+    ValidatedService, WorktreesConfig, parse_go_duration, parse_idle_duration, resolve_watch_path,
 };
 pub use validation::{
     is_valid_host, is_valid_host_label, read_conflicting_route_path, validate_health_http_url,

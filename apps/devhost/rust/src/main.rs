@@ -346,7 +346,7 @@ fn run_serve(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
             configuration: None,
             caddy_dir: state_dir.join("caddy"),
             config_path: None,
-            environment: env::vars().collect(),
+            environment: devhost_rust::environment::unicode(),
             output,
             debug_caddy: false,
             shutdown_grace_period: None,
@@ -509,7 +509,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         .filter(|s| !s.is_empty())
         .cloned();
     let idle_timeout = match raw_idle_timeout.as_deref() {
-        Some(raw) => match manifest::parse_go_duration(raw) {
+        Some(raw) => match manifest::parse_idle_duration(raw) {
             Ok(duration) => Some(duration),
             Err(_) => {
                 return Ok(write_failure(
@@ -532,7 +532,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         Ok(dir) => dir,
         Err(err) => return Ok(write_failure(mode, err.into())?),
     };
-    let mut environment: BTreeMap<String, String> = env::vars().collect();
+    let mut environment: BTreeMap<String, String> = devhost_rust::environment::unicode();
     let launch = take_launch_metadata(&mut environment);
     // SAFETY: run_start runs on the main thread before spawning worker threads.
     unsafe {

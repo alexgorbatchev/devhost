@@ -320,6 +320,46 @@ fn tls_request(machine: &Machine, host: &str) -> std::io::Result<String> {
 }
 
 #[test]
+fn saturated_preview_connections_leave_readiness_and_new_leases_available() {
+    let relay = Relay::start();
+    let machine = Machine::new(&relay);
+    let mut alpha = machine.start("capacity-alpha", false);
+    let worker = machine.worker();
+    let mut connections = Vec::new();
+    for _ in 0..128 {
+        let mut socket = TcpStream::connect(("127.0.0.1", relay.reverse_port)).unwrap();
+        socket
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        socket
+            .set_write_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        write!(socket, "GET /note.txt HTTP/1.1\r\nHost: capacity-alpha.preview.example.test\r\nConnection: keep-alive\r\n\r\n").unwrap();
+        let mut response = Vec::new();
+        let mut byte = [0];
+        while !response.ends_with(b"\r\n\r\n") {
+            socket.read_exact(&mut byte).unwrap();
+            response.push(byte[0]);
+        }
+        assert!(response.starts_with(b"HTTP/1.1 200"));
+        let mut body = vec![0; "capacity-alpha content".len()];
+        socket.read_exact(&mut body).unwrap();
+        assert_eq!(body, b"capacity-alpha content");
+        connections.push(socket);
+    }
+    let admin: SocketAddr = worker["adminAddress"].as_str().unwrap().parse().unwrap();
+    let started = Instant::now();
+    assert!(request(admin.port(), "GET", &admin.to_string(), "/ready").starts_with("HTTP/1.1 200"));
+    let mut beta = machine.start("capacity-beta", false);
+    assert_eq!(machine.worker()["owner"], worker["owner"]);
+    assert!(started.elapsed() < Duration::from_secs(5));
+    drop(connections);
+    beta.stop();
+    alpha.stop();
+    machine.wait_stopped();
+}
+
+#[test]
 fn cli_stacks_share_connector_reload_hosts_and_withdraw_only_owned_routes() {
     let relay = Relay::start();
     let machine = Machine::new(&relay);

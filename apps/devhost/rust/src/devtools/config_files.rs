@@ -313,6 +313,14 @@ pub(super) fn write_file(path: &Path, content: &[u8]) -> Result<(), String> {
         Err(e) => return Err(e.to_string()),
     };
     let parent = target.parent().ok_or("configuration file has no parent")?;
+    let mut directories = fs::DirBuilder::new();
+    directories.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        directories.mode(0o700);
+    }
+    directories.create(parent).map_err(|e| e.to_string())?;
     let permissions = match fs::metadata(&target) {
         Ok(meta) => Some(meta.permissions()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,

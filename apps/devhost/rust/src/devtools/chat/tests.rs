@@ -30,7 +30,7 @@ impl Fixture {
         let manifest = resolve_service_ports(&config, &PortResolutionOptions::default()).unwrap();
         let (mut handle, control) = RuntimeControl::channel();
         handle.live.initialize(&manifest);
-        handle.live.configure(root.path(), None);
+        handle.live.configure(&root.path().join("caddy"), None);
         let mut store = Store::default();
         for (harness, name) in [(CODEX, "codex"), (CLAUDE, "claude")] {
             let path = root.path().join(name);
@@ -291,12 +291,41 @@ fn panel_recovers_corrupt_state_and_reports_unwritable_storage() {
     use sha2::{Digest, Sha256};
     let fixture = Fixture::new("normal");
     let manifest = fixture.handle.live.manifest().unwrap();
-    let directory = fixture.handle.live.caddy_dir().join("chat-panels");
+    let directory = fixture
+        .handle
+        .live
+        .caddy_dir()
+        .parent()
+        .unwrap()
+        .join("chat-panels");
     fs::create_dir_all(&directory).unwrap();
     let path = directory.join(format!(
         "{:x}.json",
         Sha256::digest(manifest.manifest_path.as_os_str().as_encoded_bytes())
     ));
+    // The Go panel store uses this same directory, manifest hash and JSON shape.
+    fs::write(&path, r#"{"position":{"left":123,"top":45}}"#).unwrap();
+    let (status, body) = fixture.request("GET", "/__devhost__/chat/panel", "", false);
+    assert_eq!(status, 200);
+    assert_eq!(
+        serde_json::from_str::<Value>(&body).unwrap(),
+        json!({"position":{"left":123.0,"top":45.0}})
+    );
+    assert_eq!(
+        fixture
+            .request(
+                "PUT",
+                "/__devhost__/chat/panel",
+                r#"{"position":{"left":67,"top":89}}"#,
+                true
+            )
+            .0,
+        204
+    );
+    assert_eq!(
+        serde_json::from_slice::<Value>(&fs::read(&path).unwrap()).unwrap(),
+        json!({"position":{"left":67.0,"top":89.0}})
+    );
     for content in ["broken", "{\"position\":{\"left\":-1,\"top\":10}}"] {
         fs::write(&path, content).unwrap();
         let (status, body) = fixture.request("GET", "/__devhost__/chat/panel", "", false);

@@ -29,6 +29,8 @@ The toolbar appears when at least one devtools feature is on, and most are on by
 
 With all of them off except `resources`, devhost injects nothing. Startup and recovery pages work either way. Every setting applies to open pages as soon as you save the manifest.
 
+The experimental Rust proxy preserves HTML's original character encoding, decodes gzip and deflate before adding the toolbar, and accepts documents larger than 64 MiB. Other content encodings pass through without injection.
+
 ## The toolbar
 
 The toolbar sits at the bottom-right corner of the page; `[devtools.status].position = "top-right"` moves it up. It shows the stack name, service health, **Chat**, **Worktrees**, launchers for third-party devtools, and the readouts. Click the stack name to collapse it to a single health dot.
@@ -143,7 +145,7 @@ enabled = true
 
 - the root manifest (after a worktree switch, the one in the selected checkout),
 - every manifest its `includes` reach,
-- the machine-wide `config.toml`, which the editor creates if it does not exist.
+- the machine-wide `config.toml`, which the editor creates if it does not exist, including its parent directory.
 
 As you type, devhost runs the same checks as a reload: TOML syntax, allowed settings and values, dependency cycles, ports, and working directories. Problems are marked on their line and listed below the text. The editor completes table names, keys, and fixed-choice values; press **Ctrl+Space** (**Option+I** on macOS) to list completions.
 

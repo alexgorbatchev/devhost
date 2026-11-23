@@ -53,6 +53,97 @@ struct TestHttpServer {
     thread: Option<JoinHandle<()>>,
 }
 
+#[test]
+fn injection_preserves_legacy_bytes_decodes_compression_and_accepts_large_documents() {
+    use std::io::Write;
+    let legacy = b"<html><body>caf\xe9</body></html>".to_vec();
+    let mut gzip = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    gzip.write_all(&legacy).unwrap();
+    let gzip = gzip.finish().unwrap();
+    let mut deflate = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    deflate.write_all(&legacy).unwrap();
+    let deflate = deflate.finish().unwrap();
+    let source = legacy.clone();
+    let upstream = TestHttpServer::start(Router::new().fallback(any(move |req: Request<Body>| {
+        let (bytes, encoding) = match req.uri().path() {
+            "/gzip" => (gzip.clone(), Some("gzip")),
+            "/deflate" => (deflate.clone(), Some("deflate")),
+            "/bad-gzip" => (b"bad gzip".to_vec(), Some("gzip")),
+            "/unsupported" => (source.clone(), Some("br")),
+            "/large" => {
+                let mut bytes = vec![b'a'; 64 * 1024 * 1024 + 32];
+                bytes.extend_from_slice(b"</body>");
+                (bytes, None)
+            }
+            _ => (source.clone(), None),
+        };
+        async move {
+            let mut response =
+                Response::builder().header(header::CONTENT_TYPE, "text/html; charset=iso-8859-1");
+            if let Some(encoding) = encoding {
+                response = response.header(header::CONTENT_ENCODING, encoding);
+            }
+            response.body(Body::from(bytes)).unwrap()
+        }
+    })));
+    let proxy = DocumentInjectionServer::start(DocumentInjectionOptions {
+        backend_host: "127.0.0.1".to_owned(),
+        backend_port: upstream.port,
+        should_inject: Some(Arc::new(|| true)),
+        get_recovery: None,
+        restart: None,
+        worktrees: None,
+    })
+    .unwrap();
+    let agent = test_agent();
+    let script = format!(r#"<script type="module" src="{INJECTED_SCRIPT_PATH}"></script>"#);
+    let expected = [
+        b"<html><body>caf\xe9".as_slice(),
+        script.as_bytes(),
+        b"</body></html>",
+    ]
+    .concat();
+    for path in ["/legacy", "/gzip", "/deflate"] {
+        let (status, headers, bytes) = read_response_bytes(
+            agent
+                .get(format!("http://127.0.0.1:{}{path}", proxy.port()))
+                .call()
+                .unwrap(),
+        );
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(bytes, expected, "{path}");
+        assert!(!headers.contains_key(header::CONTENT_ENCODING));
+        assert_eq!(
+            headers[header::CONTENT_TYPE],
+            "text/html; charset=iso-8859-1"
+        );
+    }
+    let (status, _, bytes) = read_response_bytes(
+        agent
+            .get(format!("http://127.0.0.1:{}/large", proxy.port()))
+            .call()
+            .unwrap(),
+    );
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(bytes.len(), 64 * 1024 * 1024 + 32 + script.len() + 7);
+    assert!(bytes.ends_with(format!("{script}</body>").as_bytes()));
+    let (status, _, _) = read_response_bytes(
+        agent
+            .get(format!("http://127.0.0.1:{}/bad-gzip", proxy.port()))
+            .call()
+            .unwrap(),
+    );
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    let (_, headers, bytes) = read_response_bytes(
+        agent
+            .get(format!("http://127.0.0.1:{}/unsupported", proxy.port()))
+            .call()
+            .unwrap(),
+    );
+    assert_eq!(headers[header::CONTENT_ENCODING], "br");
+    assert_eq!(bytes, legacy);
+}
+
 impl TestHttpServer {
     fn start(app: Router) -> Self {
         let std_listener = StdTcpListener::bind("127.0.0.1:0").expect("bind ephemeral port");

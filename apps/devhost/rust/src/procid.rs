@@ -18,18 +18,23 @@ pub(crate) fn start_identity(pid: i32) -> io::Result<String> {
             format!("invalid pid {pid}"),
         ));
     }
-    let boot_id = boot_id()?;
-    let stat = read_linux_stat(pid)?;
-    Ok(format!("{boot_id}:{}", stat.start_ticks))
+    linux_stat_identity(&read_linux_stat(pid)?)
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn linux_stat_identity(stat: &LinuxStat) -> io::Result<String> {
+    Ok(format!("{}:{}", boot_id()?, stat.start_ticks))
 }
 
 #[cfg(target_os = "macos")]
 pub(crate) fn start_identity(pid: i32) -> io::Result<String> {
     let info = read_macos_info(pid)?;
-    Ok(format!(
-        "{}.{:06}",
-        info.pbi_start_tvsec, info.pbi_start_tvusec
-    ))
+    Ok(macos_info_identity(&info))
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn macos_info_identity(info: &libc::proc_bsdinfo) -> String {
+    format!("{}.{:06}", info.pbi_start_tvsec, info.pbi_start_tvusec)
 }
 
 #[cfg(target_os = "macos")]
@@ -90,17 +95,21 @@ fn boot_id() -> io::Result<&'static str> {
 #[cfg(target_os = "linux")]
 pub(crate) fn read_linux_stat(pid: i32) -> io::Result<LinuxStat> {
     let path = format!("/proc/{pid}/stat");
-    let text = fs::read_to_string(&path)?;
-    parse_linux_stat(&path, &text)
+    let bytes = fs::read(&path)?;
+    parse_linux_stat_bytes(&path, &bytes)
 }
 
 #[cfg(target_os = "linux")]
-fn parse_linux_stat(path: &str, text: &str) -> io::Result<LinuxStat> {
-    let line = text.trim();
-    let rest = line
-        .rfind(')')
-        .and_then(|close| line.get(close + 2..))
+fn parse_linux_stat_bytes(path: &str, bytes: &[u8]) -> io::Result<LinuxStat> {
+    // The kernel truncates comm by bytes, including in the middle of UTF-8.
+    // Only the fields after the final ')' are ASCII numeric process data.
+    let rest = bytes
+        .iter()
+        .rposition(|byte| *byte == b')')
+        .and_then(|close| bytes.get(close + 2..))
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, format!("parse {path}")))?;
+    let rest = std::str::from_utf8(rest)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
     let fields: Vec<&str> = rest.split_whitespace().collect();
     if fields.len() <= 19 {
         return Err(io::Error::new(
@@ -171,6 +180,22 @@ pub fn is_record_owner_alive(pid: i32, recorded_identity: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    fn parse_linux_stat(path: &str, text: &str) -> io::Result<LinuxStat> {
+        parse_linux_stat_bytes(path, text.as_bytes())
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn kernel_name_bytes_do_not_hide_process_identity() {
+        let mut bytes = b"123 (partial-".to_vec();
+        bytes.push(0xe2);
+        bytes.extend_from_slice(b") S 7 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 42");
+        let stat = parse_linux_stat_bytes("fixture", &bytes).unwrap();
+        assert_eq!(stat.parent_pid, 7);
+        assert_eq!(stat.start_ticks, 42);
+    }
 
     #[test]
     fn child_identity_survives_inspection_and_exited_children_are_not_live() {

@@ -1,11 +1,11 @@
 use std::{
     collections::{BTreeMap, BTreeSet, VecDeque},
     sync::{
-        Arc, Mutex,
+        Arc, Mutex, OnceLock,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread::{self, JoinHandle},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 #[cfg(target_os = "linux")]
@@ -13,7 +13,6 @@ use std::{
     fs,
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     path::Path,
-    sync::OnceLock,
 };
 
 use crate::procid;
@@ -55,8 +54,9 @@ pub fn prepare_service_containment() -> Result<(), String> {
 
 pub struct ServiceContainment {
     root_pid: i32,
+    root_identity: Option<String>,
     service_token: String,
-    tracked: Arc<Mutex<BTreeSet<i32>>>,
+    tracked: Arc<Mutex<BTreeMap<i32, String>>>,
     stop_flag: Arc<AtomicBool>,
     poller: Option<JoinHandle<()>>,
 }
@@ -64,13 +64,15 @@ pub struct ServiceContainment {
 impl ServiceContainment {
     pub fn start(root_pid: i32, service_token: String) -> Result<Self, String> {
         prepare_service_containment()?;
-        let tracked = Arc::new(Mutex::new(BTreeSet::new()));
+        let root_identity = procid::start_identity(root_pid).ok();
+        let tracked = Arc::new(Mutex::new(BTreeMap::new()));
         let stop_flag = Arc::new(AtomicBool::new(false));
-        refresh_tracked(&tracked, root_pid, &service_token)?;
+        refresh_tracked(&tracked, root_pid, root_identity.as_deref(), &service_token)?;
 
         let bg_tracked = tracked.clone();
         let bg_stop = stop_flag.clone();
         let bg_token = service_token.clone();
+        let bg_identity = root_identity.clone();
         let poller = thread::spawn(move || {
             while !bg_stop.load(Ordering::Relaxed) {
                 let end = std::time::Instant::now() + PROCESS_TREE_POLL_INTERVAL;
@@ -80,12 +82,13 @@ impl ServiceContainment {
                     }
                     thread::sleep(Duration::from_millis(25));
                 }
-                let _ = refresh_tracked(&bg_tracked, root_pid, &bg_token);
+                let _ = refresh_tracked(&bg_tracked, root_pid, bg_identity.as_deref(), &bg_token);
             }
         });
 
         Ok(Self {
             root_pid,
+            root_identity,
             service_token,
             tracked,
             stop_flag,
@@ -94,11 +97,16 @@ impl ServiceContainment {
     }
 
     pub fn live_descendant_pids(&self) -> Vec<i32> {
-        let _ = refresh_tracked(&self.tracked, self.root_pid, &self.service_token);
+        let _ = refresh_tracked(
+            &self.tracked,
+            self.root_pid,
+            self.root_identity.as_deref(),
+            &self.service_token,
+        );
         let mut guard = self.tracked.lock().expect("tracked lock");
         let mut live = Vec::new();
-        guard.retain(|&pid| {
-            if pid == self.root_pid || !procid::is_process_alive(pid) {
+        guard.retain(|&pid, identity| {
+            if pid == self.root_pid || !matches_identity(pid, identity) {
                 false
             } else {
                 live.push(pid);
@@ -113,12 +121,28 @@ impl ServiceContainment {
     }
 
     pub fn signal(&self, include_root_group: bool, sig: i32) {
-        let _ = refresh_tracked(&self.tracked, self.root_pid, &self.service_token);
-        if include_root_group {
-            send_signal_to_group(self.root_pid, sig);
+        let descendants = self.live_descendant_pids();
+        let root_matches = self
+            .root_identity
+            .as_deref()
+            .is_some_and(|identity| matches_identity(self.root_pid, identity));
+        // A surviving verified group member also proves the original group still exists.
+        let group_matches = descendants.iter().any(|&pid| {
+            // SAFETY: getpgid reads the process group of a positive PID.
+            unsafe { libc::getpgid(pid) == self.root_pid }
+        });
+        if include_root_group && (root_matches || group_matches) {
+            // Never fall back to the root PID: it may have exited while its group survived.
+            // SAFETY: a verified live member authorizes this original process group.
+            unsafe {
+                libc::kill(-self.root_pid, sig);
+            }
         }
-        for pid in self.live_descendant_pids() {
-            send_signal_to_pid(pid, sig);
+        let guard = self.tracked.lock().expect("tracked lock");
+        for pid in descendants {
+            if let Some(identity) = guard.get(&pid) {
+                signal_identity(pid, identity, sig);
+            }
         }
     }
 
@@ -162,25 +186,118 @@ pub fn send_signal_to_pid(pid: i32, sig: i32) {
 }
 
 fn refresh_tracked(
-    tracked: &Arc<Mutex<BTreeSet<i32>>>,
+    tracked: &Arc<Mutex<BTreeMap<i32, String>>>,
     root_pid: i32,
+    root_identity: Option<&str>,
     service_token: &str,
 ) -> Result<(), String> {
-    let children_by_parent = read_process_snapshot()?;
-    let mut descendants = collect_descendant_pids(&children_by_parent, root_pid);
-    for pid in collect_platform_containment_root_pids(&children_by_parent, service_token) {
-        descendants.push(pid);
-        descendants.extend(collect_descendant_pids(&children_by_parent, pid));
-    }
+    let snapshot = shared_process_snapshot()?;
+    let children_by_parent = &snapshot.children;
     let mut guard = tracked.lock().expect("tracked lock");
-    guard.extend(descendants);
+    guard.retain(|&pid, identity| matches_identity(pid, identity));
+    let mut roots: Vec<i32> = guard
+        .iter()
+        .filter_map(|(&pid, identity)| {
+            (snapshot.identities.get(&pid) == Some(identity)).then_some(pid)
+        })
+        .collect();
+    if root_identity.is_some_and(|identity| {
+        snapshot
+            .identities
+            .get(&root_pid)
+            .is_some_and(|cached| cached == identity)
+            && matches_identity(root_pid, identity)
+    }) {
+        roots.push(root_pid);
+    }
+    let mut descendants = Vec::new();
+    for pid in roots {
+        descendants.extend(collect_descendant_pids(&snapshot, pid));
+    }
+    for pid in collect_platform_containment_root_pids(children_by_parent, service_token) {
+        if snapshot
+            .identities
+            .get(&pid)
+            .is_some_and(|identity| matches_identity(pid, identity))
+        {
+            descendants.push(pid);
+            descendants.extend(collect_descendant_pids(&snapshot, pid));
+        }
+    }
+    for pid in descendants {
+        if let Some(identity) = snapshot.identities.get(&pid)
+            && matches_identity(pid, identity)
+        {
+            guard.entry(pid).or_insert_with(|| identity.clone());
+        }
+    }
     Ok(())
 }
 
-fn collect_descendant_pids(
-    children_by_parent: &BTreeMap<i32, Vec<i32>>,
-    root_pid: i32,
-) -> Vec<i32> {
+fn matches_identity(pid: i32, identity: &str) -> bool {
+    procid::start_identity(pid).is_ok_and(|current| current == identity)
+        && procid::is_process_alive(pid)
+}
+
+fn signal_identity(pid: i32, identity: &str, sig: i32) {
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+        // SAFETY: pidfd_open accepts a positive PID and zero flags, returning an owned fd.
+        let fd = unsafe { libc::syscall(libc::SYS_pidfd_open, pid, 0) } as i32;
+        if fd >= 0 {
+            // SAFETY: a successful pidfd_open returned a fresh descriptor.
+            let fd = unsafe { OwnedFd::from_raw_fd(fd) };
+            if matches_identity(pid, identity) {
+                // SAFETY: this pidfd pins the process; a null siginfo requests ordinary delivery.
+                unsafe {
+                    libc::syscall(
+                        libc::SYS_pidfd_send_signal,
+                        fd.as_raw_fd(),
+                        sig,
+                        std::ptr::null::<libc::siginfo_t>(),
+                        0,
+                    );
+                }
+            }
+            return;
+        }
+    }
+    if matches_identity(pid, identity) {
+        send_signal_to_pid(pid, sig);
+    }
+}
+
+struct ProcessSnapshot {
+    children: BTreeMap<i32, Vec<i32>>,
+    identities: BTreeMap<i32, String>,
+}
+
+fn shared_process_snapshot() -> Result<Arc<ProcessSnapshot>, String> {
+    struct CachedSnapshot {
+        read_at: Instant,
+        snapshot: Arc<ProcessSnapshot>,
+    }
+    static SNAPSHOT: OnceLock<Mutex<Option<CachedSnapshot>>> = OnceLock::new();
+    let mut cache = SNAPSHOT
+        .get_or_init(|| Mutex::new(None))
+        .lock()
+        .expect("process snapshot");
+    if let Some(cached) = cache.as_ref()
+        && cached.read_at.elapsed() < PROCESS_TREE_POLL_INTERVAL
+    {
+        return Ok(cached.snapshot.clone());
+    }
+    let snapshot = Arc::new(read_process_snapshot()?);
+    *cache = Some(CachedSnapshot {
+        read_at: Instant::now(),
+        snapshot: snapshot.clone(),
+    });
+    Ok(snapshot)
+}
+
+fn collect_descendant_pids(snapshot: &ProcessSnapshot, root_pid: i32) -> Vec<i32> {
+    let children_by_parent = &snapshot.children;
     let mut queue = VecDeque::new();
     if let Some(children) = children_by_parent.get(&root_pid) {
         queue.extend(children.iter().copied());
@@ -188,7 +305,12 @@ fn collect_descendant_pids(
     let mut seen = BTreeSet::new();
     let mut descendants = Vec::new();
     while let Some(pid) = queue.pop_front() {
-        if !seen.insert(pid) {
+        if !seen.insert(pid)
+            || !snapshot
+                .identities
+                .get(&pid)
+                .is_some_and(|identity| matches_identity(pid, identity))
+        {
             continue;
         }
         descendants.push(pid);
@@ -200,9 +322,10 @@ fn collect_descendant_pids(
 }
 
 #[cfg(target_os = "linux")]
-fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
+fn read_process_snapshot() -> Result<ProcessSnapshot, String> {
     let entries = fs::read_dir("/proc").map_err(|error| format!("read /proc: {error}"))?;
     let mut children_by_parent: BTreeMap<i32, Vec<i32>> = BTreeMap::new();
+    let mut identities = BTreeMap::new();
     for entry in entries.flatten() {
         let name = entry.file_name();
         let Some(name_str) = name.to_str() else {
@@ -214,16 +337,22 @@ fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
         let Ok(stat) = procid::read_linux_stat(pid) else {
             continue;
         };
+        if let Ok(identity) = procid::linux_stat_identity(&stat) {
+            identities.insert(pid, identity);
+        }
         children_by_parent
             .entry(stat.parent_pid)
             .or_default()
             .push(pid);
     }
-    Ok(children_by_parent)
+    Ok(ProcessSnapshot {
+        children: children_by_parent,
+        identities,
+    })
 }
 
 #[cfg(target_os = "macos")]
-fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
+fn read_process_snapshot() -> Result<ProcessSnapshot, String> {
     use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System};
     let mut system = System::new();
     system.refresh_processes_specifics(
@@ -235,23 +364,32 @@ fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
         return Err("read process table: no processes returned".to_owned());
     }
     let mut children_by_parent: BTreeMap<i32, Vec<i32>> = BTreeMap::new();
-    for (pid, process) in system.processes() {
+    let mut identities = BTreeMap::new();
+    for pid in system.processes().keys() {
         if pid.as_u32() == 0 {
             continue;
         }
-        if let Some(parent) = process.parent() {
+        // Read the parent and start identity from one kernel record.
+        if let Ok(info) = procid::read_macos_info(pid.as_u32() as i32) {
+            identities.insert(pid.as_u32() as i32, procid::macos_info_identity(&info));
             children_by_parent
-                .entry(parent.as_u32() as i32)
+                .entry(info.pbi_ppid as i32)
                 .or_default()
                 .push(pid.as_u32() as i32);
         }
     }
-    Ok(children_by_parent)
+    Ok(ProcessSnapshot {
+        children: children_by_parent,
+        identities,
+    })
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
-    Ok(BTreeMap::new())
+fn read_process_snapshot() -> Result<ProcessSnapshot, String> {
+    Ok(ProcessSnapshot {
+        children: BTreeMap::new(),
+        identities: BTreeMap::new(),
+    })
 }
 
 #[cfg(target_os = "linux")]
@@ -448,6 +586,42 @@ mod tests {
             // SAFETY: this fixture owns the child's isolated process group.
             unsafe { libc::kill(-(self.0.id() as i32), libc::SIGKILL) };
             let _ = self.0.wait();
+        }
+    }
+
+    #[test]
+    fn reused_root_and_descendant_identities_cannot_authorize_signals() {
+        let mut child = Child(
+            Command::new("sleep")
+                .arg("30")
+                .process_group(0)
+                .spawn()
+                .unwrap(),
+        );
+        let pid = child.0.id() as i32;
+        let mut containment = ServiceContainment::start(pid, String::new()).unwrap();
+        containment.close();
+        containment.root_identity = Some("previous-process".to_owned());
+        containment
+            .tracked
+            .lock()
+            .unwrap()
+            .insert(pid, "previous-process".to_owned());
+        containment.signal(true, libc::SIGKILL);
+        assert!(child.0.try_wait().unwrap().is_none());
+        assert!(containment.live_descendant_pids().is_empty());
+        signal_identity(pid, "previous-process", libc::SIGKILL);
+        assert!(child.0.try_wait().unwrap().is_none());
+    }
+
+    #[test]
+    fn concurrent_services_reuse_one_process_snapshot() {
+        let first = shared_process_snapshot().unwrap();
+        let others: Vec<_> = (0..8)
+            .map(|_| thread::spawn(shared_process_snapshot))
+            .collect();
+        for other in others {
+            assert!(Arc::ptr_eq(&first, &other.join().unwrap().unwrap()));
         }
     }
 
