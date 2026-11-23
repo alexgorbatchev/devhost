@@ -253,7 +253,7 @@ devhost stack restart --all
 
 This includes manifest stacks and standalone `serve` sessions in the same state directory. To restart only this project's running stack, use `devhost stack restart`; `--manifest path/to/devhost.toml` selects another project. `--all` cannot be combined with `--manifest` or `DEVHOST_MANIFEST`.
 
-The [experimental Rust CLI](../../development/building/#try-the-rust-port) uses `devhost restart-all` for this global operation on Linux, including from outside a project. Its `devhost stack restart --all` resolves the nearest root manifest from the current directory and restarts that project's whole stack. The same manifest-option restriction applies. Stack replacement on other Rust platforms is incomplete.
+The [experimental Rust CLI](../../development/building/#try-the-rust-port) uses `devhost restart-all` for this global operation on Linux and macOS, including from outside a project. Its `devhost stack restart --all` resolves the nearest root manifest from the current directory and restarts that project's whole stack. The same manifest-option restriction applies.
 
 The command captures every selected process's arguments, working directory, and environment before stopping any stack. It then stops and relaunches each stack with the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
 

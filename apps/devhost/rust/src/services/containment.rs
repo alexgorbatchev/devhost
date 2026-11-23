@@ -1,14 +1,19 @@
 use std::{
     collections::{BTreeMap, BTreeSet, VecDeque},
-    fs,
-    net::{IpAddr, Ipv4Addr, Ipv6Addr},
-    path::Path,
     sync::{
-        Arc, Mutex, OnceLock,
+        Arc, Mutex,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread::{self, JoinHandle},
     time::Duration,
+};
+
+#[cfg(target_os = "linux")]
+use std::{
+    fs,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+    path::Path,
+    sync::OnceLock,
 };
 
 use crate::procid;
@@ -217,7 +222,34 @@ fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
     Ok(children_by_parent)
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
+    use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System};
+    let mut system = System::new();
+    system.refresh_processes_specifics(
+        ProcessesToUpdate::All,
+        true,
+        ProcessRefreshKind::nothing().without_tasks(),
+    );
+    if system.processes().is_empty() {
+        return Err("read process table: no processes returned".to_owned());
+    }
+    let mut children_by_parent: BTreeMap<i32, Vec<i32>> = BTreeMap::new();
+    for (pid, process) in system.processes() {
+        if pid.as_u32() == 0 {
+            continue;
+        }
+        if let Some(parent) = process.parent() {
+            children_by_parent
+                .entry(parent.as_u32() as i32)
+                .or_default()
+                .push(pid.as_u32() as i32);
+        }
+    }
+    Ok(children_by_parent)
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn read_process_snapshot() -> Result<BTreeMap<i32, Vec<i32>>, String> {
     Ok(BTreeMap::new())
 }
@@ -281,8 +313,33 @@ pub fn read_listening_process_ids_for_bind_host(bind_host: &str, port: u16) -> V
 }
 
 #[cfg(not(target_os = "linux"))]
-pub fn read_listening_process_ids_for_bind_host(_bind_host: &str, _port: u16) -> Vec<i32> {
-    Vec::new()
+pub fn read_listening_process_ids_for_bind_host(bind_host: &str, port: u16) -> Vec<i32> {
+    let Ok(output) = std::process::Command::new("lsof")
+        .args([
+            "-nP",
+            &format!("-iTCP@{bind_host}:{port}"),
+            "-sTCP:LISTEN",
+            "-Fp",
+        ])
+        .stdin(std::process::Stdio::null())
+        .output()
+    else {
+        return Vec::new();
+    };
+    if !output.status.success() {
+        return Vec::new();
+    }
+    parse_lsof_pids(&String::from_utf8_lossy(&output.stdout))
+}
+
+#[cfg(any(test, not(target_os = "linux")))]
+fn parse_lsof_pids(output: &str) -> Vec<i32> {
+    output
+        .lines()
+        .filter_map(|line| line.strip_prefix('p')?.parse::<i32>().ok())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 #[cfg(target_os = "linux")]
@@ -385,14 +442,26 @@ mod tests {
 
     use super::*;
 
+    struct Child(std::process::Child);
+    impl Drop for Child {
+        fn drop(&mut self) {
+            // SAFETY: this fixture owns the child's isolated process group.
+            unsafe { libc::kill(-(self.0.id() as i32), libc::SIGKILL) };
+            let _ = self.0.wait();
+        }
+    }
+
     #[test]
     fn containment_tracks_and_kills_escaped_descendant_and_reads_listener_pid() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
-        #[cfg(target_os = "linux")]
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
         {
             let pids = read_listening_process_ids_for_bind_host("127.0.0.1", port);
             assert!(pids.contains(&(std::process::id() as i32)));
+        }
+        #[cfg(target_os = "linux")]
+        {
             let parsed_v4 = parse_linux_socket_address("0100007F:0050").unwrap();
             assert_eq!(parsed_v4, (IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 80));
             let parsed_v6 =
@@ -402,13 +471,15 @@ mod tests {
         drop(listener);
 
         let token = create_service_containment_token();
-        let mut child = Command::new("sh")
-            .args(["-c", "sleep 30 & wait"])
-            .env(SERVICE_CONTAINMENT_TOKEN_ENV, &token)
-            .process_group(0)
-            .spawn()
-            .unwrap();
-        let root_pid = child.id() as i32;
+        let mut child = Child(
+            Command::new("sh")
+                .args(["-c", "sleep 30 & wait"])
+                .env(SERVICE_CONTAINMENT_TOKEN_ENV, &token)
+                .process_group(0)
+                .spawn()
+                .unwrap(),
+        );
+        let root_pid = child.0.id() as i32;
         let mut containment = ServiceContainment::start(root_pid, token).unwrap();
 
         let deadline = std::time::Instant::now() + Duration::from_secs(3);
@@ -418,12 +489,17 @@ mod tests {
         assert!(containment.has_live_descendants());
 
         containment.signal(true, libc::SIGKILL);
-        let _ = child.wait();
+        let _ = child.0.wait();
         let wait_dead = std::time::Instant::now() + Duration::from_secs(3);
         while containment.has_live_descendants() && std::time::Instant::now() < wait_dead {
             thread::sleep(Duration::from_millis(20));
         }
         assert!(!containment.has_live_descendants());
         containment.close();
+    }
+
+    #[test]
+    fn listener_pid_fields_are_sorted_and_deduplicated() {
+        assert_eq!(parse_lsof_pids("p9\np3\nf12\np9\npbroken\np\n"), [3, 9]);
     }
 }

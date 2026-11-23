@@ -1,6 +1,7 @@
 use super::*;
 use devhost_rust::caddy::stacks::read_live_stacks;
 use serde_json::{Value, json};
+#[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 
 #[cfg(target_os = "linux")]

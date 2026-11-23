@@ -92,6 +92,13 @@ the same scenarios. The comparison maps Rust's global `restart-all` to Go's olde
 unchanged reloads; older versions can refuse a valid global restart while their
 initial manifest check rewrites a registration.
 
+The stack-command suite also runs on macOS. Process ownership there uses the
+kernel's microsecond start timestamp in the same decimal format as Go; launch
+capture uses `sysinfo` for arguments, environment, and working directory. Native
+process snapshots track descendants, and listener discovery uses `lsof`, matching
+the Go platform dependency. Cross-target compilation checks these code paths but
+does not replace native macOS execution before platform acceptance.
+
 `just rust test-affected <base>` selects this Cargo package when its sources,
 fixtures, embedded UI/design assets, or shared test inputs change. `just rust
 check` runs its formatting, Clippy, and 90% line/function coverage gates. Coverage

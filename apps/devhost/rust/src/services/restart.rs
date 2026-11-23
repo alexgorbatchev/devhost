@@ -201,7 +201,72 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
     ))
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
+    use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
+
+    let mut ancestor = std::process::id() as i32;
+    while ancestor > 1 {
+        if ancestor == stack.pid {
+            return Err(
+                "cannot restart an ancestor of this command; run it from a separate terminal"
+                    .to_owned(),
+            );
+        }
+        ancestor = crate::procid::read_macos_info(ancestor)
+            .map_err(|error| error.to_string())?
+            .pbi_ppid as i32;
+    }
+    let pid = Pid::from_u32(stack.pid as u32);
+    let mut system = System::new();
+    system.refresh_processes_specifics(
+        ProcessesToUpdate::Some(&[pid]),
+        true,
+        ProcessRefreshKind::nothing()
+            .without_tasks()
+            .with_cmd(UpdateKind::Always)
+            .with_cwd(UpdateKind::Always)
+            .with_environ(UpdateKind::Always),
+    );
+    let process = system
+        .process(pid)
+        .ok_or("read launch arguments: process unavailable")?;
+    let args = process.cmd();
+    if args.len() < 2 || (args[1] != "start" && args[1] != "serve") {
+        return Err("expected a devhost start or serve process".to_owned());
+    }
+    let cwd = process
+        .cwd()
+        .ok_or("read launch working directory: unavailable")?;
+    if !cwd.is_dir() {
+        return Err("launch working directory is not a directory".to_owned());
+    }
+    let environment: Vec<_> = process
+        .environ()
+        .iter()
+        .filter_map(|entry| {
+            let bytes = entry.as_bytes();
+            let index = bytes.iter().position(|byte| *byte == b'=')?;
+            Some((
+                OsString::from_vec(bytes[..index].to_vec()),
+                OsString::from_vec(bytes[index + 1..].to_vec()),
+            ))
+        })
+        .collect();
+    if environment.is_empty() {
+        return Err("the operating system did not provide the launch environment".to_owned());
+    }
+    if !stack.is_alive() {
+        return Err("stack process changed during capture".to_owned());
+    }
+    Ok((
+        preserve_launch_mode(&args[1..], stack.remote),
+        cwd.to_owned(),
+        environment,
+    ))
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn capture_launch(_stack: &LiveStack) -> Result<CapturedLaunch, String> {
     Err("capturing a running stack launch is not implemented for this platform".to_owned())
 }
@@ -335,7 +400,7 @@ fn replace_stack(
     }
 }
 
-#[cfg(all(test, target_os = "linux"))]
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
 mod tests {
     use super::*;
     use cli_command_kit::Mode;
@@ -465,10 +530,12 @@ mod tests {
             ]
         );
         assert!(replace_launch_log(&[], Path::new("new")).is_empty());
+        #[cfg(target_os = "linux")]
         assert_eq!(
             nul_entries(b"one\0\0three\0").collect::<Vec<_>>(),
             vec![b"one".to_vec(), vec![], b"three".to_vec()]
         );
+        #[cfg(target_os = "linux")]
         assert_eq!(nul_entries(b"").count(), 0);
     }
 
@@ -510,7 +577,7 @@ mod tests {
         assert!(
             capture_launch(&stack(lost.0.id() as i32))
                 .unwrap_err()
-                .contains("working directory is not a directory")
+                .contains("working directory")
         );
     }
 

@@ -1,4 +1,4 @@
-#![cfg(target_os = "linux")]
+#![cfg(any(target_os = "linux", target_os = "macos"))]
 
 use std::{
     fs::{self, OpenOptions},
@@ -463,9 +463,26 @@ fn restart_preserves_foreground_and_detached_launches_and_isolates_projects() {
         .unwrap();
     assert_ne!(replacement.pid, detached.pid);
     assert!(replacement.log_path.contains("/restart-"));
-    let environment = fs::read(format!("/proc/{}/environ", replacement.pid)).unwrap();
-    assert!(!String::from_utf8_lossy(&environment).contains("DEVHOST_INTERNAL_DETACHED_LOG="));
-    assert!(String::from_utf8_lossy(&environment).contains("DEVHOST_INTERNAL_STACK_LOG="));
+    let mut system = sysinfo::System::new();
+    let pid = sysinfo::Pid::from_u32(replacement.pid as u32);
+    system.refresh_processes_specifics(
+        sysinfo::ProcessesToUpdate::Some(&[pid]),
+        true,
+        sysinfo::ProcessRefreshKind::nothing()
+            .without_tasks()
+            .with_environ(sysinfo::UpdateKind::Always),
+    );
+    let environment = system.process(pid).unwrap().environ();
+    assert!(!environment.iter().any(|entry| {
+        entry
+            .as_encoded_bytes()
+            .starts_with(b"DEVHOST_INTERNAL_DETACHED_LOG=")
+    }));
+    assert!(environment.iter().any(|entry| {
+        entry
+            .as_encoded_bytes()
+            .starts_with(b"DEVHOST_INTERNAL_STACK_LOG=")
+    }));
     assert_eq!(
         fs::metadata(runtime.state().join("restart.lock"))
             .unwrap()
