@@ -25,6 +25,14 @@ func ensureManagedCaddyRunning(paths caddy.Paths, settings caddy.ManagedCaddyGlo
 	}
 	err = caddy.EnsureManagedCaddyAdminAvailable(caddy.CreateCaddyAdminAPIURL(running.AdminAddress), caddy.AdminAvailabilityDependencies{})
 	if err == nil {
+		restarted, err := caddy.EnsureManagedCaddyRuntime(paths, settings, options.LogWriter, options.CaddyOutputWriters.Quiet)
+		if err != nil {
+			return err
+		}
+		if restarted {
+			// The lifecycle already checked trust and reported any warning.
+			return nil
+		}
 		// A stack joining a running Caddy cannot install its local CA; it says so once.
 		if warning := caddy.RootCertificateTrustWarning(paths.RootCertificatePath); warning != "" {
 			cliout.Log(options.LogWriter, label, cliout.Warning(warning))

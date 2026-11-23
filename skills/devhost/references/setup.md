@@ -75,6 +75,8 @@ Set the proxy's listeners in the devhost config file, which every stack on the m
 
 `devhost caddy start` starts the proxy with the config file's settings, and each stack applies them when it starts. Every running stack watches the file: saving `[caddy]` settings moves the proxy with one reload sent to the admin address it runs, so `adminAddress` changes like any port, and each stack prints its service URLs again. Services, routes, and sessions keep running. An invalid file, or settings Caddy rejects, prints `shared Caddy settings rejected` with the reason and leaves the proxy on the settings it runs; check for that line before reporting a change applied.
 
+After upgrades that require a fresh Caddy process, `devhost caddy start` or the next stack startup automatically restarts the shared proxy once. Every stack briefly loses proxy connections; registered routes, certificate storage and CA trust are preserved. Ordinary route and listener changes use reloads. Installing a binary leaves existing processes running; upgrade and restart older stack processes as well, since releases predating restart tracking can still generate their previous configuration. A tracked runtime policy newer than the current devhost supports causes shared configuration changes to fail with an upgrade instruction. An unverifiable proxy owner causes automatic restart to fail while leaving the process running.
+
 The proxy keeps its settings when the last route is removed. `devhost caddy stop` and `devhost caddy trust` reach it through the admin address it runs.
 
 ## 6. Configuration Hot Reload

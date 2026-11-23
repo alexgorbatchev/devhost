@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"math/big"
 	"net"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/nettest"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/procid"
 )
 
 // StartAdminServer starts an admin endpoint that accepts every request, as a running Caddy accepts the requests
@@ -27,6 +29,21 @@ func StartAdminServer(t testing.TB) string {
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte("{}"))
+	}))
+	t.Cleanup(server.Close)
+	return server.Listener.Addr().String()
+}
+
+// StartStartingAdminServer reports readiness only after a fake start command
+// writes startedPath. The endpoint stops when the test ends.
+func StartStartingAdminServer(t testing.TB, startedPath string) string {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		if _, err := os.Stat(startedPath); err != nil {
+			writer.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 		_, _ = writer.Write([]byte("{}"))
 	}))
 	t.Cleanup(server.Close)
@@ -43,6 +60,27 @@ func WriteExecutable(t testing.TB, path string) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The accepting admin server and executable represent an already-current
+	// managed process. Bind that fixture to the test process's real identity.
+	identity, err := procid.StartIdentity(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(filepath.Dir(path), "caddy.pid"), []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	record := struct {
+		Generation    int    `json:"restartGeneration"`
+		PID           int    `json:"pid"`
+		StartIdentity string `json:"startIdentity"`
+	}{1, os.Getpid(), identity}
+	text, err := json.Marshal(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(filepath.Dir(path), "runtime.json"), text, 0o600); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -97,7 +97,7 @@ If the file is invalid, or Caddy rejects the settings (for example, a port anoth
 
 ## When the last stack stops
 
-Caddy keeps its settings and keeps running until `devhost caddy stop`. The next `devhost caddy start` reads the config file again.
+Caddy keeps its settings and keeps running after the last stack stops. The next `devhost caddy start` reads the config file again and applies any required [runtime policy restart](/guides/managed-caddy/#hostnames-and-dns).
 
 ## Older checkouts
 

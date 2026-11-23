@@ -29,6 +29,7 @@ type ManagedCaddyLifecycleDependencies struct {
 	// that starts the shared Caddy as part of its own startup.
 	Quiet                    bool
 	ReadRootCertificateTrust func() (RootCertificateTrust, error)
+	ReadManagedCaddyProcess  func() (ManagedCaddyProcess, error)
 	RemoveManagedPidFile     func() error
 	RunManagedCaddyCommand   func([]string, ManagedCaddyCommandOptions) CommandResult
 	RuntimeOS                string
@@ -43,11 +44,13 @@ type managedCaddyLifecycle struct {
 	paths                    Paths
 	quiet                    bool
 	readRootCertificateTrust func() (RootCertificateTrust, error)
+	readManagedCaddyProcess  func() (ManagedCaddyProcess, error)
 	removeManagedPidFile     func() error
 	runManagedCaddyCommand   func([]string, ManagedCaddyCommandOptions) CommandResult
 	runtimeOS                string
 	// settings are what a new Caddy starts with.
-	settings ManagedCaddyGlobalSettings
+	settings        ManagedCaddyGlobalSettings
+	previousProcess ManagedCaddyProcess
 }
 
 // RunManagedCaddyLifecycleCommand starts, stops, or trusts the managed Caddy.
@@ -73,6 +76,7 @@ func RunManagedCaddyLifecycleCommand(
 		paths:                    paths,
 		quiet:                    dependencies.Quiet,
 		readRootCertificateTrust: dependencies.ReadRootCertificateTrust,
+		readManagedCaddyProcess:  dependencies.ReadManagedCaddyProcess,
 		removeManagedPidFile:     dependencies.RemoveManagedPidFile,
 		runManagedCaddyCommand:   dependencies.RunManagedCaddyCommand,
 		runtimeOS:                dependencies.RuntimeOS,
@@ -93,14 +97,14 @@ func RunManagedCaddyLifecycleCommand(
 			return pathExists(paths.PidFilePath)
 		}
 	}
-	if l.isManagedCaddyAvailable == nil {
-		l.isManagedCaddyAvailable = func() bool {
-			return EnsureManagedCaddyAdminAvailable(CreateCaddyAdminAPIURL(l.adminAddress), AdminAvailabilityDependencies{}) == nil
-		}
-	}
 	if l.readRootCertificateTrust == nil {
 		l.readRootCertificateTrust = func() (RootCertificateTrust, error) {
 			return ReadRootCertificateTrust(paths.RootCertificatePath)
+		}
+	}
+	if l.readManagedCaddyProcess == nil {
+		l.readManagedCaddyProcess = func() (ManagedCaddyProcess, error) {
+			return readManagedCaddyProcess(paths)
 		}
 	}
 	if l.removeManagedPidFile == nil {
@@ -123,29 +127,74 @@ func RunManagedCaddyLifecycleCommand(
 		return 0, err
 	}
 
-	switch action {
-	case LifecycleStart:
-		return l.start()
-	case LifecycleStop:
-		return l.stop()
-	case LifecycleTrust:
-		return l.trust()
-	default:
-		return 0, fmt.Errorf("unsupported managed caddy lifecycle action: %s", action)
+	var exitCode int
+	err = withRouteMutationLock(paths, func() error {
+		// Another process may have started or moved Caddy while config was
+		// prepared. Read the applied address again after taking the lock.
+		running, err := readRunningSettings(paths, settings)
+		if err != nil {
+			return err
+		}
+		l.adminAddress = ResolveManagedCaddyAdminAddress(running.AdminAddress)
+		switch action {
+		case LifecycleStart:
+			exitCode, err = l.start()
+		case LifecycleStop:
+			exitCode, err = l.stop()
+		case LifecycleTrust:
+			// Trust can prompt; leave it outside the shared route lock.
+		default:
+			err = fmt.Errorf("unsupported managed caddy lifecycle action: %s", action)
+		}
+		return err
+	})
+	if err == nil && action == LifecycleStart {
+		err = l.trustAfterStart()
 	}
+	if err == nil && action == LifecycleTrust {
+		return l.trust()
+	}
+	return exitCode, err
 }
 
-func (l managedCaddyLifecycle) start() (int, error) {
-	if l.isManagedCaddyAvailable() {
+func (l managedCaddyLifecycle) isAvailable() bool {
+	if l.isManagedCaddyAvailable != nil {
+		return l.isManagedCaddyAvailable()
+	}
+	return EnsureManagedCaddyAdminAvailable(CreateCaddyAdminAPIURL(l.adminAddress), AdminAvailabilityDependencies{}) == nil
+}
+
+func (l *managedCaddyLifecycle) start() (int, error) {
+	if l.isAvailable() {
 		if !l.hasManagedPidFile() {
 			return 0, errors.New(foreignManagedCaddyError)
 		}
-		if err := cliout.WriteLog(l.logWriter, "devhost", fmt.Sprintf("managed caddy is already running with %s", l.paths.CaddyfilePath)); err != nil {
-			return 0, fmt.Errorf("log managed caddy already running: %w", err)
+		restart, err := l.needsRestart()
+		if err != nil {
+			return 0, err
 		}
-		return 0, l.trustAfterStart()
+		if !restart {
+			if err := l.reloadSettings(); err != nil {
+				return 0, err
+			}
+			if err := cliout.WriteLog(l.logWriter, "devhost", fmt.Sprintf("managed caddy is already running with %s", l.paths.CaddyfilePath)); err != nil {
+				return 0, fmt.Errorf("log managed caddy already running: %w", err)
+			}
+			return 0, nil
+		}
+		if err := cliout.WriteLog(l.logWriter, "devhost", "Restarting shared Caddy for an updated runtime policy. Proxy connections briefly drop."); err != nil {
+			return 0, err
+		}
+		l.previousProcess, err = l.readManagedCaddyProcess()
+		if err != nil {
+			return 0, err
+		}
+		if _, err := l.stop(); err != nil {
+			return 0, err
+		}
 	}
 
+	l.adminAddress = ResolveManagedCaddyAdminAddress(l.settings.AdminAddress)
 	result := l.startProcess()
 	if !result.Success {
 		failure, handled := managedCaddyStartFailure(result, l.runtimeOS, l.paths.CaddyDirectoryPath)
@@ -164,24 +213,69 @@ func (l managedCaddyLifecycle) start() (int, error) {
 		return 0, fmt.Errorf("log managed caddy start success: %w", err)
 	}
 
-	return 0, l.trustAfterStart()
+	return 0, nil
 }
 
-// startProcess renders every route for the settings, starts Caddy with them,
-// and records them as applied once Caddy runs. The route lock keeps another
-// stack from rendering routes for other settings in between.
+func (l *managedCaddyLifecycle) reloadSettings() error {
+	running, err := readRunningSettings(l.paths, l.settings)
+	if err != nil {
+		return err
+	}
+	if err := renderManagedCaddySettings(l.paths, l.settings, l.runtimeOS); err != nil {
+		return errors.Join(err, renderManagedCaddySettings(l.paths, running, l.runtimeOS))
+	}
+	result := l.runManagedCaddyCommand([]string{"reload"}, ManagedCaddyCommandOptions{AdminAddress: l.adminAddress})
+	if !result.Success {
+		return errors.Join(logManagedCaddyFailure(l.logWriter, "reload", result), renderManagedCaddySettings(l.paths, running, l.runtimeOS))
+	}
+	l.adminAddress = ResolveManagedCaddyAdminAddress(l.settings.AdminAddress)
+	if err := writeAppliedManagedCaddySettings(l.paths, l.settings); err != nil {
+		return err
+	}
+	return l.writeSuccessfulOutput(result)
+}
+
+func (l managedCaddyLifecycle) needsRestart() (bool, error) {
+	owner, err := l.readManagedCaddyProcess()
+	if err != nil {
+		return false, err
+	}
+	record, err := readManagedCaddyRuntime(l.paths)
+	if err != nil {
+		return false, err
+	}
+	if record.ManagedCaddyProcess == owner {
+		return record.Generation < managedCaddyRestartGeneration, nil
+	}
+	if err := verifyLegacyManagedCaddyProcess(l.paths, owner); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// The caller holds the route lock across stop, start, readiness and recording.
+// Reloads never write this process generation; only a fresh start can apply it.
 func (l managedCaddyLifecycle) startProcess() CommandResult {
-	var result CommandResult
-	err := withRouteMutationLock(l.paths, func() error {
-		if err := renderManagedCaddySettings(l.paths, l.settings, l.runtimeOS); err != nil {
-			return err
-		}
-		result = l.runManagedCaddyCommand([]string{"start", "--pidfile", l.paths.PidFilePath}, ManagedCaddyCommandOptions{})
-		if !result.Success {
-			return nil
-		}
-		return writeAppliedManagedCaddySettings(l.paths, l.settings)
-	})
+	if err := renderManagedCaddySettings(l.paths, l.settings, l.runtimeOS); err != nil {
+		return CommandResult{Stderr: []byte(err.Error())}
+	}
+	result := l.runManagedCaddyCommand([]string{"start", "--pidfile", l.paths.PidFilePath}, ManagedCaddyCommandOptions{})
+	if !result.Success {
+		return result
+	}
+	if !l.isAvailable() {
+		return CommandResult{Stderr: []byte("managed Caddy did not become ready after start")}
+	}
+	owner, err := l.readManagedCaddyProcess()
+	if err == nil && owner == l.previousProcess {
+		err = errors.New("managed Caddy did not start a fresh process; runtime policy remains unapplied")
+	}
+	if err == nil {
+		err = writeAppliedManagedCaddySettings(l.paths, l.settings)
+	}
+	if err == nil {
+		err = writeManagedCaddyRuntime(l.paths, owner)
+	}
 	if err != nil {
 		return CommandResult{Stderr: []byte(err.Error())}
 	}
@@ -233,7 +327,7 @@ func (l managedCaddyLifecycle) trustAfterStart() error {
 
 func (l managedCaddyLifecycle) stop() (int, error) {
 	isManagedProcessKnown := l.hasManagedPidFile()
-	isManagedProcessAvailable := l.isManagedCaddyAvailable()
+	isManagedProcessAvailable := l.isAvailable()
 	if !isManagedProcessAvailable {
 		if isManagedProcessKnown {
 			if err := l.forget(); err != nil {
@@ -274,7 +368,7 @@ func (l managedCaddyLifecycle) stop() (int, error) {
 }
 
 func (l managedCaddyLifecycle) trust() (int, error) {
-	if !l.isManagedCaddyAvailable() {
+	if !l.isAvailable() {
 		return 0, errors.New("Managed Caddy is not running. Run 'devhost caddy start' first.")
 	}
 	if !l.hasManagedPidFile() {

@@ -259,6 +259,25 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			owner := ManagedCaddyProcess{PID: 123, StartIdentity: "test-process"}
+			if tc.available && tc.hasPidFile {
+				if err := writeManagedCaddyRuntime(paths, owner); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if tc.action == LifecycleStart && tc.available && tc.hasPidFile {
+				if tc.runResults == nil {
+					tc.runResults = map[string]CommandResult{}
+				}
+				tc.runResults["reload"] = CommandResult{Success: true}
+				address := configured.AdminAddress
+				if tc.applied != nil {
+					address = tc.applied.AdminAddress
+				}
+				tc.wantCommandArguments = append([][]string{{"reload"}}, tc.wantCommandArguments...)
+				tc.wantCommandOptions = append([]ManagedCaddyCommandOptions{{AdminAddress: address}}, tc.wantCommandOptions...)
+				tc.wantApplied = &configured
+			}
 			for index := range tc.wantCommandArguments {
 				tc.wantCommandArguments[index] = slices.Clone(tc.wantCommandArguments[index])
 				for argument := range tc.wantCommandArguments[index] {
@@ -272,6 +291,7 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 			var gotArguments [][]string
 			var gotOptions []ManagedCaddyCommandOptions
 			removedPidFile := false
+			available := tc.available
 
 			exitCode, err := RunManagedCaddyLifecycleCommand(tc.action, &logOutput, paths, configured, ManagedCaddyLifecycleDependencies{
 				CanPromptForPassword: func() bool {
@@ -285,9 +305,10 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 					return tc.hasPidFile
 				},
 				IsManagedCaddyAvailable: func() bool {
-					return tc.available
+					return available
 				},
-				Quiet: tc.quiet,
+				ReadManagedCaddyProcess: func() (ManagedCaddyProcess, error) { return owner, nil },
+				Quiet:                   tc.quiet,
 				ReadRootCertificateTrust: func() (RootCertificateTrust, error) {
 					return tc.rootTrust, tc.rootTrustErr
 				},
@@ -299,6 +320,9 @@ func TestRunManagedCaddyLifecycleCommand(t *testing.T) {
 					callOrder = append(callOrder, "command")
 					gotArguments = append(gotArguments, append([]string{}, arguments...))
 					gotOptions = append(gotOptions, options)
+					if arguments[0] == "start" && tc.runResults["start"].Success {
+						available = true
+					}
 					return tc.runResults[arguments[0]]
 				},
 				RuntimeOS: "linux",

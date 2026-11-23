@@ -15,6 +15,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -170,8 +172,94 @@ func TestManagedCertificatesOnlyForConfiguredHosts(t *testing.T) {
 		t.Fatalf("cached legacy certificate after reload: %v", err)
 	}
 	conn.Close()
-	stop()
-	start()
+	before, err := readManagedCaddyProcess(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Concurrent upgraded clients share one automatic restart, including the
+	// legacy case with no generation record. Use the native executable without
+	// installing this disposable CA into the machine's trust store.
+	if err := os.Symlink(executable, paths.ExecutablePath); err != nil {
+		t.Fatal(err)
+	}
+	var workers sync.WaitGroup
+	var starts, stops atomic.Int32
+	failures := make(chan error, 8)
+	for range 8 {
+		workers.Go(func() {
+			_, err := RunManagedCaddyLifecycleCommand(LifecycleStart, io.Discard, paths, settings, ManagedCaddyLifecycleDependencies{
+				CanPromptForPassword:     func() bool { return false },
+				ReadRootCertificateTrust: func() (RootCertificateTrust, error) { return RootCertificateTrusted, nil },
+				RunManagedCaddyCommand: func(arguments []string, options ManagedCaddyCommandOptions) CommandResult {
+					if arguments[0] == "start" {
+						starts.Add(1)
+					}
+					if arguments[0] == "stop" {
+						stops.Add(1)
+					}
+					return RunManagedCaddyCommand(paths, arguments, options, ManagedCaddyCommandDependencies{})
+				},
+			})
+			failures <- err
+		})
+	}
+	workers.Wait()
+	close(failures)
+	for err := range failures {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if starts.Load() != 1 || stops.Load() != 1 {
+		t.Fatalf("concurrent clients started %d and stopped %d proxies", starts.Load(), stops.Load())
+	}
+	after, err := readManagedCaddyProcess(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before == after {
+		t.Fatal("legacy Caddy was not restarted")
+	}
+	record, err := readManagedCaddyRuntime(paths)
+	if err != nil || record.ManagedCaddyProcess != after || record.Generation != managedCaddyRestartGeneration {
+		t.Fatalf("runtime after restart: %+v, %v", record, err)
+	}
+	rootAfter, err := os.ReadFile(paths.RootCertificatePath)
+	if err != nil || string(rootAfter) != string(root) {
+		t.Fatalf("restart changed CA: %v", err)
+	}
+	if restarted, err := EnsureManagedCaddyRuntime(paths, settings, io.Discard, true); err != nil || restarted {
+		t.Fatal(err)
+	}
+	reused, err := readManagedCaddyProcess(paths)
+	if err != nil || reused != after {
+		t.Fatalf("current Caddy restarted: %+v, %v", reused, err)
+	}
+	// A reloadable settings change keeps both the process and its generation.
+	settings.StackDirectoryAllowRemote = true
+	if changed, err := ApplyManagedCaddySettings(paths, settings, RouteCommandOutputWriters{}); err != nil || !changed {
+		t.Fatalf("reload settings: %t, %v", changed, err)
+	}
+	reloaded, err := readManagedCaddyRuntime(paths)
+	if err != nil || reloaded != record {
+		t.Fatalf("reload changed runtime proof: %+v, %v", reloaded, err)
+	}
+	// Exercise the stack-start entry point as well as explicit caddy start.
+	// A legacy process without a runtime receipt must be upgraded here too.
+	if err := os.Remove(managedCaddyRuntimePath(paths)); err != nil {
+		t.Fatal(err)
+	}
+	if restarted, err := EnsureManagedCaddyRuntime(paths, settings, io.Discard, true); err != nil || !restarted {
+		t.Fatalf("stack-start runtime upgrade: restarted=%t error=%v", restarted, err)
+	}
+	stackProcess, err := readManagedCaddyProcess(paths)
+	if err != nil || stackProcess == after {
+		t.Fatalf("stack-start did not replace legacy process: %+v, %v", stackProcess, err)
+	}
+	stackRecord, err := readManagedCaddyRuntime(paths)
+	if err != nil || stackRecord.ManagedCaddyProcess != stackProcess || stackRecord.Generation != managedCaddyRestartGeneration {
+		t.Fatalf("stack-start runtime receipt: %+v, %v", stackRecord, err)
+	}
 	assertConfigured()
 	assertUnknown("tracker.example.com", "fresh.example.com", "unknown.localhost", "deep.unknown.localhost")
 	client := &http.Client{Timeout: time.Second}
