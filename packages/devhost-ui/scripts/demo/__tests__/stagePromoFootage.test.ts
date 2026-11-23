@@ -7,6 +7,14 @@ import { runCommand } from "../runCommand";
 import { stagePromoFootage } from "../stagePromoFootage";
 import type { IRecordedSourceClip } from "../types";
 
+interface IKeyframe {
+  pts_time: string;
+}
+
+interface IKeyframeProbeOutput {
+  frames: IKeyframe[];
+}
+
 let directoryPath = "";
 let sources: IRecordedSourceClip[] = [];
 
@@ -103,15 +111,11 @@ it("retimes each requested recording into a clip of exactly its slot length", as
     "-show_entries",
     "frame=pts_time",
     "-of",
-    "csv=p=0",
+    "json",
     join(projectPath, "assets/footage/held.mp4"),
   ]);
-  expect(
-    keyframes
-      .trim()
-      .split("\n")
-      .map((time) => Number.parseFloat(time)),
-  ).toEqual([0, 1, 2]);
+  const { frames } = JSON.parse(keyframes) as IKeyframeProbeOutput;
+  expect(frames.map(({ pts_time }) => Number(pts_time))).toEqual([0, 1, 2]);
 }, 30_000);
 
 it("names the frame and the recording when requested footage was not captured", async () => {
