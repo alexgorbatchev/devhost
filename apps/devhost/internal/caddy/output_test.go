@@ -31,6 +31,7 @@ func TestWriteCaddyOutput(t *testing.T) {
 		{
 			name:   "devhost generates the Caddyfile and its catch-all site",
 			output: `{"level":"warn","ts":1,"msg":"Caddyfile input is not formatted; run 'caddy fmt --overwrite' to fix inconsistencies","adapter":"caddyfile","line":2}` + "\n" + `{"level":"warn","ts":1,"logger":"tls","msg":"YOUR SERVER MAY BE VULNERABLE TO ABUSE: on-demand TLS is enabled, but no protections are in place","docs":"https://caddyserver.com/docs/automatic-https#on-demand-tls"}` + "\n" + `{"level":"warn","ts":1,"msg":"No files matching import glob pattern","pattern":"/state/caddy/routes/*.caddy"}` + "\n",
+			want:   "[caddy] WARN tls: YOUR SERVER MAY BE VULNERABLE TO ABUSE: on-demand TLS is enabled, but no protections are in place docs=https://caddyserver.com/docs/automatic-https#on-demand-tls\n",
 		},
 		{
 			name:   "routine entries are quiet after success",

@@ -29,10 +29,9 @@ var screenedCaddyMessages = []string{
 	"certificate installed properly in",
 	// skip_install_trust: devhost installs the local CA itself.
 	"root certificate trust store installation disabled",
-	// devhost writes the Caddyfile and its catch-all HTTPS site, and imports route
+	// devhost writes the Caddyfile and imports route
 	// files that exist only while a stack routes a hostname.
 	"Caddyfile input is not formatted",
-	"on-demand TLS is enabled, but no protections are in place",
 	"No files matching import glob pattern",
 }
 

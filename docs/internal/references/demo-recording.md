@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-20 17:08
+last_modified: 2026-11-22 16:17
 status: current
 ---
 
@@ -152,6 +152,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Serve files or a port without a manifest; confined file browser, index/README fallback, breadcrumbs, Markdown first paint and list markers, and preview gallery                             | `start/serve.md`, `development/page-previews.md`                                                                                           | **No demo**                                      |
 | Native manifest `serve` services with automatic ports and the stack service lifecycle                                                                                                       | `start/serve.md`, "Serve a folder in a stack"                                                                                              | **No demo**                                      |
 | Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                                                                                                                          | `guides/shared-managed-caddy-settings.md`, "Settings"                                                                                      | No demo                                          |
+| Managed TLS issues certificates only for configured service and stack-directory hostnames; unknown HTTPS names fail TLS, while enabled HTTP keeps its 404 fallback                          | `guides/managed-caddy.md`, "Hostnames and DNS"                                                                                             | No demo                                          |
 | Prefixed, screened Caddy diagnostics and actionable startup failures                                                                                                                        | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `reference/output.md`, "Caddy's lines"                                | No demo                                          |
 | Local CA trusted once when devhost starts Caddy; untrusted-CA warning                                                                                                                       | `guides/managed-caddy.md`, "Trust the certificates"; `guides/troubleshooting.md`, "Browsers reject devhost HTTPS certificates"             | No demo                                          |
 | Route changes made while the managed Caddy is stopped are kept for its next start, never sent to another Caddy                                                                              | `guides/managed-caddy.md`, "Several stacks, one Caddy"                                                                                     | No demo                                          |

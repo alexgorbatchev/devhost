@@ -54,6 +54,7 @@ Lines Caddy writes are labeled `caddy` (`caddy | ` or `caddy: `); devhost's own 
 
 - Successful route changes print nothing; `devhost start --debug` shows them.
 - After a command succeeds, devhost shows only Caddy's warnings and errors. After a failure it shows everything else too.
+- Security warnings, including unprotected on-demand TLS, are shown even when the command succeeds.
 - devhost leaves out lines it reports itself or that no setting of yours can change: Caddy's start confirmation, notes about the Caddyfile devhost generates, and trust-store notices such as `not NSS security databases found` or `define JAVA_HOME environment variable to use the Java trust`, which only mean there is no Firefox or Java trust store to update.
 
 Caddy's full log stays in `<state>/caddy/caddy.runtime.log`; see [Files and directories](../cli/#files-and-directories).

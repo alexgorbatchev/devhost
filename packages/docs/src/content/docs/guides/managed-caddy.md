@@ -122,7 +122,9 @@ devhost routes hostnames; it does not create DNS records. For local routing, a h
 
 The hostname selected by `[caddy].stackDirectoryHost` in the shared `config.toml` (default `devhost.localhost`) is reserved for the [running-stack directory](../stack-lifecycle/#running-stacks-in-the-browser), so no service can use it. That page accepts local clients by default; `[caddy].stackDirectoryAllowRemote = true` in `config.toml` enables reading it from other devices.
 
-An unknown hostname gets a 404 page listing every hostname devhost routes.
+Caddy issues local certificates only for configured service hostnames and the stack-directory hostname. An unknown hostname fails the TLS handshake instead of receiving a certificate or an HTTPS 404 page. When [plain HTTP is enabled](../shared-managed-caddy-settings/), an unknown HTTP hostname still gets a 404 page listing active routes.
+
+After upgrading from a version that issued certificates for unknown hostnames, restart the shared proxy with `devhost caddy stop` followed by `devhost caddy start`. This briefly interrupts HTTPS for every stack using it. A configuration reload stops new unknown-host issuance but can retain previously issued certificates in Caddy's in-memory cache. Restarting clears that cache; certificates stored on disk are not loaded for unconfigured names. The existing CA and its trust remain unchanged.
 
 ## Several stacks, one Caddy
 
