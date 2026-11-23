@@ -6,7 +6,7 @@ Identify which service produced a message and give scripts predictable output wi
 
 ## Stack logs
 
-A running stack prints its own messages and every service's output, each line labeled with who wrote it. devhost's own lines use the manifest's `name`, or `devhost` before the manifest is read. A `devhost serve` session has no manifest, so its name is `serve-` followed by its `--domain` value, such as `serve-notes.localhost`; `devhost stack restart` reports the session by that name.
+A running stack prints its own messages and every service's output, each line labeled with who wrote it. devhost's own lines use the manifest's `name`, or `devhost` before the manifest is read. A file or existing-port `devhost serve` session uses `serve-` followed by its `--domain` value, such as `serve-notes.localhost`. A command session uses its generated `<name>-<session-id>` label, and child output uses `command`. See [command sessions](../../start/serve/#launch-a-command) for naming and port discovery.
 
 For people (`AGENT` unset or `0`), names are padded to a shared width and followed by `| `:
 

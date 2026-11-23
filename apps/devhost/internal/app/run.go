@@ -30,6 +30,9 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	case cli.KindRemoteWorker:
 		return runRemoteWorker(arguments.RemoteStateDirectory, stderr)
 	case cli.KindServe:
+		if len(arguments.Command) > 0 {
+			return runServeCommand(arguments, cwd, stdout, stderr)
+		}
 		directory := arguments.Directory
 		if directory == "" {
 			directory = cwd
@@ -48,6 +51,12 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	case cli.KindHelp, cli.KindVersion, cli.KindCompletion, cli.KindSkill:
 		return 0
 	case cli.KindStop:
+		if arguments.Session != "" {
+			if err := services.StopServeSession(arguments.Session, readEnvironment()); err != nil {
+				return fail(stderr, err)
+			}
+			return 0
+		}
 		manifestPath, err := resolveManifestPath(arguments.ManifestPath, cwd)
 		if err != nil {
 			return fail(stderr, err)
@@ -76,6 +85,18 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 	case cli.KindStackInfo:
 		return runStackInfo(arguments, cwd, stdout, stderr)
 	case cli.KindStackList, cli.KindStackFind:
+		if arguments.Sessions {
+			stacks, err := services.ListServeSessions(readEnvironment())
+			if err != nil {
+				return fail(stderr, err)
+			}
+			for _, stack := range stacks {
+				if err := cliout.WriteData(stdout, []byte(fmt.Sprintf("%d\t%s\n", stack.PID, stack.Name))); err != nil {
+					return fail(stderr, err)
+				}
+			}
+			return 0
+		}
 		var stacks []caddy.StackOwner
 		var err error
 		if arguments.Kind == cli.KindStackFind {

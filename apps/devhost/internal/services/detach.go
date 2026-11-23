@@ -96,7 +96,7 @@ func StartDetachedStack(ctx context.Context, options DetachedStartOptions) error
 		return err
 	}
 	// Every path to the manifest shares one lock, log, and running stack.
-	canonical := caddy.ManifestIdentity(options.Manifest.ManifestPath)
+	canonical := detachedStackIdentity(options.Manifest.ManifestPath, options.Manifest.Name)
 	directory := filepath.Join(paths.StateDirectoryPath, "logs")
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return detachedSetupFailure("the stack log directory could not be created", err, stateDirectoryHint(paths))
@@ -338,11 +338,18 @@ func findDetachedStack(paths caddy.Paths, canonical string) (*caddy.LiveStack, e
 		return nil, detachedSetupFailure("the running stacks could not be read", err, stateDirectoryHint(paths))
 	}
 	for _, stack := range stacks {
-		if caddy.ManifestIdentity(stack.ManifestPath) == canonical {
+		if detachedStackIdentity(stack.ManifestPath, stack.Name) == canonical {
 			return &stack, nil
 		}
 	}
 	return nil, nil
+}
+
+func detachedStackIdentity(path, name string) string {
+	if path == "" {
+		return "serve:" + name
+	}
+	return caddy.ManifestIdentity(path)
 }
 
 // waitReady returns the supervisor's stack once it is ready, or why it is not:
@@ -417,7 +424,12 @@ func reportDetachedStack(writer io.Writer, stack caddy.LiveStack, existing bool)
 		}
 	}
 	if stack.LogPath != "" {
-		return cliout.WriteLog(writer, "devhost", "Log: "+stack.LogPath)
+		if err := cliout.WriteLog(writer, "devhost", "Log: "+stack.LogPath); err != nil {
+			return err
+		}
+	}
+	if stack.ManifestPath == "" {
+		return cliout.WriteLog(writer, "devhost", "Stop: devhost stop --session "+stack.Name)
 	}
 	return nil
 }

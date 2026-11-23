@@ -230,7 +230,7 @@ func TestParseCommandLineArgumentsAgentHelpListsTheWholeTree(t *testing.T) {
 		"    - trust-remote <ssh-target>: Trust another machine's Caddy certificate over SSH (macOS)\n",
 		"  - completion: ",
 		"    - zsh: ",
-		"  - serve: Serve a directory or local port over HTTPS\n",
+		"  - serve [command...]: Serve files, a local port, or a command over HTTPS\n",
 		"  - service: Inspect the services in devhost.toml\n",
 		"    - list: Print the service names in devhost.toml\n",
 		"  - stack: Inspect the stacks running on this machine\n",

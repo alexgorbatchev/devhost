@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-25 08:30
-last_modified: 2026-11-17 07:02
+last_modified: 2026-11-23 14:33
 status: current
 ---
 
@@ -15,6 +15,8 @@ The overview cites committed revision `b2496c7459ac103a50fb3842b741d145b7c7d18d`
 The dedicated stack directory is also outside that snapshot. Shared Caddy serves `https://devhost.localhost/` through any available stack control server, which reads live stack records and gathers read-only service and TOML snapshots from their loopback control listeners. Stack startup publishes its listener in the record; reload preserves it, and shutdown withdraws it before stopping the listener. With no registered backend, Caddy serves an embedded empty directory. See `apps/devhost/internal/caddy/stack_directory.go`, `apps/devhost/internal/devtools/stack_directory.go`, and `apps/devhost/internal/services/stack_directory.go` for that path.
 
 Native manifest `serve` services are outside the pinned diagram snapshot as well. In current code, `startServiceProcess` delegates these services to `startFileService` in `apps/devhost/internal/services/serve.go`, which runs `internal/files` inside the supervisor instead of spawning a command. The same document proxies, Caddy routes, health checks, and lifecycle operations apply. Each file handler pins its served directory with `os.Root`; stopping a native service closes its listener and file handler. The root stack uses this mode for the design package.
+
+Command-mode `devhost serve` is outside the pinned snapshot. `internal/services/serve_command.go` resolves a managed command session, discovers process-owned TCP listeners, verifies HTTP, and replaces routes through the same stack runtime. The command has process health; discovered ports are external route services. Detached startup reuses stack ownership and readiness, keyed by the generated session name instead of a manifest. Session inspection and stopping use the same live registrations.
 
 Remote previews are outside the pinned snapshot. Stacks automatically use a configured relay unless started with `--local`. Short host labels receive the machine’s local or relay suffix before service commands resolve. Remote stacks register their active hosts with a shared machine connector in `apps/devhost/internal/remote/`. The connector runs Chisel reverse forwarding through an authenticated outbound WebSocket, accepts only live remote-stack hosts, and proxies to shared Caddy with its local CA verified. The public gateway owns browser authentication and HTTPS; the connector rejects remote machine-configuration writes. Stack cleanup withdraws its lease, and the last lease stops the worker. See [Remote previews](../../../packages/docs/src/content/docs/stacks/remote-previews.md) for configuration and operational boundaries.
 

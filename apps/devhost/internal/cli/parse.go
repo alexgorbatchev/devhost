@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GiGurra/boa/pkg/boa"
 	"github.com/spf13/cobra"
@@ -90,10 +91,15 @@ type CommandLineArguments struct {
 	// Services names the services or groups devhost start was asked for; empty means all services.
 	Services []string
 	// Startable limits devhost service list to the services that start only when named.
-	Startable bool
-	Worktrees bool
-	Query     string
-	All       bool
+	Startable      bool
+	Worktrees      bool
+	Query          string
+	All            bool
+	Command        []string
+	ServeName      string
+	Session        string
+	Sessions       bool
+	StartupTimeout time.Duration
 }
 
 // ParseCommandLineArguments resolves rawArguments into the command to run. Help
@@ -207,7 +213,8 @@ type serviceListOptions struct {
 
 type stopOptions struct {
 	ManifestOptions
-	Worktrees bool `descr:"Stop stacks in every worktree of this Git repository." name:"worktrees"`
+	Worktrees bool   `descr:"Stop stacks in every worktree of this Git repository." name:"worktrees"`
+	Session   string `descr:"Stop the named manifest-free serve session." name:"session" optional:"true"`
 }
 
 type stackFindOptions struct {
@@ -216,6 +223,11 @@ type stackFindOptions struct {
 
 type stackInfoOptions struct {
 	ManifestOptions
+	Session string `descr:"Inspect the named manifest-free serve session." name:"session" optional:"true"`
+}
+
+type stackListOptions struct {
+	Sessions bool `descr:"Print serve session names instead of manifests." name:"sessions"`
 }
 
 type stackRestartOptions struct {
@@ -342,12 +354,18 @@ func createStopCommand(result *CommandLineArguments) boa.CmdT[stopOptions] {
 		Short: "Stop the running stack for this project",
 		Long:  stopDescription,
 		Args:  cobra.NoArgs,
-		RunFuncE: func(options *stopOptions, _ *cobra.Command, _ []string) error {
+		RunFuncE: func(options *stopOptions, cmd *cobra.Command, _ []string) error {
+			if options.Session != "" && (cmd.Flags().Changed("manifest") || options.Worktrees) {
+				return fmt.Errorf("--session is exclusive with --manifest and --worktrees")
+			}
+			if options.Session != "" {
+				options.ManifestPath = nil
+			}
 			if err := validateManifestPath(options.ManifestPath); err != nil {
 				return err
 			}
 
-			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath, Worktrees: options.Worktrees}
+			*result = CommandLineArguments{Kind: KindStop, ManifestPath: options.ManifestPath, Worktrees: options.Worktrees, Session: options.Session}
 			return nil
 		},
 	}
@@ -396,11 +414,18 @@ const stackDescription = `Inspect the stacks running on this machine.`
 const stackListDescription = `Print manifest-backed stacks on this machine, one per line:
 its PID, a tab, and the absolute path of its devhost.toml.
 
+Use --sessions for manifest-free serve sessions instead:
+PID, a tab, and the session name.
+
 Stop one of them from any folder by passing its path to
-devhost stop --manifest. File sessions use Ctrl+C instead.`
+devhost stop --manifest. Stop a serve session by name with
+devhost stop --session <name>.`
 
 const stackInfoDescription = `Show the running stack for this project: its name, PID,
 mode, services, state, and URLs.
+
+Use --session <name> to inspect a manifest-free serve
+session instead of locating a manifest.
 
 Without --manifest, devhost uses the nearest devhost.toml
 in the current folder or a parent folder, and matches it
@@ -429,11 +454,17 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 				Short: "Show the running stack's services, state, and URLs",
 				Long:  stackInfoDescription,
 				Args:  cobra.NoArgs,
-				RunFuncE: func(options *stackInfoOptions, _ *cobra.Command, _ []string) error {
+				RunFuncE: func(options *stackInfoOptions, cmd *cobra.Command, _ []string) error {
+					if options.Session != "" && cmd.Flags().Changed("manifest") {
+						return fmt.Errorf("--session is exclusive with --manifest")
+					}
+					if options.Session != "" {
+						options.ManifestPath = nil
+					}
 					if err := validateManifestPath(options.ManifestPath); err != nil {
 						return err
 					}
-					*result = CommandLineArguments{Kind: KindStackInfo, ManifestPath: options.ManifestPath}
+					*result = CommandLineArguments{Kind: KindStackInfo, ManifestPath: options.ManifestPath, Session: options.Session}
 					return nil
 				},
 			},
@@ -453,13 +484,13 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 					return nil
 				},
 			},
-			boa.CmdT[boa.NoParams]{
+			boa.CmdT[stackListOptions]{
 				Use:   stackListCommandName,
 				Short: "Print the PID and manifest of running stacks",
 				Long:  stackListDescription,
 				Args:  cobra.NoArgs,
-				RunFunc: func(_ *boa.NoParams, _ *cobra.Command, _ []string) {
-					*result = CommandLineArguments{Kind: KindStackList}
+				RunFunc: func(options *stackListOptions, _ *cobra.Command, _ []string) {
+					*result = CommandLineArguments{Kind: KindStackList, Sessions: options.Sessions}
 				},
 			},
 		),
