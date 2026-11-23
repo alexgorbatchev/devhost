@@ -67,6 +67,15 @@ describe("devBootstrap", () => {
     const revision = Bun.spawn(["git", "rev-parse", "--short", "HEAD"], { cwd: repositoryPath });
     const revisionText = (await new Response(revision.stdout).text()).trim();
     expect(await revision.exited).toBe(0);
+    // Shallow CI checkouts have no tags, so the recipe falls back to v0.0.0.
+    const release = Bun.spawn(
+      ["sh", "-c", "git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0"],
+      { cwd: repositoryPath },
+    );
+    const releaseTag = (await new Response(release.stdout).text()).trim();
+    expect(await release.exited).toBe(0);
+    expect(releaseTag).toMatch(/^v\d/);
+    const releaseText = releaseTag.slice(1);
     const bootstrap = Bun.spawn(["just", "dev-bootstrap", dotfilesPath], {
       cwd: repositoryPath,
       env: process.env,
@@ -77,7 +86,7 @@ describe("devBootstrap", () => {
     expect(await bootstrap.exited).toBe(0);
     expect(await Bun.file(binaryPath).text()).toBe("managed release");
     const installed = Bun.spawn([developmentPath, "--version"]);
-    expect(await new Response(installed.stdout).text()).toBe(`999.0.0-dev.${revisionText}\n`);
+    expect(await new Response(installed.stdout).text()).toBe(`999.0.0-dev--${releaseText}+${revisionText}\n`);
     expect(await installed.exited).toBe(0);
   }, 120_000);
 

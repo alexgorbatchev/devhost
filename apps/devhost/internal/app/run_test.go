@@ -563,16 +563,14 @@ func TestRunCaddyStartUsesSharedConfigSettings(t *testing.T) {
 			argumentsPath := filepath.Join(t.TempDir(), "caddy-args.txt")
 			t.Setenv("DEVHOST_TEST_ARGS_FILE", argumentsPath)
 			executablePath := caddy.CreateManagedCaddyPaths(stateDirectoryPath).ExecutablePath
-			if err := os.MkdirAll(filepath.Dir(executablePath), 0o755); err != nil {
-				t.Fatal(err)
-			}
+			caddytest.WriteExecutable(t, executablePath)
 			writeExecutable(t, executablePath, strings.Join([]string{
 				"#!/bin/sh",
 				"printf '%s\\n' \"$@\" > \"$DEVHOST_TEST_ARGS_FILE\"",
 				"exit 0",
 			}, "\n"))
 
-			adminAddress := caddytest.UnusedAdminAddress(t)
+			adminAddress := caddytest.StartStartingAdminServer(t, argumentsPath)
 			useSharedConfig(t, append([]string{`adminAddress = "` + adminAddress + `"`}, tc.globalOptions...)...)
 
 			var stdout strings.Builder

@@ -82,7 +82,19 @@ Repeating `--detach` while a stack from the same manifest runs in the same local
 
 For browser access away from the development machine, [enroll the machine](../../stacks/remote-previews/), then use `devhost start --detach`; `[remote]` selects relay routing automatically. Use `--local` to keep a run local or `--remote` to require enrollment explicitly. Remote startup also waits for the relay connection and prints public URLs. Switching between local and remote mode requires stopping the existing stack first.
 
-Use `devhost stop`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual; they too find the stack through any path to its manifest. `--detach` has no short flag: `-d` still means `--debug`.
+Use `devhost stop`, `devhost stack info`, `devhost stack list`, `devhost stack find`, and `devhost stack restart` as usual; they too find the stack through any path to its manifest. `--detach` has no short flag: `-d` still means `--debug`.
+
+## Inspect a running stack
+
+From the manifest directory or any subdirectory inside the project, run `devhost stack info` to check the running stack's live service states, URLs, PID, mode (`foreground` or `detached`), and log file:
+
+```bash
+devhost stack info
+```
+
+The command queries the running stack directly. A crashed service shows as `exited` with its exit code and last output line, even when the stack runs in another terminal or with every toolbar feature turned off. Pass `--manifest path/to/devhost.toml` (or set `DEVHOST_MANIFEST`) to inspect a stack from outside its project. After upgrading from a version that predates this command, [restart the stack](#restart-after-upgrading-devhost) to enable live queries.
+
+Run with `AGENT=1` for machine-readable `devhost:` lines that include absolute manifest and included manifest paths, the control port, log path, creation time, and per-service ports, URLs, timestamps, exit codes, and last error lines. `devhost stack info` exits `0` when every started service is ready and `1` when any started service is not ready or no stack is running; see [Stack info](../../reference/output/#stack-info).
 
 ## Service commands and working directories
 

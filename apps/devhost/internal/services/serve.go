@@ -97,7 +97,7 @@ func startFileService(service ResolvedService) (*startedService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("start file service %s: %w", service.Name, err)
 	}
-	started := &startedService{service: service, exited: make(chan struct{}), stopFileServer: closeServer}
+	started := &startedService{service: service, exited: make(chan struct{}), stopFileServer: closeServer, startedAt: time.Now().UTC()}
 	go func() {
 		err := <-serveErrors
 		started.exitMu.Lock()
@@ -105,6 +105,7 @@ func startFileService(service ResolvedService) (*startedService, error) {
 			started.exitCode = 1
 		}
 		started.hasExited = true
+		started.exitedAt = time.Now().UTC()
 		started.exitMu.Unlock()
 		close(started.exited)
 	}()

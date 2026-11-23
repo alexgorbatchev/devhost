@@ -73,6 +73,8 @@ func Run(rawArguments []string, cwd string, stdout io.Writer, stderr io.Writer) 
 			return fail(stderr, err)
 		}
 		return 0
+	case cli.KindStackInfo:
+		return runStackInfo(arguments, cwd, stdout, stderr)
 	case cli.KindStackList, cli.KindStackFind:
 		var stacks []caddy.StackOwner
 		var err error

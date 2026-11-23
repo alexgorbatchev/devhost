@@ -37,7 +37,9 @@ func (r *stackRuntime) reserveManifestFiles(files []string) (func(bool) error, e
 	if err := r.registerManifestFiles(combined); err != nil {
 		return nil, err
 	}
+	r.manifestMu.Lock()
 	r.manifestFiles = combined
+	r.manifestMu.Unlock()
 	return func(accepted bool) error {
 		retained := previous
 		if accepted {
@@ -47,7 +49,9 @@ func (r *stackRuntime) reserveManifestFiles(files []string) (func(bool) error, e
 			// The union is still registered and tracked for the next operation.
 			return err
 		}
+		r.manifestMu.Lock()
 		r.manifestFiles = retained
+		r.manifestMu.Unlock()
 		return nil
 	}, nil
 }

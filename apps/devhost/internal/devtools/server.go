@@ -108,6 +108,7 @@ type ServiceLogEntry struct {
 type StartControlServerOptions struct {
 	StackDirectoryPaths caddy.Paths
 	GetStackServices    func() ([]statuspage.StackService, error)
+	GetStackInfo        func(context.Context) (StackInfoSnapshot, error)
 	ChatPrompt          string
 	// ChatPanelFile saves where the chat panel was dragged to. Empty keeps no position.
 	ChatPanelFile   string
@@ -147,6 +148,7 @@ type StartControlServerOptions struct {
 type ControlServer struct {
 	stackDirectoryPaths caddy.Paths
 	getStackServices    func() ([]statuspage.StackService, error)
+	getStackInfo        func(context.Context) (StackInfoSnapshot, error)
 	// settings are what a hot reload changes; mu guards them with configJSON.
 	settings          ControlSettings
 	chat              *chatStore
@@ -330,10 +332,12 @@ func StartControlServer(options StartControlServerOptions) (*ControlServer, erro
 	mux := http.NewServeMux()
 	controlServer.stackDirectoryPaths = options.StackDirectoryPaths
 	controlServer.getStackServices = options.GetStackServices
+	controlServer.getStackInfo = options.GetStackInfo
 	if options.StackDirectoryPaths.StacksDirectoryPath != "" {
 		mux.HandleFunc(stackDirectoryPath, controlServer.handleStackDirectory)
 		mux.HandleFunc(stackSnapshotPath, controlServer.handleStackSnapshot)
 	}
+	mux.HandleFunc(stackInfoPath, controlServer.handleStackInfo)
 	if controlServer.devSource != nil {
 		mux.HandleFunc(pagePreviewPath, controlServer.handlePagePreview)
 	}

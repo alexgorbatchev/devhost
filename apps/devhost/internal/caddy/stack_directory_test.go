@@ -74,18 +74,30 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 	if err := writeAppliedManagedCaddySettings(paths, settings); err != nil {
 		t.Fatal(err)
 	}
-	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, Timeout: 5 * time.Second}
+	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
 	defer client.CloseIdleConnections()
 	read := func(path string, want int) string {
 		t.Helper()
+		client.CloseIdleConnections()
+		transport.TLSClientConfig.ServerName = settings.StackDirectoryHostname()
 		r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://127.0.0.1:%d%s", settings.HTTPSPort, path), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		r.Host = fmt.Sprintf("%s:%d", settings.StackDirectoryHostname(), settings.HTTPSPort)
-		response, err := client.Do(r)
-		if err != nil {
-			t.Fatal(err)
+		// Named certificates are obtained asynchronously after start or reload.
+		var response *http.Response
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			response, err = client.Do(r)
+			if err == nil {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal(err)
+			}
+			time.Sleep(25 * time.Millisecond)
 		}
 		defer response.Body.Close()
 		if response.StatusCode != want {
@@ -138,7 +150,7 @@ func TestStackDirectorySurvivesBackendWithdrawal(t *testing.T) {
 			t.Skip("no non-loopback IPv4 interface")
 		}
 		dialer := net.Dialer{LocalAddr: &net.TCPAddr{IP: address}}
-		remote := &http.Client{Transport: &http.Transport{DialContext: dialer.DialContext, TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, Timeout: 5 * time.Second}
+		remote := &http.Client{Transport: &http.Transport{DialContext: dialer.DialContext, TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: settings.StackDirectoryHostname()}}, Timeout: 5 * time.Second}
 		defer remote.CloseIdleConnections()
 		for _, allow := range []bool{false, true, false} {
 			settings.StackDirectoryAllowRemote = allow

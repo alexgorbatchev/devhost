@@ -72,10 +72,10 @@ func renderManagedCaddyfile(options renderManagedCaddyfileOptions) (string, erro
 func renderFallbackSiteBlock(protocol string, port int, directoryPath string, includeTLS bool) string {
 	lines := []string{fmt.Sprintf("%s {", FormatManagedCaddySiteAddress(protocol, port, ""))}
 	if includeTLS {
+		// Only named route sites and the stack directory may obtain certificates.
+		// The fallback must never issue a certificate for an arbitrary client SNI.
 		lines = append(lines,
-			"    tls internal {",
-			"        on_demand",
-			"    }",
+			"    tls internal",
 			"",
 		)
 	}

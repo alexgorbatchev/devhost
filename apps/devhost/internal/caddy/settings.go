@@ -93,7 +93,12 @@ func removeAppliedManagedCaddySettings(paths Paths) error {
 // withRouteMutationLock serializes changes to the shared Caddy configuration
 // across every devhost process using this state directory.
 func withRouteMutationLock(paths Paths, mutate func() error) error {
-	return withFileLock(filepath.Join(paths.CaddyDirectoryPath, "routes.lock"), "managed Caddy routes", mutate)
+	return withFileLock(filepath.Join(paths.CaddyDirectoryPath, "routes.lock"), "managed Caddy routes", func() error {
+		if err := checkManagedCaddyGeneration(paths); err != nil {
+			return err
+		}
+		return mutate()
+	})
 }
 
 // ApplyManagedCaddySettings moves the managed Caddy to settings. It renders the

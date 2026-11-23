@@ -28,6 +28,11 @@ func TestParseCommandLineArguments(t *testing.T) {
 		{name: "restart conflicting scope", rawArgs: []string{"stack", "restart", "--all", "-m", manifestPath}, wantError: "--all and --manifest (or DEVHOST_MANIFEST) are mutually exclusive"},
 		{name: "stops repository worktrees", rawArgs: []string{"stop", "--worktrees", "-m", manifestPath}, want: CommandLineArguments{Kind: KindStop, Worktrees: true, ManifestPath: &manifestPath}, comparePath: true},
 		{name: "finds stacks", rawArgs: []string{"stack", "find", "https://engine.localhost/path"}, want: CommandLineArguments{Kind: KindStackFind, Query: "https://engine.localhost/path"}},
+		{name: "parses stack info", rawArgs: []string{"stack", "info"}, want: CommandLineArguments{Kind: KindStackInfo}},
+		{name: "parses stack info with manifest flag", rawArgs: []string{"stack", "info", "-m", manifestPath}, want: CommandLineArguments{Kind: KindStackInfo, ManifestPath: &manifestPath}, comparePath: true},
+		{name: "parses stack info manifest from environment", rawArgs: []string{"stack", "info"}, env: map[string]string{"DEVHOST_MANIFEST": manifestPath}, want: CommandLineArguments{Kind: KindStackInfo, ManifestPath: &manifestPath}, comparePath: true},
+		{name: "rejects stack info arguments", rawArgs: []string{"stack", "info", "extra"}, wantError: `unknown command "extra" for "devhost stack info"`},
+		{name: "rejects invalid stack info manifest suffix", rawArgs: []string{"stack", "info", "--manifest", "./other.toml"}, wantError: "--manifest must point to a file named devhost.toml, received: ./other.toml"},
 		{
 			name:    "parses stop command",
 			rawArgs: []string{"stop"},

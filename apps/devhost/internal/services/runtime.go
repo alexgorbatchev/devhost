@@ -19,6 +19,8 @@ import (
 // stackRuntime owns process state. Startup and lifecycle operations are serialized;
 // the health stream reads snapshots while commands and probes run outside these locks.
 type stackRuntime struct {
+	createdAt         time.Time
+	stateSince        map[string]time.Time
 	remoteLease       *remote.Lease
 	manifestFiles     []string
 	starting          map[string]bool
@@ -277,12 +279,17 @@ func (r *stackRuntime) start(ctx context.Context, name string, options runtimeSt
 	if r.starting == nil {
 		r.starting = map[string]bool{}
 	}
+	if r.stateSince == nil {
+		r.stateSince = map[string]time.Time{}
+	}
 	r.starting[name] = true
+	r.stateSince[name] = time.Now().UTC()
 	delete(r.failures, name)
 	r.manifestMu.Unlock()
 	defer func() {
 		r.manifestMu.Lock()
 		delete(r.starting, name)
+		r.stateSince[name] = time.Now().UTC()
 		if returnedError != nil {
 			if r.failures == nil {
 				r.failures = map[string]string{}

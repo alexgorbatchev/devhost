@@ -30,6 +30,7 @@ const (
 	KindServiceList        Kind = "service-list"
 	KindStackList          Kind = "stack-list"
 	KindStackFind          Kind = "stack-find"
+	KindStackInfo          Kind = "stack-info"
 	KindStackRestart       Kind = "stack-restart"
 	KindCaddyLifecycle     Kind = "caddy-lifecycle"
 	KindCaddyPrintRootCert Kind = "caddy-print-root-cert"
@@ -56,6 +57,7 @@ const (
 	serviceListCommandName   = "list"
 	stackCommandName         = "stack"
 	stackCommandPath         = rootCommandName + " " + stackCommandName
+	stackInfoCommandName     = "info"
 	stackListCommandName     = "list"
 	caddyCommandName         = "caddy"
 	caddyCommandPath         = rootCommandName + " " + caddyCommandName
@@ -210,6 +212,10 @@ type stopOptions struct {
 
 type stackFindOptions struct {
 	Query string `descr:"URL, hostname, stack name, or partial name to find." positional:"true"`
+}
+
+type stackInfoOptions struct {
+	ManifestOptions
 }
 
 type stackRestartOptions struct {
@@ -393,6 +399,16 @@ its PID, a tab, and the absolute path of its devhost.toml.
 Stop one of them from any folder by passing its path to
 devhost stop --manifest. File sessions use Ctrl+C instead.`
 
+const stackInfoDescription = `Show the running stack for this project: its name, PID,
+mode, services, state, and URLs.
+
+Without --manifest, devhost uses the nearest devhost.toml
+in the current folder or a parent folder, and matches it
+to a running stack.
+
+Exits 0 when every started service is ready, and nonzero
+when any started service is not ready or no stack runs.`
+
 func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 	return boa.CmdT[boa.NoParams]{
 		Use:   stackCommandName,
@@ -406,6 +422,19 @@ func createStackCommand(result *CommandLineArguments) boa.CmdT[boa.NoParams] {
 				Long:  "Find running stacks by URL, hostname, stack name, or\nmanifest path. URLs match their hostname exactly; other\nqueries match case-insensitive substrings. A path to a\nmanifest file, relative to the current directory unless\nabsolute, also matches the stack started from that file\nthrough any symbolic link. Print every match once as PID,\ntab, absolute manifest path. No matches produces empty\noutput and succeeds.",
 				RunFunc: func(params *stackFindOptions, _ *cobra.Command, _ []string) {
 					*result = CommandLineArguments{Kind: KindStackFind, Query: params.Query}
+				},
+			},
+			boa.CmdT[stackInfoOptions]{
+				Use:   stackInfoCommandName,
+				Short: "Show the running stack's services, state, and URLs",
+				Long:  stackInfoDescription,
+				Args:  cobra.NoArgs,
+				RunFuncE: func(options *stackInfoOptions, _ *cobra.Command, _ []string) error {
+					if err := validateManifestPath(options.ManifestPath); err != nil {
+						return err
+					}
+					*result = CommandLineArguments{Kind: KindStackInfo, ManifestPath: options.ManifestPath}
+					return nil
 				},
 			},
 			boa.CmdT[stackRestartOptions]{

@@ -32,16 +32,17 @@ func ReadStackDirectoryHostname(paths Paths) (string, error) {
 
 // LiveStack identifies a running stack and its private loopback control server.
 type LiveStack struct {
-	Remote       bool
-	Ready        bool
-	URLs         []string
-	LogPath      string
-	Name         string
-	PID          int
-	ManifestPath string
-	StartedAt    string
-	ControlPort  int
-	record       stackRecord
+	Remote        bool
+	Ready         bool
+	URLs          []string
+	LogPath       string
+	Name          string
+	PID           int
+	ManifestPath  string
+	ManifestFiles []string
+	StartedAt     string
+	ControlPort   int
+	record        stackRecord
 }
 
 // Signal checks that this exact registration and process still own the stack.
@@ -79,7 +80,19 @@ func ReadLiveStacks(paths Paths) ([]LiveStack, error) {
 			return nil, fmt.Errorf("read stack %s: %w", entry.Name(), err)
 		}
 		if routeMutationIsOwnerAlive(r.OwnerPID, r.OwnerStartIdentity) {
-			stacks = append(stacks, LiveStack{Remote: r.Remote, Ready: r.Ready, URLs: r.URLs, LogPath: r.LogPath, Name: r.StackName, PID: r.OwnerPID, ManifestPath: r.ManifestPath, StartedAt: r.CreatedAt, ControlPort: r.ControlPort, record: r})
+			stacks = append(stacks, LiveStack{
+				Remote:        r.Remote,
+				Ready:         r.Ready,
+				URLs:          r.URLs,
+				LogPath:       r.LogPath,
+				Name:          r.StackName,
+				PID:           r.OwnerPID,
+				ManifestPath:  r.ManifestPath,
+				ManifestFiles: slices.Clone(r.ManifestFiles),
+				StartedAt:     r.CreatedAt,
+				ControlPort:   r.ControlPort,
+				record:        r,
+			})
 		}
 	}
 	slices.SortFunc(stacks, func(a, b LiveStack) int {

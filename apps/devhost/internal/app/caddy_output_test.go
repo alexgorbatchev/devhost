@@ -23,12 +23,12 @@ func TestCaddyCommandOutput(t *testing.T) {
 				t.Setenv("COLUMNS", "1000")
 				state := t.TempDir()
 				t.Setenv("DEVHOST_STATE_DIR", state)
-				useSharedCaddyAdmin(t, caddytest.UnusedAdminAddress(t))
+				startedPath := filepath.Join(state, "started")
+				t.Setenv("DEVHOST_TEST_STARTED", startedPath)
+				useSharedCaddyAdmin(t, caddytest.StartStartingAdminServer(t, startedPath))
 				executablePath := caddy.CreateManagedCaddyPaths(state).ExecutablePath
-				if err := os.MkdirAll(filepath.Dir(executablePath), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				script := "#!/bin/sh\nprintf 'started\\nsecond line'\nprintf 'diagnostic\\n' >&2\n"
+				caddytest.WriteExecutable(t, executablePath)
+				script := "#!/bin/sh\nprintf 'started\\nsecond line'\nprintf 'diagnostic\\n' >&2\n: > \"$DEVHOST_TEST_STARTED\"\n"
 				if failed {
 					script = "#!/bin/sh\nprintf 'listen tcp 127.0.0.1:443: bind: permission denied\\n' >&2\nexit 1\n"
 				}

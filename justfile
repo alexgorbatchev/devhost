@@ -43,7 +43,7 @@ fix:
 
 # Build and register a protected devhost development override
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
-    revision="$(git rev-parse --short HEAD)" && just --justfile apps/devhost/justfile --set build-version "999.0.0-dev.$revision" --set build-source-directory "{{ justfile_directory() }}" compile
+    base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)" && revision="$(git rev-parse --short HEAD)" && just --justfile apps/devhost/justfile --set build-version "999.0.0-dev--${base#v}+$revision" --set build-source-directory "{{ justfile_directory() }}" compile
     bun run ./apps/devhost/scripts/devBootstrap.ts
 
 # Start the root devhost stack using machine routing
