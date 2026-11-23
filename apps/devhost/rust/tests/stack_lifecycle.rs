@@ -3,8 +3,9 @@ use std::{
     fs,
     io::{self, Read, Write},
     net::{TcpListener, TcpStream},
+    os::unix::process::CommandExt,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Child, Command, ExitStatus, Stdio},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -26,6 +27,7 @@ use devhost_rust::{
     services::{
         detach::LaunchMetadata,
         resolve::{PortResolutionOptions, resolve_service_order, resolve_service_ports},
+        serve::FileServer,
         stack::{StartStackError, StartStackOptions, start_stack},
         stop::{StopStackOptions, stop_stack},
     },
@@ -58,13 +60,120 @@ fn free_port() -> u16 {
         .port()
 }
 
+struct RunningFileStack {
+    cancel: Arc<AtomicBool>,
+    thread: Option<thread::JoinHandle<Result<i32, StartStackError>>>,
+}
+
+impl Drop for RunningFileStack {
+    fn drop(&mut self) {
+        self.cancel.store(true, Ordering::SeqCst);
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+#[test]
+fn managed_directory_service_serves_live_files_and_releases_routes() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path();
+    let caddy = LiveCaddyGuard::start(root);
+    let config_path = write_config(root, &caddy.settings);
+    let project = root.join("project");
+    fs::create_dir_all(project.join("public")).unwrap();
+    fs::write(project.join("public/note.txt"), "live directory").unwrap();
+    fs::write(
+        project.join("devhost.toml"),
+        "name = 'file-stack'\n[services.files]\nserve = 'public'\nhost = 'file-stack.localhost'\n",
+    )
+    .unwrap();
+    let validated = manifest::read_manifest(&project, None).unwrap();
+    let order = resolve_service_order(&validated).unwrap();
+    let mut resolved =
+        resolve_service_ports(&validated, &PortResolutionOptions::default()).unwrap();
+    let service_port = resolved.services["files"].port.unwrap();
+    let stdout = SharedBuf::default();
+    let stderr = SharedBuf::default();
+    let output = ServiceOutput::new(
+        Mode::Agent,
+        Box::new(stdout.clone()),
+        Box::new(stderr.clone()),
+        &["file-stack", "files"],
+    );
+    let cancel = Arc::new(AtomicBool::new(false));
+    let options = StartStackOptions {
+        serve_session: false,
+        runtime_errors: None,
+        configuration: Some(validated),
+        caddy_dir: caddy.caddy_dir.clone(),
+        config_path: Some(config_path),
+        environment: BTreeMap::new(),
+        output,
+        debug_caddy: false,
+        shutdown_grace_period: Some(Duration::from_secs(2)),
+        idle_timeout: None,
+        install_signal_handlers: false,
+        external_cancel: Some(cancel.clone()),
+        launch: LaunchMetadata::default(),
+    };
+    let mut running = RunningFileStack {
+        cancel,
+        thread: Some(thread::spawn(move || {
+            start_stack(&mut resolved, &order, options)
+        })),
+    };
+    assert!(
+        wait_until(Duration::from_secs(10), || stdout
+            .text()
+            .contains("files (primary):")),
+        "{} {}",
+        stdout.text(),
+        stderr.text()
+    );
+    assert!(
+        http_get_host(
+            caddy.settings.http_port,
+            "file-stack.localhost",
+            "/note.txt"
+        )
+        .contains("live directory")
+    );
+    fs::write(project.join("public/note.txt"), "edited directory").unwrap();
+    assert!(
+        http_get_host(
+            caddy.settings.http_port,
+            "file-stack.localhost",
+            "/note.txt"
+        )
+        .contains("edited directory")
+    );
+    let mut idle = TcpStream::connect(("127.0.0.1", service_port)).unwrap();
+    idle.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+    running.cancel.store(true, Ordering::SeqCst);
+    assert_eq!(running.thread.take().unwrap().join().unwrap().unwrap(), 0);
+    assert!(TcpListener::bind(("127.0.0.1", service_port)).is_ok());
+    assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
+    let mut byte = [0];
+    assert!(matches!(idle.read(&mut byte), Ok(0) | Err(_)));
+    assert!(
+        !http_get_host(
+            caddy.settings.http_port,
+            "file-stack.localhost",
+            "/note.txt"
+        )
+        .contains("edited directory")
+    );
+    assert!(stderr.text().is_empty(), "{}", stderr.text());
+}
+
 struct LiveCaddyGuard {
     caddy_dir: PathBuf,
     settings: CaddySettings,
 }
 
 impl LiveCaddyGuard {
-    fn start(root: &Path) -> Self {
+    fn unstarted(root: &Path) -> Self {
         let caddy_dir = root.join("state/caddy");
         let settings = CaddySettings {
             admin_address: format!("127.0.0.1:{}", free_port()),
@@ -75,13 +184,153 @@ impl LiveCaddyGuard {
             stack_directory_host: String::new(),
             stack_directory_allow_remote: false,
         };
-        let mut out = Vec::new();
-        caddy::start_in_directory(&caddy_dir, &settings, Mode::Agent, &mut out, true)
-            .expect("start isolated caddy");
         Self {
             caddy_dir,
             settings,
         }
+    }
+
+    fn start(root: &Path) -> Self {
+        let guard = Self::unstarted(root);
+        let mut out = Vec::new();
+        caddy::start_in_directory(
+            &guard.caddy_dir,
+            &guard.settings,
+            Mode::Agent,
+            &mut out,
+            true,
+        )
+        .expect("start isolated caddy");
+        guard
+    }
+}
+
+struct ServeProcess(Option<Child>);
+
+impl ServeProcess {
+    fn stop(&mut self, signal: i32) -> ExitStatus {
+        let child = self.0.as_mut().unwrap();
+        if let Some(status) = child.try_wait().unwrap() {
+            self.0.take();
+            return status;
+        }
+        unsafe { libc::kill(-(child.id() as i32), signal) };
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                self.0.take();
+                return status;
+            }
+            if Instant::now() >= deadline {
+                unsafe { libc::kill(-(child.id() as i32), libc::SIGKILL) };
+                return self.0.take().unwrap().wait().unwrap();
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+    }
+}
+
+impl Drop for ServeProcess {
+    fn drop(&mut self) {
+        if self.0.is_some() {
+            self.stop(libc::SIGTERM);
+        }
+    }
+}
+
+#[test]
+fn serve_cli_starts_caddy_ignores_manifests_and_preserves_external_services() {
+    for external in [false, true] {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path();
+        let caddy = LiveCaddyGuard::unstarted(root);
+        let config_path = write_config(root, &caddy.settings);
+        let config = fs::read_to_string(&config_path).unwrap();
+        fs::write(
+            &config_path,
+            format!("domainSuffix = '.ignored.invalid'\n{config}"),
+        )
+        .unwrap();
+        fs::write(root.join("note.txt"), "standalone content").unwrap();
+        fs::write(root.join("devhost.toml"), "malformed = [").unwrap();
+        let backend = external.then(|| FileServer::start(root, "127.0.0.1:0").unwrap());
+        let stdout_path = root.join("stdout");
+        let stderr_path = root.join("stderr");
+        let mut command = Command::new(env!("CARGO_BIN_EXE_devhost"));
+        command.args(["serve", "--domain", "standalone.localhost"]);
+        if let Some(backend) = &backend {
+            command.args(["--port", &backend.port().to_string()]);
+        }
+        let mut process = ServeProcess(Some(
+            command
+                .current_dir(root)
+                .env("AGENT", "1")
+                .env("HOME", root.join("home"))
+                .env("DEVHOST_STATE_DIR", root.join("state"))
+                .env("DEVHOST_CONFIG_DIR", config_path.parent().unwrap())
+                .env("DEVHOST_MANIFEST", root.join("missing-manifest.toml"))
+                .env_remove("BASH_ENV")
+                .stdout(fs::File::create(&stdout_path).unwrap())
+                .stderr(fs::File::create(&stderr_path).unwrap())
+                .process_group(0)
+                .spawn()
+                .unwrap(),
+        ));
+        assert!(
+            wait_until(Duration::from_secs(10), || fs::read_to_string(&stdout_path)
+                .unwrap()
+                .contains("serve (primary):")),
+            "stdout={} stderr={}",
+            fs::read_to_string(&stdout_path).unwrap(),
+            fs::read_to_string(&stderr_path).unwrap()
+        );
+        assert!(
+            http_get_host(
+                caddy.settings.http_port,
+                "standalone.localhost",
+                "/note.txt"
+            )
+            .contains("standalone content")
+        );
+        assert!(
+            !http_get_host(
+                caddy.settings.http_port,
+                "standalone.localhost.ignored.invalid",
+                "/note.txt"
+            )
+            .contains("standalone content")
+        );
+        fs::write(root.join("note.txt"), "standalone edit").unwrap();
+        assert!(
+            http_get_host(
+                caddy.settings.http_port,
+                "standalone.localhost",
+                "/note.txt"
+            )
+            .contains("standalone edit")
+        );
+        assert_eq!(
+            process.stop(libc::SIGINT).code(),
+            Some(130),
+            "stdout={} stderr={}",
+            fs::read_to_string(&stdout_path).unwrap(),
+            fs::read_to_string(&stderr_path).unwrap()
+        );
+        assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
+        assert!(
+            !http_get_host(
+                caddy.settings.http_port,
+                "standalone.localhost",
+                "/note.txt"
+            )
+            .contains("standalone edit")
+        );
+        if let Some(backend) = &backend {
+            assert!(
+                http_get_host(backend.port(), "localhost", "/note.txt").contains("standalone edit")
+            );
+        }
+        assert!(fs::read_to_string(stderr_path).unwrap().is_empty());
     }
 }
 
@@ -505,6 +754,8 @@ process = true
         &mut resolved,
         &order,
         StartStackOptions {
+            serve_session: false,
+            runtime_errors: None,
             configuration: Some(validated),
             caddy_dir: caddy.caddy_dir.clone(),
             config_path: Some(config_path.clone()),
@@ -731,6 +982,8 @@ process = true
         &mut dummy_manifest,
         &order,
         StartStackOptions {
+            serve_session: false,
+            runtime_errors: None,
             configuration: None,
             caddy_dir: overlap_dir,
             config_path: Some(config_path),
@@ -893,6 +1146,8 @@ retries = 2
         &mut resolved,
         &order,
         StartStackOptions {
+            serve_session: false,
+            runtime_errors: None,
             configuration: Some(validated),
             caddy_dir: caddy.caddy_dir.clone(),
             config_path: Some(config_path),

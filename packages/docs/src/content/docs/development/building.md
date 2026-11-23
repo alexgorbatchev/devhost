@@ -24,11 +24,13 @@ From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run
 cargo run --locked --manifest-path apps/devhost/rust/Cargo.toml -- --help
 ```
 
-The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, and local `start` and `stop`. Manifests can use includes. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
+The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local `start` and `stop`, and `serve`. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
 
 On Linux and macOS, `start --detach` waits for local services and routes to become ready, prints the supervisor PID, service URLs, and log path, and leaves the stack running. Repeating the command reports the existing stack; `stop` shuts it down. Startup failures print the attempt's log tail and stop its services.
 
-Set `AGENT=1` for agent-oriented help. Use the Go binary for serving files, automatic reloads, remote previews, and browser controls while those parts of the port are incomplete.
+Use `serve --domain notes.localhost` to serve the current directory, `--dir` for another directory, or `--port` for an existing local HTTP service. The session starts Caddy when needed and removes its routes on Ctrl+C; Caddy and existing services keep running. Directory indexes, the confined file browser, and Markdown rendering follow the [serve guide](../../start/serve/).
+
+Set `AGENT=1` for agent-oriented help. Use the Go binary for automatic reloads, remote previews, and browser controls while those parts of the port are incomplete.
 
 ## Use a protected development build
 

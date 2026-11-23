@@ -119,6 +119,8 @@ impl From<String> for StartStackError {
 }
 
 pub struct StartStackOptions {
+    pub serve_session: bool,
+    pub runtime_errors: Option<Receiver<String>>,
     pub configuration: Option<Manifest>,
     pub caddy_dir: PathBuf,
     pub config_path: Option<PathBuf>,
@@ -158,6 +160,7 @@ struct ServiceExitResult {
 }
 
 struct StartedService {
+    file_server: Option<super::serve::FileServer>,
     pid: i32,
     service: ResolvedService,
     containment: Option<ServiceContainment>,
@@ -188,6 +191,10 @@ impl StartedService {
 
     fn signal(&mut self, sig: i32) {
         self.note_shutdown_signal(sig);
+        if let Some(server) = &mut self.file_server {
+            server.stop();
+            return;
+        }
         let include_root_group = self.read_exit_code().is_none();
         if let Some(ref containment) = self.containment {
             containment.signal(include_root_group, sig);
@@ -209,7 +216,7 @@ impl StartedService {
     }
 
     fn late_listener_monitor_satisfied(&self) -> bool {
-        if self.service.port.is_none() {
+        if self.file_server.is_some() || self.service.port.is_none() {
             return true;
         }
         let Some(started) = self.shutdown_at else {
@@ -219,7 +226,10 @@ impl StartedService {
     }
 
     fn handle_late_listeners(&mut self) {
-        if self.service.port.is_none() || self.read_exit_code().is_none() {
+        if self.file_server.is_some()
+            || self.service.port.is_none()
+            || self.read_exit_code().is_none()
+        {
             return;
         }
         if self.shutdown_at.is_none() {
@@ -383,12 +393,23 @@ pub fn start_stack(
         .clone()
         .unwrap_or_else(|| Arc::new(AtomicBool::new(false)));
     let stop_signal_forwarder = Arc::new(AtomicBool::new(false));
-    let signal_forwarder = if options.install_signal_handlers {
+    let runtime_failure = Arc::new(Mutex::new(None));
+    let signal_forwarder = if options.install_signal_handlers || options.runtime_errors.is_some() {
         let cancel_ref = cancel.clone();
         let stop_ref = stop_signal_forwarder.clone();
+        let failure_ref = runtime_failure.clone();
+        let runtime_errors = options.runtime_errors;
+        let install_signal_handlers = options.install_signal_handlers;
         Some(thread::spawn(move || {
             while !stop_ref.load(Ordering::Relaxed) {
-                if RECEIVED_SIGNAL.load(Ordering::SeqCst) != 0 {
+                if let Some(errors) = &runtime_errors
+                    && let Ok(error) = errors.try_recv()
+                {
+                    *failure_ref.lock().expect("runtime failure") = Some(error);
+                    cancel_ref.store(true, Ordering::SeqCst);
+                    break;
+                }
+                if install_signal_handlers && RECEIVED_SIGNAL.load(Ordering::SeqCst) != 0 {
                     cancel_ref.store(true, Ordering::SeqCst);
                     break;
                 }
@@ -440,8 +461,26 @@ pub fn start_stack(
 
         let running_settings =
             read_applied_settings(&options.caddy_dir)?.unwrap_or_else(|| shared.caddy.clone());
-        caddy::ensure_admin_available(&running_settings.admin_address)?;
-        if let Some(warning) = caddy::root_certificate_trust_warning(&options.caddy_dir) {
+        let started_caddy =
+            if let Err(error) = caddy::ensure_admin_available(&running_settings.admin_address) {
+                if !options.serve_session {
+                    return Err(error.into());
+                }
+                caddy::start_in_directory(
+                    &options.caddy_dir,
+                    &shared.caddy,
+                    options.output.mode(),
+                    &mut options.output.caddy_stdout_writer(),
+                    true,
+                )?;
+                caddy::ensure_admin_available(&shared.caddy.admin_address)?;
+                true
+            } else {
+                false
+            };
+        if !started_caddy
+            && let Some(warning) = caddy::root_certificate_trust_warning(&options.caddy_dir)
+        {
             options.output.log_stdout(
                 &manifest.name,
                 &cliout::warning(options.output.mode(), &warning),
@@ -773,6 +812,10 @@ pub fn start_stack(
     if let Some(handle) = signal_forwarder {
         let _ = handle.join();
     }
+    let run_result = match runtime_failure.lock().expect("runtime failure").take() {
+        Some(error) => Err(StartStackError::from(error)),
+        None => run_result,
+    };
 
     // Centralized cleanup in exact Go order.
     let mut cleanup_errors: Vec<String> = Vec::new();
@@ -1088,6 +1131,28 @@ fn start_service_process(
     output: &ServiceOutput,
     attempt_output: Arc<AttemptOutputLines>,
 ) -> Result<StartedService, String> {
+    if !service.serve.is_empty() {
+        let port = service
+            .port
+            .ok_or_else(|| format!("service {} has no file server port", service.name))?;
+        let server = super::serve::FileServer::start(
+            Path::new(&service.serve),
+            &format_listener_address(&service.bind_host, port),
+        )
+        .map_err(|error| format!("start file service {}: {error}", service.name))?;
+        return Ok(StartedService {
+            pid: 0,
+            service: service.clone(),
+            containment: None,
+            exit_state: server.exit_state.clone(),
+            file_server: Some(server),
+            waiter: None,
+            output_threads: Vec::new(),
+            shutdown_at: None,
+            shutdown_signal: 0,
+            last_late_listener_check: None,
+        });
+    }
     if service.command.is_empty() {
         return Err(format!("service {} command is empty", service.name));
     }
@@ -1166,6 +1231,7 @@ fn start_service_process(
     });
 
     Ok(StartedService {
+        file_server: None,
         pid,
         service: service.clone(),
         containment: Some(containment),
@@ -2230,6 +2296,7 @@ process = true
         let mut fake_svc = crash_svc.clone();
         fake_svc.port = Some(listen_port);
         let mut fake_started = StartedService {
+            file_server: None,
             pid: std::process::id() as i32,
             service: fake_svc,
             containment: None,

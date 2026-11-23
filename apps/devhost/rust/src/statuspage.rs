@@ -21,7 +21,19 @@ pub struct FilePage {
     pub breadcrumbs: Vec<FileLink>,
     pub markdown: bool,
     pub source: String,
+    #[serde(serialize_with = "serialize_entries")]
     pub entries: Vec<FileLink>,
+}
+
+fn serialize_entries<S: serde::Serializer>(
+    entries: &[FileLink],
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    if entries.is_empty() {
+        serializer.serialize_none()
+    } else {
+        entries.serialize(serializer)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

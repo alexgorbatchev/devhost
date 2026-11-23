@@ -2,6 +2,7 @@ use std::{
     fmt::Display,
     fs::{self, File, OpenOptions},
     io::{self, IsTerminal, Read, Seek, SeekFrom, Write},
+    os::unix::process::CommandExt,
     path::{Path, PathBuf},
     process::{Command, Stdio},
     time::Duration,
@@ -698,6 +699,9 @@ fn run_background_command(
     let stderr_dup = ctx(stderr_file.try_clone(), "duplicate stderr log")?;
 
     let status = command
+        // The background server outlives the command that starts it. Terminal
+        // interrupts must reach that command without stopping shared routing.
+        .process_group(0)
         .stdin(Stdio::inherit())
         .stdout(Stdio::from(stdout_dup))
         .stderr(Stdio::from(stderr_dup))

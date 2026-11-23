@@ -8,7 +8,9 @@ use std::{
 };
 
 use clap::{Arg, ArgAction, Command, error::ErrorKind, value_parser};
-use cli_command_kit::{HelpOptions, Mode, SkillSource, setup, write_skill};
+use cli_command_kit::{
+    HelpOptions, Mode, QuickstartItem, SkillSource, TechInfo, setup, write_skill,
+};
 use devhost_rust::{
     Failure, caddy, cliout, config, machine, manifest, paths,
     services::{
@@ -20,6 +22,7 @@ use devhost_rust::{
             PortResolutionOptions, resolve_service_order, resolve_service_ports,
             validate_requested_services,
         },
+        serve::start_serve,
         stack::{StartStackError, StartStackOptions, format_overlap_for_cwd, start_stack},
         stop::{StopStackOptions, stop_stack},
     },
@@ -32,6 +35,22 @@ const VERSION: &str = match option_env!("DEVHOST_BUILD_VERSION") {
 
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let options = HelpOptions {
+        catalog: BTreeMap::from([(
+            "devhost serve".to_owned(),
+            TechInfo {
+                quickstart: vec![
+                    QuickstartItem {
+                        command: "devhost serve --domain notes.localhost".to_owned(),
+                        comment: "serve the current folder".to_owned(),
+                    },
+                    QuickstartItem {
+                        command: "devhost serve --port 3000 --domain app.localhost".to_owned(),
+                        comment: "route an existing service".to_owned(),
+                    },
+                ],
+                ..TechInfo::default()
+            },
+        )]),
         skill: Some(SkillSource::new("alexgorbatchev/devhost", "main")?),
         ..HelpOptions::default()
     };
@@ -52,6 +71,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
         root.subcommand(caddy_command())
             .subcommand(service_command())
             .subcommand(start_command())
+            .subcommand(serve_command())
             .subcommand(stop_command()),
         mode,
         &options,
@@ -60,6 +80,10 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
 
     match root.try_get_matches_from_mut(std::env::args_os()) {
         Ok(matches) => match matches.subcommand() {
+            Some(("serve", serve_matches)) => {
+                drop(stdout);
+                return run_serve(serve_matches, mode);
+            }
             Some(("start", start_matches)) => {
                 drop(stdout);
                 return run_start(start_matches, mode);
@@ -182,6 +206,77 @@ fn start_command() -> Command {
                 .num_args(0..)
                 .help("Services or groups; omit to start every service."),
         )
+}
+
+fn serve_command() -> Command {
+    Command::new("serve")
+        .about("Serve a directory or local port over HTTPS")
+        .long_about("Serve files or an existing local HTTP port without a\nmanifest. Use --dir for files or --port for a service on\n127.0.0.1. With neither option, serve the current\ndirectory. --dir and --port are mutually exclusive.\n\n--domain is required; the hostname must point here.\nCaddy starts automatically if needed and stays running\nafter Ctrl+C removes this session's routes.\nAn existing service keeps running after the session stops.\n\nDirectories show index.html, index.md, README.md, or\nreadme.md, else a listing. Markdown uses GitHub styling\nwith a remembered source toggle. Hidden files and symlinks\noutside the directory are excluded.")
+        .arg(Arg::new("domain").long("domain").short('d').help("Hostname to serve, e.g. notes.localhost (required)."))
+        .arg(Arg::new("dir").long("dir").value_parser(value_parser!(PathBuf)).conflicts_with("port").help("Directory to serve; defaults to the current directory."))
+        .arg(Arg::new("port").long("port").short('p').value_parser(value_parser!(i32)).allow_negative_numbers(true).help("Existing local HTTP service port (1-65535); exclusive with --dir."))
+}
+
+fn run_serve(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Error>> {
+    let domain = args
+        .get_one::<String>("domain")
+        .map(String::as_str)
+        .unwrap_or_default();
+    if !manifest::is_valid_host(domain) {
+        return Ok(write_failure(
+            mode,
+            "--domain requires a hostname without scheme, port, or path, e.g. notes.localhost"
+                .to_owned()
+                .into(),
+        )?);
+    }
+    let port = match args.get_one::<i32>("port") {
+        Some(port) if (1..=65535).contains(port) => Some(*port as u16),
+        Some(_) => {
+            return Ok(write_failure(
+                mode,
+                "--port must be between 1 and 65535".to_owned().into(),
+            )?);
+        }
+        None => None,
+    };
+    let cwd = env::current_dir()?;
+    let directory = args
+        .get_one::<PathBuf>("dir")
+        .map(PathBuf::as_path)
+        .unwrap_or(&cwd);
+    let state_dir = match machine::state_directory() {
+        Ok(path) => path,
+        Err(error) => return Ok(write_failure(mode, error.into())?),
+    };
+    let label = format!("serve-{domain}");
+    let output = cliout::ServiceOutput::stdio(mode, &[&label, "serve", "devhost", "caddy"]);
+    match start_serve(
+        directory,
+        domain,
+        port,
+        StartStackOptions {
+            serve_session: true,
+            runtime_errors: None,
+            configuration: None,
+            caddy_dir: state_dir.join("caddy"),
+            config_path: None,
+            environment: env::vars().collect(),
+            output,
+            debug_caddy: false,
+            shutdown_grace_period: None,
+            idle_timeout: None,
+            install_signal_handlers: true,
+            external_cancel: None,
+            launch: Default::default(),
+        },
+    ) {
+        Ok(code) => Ok(ExitCode::from((code & 0xff) as u8)),
+        Err(StartStackError::Failure(failure)) => Ok(write_failure(mode, failure)?),
+        Err(StartStackError::Overlap(overlap)) => {
+            Ok(write_failure(mode, overlap.default_message().into())?)
+        }
+    }
 }
 
 fn stop_command() -> Command {
@@ -384,6 +479,8 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         &mut resolved,
         &service_order,
         StartStackOptions {
+            serve_session: false,
+            runtime_errors: None,
             configuration: Some(validated),
             caddy_dir,
             config_path: None,

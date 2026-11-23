@@ -59,3 +59,29 @@ fn help_entry_points_obey_mode_and_terminal_width() {
     assert_eq!(stdout(invoke(&["help"], "true", "100")), agent);
     assert!(stdout(invoke(&["skill", "--help"], "1", "100")).starts_with(ALERT));
 }
+
+#[test]
+fn serve_rejects_invalid_domains_ports_and_conflicting_inputs() {
+    for args in [
+        vec!["serve"],
+        vec!["serve", "--domain", "https://notes.localhost"],
+        vec!["serve", "--domain", "notes.localhost:443"],
+        vec!["serve", "--domain", "notes.localhost", "--port", "0"],
+        vec!["serve", "--domain", "notes.localhost", "--port", "65536"],
+        vec!["serve", "--domain", "notes.localhost", "--port", "-1"],
+        vec![
+            "serve",
+            "--domain",
+            "notes.localhost",
+            "--port",
+            "3000",
+            "--dir",
+            ".",
+        ],
+    ] {
+        let output = invoke(&args, "1", "80");
+        assert_eq!(output.status.code(), Some(1), "{args:?}: {output:?}");
+        assert!(output.stdout.is_empty(), "{args:?}: {output:?}");
+        assert!(!output.stderr.is_empty(), "{args:?}: {output:?}");
+    }
+}

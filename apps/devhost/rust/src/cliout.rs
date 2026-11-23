@@ -93,6 +93,14 @@ impl ServiceOutput {
         }
     }
 
+    pub fn caddy_stdout_writer(&self) -> CaddyBridgeWriter {
+        CaddyBridgeWriter {
+            target: self.stdout.clone(),
+            layout: self.layout.clone(),
+            buffer: Vec::new(),
+        }
+    }
+
     fn write_log_checked(
         &self,
         target: &Arc<Mutex<Box<dyn Write + Send>>>,
