@@ -2,7 +2,7 @@
 title: "Terminal output"
 ---
 
-Identify which service produced a message and give scripts predictable output without terminal decoration. devhost writes for people by default and for agents and scripts with `AGENT=1`; both modes carry the same information and exit codes.
+Identify which service produced a message and give scripts predictable output without terminal decoration. devhost writes for people by default and for agents and scripts with `AGENT=1`. Agent mode can include extra diagnostic fields. Exit codes are the same in both modes.
 
 ## Stack logs
 
