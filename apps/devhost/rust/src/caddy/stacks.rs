@@ -20,6 +20,26 @@ use crate::{cliout, paths::clean, procid};
 
 static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LiveStack {
+    pub remote: bool,
+    pub ready: bool,
+    pub urls: Vec<String>,
+    pub log_path: String,
+    pub name: String,
+    pub pid: i32,
+    pub manifest_path: String,
+    pub started_at: String,
+    pub control_port: u16,
+    pub owner_start_identity: String,
+}
+
+impl LiveStack {
+    pub fn is_alive(&self) -> bool {
+        procid::is_record_owner_alive(self.pid, &self.owner_start_identity)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StackOwner {
     pub manifest_path: String,
@@ -190,6 +210,54 @@ pub fn cleanup_stale_stack_records(caddy_dir: &Path) -> Result<(), String> {
         remove_if_exists(&path)?;
     }
     Ok(())
+}
+
+pub fn read_live_stacks(caddy_dir: &Path) -> Result<Vec<LiveStack>, String> {
+    let stacks_dir = caddy_dir.join("stacks");
+    if !stacks_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut stacks = Vec::new();
+    for path in files::json_files(&stacks_dir, "read stack directory")? {
+        let bytes = match fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+            Err(error) => return path_ctx(Err(error), "read stack record", &path),
+        };
+        let record = path_ctx(parse_stack_record(&bytes), "read stack", &path)?;
+        if procid::is_record_owner_alive(record.owner_pid, &record.owner_start_identity) {
+            stacks.push(LiveStack {
+                remote: record.remote,
+                ready: record.ready,
+                urls: record.urls,
+                log_path: record.log_path,
+                name: record.stack_name,
+                pid: record.owner_pid,
+                manifest_path: record.manifest_path,
+                started_at: record.created_at,
+                control_port: record.control_port,
+                owner_start_identity: record.owner_start_identity,
+            });
+        }
+    }
+    stacks.sort_by(|a, b| {
+        a.name
+            .cmp(&b.name)
+            .then_with(|| a.manifest_path.cmp(&b.manifest_path))
+            .then_with(|| a.pid.cmp(&b.pid))
+    });
+    Ok(stacks)
+}
+
+pub fn set_stack_ready(caddy_dir: &Path, urls: Vec<String>) -> Result<(), String> {
+    let stacks_dir = caddy_dir.join("stacks");
+    let _lock = stack_records_lock(&stacks_dir)?;
+    let path = stack_record_path(&stacks_dir, current_pid());
+    let bytes = path_ctx(fs::read(&path), "read stack record", &path)?;
+    let mut record = path_ctx(parse_stack_record(&bytes), "read stack record", &path)?;
+    record.ready = true;
+    record.urls = urls;
+    write_stack_record(&stacks_dir, &record)
 }
 
 pub fn read_live_stack_owners(caddy_dir: &Path) -> Result<Vec<StackOwner>, String> {

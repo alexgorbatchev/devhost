@@ -54,11 +54,15 @@ impl ServiceOutput {
     }
 
     pub fn log_stdout(&self, label: &str, message: &str) {
-        self.write_log(&self.stdout, label, message);
+        let _ = self.log_stdout_checked(label, message);
+    }
+
+    pub fn log_stdout_checked(&self, label: &str, message: &str) -> io::Result<()> {
+        self.write_log_checked(&self.stdout, label, message)
     }
 
     pub fn log_stderr(&self, label: &str, message: &str) {
-        self.write_log(&self.stderr, label, message);
+        let _ = self.write_log_checked(&self.stderr, label, message);
     }
 
     pub fn write_child_stdout(&self, label: &str, line: &str) {
@@ -67,6 +71,12 @@ impl ServiceOutput {
 
     pub fn write_child_stderr(&self, label: &str, line: &str) {
         self.write_formatted(&self.stderr, label, line);
+    }
+
+    pub fn write_raw_stderr_line(&self, line: &str) {
+        let mut writer = self.stderr.lock().expect("stderr lock");
+        let _ = writeln!(writer, "{line}");
+        let _ = writer.flush();
     }
 
     pub fn write_caddy_raw(&self, label_text: &[u8]) {
@@ -83,19 +93,34 @@ impl ServiceOutput {
         }
     }
 
-    fn write_log(&self, target: &Arc<Mutex<Box<dyn Write + Send>>>, label: &str, message: &str) {
+    fn write_log_checked(
+        &self,
+        target: &Arc<Mutex<Box<dyn Write + Send>>>,
+        label: &str,
+        message: &str,
+    ) -> io::Result<()> {
         let folded = fold_paths(message);
         let trimmed = folded.strip_suffix('\n').unwrap_or(&folded);
         for line in trimmed.split('\n') {
-            self.write_formatted(target, label, line);
+            self.write_formatted_checked(target, label, line)?;
         }
+        Ok(())
     }
 
     fn write_formatted(&self, target: &Arc<Mutex<Box<dyn Write + Send>>>, label: &str, line: &str) {
+        let _ = self.write_formatted_checked(target, label, line);
+    }
+
+    fn write_formatted_checked(
+        &self,
+        target: &Arc<Mutex<Box<dyn Write + Send>>>,
+        label: &str,
+        line: &str,
+    ) -> io::Result<()> {
         let prefix = self.prefix_for(label);
         let mut writer = target.lock().expect("output lock");
-        let _ = writeln!(writer, "{prefix}{line}");
-        let _ = writer.flush();
+        writeln!(writer, "{prefix}{line}")?;
+        writer.flush()
     }
 
     pub fn prefix_for(&self, label: &str) -> String {

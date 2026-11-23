@@ -12,6 +12,10 @@ use cli_command_kit::{HelpOptions, Mode, SkillSource, setup, write_skill};
 use devhost_rust::{
     Failure, caddy, cliout, config, machine, manifest, paths,
     services::{
+        detach::{
+            DETACHED_LOG_ENV, DetachedStartOptions, STACK_LOG_ENV, start_detached_stack,
+            take_launch_metadata,
+        },
         resolve::{
             PortResolutionOptions, resolve_service_order, resolve_service_ports,
             validate_requested_services,
@@ -282,7 +286,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
     let mut resolved = match resolve_service_ports(
         &validated,
         &PortResolutionOptions {
-            requested,
+            requested: requested.clone(),
             domain_suffix: shared.domain_suffix.clone(),
             ..PortResolutionOptions::default()
         },
@@ -291,8 +295,12 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         Err(err) => return Ok(write_failure(mode, err.into())?),
     };
 
-    let idle_timeout = match args.get_one::<String>("idle-timeout") {
-        Some(raw) if !raw.is_empty() => match manifest::parse_go_duration(raw) {
+    let raw_idle_timeout = args
+        .get_one::<String>("idle-timeout")
+        .filter(|s| !s.is_empty())
+        .cloned();
+    let idle_timeout = match raw_idle_timeout.as_deref() {
+        Some(raw) => match manifest::parse_go_duration(raw) {
             Ok(duration) => Some(duration),
             Err(_) => {
                 return Ok(write_failure(
@@ -308,20 +316,60 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
                 )?);
             }
         },
-        _ => None,
+        None => None,
     };
-
-    if args.get_flag("detach") {
-        return Ok(write_failure(
-            mode,
-            "detached startup is not yet ported".to_owned().into(),
-        )?);
-    }
 
     let state_dir = match machine::state_directory() {
         Ok(dir) => dir,
         Err(err) => return Ok(write_failure(mode, err.into())?),
     };
+    let mut environment: BTreeMap<String, String> = env::vars().collect();
+    let launch = take_launch_metadata(&mut environment);
+    // SAFETY: run_start runs on the main thread before spawning worker threads.
+    unsafe {
+        env::remove_var(DETACHED_LOG_ENV);
+        env::remove_var(STACK_LOG_ENV);
+    }
+
+    if args.get_flag("detach") {
+        let mut child_args = vec![
+            "start".to_owned(),
+            "--manifest".to_owned(),
+            resolved.manifest_path.to_string_lossy().into_owned(),
+        ];
+        if args.get_flag("debug") {
+            child_args.push("--debug".to_owned());
+        }
+        child_args.push("--local".to_owned());
+        if let Some(raw) = raw_idle_timeout {
+            child_args.push("--idle-timeout".to_owned());
+            child_args.push(raw);
+        }
+        child_args.push("--".to_owned());
+        child_args.extend(requested);
+
+        let output = cliout::ServiceOutput::stdio(mode, &["devhost"]);
+        return Ok(
+            match start_detached_stack(DetachedStartOptions {
+                manifest: resolved,
+                arguments: child_args,
+                directory: cwd,
+                state_dir,
+                environment,
+                output,
+                executable: None,
+                startup_timeout: None,
+                cleanup_timeout: None,
+                target_os: None,
+                external_signal: None,
+                install_signal_handlers: true,
+            }) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(failure) => write_failure(mode, failure)?,
+            },
+        );
+    }
+
     let caddy_dir = paths::clean(&state_dir.join("caddy"));
     let mut label_names: Vec<String> = vec![
         resolved.name.trim().to_owned(),
@@ -331,7 +379,6 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
     label_names.extend(service_order.iter().cloned());
     let label_refs: Vec<&str> = label_names.iter().map(String::as_str).collect();
     let output = cliout::ServiceOutput::stdio(mode, &label_refs);
-    let environment: BTreeMap<String, String> = env::vars().collect();
 
     match start_stack(
         &mut resolved,
@@ -347,6 +394,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
             idle_timeout,
             install_signal_handlers: true,
             external_cancel: None,
+            launch,
         },
     ) {
         Ok(code) => Ok(ExitCode::from((code & 0xff) as u8)),

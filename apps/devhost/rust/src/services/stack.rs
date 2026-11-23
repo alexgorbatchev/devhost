@@ -37,8 +37,13 @@ use crate::{
             prepare_service_containment, read_listening_process_ids_for_bind_host,
             send_signal_to_group, send_signal_to_pid,
         },
+        detach::{
+            DETACHED_LOG_ENV, LaunchMetadata, STACK_LOG_ENV, record_detached_failure,
+            take_launch_metadata,
+        },
         health::{
-            HealthWaitError, read_loopback_bind_host_ambiguity_warning, wait_for_startup_health,
+            HealthWaitError, probe_service_health, read_loopback_bind_host_ambiguity_warning,
+            wait_for_startup_health,
         },
         resolve::{
             HealthKind, PortResolutionOptions, ResolvedManifest, ResolvedService,
@@ -124,6 +129,7 @@ pub struct StartStackOptions {
     pub idle_timeout: Option<Duration>,
     pub install_signal_handlers: bool,
     pub external_cancel: Option<Arc<AtomicBool>>,
+    pub launch: LaunchMetadata,
 }
 
 #[derive(Default)]
@@ -345,11 +351,18 @@ pub fn start_stack(
         return Err("service order is required".to_owned().into());
     }
 
-    let environment = if options.environment.is_empty() {
+    let mut environment = if options.environment.is_empty() {
         read_current_environment()
     } else {
         options.environment.clone()
     };
+    let mut launch = options.launch;
+    if launch.log_path.is_empty() && !launch.detached {
+        launch = take_launch_metadata(&mut environment);
+    } else {
+        environment.remove(DETACHED_LOG_ENV);
+        environment.remove(STACK_LOG_ENV);
+    }
     let grace_period = options
         .shutdown_grace_period
         .unwrap_or(SHUTDOWN_GRACE_PERIOD);
@@ -369,6 +382,22 @@ pub fn start_stack(
         .external_cancel
         .clone()
         .unwrap_or_else(|| Arc::new(AtomicBool::new(false)));
+    let stop_signal_forwarder = Arc::new(AtomicBool::new(false));
+    let signal_forwarder = if options.install_signal_handlers {
+        let cancel_ref = cancel.clone();
+        let stop_ref = stop_signal_forwarder.clone();
+        Some(thread::spawn(move || {
+            while !stop_ref.load(Ordering::Relaxed) {
+                if RECEIVED_SIGNAL.load(Ordering::SeqCst) != 0 {
+                    cancel_ref.store(true, Ordering::SeqCst);
+                    break;
+                }
+                thread::sleep(Duration::from_millis(10));
+            }
+        }))
+    } else {
+        None
+    };
 
     let mut started_services: Vec<StartedService> = Vec::new();
     let mut started_daemons: Vec<ResolvedService> = Vec::new();
@@ -392,7 +421,7 @@ pub fn start_stack(
             &options.caddy_dir,
             &RegisterStackOptions {
                 remote: false,
-                log_path: String::new(),
+                log_path: launch.log_path.clone(),
                 control_port: 0,
                 manifest_files,
                 manifest_path: manifest_path_str.clone(),
@@ -521,6 +550,15 @@ pub fn start_stack(
                             &options.output,
                         );
                         started_daemons.retain(|s| s.name != service.name);
+                        if launch.detached {
+                            return Err(fail_detached_not_ready(
+                                &launch,
+                                &manifest.name,
+                                &options.output,
+                                service_name,
+                                err,
+                            ));
+                        }
                     }
                 } else {
                     match start_service_with_retries(
@@ -566,6 +604,15 @@ pub fn start_stack(
                             message,
                             exited_service,
                         }) => {
+                            if launch.detached {
+                                return Err(fail_detached_not_ready(
+                                    &launch,
+                                    &manifest.name,
+                                    &options.output,
+                                    service_name,
+                                    message,
+                                ));
+                            }
                             options.output.log_stdout(&manifest.name, &message);
                             if let Some(exited) = exited_service {
                                 if let Some(code) = exited.read_exit_code() {
@@ -577,6 +624,36 @@ pub fn start_stack(
                                 started_services.push(*exited);
                             }
                         }
+                    }
+                }
+            } else if launch.detached {
+                match wait_for_startup_health(
+                    &service,
+                    &manifest.name,
+                    &options.output,
+                    &cancel,
+                    || None,
+                ) {
+                    Ok(()) => {}
+                    Err(HealthWaitError::Canceled) => {
+                        if let Some(sig) = check_termination_signal(
+                            &cancel,
+                            options.install_signal_handlers,
+                            &options.output,
+                            &manifest.name,
+                        ) {
+                            return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+                        }
+                        return Ok(0);
+                    }
+                    Err(HealthWaitError::Failed(err)) => {
+                        return Err(fail_detached_not_ready(
+                            &launch,
+                            &manifest.name,
+                            &options.output,
+                            service_name,
+                            err,
+                        ));
                     }
                 }
             }
@@ -593,6 +670,87 @@ pub fn start_stack(
 
         log_service_urls(manifest, &options.output);
         log_stopped_services(manifest, &options.output);
+
+        if let Some(sig) = check_termination_signal(
+            &cancel,
+            options.install_signal_handlers,
+            &options.output,
+            &manifest.name,
+        ) {
+            return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+        }
+        if cancel.load(Ordering::Relaxed) {
+            if let Some(sig) = check_termination_signal(
+                &cancel,
+                options.install_signal_handlers,
+                &options.output,
+                &manifest.name,
+            ) {
+                return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+            }
+            return Ok(0);
+        }
+
+        if launch.detached {
+            for started in &started_services {
+                if let Some(code) = started.read_exit_code() {
+                    return Err(fail_detached_not_ready(
+                        &launch,
+                        &manifest.name,
+                        &options.output,
+                        &started.service.name,
+                        format!(
+                            "Service {} exited before passing its health check with code {code}.",
+                            started.service.name
+                        ),
+                    ));
+                }
+            }
+            for name in ordered_manifest_service_names(manifest) {
+                let Some(service) = manifest.services.get(&name) else {
+                    continue;
+                };
+                match probe_service_health(&service.health, &cancel) {
+                    Some(true) => {}
+                    None => {
+                        if let Some(sig) = check_termination_signal(
+                            &cancel,
+                            options.install_signal_handlers,
+                            &options.output,
+                            &manifest.name,
+                        ) {
+                            return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+                        }
+                        return Ok(0);
+                    }
+                    Some(false) => {
+                        if let Some(sig) = check_termination_signal(
+                            &cancel,
+                            options.install_signal_handlers,
+                            &options.output,
+                            &manifest.name,
+                        ) {
+                            return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+                        }
+                        if cancel.load(Ordering::Relaxed) {
+                            return Ok(0);
+                        }
+                        return Err(fail_detached_not_ready(
+                            &launch,
+                            &manifest.name,
+                            &options.output,
+                            &name,
+                            format!(
+                                "service {name} became unhealthy before detached startup completed"
+                            ),
+                        ));
+                    }
+                }
+            }
+            let urls = collect_manifest_service_urls(manifest);
+            caddy::stacks::set_stack_ready(&options.caddy_dir, urls)?;
+        }
+
         was_ready = true;
 
         let idle_deadline = options
@@ -610,6 +768,11 @@ pub fn start_stack(
             &mut shutdown_progress,
         )
     })();
+
+    stop_signal_forwarder.store(true, Ordering::SeqCst);
+    if let Some(handle) = signal_forwarder {
+        let _ = handle.join();
+    }
 
     // Centralized cleanup in exact Go order.
     let mut cleanup_errors: Vec<String> = Vec::new();
@@ -720,6 +883,14 @@ fn wait_for_stack_shutdown(
             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
         }
         if cancel.load(Ordering::Relaxed) {
+            if let Some(sig) = check_termination_signal(cancel, install_signals, output, stack_name)
+            {
+                for started in started_services.iter_mut() {
+                    shutdown_progress.stopping(&started.service.name);
+                    started.signal(sig);
+                }
+                return Ok(SIGNAL_EXIT_CODE_BASE + sig);
+            }
             for started in started_services.iter_mut() {
                 shutdown_progress.stopping(&started.service.name);
                 started.signal(libc::SIGTERM);
@@ -1520,6 +1691,36 @@ fn create_child_environment(
         merged.insert(k.to_owned(), v.to_owned());
     }
     merged
+}
+
+fn fail_detached_not_ready(
+    launch: &LaunchMetadata,
+    manifest_name: &str,
+    output: &ServiceOutput,
+    service_name: &str,
+    message: String,
+) -> StartStackError {
+    if launch.detached
+        && let Err(rec_err) = record_detached_failure(&launch.log_path, service_name)
+    {
+        output.log_stdout(manifest_name, &cliout::warning(output.mode(), &rec_err));
+    }
+    StartStackError::Failure(message.into())
+}
+
+pub fn collect_manifest_service_urls(manifest: &ResolvedManifest) -> Vec<String> {
+    let https_port = if manifest.caddy.https_port == 0 {
+        443
+    } else {
+        manifest.caddy.https_port
+    };
+    let mut urls = Vec::new();
+    for name in ordered_manifest_service_names(manifest) {
+        if let Some(service) = manifest.services.get(&name) {
+            urls.extend(read_service_urls(service, https_port));
+        }
+    }
+    urls
 }
 
 pub fn log_service_urls(manifest: &ResolvedManifest, output: &ServiceOutput) {

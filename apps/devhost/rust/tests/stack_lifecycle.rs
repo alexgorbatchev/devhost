@@ -24,6 +24,7 @@ use devhost_rust::{
     config::CaddySettings,
     manifest, procid,
     services::{
+        detach::LaunchMetadata,
         resolve::{PortResolutionOptions, resolve_service_order, resolve_service_ports},
         stack::{StartStackError, StartStackOptions, start_stack},
         stop::{StopStackOptions, stop_stack},
@@ -514,6 +515,7 @@ process = true
             idle_timeout: Some(Duration::from_millis(400)),
             install_signal_handlers: false,
             external_cancel: None,
+            launch: LaunchMetadata::default(),
         },
     )
     .unwrap();
@@ -739,6 +741,7 @@ process = true
             idle_timeout: None,
             install_signal_handlers: false,
             external_cancel: None,
+            launch: LaunchMetadata::default(),
         },
     )
     .unwrap_err();
@@ -791,11 +794,16 @@ fn cli_start_and_stop_error_paths_and_daemon_already_running_and_startup_health_
             .status
             .success()
     );
-    assert!(!run(&["start", "--detach"], "1").status.success());
     fs::create_dir_all(root.join("cfg")).unwrap();
+    // Reserve the endpoint without serving HTTP so an existing Caddy can never
+    // satisfy this failure fixture or receive its configuration.
+    let unavailable_admin = TcpListener::bind("127.0.0.1:0").unwrap();
     fs::write(
         root.join("cfg/config.toml"),
-        "[caddy]\nadminAddress = \"127.0.0.1:1\"\n",
+        format!(
+            "[caddy]\nadminAddress = \"{}\"\n",
+            unavailable_admin.local_addr().unwrap()
+        ),
     )
     .unwrap();
     let no_caddy = run(&["start"], "");
@@ -804,6 +812,15 @@ fn cli_start_and_stop_error_paths_and_daemon_already_running_and_startup_health_
         String::from_utf8_lossy(&no_caddy.stderr).contains("Caddy is not available."),
         "{}",
         String::from_utf8_lossy(&no_caddy.stderr)
+    );
+    let detach_no_caddy = run(&["start", "--detach"], "1");
+    assert!(!detach_no_caddy.status.success());
+    let detach_no_caddy_err = String::from_utf8_lossy(&detach_no_caddy.stderr);
+    assert!(
+        detach_no_caddy_err.contains("Startup log tail:")
+            && detach_no_caddy_err.contains("Caddy admin API is not available.")
+            && detach_no_caddy_err.contains("the stack exited before it was ready (exit code 1)"),
+        "{detach_no_caddy_err}"
     );
     assert!(run(&["stop"], "").status.success());
     assert!(!run(&["stop", "--worktrees"], "1").status.success());
@@ -886,6 +903,7 @@ retries = 2
             idle_timeout: None,
             install_signal_handlers: false,
             external_cancel: Some(cancel),
+            launch: LaunchMetadata::default(),
         },
     )
     .unwrap();

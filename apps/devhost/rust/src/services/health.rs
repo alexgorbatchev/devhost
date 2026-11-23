@@ -5,6 +5,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+use http_body_util::Empty;
+use hyper::body::Bytes;
+use hyper_util::{client::legacy::Client, rt::TokioExecutor};
+
 use crate::{
     caddy::{
         files::create_managed_url,
@@ -30,23 +34,33 @@ pub fn probe_timeout_for(health: &ResolvedHealthConfig) -> Duration {
 }
 
 pub fn check_service_health(health: &ResolvedHealthConfig) -> bool {
+    probe_service_health(health, &AtomicBool::new(false)).unwrap_or(false)
+}
+
+pub fn probe_service_health(health: &ResolvedHealthConfig, cancel: &AtomicBool) -> Option<bool> {
+    if cancel.load(Ordering::Relaxed) {
+        return None;
+    }
     let timeout = probe_timeout_for(health);
     match health.kind {
-        HealthKind::Process => true,
+        HealthKind::Process => Some(true),
         HealthKind::Tcp => {
             let (Some(host), Some(port)) = (health.host.as_deref(), health.port) else {
-                return false;
+                return Some(false);
             };
             let Ok(resolved) = resolve_proxy_host(host) else {
-                return false;
+                return Some(false);
             };
-            can_connect_to_port(resolved, port, timeout)
+            let Ok(ip) = resolved.parse::<IpAddr>() else {
+                return Some(false);
+            };
+            probe_tcp_cancelable(SocketAddr::new(ip, port), timeout, cancel)
         }
         HealthKind::Http => {
             let Some(url) = health.url.as_deref() else {
-                return false;
+                return Some(false);
             };
-            is_ready_http_endpoint(url, timeout)
+            probe_http_cancelable(url, timeout, cancel)
         }
     }
 }
@@ -77,14 +91,10 @@ where
     let mut attempts = 0usize;
 
     while Instant::now() < deadline {
-        if cancel.load(Ordering::Relaxed) {
-            return Err(HealthWaitError::Canceled);
-        }
-        if check_service_health(health) {
-            return Ok(());
-        }
-        if cancel.load(Ordering::Relaxed) {
-            return Err(HealthWaitError::Canceled);
+        match probe_service_health(health, cancel) {
+            None => return Err(HealthWaitError::Canceled),
+            Some(true) => return Ok(()),
+            Some(false) => {}
         }
 
         consecutive_failures += 1;
@@ -300,18 +310,71 @@ fn can_connect_to_port(host: &str, port: u16, timeout: Duration) -> bool {
     TcpStream::connect_timeout(&addr, timeout).is_ok()
 }
 
-fn is_ready_http_endpoint(url: &str, timeout: Duration) -> bool {
-    let agent = ureq::Agent::config_builder()
-        .timeout_global(Some(timeout))
-        .max_redirects(0)
-        .http_status_as_error(false)
-        .proxy(None)
+async fn wait_for_cancel(cancel: &AtomicBool) {
+    loop {
+        if cancel.load(Ordering::Relaxed) {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+}
+
+fn probe_tcp_cancelable(addr: SocketAddr, timeout: Duration, cancel: &AtomicBool) -> Option<bool> {
+    let Ok(rt) = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
         .build()
-        .new_agent();
-    agent
-        .get(url)
-        .call()
-        .is_ok_and(|response| response.status().is_success())
+    else {
+        return Some(false);
+    };
+    rt.block_on(async {
+        tokio::select! {
+            _ = wait_for_cancel(cancel) => None,
+            _ = tokio::time::sleep(timeout) => Some(false),
+            res = tokio::net::TcpStream::connect(addr) => Some(res.is_ok()),
+        }
+    })
+}
+
+fn probe_http_cancelable(url: &str, timeout: Duration, cancel: &AtomicBool) -> Option<bool> {
+    let Ok(uri) = url.parse::<http::Uri>() else {
+        return Some(false);
+    };
+    let https = match uri.scheme_str() {
+        Some("http") => false,
+        Some("https") => true,
+        _ => return Some(false),
+    };
+    let Ok(request) = http::Request::get(uri).body(Empty::<Bytes>::new()) else {
+        return Some(false);
+    };
+    let Ok(runtime) = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    else {
+        return Some(false);
+    };
+    runtime.block_on(async {
+        let response = async {
+            if https {
+                let Ok(connector) = hyper_rustls::HttpsConnectorBuilder::new().with_native_roots()
+                else {
+                    return false;
+                };
+                let client = Client::builder(TokioExecutor::new())
+                    .build(connector.https_only().enable_http1().build());
+                client.request(request).await
+            } else {
+                let client = Client::builder(TokioExecutor::new()).build_http::<Empty<Bytes>>();
+                client.request(request).await
+            }
+            .is_ok_and(|response| response.status().is_success())
+        };
+        tokio::select! {
+            _ = wait_for_cancel(cancel) => None,
+            _ = tokio::time::sleep(timeout) => Some(false),
+            ready = response => Some(ready),
+        }
+    })
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -401,6 +464,67 @@ mod tests {
     use cli_command_kit::Mode;
 
     use super::*;
+
+    #[test]
+    fn canceling_http_and_https_probes_closes_the_connection() {
+        for scheme in ["http", "https"] {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let address = listener.local_addr().unwrap();
+            let (connected, accepted) = std::sync::mpsc::channel();
+            let server = thread::spawn(move || {
+                let deadline = Instant::now() + Duration::from_secs(2);
+                let mut stream = loop {
+                    match listener.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                            if Instant::now() >= deadline {
+                                return false;
+                            }
+                            thread::sleep(Duration::from_millis(5));
+                        }
+                        Err(_) => return false,
+                    }
+                };
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(2)))
+                    .unwrap();
+                let _ = connected.send(());
+                let mut buffer = [0; 4096];
+                loop {
+                    match stream.read(&mut buffer) {
+                        Ok(0) => return true,
+                        Ok(_) => {}
+                        Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {
+                            return true;
+                        }
+                        Err(_) => return false,
+                    }
+                }
+            });
+            let cancel = std::sync::Arc::new(AtomicBool::new(false));
+            let trigger_cancel = cancel.clone();
+            let trigger = thread::spawn(move || {
+                let _ = accepted.recv_timeout(Duration::from_secs(2));
+                trigger_cancel.store(true, Ordering::SeqCst);
+            });
+            let started = Instant::now();
+            let result = probe_http_cancelable(
+                &format!("{scheme}://{address}/health"),
+                Duration::from_secs(30),
+                &cancel,
+            );
+            trigger.join().unwrap();
+            let closed = server.join().unwrap();
+            assert_eq!(result, None, "{scheme}");
+            assert!(closed, "{scheme} connection survived cancellation");
+            assert!(started.elapsed() < Duration::from_secs(2), "{scheme}");
+        }
+        assert_eq!(
+            probe_http_cancelable("file:///health", MIN_PROBE_TIMEOUT, &AtomicBool::new(false)),
+            Some(false)
+        );
+    }
 
     #[test]
     fn tcp_http_and_process_health_checks_behave_accurately() {
@@ -658,5 +782,20 @@ mod tests {
             };
             assert!(msg.contains("succeeded instead"));
         }
+
+        let https_unused = ResolvedHealthConfig {
+            fixed_tcp_port: false,
+            host: None,
+            interval_ms: 30_000,
+            kind: HealthKind::Http,
+            port: None,
+            retries: 0,
+            timeout_ms: 30_000,
+            url: Some(format!("https://127.0.0.1:{tcp_port}/healthz")),
+        };
+        assert_eq!(
+            probe_service_health(&https_unused, &AtomicBool::new(false)),
+            Some(false)
+        );
     }
 }
