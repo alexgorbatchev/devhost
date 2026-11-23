@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
@@ -31,6 +32,8 @@ const (
 	ServiceStateFailed     = "failed"
 	ServiceStateUnhealthy  = "unhealthy"
 	ServiceStateNotStarted = "not-started"
+
+	stackInfoProbeTimeout = time.Second
 )
 
 // StackInfo describes a running stack and the live state of every service in it.
@@ -210,17 +213,23 @@ func (r *stackRuntime) stackInfo(ctx context.Context) (devtools.StackInfoSnapsho
 		}
 	}
 
+	serviceNames := orderedManifestServiceNames(m)
+	stoppedNames := stoppedServiceNames(m)
 	result := devtools.StackInfoSnapshot{
 		Name:          m.Name,
 		Starting:      !startupComplete,
 		ManifestFiles: orderedManifestFiles(m.ManifestPath, manifestFiles),
-		Services:      make([]devtools.StackServiceInfo, 0, len(m.Services)+len(m.Stopped)),
+		Services:      make([]devtools.StackServiceInfo, len(serviceNames)+len(stoppedNames)),
 	}
 
-	for _, name := range orderedManifestServiceNames(m) {
+	probeContext, cancel := context.WithTimeout(ctx, stackInfoProbeTimeout)
+	defer cancel()
+	var probes sync.WaitGroup
+	for index, name := range serviceNames {
 		service := m.Services[name]
 		process := findStartedService(started, name)
 		_, isPending := pending[name]
+		checkHealth := false
 
 		info := devtools.StackServiceInfo{
 			Name:    name,
@@ -258,38 +267,38 @@ func (r *stackRuntime) stackInfo(ctx context.Context) (devtools.StackInfoSnapsho
 			info.State = ServiceStateFailed
 			info.LastOutput = lastServiceOutputLine(control, name, failures[name])
 		default:
-			healthy := false
-			if !isManagedService(service) || usesDaemonLifecycle(service) {
-				healthy = probeServiceHealth(ctx, service.Health)
-			} else if process != nil && process.ReadExitCode() == nil {
-				healthy = probeServiceHealth(ctx, service.Health)
-			}
-			if healthy {
-				info.State = ServiceStateReady
-			} else {
-				info.State = ServiceStateUnhealthy
-			}
+			info.State = ServiceStateUnhealthy
+			checkHealth = !isManagedService(service) || usesDaemonLifecycle(service) ||
+				(process != nil && process.ReadExitCode() == nil)
 		}
 
-		if err := ctx.Err(); err != nil {
-			return devtools.StackInfoSnapshot{}, err
-		}
 		if !since.IsZero() {
 			info.Since = since.UTC().Format(time.RFC3339)
 		}
-		result.Services = append(result.Services, info)
+		result.Services[index] = info
+		if checkHealth {
+			probes.Go(func() {
+				if probeServiceHealth(probeContext, service.Health) {
+					result.Services[index].State = ServiceStateReady
+				}
+			})
+		}
 	}
 
-	for _, name := range stoppedServiceNames(m) {
+	for index, name := range stoppedNames {
 		service := m.Stopped[name]
-		result.Services = append(result.Services, devtools.StackServiceInfo{
+		result.Services[len(serviceNames)+index] = devtools.StackServiceInfo{
 			Name:    name,
 			State:   ServiceStateNotStarted,
 			Primary: name == m.PrimaryService,
 			Port:    cloneIntPointer(service.Port),
-		})
+		}
 	}
 
+	probes.Wait()
+	if err := ctx.Err(); err != nil {
+		return devtools.StackInfoSnapshot{}, err
+	}
 	return result, nil
 }
 

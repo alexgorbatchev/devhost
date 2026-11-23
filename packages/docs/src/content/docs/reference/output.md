@@ -129,7 +129,7 @@ devhost: service name=api state=exited exitCode=1 since=2026-11-20T14:01:53Z por
 devhost: service name=worker state=ready since=2026-11-20T14:01:05Z
 ```
 
-`devhost stack info` exits `0` after startup completes and every started service is `ready`. Services omitted by a partial start report `not-started` and are excluded from readiness. The command exits `1` while the stack is starting, when a started service is unready, or when it cannot query a running stack for the manifest.
+`devhost stack info` exits `0` after startup completes and every started service is `ready`. Live health checks run together with a one-second budget. A check that times out reports its service as `unhealthy` alongside the rest of the stack. Services omitted by a partial start report `not-started` and are excluded from readiness. The command exits `1` while the stack is starting, when a started service is unready, or when it cannot query a running stack for the manifest.
 
 ## Messages worth knowing
 

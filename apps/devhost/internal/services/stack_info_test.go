@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -182,5 +184,40 @@ func TestMatchLiveStackFindsRootSymlinkAndIncludedManifests(t *testing.T) {
 	}
 	if _, ok := matchLiveStack(stacks, other); ok {
 		t.Fatalf("matchLiveStack(other) = true, want false")
+	}
+}
+
+func TestStackInfoReturnsReadyServicesWhenAHealthCheckStalls(t *testing.T) {
+	stalled := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, request *http.Request) {
+		<-request.Context().Done()
+	}))
+	t.Cleanup(stalled.Close)
+	health := ResolvedHealthConfig{Kind: HealthKindHTTP, URL: &stalled.URL, Interval: 10000}
+	runtime := &stackRuntime{
+		startupComplete: true,
+		manifest: &ResolvedManifest{
+			ServiceOrder: []string{"slow", "healthy"},
+			Services: map[string]ResolvedService{
+				"slow":    {Name: "slow", Health: health},
+				"healthy": {Name: "healthy", Health: ResolvedHealthConfig{Kind: HealthKindProcess}},
+			},
+		},
+	}
+	control, err := devtools.StartControlServer(devtools.StartControlServerOptions{
+		GetHealthResponse: func() (devtools.HealthResponse, error) { return devtools.HealthResponse{}, nil },
+		GetStackInfo:      runtime.stackInfo,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = control.Stop() })
+
+	snapshot, err := devtools.ReadStackInfo(context.Background(), control.Port())
+	if err != nil {
+		t.Fatalf("read live state with a stalled probe: %v", err)
+	}
+	if len(snapshot.Services) != 2 || snapshot.Services[0].State != ServiceStateUnhealthy ||
+		snapshot.Services[1].State != ServiceStateReady {
+		t.Fatalf("live services = %+v, want slow unhealthy and healthy ready", snapshot.Services)
 	}
 }
