@@ -16,16 +16,25 @@ pub(super) fn query_root(
         .get("chatTarget")
         .map(String::as_str)
         .unwrap_or_default();
+    root(
+        handle,
+        query.get("pageURL").map(String::as_str).unwrap_or_default(),
+        target,
+    )
+}
+
+pub(super) fn root(
+    handle: &RuntimeHandle,
+    page_url: &str,
+    target: &str,
+) -> Result<PathBuf, String> {
     match target {
         "devhost" => handle
             .live
             .dev_source()
             .map(|source| source.root_path().to_owned())
             .ok_or_else(|| "This devhost has no devhost source checkout to chat in.".to_owned()),
-        "project" => project_root(
-            handle,
-            query.get("pageURL").map(String::as_str).unwrap_or_default(),
-        ),
+        "project" => project_root(handle, page_url),
         _ => Err(format!("unknown chat target {target:?}")),
     }
 }

@@ -26,6 +26,8 @@ use serde_json::{Value, json};
 
 #[path = "stack_commands/agents.rs"]
 mod agents;
+#[path = "stack_commands/chat.rs"]
+mod chat;
 #[path = "stack_commands/info.rs"]
 mod info;
 

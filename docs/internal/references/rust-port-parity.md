@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-23 09:59
+last_modified: 2026-11-23 10:26
 status: current
 ---
 
@@ -65,6 +65,20 @@ Makiko 0.2.5 is vendored with generic server global-request support because its
 released API cannot answer the relay's keepalives. The [dependency patch
 notes](../../../apps/devhost/rust/vendor/makiko/DEVHOST-PATCH.md) describe the
 extension and the condition for returning to a registry release.
+
+## Native chat tests
+
+`just rust test --lib devtools::chat::` exercises the native Codex app-server
+and Claude stream-JSON boundaries with local protocol peers, including model
+discovery, ordered sends, approvals while a send awaits confirmation, exact
+native request IDs, turn-steering races, queued and unconfirmed delivery,
+disk-backed replay, image validation, private activity logs, panel persistence,
+and process termination. These peers perform no model inference.
+
+`just rust test --test stack_commands chat::` runs the shared HTTP/WebSocket
+scenario through an isolated native stack. Set `DEVHOST_STACK_TEST_BINARY` to
+the absolute Go oracle executable to compare model discovery, annotation image
+delivery, reconnect replay, conversation closure, and stack cleanup against Go.
 
 ## Native stack-command tests
 

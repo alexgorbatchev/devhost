@@ -114,6 +114,7 @@ pub struct RuntimeControl {
     pub(crate) activity: ActivityTracker,
     pub(crate) dirty: Arc<Mutex<BTreeSet<String>>>,
     agents: Arc<crate::devtools::agents::Agents>,
+    chat: Arc<crate::devtools::chat::Store>,
 }
 
 #[derive(Clone)]
@@ -123,6 +124,7 @@ pub struct RuntimeHandle {
     pub activity: ActivityTracker,
     dirty: Arc<Mutex<BTreeSet<String>>>,
     pub(crate) agents: Arc<crate::devtools::agents::Agents>,
+    pub(crate) chat: Arc<crate::devtools::chat::Store>,
 }
 
 impl RuntimeControl {
@@ -132,6 +134,7 @@ impl RuntimeControl {
         let dirty = Arc::new(Mutex::new(BTreeSet::new()));
         let live = super::stack::live::LiveState::default();
         let agents = Arc::new(crate::devtools::agents::Agents::default());
+        let chat = Arc::new(crate::devtools::chat::Store::default());
         (
             RuntimeHandle {
                 live: live.clone(),
@@ -139,6 +142,7 @@ impl RuntimeControl {
                 activity: activity.clone(),
                 dirty: dirty.clone(),
                 agents: agents.clone(),
+                chat: chat.clone(),
             },
             Self {
                 live,
@@ -147,6 +151,7 @@ impl RuntimeControl {
                 activity,
                 dirty,
                 agents,
+                chat,
             },
         )
     }
@@ -158,6 +163,7 @@ impl RuntimeControl {
             activity: self.activity.clone(),
             dirty: self.dirty.clone(),
             agents: self.agents.clone(),
+            chat: self.chat.clone(),
         }
     }
 }

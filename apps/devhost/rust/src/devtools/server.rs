@@ -60,6 +60,26 @@ impl ControlServer {
             middleware::from_fn_with_state((handle.clone(), store), serve_assets),
         );
         let chat = Router::new()
+            .route(
+                "/__devhost__/chat/panel",
+                any(super::chat::transport::panel),
+            )
+            .route(
+                "/__devhost__/chat/harnesses",
+                any(super::chat::transport::harnesses),
+            )
+            .route(
+                "/__devhost__/chat/sessions",
+                any(super::chat::transport::sessions),
+            )
+            .route(
+                "/__devhost__/chat/sessions/{id}/close",
+                any(super::chat::transport::close),
+            )
+            .route(
+                "/__devhost__/ws/chat",
+                any(super::chat::transport::websocket),
+            )
             .route("/__devhost__/agents", any(super::agents::serve))
             .route(
                 "/__devhost__/agents/activity",
@@ -108,6 +128,7 @@ impl ControlServer {
             .layer(middleware::from_fn_with_state(handle.clone(), json_body));
         let poller_stop = handle.live.events.stopping.clone();
         let agents = handle.agents.clone();
+        let chat_store = handle.chat.clone();
         let sampler = super::resources::Sampler::start(handle.clone())?;
         let worker = thread::Builder::new()
             .name("devhost-control".to_owned())
@@ -126,6 +147,7 @@ impl ControlServer {
                     tokio::select! { _ = &mut server => {}, _ = stopping.changed() => {
                         let _ = tokio::time::timeout(Duration::from_millis(250), &mut server).await;
                     }}
+                    chat_store.shutdown().await;
                     agents.shutdown().await;
                     poller.abort();
                     let _ = poller.await;

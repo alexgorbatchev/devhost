@@ -3,6 +3,7 @@ pub(crate) mod agents;
 #[cfg(test)]
 mod agents_tests;
 pub mod assets;
+pub(crate) mod chat;
 mod config_files;
 #[cfg(test)]
 mod control_tests;
