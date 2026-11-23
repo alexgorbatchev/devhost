@@ -63,7 +63,7 @@ impl Stack {
                 start_stack(&mut resolved, &order, options)
             })),
         };
-        let stack = Self {
+        let mut stack = Self {
             running,
             handle,
             stdout,
@@ -72,6 +72,19 @@ impl Stack {
             config_path,
         };
         before_ready(&stack);
+        if !wait_until(Duration::from_secs(10), || {
+            stack.stdout.text().contains("(primary):")
+                || stack.running.thread.as_ref().unwrap().is_finished()
+        }) || !stack.stdout.text().contains("(primary):")
+        {
+            stack.running.cancel.store(true, Ordering::SeqCst);
+            let result = stack.running.thread.take().unwrap().join();
+            panic!(
+                "stack failed before readiness: {result:?}; {} {}",
+                stack.stdout.text(),
+                stack.stderr.text()
+            );
+        }
         stack.wait_log("(primary):");
         stack
     }
@@ -280,7 +293,9 @@ fn failed_route_refresh_stops_replacement_and_allows_retry() {
         error.contains("parse applied managed Caddy settings"),
         "{error}"
     );
-    assert!(TcpListener::bind(("127.0.0.1", port)).is_ok());
+    let released = TcpListener::bind(("127.0.0.1", port));
+    assert!(released.is_ok(), "replacement port {port}: {released:?}");
+    drop(released);
     fs::write(&applied_path, applied).unwrap();
     stack.restart(&["files"]).unwrap();
     assert!(

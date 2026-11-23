@@ -64,11 +64,16 @@ impl Write for SharedBuf {
 }
 
 fn free_port() -> u16 {
-    TcpListener::bind("127.0.0.1:0")
-        .unwrap()
-        .local_addr()
-        .unwrap()
-        .port()
+    static ALLOCATED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<u16>>> =
+        std::sync::OnceLock::new();
+    let mut allocated = ALLOCATED.get_or_init(Mutex::default).lock().unwrap();
+    loop {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        if allocated.insert(port) {
+            return port;
+        }
+    }
 }
 
 struct LiveCaddyGuard {
