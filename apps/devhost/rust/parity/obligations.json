@@ -395,6 +395,13 @@
       "qualification": "An accepted HTTP health request remains unanswered through shutdown; control reads remain available, no service becomes ready, and service/registration ownership is removed within five seconds."
     },
     {
+      "id": "proxy-origins",
+      "path": "apps/devhost/rust/tests/stack_commands/proxy.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands proxy:: with each comparison executable",
+      "qualification": "Four IPv4/IPv6 bind hosts and both proxyLocalOrigin settings; app and document Host/Origin/forwarded headers, foreign-origin rejection, external ownership and backend-loss recovery."
+    },
+    {
       "id": "config-directories",
       "path": "apps/devhost/rust/tests/stack_commands/config.rs",
       "kind": "native-shared",
@@ -603,8 +610,8 @@
       "effect": "Managed process ownership and proxy origin match; external server is retained.",
       "failure": "Unavailable external backend returns recovery/error response.",
       "cleanup": "Stop owned stack while keeping external backend alive until its owner closes it.",
-      "evidence": ["documents", "relay"],
-      "remaining": "Add explicit bindHost/proxyLocalOrigin toggle comparison.",
+      "evidence": ["documents", "relay", "proxy-origins"],
+      "remaining": "Retain final native-platform execution receipts for IPv4/IPv6 local-origin settings and external-backend ownership.",
       "status": "open"
     },
     {

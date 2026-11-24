@@ -1,21 +1,25 @@
 use super::*;
 use std::io::{Read, Write};
 
-struct Backend {
-    port: u16,
+pub(super) struct Backend {
+    pub(super) port: u16,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
     thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Backend {
     fn start() -> Self {
+        Self::start_at("127.0.0.1")
+    }
+
+    pub(super) fn start_at(host: &str) -> Self {
         use axum::{
             Router,
             body::Body,
             http::{Request, Response},
             routing::any,
         };
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let listener = TcpListener::bind((host, 0)).unwrap();
         listener.set_nonblocking(true).unwrap();
         let port = listener.local_addr().unwrap().port();
         let (shutdown, receiver) = tokio::sync::oneshot::channel();
@@ -26,6 +30,19 @@ impl Backend {
                 .unwrap();
             io.block_on(async {
                 let app = Router::new().fallback(any(|request: Request<Body>| async move {
+                    if request.uri().path() == "/inspect" {
+                        return Response::builder()
+                            .header("Content-Type", "application/json")
+                            .body(Body::from(
+                                serde_json::to_vec(&json!({
+                                    "host": request.headers().get("host").map(|value| value.to_str().unwrap()),
+                                    "origin": request.headers().get("origin").map(|value| value.to_str().unwrap()),
+                                    "forwardedHost": request.headers().get("x-forwarded-host").map(|value| value.to_str().unwrap()),
+                                }))
+                                .unwrap(),
+                            ))
+                            .unwrap();
+                    }
                     let source = b"<html><body>caf\xe9</body></html>";
                     let mut response = Response::builder()
                         .header("Content-Security-Policy", "script-src 'none'")
