@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 06:57
+last_modified: 2026-11-24 08:59
 status: current
 ---
 
@@ -86,10 +86,22 @@ disk-backed replay, image validation, private activity logs, panel persistence,
 and process termination. These peers perform no model inference and use
 `python3` from `PATH`, as do the shared native stack fixtures.
 
-`just rust test --test stack_commands chat::` runs the shared HTTP/WebSocket
-scenario through an isolated native stack. Set `DEVHOST_STACK_TEST_BINARY` to
+`just rust test --test stack_commands chat::` runs shared HTTP/WebSocket
+scenarios through isolated native stacks. Set `DEVHOST_STACK_TEST_BINARY` to
 the absolute Go oracle executable to compare model discovery, annotation image
-delivery, reconnect replay, conversation closure, and stack cleanup against Go.
+delivery, reconnect replay, ordered sends, turn-steering races, interrupts,
+approval during a pending acknowledgement, exact native approval IDs, stale
+approval rejection, and queued, rejected or unconfirmed delivery without a
+second inference. The timeout cases exercise the actual acknowledgement deadline.
+Panel cases check manifest-hashed private storage, invalid-input rejection,
+corruption recovery and failed replacement preserving unrelated state. Shutdown
+cases check conversation closure and whole-stack shutdown against both peers,
+which record ignored TERM and stay alive even after stdin EOF until killed.
+
+Replay journals are private, unlinked temporary files in both implementations.
+They retain live-session replay and disappear when their owning supervisor exits;
+they do not provide replay across supervisor replacement. Native provider
+conversation history and saved panel positions use separate storage contracts.
 
 ## Native stack-command tests
 

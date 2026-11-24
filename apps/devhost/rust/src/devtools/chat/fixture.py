@@ -24,13 +24,17 @@ phase("identify harness")
 claude = pathlib.Path(sys.argv[0]).name == "claude"
 phase("read scenario")
 scenario = pathlib.Path("scenario").read_text()
-phase("publish readiness")
-pathlib.Path("claude-ready" if claude else "codex-ready").touch()
-phase("protocol ready")
+peer_name = "claude" if claude else "codex"
 turn = 0
 waiting = None
 if scenario == "ignore-term":
-    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    def ignore_term(_signal, _frame):
+        pathlib.Path(peer_name + "-term").touch()
+
+    signal.signal(signal.SIGTERM, ignore_term)
+phase("publish readiness")
+pathlib.Path(peer_name + "-ready").write_text(str(os.getpid()))
+phase("protocol ready")
 
 
 def emit(value):
@@ -115,3 +119,8 @@ for line in sys.stdin:
         emit({"type": "control_response", "response": response})
     else:
         emit({"id": message["id"], "result": result})
+
+if scenario == "ignore-term":
+    pathlib.Path(peer_name + "-eof").touch()
+    while True:
+        signal.pause()

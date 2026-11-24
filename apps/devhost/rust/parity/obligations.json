@@ -485,12 +485,12 @@
       "id": "cli.4",
       "feature": "cli",
       "contract": "Bash/Zsh/Fish/PowerShell completion registration",
-      "trigger": "Generate Bash/Zsh/Fish/PowerShell scripts; invoke native Bash Tab completion.",
-      "effect": "Scripts register the command; Bash offers commands, subcommands and flags.",
+      "trigger": "Generate Bash/Zsh/Fish/PowerShell scripts; invoke candidate completion in each native shell.",
+      "effect": "Scripts register the command and offer commands, subcommands and flags.",
       "failure": "Extra arguments fail; unsupported-shell exit status requires an explicit compatibility decision.",
       "cleanup": "Close PTY and join shell.",
       "evidence": ["readline", "cli-shared", "cli-regression"],
-      "remaining": "Run native Zsh/Fish/PowerShell candidate checks; registration substrings alone are insufficient.",
+      "remaining": "Retain final native-platform receipts. Linux native Zsh/Fish/PowerShell checks against all three executables are retained in the task record; unsupported-shell exit status still requires a compatibility decision.",
       "status": "open"
     },
     {
@@ -1678,7 +1678,7 @@
       "failure": "Late/rejected command cannot be interpreted as successful delivery.",
       "cleanup": "Close socket/session and reap provider child.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Extend shared peer fixture to steer/interrupt and concurrent ordering.",
+      "remaining": "Retain final native-platform receipts for ordered sends, turn-steering completion races, interrupts and closure through the shared external-CLI peer fixtures.",
       "status": "open"
     },
     {
@@ -1689,8 +1689,8 @@
       "effect": "Approval bypasses pending send and exact native numeric/string request ID survives.",
       "failure": "Unknown/stale approval ID is rejected without sending another turn.",
       "cleanup": "Close pending session and join provider reader.",
-      "evidence": ["chat-regression"],
-      "remaining": "Run approval scenarios through both external stack CLIs.",
+      "evidence": ["chat", "chat-regression"],
+      "remaining": "Retain final native-platform receipts for approval while acknowledgement is pending, stale approval rejection and exact numeric/string request IDs through the shared external-CLI peer fixtures.",
       "status": "open"
     },
     {
@@ -1713,20 +1713,20 @@
       "effect": "Delivery stays unconfirmed/queued and no second inference is sent.",
       "failure": "Native rejection is distinct from timeout and acceptance.",
       "cleanup": "Cancel pending operations and join provider.",
-      "evidence": ["chat-regression"],
-      "remaining": "Run timeout/queued/rejected receipts against both external CLIs.",
+      "evidence": ["chat", "chat-regression"],
+      "remaining": "Retain final native-platform receipts for queued, rejected and unconfirmed native deliveries with reconnect and exact single-delivery assertions.",
       "status": "open"
     },
     {
       "id": "chat.6",
       "feature": "chat",
       "contract": "private journals, replay/reconnect and activity logs",
-      "trigger": "Reconnect after events and restart with a private journal.",
-      "effect": "Replay remains ordered and disk-backed; activity log does not expose private prompts.",
+      "trigger": "Reconnect after events within a live supervisor, then stop or replace the supervisor.",
+      "effect": "Live-session replay remains ordered and disk-backed; activity logs exclude private prompts. Replay journals are unlinked temporary files owned by that supervisor, not persistent conversation storage.",
       "failure": "Corrupt journal cannot fabricate acknowledgements.",
-      "cleanup": "Close sessions before deleting private journal and cursor files.",
+      "cleanup": "Close sessions and release the unlinked journal descriptor; native provider conversation history remains a separate store.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Add shared persisted-journal restart and corruption comparison.",
+      "remaining": "Compare supervisor replacement dropping live sessions and starting fresh replay journals; retain native receipts for reconnect, private logs and internal journal-error regression checks. Persisted-journal restart is not the Go contract.",
       "status": "open"
     },
     {
@@ -1737,8 +1737,8 @@
       "effect": "Location is restored from same directory and invalid state recovers safely.",
       "failure": "Unwritable state reports error without changing other files.",
       "cleanup": "Remove copied panel state after closing stack.",
-      "evidence": ["chat-regression"],
-      "remaining": "Run panel persistence path/mode/corruption comparison against both CLIs.",
+      "evidence": ["chat", "chat-regression"],
+      "remaining": "Retain final native-platform receipts for manifest-hashed private panel storage, malformed/negative input rejection, corruption recovery, failed replacement preserving unrelated state, and mixed-version restoration.",
       "status": "open"
     },
     {
@@ -1750,7 +1750,7 @@
       "failure": "Dead provider rejects input without waiting for acknowledgement.",
       "cleanup": "Join child/process group, readers and outstanding sends.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Run forced provider shutdown through both external CLIs.",
+      "remaining": "Retain final native-platform receipts for explicit conversation closure and whole-stack shutdown reaping both providers that ignore TERM and do not exit on stdin EOF.",
       "status": "open"
     },
     {

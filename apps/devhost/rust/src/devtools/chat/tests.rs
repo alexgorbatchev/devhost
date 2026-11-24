@@ -219,10 +219,17 @@ async fn claude_native_timeout_does_not_resend() {
 fn server_shutdown_escalates_and_reaps_a_native_process_ignoring_term() {
     let mut fixture = Fixture::new("ignore-term");
     fixture.start(CODEX, "");
+    let pid = fs::read_to_string(fixture.root.path().join("codex-ready"))
+        .unwrap()
+        .parse::<i32>()
+        .unwrap();
+    assert!(crate::procid::is_process_alive(pid));
     let start = std::time::Instant::now();
     fixture.server.take();
     assert!(start.elapsed() < Duration::from_secs(5));
     assert!(fixture.handle.chat.cancel.is_cancelled());
+    assert!(fixture.root.path().join("codex-term").exists());
+    assert!(!crate::procid::is_process_alive(pid));
 }
 
 #[test]
