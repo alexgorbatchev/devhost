@@ -43,6 +43,11 @@ build: assets
 build-release *args: assets
     bun ../scripts/buildRustRelease.ts {{args}}
 
+# Candidate archives only; production publishing remains the Go release workflow.
+[no-cd]
+build-release-artifacts *args:
+    bun {{source_directory()}}/../scripts/buildRustReleaseArtifacts.ts {{args}}
+
 # Keep include_dir! and include_str! inputs available on fresh checkouts.
 assets:
     just --justfile ../../../justfile devhost build-devtools-bundle

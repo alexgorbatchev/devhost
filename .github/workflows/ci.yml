@@ -15,6 +15,10 @@ on:
         description: Repeat CI regression tests before the full check suite
         type: boolean
         default: false
+      rustCandidates:
+        description: Build and smoke-test unpublished Rust archives on native distribution hosts
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -84,7 +88,7 @@ jobs:
 
   # Keep advisory native verification available without spending a macOS runner on every change.
   go-macos:
-    if: github.event_name == 'workflow_dispatch' && !inputs.selfHosted
+    if: github.event_name == 'workflow_dispatch' && !inputs.selfHosted && !inputs.rustCandidates
     runs-on: macos-latest
     continue-on-error: true
     timeout-minutes: 30
@@ -117,3 +121,87 @@ jobs:
         run: |
           bash test-support/runTests.test.sh
           just devhost check
+
+  rust-candidates:
+    if: github.event_name == 'workflow_dispatch' && inputs.rustCandidates && !inputs.selfHosted
+    name: Rust candidate (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            runner: ubuntu-24.04
+            targets: linux-x64,linux-x64-musl
+            rust-targets: x86_64-unknown-linux-gnu x86_64-unknown-linux-musl
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            targets: linux-arm64,linux-arm64-musl
+            rust-targets: aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
+          - platform: darwin-arm64
+            runner: macos-15
+            targets: darwin-arm64
+            rust-targets: aarch64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Setup Just
+        uses: extractions/setup-just@v4
+      - name: Setup Go for the native proxy dependency
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: apps/devhost/go.mod
+          cache-dependency-path: apps/devhost/go.sum
+      - name: Setup Rust
+        run: rustup toolchain install 1.99.1 --profile minimal --no-self-update && rustup default 1.99.1 && rustup target add ${{ matrix.rust-targets }}
+      - name: Cache Rust dependencies and release objects
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/devhost/rust -> target
+          key: candidate-${{ matrix.platform }}
+      - name: Setup Zig
+        if: runner.os == 'Linux'
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Cache native build and runtime tools
+        id: tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/share/devhost-candidate-tools
+          key: candidate-tools-${{ runner.os }}-${{ runner.arch }}-rust1.99.1-zigbuild0.24.1-caddy2.11.9
+      - name: Install native build and runtime tools
+        if: steps.tools.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_root="$HOME/.local/share/devhost-candidate-tools"
+          mkdir -p "$tool_root/bin"
+          GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            cargo install --locked cargo-zigbuild --version 0.24.1 --root "$tool_root"
+          fi
+      - name: Add cached tools to PATH
+        run: echo "$HOME/.local/share/devhost-candidate-tools/bin" >> "$GITHUB_PATH"
+      - name: Cache Bun dependency downloads
+        uses: actions/cache@v5
+        with:
+          path: ~/.bun/install/cache
+          key: bun-candidates-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-candidates-${{ runner.os }}-${{ runner.arch }}-
+      - name: Install dependencies without browser setup
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Build and verify native candidate archives
+        run: just rust build-release-artifacts --targets=${{ matrix.targets }} --output=apps/devhost/dist/rust-candidates/ci
+      - name: Retain unpublished candidate archives and verification receipts
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-candidate-${{ matrix.platform }}
+          path: apps/devhost/dist/rust-candidates/ci/
+          if-no-files-found: error
+          retention-days: 7

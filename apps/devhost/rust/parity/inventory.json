@@ -1439,8 +1439,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/development/building.md",
-      "blob": "72c542dce62eba37773a9c1c74a1e043c2365e5a",
-      "reason": "Documents experimental Rust commands and validation, including optimized metadata-stamped candidate builds, alongside unchanged Go production and development-override entrypoints."
+      "blob": "9a741041fa3350db65bdbc0316c859f3abb3f965",
+      "reason": "Documents experimental Rust commands and validation, including optimized metadata-stamped builds and native-verified candidate packaging, alongside unchanged Go production and development-override entrypoints."
     },
     {
       "path": "packages/docs/src/content/docs/guides/annotations.md",

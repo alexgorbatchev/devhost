@@ -33,6 +33,8 @@ Use `just rust build-release` for an optimized native candidate at `apps/devhost
 
 Run `just setup` for a fresh checkout. Rust run, build, test, lint, and coverage recipes refresh the generated browser assets before Cargo embeds them; direct Cargo commands require those assets to exist already.
 
+`just rust build-release-artifacts` builds the five existing distribution targets as candidates, with the established executable/archive layout plus compiled-dependency licenses, SHA-256 checksums and source/toolchain provenance. Use `--targets=<comma-separated archive suffixes>` for a subset and `--output=<new directory>` for an explicit output. Linux GNU uses cargo-zigbuild's glibc 2.28 baseline; musl must be static. Build the macOS archive on macOS and verify its system-library dependencies, minimum OS and ad-hoc signature. Existing candidate directories are never overwritten. See `RELEASE.md` for prerequisites and native acceptance.
+
 Use `just rust test-affected <base>` to select the Rust package from changed source, fixtures, embedded UI/design assets, or shared test inputs. This is one Cargo package; changes with uncertain internal impact select its enclosing package. Use `just rust test <args>` for focused feedback. Run its package gate with formatting, Clippy, and at least 90% line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):
 
 ```bash

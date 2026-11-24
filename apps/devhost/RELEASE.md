@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-23 21:02
+last_modified: 2026-11-23 21:36
 status: current
 ---
 
@@ -69,6 +69,20 @@ This refreshes production browser assets and runs a locked Cargo release build. 
 Pass `--target <installed Rust triple>` to select another target. `--cross` selects `cargo zigbuild` and requires cargo-zigbuild, Zig, and the target's platform prerequisites. Cargo's configured target directory determines the output location. A packaged candidate uses embedded assets and requires no source checkout.
 
 This command leaves the Go release publisher and the protected Go development override selected. Rust candidates require their separate parity, packaging, and native acceptance before production cutover.
+
+### Candidate archives
+
+```sh
+just rust build-release-artifacts --targets=linux-x64,linux-x64-musl
+```
+
+Omit `--targets` for all five existing archive targets. Build `darwin-arm64` on a native macOS host with Xcode command-line tools; Linux targets require installed Rust targets, Zig and cargo-zigbuild. GNU builds pin the glibc 2.28 ABI through the Zig target suffix. musl archives must have no ELF interpreter or dynamic dependencies. macOS inspection verifies arm64 Mach-O, system libraries, a minimum deployment target no newer than macOS 11, and the linker's ad-hoc signature. The existing download-and-`install` distribution contract does not promise Developer ID signing or notarization; this candidate command adds neither a new signing policy nor a quarantine bypass.
+
+Output is a new directory under `apps/devhost/dist/rust-candidates/`, or the new directory passed with `--output`. An existing output is rejected. A failed build publishes no partial candidate directory. Each archive preserves `devhost-v<version>-<platform>/devhost`, `README.md` and `LICENSE`, and adds `THIRD_PARTY_LICENSES.txt` for Cargo-reported compiled packages, including Git, vendored and build-time dependencies. Missing license texts fail packaging. The narrowly pinned license overrides are documented in `rust/licenses/README.md`.
+
+`SHA256SUMS` covers all requested archives. `provenance.json` records the Git revision, source-file digest and dirty state, toolchain, binary/archive hashes, actual executable format and dependency requirements, and matching-host acceptance results. A dirty candidate is diagnostic evidence; final cutover must use a recorded clean revision. Extraction checks compare executable bytes, permissions and layout. On a matching native host the extracted binary must report the metadata version, display help, load a manifest, serve HTTPS and embedded browser assets with an isolated fixture CA, replace its session through `restart-all`, and stop cleanly. This does not modify the system trust store. Broader native acceptance still covers platform trust behavior; a cross-built archive is not native runtime evidence.
+
+Dispatch the `CI` workflow on the candidate branch with `rustCandidates=true` to build all five archives on hosted Linux x64, Linux ARM64 and macOS ARM64. The jobs cache dependencies and build tools, exercise the extracted native executables, and retain unpublished archives and receipts for seven days. The normal repository check remains required; these jobs neither tag nor publish a release.
 
 ## Local release artifacts
 
