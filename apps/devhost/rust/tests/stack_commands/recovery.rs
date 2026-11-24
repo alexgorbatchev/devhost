@@ -22,7 +22,10 @@ fn control_origin(runtime: &Runtime, name: &str) -> String {
     origin(runtime, name)
 }
 
+#[track_caller]
 fn routed(runtime: &Runtime, name: &str, action: &str) -> ureq::http::Response<ureq::Body> {
+    let caller = std::panic::Location::caller();
+    let started = Instant::now();
     client()
         .get(format!(
             "http://127.0.0.1:{}/note.txt",
@@ -32,7 +35,16 @@ fn routed(runtime: &Runtime, name: &str, action: &str) -> ureq::http::Response<u
         .header("X-Devhost-Recovery", action)
         .header("Accept", "application/json")
         .call()
-        .unwrap()
+        .unwrap_or_else(|error| {
+            panic!(
+                "recovery {action} for {name} at {caller} failed after {:?}: {error}; lifecycle: {}; Caddy: {}",
+                started.elapsed(),
+                fs::read_to_string(runtime.root.path().join(name).join("lifecycle.log"))
+                    .unwrap_or_default(),
+                fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log"))
+                    .unwrap_or_default()
+            )
+        })
 }
 
 fn launches(project: &Path) -> Vec<i32> {
