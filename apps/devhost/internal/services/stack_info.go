@@ -88,6 +88,10 @@ func ReadStackInfo(ctx context.Context, manifestPath string, environment map[str
 		}
 	}
 
+	return readLiveStackInfo(ctx, stack)
+}
+
+func readLiveStackInfo(ctx context.Context, stack caddy.LiveStack) (StackInfo, error) {
 	mode := StackModeForeground
 	if stack.LogPath != "" {
 		mode = StackModeDetached

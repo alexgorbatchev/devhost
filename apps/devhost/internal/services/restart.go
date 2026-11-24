@@ -163,7 +163,24 @@ func captureStackLaunch(stack caddy.LiveStack) (stackLaunch, error) {
 	if !stack.Alive() {
 		return stackLaunch{}, fmt.Errorf("stack process changed during capture")
 	}
-	return stackLaunch{stack: stack, args: preserveLaunchMode(args[1:], stack.Remote), directory: directory, environment: environment}, nil
+	launchArgs := preserveLaunchMode(args[1:], stack.Remote)
+	if stack.ManifestPath == "" {
+		launchArgs = preserveServeSession(launchArgs, stack.Name)
+	}
+	return stackLaunch{stack: stack, args: launchArgs, directory: directory, environment: environment}, nil
+}
+
+func preserveServeSession(args []string, name string) []string {
+	index := slices.Index(args, "--")
+	if index < 0 {
+		index = len(args)
+	}
+	for _, arg := range args[:index] {
+		if arg == "--session-id" || strings.HasPrefix(arg, "--session-id=") || arg == "--domain" || strings.HasPrefix(arg, "--domain=") || strings.HasPrefix(arg, "-d") {
+			return args
+		}
+	}
+	return slices.Insert(slices.Clone(args), 1, "--session-id", name)
 }
 
 // replaceLaunchLog drops the private launch variables from a captured

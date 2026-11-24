@@ -248,18 +248,18 @@ This stops every stack whose root manifest is in the current Git repository, inc
 After installing a new devhost executable, replace the running supervisors:
 
 ```bash
-devhost stack restart --all
+devhost restart-all
 ```
 
-This includes manifest stacks and standalone `serve` sessions in the same state directory. To restart only this project's running stack, use `devhost stack restart`; `--manifest path/to/devhost.toml` selects another project. `--all` cannot be combined with `--manifest` or `DEVHOST_MANIFEST`.
+Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables).
 
-The [experimental Rust CLI](../../development/building/#try-the-rust-port) uses `devhost restart-all` for this global operation on Linux and macOS, including from outside a project. Its `devhost stack restart --all` resolves the nearest root manifest from the current directory and restarts that project's whole stack. The same manifest-option restriction applies.
+To restart a single project, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`.
 
-The command captures every selected process's arguments, working directory, and environment before stopping any stack. It then stops and relaunches each stack with the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+Both commands capture every selected process's arguments, working directory, and environment before stopping any stack. Each relaunch uses the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
 
-Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or signal a standalone session's PID, to stop its replacement.
+Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or `devhost stop --session <name>` for a standalone session, to stop its replacement. Command sessions preserve their generated names.
 
-A replacement starts like a foreground stack, even when it replaces a stack started with `--detach`: no command waits for its readiness, so a service that fails its health check goes to [recovery](../../stacks/recovery/) while the rest of the stack keeps running. A detached stack's replacement records its new log path, which `devhost start --detach` then reports.
+A manifest stack replacement starts like a foreground stack, even when it replaces a stack started with `--detach`: no command waits for its readiness, so a service that fails its health check goes to [recovery](../../stacks/recovery/) while the rest of the stack keeps running. A detached stack's replacement records its new log path, which `devhost start --detach` then reports. Command-mode `serve` replacements still require an initial HTTP listener within their startup timeout.
 
 Shutdown has a 15-second grace period. A stack that is still stopping is reported as a failure and gets no replacement; it is not force-killed. A replacement has 30 seconds to register its control server; registration confirms the supervisor started, while its services may still be starting. A registration timeout leaves the replacement running and prints its PID and log path. Failures return a nonzero exit code while the command attempts the remaining captured stacks. Shared Caddy stays running.
 

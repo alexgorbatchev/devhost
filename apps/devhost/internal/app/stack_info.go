@@ -20,6 +20,19 @@ import (
 )
 
 func runStackInfo(arguments cli.CommandLineArguments, cwd string, stdout, stderr io.Writer) int {
+	if arguments.Session != "" {
+		info, err := services.ReadServeInfo(context.Background(), arguments.Session, readEnvironment())
+		if err != nil {
+			return fail(stderr, err)
+		}
+		if err := cliout.WriteData(stdout, []byte(formatStackInfo(info, cliout.IsAgentMode(), time.Now().UTC()))); err != nil {
+			return fail(stderr, err)
+		}
+		if !info.Ready {
+			return 1
+		}
+		return 0
+	}
 	var manifestPath string
 	var err error
 	if arguments.ManifestPath != nil {

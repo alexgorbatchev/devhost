@@ -56,6 +56,7 @@ type StartStackOptions struct {
 	// File sessions own their backend and report unexpected listener failures.
 	runtimeErrors      <-chan error
 	serveSession       bool
+	commandServe       *commandServe
 	Configuration      *manifest.Manifest
 	CaddyOutputWriters caddy.RouteCommandOutputWriters
 	CaddyPaths         caddy.Paths
@@ -513,7 +514,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				if lifecycleCtx.Err() != nil {
 					return 0, err
 				}
-				if options.Launch.Detached {
+				if options.Launch.Detached || options.commandServe != nil {
 					return 0, &serviceNotReadyError{service: serviceName, err: err}
 				}
 				state.logFailure(serviceName, err)
@@ -557,7 +558,13 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	if err := state.acquireRemote(lifecycleCtx); err != nil {
 		return 0, err
 	}
-	LogServiceURLs(*manifest, options.LogWriter)
+	if options.commandServe != nil {
+		if code, err := state.waitForCommandRoutes(lifecycleCtx); err != nil {
+			return code, err
+		}
+	} else {
+		LogServiceURLs(*manifest, options.LogWriter)
+	}
 	logStoppedServices(*manifest, options.LogWriter)
 
 	idle := newIdleWatch(devtoolsControlServer, caddy.AccessLogPath(paths, stackAccessLogName(*manifest)), options.LogWriter, state.stackName)
@@ -590,7 +597,7 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	state.ready = true
 	if options.Launch.Detached {
 		err = state.publishDetachedReady(lifecycleCtx, paths)
-	} else if manifest.Remote != nil {
+	} else if manifest.Remote != nil || options.commandServe != nil {
 		err = state.publishStackURLs(paths)
 	}
 	state.operationMu.Unlock()
@@ -614,8 +621,18 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 		manifestWatch.check()
 	}
 	configWatch.check()
+	var commandTicks <-chan time.Time
+	if options.commandServe != nil {
+		ticker := time.NewTicker(commandDiscoveryInterval)
+		defer ticker.Stop()
+		commandTicks = ticker.C
+	}
 	for {
 		select {
+		case <-commandTicks:
+			if err := state.refreshCommandRoutes(lifecycleCtx); err != nil {
+				return 0, err
+			}
 		case err := <-configEvents:
 			completed := make(chan error, 1)
 			configResults = completed
@@ -649,6 +666,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 				cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("configuration reload rejected: %v", err))
 			}
 		case result := <-state.exits:
+			if options.commandServe != nil && result.serviceName == commandServiceName {
+				return result.exitCode, nil
+			}
 			cliout.Log(options.LogWriter, state.stackName(), fmt.Sprintf("%s exited with code %d; devhost is waiting for a restart.", result.serviceName, result.exitCode))
 		case receivedSignal := <-signalExits:
 			cancelLifecycle()

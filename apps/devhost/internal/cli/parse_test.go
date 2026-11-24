@@ -23,9 +23,13 @@ func TestParseCommandLineArguments(t *testing.T) {
 		{name: "detach and debug remain distinct", rawArgs: []string{"start", "--detach", "-d", "web"}, want: CommandLineArguments{Kind: KindStart, Detach: true, Debug: true, Services: []string{"web"}}},
 		{name: "detach false", rawArgs: []string{"start", "--detach=false"}, want: CommandLineArguments{Kind: KindStart}},
 		{name: "detach rejected on stop", rawArgs: []string{"stop", "--detach"}, wantError: "unknown option: --detach"},
-		{name: "restart all stacks", rawArgs: []string{"stack", "restart", "--all"}, want: CommandLineArguments{Kind: KindStackRestart, All: true}},
+		{name: "restart project stack", rawArgs: []string{"stack", "restart", "--all"}, want: CommandLineArguments{Kind: KindStackRestart}},
 		{name: "restart manifest", rawArgs: []string{"stack", "restart", "-m", manifestPath}, want: CommandLineArguments{Kind: KindStackRestart, ManifestPath: &manifestPath}, comparePath: true},
-		{name: "restart conflicting scope", rawArgs: []string{"stack", "restart", "--all", "-m", manifestPath}, wantError: "--all and --manifest (or DEVHOST_MANIFEST) are mutually exclusive"},
+		{name: "restart project stack with short flag", rawArgs: []string{"stack", "restart", "-a"}, want: CommandLineArguments{Kind: KindStackRestart}},
+		{name: "project restart rejects a manifest override", rawArgs: []string{"stack", "restart", "--all", "-m", manifestPath}, wantError: "--all and --manifest (or DEVHOST_MANIFEST) are mutually exclusive"},
+		{name: "restart all running instances", rawArgs: []string{"restart-all"}, env: map[string]string{"DEVHOST_MANIFEST": manifestPath}, want: CommandLineArguments{Kind: KindRestartAll}},
+		{name: "restart all rejects manifest option", rawArgs: []string{"restart-all", "--manifest", manifestPath}, wantError: "unknown option: --manifest"},
+		{name: "restart all rejects positional argument", rawArgs: []string{"restart-all", manifestPath}, wantError: `unknown command "./devhost.toml" for "devhost restart-all"`},
 		{name: "stops repository worktrees", rawArgs: []string{"stop", "--worktrees", "-m", manifestPath}, want: CommandLineArguments{Kind: KindStop, Worktrees: true, ManifestPath: &manifestPath}, comparePath: true},
 		{name: "finds stacks", rawArgs: []string{"stack", "find", "https://engine.localhost/path"}, want: CommandLineArguments{Kind: KindStackFind, Query: "https://engine.localhost/path"}},
 		{name: "parses stack info", rawArgs: []string{"stack", "info"}, want: CommandLineArguments{Kind: KindStackInfo}},
@@ -353,7 +357,7 @@ func TestParseCommandLineArguments(t *testing.T) {
 				t.Fatalf("ParseCommandLineArguments(%q) unexpected error = %v", tc.rawArgs, err)
 			}
 
-			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.Detach != tc.want.Detach || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || got.Worktrees != tc.want.Worktrees || got.All != tc.want.All || got.Query != tc.want.Query || !slices.Equal(got.Services, tc.want.Services) {
+			if got.Kind != tc.want.Kind || got.Action != tc.want.Action || got.SSHTarget != tc.want.SSHTarget || got.Debug != tc.want.Debug || got.Detach != tc.want.Detach || got.IdleTimeout != tc.want.IdleTimeout || got.Startable != tc.want.Startable || got.Worktrees != tc.want.Worktrees || got.Query != tc.want.Query || !slices.Equal(got.Services, tc.want.Services) {
 				t.Fatalf("ParseCommandLineArguments(%q) = %#v, want %#v", tc.rawArgs, got, tc.want)
 			}
 
