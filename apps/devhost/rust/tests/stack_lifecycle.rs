@@ -57,21 +57,57 @@ impl Write for SharedBuf {
 }
 
 fn free_port() -> u16 {
+    static EPHEMERAL: std::sync::OnceLock<(u16, u16)> = std::sync::OnceLock::new();
+    let &(first, last) = EPHEMERAL.get_or_init(|| {
+        #[cfg(target_os = "linux")]
+        let range = fs::read_to_string("/proc/sys/net/ipv4/ip_local_port_range").unwrap();
+        #[cfg(target_os = "macos")]
+        let range = {
+            let output = Command::new("/usr/sbin/sysctl")
+                .args([
+                    "-n",
+                    "net.inet.ip.portrange.first",
+                    "net.inet.ip.portrange.last",
+                ])
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "read ephemeral port range: {output:?}"
+            );
+            String::from_utf8(output.stdout).unwrap()
+        };
+        let ports: Vec<u16> = range
+            .split_whitespace()
+            .map(|port| port.parse().unwrap())
+            .collect();
+        assert_eq!(ports.len(), 2, "unexpected ephemeral port range: {range}");
+        (ports[0].min(ports[1]), ports[0].max(ports[1]))
+    });
     static ALLOCATED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<u16>>> =
         std::sync::OnceLock::new();
     let mut allocated = ALLOCATED.get_or_init(Mutex::default).lock().unwrap();
-    loop {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let port = listener.local_addr().unwrap().port();
+    let mut seed = [0; 2];
+    getrandom::fill(&mut seed).unwrap();
+    let start = u32::from(u16::from_ne_bytes(seed));
+    for offset in 0..55_536 {
+        // Released :0 ports can become client source ports before Caddy binds.
+        let port = (10_000 + (start + offset) % 55_536) as u16;
+        if (first..=last).contains(&port) || allocated.contains(&port) {
+            continue;
+        }
+        let Ok(listener) = TcpListener::bind(("127.0.0.1", port)) else {
+            continue;
+        };
         // A concurrent child may retain a forked descriptor until exec.
         // Shut down the reservation socket before releasing our descriptor.
         use std::os::fd::AsRawFd;
         // SAFETY: listener owns this descriptor until the end of this iteration.
         unsafe { libc::shutdown(listener.as_raw_fd(), libc::SHUT_RDWR) };
-        if allocated.insert(port) {
-            return port;
-        }
+        allocated.insert(port);
+        return port;
     }
+    panic!("no unused fixture port outside client ephemeral range {first}..={last}");
 }
 
 struct RunningFileStack {
@@ -209,14 +245,20 @@ impl LiveCaddyGuard {
     fn start(root: &Path) -> Self {
         let guard = Self::unstarted(root);
         let mut out = Vec::new();
-        caddy::start_in_directory(
+        let result = caddy::start_in_directory(
             &guard.caddy_dir,
             &guard.settings,
             Mode::Agent,
             &mut out,
             true,
-        )
-        .expect("start isolated caddy");
+        );
+        assert!(
+            result.is_ok(),
+            "start isolated caddy: {result:?}\n{}\nstdout: {}\nstderr: {}",
+            String::from_utf8_lossy(&out),
+            fs::read_to_string(guard.caddy_dir.join("caddy.stdout.log")).unwrap_or_default(),
+            fs::read_to_string(guard.caddy_dir.join("caddy.stderr.log")).unwrap_or_default(),
+        );
         guard
     }
 }
