@@ -10,12 +10,16 @@ pub(super) fn client() -> ureq::Agent {
 }
 
 pub(super) fn origin(runtime: &Runtime, name: &str) -> String {
-    let stack = read_live_stacks(&runtime.state().join("caddy"))
-        .unwrap()
-        .into_iter()
-        .find(|stack| stack.name == name)
-        .unwrap();
-    format!("http://127.0.0.1:{}", stack.control_port)
+    let mut port = 0;
+    wait_until(|| {
+        port = read_live_stacks(&runtime.state().join("caddy"))
+            .unwrap()
+            .into_iter()
+            .find(|stack| stack.name == name)
+            .map_or(0, |stack| stack.control_port);
+        port > 0
+    });
+    format!("http://127.0.0.1:{port}")
 }
 
 pub(super) fn get(origin: &str, path: &str) -> ureq::http::Response<ureq::Body> {
