@@ -127,7 +127,7 @@ fn start(runtime: &Runtime, backend: &Backend) -> Process {
             }
         });
     }
-    let process = Process(command.spawn().unwrap());
+    let mut process = Process(command.spawn().unwrap());
     wait_until(|| {
         read_live_stacks(&runtime.state().join("caddy"))
             .unwrap()
@@ -136,11 +136,36 @@ fn start(runtime: &Runtime, backend: &Backend) -> Process {
                 stack.name == "serve-document-contract.localhost" && stack.control_port > 0
             })
     });
-    wait_until(|| request(runtime, "/plain").status() == 200);
+    super::lifecycle::ready(&super::control::origin(
+        runtime,
+        "serve-document-contract.localhost",
+    ));
+    let deadline = Instant::now() + Duration::from_secs(15);
+    loop {
+        // Registration precedes route readiness; a reload may close this probe.
+        let pending = match try_request(runtime, "/plain") {
+            Ok(response) if response.status() == 200 => break,
+            Ok(response) => format!("HTTP {}", response.status()),
+            Err(error) => error.to_string(),
+        };
+        assert!(
+            process.0.try_wait().unwrap().is_none() && Instant::now() < deadline,
+            "document route did not become ready: {pending}\n{}",
+            fs::read_to_string(directory.join("serve.log")).unwrap()
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
     process
 }
 
 fn request(runtime: &Runtime, path: &str) -> ureq::http::Response<ureq::Body> {
+    try_request(runtime, path).unwrap_or_else(|error| panic!("document request {path}: {error}"))
+}
+
+fn try_request(
+    runtime: &Runtime,
+    path: &str,
+) -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
     client()
         .get(format!(
             "http://127.0.0.1:{}{path}",
@@ -149,7 +174,6 @@ fn request(runtime: &Runtime, path: &str) -> ureq::http::Response<ureq::Body> {
         .header("Host", "document-contract.localhost")
         .header("Sec-Fetch-Dest", "document")
         .call()
-        .unwrap_or_else(|error| panic!("document request {path}: {error}"))
 }
 
 fn bytes(response: &mut ureq::http::Response<ureq::Body>) -> Vec<u8> {
@@ -170,7 +194,18 @@ fn external_proxy_preserves_document_bytes_headers_recovery_and_backend_ownershi
     let expected = [b"<html><body>caf\xe9".as_slice(), script, b"</body></html>"].concat();
     for path in ["/legacy", "/gzip"] {
         let mut response = request(&runtime, path);
-        assert_eq!(response.status(), 200, "{path}");
+        assert_eq!(
+            response.status(),
+            200,
+            "{path}: {}\nserve: {}\ncaddy: {}",
+            if response.status() == 200 {
+                String::new()
+            } else {
+                response.body_mut().read_to_string().unwrap_or_default()
+            },
+            fs::read_to_string(runtime.root.path().join("external backend/serve.log")).unwrap(),
+            fs::read_to_string(runtime.state().join("caddy/Caddyfile")).unwrap_or_default()
+        );
         assert_eq!(
             response.headers()["content-type"],
             "text/html; charset=iso-8859-1"

@@ -412,9 +412,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(unix)]
-    fn manifest_watch_ignores_permission_changes() {
-        use std::os::unix::fs::PermissionsExt;
+    fn manifest_watch_ignores_permission_metadata_events() {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("config.toml");
         fs::write(&path, "initial").unwrap();
@@ -423,12 +421,18 @@ mod tests {
             patterns: Vec::new(),
         })
         .unwrap();
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
-        let until = Instant::now() + Duration::from_secs(1);
-        while Instant::now() < until {
-            assert!(!watch.poll().unwrap());
-            thread::sleep(Duration::from_millis(10));
-        }
+        // FSEvents can deliver pre-watch create/write events after registration.
+        // Exercise the metadata contract without treating those as chmod events.
+        let (sender, events) = mpsc::channel();
+        watch.events = events;
+        sender
+            .send(Ok(Event::new(EventKind::Modify(
+                notify::event::ModifyKind::Metadata(notify::event::MetadataKind::Permissions),
+            ))
+            .add_path(path)))
+            .unwrap();
+        assert!(!watch.poll().unwrap());
+        assert!(watch.pending.is_none());
     }
 
     #[test]

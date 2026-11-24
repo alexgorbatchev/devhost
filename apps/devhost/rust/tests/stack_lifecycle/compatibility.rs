@@ -50,23 +50,19 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
     let root = fixture.path();
     let cert = root.join("root.pem");
     let key = root.join("key.pem");
+    // Keep certificate extensions independent of the platform openssl.cnf.
+    let openssl_config = root.join("openssl.cnf");
+    fs::write(
+        &openssl_config,
+        "[req]\nprompt=no\ndistinguished_name=subject\nx509_extensions=server\n[subject]\nCN=localhost\n[server]\nsubjectAltName=IP:127.0.0.1\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n",
+    )
+    .unwrap();
     let generated = Command::new("openssl")
         .args([
-            "req",
-            "-x509",
-            "-newkey",
-            "rsa:2048",
-            "-nodes",
-            "-days",
-            "1",
-            "-subj",
-            "/CN=localhost",
-            "-addext",
-            "subjectAltName=IP:127.0.0.1",
-            "-addext",
-            "basicConstraints=critical,CA:FALSE",
-            "-keyout",
+            "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-config",
         ])
+        .arg(&openssl_config)
+        .arg("-keyout")
         .arg(&key)
         .arg("-out")
         .arg(&cert)
