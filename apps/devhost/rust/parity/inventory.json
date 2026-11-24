@@ -1471,6 +1471,21 @@
   ],
   "branchDifferences": [
     {
+      "path": "apps/devhost/internal/caddy/not_found.go",
+      "blob": "5d4c4308c3a9f794a6ec4e45820c6dc6b1056911",
+      "reason": "Verified Go and Rust repair publishes generated not-found HTML and CSS through sibling temporary files and atomic rename. Held-reader regressions preserve the complete old document while new opens receive the complete replacement; the unchanged Go20 oracle retains truncating writes."
+    },
+    {
+      "path": "apps/devhost/internal/caddy/stack_directory.go",
+      "blob": "00163f02f62ab23e508850f750daf96c3bc1291b",
+      "reason": "Verified Go and Rust repair uses the shared atomic writer for generated stack-directory HTML and its imported Caddy snippet, preserving public/private permissions and leaving the previous file intact on failure."
+    },
+    {
+      "path": "packages/docs/src/content/docs/guides/managed-caddy.md",
+      "blob": "81b40ad555a44f5af00410c98da10ce9417512ed",
+      "reason": "Documents verified atomic publication of generated not-found and stack-directory pages so an in-flight reader receives a complete old or new document."
+    },
+    {
       "path": "apps/devhost/internal/manifest/read.go",
       "blob": "ebec231ab4c9bcab70e95d7c79c74621797602b2",
       "reason": "Verified Go repairs resolve each included service cwd and serve root once relative to its declaring manifest and preserve literal environment values named cwd or serve. Shared native comparisons reproduce both unchanged Go20 defects and require repaired Go and Rust to pass."
@@ -1567,6 +1582,12 @@
     }
   ],
   "branchAdditions": [
+    {
+      "path": "apps/devhost/internal/caddy/site_file.go",
+      "blob": "60e50762dfbac6561bc5cedc82ba7a67836baf18",
+      "feature": "caddy-routes",
+      "reason": "Shared sibling-temporary-file writer preserves permissions, atomically replaces generated site files, and removes temporary files on publication failure. Go held-reader and failure-cleanup regressions verify its behavior alongside the equivalent Rust writer."
+    },
     {
       "path": "apps/devhost/internal/services/serve_command_connections_darwin.go",
       "blob": "569eff3595775d5c79ffac0844a15fd94df413ef",
