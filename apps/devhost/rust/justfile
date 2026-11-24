@@ -41,6 +41,11 @@ check: fmt-check lint coverage
 comparisons oracle repaired rust-binary output: assets
     bash {{source_directory()}}/../../../test-support/runTests.sh bun {{source_directory()}}/../scripts/verifyRustComparisons.ts '{{oracle}}' '{{repaired}}' '{{rust-binary}}' '{{output}}'
 
+# Compare each native GNU/musl/macOS archive executable, retaining its provenance.
+[no-cd]
+distribution-comparisons candidates oracle repaired output: assets
+    bash {{source_directory()}}/../../../test-support/runTests.sh bash {{source_directory()}}/../../../test-support/verifyRustCandidates.sh '{{candidates}}' '{{oracle}}' '{{repaired}}' '{{output}}'
+
 build: assets
     cargo build --locked
 

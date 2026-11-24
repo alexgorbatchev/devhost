@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-23 23:03
+last_modified: 2026-11-24 00:21
 status: current
 ---
 
@@ -82,11 +82,19 @@ Output is a new directory under `apps/devhost/dist/rust-candidates/`, or the new
 
 `SHA256SUMS` covers all requested archives. `provenance.json` records the Git revision, source-file digest and dirty state, toolchain, binary/archive hashes, actual executable format and dependency requirements, and matching-host acceptance results. A dirty candidate is diagnostic evidence; final cutover must use a recorded clean revision. Extraction checks compare executable bytes, permissions and layout. On a matching native host the extracted binary must report the metadata version, display help, load a manifest, serve HTTPS and embedded browser assets with an isolated fixture CA, replace its session through `restart-all`, and stop cleanly. This does not modify the system trust store. Broader native acceptance still covers platform trust behavior; a cross-built archive is not native runtime evidence.
 
-Dispatch the `CI` workflow on the candidate branch with `rustCandidates=true` to build all five archives on hosted Linux x64, Linux ARM64 and macOS ARM64. The jobs cache dependencies and build tools, exercise the extracted native executables, and retain unpublished archives and receipts for seven days. The normal repository check remains required; these jobs neither tag nor publish a release.
+Dispatch the `CI` workflow on the candidate branch with `rustCandidates=true` to build all five archives on hosted Linux x64, Linux ARM64 and macOS ARM64. After the extraction smoke, each job runs the maintained executable comparison gate against every extracted native candidate, including both GNU and musl on Linux. The jobs cache dependencies and build tools and retain unpublished archives, distribution provenance and comparison receipts for seven days. The normal repository check remains required; these jobs neither tag nor publish a release.
+
+Repeat distribution comparisons on the matching native host with the same Rust Anything, Caddy, Chisel and Bash completion prerequisites as the executable gate:
+
+```sh
+just rust distribution-comparisons /path/to/candidate-directory /path/to/go-oracle /path/to/repaired-go/devhost /path/to/new-evidence-directory
+```
+
+The command verifies checksums before comparing each extracted executable, keeps its hashes and logs in the new evidence directory, and removes temporary extractions on success or failure. A native Linux GNU host can execute the static musl candidate; the archive's static-link inspection remains required.
 
 ### Rust validation before cutover
 
-Pull requests, main pushes and ordinary manual CI runs also run mandatory Rust jobs on hosted Linux x64, Linux ARM64 and macOS ARM64. The Linux-only self-hosted pilot retains its separate scope. Rust/Cargo is pinned in `rust/rust-toolchain.toml`; Linux x64 additionally checks Rust 1.98.1 against the declared 1.98 minimum and enforces 90% first-party line/function coverage. All native jobs run formatting, strict Clippy, current-Go inventory drift validation and shared executable comparisons. Toolchains, Cargo objects, Bun downloads and versioned native tools are cached; comparison logs and provenance are retained for seven days.
+Pull requests, main pushes and ordinary manual CI runs also run mandatory Rust jobs on hosted Linux x64, Linux ARM64, macOS ARM64 and macOS Intel. The Linux-only self-hosted pilot retains its separate scope. Rust/Cargo is pinned in `rust/rust-toolchain.toml`; Linux x64 additionally checks Rust 1.98.1 against the declared 1.98 minimum and enforces 90% first-party line/function coverage. All native jobs run formatting, strict Clippy, current-Go inventory drift validation and shared executable comparisons. Toolchains, Cargo objects, Bun downloads and versioned native tools are cached; comparison logs and provenance are retained for seven days.
 
 To repeat the executable gate locally, install Rust Anything 3.3.0, prepare an unchanged checkout at the inventory's Go revision, build its binary and the branch's repaired Go binary with `just devhost compile`, and build optimized Rust with `just rust build-release`. From the candidate checkout run:
 

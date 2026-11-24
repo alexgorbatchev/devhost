@@ -16,7 +16,7 @@ on:
         type: boolean
         default: false
       rustCandidates:
-        description: Build and smoke-test unpublished Rust archives on native distribution hosts
+        description: Build and compare unpublished Rust archives on native distribution hosts
         type: boolean
         default: false
 
@@ -143,6 +143,10 @@ jobs:
             runner: macos-15
             target: aarch64-apple-darwin
             rust-anything-sha: a39bf2b336a5e4030560dba68906fb089a10f61ac9d5b12dde4269bf679ae1da
+          - platform: darwin-x64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+            rust-anything-sha: 0d96dc91c952db24f831b2ed36d295a0db7aad0df39bc4c95f3beb696774f2ca
     steps:
       - name: Checkout candidate and Go history
         uses: actions/checkout@v7
@@ -171,7 +175,7 @@ jobs:
           channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
           rustup toolchain install "$channel" --profile minimal --component rustfmt,clippy,llvm-tools-preview --no-self-update
           rustup default "$channel"
-          if [[ "$RUNNER_ARCH" == X64 ]]; then rustup toolchain install 1.98.1 --profile minimal --no-self-update; fi
+          if [[ '${{ matrix.platform }}' == linux-x64 ]]; then rustup toolchain install 1.98.1 --profile minimal --no-self-update; fi
       - name: Cache Rust dependencies and test objects
         uses: Swatinem/rust-cache@v2
         with:
@@ -192,7 +196,7 @@ jobs:
           mkdir -p "$tool_root/bin"
           GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
           GOBIN="$tool_root/bin" go install github.com/jpillora/chisel@v1.12.0
-          if [[ "$RUNNER_ARCH" == X64 ]]; then cargo install --locked cargo-llvm-cov --version 0.9.1 --root "$tool_root"; fi
+          if [[ '${{ matrix.platform }}' == linux-x64 ]]; then cargo install --locked cargo-llvm-cov --version 0.9.1 --root "$tool_root"; fi
           archive="rust-anything-v3.3.0-${{ matrix.target }}.tar.gz"
           curl --fail --location --retry 3 "https://github.com/erkamyaman/rust-anything/releases/download/v3.3.0/$archive" --output "$RUNNER_TEMP/$archive"
           printf '%s  %s\n' '${{ matrix.rust-anything-sha }}' "$RUNNER_TEMP/$archive" | shasum -a 256 --check
@@ -236,14 +240,14 @@ jobs:
           just rust fmt-check
           just rust lint
       - name: Check minimum supported Rust
-        if: runner.arch == 'X64'
+        if: matrix.platform == 'linux-x64'
         working-directory: apps/devhost/rust
         run: cargo +1.98.1 check --locked --all-targets
       - name: Enforce first-party line and function coverage
-        if: runner.arch == 'X64'
+        if: matrix.platform == 'linux-x64'
         run: just rust coverage
       - name: Run native Rust tests
-        if: runner.arch != 'X64'
+        if: matrix.platform != 'linux-x64'
         run: just rust test
       - name: Build unchanged Go oracle
         working-directory: .state/ci-go-oracle
@@ -279,17 +283,25 @@ jobs:
             runner: ubuntu-24.04
             targets: linux-x64,linux-x64-musl
             rust-targets: x86_64-unknown-linux-gnu x86_64-unknown-linux-musl
+            rust-anything-target: x86_64-unknown-linux-gnu
+            rust-anything-sha: e0b3456a9b1a6ae2f1205397815f21f3797be1e3ca505985d5ae9e054ee5dcc0
           - platform: linux-arm64
             runner: ubuntu-24.04-arm
             targets: linux-arm64,linux-arm64-musl
             rust-targets: aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
+            rust-anything-target: aarch64-unknown-linux-gnu
+            rust-anything-sha: a56790fbc6a0615deb969b272ce53114d66032da462f061818cf6206513d4b02
           - platform: darwin-arm64
             runner: macos-15
             targets: darwin-arm64
             rust-targets: aarch64-apple-darwin
+            rust-anything-target: aarch64-apple-darwin
+            rust-anything-sha: a39bf2b336a5e4030560dba68906fb089a10f61ac9d5b12dde4269bf679ae1da
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -324,7 +336,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.local/share/devhost-candidate-tools
-          key: candidate-tools-${{ runner.os }}-${{ runner.arch }}-rust1.99.1-zigbuild0.24.1-caddy2.11.9
+          key: candidate-tools-${{ runner.os }}-${{ runner.arch }}-rust1.99.1-zigbuild0.24.1-caddy2.11.9-chisel1.12.0-anything3.3.0-${{ matrix.rust-anything-sha }}
       - name: Install native build and runtime tools
         if: steps.tools.outputs.cache-hit != 'true'
         shell: bash
@@ -333,11 +345,27 @@ jobs:
           tool_root="$HOME/.local/share/devhost-candidate-tools"
           mkdir -p "$tool_root/bin"
           GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
+          GOBIN="$tool_root/bin" go install github.com/jpillora/chisel@v1.12.0
+          archive="rust-anything-v3.3.0-${{ matrix.rust-anything-target }}.tar.gz"
+          curl --fail --location --retry 3 "https://github.com/erkamyaman/rust-anything/releases/download/v3.3.0/$archive" --output "$RUNNER_TEMP/$archive"
+          printf '%s  %s\n' '${{ matrix.rust-anything-sha }}' "$RUNNER_TEMP/$archive" | shasum -a 256 --check
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$tool_root/bin" --strip-components=1 "rust-anything-v3.3.0-${{ matrix.rust-anything-target }}/rust-anything"
           if [[ "$RUNNER_OS" == Linux ]]; then
             cargo install --locked cargo-zigbuild --version 0.24.1 --root "$tool_root"
           fi
       - name: Add cached tools to PATH
-        run: echo "$HOME/.local/share/devhost-candidate-tools/bin" >> "$GITHUB_PATH"
+        shell: bash
+        run: |
+          echo "$HOME/.local/share/devhost-candidate-tools/bin" >> "$GITHUB_PATH"
+          mkdir -p .cache/test-dependencies
+          cp "$HOME/.local/share/devhost-candidate-tools/bin/chisel" .cache/test-dependencies/chisel-v1.12.0
+      - name: Install native Bash completion fixture
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install bash bash-completion@2
+          echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
+          echo "DEVHOST_TEST_BASH_COMPLETION=$(brew --prefix bash-completion@2)/share/bash-completion/bash_completion" >> "$GITHUB_ENV"
       - name: Cache Bun dependency downloads
         uses: actions/cache@v5
         with:
@@ -346,9 +374,40 @@ jobs:
           restore-keys: bun-candidates-${{ runner.os }}-${{ runner.arch }}-
       - name: Install dependencies without browser setup
         run: bun install --frozen-lockfile --ignore-scripts
+      - name: Validate distribution inventory and select unchanged oracle
+        id: oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          bun apps/devhost/scripts/verifyRustParity.ts
+          echo "revision=$(bun -e 'console.log((await Bun.file("apps/devhost/rust/parity/inventory.json").json()).goSha)')" >> "$GITHUB_OUTPUT"
+      - name: Checkout unchanged distribution oracle
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.oracle.outputs.revision }}
+          path: .state/ci-go-oracle
+      - name: Build unchanged distribution oracle
+        working-directory: .state/ci-go-oracle
+        run: |
+          bun install --frozen-lockfile --ignore-scripts
+          just devhost compile
+      - name: Build repaired Go comparison executable
+        run: just devhost compile
       - name: Build and verify native candidate archives
         run: just rust build-release-artifacts --targets=${{ matrix.targets }} --output=apps/devhost/dist/rust-candidates/ci
+      - name: Compare every extracted native distribution executable
+        run: just rust distribution-comparisons "$GITHUB_WORKSPACE/apps/devhost/dist/rust-candidates/ci" "$GITHUB_WORKSPACE/.state/ci-go-oracle" "$GITHUB_WORKSPACE/apps/devhost/bin/devhost" "$GITHUB_WORKSPACE/.state/ci-distribution-comparisons"
+      - name: Retain distribution comparison receipts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-distribution-comparisons-${{ matrix.platform }}
+          path: .state/ci-distribution-comparisons/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Retain unpublished candidate archives and verification receipts
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: rust-candidate-${{ matrix.platform }}
