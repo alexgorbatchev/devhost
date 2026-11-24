@@ -7,9 +7,18 @@ async fn activity_event(
     expected: &str,
     matches: impl Fn(&Value) -> bool,
 ) -> Value {
+    activity_event_within(socket, expected, Duration::from_secs(5), matches).await
+}
+
+async fn activity_event_within(
+    socket: &mut ActivitySocket,
+    expected: &str,
+    timeout: Duration,
+    matches: impl Fn(&Value) -> bool,
+) -> Value {
     use async_tungstenite::tungstenite::Message;
     use futures_util::StreamExt;
-    tokio::time::timeout(Duration::from_secs(5), async {
+    tokio::time::timeout(timeout, async {
         loop {
             let Message::Text(text) = socket.next().await.unwrap().unwrap() else {
                 panic!("activity stream closed before the expected event")
@@ -17,7 +26,9 @@ async fn activity_event(
             let value: Value = serde_json::from_str(&text).unwrap();
             assert!(value.get("sessionId").is_none());
             assert!(value.get("transcriptPath").is_none());
+            assert!(value.get("subagentId").is_none());
             assert!(!text.contains("private old history"));
+            assert!(!text.contains("private old subagent history"));
             if matches(&value) {
                 return value;
             }
@@ -278,7 +289,13 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         .await
         .unwrap();
         activity_event(&mut socket, "initial run_started", |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
+        activity_event(&mut socket, "subagent run_started", |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
         use std::io::Write;
+        let mut child = OpenOptions::new().append(true).open(subagents.join("child.jsonl")).unwrap();
+        writeln!(child, "{}", json!({"type":"user","message":{"role":"user","content":"private appended subagent input"}})).unwrap();
+        let delivered = activity_event(&mut socket, "subagent input", |value| value["eventType"] == "turn_start").await;
+        assert_eq!(delivered["pid"], harness.0.id());
+        assert_eq!(delivered["text"], "private appended subagent input");
         let mut appended = OpenOptions::new().append(true).open(&transcript).unwrap();
         writeln!(appended, "not valid json\n{{\"type\":\"user\",\"message\":null}}").unwrap();
         let text = "🦀".repeat(1030);
@@ -290,11 +307,21 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
             "ws://127.0.0.1:{port}/__devhost__/ws/agents/activity?chatTarget=project"
         )).await.unwrap();
         activity_event(&mut reconnected, "reconnected run_started", |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
+        activity_event(&mut reconnected, "reconnected subagent run_started", |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
         writeln!(appended, "{}", json!({"type":"user","message":{"role":"user","content":"private appended after reconnect"}})).unwrap();
         for stream in [&mut socket, &mut reconnected] {
             let delivered = activity_event(stream, "input after reconnect", |value| value["eventType"] == "turn_start").await;
             assert_eq!(delivered["text"], "private appended after reconnect");
             assert_eq!(delivered["pid"], harness.0.id());
+        }
+        let descriptor = sessions.join("native.json");
+        let mut changed: Value = serde_json::from_str(&fs::read_to_string(&descriptor).unwrap()).unwrap();
+        changed["startedAt"] = json!(1);
+        fs::write(&descriptor, changed.to_string()).unwrap();
+        // Discovery scans every five seconds; transcript polling remains bounded separately.
+        for stream in [&mut socket, &mut reconnected] {
+            let exited = activity_event_within(stream, "changed parent identity detaches activity", Duration::from_secs(10), |value| value["eventType"] == "run_exited" && value["pid"] == harness.0.id()).await;
+            assert!(exited.get("text").is_none());
         }
         reconnected.close(None).await.unwrap();
         unsafe {
@@ -322,6 +349,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
     let log = fs::read_to_string(project.join("stack.log")).unwrap();
     assert!(
         !log.contains("private old history")
+            && !log.contains("private appended subagent input")
             && !log.contains("private appended after reconnect")
             && !log.contains('🦀')
     );

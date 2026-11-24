@@ -1769,7 +1769,7 @@
       "failure": "Dead or changed process identity cannot stay attached.",
       "cleanup": "Stop watcher and join owned harness process.",
       "evidence": ["agents"],
-      "remaining": "Linux external comparisons discover a live harness with non-UTF-8 argv and reject a live PID with a stale start identity without signalling it. Retain final native-platform receipts; add changed-identity detachment while activity is attached.",
+      "remaining": "Shared external-CLI fixture rejects a live PID with a stale start identity, then changes identity while two activity clients are attached and requires run_exited on both without signalling the live foreign harness. Linux also discovers non-UTF-8 argv. Retain final native-platform receipts and dependency-integrated Go acceptance.",
       "status": "open"
     },
     {
@@ -1793,7 +1793,7 @@
       "failure": "Unknown target cannot broaden discovery scope.",
       "cleanup": "Stop watchers and all synthetic real process fixtures.",
       "evidence": ["agents", "agents-regression"],
-      "remaining": "External comparisons order waiting, working, unknown and idle root agents and exclude seeded subagent transcript metadata from the top-level list. Unknown targets are rejected by discovery, activity HTTP and WebSocket routes. Add live subagent transitions; retain final native-platform receipts and dependency-integrated Go acceptance.",
+      "remaining": "Shared external-CLI fixture orders waiting, working, unknown and idle root agents, excludes child metadata from the top-level list, observes child lifecycle and newly appended child activity without history or private IDs, and rejects unknown HTTP/WebSocket targets. Retain final native-platform receipts and dependency-integrated Go acceptance.",
       "status": "open"
     },
     {

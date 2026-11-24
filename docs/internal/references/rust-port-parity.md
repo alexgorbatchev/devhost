@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:07
+last_modified: 2026-11-24 10:11
 status: current
 ---
 
@@ -325,16 +325,17 @@ and checks discovery and activity HTTP/WebSocket contracts against real process
 identity and temporary harness storage. It checks state ordering, nested checkout
 scope, sibling-prefix and stale-identity exclusion, private identifiers, partial
 discovery failures with five-second cache expiry, unknown-target rejection,
-malformed transcript recovery, bounded multibyte activity, reconnect history
-suppression and shutdown without stopping foreign harness processes. Linux also
+malformed transcript recovery, bounded multibyte activity, subagent lifecycle
+and appended input, reconnect history suppression, changed-identity detachment
+on both open clients, and shutdown without stopping foreign harness processes. Linux also
 uses a harness with non-UTF-8 argv. Set
 `DEVHOST_STACK_TEST_BINARY` to the Go oracle executable to run the same scenarios
 against Go. Immediate input after the activity stream announces a session is a
 readiness assertion: preparing the initial transcript cursor afterward can lose
 that input when history is suppressed. The pinned Go watcher has this race;
 passing retries do not establish acceptance. Validate its dependency repair
-before accepting Go comparison receipts. Live subagent transitions and
-worktree-target activity still need shared executable acceptance.
+before accepting Go comparison receipts. Worktree-target activity still needs
+shared executable acceptance.
 
 ## Native completion and argument tests
 
