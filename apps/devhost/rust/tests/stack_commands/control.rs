@@ -1,5 +1,7 @@
 use super::*;
 
+#[path = "control/logs.rs"]
+mod logs;
 #[path = "control/resources.rs"]
 mod resources;
 
@@ -336,6 +338,7 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
         .build()
         .unwrap();
     io.block_on(async {
+        logs::verify(&project, &origin).await;
         let mut sockets = Vec::new();
         for path in ["health", "logs", "resources"] {
             let url = format!("{}/__devhost__/ws/{path}", origin.replacen("http:", "ws:", 1));

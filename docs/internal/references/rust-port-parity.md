@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:42
+last_modified: 2026-11-24 10:49
 status: current
 ---
 
@@ -249,6 +249,12 @@ fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
 250 ms minimum interval; frame counts do not establish sampling cadence because
 unchanged readings are deduplicated.
+
+The log fixture emits gated bursts of 1024 and 4096 real service stdout lines.
+Fresh connections retain exactly the last 512 entries in order. During the larger
+burst, one small-buffer client stops reading while another receives all entries
+in order and control requests remain responsive. This verifies bounded history
+and stream progress; it does not measure process memory consumption.
 
 For Linux cadence acceptance, trace the selected external executable's actual
 `read` and `pread64` calls with `strace -f -ttt -yy -P <path>`. Select

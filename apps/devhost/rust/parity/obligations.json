@@ -1385,7 +1385,7 @@
       "failure": "Slow clients cannot grow retention without bound.",
       "cleanup": "Drain bounded frames, close sockets and join broadcasters.",
       "evidence": ["control", "control-regression"],
-      "remaining": "Add differential bounded log retention and slow-client behavior.",
+      "remaining": "Linux external CLI acceptance verifies ordered 512-entry retention after 1024/4096-line bursts, an active reader alongside an unread small-buffer reader, responsive control requests and shutdown codes. Final native platform acceptance remains.",
       "status": "open"
     },
     {
