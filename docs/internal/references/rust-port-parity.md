@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:54
+last_modified: 2026-11-24 12:08
 status: current
 ---
 
@@ -265,6 +265,14 @@ fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
 250 ms minimum interval; frame counts do not establish sampling cadence because
 unchanged readings are deduplicated.
+
+The `control::pending::` fixtures hold real service shutdown and replacement
+HTTP health independently. A watched-file change marks the service dirty;
+restarting clears that flag. Stack snapshots report `starting` through both
+gates while health retains `restarting: true` until readiness succeeds. Invalid
+restart batches leave the service untouched, and a valid restart launches one
+replacement. Configuration and directory reads remain responsive during pending
+health.
 
 The `control::editor::` fixture checks all four editor selections and live
 enablement changes without restarting the service. Two clients receive cursor

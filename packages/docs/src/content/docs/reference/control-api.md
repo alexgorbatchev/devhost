@@ -65,6 +65,8 @@ The stack-directory routes `/__devhost__/stacks` and `/__devhost__/stacks/self` 
 
 Directory snapshots and configuration-file discovery remain available while a service restart waits for health. Configuration validation and saves wait for the lifecycle operation to finish.
 
+During a service restart, stack snapshots report `starting` while the old process stops and its replacement waits for health. The health stream keeps `restarting: true` until the replacement becomes ready.
+
 ### Status codes
 
 | Code                         | When                                                                                                                           |

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 11:05
+last_modified: 2026-11-24 12:08
 status: current
 ---
 
@@ -147,6 +147,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Detached startup with readiness, retained logs, failure cleanup with named causes, and an idempotent repeat through any path to the manifest                                                | `guides/stack-lifecycle.md`, "Keep a stack running after the terminal closes"; `reference/output.md`, "Detached start"; `reference/cli.md` | **No demo**                                      |
 | Find running stacks by URL, partial name, or manifest path through symlinks; stop every worktree of one repository                                                                          | `guides/stack-lifecycle.md`, "Stop a stack started elsewhere", "Stop every worktree of a repository"                                       | **No demo**                                      |
 | Inspect a running stack from any project subfolder (`devhost stack info`) with human summary and `AGENT=1` details, live service states, URLs, and readiness exit status                    | `guides/stack-lifecycle.md`, "Inspect a running stack"; `reference/cli.md`; `reference/output.md`, "Stack info"                            | **No demo**                                      |
+| Restart snapshots report starting through shutdown and replacement health; the health stream retains its restarting flag until readiness succeeds                                           | `reference/control-api.md`, "Private stack inspection"                                                                                     | **No demo**                                      |
 | Single-column compact React/shadcn stack directory with aligned service/status/URL columns, expandable TOML, filtering, and exited-owner exclusion                                          | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`, "Hostnames and DNS"                               | **No demo**                                      |
 | Customize the shared running-stack directory hostname and opt in to remote read access                                                                                                      | `guides/shared-managed-caddy-settings.md`, "Choose the stack directory hostname"                                                           | **No demo**                                      |
 | Project stack restart and global binary replacement. `restart-all` stops instances with a removed working directory and retains file sessions with an unavailable served directory.         | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"                                                                             | **No demo**                                      |

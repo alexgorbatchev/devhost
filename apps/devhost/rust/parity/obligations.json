@@ -849,7 +849,7 @@
       "failure": "Concurrent requests must not duplicate launches.",
       "cleanup": "Join requests and stop lazily launched children.",
       "evidence": ["lifecycle", "reload-regression", "recovery"],
-      "remaining": "Concurrent explicit start requests and responsive reads during pending health are compared; add dirty/restarting configuration and browser-driven start comparisons, then retain final native receipts.",
+      "remaining": "Concurrent explicit starts, responsive reads during pending health, dirty clearing and restart snapshot/health phases are compared; add browser-driven on-demand start comparisons and retain final native receipts.",
       "status": "open"
     },
     {

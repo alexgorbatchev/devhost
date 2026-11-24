@@ -60,7 +60,7 @@ pub(super) fn ready(origin: &str) {
     }
 }
 
-fn health(origin: &str) -> Value {
+pub(super) fn health(origin: &str) -> Value {
     use async_tungstenite::tungstenite::client::IntoClientRequest;
     let address: std::net::SocketAddr = origin.strip_prefix("http://").unwrap().parse().unwrap();
     let stream = std::net::TcpStream::connect_timeout(&address, Duration::from_secs(5)).unwrap();

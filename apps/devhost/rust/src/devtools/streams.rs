@@ -70,7 +70,7 @@ fn health_message(handle: &RuntimeHandle) -> Result<String, String> {
         if dirty.contains(&info.name) {
             value["dirty"] = json!(true);
         }
-        if info.state == "restarting" {
+        if info.restarting {
             value["restarting"] = json!(true);
         }
         if let Some(code) = info.exit_code {

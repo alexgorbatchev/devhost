@@ -1542,8 +1542,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/reference/control-api.md",
-      "blob": "d984b4f7d24b55798b40a0dae8dc8d6172183e94",
-      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences. Document responsive directory and file discovery during pending health while retaining lifecycle serialization for validation and saves."
+      "blob": "15f494bf32ea4dce827666a2bd0ac0477b9ab753",
+      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences. Document responsive directory and file discovery during pending health while retaining lifecycle serialization for validation and saves. Shared gated native comparisons verify starting snapshots with the health restarting flag retained until replacement readiness."
     },
     {
       "path": "packages/docs/src/content/docs/reference/output.md",

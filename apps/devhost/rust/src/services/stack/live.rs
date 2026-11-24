@@ -20,6 +20,8 @@ pub struct StackSnapshot {
 pub struct ServiceInfo {
     pub name: String,
     pub state: String,
+    #[serde(skip)]
+    pub(crate) restarting: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub primary: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -459,6 +461,8 @@ impl LiveState {
                     scope.spawn(move || {
                         let mut info = ServiceInfo {
                             name: name.clone(),
+                            restarting: state
+                                .is_some_and(|state| matches!(state.phase, Phase::Restarting)),
                             primary: name == manifest.primary_service,
                             port: service.port,
                             urls: read_service_urls(service, manifest.caddy.https_port),
@@ -472,8 +476,7 @@ impl LiveState {
                             "starting"
                         } else {
                             match state.map(|state| &state.phase) {
-                                Some(Phase::Starting) => "starting",
-                                Some(Phase::Restarting) => "restarting",
+                                Some(Phase::Starting | Phase::Restarting) => "starting",
                                 phase => {
                                     if let Some(code) = exit {
                                         info.exit_code = Some(code);
@@ -589,8 +592,19 @@ mod tests {
         assert!(snapshot.services[0].primary);
         assert_eq!(snapshot.services[1].state, "not-started");
         live.starting("web", true);
+        let restarting = live.snapshot().unwrap();
+        assert_eq!(restarting.services[0].state, "starting");
+        assert!(restarting.services[0].restarting);
         live.starting("web", false);
-        assert_eq!(live.snapshot().unwrap().services[0].state, "restarting");
+        let starting = live.snapshot().unwrap();
+        assert_eq!(starting.services[0].state, "starting");
+        assert!(starting.services[0].restarting);
+        assert!(
+            !serde_json::to_value(&starting).unwrap()["services"][0]
+                .as_object()
+                .unwrap()
+                .contains_key("restarting")
+        );
         live.ready("web");
         assert_eq!(live.snapshot().unwrap().services[0].state, "unhealthy");
         live.failed("web", "health failed");
@@ -744,7 +758,9 @@ mod tests {
         let (_connection, _) = listener.accept().unwrap();
         live.starting("web", true);
         assert!(started.elapsed() < Duration::from_millis(500));
-        assert_eq!(live.snapshot().unwrap().services[0].state, "restarting");
+        let restarting = live.snapshot().unwrap();
+        assert_eq!(restarting.services[0].state, "starting");
+        assert!(restarting.services[0].restarting);
         assert_eq!(worker.join().unwrap().services[0].state, "unhealthy");
         assert!(started.elapsed() < Duration::from_secs(2));
     }
