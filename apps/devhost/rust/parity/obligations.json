@@ -428,6 +428,13 @@
       "kind": "native-cli",
       "selector": "recovery::",
       "qualification": "Run identical actual-CLI fixtures against unchanged Go, repaired Go and optimized Rust; final native receipts remain required."
+    },
+    {
+      "id": "source-assets",
+      "path": "apps/devhost/rust/tests/stack_commands/documents/source.rs",
+      "kind": "shared-cli",
+      "selector": "cargo test --locked --test stack_commands documents::source::",
+      "qualification": "Explicit source checkout discovery, serialized stale/missing bundle rebuilds, build failure and missing-output retry, source-only preview access and read-only actions; stamped checkout fallback and hostile payloads remain separate."
     }
   ],
   "cases": [
@@ -1507,8 +1514,8 @@
       "effect": "Instance config is no-store; source assets reflect allowed development input.",
       "failure": "Missing source path cannot expose arbitrary files.",
       "cleanup": "Stop stack before deleting development fixture.",
-      "evidence": ["assets", "control", "asset-regression"],
-      "remaining": "Add source-mode asset refresh differential case.",
+      "evidence": ["assets", "control", "asset-regression", "source-assets"],
+      "remaining": "None beyond native platform acceptance.",
       "status": "open"
     },
     {
@@ -1519,8 +1526,8 @@
       "effect": "Only valid checkout supplies live assets and source behavior.",
       "failure": "Unusable development source reports fallback/error per contract.",
       "cleanup": "Remove only fixture checkout and owned generated bundle.",
-      "evidence": ["asset-regression"],
-      "remaining": "Add external-CLI source discovery/rebuild comparison.",
+      "evidence": ["asset-regression", "source-assets"],
+      "remaining": "Compare stamped source checkout selection and unavailable stamped checkout fallback through the CLI; explicit environment checkout rebuild and rejection cases are shared.",
       "status": "open"
     },
     {
@@ -1579,8 +1586,8 @@
       "effect": "Preview access is limited correctly; embedded JSON escapes script boundaries.",
       "failure": "Production build or unauthorized path cannot expose source previews.",
       "cleanup": "Stop temporary source-mode server.",
-      "evidence": ["document-regression", "shared-pages"],
-      "remaining": "Add external-CLI preview access and hostile payload comparison.",
+      "evidence": ["document-regression", "shared-pages", "source-assets"],
+      "remaining": "Add external-CLI hostile payload comparison; source-only access and read-only preview actions are shared.",
       "status": "open"
     },
     {

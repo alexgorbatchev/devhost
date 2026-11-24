@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 04:00
+last_modified: 2026-11-24 07:13
 status: current
 ---
 
@@ -163,7 +163,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Start part of a stack by naming services                                                                                                                                                    | `guides/stack-lifecycle.md`, "Start part of a stack"                                                                                       | No demo                                          |
 | Named service groups                                                                                                                                                                        | `guides/stack-lifecycle.md`, "Named service groups"                                                                                        | No demo                                          |
 | Start a stopped service from the Services panel                                                                                                                                             | `guides/stack-lifecycle.md`, "Starting the rest later"; `guides/devtools.md`, "Services panel"                                             | No demo                                          |
-| shadcn error and recovery pages; HTML fallback; in-place refresh; gallery                                                                                                                   | `stacks/recovery.md`; `development/page-previews.md`                                                                                       | No demo                                          |
+| shadcn error and recovery pages; HTML fallback; in-place refresh; source-only Go/Rust preview gallery with read-only actions                                                                | `stacks/recovery.md`; `development/page-previews.md`                                                                                       | No demo                                          |
 | Configuration hot reload, applied and rejected                                                                                                                                              | README, "Why devhost"; `stacks/hot-reload.md`; `guides/troubleshooting.md`, "Manifest changes rejected"                                    | `troubleshooting` step-4 to step-9               |
 | Every manifest setting reloads: name, devtools, worktrees, killZombies                                                                                                                      | `stacks/hot-reload.md`, "What restarts", "Settings that apply in place"                                                                    | No demo                                          |
 | Unmanaged services, such as a Docker container                                                                                                                                              | `guides/docker-backed-services.md`                                                                                                         | `docker-backed-services` step-1 to step-9        |

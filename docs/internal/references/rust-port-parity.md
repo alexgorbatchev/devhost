@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 06:31
+last_modified: 2026-11-24 06:57
 status: current
 ---
 
@@ -214,6 +214,15 @@ byte units and percentage relationships. Live enablement changes remove disabled
 fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
 250 ms minimum interval; they do not establish sampling cadence.
+
+`just rust test --test stack_commands documents::source::` compares explicit
+source-checkout selection through the live CLI. Missing and stale bundles rebuild
+through the real `just` recipe; fresh assets reuse their bundle, concurrent
+requests serialize one build, and failed or missing build output retries on the
+next request. The same fixture checks invalid checkout rejection, development
+preview access, read-only preview actions, and continued live-stack readiness.
+The embedded-asset fixture verifies that production mode returns 404 for previews.
+Stamped-checkout fallback and hostile preview payloads require separate evidence.
 
 `just rust test --test devtools_assets_injection` checks native document
 injection and recovery-page proxying. The recovery callback owns its own Tokio

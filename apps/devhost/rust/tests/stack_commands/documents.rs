@@ -1,6 +1,9 @@
 use super::*;
 use std::io::{Read, Write};
 
+#[path = "documents/source.rs"]
+mod source;
+
 pub(super) struct Backend {
     pub(super) port: u16,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
@@ -305,6 +308,7 @@ fn embedded_assets_obey_version_compression_condition_and_method_contracts() {
     let _process = runtime.start_serve();
     wait_until(|| runtime.serve_response().is_some());
     let origin = control::origin(&runtime, "serve-restart-serve.localhost");
+    assert_eq!(control::get(&origin, "pages/").status(), 404);
     let mut config = client()
         .get(format!("{origin}/__devhost__/config.json"))
         .call()

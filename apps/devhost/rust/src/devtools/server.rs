@@ -56,6 +56,7 @@ impl ControlServer {
             serde_json::to_vec(&super::configuration::injected_config(&handle))
                 .map_err(|error| error.to_string())?,
         );
+        let previews = super::page_preview::preview_routes(store.clone());
         let assets = super::assets::asset_routes(store.clone()).layer(
             middleware::from_fn_with_state((handle.clone(), store), serve_assets),
         );
@@ -125,6 +126,7 @@ impl ControlServer {
             )
             .with_state(handle.clone())
             .merge(assets)
+            .merge(previews)
             .layer(middleware::from_fn_with_state(handle.clone(), json_body));
         let poller_stop = handle.live.events.stopping.clone();
         let agents = handle.agents.clone();
