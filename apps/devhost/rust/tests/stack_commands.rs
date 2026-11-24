@@ -41,6 +41,8 @@ mod files;
 mod info;
 #[path = "stack_commands/lifecycle.rs"]
 mod lifecycle;
+#[path = "stack_commands/processes.rs"]
+mod processes;
 #[path = "stack_commands/serve.rs"]
 mod serve;
 #[path = "stack_commands/worktrees.rs"]

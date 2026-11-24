@@ -1,7 +1,7 @@
 use super::control::{body, client, get, origin, post};
 use super::*;
 
-fn launch(runtime: &Runtime, project: &Path, selections: &[&str]) -> Process {
+pub(super) fn launch(runtime: &Runtime, project: &Path, selections: &[&str]) -> Process {
     let log = File::create(project.join("lifecycle.log")).unwrap();
     let mut command = runtime.command();
     command
@@ -37,7 +37,7 @@ fn wait_log(project: &Path, text: &str) {
     }
 }
 
-fn ready(origin: &str) {
+pub(super) fn ready(origin: &str) {
     wait_until(|| {
         let snapshot = body(&mut get(origin, "stack-info"));
         snapshot["starting"] == false
@@ -75,7 +75,7 @@ fn health(origin: &str) -> Value {
     snapshot
 }
 
-fn stop(runtime: &Runtime, project: &Path, process: &mut Process) {
+pub(super) fn stop(runtime: &Runtime, project: &Path, process: &mut Process) {
     let output = runtime
         .command()
         .current_dir(project)

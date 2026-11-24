@@ -9,8 +9,13 @@ pub fn reserve_listener() -> TcpListener {
     const FIRST: u16 = 10240;
     const LAST: u16 = 32768;
     static NEXT: OnceLock<Mutex<u16>> = OnceLock::new();
-    let next = NEXT
-        .get_or_init(|| Mutex::new(FIRST + (std::process::id() % u32::from(LAST - FIRST)) as u16));
+    let next = NEXT.get_or_init(|| {
+        // Adjacent test-process PIDs must not start overlapping sequences while
+        // their subprocess listeners are between reservation and bind.
+        let mut seed = [0_u8; 2];
+        getrandom::fill(&mut seed).unwrap();
+        Mutex::new(FIRST + u16::from_ne_bytes(seed) % (LAST - FIRST))
+    });
     let ephemeral = std::fs::read_to_string("/proc/sys/net/ipv4/ip_local_port_range")
         .ok()
         .and_then(|range| {
