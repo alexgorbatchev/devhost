@@ -1604,7 +1604,7 @@
       "failure": "Out-of-range request is 416 without unrelated file data.",
       "cleanup": "Close all bodies/sockets and stop file session.",
       "evidence": ["files"],
-      "remaining": "Expand comparison to multipart/precondition combinations covered only by Rust regression.",
+      "remaining": "Multipart, malformed/oversized/overlapping ranges, GET/HEAD and precondition precedence run through each external CLI; fresh native platform acceptance remains.",
       "status": "open"
     },
     {

@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "files/ranges.rs"]
+mod ranges;
+
 fn client() -> ureq::Agent {
     ureq::Agent::config_builder()
         .proxy(None)
@@ -38,24 +41,7 @@ fn file_sessions_preserve_http_ranges_conditions_and_live_content() {
     let modified = response.headers()["last-modified"].clone();
     assert_eq!(response.body_mut().read_to_string().unwrap(), "0123456789");
     let url = format!("http://127.0.0.1:{}/note.txt", runtime.settings.http_port);
-    for (range, status, content) in [
-        ("bytes=2-5", 206, "2345"),
-        ("bytes=-3", 206, "789"),
-        ("bytes=99-100", 416, "invalid range: failed to overlap\n"),
-    ] {
-        let mut response = client()
-            .get(&url)
-            .header("Host", "restart-serve.localhost")
-            .header("Range", range)
-            .call()
-            .unwrap();
-        assert_eq!(response.status(), status, "{range}");
-        assert_eq!(
-            response.body_mut().read_to_string().unwrap(),
-            content,
-            "{range}"
-        );
-    }
+    ranges::check(&runtime, modified.to_str().unwrap());
     let mut response = client()
         .get(&url)
         .header("Host", "restart-serve.localhost")

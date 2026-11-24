@@ -242,6 +242,11 @@ Port reservations shut down their sockets before close, and file-server shutdown
 releases the listening socket across inherited descriptors. Close-on-exec alone
 does not release those copies while a child is still preparing to execute.
 
+The shared `stack_commands files::` HTTP checks compare live file edits, MIME,
+GET/HEAD, malformed and overflowing ranges, multipart boundaries and lengths,
+and conditional-request precedence through each selected CLI. Preconditions also
+run with range requests; failed and unchanged responses must omit file data.
+
 ## Native agent activity tests
 
 `just rust test --lib devtools::` checks shared discovery caching,
