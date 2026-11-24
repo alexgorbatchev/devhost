@@ -3,6 +3,66 @@ use super::*;
 #[path = "source/stamped.rs"]
 mod stamped;
 
+fn page_data(document: &str) -> Value {
+    let marker = "<script id=\"devhost-status-data\" type=\"application/json\">";
+    assert_eq!(document.matches(marker).count(), 1);
+    let payload = document
+        .split_once(marker)
+        .unwrap()
+        .1
+        .split_once("</script>")
+        .unwrap()
+        .0;
+    for unsafe_character in ['<', '>', '&', '\u{2028}', '\u{2029}'] {
+        assert!(
+            !payload.contains(unsafe_character),
+            "unescaped script-data character {unsafe_character:?}"
+        );
+    }
+    assert!(!document.contains("<img src=x onerror=alert('preview-injection')>"));
+    serde_json::from_str(payload).unwrap()
+}
+
+fn hostile_previews(checkout: &Path, origin: &str) {
+    let files = checkout.join("demos/pages/files");
+    fs::create_dir_all(&files).unwrap();
+    let filename = "<img src=x onerror=alert('preview-injection')> & \"quoted\".md";
+    let source = "# Hostile document\n\n</script><img src=x onerror=alert('preview-injection')> & \"quoted\"\n\u{2028}\u{2029}\n[Unsafe](javascript:alert(1))\n";
+    fs::write(files.join(filename), source).unwrap();
+    fs::write(files.join(".private.md"), "private preview source").unwrap();
+    fs::write(checkout.join("private.md"), "private preview source").unwrap();
+    symlink(checkout.join("private.md"), files.join("escape.md")).unwrap();
+    let mut response = control::get(origin, "pages/files/");
+    assert_eq!(response.status(), 200);
+    assert_eq!(response.headers()["cache-control"], "no-cache");
+    let listing = page_data(&response.body_mut().read_to_string().unwrap());
+    let entries = listing["files"]["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0]["name"], filename);
+    let href = entries[0]["href"].as_str().unwrap();
+    assert!(!href.contains(['<', '>', '"', ' ']));
+    let path = format!("pages/files/{href}");
+    let mut response = control::get(origin, &path);
+    assert_eq!(response.status(), 200);
+    let page = page_data(&response.body_mut().read_to_string().unwrap());
+    assert_eq!(page["title"], format!("/{filename}"));
+    assert_eq!(page["files"]["source"], source);
+    assert_eq!(page["files"]["markdown"], true);
+    assert_eq!(page["files"]["breadcrumbs"][1]["name"], filename);
+    assert_eq!(control::post(origin, &path, json!({})).status(), 405);
+    for path in ["pages/files/.private.md", "pages/files/escape.md"] {
+        let mut response = control::get(origin, path);
+        assert_eq!(response.status(), 404, "{path}");
+        assert!(
+            !response
+                .body_mut()
+                .read_to_string()
+                .unwrap()
+                .contains("private preview source")
+        );
+    }
+}
+
 fn script(origin: &str) -> String {
     let mut response = control::get(origin, "inject.js");
     assert_eq!(response.status(), 200);
@@ -152,6 +212,7 @@ fn source_checkout_rebuilds_serially_retries_failures_and_limits_preview_mutatio
         409
     );
     assert_eq!(control::get(&origin, "pages/missing").status(), 404);
+    hostile_previews(&checkout, &origin);
     lifecycle::ready(&origin);
     lifecycle::stop(&runtime, &project, &mut process);
     fs::remove_file(app.join("justfile")).unwrap();

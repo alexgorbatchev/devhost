@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:35
+last_modified: 2026-11-24 11:39
 status: current
 ---
 
@@ -258,6 +258,14 @@ browser editor feature leaves cursor transport available. Nonempty locators are
 transported without backend filesystem validation. Neither backend starts an
 editor process: the shared browser UI navigates to the selected editor's URL
 handler. Native browser and OS-handler acceptance is a separate boundary.
+
+The source-checkout fixture requests real file previews containing hostile
+filenames and Markdown with script-closing tags, markup, quotes and JavaScript
+line separators. Embedded page data must round-trip the title, breadcrumb,
+listing entry and source while escaping script boundaries and fallback markup.
+Private files and escaping symlinks stay inaccessible, and preview writes are
+rejected. The embedded-assets fixture separately rejects production previews.
+These HTTP checks do not establish browser script-execution safety.
 
 The `proxy::routes::` fixture compares native HTTP and HTTPS routing over host
 aliases, exact paths, wildcard boundaries, root fallback, and an isolated second
