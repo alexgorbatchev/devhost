@@ -3,15 +3,30 @@
 with open(__file__ + ".boot", "w") as boot:
     boot.write("interpreter entered before imports\n")
 
+
+def phase(value):
+    with open(__file__ + ".boot", "a") as boot:
+        boot.write(value + "\n")
+
+
+phase("import json")
 import json
+phase("import os")
 import os
+phase("import pathlib")
 import pathlib
+phase("import sys")
 import sys
+phase("import signal")
 import signal
 
+phase("identify harness")
 claude = pathlib.Path(sys.argv[0]).name == "claude"
+phase("read scenario")
 scenario = pathlib.Path("scenario").read_text()
+phase("publish readiness")
 pathlib.Path("claude-ready" if claude else "codex-ready").touch()
+phase("protocol ready")
 turn = 0
 waiting = None
 if scenario == "ignore-term":

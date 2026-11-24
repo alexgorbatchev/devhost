@@ -76,9 +76,9 @@ impl Fixture {
                     })
                     .into();
                 panic!(
-                    "{method} {path} failed: {error}; scenario={:?}; interpreter entered={:?}; peer ready={:?}; native input={protocol:?}",
+                    "{method} {path} failed: {error}; scenario={:?}; startup phases={:?}; peer ready={:?}; native input={protocol:?}",
                     fs::read_to_string(self.root.path().join("scenario")),
-                    ["codex.boot", "claude.boot"].map(|name| (name, self.root.path().join(name).exists())),
+                    ["codex.boot", "claude.boot"].map(|name| (name, fs::read_to_string(self.root.path().join(name)))),
                     ["codex-ready", "claude-ready"].map(|name| (name, self.root.path().join(name).exists()))
                 );
             });
