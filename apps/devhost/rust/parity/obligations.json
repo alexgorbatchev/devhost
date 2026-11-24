@@ -1228,8 +1228,8 @@
       "effect": "Rewritten local origin and devtools origin preserve intended routing.",
       "failure": "Spoofed control origin is rejected.",
       "cleanup": "Join proxy, control and backend listeners.",
-      "evidence": ["documents", "control", "relay"],
-      "remaining": "Add explicit local-origin rewriting disable/enable toggle comparison.",
+      "evidence": ["documents", "control", "relay", "proxy-origins"],
+      "remaining": "Linux external CLI comparisons cover both proxyLocalOrigin settings over four IPv4/IPv6 bind hosts, direct/document Host and Origin headers, forwarded host, foreign-origin rejection and external backend ownership. Final native and external relay acceptance remain.",
       "status": "open"
     },
     {
