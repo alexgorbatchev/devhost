@@ -1,13 +1,14 @@
 use super::control::{body, client, get, origin, post};
 use super::lifecycle::{launch, ready, stop};
 use super::*;
+use std::io::Read;
 
 fn project(runtime: &Runtime, name: &str) -> PathBuf {
     let project = runtime.root.path().join(name);
     fs::create_dir_all(project.join("public")).unwrap();
     fs::write(project.join("public/note.txt"), "retained keeper").unwrap();
     fs::write(project.join("note.txt"), "recovered worker").unwrap();
-    fs::write(project.join("worker.py"), "import http.server, os, pathlib, time\npid = os.getpid()\nwith open('launches', 'a') as output:\n output.write(str(pid) + '\\n')\nprint('worker readiness pending', flush=True)\nwhile not pathlib.Path('healthy').exists(): time.sleep(0.01)\nserver = http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler)\nserver.serve_forever()\n").unwrap();
+    fs::write(project.join("worker.py"), "import http.server, os, pathlib, socketserver, time\npid = os.getpid()\nwith open('launches', 'a') as output:\n output.write(str(pid) + '\\n')\nprint('worker readiness pending', flush=True)\nwhile not pathlib.Path('healthy').exists(): time.sleep(0.01)\nsocketserver.TCPServer.allow_reuse_address = True\nserver = socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler)\nserver.serve_forever()\n").unwrap();
     fs::write(project.join("devhost.toml"), format!("name={name:?}\n[worktrees]\nenabled=false\n[services.keeper]\nserve='public'\nhost='{name}-keeper'\n[services.worker]\ncommand=['python3','worker.py']\nport='auto'\nhost='{name}'\n[services.worker.health]\ntimeout=1000\ninterval=25\n")).unwrap();
     project
 }
@@ -45,6 +46,45 @@ fn routed(runtime: &Runtime, name: &str, action: &str) -> ureq::http::Response<u
                     .unwrap_or_default()
             )
         })
+}
+
+#[track_caller]
+fn response_text(
+    runtime: &Runtime,
+    name: &str,
+    response: &mut ureq::http::Response<ureq::Body>,
+) -> String {
+    let caller = std::panic::Location::caller();
+    let started = Instant::now();
+    let status = response.status();
+    let headers = response.headers().clone();
+    let mut text = String::new();
+    response
+        .body_mut()
+        .with_config()
+        .limit(10 * 1024 * 1024)
+        .lossy_utf8(true)
+        .reader()
+        .read_to_string(&mut text)
+        .unwrap_or_else(|error| {
+            panic!(
+                "recovery body for {name} at {caller} failed after {:?}: {error}; status: {status}; headers: {headers:?}; partial body: {text:?}; lifecycle: {}; Caddy: {}",
+                started.elapsed(),
+                fs::read_to_string(runtime.root.path().join(name).join("lifecycle.log"))
+                    .unwrap_or_default(),
+                fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log"))
+                    .unwrap_or_default()
+            )
+        });
+    text
+}
+
+#[track_caller]
+fn routed_status(runtime: &Runtime, name: &str) -> Value {
+    let text = response_text(runtime, name, &mut routed(runtime, name, "status"));
+    serde_json::from_str(&text).unwrap_or_else(|error| {
+        panic!("recovery status for {name} is invalid JSON: {error}; body: {text:?}")
+    })
 }
 
 fn launches(project: &Path) -> Vec<i32> {
@@ -89,11 +129,11 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
     let origin = control_origin(&runtime, name);
     wait_until(|| {
         let mut response = routed(&runtime, name, "status");
-        let text = response.body_mut().read_to_string().unwrap();
+        let text = response_text(&runtime, name, &mut response);
         serde_json::from_str::<Value>(&text)
             .is_ok_and(|status| status["phase"] == "unavailable" && status["canRestart"] == true)
     });
-    let status = body(&mut routed(&runtime, name, "status"));
+    let status = routed_status(&runtime, name);
     assert_eq!(status["title"], "worker could not start", "{status}");
     assert!(
         status["message"]
@@ -105,7 +145,10 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
     let mut probe = routed(&runtime, name, "probe");
     assert_eq!(probe.status(), 503);
     assert_eq!(probe.headers()["cache-control"], "no-store");
-    assert_eq!(body(&mut probe)["phase"], "unavailable");
+    assert_eq!(
+        serde_json::from_str::<Value>(&response_text(&runtime, name, &mut probe)).unwrap()["phase"],
+        "unavailable"
+    );
     assert_eq!(launches(&project).len(), 1);
     assert!(!procid::is_process_alive(launches(&project)[0]));
     assert_eq!(
@@ -114,19 +157,23 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
     );
 
     fs::write(project.join("healthy"), "ready").unwrap();
-    assert_eq!(restart(&origin, &project).status(), 200);
-    ready(&origin);
+    let mut restarted = restart(&origin, &project);
     assert_eq!(
-        body(&mut routed(&runtime, name, "status"))["phase"],
-        "ready"
+        restarted.status(),
+        200,
+        "restart response: {}; lifecycle: {}",
+        response_text(&runtime, name, &mut restarted),
+        fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default()
     );
+    ready(&origin);
+    assert_eq!(routed_status(&runtime, name)["phase"], "ready");
     assert_eq!(launches(&project).len(), 2);
     let crashed = launches(&project)[1];
     // SAFETY: this PID was published by the live service owned by this fixture.
     assert_eq!(unsafe { libc::kill(crashed, libc::SIGKILL) }, 0);
-    wait_until(|| body(&mut routed(&runtime, name, "status"))["title"] == "worker exited");
+    wait_until(|| routed_status(&runtime, name)["title"] == "worker exited");
     for _ in 0..3 {
-        let status = body(&mut routed(&runtime, name, "status"));
+        let status = routed_status(&runtime, name);
         assert!(
             status["message"].as_str().unwrap().contains("137"),
             "{status}"
@@ -146,12 +193,16 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
 
     fs::remove_file(project.join("healthy")).unwrap();
     assert!(restart(&origin, &project).status().is_server_error());
-    assert_eq!(
-        body(&mut routed(&runtime, name, "status"))["canRestart"],
-        true
-    );
+    assert_eq!(routed_status(&runtime, name)["canRestart"], true);
     fs::write(project.join("healthy"), "ready").unwrap();
-    assert_eq!(restart(&origin, &project).status(), 200);
+    let mut restarted = restart(&origin, &project);
+    assert_eq!(
+        restarted.status(),
+        200,
+        "restart response: {}; lifecycle: {}",
+        response_text(&runtime, name, &mut restarted),
+        fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default()
+    );
     ready(&origin);
     assert_eq!(launches(&project).len(), 4);
     stop(&runtime, &project, &mut process);
@@ -210,10 +261,7 @@ fn concurrent_start_requests_launch_an_unselected_service_once() {
     );
     ready(&origin);
     assert_eq!(launches(&project).len(), 1);
-    assert_eq!(
-        body(&mut routed(&runtime, name, "status"))["phase"],
-        "ready"
-    );
+    assert_eq!(routed_status(&runtime, name)["phase"], "ready");
     stop(&runtime, &project, &mut process);
     assert!(!procid::is_process_alive(launches(&project)[0]));
 }

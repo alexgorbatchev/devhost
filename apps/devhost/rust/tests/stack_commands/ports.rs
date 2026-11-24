@@ -2,7 +2,7 @@ use super::control::{body, client, get, origin};
 use super::lifecycle::{launch, stop};
 use super::*;
 
-const SERVER: &str = r#"import http.server, json, os, pathlib, socket, sys
+const SERVER: &str = r#"import http.server, json, os, pathlib, socket, socketserver, sys
 root = pathlib.Path.cwd()
 port = int(os.environ['PORT'])
 trace = root/'attempts.jsonl'
@@ -24,7 +24,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200); self.end_headers(); self.wfile.write(b'assigned port backend')
     def log_message(self,*args): pass
-http.server.HTTPServer(('127.0.0.1',port),Handler).serve_forever()
+socketserver.TCPServer.allow_reuse_address = True
+socketserver.TCPServer(('127.0.0.1',port),Handler).serve_forever()
 "#;
 
 enum Collision {
@@ -164,7 +165,18 @@ fn run_case(case: Collision) {
         socket.set_reuse_address(true).unwrap();
         socket
             .bind(&std::net::SocketAddr::from(([127, 0, 0, 1], port)).into())
-            .unwrap();
+            .unwrap_or_else(|error| {
+                let address = format!("0100007F:{port:04X}");
+                let connections = fs::read_to_string("/proc/net/tcp")
+                    .unwrap_or_default()
+                    .lines()
+                    .filter(|line| line.contains(&address))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                panic!(
+                    "{name}: port {port} was not reusable after stopping: {error}; attempts={attempts:?}; connections={connections}; lifecycle={log}"
+                );
+            });
         socket.listen(1).unwrap();
     }
 }

@@ -142,7 +142,7 @@ fn shared_settings_saved_during_service_startup_are_applied_after_readiness() {
     files(root);
     fs::write(
         root.join("project/public/server.py"),
-        "import http.server, os, pathlib, time\nprint('waiting for startup', flush=True)\nwhile not pathlib.Path('../../startup.gate').exists():\n    time.sleep(0.01)\nhttp.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n",
+        "import http.server, os, pathlib, socketserver, time\nprint('waiting for startup', flush=True)\nwhile not pathlib.Path('../../startup.gate').exists():\n    time.sleep(0.01)\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n",
     )
     .unwrap();
     write_manifest(
@@ -180,7 +180,7 @@ fn native_watches_restart_requests_reload_and_failed_replacement_recovery() {
     let caddy = LiveCaddyGuard::start(root);
     files(root);
     fs::create_dir_all(root.join("project/public/node_modules")).unwrap();
-    let command = "command = ['python3', '-c', \"import http.server, os; http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\"]";
+    let command = "command = ['python3', '-c', \"import http.server, os, socketserver; socketserver.TCPServer.allow_reuse_address = True; socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\"]";
     let original = format!(
         "name = 'runtime'\n[services.files]\n{command}\ncwd = 'public'\nwatch = ['.']\nport = 'auto'\nhost = 'runtime.localhost'\n"
     );
@@ -442,7 +442,7 @@ fn simultaneous_changes_restart_dependents_and_preserve_unaffected_services() {
     let script = root.join("project/server.py");
     fs::write(
         &script,
-        r#"import http.server, os
+        r#"import http.server, os, socketserver
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         body = (str(os.getpid()) + ':' + os.environ.get('TOKEN', '')).encode()
@@ -450,7 +450,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), Handler).serve_forever()
+socketserver.TCPServer.allow_reuse_address = True
+socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), Handler).serve_forever()
 "#,
     )
     .unwrap();

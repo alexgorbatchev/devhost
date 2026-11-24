@@ -1,6 +1,6 @@
 use super::*;
 
-const SERVER: &str = r#"import http.server, json, pathlib, sys
+const SERVER: &str = r#"import http.server, json, pathlib, socketserver, sys
 pathlib.Path('arguments.json').write_text(json.dumps(sys.argv[1:]))
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
@@ -8,7 +8,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200); self.send_header('Content-Type', 'text/plain'); self.end_headers(); self.wfile.write(b'argument boundaries preserved')
     def log_message(self, *args): pass
-http.server.HTTPServer(('127.0.0.1', 0), Handler).serve_forever()
+socketserver.TCPServer.allow_reuse_address = True
+socketserver.TCPServer(('127.0.0.1', 0), Handler).serve_forever()
 "#;
 
 fn repository(directory: &Path, remote: Option<&str>) {

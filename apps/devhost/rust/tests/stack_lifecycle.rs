@@ -511,7 +511,7 @@ if os.path.exists(p):
     let server_script = project.join("server.py");
     fs::write(
         &server_script,
-        r#"import http.server, os, subprocess, sys
+        r#"import http.server, os, socketserver, subprocess, sys
 port = int(os.environ["PORT"])
 label = sys.argv[1]
 if len(sys.argv) > 2:
@@ -528,7 +528,8 @@ class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 print(f"{label}-started", flush=True)
-http.server.HTTPServer(("127.0.0.1", port), H).serve_forever()
+socketserver.TCPServer.allow_reuse_address = True
+socketserver.TCPServer(("127.0.0.1", port), H).serve_forever()
 "#,
     )
     .unwrap();
@@ -776,7 +777,7 @@ fn auto_port_collision_idle_timeout_unexpected_exit_and_worktree_stop() {
         r#"name = "retry-demo"
 
 [services.app]
-command = ["python3", "-c", "import http.server, os; http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.BaseHTTPRequestHandler).serve_forever()"]
+command = ["python3", "-c", "import http.server, os, socketserver; socketserver.TCPServer.allow_reuse_address = True; socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.BaseHTTPRequestHandler).serve_forever()"]
 port = "auto"
 host = "retry-app"
 [services.app.health]

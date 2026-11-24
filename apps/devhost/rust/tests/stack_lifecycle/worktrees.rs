@@ -239,7 +239,7 @@ fn failed_rollback_stops_the_group_until_an_explicit_worktree_recovery() {
     let caddy = LiveCaddyGuard::start(root);
     let (project, linked, _) = repository(root);
     let body = "name = 'runtime'\n[services.api]\ncommand = ['python3', '-u', 'server.py']\ncwd = 'api'\nport = 'auto'\nhost = 'api.localhost'\nhealth.interval = 20\nhealth.timeout = 500\n[services.web]\ncommand = ['python3', '-u', 'server.py']\ncwd = 'web'\nport = 'auto'\nhost = 'web.localhost'\nhealth.interval = 20\nhealth.timeout = 500\ndependsOn = ['api']\n";
-    let script = "import http.server, os, pathlib, sys\nif pathlib.Path('../poison').exists():\n    pathlib.Path(pathlib.Path('../poison').read_text()).touch()\n    sys.exit(7)\nif pathlib.Path('../fail').exists():\n    sys.exit(8)\nhttp.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n";
+    let script = "import http.server, os, pathlib, socketserver, sys\nif pathlib.Path('../poison').exists():\n    pathlib.Path(pathlib.Path('../poison').read_text()).touch()\n    sys.exit(7)\nif pathlib.Path('../fail').exists():\n    sys.exit(8)\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n";
     for checkout in [&project, &linked] {
         fs::write(checkout.join("devhost.toml"), body).unwrap();
         for name in ["api", "web"] {
@@ -303,7 +303,7 @@ fn accepted_checkout_survives_a_retired_claim_cleanup_failure() {
         .join("routes/.host-claims/api.localhost.json");
     let original = fs::read(&record).unwrap();
     let command = format!(
-        "printf malformed > '{}'; exec python3 -m http.server \"$PORT\" --bind 127.0.0.1",
+        "printf malformed > '{}'; exec python3 -c \"import http.server, os, socketserver; socketserver.TCPServer.allow_reuse_address = True; socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\"",
         record.display()
     );
     let command = serde_json::to_string(&["sh", "-c", &command]).unwrap();

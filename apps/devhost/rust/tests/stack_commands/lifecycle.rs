@@ -37,17 +37,27 @@ fn wait_log(project: &Path, text: &str) {
     }
 }
 
+#[track_caller]
 pub(super) fn ready(origin: &str) {
-    wait_until(|| {
+    let deadline = Instant::now() + Duration::from_secs(15);
+    loop {
         let snapshot = body(&mut get(origin, "stack-info"));
-        snapshot["starting"] == false
+        if snapshot["starting"] == false
             && snapshot["services"]
                 .as_array()
                 .unwrap()
                 .iter()
                 .filter(|service| service["state"] != "not-started")
                 .all(|service| service["state"] == "ready")
-    });
+        {
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "stack did not become ready at {origin}: {snapshot}"
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
 }
 
 fn health(origin: &str) -> Value {
@@ -196,7 +206,8 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
     fs::create_dir_all(child.join("src")).unwrap();
     fs::create_dir(child.join("src/node_modules")).unwrap();
     fs::write(child.join("src/input.txt"), "initial").unwrap();
-    fs::write(child.join("worker.sh"), "printf '%s|%s|%s\\n' \"$1\" \"$PWD\" \"$MARK\" >> ../launches\nprintf '%s' \"$$\" > \"$1.pid\"\nif [ \"$1\" = web ] || [ \"$1\" = base ]; then exec python3 -m http.server \"$PORT\" --bind 127.0.0.1; fi\nexec sleep 300\n").unwrap();
+    fs::write(child.join("worker.sh"), "printf '%s|%s|%s\\n' \"$1\" \"$PWD\" \"$MARK\" >> ../launches\nprintf '%s' \"$$\" > \"$1.pid\"\nif [ \"$1\" = web ] || [ \"$1\" = base ]; then exec python3 worker.py; fi\nexec sleep 300\n").unwrap();
+    fs::write(child.join("worker.py"), "import http.server, os, socketserver\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n").unwrap();
     fs::write(
         project.join("devhost.toml"),
         "name='selection-contract'\nincludes=['included/services.toml']\n[groups]\napp=['web']\n",
@@ -383,13 +394,14 @@ fn reload_claim_conflicts_preserve_both_stacks_and_removal_releases_resources() 
         let project = runtime.root.path().join(name);
         fs::create_dir_all(project.join("public")).unwrap();
         fs::write(project.join("public/note.txt"), format!("live {name}")).unwrap();
-        fs::write(project.join("worker.py"), r#"import http.server, os, pathlib, signal, sys
+        fs::write(project.join("worker.py"), r#"import http.server, os, pathlib, signal, socketserver, sys
 def terminate(signum, frame):
     pathlib.Path('worker.term').write_text('TERM')
     sys.exit(0)
 signal.signal(signal.SIGTERM, terminate)
 os.chdir('public')
-server = http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler)
+socketserver.TCPServer.allow_reuse_address = True
+server = socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler)
 pathlib.Path('../worker.pid.pending').write_text(str(os.getpid()))
 pathlib.Path('../worker.pid.pending').replace('../worker.pid')
 server.serve_forever()

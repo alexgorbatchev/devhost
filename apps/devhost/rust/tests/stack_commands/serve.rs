@@ -6,7 +6,7 @@ mod files;
 #[path = "serve/names.rs"]
 mod names;
 
-const SERVER: &str = r#"import http.server, json, os, pathlib, signal, socket, threading, time
+const SERVER: &str = r#"import http.server, json, os, pathlib, signal, socket, socketserver, threading, time
 root = pathlib.Path.cwd()
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
@@ -16,17 +16,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(200); self.send_header('Content-Type', 'text/plain'); self.end_headers(); self.wfile.write(data)
     def log_message(self, *args): pass
 def server():
-    instance = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    instance = socketserver.ThreadingTCPServer(('127.0.0.1', 0), Handler)
     threading.Thread(target=instance.serve_forever, daemon=True).start()
     return instance
 raw = socket.socket(); raw.bind(('127.0.0.1', 0)); raw.listen()
 time.sleep(0.3)
 first = server(); second = None
-(root/'ports.json').write_text(json.dumps({'first':first.server_port, 'raw':raw.getsockname()[1]}))
+(root/'ports.json').write_text(json.dumps({'first':first.server_address[1], 'raw':raw.getsockname()[1]}))
 while True:
     if (root/'second').exists() and second is None:
         second = server()
-        (root/'second-port').write_text(str(second.server_port))
+        (root/'second-port').write_text(str(second.server_address[1]))
     if (root/'close-first').exists() and first is not None:
         first.shutdown(); first.server_close(); first = None
         (root/'first-closed').touch()

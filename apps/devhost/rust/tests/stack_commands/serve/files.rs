@@ -153,7 +153,7 @@ fn external_port_session_withdraws_only_its_route_and_preserves_the_backend() {
     fs::write(project.join("invalid-override.toml"), "invalid=[").unwrap();
     fs::write(
         project.join("backend.py"),
-        r#"import http.server, pathlib
+        r#"import http.server, pathlib, socketserver
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -161,8 +161,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b'external standalone backend')
     def log_message(self, *args): pass
-server = http.server.HTTPServer(('127.0.0.1', 0), Handler)
-pathlib.Path('port.pending').write_text(str(server.server_port))
+socketserver.TCPServer.allow_reuse_address = True
+server = socketserver.TCPServer(('127.0.0.1', 0), Handler)
+pathlib.Path('port.pending').write_text(str(server.server_address[1]))
 pathlib.Path('port.pending').replace('port')
 server.serve_forever()
 "#,

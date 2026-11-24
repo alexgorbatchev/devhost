@@ -1,10 +1,12 @@
 use std::{
     fs,
-    net::TcpListener,
     path::Path,
     process::{Command, Output},
     thread,
 };
+
+#[path = "support/ports.rs"]
+mod fixture_ports;
 
 fn cli(root: &Path, action: &str) -> Output {
     Command::new(
@@ -46,9 +48,7 @@ fn native_cli_restart_receipt_and_settings_contract_matches_go() {
     let root = fixture.path();
     fs::create_dir(root.join("config")).unwrap();
     // Retain reservations together until the configuration is ready.
-    let listeners: Vec<_> = (0..4)
-        .map(|_| TcpListener::bind("127.0.0.1:0").unwrap())
-        .collect();
+    let listeners: Vec<_> = (0..4).map(|_| fixture_ports::reserve_listener()).collect();
     let ports: Vec<_> = listeners
         .iter()
         .map(|listener| listener.local_addr().unwrap().port())
@@ -116,9 +116,7 @@ fn failed_restart_is_retryable_and_cannot_certify_the_same_process() {
     use std::os::unix::fs::PermissionsExt;
     let fixture = tempfile::tempdir().unwrap();
     let directory = fixture.path().join("caddy");
-    let listeners: Vec<_> = (0..3)
-        .map(|_| TcpListener::bind("127.0.0.1:0").unwrap())
-        .collect();
+    let listeners: Vec<_> = (0..3).map(|_| fixture_ports::reserve_listener()).collect();
     let ports: Vec<_> = listeners
         .iter()
         .map(|listener| listener.local_addr().unwrap().port())

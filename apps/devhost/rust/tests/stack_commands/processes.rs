@@ -309,7 +309,7 @@ subprocess.Popen([sys.executable, 'daemon.py'])
     fs::write(
         project.join("daemon.py"),
         format!(
-            r#"import os, pathlib, socket, time
+            r#"import os, pathlib, socket
 s = socket.socket()
 s.bind(('127.0.0.1', {port}))
 s.listen(5)
@@ -317,7 +317,10 @@ pathlib.Path('daemon.pid.pending').write_text(str(os.getpid()))
 pathlib.Path('daemon.pid.pending').replace('daemon.pid')
 os.write(1, b'opaque-\xff\n')
 os.write(1, b'after-invalid-byte\n')
-time.sleep(300)
+while True:
+    connection, _ = s.accept()
+    with connection:
+        connection.recv(1)
 "#
         ),
     )
