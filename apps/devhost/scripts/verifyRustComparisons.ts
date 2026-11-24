@@ -128,16 +128,27 @@ const commandServe = [
   "serve::global_restart_preserves_command_session_identity",
   "serve::command_startup_rejects_exit_and_missing_http_without_leaving_sessions",
 ];
+const stubbornDaemonHelper = "processes::interrupt_escalates_for_a_term_ignoring_daemon_start_helper";
 for (const binary of binaries) {
   const isOracle = binary.name === "go-oracle";
+  const isGo = binary.name !== "rust-optimized";
   const unsupportedOracleListeners = isOracle && process.platform === "darwin";
   const exclusions = isOracle ? [duplicate, legacy, nestedIncludes, literalEnvironment, exhaustedPort] : [];
+  if (isGo) exclusions.push(stubbornDaemonHelper);
   if (unsupportedOracleListeners) exclusions.push(...commandServe);
   await run(
     `${binary.name}-stack`,
     cargo("stack_commands", "--", ...exclusions.flatMap((test) => ["--skip", test])),
     binary.path,
   );
+  if (isGo) {
+    await run(
+      `${binary.name}-daemon-helper-cancellation`,
+      cargo("stack_commands", stubbornDaemonHelper, "--", "--exact"),
+      binary.path,
+      "wait for service worker daemon start command: signal: killed",
+    );
+  }
   if (isOracle) {
     await run(
       "go-oracle-exhausted-port",

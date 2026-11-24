@@ -697,7 +697,7 @@
       "failure": "Failed helper/status prevents readiness.",
       "cleanup": "Invoke daemon stop, join supervisor and verify daemon PID is gone.",
       "evidence": ["processes", "lifecycle"],
-      "remaining": "Add failed status/stop-helper differential cases.",
+      "remaining": "Final native receipts for daemon status/start/stop failures and failed-start cleanup retry.",
       "status": "open"
     },
     {

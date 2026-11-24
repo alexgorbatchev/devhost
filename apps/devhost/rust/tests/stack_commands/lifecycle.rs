@@ -124,6 +124,7 @@ fn pending_http_health_request_is_canceled_before_backend_timeout() {
         }
     });
     let pending = accepted.unwrap();
+    pending.set_nonblocking(false).unwrap();
     pending
         .set_read_timeout(Some(Duration::from_secs(3)))
         .unwrap();
@@ -195,7 +196,7 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
     fs::create_dir_all(child.join("src")).unwrap();
     fs::create_dir(child.join("src/node_modules")).unwrap();
     fs::write(child.join("src/input.txt"), "initial").unwrap();
-    fs::write(child.join("worker.sh"), "printf '%s|%s|%s\\n' \"$1\" \"$PWD\" \"$MARK\" >> ../launches\nprintf '%s' \"$$\" > \"$1.pid\"\nif [ \"$1\" = web ]; then exec python3 -m http.server \"$PORT\" --bind 127.0.0.1; fi\nexec sleep 300\n").unwrap();
+    fs::write(child.join("worker.sh"), "printf '%s|%s|%s\\n' \"$1\" \"$PWD\" \"$MARK\" >> ../launches\nprintf '%s' \"$$\" > \"$1.pid\"\nif [ \"$1\" = web ] || [ \"$1\" = base ]; then exec python3 -m http.server \"$PORT\" --bind 127.0.0.1; fi\nexec sleep 300\n").unwrap();
     fs::write(
         project.join("devhost.toml"),
         "name='selection-contract'\nincludes=['included/services.toml']\n[groups]\napp=['web']\n",
@@ -203,7 +204,7 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
     .unwrap();
     let mut services = String::new();
     for name in ["base", "web", "always", "spare"] {
-        let health = if name == "web" {
+        let health = if matches!(name, "base" | "web") {
             "port='auto'\nhealth.http='/'"
         } else {
             "health.process=true"

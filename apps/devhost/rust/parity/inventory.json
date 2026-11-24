@@ -274,9 +274,10 @@
       "checks": [
         "apps/devhost/rust/tests/stack_lifecycle.rs",
         "apps/devhost/rust/tests/stack_lifecycle/compatibility.rs",
-        "apps/devhost/rust/tests/detach_lifecycle.rs"
+        "apps/devhost/rust/tests/detach_lifecycle.rs",
+        "apps/devhost/rust/tests/stack_commands/processes.rs"
       ],
-      "comparison": "Rust regression; source correspondence",
+      "comparison": "Shared executable fixtures for daemon failures, rollback retry and TERM escalation; Rust regression; source correspondence. Go reports a killed TERM-ignoring daemon helper as exit 1; Rust preserves cancellation exit 130. Detached descendants and retained-tail bounds remain open.",
       "go": [
         {
           "path": "apps/devhost/internal/app/manifest_conflict.go",
@@ -1501,8 +1502,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/managed-daemon-style-services.md",
-      "blob": "6cfdbf66f1cd5d33c2c93887b416a85bc28249fe",
-      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
+      "blob": "15e358cb4fba4fce611f4f2abeefbc5b457e4daa",
+      "reason": "Documents experimental Rust daemon helper escalation and failed-start cleanup diagnostics and shutdown retry, verified with shared native executable fixtures."
     },
     {
       "path": "packages/docs/src/content/docs/guides/manifest-includes.md",
@@ -1536,8 +1537,8 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "533f220626b420f55959226a075840d7877598f1",
-      "reason": "Shared operator contract documents verified Rust behavior, completion installation and portability differences. Describes final attempted port references after automatic startup retry exhaustion."
+      "blob": "739152d1ebbb30d25bb92c78716cfc80b043aeca",
+      "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry."
     },
     {
       "path": "apps/devhost/internal/devtools/document_injection.go",

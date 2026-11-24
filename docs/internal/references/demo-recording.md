@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 02:37
+last_modified: 2026-11-24 03:33
 status: current
 ---
 
@@ -167,7 +167,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Configuration hot reload, applied and rejected                                                                                                                                              | README, "Why devhost"; `stacks/hot-reload.md`; `guides/troubleshooting.md`, "Manifest changes rejected"                                    | `troubleshooting` step-4 to step-9               |
 | Every manifest setting reloads: name, devtools, worktrees, killZombies                                                                                                                      | `stacks/hot-reload.md`, "What restarts", "Settings that apply in place"                                                                    | No demo                                          |
 | Unmanaged services, such as a Docker container                                                                                                                                              | `guides/docker-backed-services.md`                                                                                                         | `docker-backed-services` step-1 to step-9        |
-| Daemon-style services with start, status, and stop commands                                                                                                                                 | `guides/managed-daemon-style-services.md`                                                                                                  | `managed-daemon-style-services` step-1 to step-6 |
+| Daemon-style services with start, status, and stop commands; failed-start cleanup retries at shutdown (**No demo**)                                                                         | `guides/managed-daemon-style-services.md`                                                                                                  | `managed-daemon-style-services` step-1 to step-6 |
 | Service commands run without a shell                                                                                                                                                        | `guides/stack-lifecycle.md`, "Service commands and working directories"                                                                    | No demo                                          |
 | Zombie process recovery                                                                                                                                                                     | `guides/troubleshooting.md`, "Zombie cleanup messages"                                                                                     | No demo                                          |
 | Development servers that require a local origin                                                                                                                                             | `guides/managed-caddy.md`, "Development servers that require a local origin"                                                               | No demo                                          |

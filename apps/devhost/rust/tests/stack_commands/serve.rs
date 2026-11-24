@@ -255,14 +255,17 @@ fn global_restart_preserves_command_session_identity() {
 #[test]
 fn command_startup_rejects_exit_and_missing_http_without_leaving_sessions() {
     let runtime = Runtime::start();
-    for (arguments, diagnostic) in [
+    for (arguments, diagnostics) in [
         (
             vec!["serve", "--startup-timeout", "1s", "exit 7"],
-            "command exited with code 7 before opening an HTTP listener",
+            &[
+                "command exited with code 7 before opening an HTTP listener",
+                "Service command exited before passing its health check with code 7.",
+            ][..],
         ),
         (
             vec!["serve", "--startup-timeout", "200ms", "--", "sleep", "300"],
-            "command opened no HTTP listener within 200ms",
+            &["command opened no HTTP listener within 200ms"][..],
         ),
         (
             vec![
@@ -274,7 +277,7 @@ fn command_startup_rejects_exit_and_missing_http_without_leaving_sessions() {
                 "sleep",
                 "300",
             ],
-            "command opened no HTTP listener within 200ms",
+            &["command opened no HTTP listener within 200ms"][..],
         ),
     ] {
         let output = runtime
@@ -285,8 +288,10 @@ fn command_startup_rejects_exit_and_missing_http_without_leaving_sessions() {
             .unwrap();
         assert!(!output.status.success(), "{:?}", output);
         assert!(
-            String::from_utf8_lossy(&output.stderr).contains(diagnostic)
-                || String::from_utf8_lossy(&output.stdout).contains(diagnostic),
+            diagnostics.iter().any(|diagnostic| {
+                String::from_utf8_lossy(&output.stderr).contains(diagnostic)
+                    || String::from_utf8_lossy(&output.stdout).contains(diagnostic)
+            }),
             "{:?}",
             output
         );

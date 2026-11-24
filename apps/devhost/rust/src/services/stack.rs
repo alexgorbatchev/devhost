@@ -720,16 +720,21 @@ pub fn start_stack(
                         ) {
                             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                         }
-                        options.output.log_stdout(&manifest.name, &err);
-                        control.live.failed(service_name, &err);
-                        let _ = stop_daemon_lifecycle_service(
+                        let err = match stop_daemon_lifecycle_service(
                             manifest,
                             &service,
                             &environment,
                             &options.output,
                             &daemon_output,
-                        );
-                        started_daemons.retain(|s| s.name != service.name);
+                        ) {
+                            Ok(()) => {
+                                started_daemons.retain(|s| s.name != service.name);
+                                err
+                            }
+                            Err(cleanup_error) => format!("{err}\ncleanup: {cleanup_error}"),
+                        };
+                        options.output.log_stdout(&manifest.name, &err);
+                        control.live.failed(service_name, &err);
                         if launch.detached {
                             return Err(fail_detached_not_ready(
                                 &launch,
