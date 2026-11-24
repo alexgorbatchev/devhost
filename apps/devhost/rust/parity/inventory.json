@@ -231,9 +231,10 @@
       "checks": [
         "apps/devhost/rust/tests/stack_lifecycle.rs",
         "apps/devhost/rust/tests/detach_lifecycle.rs",
-        "apps/devhost/rust/tests/stack_lifecycle/compatibility.rs"
+        "apps/devhost/rust/tests/stack_lifecycle/compatibility.rs",
+        "apps/devhost/rust/tests/stack_commands/health.rs"
       ],
-      "comparison": "Rust regression; source correspondence",
+      "comparison": "Shared Go/Rust process, TCP, HTTP and HTTPS interval/deadline, recovery and cancellation fixtures; native final receipts pending",
       "go": [
         {
           "path": "apps/devhost/internal/services/health.go",

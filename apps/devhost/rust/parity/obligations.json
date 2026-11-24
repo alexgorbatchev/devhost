@@ -414,6 +414,13 @@
       "kind": "native-shared",
       "selector": "cargo test --test stack_commands config:: with each comparison executable",
       "qualification": "Private HOME/config/state; suffix and listener boundaries reject before mutation; generated defaults and ordered errors; normalized live HTTP/HTTPS routing and port release."
+    },
+    {
+      "id": "health-timing",
+      "path": "apps/devhost/rust/tests/stack_commands/health.rs",
+      "kind": "shared-cli",
+      "selector": "cargo test --test stack_commands health:: with each comparison executable; compatibility::https_health_negotiates_http2_and_rejects_non_success_status covers HTTPS timing",
+      "qualification": "Process readiness ignores network timing; refused TCP probes honor intervals, retry limits and deadlines; HTTP and HTTP/2 HTTPS recover after two failed probes and fail within the configured deadline while retaining unavailable state. All children and listeners are joined."
     }
   ],
   "cases": [
@@ -637,12 +644,12 @@
       "id": "health.1",
       "feature": "health",
       "contract": "process/TCP/HTTP/HTTPS checks, intervals and deadlines",
-      "trigger": "Start process-only, TCP and HTTP backends and vary readiness status.",
+      "trigger": "Start process-only, TCP, HTTP and HTTPS backends with configured intervals, deadlines and failure-to-success transitions.",
       "effect": "Services become ready only under their selected checks and configured deadline.",
       "failure": "Unhealthy status and timeout remain unavailable.",
       "cleanup": "Cancel probes, stop children and release listeners.",
-      "evidence": ["lifecycle", "compatibility", "serve"],
-      "remaining": "Add explicit interval/deadline comparison for all health modes.",
+      "evidence": ["lifecycle", "compatibility", "serve", "health-timing"],
+      "remaining": "Retain final native-platform receipts for process timing semantics and TCP/HTTP/HTTPS interval, deadline, recovery and cleanup comparisons.",
       "status": "open"
     },
     {

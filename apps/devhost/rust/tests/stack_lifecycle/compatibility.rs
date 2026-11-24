@@ -108,6 +108,8 @@ fn verify_https_health(trusted_certificate: bool) {
     let (shutdown, done) = tokio::sync::oneshot::channel();
     let statuses = Arc::new(Mutex::new(Vec::new()));
     let observed = statuses.clone();
+    let probe_times = Arc::new(Mutex::new(Vec::new()));
+    let observed_times = probe_times.clone();
     let attempts = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let observed_attempts = attempts.clone();
     let server = thread::spawn(move || {
@@ -124,12 +126,18 @@ fn verify_https_health(trusted_certificate: bool) {
                         observed_attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         let acceptor = acceptor.clone();
                         let observed = observed.clone();
+                        let observed_times = observed_times.clone();
                         connections.spawn(async move {
                             let Ok(socket) = acceptor.accept(socket).await else { return; };
                             assert_eq!(socket.get_ref().1.alpn_protocol(), Some(b"h2".as_slice()));
                             let service = hyper::service::service_fn(move |request: hyper::Request<hyper::body::Incoming>| {
-                                let status = if request.uri().path() == "/ok" { 200 } else { 503 };
-                                observed.lock().unwrap().push(status);
+                                let status = {
+                                    let mut statuses = observed.lock().unwrap();
+                                    let status = if request.uri().path() == "/ok" || (request.uri().path() == "/eventually" && statuses.len() >= 2) { 200 } else { 503 };
+                                    statuses.push(status);
+                                    status
+                                };
+                                observed_times.lock().unwrap().push(Instant::now());
                                 async move { Ok::<_, std::convert::Infallible>(hyper::Response::builder().status(status).body(http_body_util::Empty::<hyper::body::Bytes>::new()).unwrap()) }
                             });
                             let _ = hyper::server::conn::http2::Builder::new(hyper_util::rt::TokioExecutor::new()).serve_connection(hyper_util::rt::TokioIo::new(socket), service).await;
@@ -154,12 +162,22 @@ fn verify_https_health(trusted_certificate: bool) {
     let caddy = LiveCaddyGuard::start(root);
     let config = write_config(root, &caddy.settings);
     let paths: &[&str] = if trusted_certificate {
-        &["/ok", "/unavailable"]
+        &["/ok", "/unavailable", "/eventually", "/deadline"]
     } else {
         &["/ok"]
     };
     for &path in paths {
-        fs::write(root.join("devhost.toml"), format!("name='h2-health'\n[services.worker]\ncommand=['sleep','30']\nport='auto'\nhost='h2-health'\n[services.worker.health]\nhttp='https://127.0.0.1:{port}{path}'\ninterval=50\ntimeout=1000\nretries=1\n")).unwrap();
+        statuses.lock().unwrap().clear();
+        probe_times.lock().unwrap().clear();
+        let timing_case = matches!(path, "/eventually" | "/deadline");
+        let interval = if timing_case { 300 } else { 50 };
+        let timeout = match path {
+            "/deadline" => 850,
+            "/eventually" => 5000,
+            _ => 1000,
+        };
+        let retries = if timing_case { 0 } else { 1 };
+        fs::write(root.join("devhost.toml"), format!("name='h2-health'\n[services.worker]\ncommand=['sleep','30']\nport='auto'\nhost='h2-health'\n[services.worker.health]\nhttp='https://127.0.0.1:{port}{path}'\ninterval={interval}\ntimeout={timeout}\nretries={retries}\n")).unwrap();
         let selected_authority = if trusted_certificate {
             authority.clone()
         } else {
@@ -193,7 +211,11 @@ fn verify_https_health(trusted_certificate: bool) {
                     statuses
                         .lock()
                         .unwrap()
-                        .contains(&if path == "/ok" { 200 } else { 503 })
+                        .contains(&if matches!(path, "/ok" | "/eventually") {
+                            200
+                        } else {
+                            503
+                        })
                 } else {
                     attempts.load(std::sync::atomic::Ordering::SeqCst) > 0
                 }
@@ -202,7 +224,7 @@ fn verify_https_health(trusted_certificate: bool) {
             fs::read_to_string(root.join("stdout")).unwrap(),
             fs::read_to_string(root.join("stderr")).unwrap()
         );
-        if trusted_certificate && path == "/ok" {
+        if trusted_certificate && matches!(path, "/ok" | "/eventually") {
             assert!(
                 wait_until(Duration::from_secs(5), || {
                     caddy::stacks::read_live_stacks(&caddy.caddy_dir)
@@ -233,6 +255,14 @@ fn verify_https_health(trusted_certificate: bool) {
             )
             .unwrap()
             .contains("startup health check failed")));
+            if path == "/deadline" {
+                assert!(
+                    fs::read_to_string(root.join("stdout"))
+                        .unwrap()
+                        .contains("did not pass its health check within 850ms")
+                );
+                assert!(probe_times.lock().unwrap()[0].elapsed() >= Duration::from_millis(800));
+            }
             assert!(wait_until(Duration::from_secs(8), || {
                 caddy::stacks::read_live_stacks(&caddy.caddy_dir)
                     .unwrap()
@@ -262,6 +292,24 @@ fn verify_https_health(trusted_certificate: bool) {
         }
         if !trusted_certificate {
             assert!(statuses.lock().unwrap().is_empty());
+        }
+        if timing_case {
+            let times = probe_times.lock().unwrap();
+            assert!(times.len() >= 3, "{path}: {times:?}");
+            for pair in times[..3].windows(2) {
+                assert!(
+                    pair[1].duration_since(pair[0]) >= Duration::from_millis(250),
+                    "{path}: probe interval was ignored: {times:?}"
+                );
+            }
+            assert_eq!(
+                &statuses.lock().unwrap()[..3],
+                if path == "/eventually" {
+                    &[503, 503, 200]
+                } else {
+                    &[503, 503, 503]
+                }
+            );
         }
         assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
     }

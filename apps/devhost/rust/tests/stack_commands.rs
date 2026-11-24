@@ -39,6 +39,8 @@ mod control;
 mod documents;
 #[path = "stack_commands/files.rs"]
 mod files;
+#[path = "stack_commands/health.rs"]
+mod health;
 #[path = "stack_commands/info.rs"]
 mod info;
 #[path = "stack_commands/lifecycle.rs"]
