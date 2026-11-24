@@ -1480,8 +1480,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/development/building.md",
-      "blob": "53d580dbe5cbff1717813e4f52e3d58ba81ffc6b",
-      "reason": "Documents experimental Rust commands and validation, including optimized metadata-stamped builds and native-verified candidate packaging, alongside unchanged Go production and development-override entrypoints."
+      "blob": "33db7b590d445791bedb52f7342fa65320cd4410",
+      "reason": "Documents Rust candidates, native comparisons and the explicit trusted HTTPS fixture prerequisite on macOS."
     },
     {
       "path": "packages/docs/src/content/docs/guides/annotations.md",

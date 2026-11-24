@@ -48,31 +48,43 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
     use rustls_pki_types::pem::PemObject;
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path();
-    let cert = root.join("root.pem");
+    let cert = root.join("server.pem");
     let key = root.join("key.pem");
-    // Keep certificate extensions independent of the platform openssl.cnf.
-    let openssl_config = root.join("openssl.cnf");
-    fs::write(
+    let authority = if cfg!(target_os = "macos") {
+        let trusted = std::env::var_os("DEVHOST_HEALTH_TRUST_DIR")
+            .map(PathBuf::from)
+            .expect("macOS HTTPS health comparison requires a trusted isolated certificate fixture; see the Rust parity runbook");
+        fs::copy(trusted.join("server.pem"), &cert).unwrap();
+        fs::copy(trusted.join("server.key"), &key).unwrap();
+        let authority = root.join("root.pem");
+        fs::copy(trusted.join("root.pem"), &authority).unwrap();
+        authority
+    } else {
+        // Keep certificate extensions independent of the platform openssl.cnf.
+        let openssl_config = root.join("openssl.cnf");
+        fs::write(
         &openssl_config,
         "[req]\nprompt=no\ndistinguished_name=subject\nx509_extensions=server\n[subject]\nCN=localhost\n[server]\nsubjectAltName=IP:127.0.0.1\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n",
     )
     .unwrap();
-    let generated = Command::new("openssl")
-        .args([
-            "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-config",
-        ])
-        .arg(&openssl_config)
-        .arg("-keyout")
-        .arg(&key)
-        .arg("-out")
-        .arg(&cert)
-        .output()
-        .unwrap();
-    assert!(
-        generated.status.success(),
-        "{}",
-        String::from_utf8_lossy(&generated.stderr)
-    );
+        let generated = Command::new("openssl")
+            .args([
+                "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-config",
+            ])
+            .arg(&openssl_config)
+            .arg("-keyout")
+            .arg(&key)
+            .arg("-out")
+            .arg(&cert)
+            .output()
+            .unwrap();
+        assert!(
+            generated.status.success(),
+            "{}",
+            String::from_utf8_lossy(&generated.stderr)
+        );
+        cert.clone()
+    };
     let mut tls = rustls::ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(
@@ -136,7 +148,7 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
                 .arg("start")
                 .current_dir(root)
                 .env("AGENT", "1")
-                .env("SSL_CERT_FILE", &cert)
+                .env("SSL_CERT_FILE", &authority)
                 .env("SSL_CERT_DIR", root.join("empty-ca-directory"))
                 .env("DEVHOST_CONFIG_DIR", config.parent().unwrap())
                 .env("DEVHOST_STATE_DIR", root.join("state"))
@@ -153,7 +165,8 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
                 .lock()
                 .unwrap()
                 .contains(&if path == "/ok" { 200 } else { 503 })),
-            "{}",
+            "stdout: {}\nstderr: {}",
+            fs::read_to_string(root.join("stdout")).unwrap(),
             fs::read_to_string(root.join("stderr")).unwrap()
         );
         if path == "/ok" {

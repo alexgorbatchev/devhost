@@ -214,6 +214,9 @@ jobs:
           brew install bash bash-completion@2
           echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
           echo "DEVHOST_TEST_BASH_COMPLETION=$(brew --prefix bash-completion@2)/share/bash-completion/bash_completion" >> "$GITHUB_ENV"
+      - name: Prepare disposable macOS HTTPS health trust
+        if: runner.os == 'macOS'
+        run: bash test-support/macosHealthTrust.sh prepare
       - name: Cache Bun dependency downloads
         uses: actions/cache@v5
         with:
@@ -269,6 +272,9 @@ jobs:
           path: .state/ci-rust-comparisons/
           if-no-files-found: warn
           retention-days: 7
+      - name: Remove disposable macOS HTTPS health trust
+        if: always() && runner.os == 'macOS'
+        run: bash test-support/macosHealthTrust.sh cleanup
 
   rust-candidates:
     if: github.event_name == 'workflow_dispatch' && inputs.rustCandidates && !inputs.selfHosted
@@ -366,6 +372,9 @@ jobs:
           brew install bash bash-completion@2
           echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
           echo "DEVHOST_TEST_BASH_COMPLETION=$(brew --prefix bash-completion@2)/share/bash-completion/bash_completion" >> "$GITHUB_ENV"
+      - name: Prepare disposable macOS HTTPS health trust
+        if: runner.os == 'macOS'
+        run: bash test-support/macosHealthTrust.sh prepare
       - name: Cache Bun dependency downloads
         uses: actions/cache@v5
         with:
@@ -414,3 +423,6 @@ jobs:
           path: apps/devhost/dist/rust-candidates/ci/
           if-no-files-found: error
           retention-days: 7
+      - name: Remove disposable macOS HTTPS health trust
+        if: always() && runner.os == 'macOS'
+        run: bash test-support/macosHealthTrust.sh cleanup

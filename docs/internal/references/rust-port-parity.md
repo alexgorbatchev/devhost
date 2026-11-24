@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-23 16:33
+last_modified: 2026-11-24 01:51
 status: current
 ---
 
@@ -44,6 +44,14 @@ rust-anything app replay .state/rust-anything/service-list \
 ```
 
 Keep case inputs small and focused on the active ticket. Inspect the replay report under the recording directory's `rust/app-cases/`. Add cases for the new behavior and use `app replay --case` for targeted reruns. Use the same isolated state for recordings and replays that touch files or services. Keep generated source out of the existing Rust crate.
+
+## Native HTTPS health fixture
+
+The shared `stack_lifecycle` HTTPS test uses an HTTP/2-only loopback server and verifies certificate trust, successful health responses and rejected status codes against each executable. Linux uses a private CA file through `SSL_CERT_FILE`. Go on macOS uses Security.framework instead, so that platform needs a root already trusted by the test user.
+
+On disposable GitHub-hosted macOS runners, source and candidate jobs run `bash test-support/macosHealthTrust.sh prepare`. It generates a unique one-day CA and a separate server certificate for `127.0.0.1`, adds only that CA to the admin trust store, and exports `DEVHOST_HEALTH_TRUST_DIR` through `GITHUB_ENV`. An unconditional cleanup step removes that exact certificate and its trust settings, then its private files. Cleanup errors fail the job; partially completed cleanup retains its own state for a retry. The script refuses other hosts and preserves all pre-existing certificates and trust settings.
+
+For local macOS validation, provision a certificate explicitly on an isolated test user or disposable machine. Set `DEVHOST_HEALTH_TRUST_DIR` to a private directory containing `root.pem`, `server.pem` and `server.key`; the server certificate must be valid for IP `127.0.0.1`, allow TLS server authentication, and chain to the root trusted by that user. Run the normal Rust test or comparison recipe with that variable. Remove only the fixture's own certificate and trust after its final consumer. The test fails with a prerequisite diagnostic when this directory is missing; it never skips HTTPS verification or edits the local trust store itself.
 
 ## Native remote-preview tests
 

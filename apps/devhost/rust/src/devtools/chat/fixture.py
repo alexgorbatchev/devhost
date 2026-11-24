@@ -8,6 +8,7 @@ import signal
 
 claude = pathlib.Path(sys.argv[0]).name == "claude"
 scenario = pathlib.Path("scenario").read_text()
+pathlib.Path("claude-ready" if claude else "codex-ready").touch()
 turn = 0
 waiting = None
 if scenario == "ignore-term":

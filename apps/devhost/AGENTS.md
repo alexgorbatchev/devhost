@@ -49,6 +49,8 @@ Use `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <opti
 
 Run `just rust distribution-comparisons <candidate-directory> <clean-Go-oracle-checkout> <repaired-Go-binary> <new-evidence-directory>` to apply that gate to each archive executable on its native host. It verifies archive and binary hashes, retains distribution provenance with comparison receipts, and removes temporary extractions. Candidate CI runs both GNU and musl executables on each Linux architecture and the Apple-silicon executable on macOS.
 
+On macOS, the shared HTTPS health fixture requires `DEVHOST_HEALTH_TRUST_DIR` with a trusted `root.pem` and its `server.pem`/`server.key` for `127.0.0.1`. Hosted CI creates and removes its own temporary CA through `test-support/macosHealthTrust.sh`; that script refuses contributor machines. Follow the [native HTTPS fixture procedure](../../docs/internal/references/rust-port-parity.md#native-https-health-fixture) before running this test locally; never install its CA implicitly.
+
 ## Development workflow
 
 From the repository root, build and register a protected development override for the dotfiles-managed `devhost` shim:
