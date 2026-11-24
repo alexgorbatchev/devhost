@@ -857,7 +857,7 @@
       "failure": "Unrelated manifest cannot steal the launch lock.",
       "cleanup": "Stop owner and confirm lock can be reacquired.",
       "evidence": ["detach", "detach-regression"],
-      "remaining": "Run same-manifest concurrent contention fixture through both external CLIs.",
+      "remaining": "Linux external CLI fixture passes against unchanged Go, repaired Go and optimized Rust: three pending starts share one supervisor and service launch; symlink start reuses it; stop releases the launch lock. Final native source/archive acceptance remains.",
       "status": "open"
     },
     {

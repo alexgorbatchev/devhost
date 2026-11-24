@@ -412,14 +412,20 @@ fn detach_live_cli_start_idempotency_and_stop() {
     let project = root.join("project");
     fs::create_dir_all(&project).unwrap();
     let env_dump = project.join("service_env.txt");
+    let launches = project.join("launches.txt");
+    let ready_gate = project.join("ready");
     let server_py = project.join("server.py");
     fs::write(
         &server_py,
         format!(
-            r#"import faulthandler, http.server, os, socketserver
+            r#"import faulthandler, http.server, os, pathlib, socketserver, time
+with open({launches:?}, "a") as f:
+    f.write(str(os.getpid()) + "\n")
 with open({dump:?}, "w") as f:
     for k in sorted(os.environ):
         f.write(f"{{k}}={{os.environ[k]}}\n")
+while not pathlib.Path({gate:?}).exists():
+    time.sleep(0.01)
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         body = b"detached-ok"
@@ -434,7 +440,9 @@ server = socketserver.TCPServer(("127.0.0.1", int(os.environ["PORT"])), H)
 faulthandler.cancel_dump_traceback_later()
 server.serve_forever()
 "#,
-            dump = env_dump.to_str().unwrap()
+            dump = env_dump.to_str().unwrap(),
+            launches = launches.to_str().unwrap(),
+            gate = ready_gate.to_str().unwrap(),
         ),
     )
     .unwrap();
@@ -463,16 +471,71 @@ process = true
     let selected = std::env::var_os("DEVHOST_STACK_TEST_BINARY")
         .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into());
     let bin = &selected;
-    let out = Command::new(bin)
-        .args(["start", "--detach", "--idle-timeout", "5m", "--", "web"])
-        .current_dir(&project)
-        .env("DEVHOST_STATE_DIR", &state_dir)
-        .env("DEVHOST_CONFIG_DIR", &config_dir)
-        .env("HOME", &home_dir)
-        .env("AGENT", "1")
-        .env(DETACHED_LOG_ENV, "/tmp/should-be-cleared.log")
-        .output()
-        .expect("run devhost start --detach");
+    let barrier = std::sync::Barrier::new(4);
+    let outputs = thread::scope(|scope| {
+        let starts: Vec<_> = (0..3)
+            .map(|_| {
+                scope.spawn(|| {
+                    let child = Command::new(bin)
+                        .args(["start", "--detach", "--idle-timeout", "5m", "--", "web"])
+                        .current_dir(&project)
+                        .env("DEVHOST_STATE_DIR", &state_dir)
+                        .env("DEVHOST_CONFIG_DIR", &config_dir)
+                        .env("HOME", &home_dir)
+                        .env("AGENT", "1")
+                        .env(DETACHED_LOG_ENV, "/tmp/should-be-cleared.log")
+                        .stdout(Stdio::piped())
+                        .stderr(Stdio::piped())
+                        .spawn()
+                        .expect("spawn concurrent detached start");
+                    barrier.wait();
+                    child.wait_with_output().unwrap()
+                })
+            })
+            .collect();
+        barrier.wait();
+        let deadline = Instant::now() + Duration::from_secs(4);
+        while !env_dump.exists() && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(10));
+        }
+        assert!(
+            env_dump.exists(),
+            "concurrent start did not launch the service"
+        );
+        let starting = read_live_stack_owners(&caddy.caddy_dir).unwrap();
+        assert_eq!(
+            starting.len(),
+            1,
+            "one supervisor must own the pending launch"
+        );
+        let records = read_live_stacks(&caddy.caddy_dir).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].pid, starting[0].pid);
+        assert!(!records[0].ready);
+        let lock = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(
+                state_dir
+                    .join("logs")
+                    .join(format!("{}.lock", log_stem(&manifest_path))),
+            )
+            .unwrap();
+        // SAFETY: this live descriptor is only probed for an exclusive nonblocking lock.
+        assert_ne!(
+            unsafe { libc::flock(lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
+            0
+        );
+        fs::write(&ready_gate, "ready").unwrap();
+        starts
+            .into_iter()
+            .map(|start| start.join().unwrap())
+            .collect::<Vec<_>>()
+    });
+    let out = outputs
+        .iter()
+        .find(|out| String::from_utf8_lossy(&out.stdout).contains("devhost: Started detach-live"))
+        .unwrap_or_else(|| panic!("no concurrent start launched the stack: {outputs:?}"));
     let stdout = String::from_utf8_lossy(&out.stdout);
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(
@@ -491,6 +554,21 @@ process = true
     assert!(stack.is_alive());
     assert_eq!(stack.name, "detach-live");
     assert_eq!(stack.log_path, expected_log.to_string_lossy());
+    let mut already_running = 0;
+    for output in &outputs {
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(output.status.success(), "{output:?}");
+        assert!(text.contains(&format!("(PID {}).", stack.pid)), "{text}");
+        if text.contains("devhost: Already running detach-live") {
+            already_running += 1;
+        }
+    }
+    assert_eq!(
+        already_running, 2,
+        "exactly one of three starts must launch"
+    );
+    let service_launches = fs::read_to_string(&launches).unwrap();
+    assert_eq!(service_launches.lines().count(), 1, "{service_launches}");
     assert_eq!(
         stack.urls,
         vec![format!(
@@ -569,6 +647,16 @@ process = true
     assert!(stop_out.status.success());
     assert!(read_live_stacks(&caddy.caddy_dir).unwrap().is_empty());
     assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
+    let lock = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(expected_lock)
+        .unwrap();
+    // SAFETY: acquiring this fixture-owned lock proves all start callers released it.
+    assert_eq!(
+        unsafe { libc::flock(lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
+        0
+    );
 }
 
 #[test]

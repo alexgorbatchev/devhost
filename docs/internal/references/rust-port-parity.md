@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:32
+last_modified: 2026-11-24 10:38
 status: current
 ---
 
@@ -107,6 +107,15 @@ they do not provide replay across supervisor replacement. Native provider
 conversation history and saved panel positions use separate storage contracts.
 
 ## Native stack-command tests
+
+`just rust test --test detach_lifecycle detach_live_cli_start_idempotency_and_stop -- --exact`
+races three detached CLI starts for one manifest while its service waits behind
+a readiness gate. The fixture observes one pending supervisor and an exclusively
+held launch lock, then releases the service. All callers must report the same
+owner, with one successful launch and two already-running results. A symlinked
+manifest must reuse that owner. Stopping must remove the route and owner and
+release the launch lock. Set `DEVHOST_STACK_TEST_BINARY` to the absolute Go or
+Rust executable to compare this same fixture.
 
 `just rust test --test stack_commands processes::` also compares cooperative and
 TERM-ignoring children, including a child in its own session, through the selected
