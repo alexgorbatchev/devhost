@@ -232,7 +232,9 @@ jobs:
           ref: ${{ steps.oracle.outputs.revision }}
           path: .state/ci-go-oracle
       - name: Check formatting and strict Clippy
-        run: just rust fmt-check lint
+        run: |
+          just rust fmt-check
+          just rust lint
       - name: Check minimum supported Rust
         if: runner.arch == 'X64'
         working-directory: apps/devhost/rust
