@@ -31,6 +31,8 @@ mod fixture_ports;
 mod agents;
 #[path = "stack_commands/chat.rs"]
 mod chat;
+#[path = "stack_commands/config.rs"]
+mod config;
 #[path = "stack_commands/control.rs"]
 mod control;
 #[path = "stack_commands/documents.rs"]
@@ -41,6 +43,8 @@ mod files;
 mod info;
 #[path = "stack_commands/lifecycle.rs"]
 mod lifecycle;
+#[path = "stack_commands/manifest.rs"]
+mod manifest;
 #[path = "stack_commands/processes.rs"]
 mod processes;
 #[path = "stack_commands/serve.rs"]

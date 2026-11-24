@@ -65,6 +65,9 @@ fn load(
         .parse::<Table>()
         .map_err(|error| diagnostics::parse_error(path, &text, &error))?;
     let mut service_order = read_service_order(&text);
+    if path != root {
+        prepare_services(&mut table, root, path);
+    }
     let Some(patterns) = table.get("includes") else {
         return Ok((table, service_order));
     };
@@ -90,7 +93,6 @@ fn load(
                 .into());
             }
             merge(&mut table, &mut child, "groups", "group", path, &included)?;
-            prepare_services(&mut child, root, &included);
             merge(
                 &mut table, &mut child, "services", "service", path, &included,
             )?;

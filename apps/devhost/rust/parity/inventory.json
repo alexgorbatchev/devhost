@@ -1469,6 +1469,11 @@
   ],
   "branchDifferences": [
     {
+      "path": "apps/devhost/internal/manifest/read.go",
+      "blob": "f4692adc79423a512dd87bf614b103cf4b8ca141",
+      "reason": "Verified Go repair resolves each included service cwd and serve root exactly once relative to its declaring manifest. The unchanged Go20 oracle rebases nested services again; shared native comparisons require repaired Go and Rust to launch from the declared directories."
+    },
+    {
       "path": "apps/devhost/internal/caddy/background_command.go",
       "blob": "ad0e2ccfd26fb6b704c9bea9125310c0d32f7256",
       "reason": "Existing port-branch repair isolates shared Caddy from foreground terminal interrupts; current Go oracle remains unchanged."
@@ -1500,8 +1505,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/manifest-includes.md",
-      "blob": "8a62a9f3e75003ac53aef61b74b371db76ecb4a8",
-      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
+      "blob": "7fbd9fa7222de242f8c2f1ddfe484282555003c8",
+      "reason": "Documents verified include-relative cwd and serve roots, including nested manifests. Shared native comparisons reproduce the unchanged Go20 nested-path defect and require repaired Go and Rust to pass."
     },
     {
       "path": "packages/docs/src/content/docs/guides/service-references.md",

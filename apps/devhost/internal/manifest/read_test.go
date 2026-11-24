@@ -3,6 +3,7 @@ package manifest
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -498,6 +499,51 @@ func TestReadManifestWithIncludes(t *testing.T) {
 	}
 	if rootService["cwd"] != nil {
 		t.Fatalf("root-service cwd = %#v, want nil", rootService["cwd"])
+	}
+}
+
+func TestNestedIncludesRebaseDeclaringServicePathsOnce(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	files := map[string]string{
+		"devhost.toml":        "name='nested'\nincludes=['parts/one.toml']\n[services.root]\ncommand=['true']\ncwd='root-work'\n",
+		"parts/one.toml":      "includes=['deep/two.toml']\n[services.parent]\ncommand=['true']\ncwd='parent-work'\n",
+		"parts/deep/two.toml": "includes=['../../devhost.toml']\n[services.explicit]\ncommand=['true']\ncwd='../../work with spaces'\nwatch=['src/']\n[services.default]\ncommand=['true']\n[services.files]\nserve='../../public'\n",
+	}
+	for name, text := range files {
+		path := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, err := ReadManifest(filepath.Join(root, "devhost.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	services := raw.value["services"].(map[string]any)
+	cases := []struct {
+		service string
+		field   string
+		want    any
+	}{
+		{"root", "cwd", "root-work"},
+		{"parent", "cwd", filepath.Join("parts", "parent-work")},
+		{"explicit", "cwd", "work with spaces"},
+		{"explicit", "watch", []any{"src/"}},
+		{"default", "cwd", filepath.Join("parts", "deep")},
+		{"files", "serve", "public"},
+		{"files", "cwd", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.service+"/"+tc.field, func(t *testing.T) {
+			got := services[tc.service].(map[string]any)[tc.field]
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("%s.%s = %#v, want %#v", tc.service, tc.field, got, tc.want)
+			}
+		})
 	}
 }
 

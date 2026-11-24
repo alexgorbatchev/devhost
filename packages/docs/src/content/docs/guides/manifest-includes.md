@@ -28,7 +28,7 @@ port = "auto"
 watch = ["src/"]
 ```
 
-`includes` takes paths or glob patterns, relative to the root manifest. Included manifests can include others in turn.
+`includes` takes paths or glob patterns, relative to the manifest declaring them. Included manifests can include others in turn.
 
 - Each included manifest contributes its `[services.*]` and `[groups]`. Everything else, such as `name` and `[devtools]`, comes from the root manifest only.
 - Service names and group names must be unique across all the files. A duplicate fails with a conflict error.
@@ -43,6 +43,7 @@ Paths in an included manifest are relative to that manifest's own directory, as 
 
 - A service without `cwd` runs in its manifest's directory, `apps/api` above.
 - A relative `cwd` resolves from there too, and relative `watch` paths from the service's `cwd`, so `watch = ["src/"]` watches `apps/api/src/`.
+- Nested includes follow the same rule: each service's `cwd` and `serve` resolve from the file that declares the service, regardless of how many manifests include it.
 
 With `cwd = "src"` and `watch = ["."]`, the same service watches `apps/api/src/`, whether run on its own or included by the root.
 

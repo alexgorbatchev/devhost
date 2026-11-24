@@ -379,6 +379,20 @@
       "kind": "build-only",
       "selector": "just rust lint",
       "qualification": "Go logpolicy is a build-time analyzer without a Rust runtime analogue. Rust uses strict Clippy."
+    },
+    {
+      "id": "manifest-runtime",
+      "path": "apps/devhost/rust/tests/stack_commands/manifest.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands manifest:: with each comparison executable",
+      "qualification": "Unchanged Go nested cwd failure is classified explicitly; repaired Go and optimized Rust must pass."
+    },
+    {
+      "id": "config-directories",
+      "path": "apps/devhost/rust/tests/stack_commands/config.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands config:: with each comparison executable",
+      "qualification": "Private HOME, config and state; rejected selected configurations prevent Caddy mutation."
     }
   ],
   "cases": [
@@ -450,8 +464,8 @@
       "effect": "Selected manifest identity and relative service paths agree.",
       "failure": "An absent explicit path fails without falling back.",
       "cleanup": "Remove isolated repository and symlinks.",
-      "evidence": ["cli-precedence", "info", "manifest-includes"],
-      "remaining": "Add a differential Git-root discovery boundary case.",
+      "evidence": ["cli-precedence", "info", "manifest-includes", "manifest-runtime"],
+      "remaining": "Retain final native-platform execution receipts; nested path correction is an explicit unchanged-Go defect.",
       "status": "open"
     },
     {
@@ -472,10 +486,10 @@
       "contract": "nested includes, duplicate conflicts and relative cwd resolution",
       "trigger": "Load nested includes, duplicate declarations and include-relative working directories.",
       "effect": "Merged selection, dependency order and child cwd agree.",
-      "failure": "Duplicate conflicts and include cycles are rejected.",
+      "failure": "Duplicate conflicts are rejected; include cycles read each manifest once.",
       "cleanup": "Stop all selected services before removing included files.",
-      "evidence": ["manifest-includes", "lifecycle"],
-      "remaining": "Compare nested runtime environment and cwd values beyond service-list output.",
+      "evidence": ["manifest-includes", "lifecycle", "manifest-runtime"],
+      "remaining": "Retain final native-platform execution receipts; nested path correction is an explicit unchanged-Go defect.",
       "status": "open"
     },
     {
@@ -486,8 +500,8 @@
       "effect": "Opaque environment survives process launch; valid interpolation resolves.",
       "failure": "Missing required interpolation produces a diagnostic without panic.",
       "cleanup": "Stop the child and remove its private environment fixture.",
-      "evidence": ["manifest-full-schema", "compatibility"],
-      "remaining": "Expand runtime interpolation comparison to all supported forms.",
+      "evidence": ["manifest-full-schema", "compatibility", "manifest-runtime"],
+      "remaining": "Retain final native-platform execution receipts; nested path correction is an explicit unchanged-Go defect.",
       "status": "open"
     },
     {
@@ -510,8 +524,8 @@
       "effect": "Reads and writes occur only in the selected directories.",
       "failure": "Unusable selected paths report errors without fallback.",
       "cleanup": "Use private homes and remove only fixture-owned directories.",
-      "evidence": ["certificate", "config-editor"],
-      "remaining": "Add differential XDG/home default-directory probes.",
+      "evidence": ["certificate", "config-editor", "config-directories"],
+      "remaining": "Retain final native-platform execution receipts for private config precedence and state-certificate fallback.",
       "status": "open"
     },
     {

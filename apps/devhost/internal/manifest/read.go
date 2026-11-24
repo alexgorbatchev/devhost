@@ -84,6 +84,8 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 
 	if rootManifestDir == "" {
 		rootManifestDir = manifestDir
+	} else {
+		manifestValue = prepareSubManifest(manifestValue, rootManifestDir, manifestDir)
 	}
 
 	rawIncludes, ok := manifestValue["includes"]
@@ -136,15 +138,10 @@ func loadAndMergeManifests(manifestPath string, rootManifestDir string, visited 
 					continue
 				}
 
-				// Group members are service names, including for groups named watch;
-				// preserve them before the service-path rewriting below.
 				if err := mergeIncludedGroups(manifestValue, subManifest, absPath, matchAbs); err != nil {
 					return nil, nil, err
 				}
-				subManifestCopy := copyMap(subManifest)
-				preparedSub := prepareSubManifest(subManifestCopy, rootManifestDir, filepath.Dir(matchAbs))
-
-				if subServices, ok := preparedSub["services"].(map[string]any); ok {
+				if subServices, ok := subManifest["services"].(map[string]any); ok {
 					if _, exists := manifestValue["services"]; !exists {
 						manifestValue["services"] = map[string]any{}
 					}
@@ -239,42 +236,6 @@ func rewritePaths(rootManifestDir, subManifestDir string, value any) any {
 	default:
 		return value
 	}
-}
-
-func copyMap(m map[string]any) map[string]any {
-	if m == nil {
-		return nil
-	}
-	result := make(map[string]any, len(m))
-	for k, v := range m {
-		switch val := v.(type) {
-		case map[string]any:
-			result[k] = copyMap(val)
-		case []any:
-			result[k] = copySlice(val)
-		default:
-			result[k] = v
-		}
-	}
-	return result
-}
-
-func copySlice(s []any) []any {
-	if s == nil {
-		return nil
-	}
-	result := make([]any, len(s))
-	for i, v := range s {
-		switch val := v.(type) {
-		case map[string]any:
-			result[i] = copyMap(val)
-		case []any:
-			result[i] = copySlice(val)
-		default:
-			result[i] = v
-		}
-	}
-	return result
 }
 
 func interpolateManifestValue(value any) (any, []string) {

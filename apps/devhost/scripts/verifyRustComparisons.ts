@@ -117,6 +117,7 @@ async function run(name: string, command: string[], binary: string, expectedFail
 const cargo = (suite: string, ...args: string[]) => ["cargo", "test", "--locked", "--test", suite, ...args];
 const duplicate = "lifecycle::included_groups_dependencies_always_start_watches_and_start_stopped_match";
 const legacy = "documents::external_proxy_preserves_document_bytes_headers_recovery_and_backend_ownership";
+const nestedIncludes = "manifest::nested_includes_resolve_child_cwd_and_all_runtime_service_templates";
 const commandServe = [
   "serve::command_sessions_discover_http_and_support_named_controls",
   "serve::command_routes_keep_alias_and_port_qualifiers_as_listeners_change",
@@ -126,7 +127,7 @@ const commandServe = [
 for (const binary of binaries) {
   const isOracle = binary.name === "go-oracle";
   const unsupportedOracleListeners = isOracle && process.platform === "darwin";
-  const exclusions = isOracle ? [duplicate, legacy] : [];
+  const exclusions = isOracle ? [duplicate, legacy, nestedIncludes] : [];
   if (unsupportedOracleListeners) exclusions.push(...commandServe);
   await run(
     `${binary.name}-stack`,
@@ -134,6 +135,12 @@ for (const binary of binaries) {
     binary.path,
   );
   if (isOracle) {
+    await run(
+      "go-oracle-nested-includes",
+      cargo("stack_commands", nestedIncludes, "--", "--exact"),
+      binary.path,
+      "nested include rebased a service more than once",
+    );
     if (unsupportedOracleListeners) {
       await run(
         "go-oracle-macos-command-listeners",
