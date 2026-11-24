@@ -77,11 +77,9 @@ fn opaque_harness() -> Process {
         });
     }
     let child = Process(command.spawn().unwrap());
-    assert!(
-        fs::read(format!("/proc/{}/cmdline", child.0.id()))
-            .unwrap()
-            .contains(&0xff)
-    );
+    wait_until(|| {
+        fs::read(format!("/proc/{}/cmdline", child.0.id())).is_ok_and(|bytes| bytes.contains(&0xff))
+    });
     child
 }
 

@@ -1,8 +1,9 @@
 use std::{
-    fs,
+    fs::{self, File},
     os::unix::fs::PermissionsExt,
     path::Path,
-    process::{Command, Output},
+    process::{Command, Output, Stdio},
+    sync::atomic::{AtomicUsize, Ordering},
     thread,
     time::{Duration, Instant},
 };
@@ -10,8 +11,15 @@ use std::{
 #[path = "support/ports.rs"]
 mod fixture_ports;
 
+static CLI_INVOCATIONS: AtomicUsize = AtomicUsize::new(0);
+
 fn cli(root: &Path, action: &str) -> Output {
-    Command::new(
+    let invocation = CLI_INVOCATIONS.fetch_add(1, Ordering::Relaxed);
+    let stdout_path = root.join(format!("cli-{invocation}.stdout"));
+    let stderr_path = root.join(format!("cli-{invocation}.stderr"));
+    let stdout_file = File::create(&stdout_path).unwrap();
+    let stderr_file = File::create(&stderr_path).unwrap();
+    let status = Command::new(
         std::env::var_os("DEVHOST_CADDY_TEST_BINARY")
             .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into()),
     )
@@ -19,8 +27,16 @@ fn cli(root: &Path, action: &str) -> Output {
     .env("AGENT", "1")
     .env("DEVHOST_CONFIG_DIR", root.join("config"))
     .env("DEVHOST_STATE_DIR", root.join("state"))
-    .output()
-    .unwrap()
+    .stdin(Stdio::null())
+    .stdout(Stdio::from(stdout_file))
+    .stderr(Stdio::from(stderr_file))
+    .status()
+    .unwrap();
+    Output {
+        status,
+        stdout: fs::read(&stdout_path).unwrap(),
+        stderr: fs::read(&stderr_path).unwrap(),
+    }
 }
 
 fn succeeded(output: Output) -> String {

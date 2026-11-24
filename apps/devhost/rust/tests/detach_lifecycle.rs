@@ -473,23 +473,38 @@ process = true
     let bin = &selected;
     let barrier = std::sync::Barrier::new(4);
     let outputs = thread::scope(|scope| {
+        let project_ref = &project;
+        let state_ref = &state_dir;
+        let config_ref = &config_dir;
+        let home_ref = &home_dir;
+        let barrier_ref = &barrier;
         let starts: Vec<_> = (0..3)
-            .map(|_| {
-                scope.spawn(|| {
-                    let child = Command::new(bin)
+            .map(|index| {
+                let stdout_path = project_ref.join(format!("start-{index}.stdout"));
+                let stderr_path = project_ref.join(format!("start-{index}.stderr"));
+                scope.spawn(move || {
+                    let stdout_file = fs::File::create(&stdout_path).unwrap();
+                    let stderr_file = fs::File::create(&stderr_path).unwrap();
+                    let mut child = Command::new(bin)
                         .args(["start", "--detach", "--idle-timeout", "5m", "--", "web"])
-                        .current_dir(&project)
-                        .env("DEVHOST_STATE_DIR", &state_dir)
-                        .env("DEVHOST_CONFIG_DIR", &config_dir)
-                        .env("HOME", &home_dir)
+                        .current_dir(project_ref)
+                        .env("DEVHOST_STATE_DIR", state_ref)
+                        .env("DEVHOST_CONFIG_DIR", config_ref)
+                        .env("HOME", home_ref)
                         .env("AGENT", "1")
                         .env(DETACHED_LOG_ENV, "/tmp/should-be-cleared.log")
-                        .stdout(Stdio::piped())
-                        .stderr(Stdio::piped())
+                        .stdin(Stdio::null())
+                        .stdout(Stdio::from(stdout_file))
+                        .stderr(Stdio::from(stderr_file))
                         .spawn()
                         .expect("spawn concurrent detached start");
-                    barrier.wait();
-                    child.wait_with_output().unwrap()
+                    barrier_ref.wait();
+                    let status = child.wait().unwrap();
+                    std::process::Output {
+                        status,
+                        stdout: fs::read(&stdout_path).unwrap(),
+                        stderr: fs::read(&stderr_path).unwrap(),
+                    }
                 })
             })
             .collect();
