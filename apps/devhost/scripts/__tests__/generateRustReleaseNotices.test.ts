@@ -70,3 +70,24 @@ it("does not bundle licenses from unused target packages", async () => {
   await Bun.write(join(directoryPath, "LICENSE"), "Fixture permission notice\n");
   expect(await generateRustReleaseNotices(packageMetadata, artifactLog)).not.toContain("unused");
 });
+
+it("includes pinned Apple framework license declarations and the full offered Apache license", async () => {
+  for (const name of ["objc2-core-foundation", "objc2-core-services", "objc2-io-kit"]) {
+    const packageMetadata = metadata();
+    const item = packageMetadata.packages[0];
+    assert(item);
+    Object.assign(item, {
+      name,
+      version: "0.3.2",
+      repository: "https://github.com/madsmtm/objc2",
+      license: "Zlib OR Apache-2.0 OR MIT",
+      license_file: null,
+    });
+    const notices = await generateRustReleaseNotices(packageMetadata, artifactLog);
+    expect(notices).toContain(`${name} 0.3.2`);
+    expect(notices).toContain("Apple SDKs");
+    expect(notices).toContain("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION");
+    item.version = "0.3.3";
+    await expect(generateRustReleaseNotices(packageMetadata, artifactLog)).rejects.toThrow("No bundled license text");
+  }
+});

@@ -92,6 +92,17 @@ export async function generateRustReleaseNotices(metadata: unknown, artifactLog:
     ) {
       licenseFilePaths.add(join(repositoryDirectoryPath, "apps/devhost/rust/licenses/include_dir-0.7.4-MIT.txt"));
     }
+    if (
+      ["objc2-core-foundation", "objc2-core-services", "objc2-io-kit"].includes(item.name) &&
+      item.version === "0.3.2" &&
+      item.repository === "https://github.com/madsmtm/objc2" &&
+      item.license === "Zlib OR Apache-2.0 OR MIT"
+    ) {
+      licenseFilePaths.add(
+        join(repositoryDirectoryPath, "apps/devhost/rust/licenses/objc2-frameworks-0.3.2-LICENSE.md"),
+      );
+      licenseFilePaths.add(join(repositoryDirectoryPath, "apps/devhost/rust/licenses/Apache-2.0.txt"));
+    }
     if (!licenseFilePaths.size)
       throw new Error(`No bundled license text for ${item.name} ${item.version} (${item.license ?? "unspecified"}).`);
     const source = item.source ?? (item.name === "devhost-rust" ? "this repository" : "vendored dependency");
