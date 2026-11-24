@@ -6,6 +6,7 @@ const rootPath = fileURLToPath(new URL("../../../", import.meta.url));
 
 type GitTreeEntry = [string, string];
 type BehaviorContract = { feature: string; contract: string };
+type ContractEntry = [string, BehaviorContract];
 
 function git(...args: string[]): string {
   const result = Bun.spawnSync(["git", ...args], { cwd: rootPath, stdout: "pipe", stderr: "pipe" });
@@ -54,10 +55,9 @@ export async function verifyRustParity(reference: string): Promise<void> {
   }
   const contracts = new Map(
     inventory.features.flatMap((feature) =>
-      feature.contracts.map((contract, index): [string, BehaviorContract] => [
-        `${feature.id}.${index + 1}`,
-        { feature: feature.id, contract },
-      ]),
+      feature.contracts.map(
+        (contract, index): ContractEntry => [`${feature.id}.${index + 1}`, { feature: feature.id, contract }],
+      ),
     ),
   );
   const caseIds = new Set<string>();
@@ -108,6 +108,16 @@ export async function verifyRustParity(reference: string): Promise<void> {
   }
   for (const path of branchDifferences.keys()) {
     if (!assigned.has(path)) failures.push(`Branch difference has no Go source: ${path}`);
+  }
+  const additions = new Set<string>();
+  for (const source of inventory.branchAdditions) {
+    if (additions.has(source.path) || sources.has(source.path) || !isContract(source.path)) {
+      failures.push(`Invalid branch addition: ${source.path}`);
+    }
+    additions.add(source.path);
+    if (!ids.has(source.feature) || !source.reason || git("hash-object", "--", source.path) !== source.blob) {
+      failures.push(`Changed or unexplained branch addition: ${source.path}`);
+    }
   }
   if (failures.length) throw new Error(failures.join("\n"));
   console.log(

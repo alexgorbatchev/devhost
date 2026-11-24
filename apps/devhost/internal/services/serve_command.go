@@ -18,7 +18,6 @@ import (
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/config"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/manifest"
-	processnet "github.com/shirou/gopsutil/v4/net"
 )
 
 const commandServiceName = "command"
@@ -117,7 +116,7 @@ func readCommandListeners(ctx context.Context, started *startedService) ([]comma
 	pids = slices.Compact(pids)
 	byPort := map[int]commandListener{}
 	for _, pid := range pids {
-		connections, err := processnet.ConnectionsPidWithoutUidsWithContext(ctx, "tcp", int32(pid))
+		connections, err := readCommandConnections(ctx, pid)
 		if err != nil {
 			if !processExists(pid) {
 				continue

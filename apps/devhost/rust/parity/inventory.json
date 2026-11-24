@@ -1547,6 +1547,30 @@
       "path": "packages/docs/src/content/docs/stacks/recovery.md",
       "reason": "Documents validation-before-mutation and one restart per distinct selected service, verified by native Go/Rust control scenarios.",
       "blob": "a5d6b8d79b341a809f73fb0d68b797ced7c82db6"
+    },
+    {
+      "path": "apps/devhost/internal/services/serve_command.go",
+      "blob": "234031db7cd220dad463f09a921412924bd8618a",
+      "reason": "macOS command serving uses the existing system lsof dependency to discover only the contained process TCP listeners; the unchanged Go20 oracle calls an unsupported API."
+    },
+    {
+      "path": "packages/docs/src/content/docs/start/serve.md",
+      "blob": "d503b1f186945edab0ff8113443f2e3735dd8a6a",
+      "reason": "Documents the system lsof requirement for Go command listener discovery on macOS."
+    }
+  ],
+  "branchAdditions": [
+    {
+      "path": "apps/devhost/internal/services/serve_command_connections_darwin.go",
+      "blob": "569eff3595775d5c79ffac0844a15fd94df413ef",
+      "feature": "serve-command",
+      "reason": "Native macOS system lsof discovery intersects PID, TCP and LISTEN filters and parses IPv4/IPv6 addresses; cancellation and discovery errors remain failures."
+    },
+    {
+      "path": "apps/devhost/internal/services/serve_command_connections_other.go",
+      "blob": "9300a4481439d8e9e62f522614d738f2690825bc",
+      "feature": "serve-command",
+      "reason": "Other platforms retain the existing gopsutil connection discovery unchanged."
     }
   ]
 }

@@ -45,7 +45,13 @@ fn start(runtime: &Runtime, directory: &Path, detach: bool) -> Option<Process> {
     command.args(["--", "python3", "server.py"]);
     if detach {
         let output = command.output().unwrap();
-        assert!(output.status.success(), "{:?}", output);
+        assert!(
+            output.status.success(),
+            "serve exited {}: {}{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
         assert!(
             directory.join("ports.json").exists(),
             "detach returned before HTTP readiness"
