@@ -181,10 +181,9 @@ mod tests {
         result.send(Ok(Vec::new())).unwrap();
         let (status, body) = worktrees.join().unwrap();
         assert_eq!(status, 200);
-        assert_eq!(
-            serde_json::from_str::<Value>(&body).unwrap()["repositories"],
-            serde_json::json!([])
-        );
+        let refreshed = serde_json::from_str::<Value>(&body).unwrap();
+        assert!(refreshed["services"].is_array(), "{refreshed}");
+        assert!(refreshed["config"].is_object(), "{refreshed}");
         // A route refresh retains the document listener while replacing its backend.
         let replacement = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
         manifest.services.get_mut("web").unwrap().port = Some(replacement.port());

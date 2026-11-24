@@ -49,6 +49,10 @@ pub(super) async fn poll_health(handle: RuntimeHandle) {
 }
 
 fn health_message(handle: &RuntimeHandle) -> Result<String, String> {
+    health_value(handle).map(|response| response.to_string())
+}
+
+pub(super) fn health_value(handle: &RuntimeHandle) -> Result<serde_json::Value, String> {
     let manifest = handle.live.manifest().ok_or("Health is not available.")?;
     let snapshot = handle.live.snapshot()?;
     let dirty = handle.dirty_services();
@@ -105,7 +109,7 @@ fn health_message(handle: &RuntimeHandle) -> Result<String, String> {
     if !repositories.is_empty() {
         response["repositories"] = json!(repositories);
     }
-    Ok(response.to_string())
+    Ok(response)
 }
 
 pub(super) fn websocket_guard(

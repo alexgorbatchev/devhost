@@ -420,7 +420,14 @@ async fn worktrees(State(handle): State<RuntimeHandle>, request: Request<Body>) 
         match result.try_recv() {
             Ok(Ok(repositories)) => {
                 let value = if read {
-                    serde_json::json!({"repositories": repositories})
+                    let mut health = match super::streams::health_value(&handle) {
+                        Ok(health) => health,
+                        Err(error) => return diagnostic(StatusCode::INTERNAL_SERVER_ERROR, &error),
+                    };
+                    if !repositories.is_empty() {
+                        health["repositories"] = serde_json::json!(repositories);
+                    }
+                    health
                 } else {
                     serde_json::json!({"success": true})
                 };
@@ -598,7 +605,20 @@ mod tests {
 
     #[test]
     fn worktree_requests_enforce_guards_payload_limits_and_runtime_results() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::write(
+            root.path().join("devhost.toml"),
+            "name = 'worktrees'\n[services.web]\ncommand = ['sleep', '30']\nhealth.process = true\n",
+        )
+        .unwrap();
+        let config = crate::manifest::read_manifest(root.path(), None).unwrap();
+        let manifest = crate::services::resolve::resolve_service_ports(
+            &config,
+            &crate::services::resolve::PortResolutionOptions::default(),
+        )
+        .unwrap();
         let (handle, control) = RuntimeControl::channel();
+        handle.live.initialize(&manifest);
         let server = ControlServer::start(handle).unwrap();
         let request = |method, headers, body: &str| {
             request_path(
@@ -684,7 +704,15 @@ mod tests {
                 }
             }
         });
-        assert!(request("GET", "Host: localhost\r\n", "").ends_with(r#"{"repositories":[]}"#));
+        let refresh_response = request("GET", "Host: localhost\r\n", "");
+        assert!(
+            refresh_response.starts_with("HTTP/1.1 200"),
+            "{refresh_response}"
+        );
+        let refresh_body = refresh_response.split_once("\r\n\r\n").unwrap().1;
+        let refresh_json: serde_json::Value = serde_json::from_str(refresh_body).unwrap();
+        assert!(refresh_json["services"].is_array(), "{refresh_json}");
+        assert!(refresh_json["config"].is_object(), "{refresh_json}");
         assert!(
             request(
                 "POST",

@@ -26,7 +26,10 @@ fn occupied_checkout_requires_a_matching_owner_before_stopping_the_competing_sta
     let (project, linked, mut process) = saved::repository(&runtime, "owner-contract");
     let origin = origin(&runtime, "owner-contract");
     let mut occupant = occupant(&runtime, &linked);
-    let repository = body(&mut get(&origin, "worktrees"))["repositories"][0].clone();
+    let refreshed = body(&mut get(&origin, "worktrees"));
+    assert!(refreshed["services"].is_array(), "{refreshed}");
+    assert!(refreshed["config"].is_object(), "{refreshed}");
+    let repository = refreshed["repositories"][0].clone();
     let checkout = repository["worktrees"]
         .as_array()
         .unwrap()
