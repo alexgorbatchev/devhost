@@ -27,11 +27,12 @@ type RestartStacksOptions struct {
 }
 
 type stackLaunch struct {
-	stack       caddy.LiveStack
-	args        []string
-	directory   string
-	environment []string
-	log         *os.File
+	stack            caddy.LiveStack
+	args             []string
+	directory        string
+	environment      []string
+	log              *os.File
+	directoryMissing bool
 }
 
 // RestartStacks replaces running supervisors with this executable. Launch
@@ -70,17 +71,27 @@ func RestartStacks(options RestartStacksOptions, environment map[string]string, 
 	if len(stacks) == 0 {
 		return cliout.WriteLog(stdout, "devhost", "No running stacks to restart.")
 	}
-	launches, err := captureStackLaunches(stacks, paths)
+	launches, err := captureStackLaunches(stacks, paths, options.All)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		for _, launch := range launches {
-			err = errors.Join(err, launch.log.Close())
+			if launch.log != nil {
+				err = errors.Join(err, launch.log.Close())
+			}
 		}
 	}()
 	var failures []error
 	for _, launch := range launches {
+		if launch.directoryMissing {
+			if err := stopStackForRestart(launch.stack, paths); err != nil {
+				failures = append(failures, fmt.Errorf("stop %s (PID %d) with missing launch directory: %w", launch.stack.Name, launch.stack.PID, err))
+			} else {
+				cliout.Log(stdout, "devhost", fmt.Sprintf("Stopped %s (PID %d) because its launch directory was removed.", launch.stack.Name, launch.stack.PID))
+			}
+			continue
+		}
 		cliout.Log(stdout, "devhost", fmt.Sprintf("Restarting %s (PID %d); log: %s", launch.stack.Name, launch.stack.PID, launch.log.Name()))
 		if err := replaceStack(launch, paths, executable, stdout); err != nil {
 			failures = append(failures, fmt.Errorf("restart %s (PID %d), log %s: %w", launch.stack.Name, launch.stack.PID, launch.log.Name(), err))
@@ -89,34 +100,41 @@ func RestartStacks(options RestartStacksOptions, environment map[string]string, 
 	return errors.Join(failures...)
 }
 
-func captureStackLaunches(stacks []caddy.LiveStack, paths caddy.Paths) (launches []stackLaunch, err error) {
-	directory, err := os.MkdirTemp(paths.StateDirectoryPath, "restart-")
-	if err != nil {
-		return nil, err
-	}
+func captureStackLaunches(stacks []caddy.LiveStack, paths caddy.Paths, stopMissingDirectory bool) (launches []stackLaunch, err error) {
+	var directory string
 	defer func() {
-		if err != nil {
+		if err != nil && directory != "" {
 			for _, launch := range launches {
-				err = errors.Join(err, launch.log.Close())
+				if launch.log != nil {
+					err = errors.Join(err, launch.log.Close())
+				}
 			}
 			err = errors.Join(err, os.RemoveAll(directory))
 		}
 	}()
 	for _, stack := range stacks {
-		launch, captureErr := captureStackLaunch(stack)
+		launch, captureErr := captureStackLaunch(stack, stopMissingDirectory)
 		if captureErr != nil {
 			return launches, fmt.Errorf("capture %s (PID %d); no stacks were stopped: %w", stack.Name, stack.PID, captureErr)
 		}
-		launch.log, err = os.OpenFile(filepath.Join(directory, fmt.Sprintf("%d.log", stack.PID)), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-		if err != nil {
-			return launches, err
+		if !launch.directoryMissing {
+			if directory == "" {
+				directory, err = os.MkdirTemp(paths.StateDirectoryPath, "restart-")
+				if err != nil {
+					return launches, err
+				}
+			}
+			launch.log, err = os.OpenFile(filepath.Join(directory, fmt.Sprintf("%d.log", stack.PID)), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+			if err != nil {
+				return launches, err
+			}
 		}
 		launches = append(launches, launch)
 	}
 	return launches, nil
 }
 
-func captureStackLaunch(stack caddy.LiveStack) (stackLaunch, error) {
+func captureStackLaunch(stack caddy.LiveStack, stopMissingDirectory bool) (stackLaunch, error) {
 	p, err := process.NewProcess(int32(stack.PID))
 	if err != nil {
 		return stackLaunch{}, err
@@ -148,6 +166,12 @@ func captureStackLaunch(stack caddy.LiveStack) (stackLaunch, error) {
 	}
 	info, err := os.Stat(directory)
 	if err != nil {
+		if stopMissingDirectory && errors.Is(err, os.ErrNotExist) {
+			if !stack.Alive() {
+				return stackLaunch{}, fmt.Errorf("stack process changed during capture")
+			}
+			return stackLaunch{stack: stack, directoryMissing: true}, nil
+		}
 		return stackLaunch{}, err
 	}
 	if !info.IsDir() {
@@ -204,16 +228,23 @@ func replaceLaunchLog(environment []string, logPath string) []string {
 	return environment
 }
 
-func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdout io.Writer) error {
-	if err := launch.stack.Signal(paths, syscall.SIGTERM); err != nil {
+func stopStackForRestart(stack caddy.LiveStack, paths caddy.Paths) error {
+	if err := stack.Signal(paths, syscall.SIGTERM); err != nil {
 		return err
 	}
 	deadline := time.Now().Add(stopGracePeriod)
-	for launch.stack.Alive() && processExists(launch.stack.PID) {
+	for stack.Alive() && processExists(stack.PID) {
 		if time.Now().After(deadline) {
-			return fmt.Errorf("stack is still stopping after %s; replacement was not started", stopGracePeriod)
+			return fmt.Errorf("stack is still stopping after %s", stopGracePeriod)
 		}
 		time.Sleep(restartPollInterval)
+	}
+	return nil
+}
+
+func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdout io.Writer) error {
+	if err := stopStackForRestart(launch.stack, paths); err != nil {
+		return err
 	}
 	input, err := os.Open(os.DevNull)
 	if err != nil {
@@ -230,7 +261,7 @@ func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdo
 		return err
 	}
 	defer child.Release() // A detached supervisor outlives the restart command.
-	deadline = time.Now().Add(restartRegistrationTimeout)
+	deadline := time.Now().Add(restartRegistrationTimeout)
 	for {
 		stacks, err := caddy.ReadLiveStacks(paths)
 		if err != nil {
