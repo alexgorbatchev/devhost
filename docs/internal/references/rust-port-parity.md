@@ -83,7 +83,8 @@ and Claude stream-JSON boundaries with local protocol peers, including model
 discovery, ordered sends, approvals while a send awaits confirmation, exact
 native request IDs, turn-steering races, queued and unconfirmed delivery,
 disk-backed replay, image validation, private activity logs, panel persistence,
-and process termination. These peers perform no model inference.
+and process termination. These peers perform no model inference and use
+`python3` from `PATH`, as do the shared native stack fixtures.
 
 `just rust test --test stack_commands chat::` runs the shared HTTP/WebSocket
 scenario through an isolated native stack. Set `DEVHOST_STACK_TEST_BINARY` to

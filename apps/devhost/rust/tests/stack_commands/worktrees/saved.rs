@@ -1,10 +1,8 @@
 use super::*;
 
 pub(super) fn repository(runtime: &Runtime, name: &str) -> (PathBuf, PathBuf, Process) {
-    let (project, process) = runtime.start_stack(name, false);
-    let origin = origin(runtime, name);
-    lifecycle::ready(&origin);
-    fs::create_dir(project.join("public")).unwrap();
+    let project = runtime.root.path().join(name);
+    fs::create_dir_all(project.join("public")).unwrap();
     fs::write(project.join("public/note.txt"), "main checkout").unwrap();
     fs::create_dir(project.join("extra")).unwrap();
     fs::write(project.join("extra/note.txt"), "main extra").unwrap();
@@ -33,18 +31,16 @@ pub(super) fn repository(runtime: &Runtime, name: &str) -> (PathBuf, PathBuf, Pr
     );
     fs::write(linked.join("public/note.txt"), "feature checkout").unwrap();
     fs::write(linked.join("extra/note.txt"), "feature extra").unwrap();
-    fs::write(
-        project.join("devhost.toml"),
-        format!("{manifest}\n# discover Git\n"),
-    )
-    .unwrap();
+    let process = lifecycle::launch(runtime, &project, &[]);
+    let origin = origin(runtime, name);
+    lifecycle::ready(&origin);
     wait_until(|| content(runtime).as_deref() == Some("main checkout"));
     wait_until(|| {
         let mut response = get(&origin, "worktrees");
         response.status() == 200
             && body(&mut response)["repositories"][0]["serviceNames"] == json!(["files", "extra"])
     });
-    (project, linked, process.unwrap())
+    (project, linked, process)
 }
 
 #[test]

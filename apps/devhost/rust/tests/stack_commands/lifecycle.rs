@@ -234,6 +234,16 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
     });
     let origin = origin(&runtime, "selection-contract");
     ready(&origin);
+    wait_until(|| {
+        fs::read_to_string(project.join("launches"))
+            .unwrap_or_default()
+            .lines()
+            .count()
+            >= 3
+            && ["base", "web", "always"]
+                .iter()
+                .all(|name| child.join(format!("{name}.pid")).exists())
+    });
     let launches = fs::read_to_string(project.join("launches")).unwrap();
     let names: Vec<_> = launches
         .lines()
@@ -305,7 +315,9 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
             .lines()
             .count(),
         4,
-        "a duplicate restart batch must restart web exactly once"
+        "a duplicate restart batch must restart web exactly once; launches={} log={}",
+        fs::read_to_string(project.join("launches")).unwrap(),
+        fs::read_to_string(project.join("lifecycle.log")).unwrap()
     );
     assert!(!procid::is_process_alive(old_pid));
     assert!(
