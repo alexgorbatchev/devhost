@@ -3,6 +3,8 @@ import inventory from "../rust/parity/inventory.json";
 
 const rootPath = fileURLToPath(new URL("../../../", import.meta.url));
 
+type GitTreeEntry = [string, string];
+
 function git(...args: string[]): string {
   const result = Bun.spawnSync(["git", ...args], { cwd: rootPath, stdout: "pipe", stderr: "pipe" });
   if (result.exitCode !== 0) throw new Error(result.stderr.toString().trim());
@@ -32,7 +34,7 @@ export async function verifyRustParity(reference: string): Promise<void> {
   const entries = git("ls-tree", "-r", referenceSha).split("\n");
   const sources = new Map(
     entries
-      .map((entry): [string, string] => {
+      .map((entry): GitTreeEntry => {
         const [metadata, path] = entry.split("\t");
         return [path ?? "", metadata?.split(" ")[2] ?? ""];
       })
