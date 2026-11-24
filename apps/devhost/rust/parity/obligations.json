@@ -402,6 +402,13 @@
       "qualification": "Four IPv4/IPv6 bind hosts and both proxyLocalOrigin settings; app and document Host/Origin/forwarded headers, foreign-origin rejection, external ownership and backend-loss recovery."
     },
     {
+      "id": "port-retries",
+      "path": "apps/devhost/rust/tests/stack_commands/ports.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands ports:: with each comparison executable",
+      "qualification": "Real occupied ports exercise successful automatic retries, bounded exhaustion and fixed-port failure; check final port references, dependent startup order and child/listener cleanup. Unchanged Go exhaustion is an explicit expected failure; repaired Go and optimized Rust must pass."
+    },
+    {
       "id": "config-directories",
       "path": "apps/devhost/rust/tests/stack_commands/config.rs",
       "kind": "native-shared",
@@ -622,8 +629,8 @@
       "effect": "Chosen ports and references are visible to the correct child.",
       "failure": "Occupied fixed ports fail; auto collisions retry within the bound.",
       "cleanup": "Release claims and confirm ports can be rebound.",
-      "evidence": ["lifecycle", "serve", "service-validation"],
-      "remaining": "Add forced auto-collision retry and injected-reference differential fixture.",
+      "evidence": ["lifecycle", "serve", "service-validation", "port-retries"],
+      "remaining": "Retain final native-platform receipts for forced port collisions and injected references.",
       "status": "open"
     },
     {
@@ -644,10 +651,10 @@
       "contract": "fixed versus dynamic ports and bounded retries",
       "trigger": "Start fixed and auto-port services while a port is occupied.",
       "effect": "Fixed ownership is respected; dynamic retries remain bounded.",
-      "failure": "Exhausted retries roll back startup.",
+      "failure": "Exhausted foreground startup retains the exited service for recovery and its final attempted port for subsequent service references.",
       "cleanup": "Remove claims and rebind successful and failed ports.",
-      "evidence": ["serve", "service-validation"],
-      "remaining": "Add forced fixed/automatic health retry comparison.",
+      "evidence": ["serve", "service-validation", "port-retries"],
+      "remaining": "Retain final native-platform receipts for fixed/automatic collision retries and cleanup.",
       "status": "open"
     },
     {

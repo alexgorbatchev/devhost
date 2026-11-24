@@ -1535,8 +1535,8 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "aa83d7b5b9e422519f62b05e215365c8eb29b5b1",
-      "reason": "Shared operator contract documents verified Rust behavior, completion installation and portability differences."
+      "blob": "533f220626b420f55959226a075840d7877598f1",
+      "reason": "Shared operator contract documents verified Rust behavior, completion installation and portability differences. Describes final attempted port references after automatic startup retry exhaustion."
     },
     {
       "path": "apps/devhost/internal/devtools/document_injection.go",
@@ -1545,13 +1545,13 @@
     },
     {
       "path": "apps/devhost/internal/services/runtime.go",
-      "reason": "Verified Go repair deduplicates validated restart batches in dependency order. The unchanged Go20 oracle repeats a restart for duplicate names; Rust and repaired Go restart each requested service once.",
-      "blob": "0218d207f96b33bd23bc2bdda780d8035e6dfa5f"
+      "reason": "Verified Go repair deduplicates validated restart batches in dependency order. The unchanged Go20 oracle repeats a restart for duplicate names; Rust and repaired Go restart each requested service once. Failed automatic startup retries also publish the final assigned manifest so snapshots and subsequent service references retain the attempted port.",
+      "blob": "e5e10989de83e7bacbb9a2c370bb4564f1f2e688"
     },
     {
       "path": "packages/docs/src/content/docs/stacks/recovery.md",
-      "reason": "Documents validation-before-mutation and one restart per distinct selected service, verified by native Go/Rust control scenarios.",
-      "blob": "a5d6b8d79b341a809f73fb0d68b797ced7c82db6"
+      "reason": "Documents validation-before-mutation and one restart per distinct selected service, verified by native Go/Rust control scenarios. Documents final automatic-port assignments after startup retry exhaustion.",
+      "blob": "4ec6234d19e86a034a0ef0ea9feebbe1fdd45262"
     },
     {
       "path": "apps/devhost/internal/services/serve_command.go",

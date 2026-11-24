@@ -45,6 +45,8 @@ mod info;
 mod lifecycle;
 #[path = "stack_commands/manifest.rs"]
 mod manifest;
+#[path = "stack_commands/ports.rs"]
+mod ports;
 #[path = "stack_commands/processes.rs"]
 mod processes;
 #[path = "stack_commands/proxy.rs"]

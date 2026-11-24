@@ -59,7 +59,7 @@ It uses the last manifest that was accepted, so an invalid edit on disk does not
 
 ## Port conflicts on restart
 
-Another process can take a service's automatic port while the service is stopped. The single-service restart then fails with an error that points to **Restart Stack**, which assigns a new port. Startup and hot reload retry this kind of conflict with another port on their own, up to three times.
+Another process can take a service's automatic port while the service is stopped. The single-service restart then fails with an error that points to **Restart Stack**, which assigns a new port. Startup and hot reload retry this kind of conflict with another port on their own, up to three times. If those retries fail, the stack's service details and references used by subsequently started services retain the last attempted port, so a later single-service restart uses that same address.
 
 **Restart Stack** cannot fix a conflict on a fixed port. Stop the process that holds it, or change the service's `port`.
 

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 01:44
+last_modified: 2026-11-24 02:37
 status: current
 ---
 
@@ -159,6 +159,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Local CA trusted once when devhost starts Caddy; untrusted-CA warning                                                                                                                       | `guides/managed-caddy.md`, "Trust the certificates"; `guides/troubleshooting.md`, "Browsers reject devhost HTTPS certificates"             | No demo                                          |
 | Route changes made while the managed Caddy is stopped are kept for its next start, never sent to another Caddy                                                                              | `guides/managed-caddy.md`, "Several stacks, one Caddy"                                                                                     | No demo                                          |
 | Start a stack in dependency order, stop it with one command                                                                                                                                 | `guides/stack-lifecycle.md`, "Start a stack", "Stop a stack"                                                                               | `stack-lifecycle` step-1 to step-5; promo line-3 |
+| Bounded automatic-port collision retries retain the final attempted port in service details and subsequent service references after failure                                                 | `stacks/recovery.md`, "Port conflicts"                                                                                                     | No demo                                          |
 | Start part of a stack by naming services                                                                                                                                                    | `guides/stack-lifecycle.md`, "Start part of a stack"                                                                                       | No demo                                          |
 | Named service groups                                                                                                                                                                        | `guides/stack-lifecycle.md`, "Named service groups"                                                                                        | No demo                                          |
 | Start a stopped service from the Services panel                                                                                                                                             | `guides/stack-lifecycle.md`, "Starting the rest later"; `guides/devtools.md`, "Services panel"                                             | No demo                                          |

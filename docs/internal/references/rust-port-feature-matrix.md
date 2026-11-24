@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-23 16:33
-last_modified: 2026-11-24 01:31
+last_modified: 2026-11-24 02:37
 status: current
 ---
 
@@ -45,7 +45,7 @@ just rust test --test remote_transport
 DEVHOST_REMOTE_TEST_BINARY=/absolute/path/to/go/devhost just rust test --test remote_transport
 ```
 
-The maintained `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>` recipe runs the corpora and shared native fixtures with retained hashes, logs and explicit assertions for the unchanged oracle's duplicate-restart, legacy-document, nested-include path and literal-environment defects. On macOS, four command-serving scenarios are excluded only for the unchanged oracle, whose listener API is unsupported; a separate exact failure assertion reproduces that unsupported API. Repaired Go and Rust run all four scenarios. Repaired Go and optimized Rust must pass those fixtures. CI runs the recipe on hosted Linux x64, Linux ARM64 and macOS ARM64, checks current-Go inventory drift, and uses the pinned Rust toolchain; Linux x64 additionally checks the declared minimum compiler and 90% first-party line/function coverage. Candidate packaging is a separate manual input and uploads unpublished artifacts only.
+The maintained `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>` recipe runs the corpora and shared native fixtures with retained hashes, logs and explicit assertions for the unchanged oracle's duplicate-restart, legacy-document, nested-include path, literal-environment and exhausted automatic-port retry defects. Fixed-port collisions, successful automatic retries and exhausted retries share real occupied-port fixtures that check references, startup order and cleanup. On macOS, four command-serving scenarios are excluded only for the unchanged oracle, whose listener API is unsupported; a separate exact failure assertion reproduces that unsupported API. Repaired Go and Rust run all four scenarios. Repaired Go and optimized Rust must pass those fixtures. CI runs the recipe on hosted Linux x64, Linux ARM64 and macOS ARM64, checks current-Go inventory drift, and uses the pinned Rust toolchain; Linux x64 additionally checks the declared minimum compiler and 90% first-party line/function coverage. Candidate packaging is a separate manual input and uploads unpublished artifacts only.
 
 The runner also walks all 26 public help entry points and compares command names and short/long flag availability. It runs the shared CLI validation, precedence, skill, stamped-version and native Bash Readline cases against each executable. Three additional Rust regressions retain framework-specific help layout, installation instructions and diagnostic wording; those are excluded from the shared subset. Flag types/defaults and invalid inputs require semantic cases rather than equal help prose. Each binary's version is checked against its own stamp.
 
