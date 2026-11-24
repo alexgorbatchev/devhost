@@ -12,7 +12,7 @@ use std::{
 
 struct Shell {
     child: Child,
-    terminal: File,
+    terminal: Option<File>,
 }
 
 pub(super) fn phase(message: impl std::fmt::Display) {
@@ -22,6 +22,12 @@ pub(super) fn phase(message: impl std::fmt::Display) {
 }
 
 impl Shell {
+    fn terminal(&mut self) -> &mut File {
+        self.terminal
+            .as_mut()
+            .expect("Bash terminal remains owned until shutdown")
+    }
+
     fn until(&mut self, marker: &[u8]) -> Vec<u8> {
         let deadline = Instant::now() + Duration::from_secs(8);
         let mut output = Vec::new();
@@ -33,7 +39,7 @@ impl Shell {
                 String::from_utf8_lossy(&output)
             );
             let mut descriptor = libc::pollfd {
-                fd: self.terminal.as_raw_fd(),
+                fd: self.terminal().as_raw_fd(),
                 events: libc::POLLIN,
                 revents: 0,
             };
@@ -61,7 +67,7 @@ impl Shell {
                 String::from_utf8_lossy(&output)
             );
             let mut buffer = [0; 65536];
-            let count = self.terminal.read(&mut buffer).expect("read Bash PTY");
+            let count = self.terminal().read(&mut buffer).expect("read Bash PTY");
             phase(format_args!("PTY read {count} bytes"));
             assert!(
                 count > 0,
@@ -85,9 +91,35 @@ impl Drop for Shell {
                 std::io::Error::last_os_error()
             ));
         }
-        phase("join Bash child");
-        let status = self.child.wait().expect("join Bash fixture");
-        phase(format_args!("Bash joined: {status}"));
+        phase("close Bash PTY master");
+        drop(self.terminal.take());
+        if let Err(error) = self.child.kill() {
+            phase(format_args!("direct Bash kill: {error}"));
+        }
+        phase("join Bash child within five seconds");
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            match self.child.try_wait() {
+                Ok(Some(status)) => {
+                    phase(format_args!("Bash joined: {status}"));
+                    return;
+                }
+                Ok(None) if Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                result => {
+                    phase(format_args!(
+                        "Bash cleanup failed for {}: {result:?}",
+                        self.child.id()
+                    ));
+                    assert!(
+                        std::thread::panicking(),
+                        "Bash fixture did not join within five seconds"
+                    );
+                    return;
+                }
+            }
+        }
     }
 }
 
@@ -164,7 +196,7 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
     phase("spawn Bash with a controlling terminal");
     let mut shell = Shell {
         child: command.spawn().expect("spawn interactive Bash"),
-        terminal,
+        terminal: Some(terminal),
     };
     phase(format_args!(
         "Bash spawned: {}; await prompt",
@@ -187,7 +219,7 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
     ] {
         phase(format_args!("probe {line:?}"));
         shell
-            .terminal
+            .terminal()
             .write_all(format!("{line}\t\x18\x12").as_bytes())
             .unwrap();
         let mut output = shell.until(b"READLINE_VALUE:");
@@ -212,7 +244,7 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
             "{output}"
         );
         // Clear the editable command without executing it or racing asynchronous SIGINT handling.
-        shell.terminal.write_all(b"\x15").unwrap();
+        shell.terminal().write_all(b"\x15").unwrap();
         phase(format_args!("probe accepted: {line:?}"));
     }
 }
