@@ -442,6 +442,13 @@
       "kind": "shared-cli",
       "selector": "cargo test --locked --test stack_commands documents::source::stamped:: -- --ignored",
       "qualification": "Requires separately stamped executables and DEVHOST_STAMP_TEST_CHECKOUT. Checks actual CLI recorded source selection, relative override precedence, invalid explicit rejection and missing recorded checkout embedded fallback. Native platform receipts remain required."
+    },
+    {
+      "id": "resource-cadence",
+      "path": "docs/internal/references/rust-port-parity.md",
+      "kind": "native-observation",
+      "selector": "Native control tests: Linux CPU cadence acceptance",
+      "qualification": "Retained native strace receipts compare unchanged Go20, repaired Go and optimized Rust; path-filtered actual CPU reads establish Linux scheduling independently of deduplicated WebSocket frames. macOS and other resource readouts remain separate acceptance."
     }
   ],
   "cases": [
@@ -1473,8 +1480,8 @@
       "effect": "Disabled resources stop emitting; enabled resources use configured cadence.",
       "failure": "Invalid duration or resource settings are rejected.",
       "cleanup": "Close stream and join old/new sampler schedules.",
-      "evidence": ["control", "resource-regression"],
-      "remaining": "Live toggle comparisons now remove disabled fields, normally close existing sockets and reject new sockets when all resources are disabled, then permit memory-only re-enablement. Add differential sampling cadence evidence; fixtures use the valid250ms minimum rather than the previously rejected100ms interval.",
+      "evidence": ["control", "resource-regression", "resource-cadence"],
+      "remaining": "Live toggles and Linux CPU scheduling have differential evidence, including 1 s without a browser, live 250 ms, restored 1 s, no reads while disabled and 250 ms after reenablement. Retain final native receipts; add macOS cadence and memory/disk scheduling acceptance. The supported minimum remains 250 ms.",
       "status": "open"
     },
     {

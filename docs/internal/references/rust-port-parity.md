@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 09:11
+last_modified: 2026-11-24 09:30
 status: current
 ---
 
@@ -228,7 +228,22 @@ settings preserve the accepted listener and disk content. Resource frames check
 byte units and percentage relationships. Live enablement changes remove disabled
 fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
-250 ms minimum interval; they do not establish sampling cadence.
+250 ms minimum interval; frame counts do not establish sampling cadence because
+unchanged readings are deduplicated.
+
+For Linux cadence acceptance, trace the selected external executable's actual
+`read` and `pread64` calls on `/proc/stat` with `strace -f -ttt -yy -P /proc/stat`.
+Use an isolated CPU-only stack and private Caddy ports. Measure a 1 s interval
+without a browser, change it live to 250 ms, restore 1 s, disable sampling, then
+re-enable 250 ms. Exclude reload transitions from each measurement window. Join
+unfinished and resumed syscall lines by thread ID; count only successful reads
+whose bytes begin with the aggregate `cpu` row. This avoids counting EOF reads
+or subsequent pages as samples. Retain phase boundaries, individual read times,
+interval bounds, script and trace hashes, selected binary hashes, wire payload
+checks, and identity-aware cleanup evidence for all three executables. These
+traces establish Linux CPU scheduling only; native macOS scheduling and the other
+readouts require separate evidence. Exclude instrumented runs from performance
+benchmarks.
 
 `just rust test --test stack_commands documents::source::` compares explicit
 source-checkout selection through the live CLI. Missing and stale bundles rebuild
