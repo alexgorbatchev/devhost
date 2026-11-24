@@ -22,6 +22,72 @@ fn selected(output: Output, name: &str) {
 }
 
 #[test]
+fn invalid_dependency_graphs_and_references_reject_before_launch_or_registration() {
+    let runtime = Runtime::start();
+    for (name, a, b, diagnostic) in [
+        (
+            "cycle",
+            "dependsOn=['b']",
+            "dependsOn=['a']",
+            "Dependency cycle detected: a -> b -> a",
+        ),
+        (
+            "self-cycle",
+            "dependsOn=['a']",
+            "",
+            "Dependency cycle detected: a -> a",
+        ),
+        (
+            "missing-dependency",
+            "dependsOn=['missing']",
+            "",
+            "dependsOn references an unknown service: missing",
+        ),
+        (
+            "missing-reference",
+            "env.OTHER='{{services.missing.port}}'",
+            "",
+            "referenced service \"missing\" in template \"{{services.missing.port}}\" does not exist",
+        ),
+    ] {
+        let project = runtime.root.path().join(name);
+        fs::create_dir(&project).unwrap();
+        fs::write(
+            project.join("devhost.toml"),
+            format!(
+                "name={name:?}\n[services.a]\ncommand=['sh','-c','touch a-launched; exec sleep 300']\nport='auto'\nhealth.process=true\n{a}\n[services.b]\ncommand=['sh','-c','touch b-launched; exec sleep 300']\nport='auto'\nhealth.process=true\n{b}\n"
+            ),
+        )
+        .unwrap();
+        let mut process = super::lifecycle::launch(&runtime, &project, &[]);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let status = loop {
+            if let Some(status) = process.0.try_wait().unwrap() {
+                break status;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "{name} was not rejected: {}",
+                fs::read_to_string(project.join("lifecycle.log")).unwrap()
+            );
+            thread::sleep(Duration::from_millis(20));
+        };
+        let log = fs::read_to_string(project.join("lifecycle.log")).unwrap();
+        assert_eq!(status.code(), Some(1), "{name}: {log}");
+        assert!(log.contains(diagnostic), "{name}: {log}");
+        for marker in ["a-launched", "b-launched"] {
+            assert!(!project.join(marker).exists(), "{name}: {marker}");
+        }
+        assert!(
+            read_live_stack_owners(&runtime.state().join("caddy"))
+                .unwrap()
+                .is_empty(),
+            "{name} registered stack, hostname or port ownership"
+        );
+    }
+}
+
+#[test]
 fn included_service_cwd_does_not_rewrite_literal_environment_values() {
     let runtime = Runtime::start();
     let project = runtime.root.path().join("literal-environment");

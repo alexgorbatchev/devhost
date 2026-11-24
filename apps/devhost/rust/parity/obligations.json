@@ -587,12 +587,12 @@
       "id": "selection.2",
       "feature": "selection",
       "contract": "implicit dependencies, cycle detection and startup order",
-      "trigger": "Use implicit references, ordered dependencies and cyclic graphs.",
+      "trigger": "Select dependants with ordered dependencies, cyclic graphs and missing references.",
       "effect": "Dependencies start before dependants without duplicate launches.",
       "failure": "Cycles and missing references prevent startup.",
-      "cleanup": "Rollback already-started children on failure.",
-      "evidence": ["lifecycle", "service-validation"],
-      "remaining": "Add cyclic graph runtime rollback assertion.",
+      "cleanup": "Invalid graphs are rejected before any child launch or stack, hostname or port ownership registration.",
+      "evidence": ["lifecycle", "service-validation", "manifest-runtime"],
+      "remaining": "Retain final native-platform execution receipts for cycle, self-cycle, missing dependency and missing template reference rejection.",
       "status": "open"
     },
     {
