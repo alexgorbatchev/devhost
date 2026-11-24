@@ -103,7 +103,7 @@ fn pending_http_health_request_is_canceled_before_backend_timeout() {
     fs::create_dir(&project).unwrap();
     fs::write(
         project.join("devhost.toml"),
-        format!("name='http-cancel'\n[worktrees]\nenabled=false\n[services.worker]\ncommand=['sh','-c','printf %s $$ > worker.pid; exec sleep 300']\nport='auto'\n[services.worker.health]\nhttp='http://127.0.0.1:{port}/health'\ninterval=30000\ntimeout=60000\n"),
+        format!("name='http-cancel'\n[worktrees]\nenabled=false\n[services.worker]\ncommand=['sh','-c','printf %s $$ > worker.pid.pending; mv worker.pid.pending worker.pid; exec sleep 300']\nport='auto'\n[services.worker.health]\nhttp='http://127.0.0.1:{port}/health'\ninterval=30000\ntimeout=60000\n"),
     )
     .unwrap();
     let mut process = launch(&runtime, &project, &["--detach"]);
@@ -131,6 +131,7 @@ fn pending_http_health_request_is_canceled_before_backend_timeout() {
     let mut request = String::new();
     pending.read_line(&mut request).unwrap();
     assert_eq!(request, "GET /health HTTP/1.1\r\n");
+    wait_until(|| project.join("worker.pid").exists());
     let worker_pid = fs::read_to_string(project.join("worker.pid"))
         .unwrap()
         .parse::<i32>()

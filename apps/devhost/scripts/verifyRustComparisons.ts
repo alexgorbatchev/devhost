@@ -71,6 +71,12 @@ const results = [];
 async function run(name: string, command: string[], binary: string, expectedFailure?: string) {
   const started = performance.now();
   const log = resolve(output, `${name}.log`);
+  const pending = Bun.file(resolve(output, "pending-command.json"));
+  await Bun.write(
+    pending,
+    JSON.stringify({ name, command, binary, log, startedAt: new Date().toISOString() }, null, 2),
+  );
+  console.log(`${name}: running`);
   const child = Bun.spawn(command, {
     cwd: resolve(root, "apps/devhost/rust"),
     env: {
@@ -84,16 +90,11 @@ async function run(name: string, command: string[], binary: string, expectedFail
       DEVHOST_CLI_TEST_VERSION: Bun.spawnSync([binary, "--version"]).stdout.toString().trim(),
     },
     stdin: "ignore",
-    stdout: "pipe",
-    stderr: "pipe",
+    stdout: Bun.file(`${log}.stdout`),
+    stderr: Bun.file(`${log}.stderr`),
   });
-  const [exitCode, stdout, stderr] = await Promise.all([
-    child.exited,
-    new Response(child.stdout).text(),
-    new Response(child.stderr).text(),
-  ]);
-  await Bun.write(`${log}.stdout`, stdout);
-  await Bun.write(`${log}.stderr`, stderr);
+  const exitCode = await child.exited;
+  const [stdout, stderr] = await Promise.all([Bun.file(`${log}.stdout`).text(), Bun.file(`${log}.stderr`).text()]);
   const text = `${stdout}\n${stderr}`;
   await Bun.write(log, text);
   const accepted = expectedFailure
@@ -111,6 +112,7 @@ async function run(name: string, command: string[], binary: string, expectedFail
     elapsedSeconds: (performance.now() - started) / 1000,
   });
   await Bun.write(resolve(output, "results.json"), JSON.stringify(results, null, 2));
+  await pending.delete();
   console.log(`${name}: ${accepted ? "accepted" : "FAILED"} (${exitCode})`);
   if (!accepted) throw new Error(`Unexpected comparison result; see ${log}`);
 }
