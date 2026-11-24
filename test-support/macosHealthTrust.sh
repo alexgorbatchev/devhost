@@ -8,7 +8,19 @@ if [[ "$(uname -s)" != Darwin || "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVI
   exit 1
 fi
 
-cleanup() {
+# Bound Security.framework calls independently of the workflow deadline, so a
+# blocked certificate removal still leaves time to restore authorization.
+run_security() {
+  sudo -n "$(command -v bun)" -e '
+    const result = Bun.spawnSync(["/usr/bin/security", ...process.argv.slice(1)], {
+      stdin: "inherit", stdout: "inherit", stderr: "inherit",
+      timeout: 15000, killSignal: "SIGKILL",
+    });
+    process.exit(result.exitCode ?? 1);
+  ' -- "$@"
+}
+
+cleanup() (
   local fixture_dir="${DEVHOST_HEALTH_TRUST_DIR:-}"
   [[ -n "$fixture_dir" ]] || return 0
   if [[ "$fixture_dir" != "$RUNNER_TEMP"/devhost-health-trust.* || -L "$fixture_dir" ]]; then
@@ -16,23 +28,46 @@ cleanup() {
     return 1
   fi
   [[ -d "$fixture_dir" ]] || return 0
+  local authorization_right=com.apple.trust-settings.admin
+  restore_authorization() {
+    if [[ -f "$fixture_dir/authorization-attempted" ]]; then
+      run_security authorizationdb write "$authorization_right" < "$fixture_dir/authorization.plist" || return 1
+      rm -- "$fixture_dir/authorization-attempted"
+      echo 'Restored original admin trust authorization rule.'
+      run_security authorizationdb read "$authorization_right"
+    fi
+  }
+  trap restore_authorization EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
   local failed=0
   if [[ -f "$fixture_dir/trust-attempted" ]]; then
     local fingerprint
     fingerprint="$(openssl x509 -in "$fixture_dir/root.pem" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')"
     if [[ ! -f "$fixture_dir/certificate-removed" ]]; then
       printf 'Removing health fixture certificate and trust: %s\n' "$fingerprint"
+      if [[ ! -f "$fixture_dir/authorization.plist" ]]; then
+        run_security authorizationdb read "$authorization_right" > "$fixture_dir/authorization.pending" || return 1
+        plutil -lint "$fixture_dir/authorization.pending" || return 1
+        mv -- "$fixture_dir/authorization.pending" "$fixture_dir/authorization.plist"
+      fi
+      # Current macOS requires interactive admin authentication even for root
+      # when deleting the final trust record. Permit only root during this exact
+      # removal, then restore the original rule on success, failure or signal.
+      touch "$fixture_dir/authorization-attempted"
+      run_security authorizationdb write "$authorization_right" is-root || return 1
       # Root's -t removes both user and admin trust before deleting this item.
-      if sudo -n security delete-certificate -t -Z "$fingerprint" /Library/Keychains/System.keychain; then
+      if run_security delete-certificate -t -Z "$fingerprint" /Library/Keychains/System.keychain; then
         touch "$fixture_dir/certificate-removed"
       else
         failed=1
       fi
     fi
   fi
+  restore_authorization || return 1
   [[ "$failed" == 0 ]] || return 1
   rm -rf -- "$fixture_dir"
-}
+)
 
 case "${1:-}" in
   prepare)

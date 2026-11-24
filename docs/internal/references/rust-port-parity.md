@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 02:52
+last_modified: 2026-11-24 03:46
 status: current
 ---
 
@@ -49,7 +49,7 @@ Keep case inputs small and focused on the active ticket. Inspect the replay repo
 
 The shared `stack_lifecycle` HTTPS test uses an HTTP/2-only loopback server and verifies certificate trust, successful health responses and rejected status codes against each executable. Linux uses a private CA file through `SSL_CERT_FILE`. Go on macOS uses Security.framework instead, so that platform needs a root already trusted by the test user.
 
-On disposable GitHub-hosted macOS runners, source and candidate jobs run `bash test-support/macosHealthTrust.sh prepare`. It generates a unique one-day CA and a separate server certificate for `127.0.0.1`, adds only that CA to the admin trust store, and exports `DEVHOST_HEALTH_TRUST_DIR` through `GITHUB_ENV`. An unconditional cleanup step runs root's `security delete-certificate -t` against that exact fingerprint in the system keychain, removing its user and admin trust settings and certificate before its private files. Both fixture steps have two-minute deadlines. Cleanup errors fail the job; partially completed cleanup retains its own state for a retry. The script refuses other hosts and preserves all pre-existing certificates and trust settings.
+On disposable GitHub-hosted macOS runners, source and candidate jobs run `bash test-support/macosHealthTrust.sh prepare`. It generates a unique one-day CA and a separate server certificate for `127.0.0.1`, adds only that CA to the admin trust store, and exports `DEVHOST_HEALTH_TRUST_DIR` through `GITHUB_ENV`. An unconditional cleanup step runs root's `security delete-certificate -t` against that exact fingerprint in the system keychain, removing its user and admin trust settings and certificate before its private files. Current macOS admin trust authorization can request an interactive password even for root when removing the last trust entry. Cleanup saves that authorization rule, temporarily requires `is-root`, and restores the original rule on success, failure or a handled signal. Every cleanup Security command has a 15-second limit, leaving restoration time within the two-minute step deadline. Cleanup errors fail the job; partially completed cleanup retains its own state for a retry. The script refuses other hosts and preserves all pre-existing certificates and trust settings.
 
 For local macOS validation, provision a certificate explicitly on an isolated test user or disposable machine. Set `DEVHOST_HEALTH_TRUST_DIR` to a private directory containing `root.pem`, `server.pem` and `server.key`; the server certificate must be valid for IP `127.0.0.1`, allow TLS server authentication, and chain to the root trusted by that user. Run the normal Rust test or comparison recipe with that variable. Remove only the fixture's own certificate and trust after its final consumer. The test fails with a prerequisite diagnostic when this directory is missing; it never skips HTTPS verification or edits the local trust store itself.
 
