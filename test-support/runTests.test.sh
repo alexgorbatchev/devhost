@@ -75,6 +75,15 @@ read -r RUN_DIRECTORY < "$FIXTURE/canonical-root"
 RUN_DIRECTORY=
 printf 'PASS: exported test paths use the physical directory and cleanup removes it\n'
 
+# Exercise cleanup when multiple detached process groups survive the first scan
+# (passing multiline group lists back into live_groups, which BSD awk rejects if unflattened).
+bash "$ROOT/test-support/runTests.sh" bash -ec '
+  python3 -c "import os, time; os.setsid(); time.sleep(60)" &
+  python3 -c "import os, time; os.setsid(); time.sleep(60)" &
+  sleep 0.2
+'
+printf 'PASS: cleanup terminates multiple detached process groups without awk newline failure\n'
+
 # Fail signal delivery while retaining real processes and real ps inspection.
 # This exercises a surviving child without requiring uninterruptible kernel I/O.
 printf 'kill() { return 1; }\n' > "$FIXTURE/no-signal.bash"
