@@ -127,6 +127,9 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
     let project = project(&runtime, name);
     let mut process = launch(&runtime, &project, &[]);
     let origin = control_origin(&runtime, name);
+    // Registration exposes control before initial routes and startup health
+    // finish. Exercise unavailable recovery after that startup boundary.
+    wait_until(|| body(&mut get(&origin, "stack-info"))["starting"] == false);
     wait_until(|| {
         let mut response = routed(&runtime, name, "status");
         let text = response_text(&runtime, name, &mut response);
