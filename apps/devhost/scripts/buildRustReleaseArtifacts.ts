@@ -4,6 +4,7 @@ import { basename, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { buildDevtoolsBundle } from "./buildDevtoolsBundle";
 import { buildRustRelease, readRustReleaseVersion } from "./buildRustRelease";
+import { buildStatusPages } from "./buildStatusPages";
 import { generateRustReleaseNotices } from "./generateRustReleaseNotices";
 import { inspectRustReleaseBinary } from "./inspectRustReleaseBinary";
 import { verifyRustReleaseRuntime } from "./verifyRustReleaseRuntime";
@@ -84,6 +85,7 @@ export async function buildRustReleaseArtifacts(options: IBuildRustReleaseArtifa
     const candidateDirectoryPath = join(temporaryDirectoryPath, "candidate");
     await mkdir(candidateDirectoryPath);
     await buildDevtoolsBundle();
+    await buildStatusPages();
     const cargoMetadata: unknown = JSON.parse(
       await command(["cargo", "metadata", "--locked", "--format-version", "1"], rustDirectoryPath),
     );
