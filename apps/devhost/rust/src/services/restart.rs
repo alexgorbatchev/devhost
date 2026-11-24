@@ -151,6 +151,27 @@ pub fn restart_stacks(
 
 type CapturedLaunch = (Vec<OsString>, PathBuf, Vec<(OsString, OsString)>);
 
+fn preserve_serve_session(mut args: Vec<OsString>, stack: &LiveStack) -> Vec<OsString> {
+    if !stack.manifest_path.is_empty() || args.first().is_none_or(|arg| arg != "serve") {
+        return args;
+    }
+    if args.iter().take_while(|arg| *arg != "--").any(|arg| {
+        let arg = arg.as_bytes();
+        arg == b"--session-id"
+            || arg.starts_with(b"--session-id=")
+            || arg == b"--domain"
+            || arg.starts_with(b"--domain=")
+            || arg.starts_with(b"-d")
+    }) {
+        return args;
+    }
+    args.splice(
+        1..1,
+        [OsString::from("--session-id"), OsString::from(&stack.name)],
+    );
+    args
+}
+
 #[cfg(target_os = "linux")]
 fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
     let mut ancestor = std::process::id() as i32;
@@ -195,7 +216,7 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
         return Err("stack process changed during capture".to_owned());
     }
     Ok((
-        preserve_launch_mode(&args[1..], stack.remote),
+        preserve_serve_session(preserve_launch_mode(&args[1..], stack.remote), stack),
         cwd,
         environment,
     ))
@@ -260,7 +281,7 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
         return Err("stack process changed during capture".to_owned());
     }
     Ok((
-        preserve_launch_mode(&args[1..], stack.remote),
+        preserve_serve_session(preserve_launch_mode(&args[1..], stack.remote), stack),
         cwd.to_owned(),
         environment,
     ))

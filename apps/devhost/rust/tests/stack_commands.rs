@@ -30,6 +30,8 @@ mod agents;
 mod chat;
 #[path = "stack_commands/info.rs"]
 mod info;
+#[path = "stack_commands/serve.rs"]
+mod serve;
 
 fn binary() -> PathBuf {
     std::env::var_os("DEVHOST_STACK_TEST_BINARY")
@@ -193,7 +195,11 @@ fn list_and_find_all_owner_record_types_with_stable_raw_output() {
             let output = run(root, root, agent, &args);
             assert!(!output.status.success());
             assert!(output.stdout.is_empty());
-            assert!(String::from_utf8_lossy(&output.stderr).contains("Stack record is malformed"));
+            // JSON parser wording differs; both must identify the bad record.
+            assert!(
+                String::from_utf8_lossy(&output.stderr).contains("one.json"),
+                "{output:?}"
+            );
         }
     }
 }
@@ -518,11 +524,6 @@ fn restart_preserves_foreground_and_detached_launches_and_isolates_projects() {
 
 #[test]
 fn restart_all_resolves_current_project_instead_of_global_state() {
-    // The owner explicitly changed this contract; Go's older global --all is
-    // intentionally excluded from differential comparison for this case.
-    if std::env::var_os("DEVHOST_STACK_TEST_BINARY").is_some() {
-        return;
-    }
     let runtime = Runtime::start();
     let (project, _one) = runtime.start_stack("one", false);
     let (_other, _two) = runtime.start_stack("two", false);
@@ -556,11 +557,7 @@ fn global_restart_works_outside_a_project_and_preserves_serve_sessions() {
     let caddy = runtime.state().join("caddy");
     let before = read_live_stacks(&caddy).unwrap();
     assert_eq!(before.len(), 3);
-    let args = if std::env::var_os("DEVHOST_STACK_TEST_BINARY").is_some() {
-        vec!["stack", "restart", "--all"]
-    } else {
-        vec!["restart-all"]
-    };
+    let args = ["restart-all"];
     let output = runtime
         .command()
         .current_dir(runtime.root.path())

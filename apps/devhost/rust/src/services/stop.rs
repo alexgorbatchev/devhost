@@ -196,6 +196,14 @@ pub fn discover_git_repository(cwd: &Path) -> Result<GitRepository, String> {
 }
 
 pub fn run_git(cwd: &Path, args: &[&str]) -> Result<String, String> {
+    run_git_with_timeout(cwd, args, GIT_WORKTREE_TIMEOUT)
+}
+
+pub(super) fn run_git_with_timeout(
+    cwd: &Path,
+    args: &[&str],
+    timeout: Duration,
+) -> Result<String, String> {
     // Drain into owned files while polling: Git output can exceed a pipe's
     // capacity before it exits, including worktree and remote-ref listings.
     let mut stdout = ctx(tempfile::tempfile(), "create Git stdout")?;
@@ -218,7 +226,7 @@ pub fn run_git(cwd: &Path, args: &[&str]) -> Result<String, String> {
     command.env("LC_ALL", "C").env("GIT_TERMINAL_PROMPT", "0");
 
     let mut child = path_ctx(command.spawn(), "git in", cwd)?;
-    let deadline = Instant::now() + GIT_WORKTREE_TIMEOUT;
+    let deadline = Instant::now() + timeout;
     let status = loop {
         match path_ctx(child.try_wait(), "git in", cwd)? {
             Some(status) => break status,

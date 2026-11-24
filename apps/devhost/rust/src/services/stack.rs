@@ -56,6 +56,7 @@ use sha2::{Digest, Sha256};
 mod daemon_output;
 use daemon_output::{CommandOptions, DaemonOutput, Readers};
 
+mod command;
 mod documents;
 pub(crate) mod live;
 mod runtime;
@@ -127,6 +128,7 @@ impl From<String> for StartStackError {
 }
 
 pub struct StartStackOptions {
+    pub command_serve_timeout: Option<Duration>,
     pub runtime_control: Option<super::control::RuntimeControl>,
     pub serve_session: bool,
     pub runtime_errors: Option<Receiver<String>>,
@@ -880,7 +882,7 @@ pub fn start_stack(
             return Ok(0);
         }
 
-        if launch.detached {
+        if launch.detached && options.command_serve_timeout.is_none() {
             for started in &started_services {
                 if let Some(code) = started.read_exit_code() {
                     return Err(fail_detached_not_ready(
@@ -950,7 +952,9 @@ pub fn start_stack(
 
         was_ready = true;
         control.live.update_manifest(manifest);
-        control.live.finish_startup();
+        if options.command_serve_timeout.is_none() {
+            control.live.finish_startup();
+        }
 
         if let Some(worktrees) = &mut worktrees {
             worktrees.finish(&blocked);

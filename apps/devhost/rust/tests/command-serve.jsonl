@@ -1,0 +1,18 @@
+{"name":"unquoted-command","args":["serve","python3","server.py"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"empty-command","args":["serve",""],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"command-dir-conflict","args":["serve","--dir",".","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"command-port-conflict","args":["serve","--port","1234","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"command-domain-conflict","args":["serve","--domain","web.localhost","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"timeout-zero","args":["serve","--startup-timeout","0s","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"timeout-invalid","args":["serve","--startup-timeout","tomorrow","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"name-without-command","args":["serve","--name","test"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"detach-without-command","args":["serve","--detach=false"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"timeout-without-command","args":["serve","--startup-timeout","30s"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"invalid-session","args":["serve","--session-id","bad.label","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"session-not-running","args":["stack","info","--session","absent"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"stop-session-not-running","args":["stop","--session","absent"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"no-sessions","args":["stack","list","--sessions"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"short-timeout-zero","args":["serve","-s","0s","sleep 1"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"short-session-info","args":["stack","info","-s","absent"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"short-session-stop","args":["stop","-s","absent"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}
+{"name":"short-session-list","args":["stack","list","-s"],"env":{"AGENT":"1","DEVHOST_STATE_DIR":"state","DEVHOST_CONFIG_DIR":"config","DEVHOST_MANIFEST":""}}

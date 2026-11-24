@@ -43,6 +43,10 @@ pub fn read_stack_info(caddy_dir: &Path, manifest: &Path) -> Result<StackInfo, F
         return Err(Failure { message: format!("no running stack found for manifest: {}", manifest.display()), summary: None,
             hint: Some(if stacks.is_empty() { "Run \"devhost start\" to start this stack." } else { "Other stacks are running. Run \"devhost stack list\" to print their PIDs and manifests." }.to_owned()) });
     };
+    read_live_stack_info(stack)
+}
+
+pub(crate) fn read_live_stack_info(stack: &LiveStack) -> Result<StackInfo, Failure> {
     let mut stack = stack.clone();
     stack.started_at = normalize_timestamp(&stack.started_at);
     stack.manifest_files =

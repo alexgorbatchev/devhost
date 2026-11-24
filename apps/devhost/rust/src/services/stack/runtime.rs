@@ -41,6 +41,17 @@ struct AcceptedChange {
 
 impl Runtime<'_> {
     pub fn run(mut self, mut shared: MachineConfig) -> Result<i32, StartStackError> {
+        let mut discovery = self
+            .options
+            .command_serve_timeout
+            .map(|_| super::command::Discovery::default());
+        if let (Some(discovery), Some(timeout)) =
+            (&mut discovery, self.options.command_serve_timeout)
+            && let Some(code) = self.wait_for_command_routes(discovery, timeout)?
+        {
+            return Ok(code);
+        }
+        let mut next_discovery = Instant::now() + Duration::from_millis(500);
         let config_path = self
             .options
             .config_path
@@ -96,6 +107,12 @@ impl Runtime<'_> {
                 return Ok(0);
             }
             self.watches.poll(&self.manifest.name);
+            if let Some(discovery) = &mut discovery
+                && Instant::now() >= next_discovery
+            {
+                self.refresh_command_routes(discovery, true, None)?;
+                next_discovery = Instant::now() + Duration::from_millis(500);
+            }
             while let Ok(request) = self.control.requests.try_recv() {
                 match request {
                     RuntimeRequest::CheckConfig {
@@ -235,7 +252,7 @@ impl Runtime<'_> {
         Ok(())
     }
 
-    fn publish_live(&self) {
+    pub(super) fn publish_live(&self) {
         self.control.live.update_manifest(self.manifest);
         if let Some(watch) = &self.manifest_watch {
             self.control
@@ -253,7 +270,7 @@ impl Runtime<'_> {
         );
     }
 
-    fn signal(&mut self, signal: i32) {
+    pub(super) fn signal(&mut self, signal: i32) {
         for started in self.started.iter_mut() {
             self.progress.stopping(&started.service.name);
             started.signal(signal);

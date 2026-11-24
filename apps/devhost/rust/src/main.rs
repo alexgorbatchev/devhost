@@ -35,6 +35,7 @@ const VERSION: &str = match option_env!("DEVHOST_BUILD_VERSION") {
 };
 
 mod completion;
+mod serve_cli;
 
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let options = HelpOptions {
@@ -74,7 +75,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
         root.subcommand(caddy_command())
             .subcommand(service_command())
             .subcommand(start_command())
-            .subcommand(serve_command())
+            .subcommand(serve_cli::command())
             .subcommand(stop_command())
             .subcommand(stack_command())
             .subcommand(completion::command())
@@ -125,7 +126,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                 }
                 Some(("serve", serve_matches)) => {
                     drop(stdout);
-                    return run_serve(serve_matches, mode);
+                    return serve_cli::run(serve_matches, mode);
                 }
                 Some(("start", start_matches)) => {
                     drop(stdout);
@@ -137,10 +138,13 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                 }
                 Some(("stack", stack)) => match stack.subcommand() {
                     Some(("info", args)) => return run_stack_info(args, mode, &mut stdout),
-                    Some(("list", _)) => return list_stacks(None, mode, &mut stdout),
+                    Some(("list", args)) => {
+                        return list_stacks(None, args.get_flag("sessions"), mode, &mut stdout);
+                    }
                     Some(("find", args)) => {
                         return list_stacks(
                             args.get_one::<String>("query").map(String::as_str),
+                            false,
                             mode,
                             &mut stdout,
                         );
@@ -291,84 +295,17 @@ fn start_command() -> Command {
         )
 }
 
-fn serve_command() -> Command {
-    Command::new("serve")
-        .args_override_self(true)
-        .about("Serve a directory or local port over HTTPS")
-        .long_about("Serve files or an existing local HTTP port without a\nmanifest. Use --dir for files or --port for a service on\n127.0.0.1. With neither option, serve the current\ndirectory. --dir and --port are mutually exclusive.\n\n--domain is required; the hostname must point here.\nCaddy starts automatically if needed and stays running\nafter Ctrl+C removes this session's routes.\nAn existing service keeps running after the session stops.\n\nDirectories show index.html, index.md, README.md, or\nreadme.md, else a listing. Markdown uses GitHub styling\nwith a remembered source toggle. Hidden files and symlinks\noutside the directory are excluded.")
-        .arg(Arg::new("domain").long("domain").short('d').help("Hostname to serve, e.g. notes.localhost (required)."))
-        .arg(Arg::new("dir").long("dir").value_parser(value_parser!(PathBuf)).conflicts_with("port").help("Directory to serve; defaults to the current directory."))
-        .arg(Arg::new("port").long("port").short('p').value_parser(value_parser!(i32)).allow_negative_numbers(true).help("Existing local HTTP service port (1-65535); exclusive with --dir."))
-}
-
-fn run_serve(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Error>> {
-    let domain = args
-        .get_one::<String>("domain")
-        .map(String::as_str)
-        .unwrap_or_default();
-    if !manifest::is_valid_host(domain) {
-        return Ok(write_failure(
-            mode,
-            "--domain requires a hostname without scheme, port, or path, e.g. notes.localhost"
-                .to_owned()
-                .into(),
-        )?);
-    }
-    let port = match args.get_one::<i32>("port") {
-        Some(port) if (1..=65535).contains(port) => Some(*port as u16),
-        Some(_) => {
-            return Ok(write_failure(
-                mode,
-                "--port must be between 1 and 65535".to_owned().into(),
-            )?);
-        }
-        None => None,
-    };
-    let cwd = env::current_dir()?;
-    let directory = args
-        .get_one::<PathBuf>("dir")
-        .map(PathBuf::as_path)
-        .unwrap_or(&cwd);
-    let state_dir = match machine::state_directory() {
-        Ok(path) => path,
-        Err(error) => return Ok(write_failure(mode, error.into())?),
-    };
-    let label = format!("serve-{domain}");
-    let output = cliout::ServiceOutput::stdio(mode, &[&label, "serve", "devhost", "caddy"]);
-    match start_serve(
-        directory,
-        domain,
-        port,
-        StartStackOptions {
-            runtime_control: None,
-            serve_session: true,
-            runtime_errors: None,
-            configuration: None,
-            caddy_dir: state_dir.join("caddy"),
-            config_path: None,
-            environment: devhost_rust::environment::unicode(),
-            output,
-            debug_caddy: false,
-            shutdown_grace_period: None,
-            idle_timeout: None,
-            install_signal_handlers: true,
-            external_cancel: None,
-            launch: Default::default(),
-        },
-    ) {
-        Ok(code) => Ok(ExitCode::from((code & 0xff) as u8)),
-        Err(StartStackError::Failure(failure)) => Ok(write_failure(mode, failure)?),
-        Err(StartStackError::Overlap(overlap)) => {
-            Ok(write_failure(mode, overlap.default_message().into())?)
-        }
-    }
-}
-
 fn stop_command() -> Command {
     Command::new("stop")
         .args_override_self(true)
         .about("Stop the running stack for this project")
         .arg(manifest_arg())
+        .arg(
+            Arg::new("session")
+                .long("session")
+                .short('s')
+                .help("Stop the named manifest-free serve session."),
+        )
         .arg(
             boolean_arg("worktrees")
                 .short('w')
@@ -601,6 +538,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         &service_order,
         StartStackOptions {
             runtime_control: None,
+            command_serve_timeout: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),
@@ -627,6 +565,25 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
 }
 
 fn run_stop(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Error>> {
+    if let Some(name) = args.get_one::<String>("session") {
+        if args.value_source("manifest") == Some(clap::parser::ValueSource::CommandLine)
+            || args.get_flag("worktrees")
+        {
+            return Ok(write_failure(
+                mode,
+                "--session is mutually exclusive with --manifest and --worktrees"
+                    .to_owned()
+                    .into(),
+            )?);
+        }
+        let result = machine::state_directory().and_then(|state| {
+            devhost_rust::services::serve_sessions::stop_session(&state.join("caddy"), name)
+        });
+        return Ok(match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => write_failure(mode, error.into())?,
+        });
+    }
     let explicit_manifest = args.get_one::<PathBuf>("manifest").map(PathBuf::as_path);
     if let Err(failure) = validate_manifest_flag(explicit_manifest) {
         return Ok(write_failure(mode, failure)?);
@@ -663,10 +620,11 @@ fn run_stop(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Err
 fn stack_command() -> Command {
     Command::new("stack")
         .about("Inspect the stacks running on this machine")
-        .subcommand(Command::new("info").args_override_self(true).about("Inspect the current project's running stack and service readiness").arg(manifest_arg()))
+        .subcommand(Command::new("info").args_override_self(true).about("Inspect a project's stack or a named serve session").arg(manifest_arg()).arg(Arg::new("session").long("session").short('s').help("Inspect the named manifest-free serve session.")))
         .subcommand(Command::new("list")
             .about("Print the PID and manifest of running stacks")
-            .long_about("Print one running stack per line: PID, tab, absolute manifest path.\nWorks from any directory, with identical output in both modes."))
+            .long_about("Print one running stack per line: PID, tab, absolute manifest path.\nUse --sessions to print PID and name for manifest-free serve sessions.\nWorks from any directory, with identical output in both modes.")
+            .arg(boolean_arg("sessions").short('s').help("List manifest-free serve sessions instead of project stacks.")))
         .subcommand(Command::new("find")
             .about("Find running stacks by hostname, URL, name, or manifest")
             .arg(Arg::new("query").required(true)))
@@ -680,6 +638,7 @@ fn stack_command() -> Command {
 
 fn list_stacks(
     query: Option<&str>,
+    sessions: bool,
     mode: Mode,
     stdout: &mut dyn Write,
 ) -> Result<ExitCode, Box<dyn Error>> {
@@ -687,6 +646,15 @@ fn list_stacks(
         let state = machine::state_directory()
             .map_err(|error| format!("resolve caddy paths from environment: {error}"))?;
         let caddy = paths::clean(&state.join("caddy"));
+        if sessions {
+            for session in devhost_rust::services::serve_sessions::list_sessions(&caddy)? {
+                writeln!(stdout, "{}\t{}", session.pid, session.name)
+                    .map_err(|error| format!("write running sessions: {error}"))?;
+            }
+            return stdout
+                .flush()
+                .map_err(|error| format!("write running sessions: {error}"));
+        }
         let owners = match query {
             Some(query) => caddy::stacks::find_live_stack_owners(
                 &caddy,
@@ -717,6 +685,25 @@ fn run_stack_info(
     mode: Mode,
     stdout: &mut dyn Write,
 ) -> Result<ExitCode, Box<dyn Error>> {
+    if let Some(name) = args.get_one::<String>("session") {
+        if args.value_source("manifest") == Some(clap::parser::ValueSource::CommandLine) {
+            return Ok(write_failure(
+                mode,
+                "--session and --manifest are mutually exclusive"
+                    .to_owned()
+                    .into(),
+            )?);
+        }
+        let state = match machine::state_directory() {
+            Ok(state) => state,
+            Err(error) => return Ok(write_failure(mode, error.into())?),
+        };
+        return write_stack_info(
+            devhost_rust::services::serve_sessions::read_info(&state.join("caddy"), name),
+            mode,
+            stdout,
+        );
+    }
     let explicit = args.get_one::<PathBuf>("manifest").map(PathBuf::as_path);
     if let Err(failure) = validate_manifest_flag(explicit) {
         return Ok(write_failure(mode, failure)?);
@@ -741,10 +728,22 @@ fn run_stack_info(
         Ok(state) => state,
         Err(error) => return Ok(write_failure(mode, error.into())?),
     };
-    match devhost_rust::services::stack_info::read_stack_info(
-        &paths::clean(&state.join("caddy")),
-        &manifest,
-    ) {
+    write_stack_info(
+        devhost_rust::services::stack_info::read_stack_info(
+            &paths::clean(&state.join("caddy")),
+            &manifest,
+        ),
+        mode,
+        stdout,
+    )
+}
+
+fn write_stack_info(
+    result: Result<devhost_rust::services::stack_info::StackInfo, Failure>,
+    mode: Mode,
+    stdout: &mut dyn Write,
+) -> Result<ExitCode, Box<dyn Error>> {
+    match result {
         Ok(info) => {
             let output = devhost_rust::services::stack_info::format_stack_info(
                 &info,

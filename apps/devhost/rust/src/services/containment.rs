@@ -120,6 +120,23 @@ impl ServiceContainment {
         !self.live_descendant_pids().is_empty()
     }
 
+    pub(crate) fn live_process_identities(&self) -> Vec<(i32, String)> {
+        self.live_descendant_pids();
+        let mut processes: Vec<_> = self
+            .tracked
+            .lock()
+            .expect("tracked lock")
+            .iter()
+            .map(|(&pid, identity)| (pid, identity.clone()))
+            .collect();
+        if let Some(identity) = &self.root_identity
+            && matches_identity(self.root_pid, identity)
+        {
+            processes.push((self.root_pid, identity.clone()));
+        }
+        processes
+    }
+
     pub fn signal(&self, include_root_group: bool, sig: i32) {
         let descendants = self.live_descendant_pids();
         let root_matches = self
@@ -480,6 +497,122 @@ fn parse_lsof_pids(output: &str) -> Vec<i32> {
         .collect()
 }
 
+pub(crate) fn read_process_listeners(
+    processes: &[(i32, String)],
+) -> Result<BTreeMap<u16, String>, String> {
+    let mut listeners = BTreeMap::new();
+    for (pid, identity) in processes {
+        if !matches_identity(*pid, identity) {
+            continue;
+        }
+        let found = process_listeners(*pid);
+        if !matches_identity(*pid, identity) {
+            continue;
+        }
+        for (port, host) in found? {
+            listeners
+                .entry(port)
+                .and_modify(|old: &mut String| {
+                    if host < *old {
+                        *old = host.clone();
+                    }
+                })
+                .or_insert(host);
+        }
+    }
+    Ok(listeners)
+}
+
+#[cfg(target_os = "linux")]
+fn process_listeners(pid: i32) -> Result<Vec<(u16, String)>, String> {
+    let directory = format!("/proc/{pid}");
+    let entries = fs::read_dir(format!("{directory}/fd"))
+        .map_err(|error| format!("discover listeners for PID {pid}: {error}"))?;
+    let sockets: BTreeSet<_> = entries
+        .filter_map(Result::ok)
+        .filter_map(|entry| fs::read_link(entry.path()).ok())
+        .filter_map(|link| {
+            link.to_str()?
+                .strip_prefix("socket:[")?
+                .strip_suffix(']')
+                .map(str::to_owned)
+        })
+        .collect();
+    let mut listeners = Vec::new();
+    for table in ["tcp", "tcp6"] {
+        let text = match fs::read_to_string(format!("{directory}/net/{table}")) {
+            Ok(text) => text,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(format!("discover listeners for PID {pid}: {error}")),
+        };
+        for line in text.lines().skip(1) {
+            let fields: Vec<_> = line.split_whitespace().collect();
+            if fields.len() < 10 || fields[3] != "0A" || !sockets.contains(fields[9]) {
+                continue;
+            }
+            if let Some((mut ip, port)) = parse_linux_socket_address(fields[1])
+                && port > 0
+            {
+                if ip.is_unspecified() {
+                    ip = match ip {
+                        IpAddr::V4(_) => IpAddr::V4(Ipv4Addr::LOCALHOST),
+                        IpAddr::V6(_) => IpAddr::V6(Ipv6Addr::LOCALHOST),
+                    };
+                }
+                listeners.push((port, ip.to_string()));
+            }
+        }
+    }
+    Ok(listeners)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn process_listeners(pid: i32) -> Result<Vec<(u16, String)>, String> {
+    let output = std::process::Command::new("lsof")
+        .args([
+            "-nP",
+            "-a",
+            "-p",
+            &pid.to_string(),
+            "-iTCP",
+            "-sTCP:LISTEN",
+            "-Ftn",
+        ])
+        .stdin(std::process::Stdio::null())
+        .output()
+        .map_err(|error| format!("discover listeners for PID {pid}: {error}"))?;
+    if !output.status.success() && output.status.code() != Some(1) {
+        return Err(format!(
+            "discover listeners for PID {pid}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(parse_process_listeners(&String::from_utf8_lossy(
+        &output.stdout,
+    )))
+}
+
+#[cfg(any(test, not(target_os = "linux")))]
+fn parse_process_listeners(text: &str) -> Vec<(u16, String)> {
+    let mut ipv6 = false;
+    text.lines()
+        .filter_map(|line| {
+            if line.starts_with('t') {
+                ipv6 = line == "tIPv6";
+            }
+            let (host, port) = line.strip_prefix('n')?.rsplit_once(':')?;
+            let port: u16 = port.parse().ok()?;
+            let host = host.trim_matches(['[', ']']);
+            let host = match host {
+                "*" | "" | "0.0.0.0" if !ipv6 => "127.0.0.1",
+                "*" | "" | "::" => "::1",
+                host => host,
+            };
+            (port > 0).then(|| (port, host.to_owned()))
+        })
+        .collect()
+}
+
 #[cfg(target_os = "linux")]
 fn read_linux_listening_socket_inodes(target_ip: IpAddr, port: u16) -> BTreeSet<String> {
     let mut inodes = BTreeSet::new();
@@ -675,5 +808,20 @@ mod tests {
     #[test]
     fn listener_pid_fields_are_sorted_and_deduplicated() {
         assert_eq!(parse_lsof_pids("p9\np3\nf12\np9\npbroken\np\n"), [3, 9]);
+    }
+
+    #[test]
+    fn command_listener_fields_normalize_wildcard_and_ipv6_addresses() {
+        assert_eq!(
+            parse_process_listeners(
+                "p123\ntIPv4\nn*:1234\ntIPv6\nn[::]:2345\nn[::1]:3456\nn[fe80::1]:4567\nninvalid\nn127.0.0.1:0\n"
+            ),
+            vec![
+                (1234, "127.0.0.1".to_owned()),
+                (2345, "::1".to_owned()),
+                (3456, "::1".to_owned()),
+                (4567, "fe80::1".to_owned())
+            ]
+        );
     }
 }

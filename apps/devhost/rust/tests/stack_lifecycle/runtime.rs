@@ -45,6 +45,7 @@ impl Stack {
         let (handle, control) = RuntimeControl::channel();
         let options = StartStackOptions {
             runtime_control: Some(control),
+            command_serve_timeout: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),

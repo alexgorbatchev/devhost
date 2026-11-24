@@ -5,6 +5,8 @@ pub mod health;
 pub mod resolve;
 pub mod restart;
 pub mod serve;
+pub mod serve_command;
+pub mod serve_sessions;
 pub mod stack;
 pub mod stack_info;
 pub mod stop;

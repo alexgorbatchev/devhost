@@ -334,9 +334,7 @@ pub fn start_detached_stack(options: DetachedStartOptions) -> Result<(), Failure
     };
 
     let caddy_dir = options.state_dir.join("caddy");
-    let canonical = manifest_identity(&options.manifest.manifest_path)
-        .to_string_lossy()
-        .into_owned();
+    let canonical = launch_identity(&options.manifest.manifest_path, &options.manifest.name);
     let log_dir = options.state_dir.join("logs");
     let state_hint = format!(
         "Check that you can read and write devhost's state directory, {}.",
@@ -743,7 +741,15 @@ fn find_detached_stack(caddy_dir: &Path, canonical: &str) -> Result<Option<LiveS
     let stacks = read_live_stacks(caddy_dir)?;
     Ok(stacks
         .into_iter()
-        .find(|s| manifest_identity(Path::new(&s.manifest_path)).to_string_lossy() == canonical))
+        .find(|s| launch_identity(Path::new(&s.manifest_path), &s.name) == canonical))
+}
+
+fn launch_identity(path: &Path, name: &str) -> String {
+    if path.as_os_str().is_empty() {
+        format!("serve:{name}")
+    } else {
+        manifest_identity(path).to_string_lossy().into_owned()
+    }
 }
 
 fn report_detached_stack(

@@ -118,6 +118,7 @@ fn managed_directory_service_serves_live_files_and_releases_routes() {
     let cancel = Arc::new(AtomicBool::new(false));
     let options = StartStackOptions {
         runtime_control: None,
+        command_serve_timeout: None,
         serve_session: false,
         runtime_errors: None,
         configuration: Some(validated),
@@ -771,6 +772,7 @@ process = true
         &order,
         StartStackOptions {
             runtime_control: None,
+            command_serve_timeout: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),
@@ -1000,6 +1002,7 @@ process = true
         &order,
         StartStackOptions {
             runtime_control: None,
+            command_serve_timeout: None,
             serve_session: false,
             runtime_errors: None,
             configuration: None,
@@ -1171,6 +1174,7 @@ retries = 2
         &order,
         StartStackOptions {
             runtime_control: None,
+            command_serve_timeout: None,
             serve_session: false,
             runtime_errors: None,
             configuration: Some(validated),

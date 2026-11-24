@@ -31,6 +31,8 @@ Build its separate executable at `apps/devhost/rust/target/debug/devhost` with `
 
 On Linux and macOS, `start --detach` waits for services, routes, and any configured remote connection to become ready, prints the supervisor PID, service URLs, and log path, and leaves the stack running. Repeating the command reports the existing stack; `stop` shuts it down. Startup failures print the attempt's log tail and stop its services.
 
+Use `serve --name notes --detach -- npm run dev` to start a command, discover its HTTP listeners, and publish a named session. Inspect it with `stack info --session <session>`, list sessions with `stack list --sessions`, and stop one with `stop --session <session>`. The [serve guide](../../start/serve/) covers naming, startup timeouts, and port-qualified routes.
+
 Use `serve --domain notes.localhost` to serve the current directory, `--dir` for another directory, or `--port` for an existing local HTTP service. The session starts Caddy when needed and removes its routes on Ctrl+C; Caddy and existing services keep running. Directory indexes, the confined file browser, and Markdown rendering follow the [serve guide](../../start/serve/).
 
 Saved manifest and include changes reload automatically, preserving compatible automatic ports and restarting affected services and dependents. A rejected replacement restores the accepted configuration; fixing the file retries it. Saved machine configuration updates shared Caddy settings; changing the local domain suffix requires stopping and starting the stack. The Rust CLI supports `idleTimeout` and `--idle-timeout`, including HTTP activity through Caddy.

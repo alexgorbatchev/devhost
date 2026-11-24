@@ -167,35 +167,14 @@ pub fn start_serve(
     start_stack(&mut manifest, &["serve".to_owned()], options)
 }
 
-fn serve_manifest(directory: PathBuf, domain: &str, port: u16) -> ResolvedManifest {
-    let service = ResolvedService {
-        proxy_local_origin: false,
-        bind_host: "127.0.0.1".to_owned(),
-        command: Vec::new(),
-        serve: String::new(),
-        cwd: directory.clone(),
-        depends_on: Vec::new(),
-        env: BTreeMap::new(),
-        health: ResolvedHealthConfig {
-            fixed_tcp_port: false,
-            host: Some("127.0.0.1".to_owned()),
-            interval_ms: 200,
-            kind: HealthKind::Tcp,
-            port: Some(port),
-            retries: 0,
-            timeout_ms: 30_000,
-            url: None,
-        },
-        hosts: vec![domain.to_owned()],
-        inject_port: false,
-        lifecycle: ServiceLifecycleConfig::default(),
-        managed: false,
-        name: "serve".to_owned(),
-        path: Some("/".to_owned()),
-        port: Some(port),
-        port_source: String::new(),
-        watch: Vec::new(),
-    };
+pub(super) fn serve_manifest(directory: PathBuf, domain: &str, port: u16) -> ResolvedManifest {
+    let service = external_service(
+        directory.clone(),
+        "serve",
+        "127.0.0.1",
+        port,
+        vec![domain.to_owned()],
+    );
     ResolvedManifest {
         remote: None,
         configuration: None,
@@ -212,5 +191,42 @@ fn serve_manifest(directory: PathBuf, domain: &str, port: u16) -> ResolvedManife
         services: BTreeMap::from([("serve".to_owned(), service)]),
         stopped: BTreeMap::new(),
         kill_zombies: false,
+    }
+}
+
+pub(super) fn external_service(
+    directory: PathBuf,
+    name: &str,
+    host: &str,
+    port: u16,
+    hosts: Vec<String>,
+) -> ResolvedService {
+    ResolvedService {
+        proxy_local_origin: false,
+        bind_host: host.to_owned(),
+        command: Vec::new(),
+        serve: String::new(),
+        cwd: directory.clone(),
+        depends_on: Vec::new(),
+        env: BTreeMap::new(),
+        health: ResolvedHealthConfig {
+            fixed_tcp_port: false,
+            host: Some(host.to_owned()),
+            interval_ms: 200,
+            kind: HealthKind::Tcp,
+            port: Some(port),
+            retries: 0,
+            timeout_ms: 30_000,
+            url: None,
+        },
+        hosts,
+        inject_port: false,
+        lifecycle: ServiceLifecycleConfig::default(),
+        managed: false,
+        name: name.to_owned(),
+        path: Some("/".to_owned()),
+        port: Some(port),
+        port_source: String::new(),
+        watch: Vec::new(),
     }
 }
