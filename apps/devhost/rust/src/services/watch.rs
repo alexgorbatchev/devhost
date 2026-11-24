@@ -293,6 +293,8 @@ impl InputWatch {
                 .iter()
                 .any(|path| self.matches(path, &event.kind))
             {
+                #[cfg(test)]
+                eprintln!("manifest input event: {event:?}");
                 self.check();
             }
         }

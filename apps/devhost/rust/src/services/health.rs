@@ -367,12 +367,6 @@ fn probe_http_cancelable(url: &str, timeout: Duration, cancel: &AtomicBool) -> O
                 let client = Client::builder(TokioExecutor::new()).build_http::<Empty<Bytes>>();
                 client.request(request).await
             }
-            .inspect_err(|error| {
-                #[cfg(test)]
-                eprintln!("HTTP health probe failed: {error:?}");
-                #[cfg(not(test))]
-                let _ = error;
-            })
             .is_ok_and(|response| response.status().is_success())
         };
         tokio::select! {
@@ -492,6 +486,8 @@ mod tests {
                         Err(_) => return false,
                     }
                 };
+                // Darwin inherits the listener's nonblocking flag on accept.
+                stream.set_nonblocking(false).unwrap();
                 stream
                     .set_read_timeout(Some(Duration::from_secs(2)))
                     .unwrap();
@@ -504,7 +500,10 @@ mod tests {
                         Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {
                             return true;
                         }
-                        Err(_) => return false,
+                        Err(error) => {
+                            eprintln!("{scheme} health server read failed: {error:?}");
+                            return false;
+                        }
                     }
                 }
             });
@@ -522,7 +521,13 @@ mod tests {
             );
             trigger.join().unwrap();
             let closed = server.join().unwrap();
-            assert_eq!(result, None, "{scheme}");
+            assert_eq!(
+                result,
+                None,
+                "{scheme}; elapsed={:?}; cancel={}; connection_closed={closed}",
+                started.elapsed(),
+                cancel.load(Ordering::SeqCst)
+            );
             assert!(closed, "{scheme} connection survived cancellation");
             assert!(started.elapsed() < Duration::from_secs(2), "{scheme}");
         }

@@ -184,6 +184,15 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
     let runtime = Runtime::start();
     let (project, mut process) = runtime.start_stack("control-contract", false);
     let origin = origin(&runtime, "control-contract");
+    wait_until(|| {
+        let snapshot = body(&mut get(&origin, "stack-info"));
+        snapshot["starting"] == false
+            && snapshot["services"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|service| service["name"] == "worker" && service["state"] == "ready")
+    });
     let manifest = project.join("devhost.toml");
     let content = format!(
         "{}\n[devtools.resources]\nenabled=true\n[devtools.resources.cpu]\nenabled=true\npollInterval='100ms'\n[devtools.resources.memory]\nenabled=true\npollInterval='100ms'\n[devtools.resources.disk]\nenabled=true\npollInterval='100ms'\n",
@@ -210,9 +219,12 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
     }
     assert_eq!(post(&origin, "restart-service", json!({})).status(), 400);
     assert_eq!(post(&origin, "start-service", json!({})).status(), 400);
+    let mut response = post(&origin, "restart-service", json!({"serviceName":"worker"}));
     assert_eq!(
-        post(&origin, "restart-service", json!({"serviceName":"worker"})).status(),
-        200
+        response.status(),
+        200,
+        "{}",
+        response.body_mut().read_to_string().unwrap()
     );
     assert_eq!(
         post(&origin, "start-service", json!({"serviceNames":["worker"]})).status(),
