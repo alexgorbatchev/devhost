@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "control/resources.rs"]
+mod resources;
+
 pub(super) fn client() -> ureq::Agent {
     ureq::Agent::config_builder()
         .proxy(None)
@@ -59,11 +62,39 @@ fn config_editor_guards_versions_validation_and_atomic_saves_match() {
     let (project, _process) = runtime.start_stack("config-contract", false);
     let origin = origin(&runtime, "config-contract");
     assert_eq!(get(&origin, "config/files").status(), 404);
-    let content = enable_editor(&project, &origin);
     let manifest = project.join("devhost.toml");
+    let include = project.join("parts/included.toml");
+    fs::create_dir(include.parent().unwrap()).unwrap();
+    let included_content = "[services.optional]\ncommand=['sleep','300']\nhealth.process=true\n";
+    fs::write(&include, included_content).unwrap();
+    fs::write(
+        &manifest,
+        format!(
+            "includes='parts/*.toml'\n{}",
+            fs::read_to_string(&manifest).unwrap()
+        ),
+    )
+    .unwrap();
+    let content = enable_editor(&project, &origin);
+    wait_until(|| {
+        body(&mut get(&origin, "config/files"))["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["path"] == include.to_str().unwrap())
+    });
     let mut response = get(&origin, "config/files");
     assert_eq!(response.headers()["cache-control"], "no-store");
     let files = body(&mut response);
+    let included = files["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["path"] == include.to_str().unwrap())
+        .expect("config editor discovers manifest include files");
+    assert_eq!(included["kind"], "include");
+    assert_eq!(included["content"], included_content);
+    assert_eq!(included["version"].as_str().unwrap().len(), 64);
     let file = files["files"]
         .as_array()
         .unwrap()
@@ -161,7 +192,55 @@ fn config_editor_guards_versions_validation_and_atomic_saves_match() {
             .starts_with(".tmp")
     }));
     let config_path = runtime.config.join("config.toml");
-    let config_content = fs::read_to_string(&config_path).unwrap();
+    let listener = fixture_ports::reserve_listener();
+    let next_http_port = listener.local_addr().unwrap().port();
+    drop(listener);
+    let config_content = fs::read_to_string(&config_path).unwrap().replace(
+        &format!("httpPort = {}", runtime.settings.http_port),
+        &format!("httpPort = {next_http_port}"),
+    );
+    let discovered = body(&mut get(&origin, "config/files"));
+    let machine = discovered["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["path"] == config_path.to_str().unwrap())
+        .unwrap();
+    assert_eq!(machine["kind"], "config");
+    let mut accepted = post(
+        &origin,
+        "config/save",
+        json!({"path":config_path,"content":config_content,"baseVersion":machine["version"]}),
+    );
+    assert_eq!(
+        accepted.status(),
+        200,
+        "{}",
+        accepted.body_mut().read_to_string().unwrap()
+    );
+    let accepted_version = body(&mut accepted)["version"].clone();
+    let changed_listener = format!("http://127.0.0.1:{next_http_port}/");
+    wait_until(|| {
+        client()
+            .get(&changed_listener)
+            .call()
+            .is_ok_and(|response| response.status() == 404)
+    });
+    wait_until(|| std::net::TcpStream::connect(("127.0.0.1", runtime.settings.http_port)).is_err());
+    assert_eq!(
+        post(
+            &origin,
+            "config/save",
+            json!({"path":config_path,"content":config_content.replace(&format!("httpPort = {next_http_port}"), "httpPort = 0"),"baseVersion":accepted_version})
+        )
+        .status(),
+        422
+    );
+    assert_eq!(fs::read_to_string(&config_path).unwrap(), config_content);
+    assert_eq!(
+        client().get(&changed_listener).call().unwrap().status(),
+        404
+    );
     let previous_config = runtime.root.path().join("previous-config");
     fs::rename(&runtime.config, &previous_config).unwrap();
     let response = post(
@@ -199,7 +278,7 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
     });
     let manifest = project.join("devhost.toml");
     let content = format!(
-        "{}\n[devtools.resources]\nenabled=true\n[devtools.resources.cpu]\nenabled=true\npollInterval='100ms'\n[devtools.resources.memory]\nenabled=true\npollInterval='100ms'\n[devtools.resources.disk]\nenabled=true\npollInterval='100ms'\n",
+        "{}\n[devtools.resources]\nenabled=true\n[devtools.resources.cpu]\nenabled=true\npollInterval='250ms'\n[devtools.resources.memory]\nenabled=true\npollInterval='250ms'\n[devtools.resources.disk]\nenabled=true\npollInterval='250ms'\n",
         fs::read_to_string(&manifest).unwrap()
     );
     fs::write(&manifest, content).unwrap();
@@ -223,6 +302,13 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
     }
     assert_eq!(post(&origin, "restart-service", json!({})).status(), 400);
     assert_eq!(post(&origin, "start-service", json!({})).status(), 400);
+    let launches = || {
+        fs::read_to_string(project.join("launches"))
+            .unwrap()
+            .lines()
+            .count()
+    };
+    assert_eq!(launches(), 1);
     let mut response = post(&origin, "restart-service", json!({"serviceName":"worker"}));
     assert_eq!(
         response.status(),
@@ -230,11 +316,19 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
         "{}",
         response.body_mut().read_to_string().unwrap()
     );
+    lifecycle::ready(&origin);
+    assert_eq!(launches(), 2, "service restart launches exactly once");
     assert_eq!(
         post(&origin, "start-service", json!({"serviceNames":["worker"]})).status(),
         500
     );
     assert_eq!(post(&origin, "restart-stack", json!({})).status(), 204);
+    lifecycle::ready(&origin);
+    assert_eq!(launches(), 3, "whole-stack restart launches exactly once");
+    assert!(process.as_mut().unwrap().0.try_wait().unwrap().is_none());
+    let owners = read_live_stacks(&runtime.state().join("caddy")).unwrap();
+    assert_eq!(owners.len(), 1);
+    assert_eq!(owners[0].pid, process.as_ref().unwrap().0.id() as i32);
     let io = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -259,9 +353,16 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
                     _ => {
                         if value.get("disk").is_none() { continue; }
                         assert!(value["cpu"]["cores"].as_u64().unwrap() > 0);
+                        assert!((0.0..=100.0).contains(&value["cpu"]["percent"].as_f64().unwrap()));
                         for resource in ["memory", "disk"] {
-                            assert!(value[resource]["totalBytes"].as_u64().unwrap() > 0);
-                            assert!((0.0..=100.0).contains(&value[resource]["percent"].as_f64().unwrap()));
+                            let total = value[resource]["totalBytes"].as_u64().unwrap();
+                            let used = value[resource]["usedBytes"].as_u64().unwrap();
+                            let percent = value[resource]["percent"].as_f64().unwrap();
+                            assert!(total > 0);
+                            assert!(used <= total, "{resource}: {value}");
+                            assert!((0.0..=100.0).contains(&percent));
+                            assert!((percent - used as f64 / total as f64 * 100.0).abs() < 0.01,
+                                "{resource} percentage must use byte units: {value}");
                         }
                     }
                 }

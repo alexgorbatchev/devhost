@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 06:12
+last_modified: 2026-11-24 06:31
 status: current
 ---
 
@@ -203,6 +203,16 @@ validation, version conflicts, atomic saves, local-access guards, responsive
 status reads during pending mutations, and health, logs, resources, and editor
 cursor WebSockets. Stream tests check configuration changes and shutdown close
 codes as well as initial messages.
+
+`just rust test --test stack_commands control::` compares the same live CLI
+fixtures across executables. Service and whole-stack restarts must each launch
+the worker once and retain the supervisor. Config-editor checks discover include
+files and move Caddy's HTTP listener through a machine-config save; rejected
+settings preserve the accepted listener and disk content. Resource frames check
+byte units and percentage relationships. Live enablement changes remove disabled
+fields, close existing sockets normally when sampling is disabled, reject new
+attachments, and allow memory-only re-enablement. These cases use the supported
+250 ms minimum interval; they do not establish sampling cadence.
 
 `just rust test --test devtools_assets_injection` checks native document
 injection and recovery-page proxying. The recovery callback owns its own Tokio

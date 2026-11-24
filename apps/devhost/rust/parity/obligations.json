@@ -1340,7 +1340,7 @@
       "failure": "Missing service fields, invalid names and external restart return errors.",
       "cleanup": "Join request operations and stop resulting children.",
       "evidence": ["control", "lifecycle"],
-      "remaining": "Add explicit whole-stack HTTP restart success comparison.",
+      "remaining": "None beyond final native platform acceptance; shared actual-CLI checks prove exactly one additional launch for service restart and whole-stack restart, readiness and unchanged supervisor ownership.",
       "status": "open"
     },
     {
@@ -1400,7 +1400,7 @@
       "failure": "Disabled endpoint or outside path returns error.",
       "cleanup": "Stop stack and remove private file copies.",
       "evidence": ["config-editor"],
-      "remaining": "Add include discovery to the live differential fixture.",
+      "remaining": "None beyond final native platform acceptance; shared live discovery waits for publication of included files, then checks include kind, source content and version hashes alongside manifest and machine files.",
       "status": "open"
     },
     {
@@ -1436,7 +1436,7 @@
       "failure": "Rejected save retains last valid runtime and disk content.",
       "cleanup": "Join watcher/save operations before removing files.",
       "evidence": ["config-editor", "control"],
-      "remaining": "Add explicit accepted machine-setting reload effect comparison.",
+      "remaining": "None beyond final native platform acceptance; accepted machine saves move the real Caddy HTTP listener and close its old port; invalid replacement settings return422, preserve disk bytes and keep the accepted listener serving.",
       "status": "open"
     },
     {
@@ -1448,7 +1448,7 @@
       "failure": "Unavailable sample is represented without crashing the stream.",
       "cleanup": "Close stream and join sampler threads.",
       "evidence": ["control", "resource-regression"],
-      "remaining": "Add differential sample semantic assertions beyond frame presence.",
+      "remaining": "None beyond final native platform acceptance; shared native frames check CPU range/core count, byte units, used<=total and percentage consistency for memory and disk.",
       "status": "open"
     },
     {
@@ -1460,7 +1460,7 @@
       "failure": "Invalid duration or resource settings are rejected.",
       "cleanup": "Close stream and join old/new sampler schedules.",
       "evidence": ["control", "resource-regression"],
-      "remaining": "Add shared per-resource toggle/cadence comparison.",
+      "remaining": "Live toggle comparisons now remove disabled fields, normally close existing sockets and reject new sockets when all resources are disabled, then permit memory-only re-enablement. Add differential sampling cadence evidence; fixtures use the valid250ms minimum rather than the previously rejected100ms interval.",
       "status": "open"
     },
     {
