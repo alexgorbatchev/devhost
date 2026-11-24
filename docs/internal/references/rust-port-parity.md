@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 09:30
+last_modified: 2026-11-24 09:38
 status: current
 ---
 
@@ -317,8 +317,13 @@ files are removed.
 
 `just rust test --test stack_commands agents::` starts an isolated native stack
 and checks discovery and activity HTTP/WebSocket contracts against real process
-identity and temporary harness storage. Set `DEVHOST_STACK_TEST_BINARY` to the Go
-oracle executable to run the same scenarios against Go.
+identity and temporary harness storage. It checks state ordering, nested checkout
+scope, sibling-prefix and stale-identity exclusion, private identifiers, bounded
+multibyte activity, reconnect history suppression and shutdown without stopping
+foreign harness processes. Linux also uses a harness with non-UTF-8 argv. Set
+`DEVHOST_STACK_TEST_BINARY` to the Go oracle executable to run the same scenarios
+against Go. Live subagent transitions, partial scan failure/cache behavior and
+worktree-target activity still need shared executable acceptance.
 
 ## Native completion and argument tests
 

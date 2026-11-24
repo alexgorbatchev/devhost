@@ -1769,7 +1769,7 @@
       "failure": "Dead or changed process identity cannot stay attached.",
       "cleanup": "Stop watcher and join owned harness process.",
       "evidence": ["agents"],
-      "remaining": "Add non-UTF-8 process metadata and reused-identity sentinel comparison.",
+      "remaining": "Linux external comparisons discover a live harness with non-UTF-8 argv and reject a live PID with a stale start identity without signalling it. Retain final native-platform receipts; add changed-identity detachment while activity is attached.",
       "status": "open"
     },
     {
@@ -1781,7 +1781,7 @@
       "failure": "Broken harness source cannot hide other valid agents.",
       "cleanup": "Join scanner and remove private harness fixture directories.",
       "evidence": ["agents", "agents-regression"],
-      "remaining": "Add partial-failure/cache and sibling-prefix cases to shared fixture.",
+      "remaining": "External comparisons exclude a sibling directory sharing the checkout prefix and an empty working directory. Add shared partial-failure/cache acceptance; retain final native-platform receipts.",
       "status": "open"
     },
     {
@@ -1792,8 +1792,8 @@
       "effect": "Filtering and attention ordering match without exposing private harness identifiers.",
       "failure": "Unknown target cannot broaden discovery scope.",
       "cleanup": "Stop watchers and all synthetic real process fixtures.",
-      "evidence": ["agents-regression"],
-      "remaining": "Run subagent/ordering matrix through both external CLIs.",
+      "evidence": ["agents", "agents-regression"],
+      "remaining": "External comparisons order waiting, working, unknown and idle root agents and exclude seeded subagent transcript metadata from the top-level list. Add live subagent transitions and unknown-target rejection; retain final native-platform receipts.",
       "status": "open"
     },
     {
@@ -1805,7 +1805,7 @@
       "failure": "Oversized/broken events cannot stall or corrupt stream.",
       "cleanup": "Close socket and join watcher before removing transcript/cursor.",
       "evidence": ["agents", "agents-regression"],
-      "remaining": "Extend shared peer to appended events, reconnect and bounds.",
+      "remaining": "External comparisons append multibyte UTF-8 input, enforce the 4096-byte text bound, reconnect without replaying earlier input and deliver subsequent input to both peers. Add malformed-event recovery; retain final native-platform receipts.",
       "status": "open"
     },
     {
