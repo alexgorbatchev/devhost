@@ -2,7 +2,11 @@ use super::*;
 
 type ActivitySocket = async_tungstenite::WebSocketStream<async_tungstenite::tokio::ConnectStream>;
 
-async fn activity_event(socket: &mut ActivitySocket, matches: impl Fn(&Value) -> bool) -> Value {
+async fn activity_event(
+    socket: &mut ActivitySocket,
+    expected: &str,
+    matches: impl Fn(&Value) -> bool,
+) -> Value {
     use async_tungstenite::tungstenite::Message;
     use futures_util::StreamExt;
     tokio::time::timeout(Duration::from_secs(5), async {
@@ -24,7 +28,7 @@ async fn activity_event(socket: &mut ActivitySocket, matches: impl Fn(&Value) ->
         }
     })
     .await
-    .expect("expected native activity event")
+    .unwrap_or_else(|_| panic!("expected native activity event: {expected}"))
 }
 
 #[cfg(target_os = "linux")]
@@ -64,6 +68,8 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
     let sessions = home.join(".claude/sessions");
     fs::create_dir_all(&project).unwrap();
     fs::create_dir_all(&sessions).unwrap();
+    let broken_database = home.join("private-opencode.db");
+    fs::write(&broken_database, "not a sqlite database").unwrap();
     fs::write(project.join("devhost.toml"), "name='activity'\n[devtools.chat]\nenabled=true\n[services.web]\ncommand=['sleep','300']\nhealth.process=true\n").unwrap();
     #[cfg(target_os = "linux")]
     let harness = opaque_harness();
@@ -114,6 +120,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         .args(["start", "--local"])
         .env("HOME", &home)
         .env("XDG_DATA_HOME", home.join(".local/share"))
+        .env("OPENCODE_DB_PATH", &broken_database)
         .env("CLAUDE_SESSIONS_DIR", &sessions)
         .env("CLAUDE_PROJECTS_DIR", home.join(".claude/projects"))
         .env("CODEX_HOME", home.join(".codex"))
@@ -151,6 +158,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         .build()
         .into();
     let url = format!("http://127.0.0.1:{port}");
+    let first_scan = Instant::now();
     let mut response = client
         .get(format!("{url}/__devhost__/agents?chatTarget=project"))
         .call()
@@ -159,6 +167,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
     assert_eq!(response.headers()["cache-control"], "no-store");
     let body = response.body_mut().read_to_string().unwrap();
     let value: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(value["error"], "Some agents could not be listed.");
     let listed = value["agents"].as_array().unwrap();
     assert_eq!(listed.len(), 4, "{body}");
     for (agent, (process, state, subdirectory)) in listed.iter().zip([
@@ -173,6 +182,56 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         assert_eq!(agent["isOwned"], false);
     }
     assert!(!body.contains("private-") && !body.contains("transcript"));
+    // Mutate both sources while the partial snapshot is cached.
+    fs::remove_file(&broken_database).unwrap();
+    let descriptor = sessions.join("working.json");
+    let mut changed: Value =
+        serde_json::from_str(&fs::read_to_string(&descriptor).unwrap()).unwrap();
+    changed["name"] = json!("Updated task");
+    fs::write(&descriptor, changed.to_string()).unwrap();
+    let cached: Value = serde_json::from_str(
+        &client
+            .get(format!("{url}/__devhost__/agents?chatTarget=project"))
+            .call()
+            .unwrap()
+            .body_mut()
+            .read_to_string()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(
+        first_scan.elapsed() < Duration::from_secs(5),
+        "cache probe exceeded the five-second snapshot lifetime"
+    );
+    assert_eq!(cached, value);
+    std::thread::sleep(Duration::from_secs(5));
+    let refreshed: Value = serde_json::from_str(
+        &client
+            .get(format!("{url}/__devhost__/agents?chatTarget=project"))
+            .call()
+            .unwrap()
+            .body_mut()
+            .read_to_string()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(refreshed.get("error").is_none(), "{refreshed}");
+    assert_eq!(refreshed["agents"].as_array().unwrap().len(), 4);
+    assert_eq!(refreshed["agents"][1]["name"], "Updated task");
+    assert_eq!(
+        refreshed["agents"][1]["key"],
+        format!("claude-code:{}", working.0.id())
+    );
+    for path in ["agents", "agents/activity"] {
+        assert_eq!(
+            client
+                .get(format!("{url}/__devhost__/{path}?chatTarget=missing"))
+                .call()
+                .unwrap()
+                .status(),
+            400
+        );
+    }
     let mut page = client
         .get(format!(
             "{url}/__devhost__/agents/activity?chatTarget=project"
@@ -204,26 +263,36 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         .unwrap();
     io.block_on(async {
         use futures_util::StreamExt;
+        let refused = async_tungstenite::tokio::connect_async(format!(
+            "ws://127.0.0.1:{port}/__devhost__/ws/agents/activity?chatTarget=missing"
+        ))
+        .await
+        .unwrap_err();
+        let async_tungstenite::tungstenite::Error::Http(refused) = refused else {
+            panic!("expected an HTTP target rejection: {refused}")
+        };
+        assert_eq!(refused.status(), 400);
         let (mut socket, _) = async_tungstenite::tokio::connect_async(format!(
             "ws://127.0.0.1:{port}/__devhost__/ws/agents/activity?chatTarget=project"
         ))
         .await
         .unwrap();
-        activity_event(&mut socket, |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
+        activity_event(&mut socket, "initial run_started", |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
         use std::io::Write;
         let mut appended = OpenOptions::new().append(true).open(&transcript).unwrap();
+        writeln!(appended, "not valid json\n{{\"type\":\"user\",\"message\":null}}").unwrap();
         let text = "🦀".repeat(1030);
         writeln!(appended, "{}", json!({"type":"user","message":{"role":"user","content":text}})).unwrap();
-        let delivered = activity_event(&mut socket, |value| value["eventType"] == "turn_start").await;
+        let delivered = activity_event(&mut socket, "bounded input after malformed lines", |value| value["eventType"] == "turn_start").await;
         assert_eq!(delivered["pid"], harness.0.id());
         assert_eq!(delivered["text"], format!("{}…", "🦀".repeat(1024)));
         let (mut reconnected, _) = async_tungstenite::tokio::connect_async(format!(
             "ws://127.0.0.1:{port}/__devhost__/ws/agents/activity?chatTarget=project"
         )).await.unwrap();
-        activity_event(&mut reconnected, |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
+        activity_event(&mut reconnected, "reconnected run_started", |value| value["eventType"] == "run_started" && value["pid"] == harness.0.id()).await;
         writeln!(appended, "{}", json!({"type":"user","message":{"role":"user","content":"private appended after reconnect"}})).unwrap();
         for stream in [&mut socket, &mut reconnected] {
-            let delivered = activity_event(stream, |value| value["eventType"] == "turn_start").await;
+            let delivered = activity_event(stream, "input after reconnect", |value| value["eventType"] == "turn_start").await;
             assert_eq!(delivered["text"], "private appended after reconnect");
             assert_eq!(delivered["pid"], harness.0.id());
         }

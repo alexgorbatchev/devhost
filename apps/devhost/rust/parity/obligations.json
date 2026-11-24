@@ -1781,7 +1781,7 @@
       "failure": "Broken harness source cannot hide other valid agents.",
       "cleanup": "Join scanner and remove private harness fixture directories.",
       "evidence": ["agents", "agents-regression"],
-      "remaining": "External comparisons exclude a sibling directory sharing the checkout prefix and an empty working directory. Add shared partial-failure/cache acceptance; retain final native-platform receipts.",
+      "remaining": "Shared external-CLI fixture verifies valid results and generic partial-failure diagnostics from a corrupt native harness database, unchanged cached results after source mutation, and refreshed results after five seconds. Sibling-prefix and empty-directory exclusions also execute. Retain final native-platform receipts and dependency-integrated Go acceptance.",
       "status": "open"
     },
     {
@@ -1793,7 +1793,7 @@
       "failure": "Unknown target cannot broaden discovery scope.",
       "cleanup": "Stop watchers and all synthetic real process fixtures.",
       "evidence": ["agents", "agents-regression"],
-      "remaining": "External comparisons order waiting, working, unknown and idle root agents and exclude seeded subagent transcript metadata from the top-level list. Add live subagent transitions and unknown-target rejection; retain final native-platform receipts.",
+      "remaining": "External comparisons order waiting, working, unknown and idle root agents and exclude seeded subagent transcript metadata from the top-level list. Unknown targets are rejected by discovery, activity HTTP and WebSocket routes. Add live subagent transitions; retain final native-platform receipts and dependency-integrated Go acceptance.",
       "status": "open"
     },
     {
@@ -1805,7 +1805,7 @@
       "failure": "Oversized/broken events cannot stall or corrupt stream.",
       "cleanup": "Close socket and join watcher before removing transcript/cursor.",
       "evidence": ["agents", "agents-regression"],
-      "remaining": "External comparisons append multibyte UTF-8 input, enforce the 4096-byte text bound, reconnect without replaying earlier input and deliver subsequent input to both peers. Add malformed-event recovery; retain final native-platform receipts.",
+      "remaining": "Shared external-CLI fixture skips malformed transcript lines, delivers subsequent multibyte input within the 4096-byte bound, reconnects without history and delivers immediate appended input to both peers. The pinned Go watcher can lose immediate input because it prepares the initial cursor after lifecycle delivery; validate its dependency-integrated repair and retain final native-platform receipts.",
       "status": "open"
     },
     {
