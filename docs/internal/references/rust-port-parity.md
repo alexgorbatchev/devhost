@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:18
+last_modified: 2026-11-24 11:26
 status: current
 ---
 
@@ -257,6 +257,12 @@ manifest validation; routed stack-info stays private to the loopback listener.
 The real root directory rejects non-root paths and writes. An unknown hostname
 fails the TLS handshake with the fixture CA selected, rather than merely failing
 certificate validation or returning an HTTP error. No OS trust is installed.
+
+The `proxy::claims::` fixture seeds hostname claims and registrations with a live
+sentinel PID and a stale start identity. A new stack reclaims the hosts while the
+sentinel survives. A real live owner's claim and registration independently reject
+another manifest with either `killZombies` setting; the existing route remains
+healthy. After the owner stops, a new stack can serve those hostnames.
 
 The pending-control fixture holds a real backend HTTP health response during a
 restart. It repeatedly reads stack-info, browser configuration, the self snapshot,

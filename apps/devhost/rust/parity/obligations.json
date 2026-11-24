@@ -409,6 +409,13 @@
       "qualification": "Native HTTP/HTTPS exact and wildcard path precedence, root fallback, aliases, host isolation, preserved upstream paths, rejected nested overlaps, private control guard, directory methods and unknown-SNI TLS rejection."
     },
     {
+      "id": "proxy-claims",
+      "path": "apps/devhost/rust/tests/stack_commands/proxy/claims.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands proxy::claims:: with each comparison executable",
+      "qualification": "Live sentinel with stale start identities cannot retain a hostname or receive a signal. Real live claims and registrations independently reject foreign takeover with either killZombies setting; stopping the owner releases the hosts for a new stack."
+    },
+    {
       "id": "port-retries",
       "path": "apps/devhost/rust/tests/stack_commands/ports.rs",
       "kind": "native-shared",
@@ -1247,8 +1254,8 @@
       "effect": "Canonical identity deduplicates valid owners; only matching live identity authorizes ownership.",
       "failure": "Foreign live host claims cannot be stolen.",
       "cleanup": "Remove synthetic owner records; preserve foreign sentinel process.",
-      "evidence": ["stack", "info"],
-      "remaining": "Add wrong-start-identity host-claim sentinel comparison.",
+      "evidence": ["stack", "info", "proxy-claims"],
+      "remaining": "Linux shared external CLI acceptance covers wrong-start-identity host claims and registrations with a surviving live sentinel; genuine live claims and registrations independently block foreign takeover for both killZombies settings, and stopped owners release the hostname. Final native source/archive acceptance remains.",
       "status": "open"
     },
     {

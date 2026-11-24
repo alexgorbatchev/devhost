@@ -2,6 +2,8 @@ use super::documents::Backend;
 use super::lifecycle::{launch, ready, stop};
 use super::*;
 
+#[path = "proxy/claims.rs"]
+mod claims;
 #[path = "proxy/routes.rs"]
 mod routes;
 
