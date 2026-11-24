@@ -251,11 +251,11 @@ After installing a new devhost executable, replace the running supervisors:
 devhost restart-all
 ```
 
-Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables).
+Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables). `restart-all` stops instances whose launch directory was removed and restarts the remaining instances.
 
 To restart a single project, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`.
 
-Both commands capture every selected process's arguments, working directory, and environment before stopping any stack. Each relaunch uses the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+Both commands capture the arguments, working directory, and environment for every replacement before stopping any stack. An unexpected capture error aborts the command before shutdown. Each relaunch uses the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
 
 Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or `devhost stop --session <name>` for a standalone session, to stop its replacement. Command sessions preserve their generated names.
 
