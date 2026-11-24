@@ -125,14 +125,14 @@ pub(crate) fn sync_not_found_site(
     let page_path = not_found_dir.join("index.html");
     let page = statuspage::not_found_page(links, "/devhost-route-not-found.css")?;
     path_ctx(
-        fs::write(&page_path, page),
+        write_site_file(&page_path, page.as_bytes(), 0o644),
         "write managed caddy not-found page",
         &page_path,
     )?;
 
     let css_path = not_found_dir.join("devhost-route-not-found.css");
     path_ctx(
-        fs::write(&css_path, statuspage::PAGE_CSS),
+        write_site_file(&css_path, statuspage::PAGE_CSS.as_bytes(), 0o644),
         "write managed caddy not-found stylesheet",
         &css_path,
     )?;
@@ -469,25 +469,29 @@ pub(crate) fn create_managed_url(protocol: &str, host: &str, port: u16, path: &s
 }
 
 fn write_private(path: &Path, content: &[u8]) -> Result<(), String> {
+    path_ctx(write_site_file(path, content, 0o600), "write", path)
+}
+
+fn write_site_file(path: &Path, content: &[u8], mode: u32) -> io::Result<()> {
+    use io::Write;
+
+    let directory = path.parent().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "site file has no parent directory",
+        )
+    })?;
+    // Caddy may still be reading the old inode with its original Content-Length.
+    let mut file = tempfile::NamedTempFile::new_in(directory)?;
+    file.write_all(content)?;
     #[cfg(unix)]
     {
-        use std::{io::Write, os::unix::fs::OpenOptionsExt};
-        let mut file = path_ctx(
-            fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .mode(0o600)
-                .open(path),
-            "write",
-            path,
-        )?;
-        path_ctx(file.write_all(content), "write", path)
+        use std::os::unix::fs::PermissionsExt;
+        file.as_file()
+            .set_permissions(fs::Permissions::from_mode(mode))?;
     }
-    #[cfg(not(unix))]
-    {
-        path_ctx(fs::write(path, content), "write", path)
-    }
+    file.persist(path).map_err(|error| error.error)?;
+    Ok(())
 }
 
 fn render_caddyfile(directory: &Path, settings: &CaddySettings) -> Result<String, String> {
@@ -545,4 +549,76 @@ fn append_fallback(document: &mut String, directory: &Path, protocol: &str, port
         "\n{address} {{\n{tls}    root * {root}\n\n    @devhost_route_not_found_asset file {{path}}\n    handle @devhost_route_not_found_asset {{\n        file_server\n    }}\n\n    handle {{\n        error 404\n    }}\n\n    handle_errors 404 {{\n        rewrite /index.html\n        file_server\n    }}\n}}"
     )
     .expect("append to Caddyfile");
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::{Read, Write};
+    use std::os::unix::fs::PermissionsExt;
+
+    use super::*;
+
+    #[test]
+    fn site_refresh_preserves_in_flight_file_readers() {
+        let fixture = tempfile::tempdir().unwrap();
+        prepare_directories(fixture.path()).unwrap();
+        let settings = CaddySettings::default();
+        sync_not_found_site(fixture.path(), &settings).unwrap();
+        let site = fixture.path().join("route-not-found");
+        let mut readers = Vec::new();
+        for (name, mode) in [
+            ("index.html", 0o644),
+            ("devhost-route-not-found.css", 0o644),
+            ("stacks.html", 0o600),
+        ] {
+            let path = site.join(name);
+            let replacement = fs::read(&path).unwrap();
+            let mut file = fs::OpenOptions::new().append(true).open(&path).unwrap();
+            file.write_all(b"\n/* previous generation */").unwrap();
+            drop(file);
+            let original = fs::read(&path).unwrap();
+            readers.push((
+                path,
+                fs::File::open(site.join(name)).unwrap(),
+                original,
+                replacement,
+                mode,
+            ));
+        }
+
+        sync_not_found_site(fixture.path(), &settings).unwrap();
+        for (path, mut reader, original, replacement, mode) in readers {
+            let mut served = Vec::new();
+            reader.read_to_end(&mut served).unwrap();
+            assert_eq!(
+                served.len(),
+                original.len(),
+                "in-flight reader: {}",
+                path.display()
+            );
+            assert_eq!(served, original);
+            assert_eq!(fs::read(&path).unwrap(), replacement);
+            assert_eq!(
+                fs::metadata(path).unwrap().permissions().mode() & 0o777,
+                mode
+            );
+        }
+        assert_eq!(fs::read_dir(site).unwrap().count(), 3);
+    }
+
+    #[test]
+    fn failed_site_publication_removes_temporary_file() {
+        let fixture = tempfile::tempdir().unwrap();
+        let path = fixture.path().join("index.html");
+        fs::create_dir(&path).unwrap();
+        let marker = path.join("owned");
+        fs::write(&marker, b"keep").unwrap();
+        assert!(write_site_file(&path, b"replacement", 0o644).is_err());
+        assert_eq!(fs::read(marker).unwrap(), b"keep");
+        assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 1);
+        assert!(
+            write_site_file(&fixture.path().join("missing/index.html"), b"page", 0o644).is_err()
+        );
+        assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 1);
+    }
 }

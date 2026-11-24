@@ -50,11 +50,11 @@ func syncManagedCaddyNotFoundSite(routesDirectoryPath string, settings ManagedCa
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(sitePaths.PagePath, []byte(document), 0o644); err != nil {
+	if err := writeSiteFile(sitePaths.PagePath, []byte(document), 0o644); err != nil {
 		return fmt.Errorf("write managed caddy not-found page %s: %w", sitePaths.PagePath, err)
 	}
 
-	if err := os.WriteFile(sitePaths.StylesheetPath, []byte(managedCaddyNotFoundPageCSS), 0o644); err != nil {
+	if err := writeSiteFile(sitePaths.StylesheetPath, []byte(managedCaddyNotFoundPageCSS), 0o644); err != nil {
 		return fmt.Errorf("write managed caddy not-found stylesheet %s: %w", sitePaths.StylesheetPath, err)
 	}
 

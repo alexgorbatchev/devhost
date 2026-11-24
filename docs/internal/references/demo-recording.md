@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 07:13
+last_modified: 2026-11-24 08:28
 status: current
 ---
 
@@ -158,6 +158,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Prefixed, screened Caddy diagnostics and actionable startup failures                                                                                                                        | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `reference/output.md`, "Caddy's lines"                                | No demo                                          |
 | Local CA trusted once when devhost starts Caddy; untrusted-CA warning                                                                                                                       | `guides/managed-caddy.md`, "Trust the certificates"; `guides/troubleshooting.md`, "Browsers reject devhost HTTPS certificates"             | No demo                                          |
 | Route changes made while the managed Caddy is stopped are kept for its next start, never sent to another Caddy                                                                              | `guides/managed-caddy.md`, "Several stacks, one Caddy"                                                                                     | No demo                                          |
+| Generated 404 and running-stack directory pages remain complete for in-flight readers during route updates                                                                                  | `guides/managed-caddy.md`, "Hostnames and DNS"                                                                                             | **No demo**                                      |
 | Start a stack in dependency order, stop it with one command; Rust discovers newly detached children before shutdown signals (**No demo**)                                                   | `guides/stack-lifecycle.md`, "Start a stack", "Stop a stack", "How devhost stops services"                                                 | `stack-lifecycle` step-1 to step-5; promo line-3 |
 | Bounded automatic-port collision retries retain the final attempted port in service details and subsequent service references after failure                                                 | `stacks/recovery.md`, "Port conflicts"                                                                                                     | No demo                                          |
 | Start part of a stack by naming services                                                                                                                                                    | `guides/stack-lifecycle.md`, "Start part of a stack"                                                                                       | No demo                                          |

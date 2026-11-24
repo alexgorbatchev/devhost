@@ -138,7 +138,7 @@ func syncStackDirectorySite(paths Paths, settings ManagedCaddyGlobalSettings) er
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(directory, "stacks.html"), []byte(document), 0o600); err != nil {
+	if err := writeSiteFile(filepath.Join(directory, "stacks.html"), []byte(document), 0o600); err != nil {
 		return err
 	}
 	return writeStackDirectorySite(paths, settings, stacks, directory)
@@ -240,7 +240,7 @@ func writeStackDirectorySite(paths Paths, settings ManagedCaddyGlobalSettings, s
 	if settings.HTTPEnabled {
 		document += FormatManagedCaddySiteAddress("http", settings.HTTPPort, settings.StackDirectoryHostname()) + " {\n" + body
 	}
-	return os.WriteFile(stackDirectorySnippetPath(paths), []byte(document), 0o600)
+	return writeSiteFile(stackDirectorySnippetPath(paths), []byte(document), 0o600)
 }
 
 // SyncStackDirectory applies backend changes even for stacks without routes.

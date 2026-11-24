@@ -1,11 +1,73 @@
 package caddy
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestSiteRefreshPreservesInFlightFileReaders(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		mode os.FileMode
+	}{
+		{"index.html", 0o644},
+		{"devhost-route-not-found.css", 0o644},
+		{"stacks.html", 0o600},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			paths := CreateManagedCaddyPaths(t.TempDir())
+			if err := os.MkdirAll(paths.RegistrationsDirectoryPath, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			settings := DefaultManagedCaddyGlobalSettings()
+			if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, settings); err != nil {
+				t.Fatal(err)
+			}
+			site := createManagedCaddyNotFoundSitePaths(paths.CaddyDirectoryPath)
+			path := filepath.Join(site.DirectoryPath, test.name)
+			replacement, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			original := append(bytes.Clone(replacement), []byte("\n/* previous generation */")...)
+			if err := os.WriteFile(path, original, test.mode); err != nil {
+				t.Fatal(err)
+			}
+			reader, err := os.Open(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = reader.Close() })
+			if err := syncManagedCaddyNotFoundSite(paths.RoutesDirectoryPath, settings); err != nil {
+				t.Fatal(err)
+			}
+			served, err := io.ReadAll(reader)
+			if err != nil || !bytes.Equal(served, original) {
+				t.Fatalf("in-flight reader got %d bytes, want %d; error=%v", len(served), len(original), err)
+			}
+			current, err := os.ReadFile(path)
+			if err != nil || !bytes.Equal(current, replacement) {
+				t.Fatalf("replacement mismatch; error=%v", err)
+			}
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm() != test.mode {
+				t.Fatalf("mode=%o, want %o", info.Mode().Perm(), test.mode)
+			}
+			entries, err := os.ReadDir(site.DirectoryPath)
+			if err != nil || len(entries) != 3 {
+				t.Fatalf("site has %d entries, want 3; error=%v", len(entries), err)
+			}
+		})
+	}
+}
 
 func TestSyncManagedCaddyNotFoundSite(t *testing.T) {
 	t.Parallel()
