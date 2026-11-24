@@ -32,12 +32,19 @@ fn registration(runtime: &Runtime, host: &str) -> PathBuf {
         .unwrap_or_else(|| panic!("no registration for {host}"))
 }
 
+#[track_caller]
 pub(super) fn routed_body(runtime: &Runtime, host: &str) -> String {
     let mut response = control::client()
         .get(format!("http://127.0.0.1:{}/", runtime.settings.http_port))
         .header("Host", host)
         .call()
-        .unwrap();
+        .unwrap_or_else(|error| {
+            panic!(
+                "routed request for {host} failed: {error:?}; Caddy: {}",
+                fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log"))
+                    .unwrap_or_default()
+            )
+        });
     assert_eq!(response.status(), 200);
     response.body_mut().read_to_string().unwrap()
 }

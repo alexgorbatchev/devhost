@@ -45,7 +45,7 @@ async fn frame(socket: &mut Socket) -> Value {
     serde_json::from_str(&text).unwrap()
 }
 
-async fn snapshot(origin: &str, phase: usize, count: usize) -> Value {
+async fn snapshot(project: &Path, origin: &str, phase: usize, count: usize) -> Value {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
         let mut socket = connect(origin, false).await;
@@ -79,7 +79,9 @@ async fn snapshot(origin: &str, phase: usize, count: usize) -> Value {
         }
         assert!(
             Instant::now() < deadline,
-            "log retention did not reach final burst entry"
+            "log retention did not reach final burst entry: phase {phase}, last entry {:?}; lifecycle: {}",
+            entries.last(),
+            fs::read_to_string(project.join("original.log")).unwrap()
         );
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
@@ -131,7 +133,7 @@ time.sleep(300)
     lifecycle::ready(origin);
     fs::write(project.join("emit-1"), "ready").unwrap();
     wait_until(|| project.join("emitted-1").exists());
-    snapshot(origin, 1, 1024).await;
+    snapshot(project, origin, 1, 1024).await;
     let mut slow = connect(origin, true).await;
     assert_eq!(frame(&mut slow).await["type"], "snapshot");
     let mut fast = connect(origin, false).await;
@@ -165,7 +167,7 @@ time.sleep(300)
         );
     }
     wait_until(|| project.join("emitted-2").exists());
-    snapshot(origin, 2, 4096).await;
+    snapshot(project, origin, 2, 4096).await;
     drop(slow);
     drop(fast);
 }
