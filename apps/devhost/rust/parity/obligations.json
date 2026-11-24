@@ -385,7 +385,7 @@
       "path": "apps/devhost/rust/tests/stack_commands/manifest.rs",
       "kind": "native-shared",
       "selector": "cargo test --test stack_commands manifest:: with each comparison executable",
-      "qualification": "Unchanged Go nested cwd failure is classified explicitly; repaired Go and optimized Rust must pass."
+      "qualification": "Unchanged Go nested cwd and literal environment failures are classified explicitly; repaired Go and optimized Rust must pass."
     },
     {
       "id": "config-directories",

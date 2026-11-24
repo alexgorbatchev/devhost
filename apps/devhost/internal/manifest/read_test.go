@@ -547,6 +547,33 @@ func TestNestedIncludesRebaseDeclaringServicePathsOnce(t *testing.T) {
 	}
 }
 
+func TestIncludedServicePathsPreserveLiteralEnvironmentValues(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(root, "devhost.toml")
+	if err := os.WriteFile(manifestPath, []byte("includes=['sub/service.toml']\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "sub/service.toml"), []byte("[services.worker]\ncommand=['true']\ncwd='src'\n[services.worker.env]\ncwd='cache'\nserve='literal-root'\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := raw.value["services"].(map[string]any)["worker"].(map[string]any)
+	if service["cwd"] != filepath.Join("sub", "src") {
+		t.Fatalf("service cwd = %#v, want sub/src", service["cwd"])
+	}
+	want := map[string]any{"cwd": "cache", "serve": "literal-root"}
+	if !reflect.DeepEqual(service["env"], want) {
+		t.Fatalf("service environment = %#v, want %#v", service["env"], want)
+	}
+}
+
 func TestReadManifestConflictError(t *testing.T) {
 	t.Parallel()
 

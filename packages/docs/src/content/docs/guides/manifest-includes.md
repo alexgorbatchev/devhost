@@ -47,7 +47,7 @@ Paths in an included manifest are relative to that manifest's own directory, as 
 
 With `cwd = "src"` and `watch = ["."]`, the same service watches `apps/api/src/`, whether run on its own or included by the root.
 
-The experimental Rust CLI rebases only service paths. An environment variable named `cwd` keeps its literal value when its manifest is included.
+Only service paths are rebased. Environment variables named `cwd` or `serve` keep their literal values when their manifest is included.
 
 ## Start one app of the monorepo
 

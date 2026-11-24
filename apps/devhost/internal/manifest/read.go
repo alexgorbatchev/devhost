@@ -182,12 +182,14 @@ func prepareSubManifest(subManifest map[string]any, rootDir, subDir string) map[
 				if _, exists := serviceMap["cwd"]; !exists && !servesFiles {
 					serviceMap["cwd"] = "."
 				}
+				if cwd, ok := serviceMap["cwd"].(string); ok {
+					serviceMap["cwd"] = rewriteManifestPath(rootDir, subDir, cwd)
+				}
 			}
 		}
 	}
 
-	rewritten := rewritePaths(rootDir, subDir, subManifest)
-	return rewritten.(map[string]any)
+	return subManifest
 }
 
 func rewriteManifestPath(rootDir, subDir, value string) string {
@@ -200,42 +202,6 @@ func rewriteManifestPath(rootDir, subDir, value string) string {
 		return absPath
 	}
 	return relPath
-}
-
-func rewritePaths(rootManifestDir, subManifestDir string, value any) any {
-	switch item := value.(type) {
-	case map[string]any:
-		result := make(map[string]any, len(item))
-		for k, v := range item {
-			if k == "cwd" {
-				if str, ok := v.(string); ok && !filepath.IsAbs(str) && !strings.Contains(str, "{{") {
-					result[k] = rewriteManifestPath(rootManifestDir, subManifestDir, str)
-					continue
-				}
-			}
-
-			result[k] = rewritePaths(rootManifestDir, subManifestDir, v)
-		}
-		return result
-	case []any:
-		result := make([]any, len(item))
-		for i, v := range item {
-			result[i] = rewritePaths(rootManifestDir, subManifestDir, v)
-		}
-		return result
-	case []map[string]any:
-		result := make([]map[string]any, len(item))
-		for i, v := range item {
-			if rewritten, ok := rewritePaths(rootManifestDir, subManifestDir, v).(map[string]any); ok {
-				result[i] = rewritten
-			} else {
-				result[i] = v
-			}
-		}
-		return result
-	default:
-		return value
-	}
 }
 
 func interpolateManifestValue(value any) (any, []string) {

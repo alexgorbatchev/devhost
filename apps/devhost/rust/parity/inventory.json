@@ -1470,8 +1470,8 @@
   "branchDifferences": [
     {
       "path": "apps/devhost/internal/manifest/read.go",
-      "blob": "f4692adc79423a512dd87bf614b103cf4b8ca141",
-      "reason": "Verified Go repair resolves each included service cwd and serve root exactly once relative to its declaring manifest. The unchanged Go20 oracle rebases nested services again; shared native comparisons require repaired Go and Rust to launch from the declared directories."
+      "blob": "ebec231ab4c9bcab70e95d7c79c74621797602b2",
+      "reason": "Verified Go repairs resolve each included service cwd and serve root once relative to its declaring manifest and preserve literal environment values named cwd or serve. Shared native comparisons reproduce both unchanged Go20 defects and require repaired Go and Rust to pass."
     },
     {
       "path": "apps/devhost/internal/caddy/background_command.go",
@@ -1505,8 +1505,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/manifest-includes.md",
-      "blob": "7fbd9fa7222de242f8c2f1ddfe484282555003c8",
-      "reason": "Documents verified include-relative cwd and serve roots, including nested manifests. Shared native comparisons reproduce the unchanged Go20 nested-path defect and require repaired Go and Rust to pass."
+      "blob": "c85d14414d4c6a9efeebf77e9cafdfac6e83f77c",
+      "reason": "Documents verified include-relative cwd and serve roots and literal environment values. Shared native comparisons reproduce unchanged Go20 nested-path and env.cwd defects and require repaired Go and Rust to pass."
     },
     {
       "path": "packages/docs/src/content/docs/guides/service-references.md",

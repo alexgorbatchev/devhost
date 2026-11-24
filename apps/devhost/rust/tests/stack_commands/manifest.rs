@@ -22,6 +22,59 @@ fn selected(output: Output, name: &str) {
 }
 
 #[test]
+fn included_service_cwd_does_not_rewrite_literal_environment_values() {
+    let runtime = Runtime::start();
+    let project = runtime.root.path().join("literal-environment");
+    let work = project.join("sub/src");
+    fs::create_dir_all(&work).unwrap();
+    fs::write(
+        project.join("devhost.toml"),
+        "name='literal-environment'\nincludes=['sub/service.toml']\n",
+    )
+    .unwrap();
+    fs::write(project.join("sub/service.toml"), "[services.worker]\ncwd='src'\ncommand=['python3','observe.py']\nhealth.process=true\n[services.worker.env]\ncwd='cache'\nserve='literal-root'\n").unwrap();
+    fs::write(work.join("observe.py"), "import json,os,pathlib,time\npathlib.Path('observed.json').write_text(json.dumps({'directory':os.getcwd(),'cwd':os.environ['cwd'],'serve':os.environ['serve']}))\ntime.sleep(300)\n").unwrap();
+    let log = File::create(project.join("lifecycle.log")).unwrap();
+    let mut process = Process(
+        runtime
+            .command()
+            .current_dir(&project)
+            .args(["start", "--local"])
+            .env_remove("BASH_ENV")
+            .stdin(Stdio::null())
+            .stdout(log.try_clone().unwrap())
+            .stderr(log)
+            .process_group(0)
+            .spawn()
+            .unwrap(),
+    );
+    let observed = work.join("observed.json");
+    wait_until(|| {
+        assert!(
+            process.0.try_wait().unwrap().is_none(),
+            "{}",
+            fs::read_to_string(project.join("lifecycle.log")).unwrap()
+        );
+        observed.is_file()
+    });
+    let value: Value = serde_json::from_slice(&fs::read(observed).unwrap()).unwrap();
+    assert_eq!(value["directory"], work.to_str().unwrap());
+    assert_eq!(value["serve"], "literal-root");
+    assert_eq!(
+        value["cwd"], "cache",
+        "included environment cwd was rewritten as a service path"
+    );
+    let output = runtime
+        .command()
+        .current_dir(&project)
+        .arg("stop")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    wait_until(|| process.0.try_wait().unwrap().is_some());
+}
+
+#[test]
 fn discovery_stops_at_git_boundaries_and_explicit_paths_never_fall_back() {
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path().canonicalize().unwrap();
