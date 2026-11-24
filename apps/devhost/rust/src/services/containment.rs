@@ -138,6 +138,17 @@ impl ServiceContainment {
     }
 
     pub fn signal(&self, include_root_group: bool, sig: i32) {
+        // Discover new children before their parent can exit in response to this signal.
+        // The shared polling snapshot may predate a detached child's creation.
+        if let Ok(snapshot) = read_process_snapshot() {
+            refresh_tracked_from_snapshot(
+                &self.tracked,
+                self.root_pid,
+                self.root_identity.as_deref(),
+                &self.service_token,
+                &snapshot,
+            );
+        }
         let descendants = self.live_descendant_pids();
         let root_matches = self
             .root_identity
@@ -209,6 +220,17 @@ fn refresh_tracked(
     service_token: &str,
 ) -> Result<(), String> {
     let snapshot = shared_process_snapshot()?;
+    refresh_tracked_from_snapshot(tracked, root_pid, root_identity, service_token, &snapshot);
+    Ok(())
+}
+
+fn refresh_tracked_from_snapshot(
+    tracked: &Arc<Mutex<BTreeMap<i32, String>>>,
+    root_pid: i32,
+    root_identity: Option<&str>,
+    service_token: &str,
+    snapshot: &ProcessSnapshot,
+) {
     let children_by_parent = &snapshot.children;
     let mut guard = tracked.lock().expect("tracked lock");
     guard.retain(|&pid, identity| matches_identity(pid, identity));
@@ -229,7 +251,7 @@ fn refresh_tracked(
     }
     let mut descendants = Vec::new();
     for pid in roots {
-        descendants.extend(collect_descendant_pids(&snapshot, pid));
+        descendants.extend(collect_descendant_pids(snapshot, pid));
     }
     for pid in collect_platform_containment_root_pids(children_by_parent, service_token) {
         if snapshot
@@ -238,7 +260,7 @@ fn refresh_tracked(
             .is_some_and(|identity| matches_identity(pid, identity))
         {
             descendants.push(pid);
-            descendants.extend(collect_descendant_pids(&snapshot, pid));
+            descendants.extend(collect_descendant_pids(snapshot, pid));
         }
     }
     for pid in descendants {
@@ -248,7 +270,6 @@ fn refresh_tracked(
             guard.entry(pid).or_insert_with(|| identity.clone());
         }
     }
-    Ok(())
 }
 
 fn matches_identity(pid: i32, identity: &str) -> bool {

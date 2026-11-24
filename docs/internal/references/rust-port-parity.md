@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 03:46
+last_modified: 2026-11-24 04:00
 status: current
 ---
 
@@ -91,6 +91,15 @@ the absolute Go oracle executable to compare model discovery, annotation image
 delivery, reconnect replay, conversation closure, and stack cleanup against Go.
 
 ## Native stack-command tests
+
+`just rust test --test stack_commands processes::` also compares cooperative and
+TERM-ignoring children, including a child in its own session, through the selected
+CLI's actual stop command. It verifies signal delivery, bounded escalation,
+supervisor exit, descendant death, and an unrelated surviving sentinel. Synthetic
+stale stack, hostname, port and route records use the sentinel's PID with a wrong
+process-start identity to verify that inspection, stop and restart leave it alive.
+Shutdown signaling reads a current process tree before the parent can exit;
+background polling retains its shared snapshot.
 
 `just rust test --test stack_commands` checks live owner lookup, manifest identity,
 foreground and detached supervisor replacement, launch environment and directory

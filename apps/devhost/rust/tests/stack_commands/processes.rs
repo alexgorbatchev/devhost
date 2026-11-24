@@ -20,6 +20,156 @@ fn pid(project: &Path, name: &str) -> i32 {
 }
 
 #[test]
+fn stale_process_identities_never_authorize_stop_or_restart_signals() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path();
+    let mut sentinel = sleeper();
+    let manifest = root.join("devhost.toml");
+    fs::write(&manifest, "name='stale-owner'\n").unwrap();
+    let owner = json!({
+        "createdAt": "2026-11-24T00:00:00Z",
+        "manifestPath": manifest,
+        "ownerPid": sentinel.0.id(),
+        "ownerStartIdentity": "previous-process-start-identity",
+        "stackName": "stale-owner",
+        "host": "stale-owner.localhost",
+        "bindHost": "127.0.0.1",
+        "port": 9234,
+        "appBindHost": "127.0.0.1",
+        "appPort": 9234,
+        "path": "/",
+        "serviceName": "worker"
+    });
+    for path in [
+        "stacks/stale.json",
+        "routes/.host-claims/stale.json",
+        "port-claims/stale.json",
+        "routes/.registrations/stale.json",
+    ] {
+        record(root, path, owner.clone());
+    }
+    for args in [
+        vec!["stack", "list"],
+        vec!["stack", "find", "stale-owner"],
+        vec!["stop"],
+        vec!["restart-all"],
+    ] {
+        let output = run(root, root, "1", &args);
+        assert!(output.status.success(), "{args:?}: {output:?}");
+        if args[0] == "stack" {
+            assert!(output.stdout.is_empty(), "{args:?}: {output:?}");
+        }
+        assert!(sentinel.0.try_wait().unwrap().is_none(), "{args:?}");
+        assert!(
+            read_live_stack_owners(&root.join("caddy"))
+                .unwrap()
+                .is_empty()
+        );
+    }
+}
+
+#[test]
+fn stop_contains_cooperative_and_term_ignoring_detached_descendants() {
+    let runtime = Runtime::start();
+    let mut sentinel = sleeper();
+    for stubborn in [false, true] {
+        let name = if stubborn {
+            "escaped-stubborn"
+        } else {
+            "escaped-cooperative"
+        };
+        let project = project(
+            &runtime,
+            name,
+            "[services.worker]\ncommand=['python3','parent.py']\nhealth.process=true\n",
+        );
+        fs::write(
+            project.join("child.py"),
+            format!(
+                r#"import os, pathlib, signal, sys, time
+name = sys.argv[1]
+def terminate(signum, frame):
+    pathlib.Path(name + '.term').write_text('TERM')
+    if not {stubborn}: sys.exit(0)
+signal.signal(signal.SIGTERM, terminate)
+signal.signal(signal.SIGINT, signal.SIG_IGN)
+pathlib.Path(name + '.pid.pending').write_text(str(os.getpid()))
+pathlib.Path(name + '.pid.pending').replace(name + '.pid')
+while True: time.sleep(0.1)
+"#,
+                stubborn = if stubborn { "True" } else { "False" }
+            ),
+        )
+        .unwrap();
+        fs::write(
+            project.join("parent.py"),
+            r#"import os, pathlib, signal, subprocess, sys, time
+def terminate(signum, frame):
+    pathlib.Path('parent.term').write_text('TERM')
+    sys.exit(0)
+signal.signal(signal.SIGTERM, terminate)
+pathlib.Path('parent.pid.pending').write_text(str(os.getpid()))
+pathlib.Path('parent.pid.pending').replace('parent.pid')
+subprocess.Popen([sys.executable, 'child.py', 'ordinary'])
+subprocess.Popen([sys.executable, 'child.py', 'detached'], start_new_session=True)
+while True: time.sleep(0.1)
+"#,
+        )
+        .unwrap();
+        let mut process = super::lifecycle::launch(&runtime, &project, &[]);
+        wait_until(|| project.join("parent.pid").exists());
+        let parent = pid(&project, "parent.pid");
+        let _cleanup = WorkerCleanup(
+            devhost_rust::services::containment::ServiceContainment::start(
+                parent,
+                devhost_rust::services::containment::create_service_containment_token(),
+            )
+            .unwrap(),
+        );
+        wait_until(|| {
+            ["ordinary.pid", "detached.pid"]
+                .iter()
+                .all(|name| project.join(name).exists())
+        });
+        let descendants = [pid(&project, "ordinary.pid"), pid(&project, "detached.pid")];
+        // The detached child has actually escaped both the parent and supervisor groups.
+        assert_eq!(unsafe { libc::getpgid(descendants[1]) }, descendants[1]);
+        super::lifecycle::ready(&origin(&runtime, name));
+        let started = Instant::now();
+        super::lifecycle::stop(&runtime, &project, &mut process);
+        assert!(
+            started.elapsed() < Duration::from_secs(15),
+            "{name}: elapsed {:?}, supervisor {:?}, parent alive {}, descendants {:?}, log: {}",
+            started.elapsed(),
+            process.0.try_wait().unwrap(),
+            procid::is_process_alive(parent),
+            descendants.map(procid::is_process_alive),
+            fs::read_to_string(project.join("lifecycle.log")).unwrap()
+        );
+        if stubborn {
+            assert!(
+                started.elapsed() >= Duration::from_secs(9),
+                "termination grace was skipped"
+            );
+        }
+        assert_eq!(process.0.wait().unwrap().code(), Some(143));
+        for name in ["parent", "ordinary", "detached"] {
+            assert_eq!(
+                fs::read_to_string(project.join(format!("{name}.term"))).unwrap(),
+                "TERM"
+            );
+        }
+        wait_until(|| {
+            !procid::is_process_alive(parent)
+                && descendants
+                    .iter()
+                    .all(|&pid| !procid::is_process_alive(pid))
+        });
+        assert!(sentinel.0.try_wait().unwrap().is_none());
+    }
+}
+
+#[test]
 fn daemon_inherited_output_and_invalid_log_bytes_do_not_block_readiness() {
     let runtime = Runtime::start();
     let listener = fixture_ports::reserve_listener();
@@ -173,7 +323,7 @@ fn interrupt_and_wait(runtime: &Runtime, project: &Path, process: &mut Process, 
 
 #[test]
 fn daemon_status_start_and_stop_failures_preserve_readiness_and_cleanup_contracts() {
-    use super::control::{body, get};
+    use super::control::{body, client, get};
 
     let runtime = Runtime::start();
     // This listener belongs to the fixture, not the daemon. A healthy endpoint
@@ -226,9 +376,21 @@ fn daemon_status_start_and_stop_failures_preserve_readiness_and_cleanup_contract
             read_live_stacks(&runtime.state().join("caddy"))
                 .unwrap()
                 .iter()
-                .any(|stack| stack.name == name)
+                .any(|stack| stack.name == name && stack.control_port > 0)
         });
         let origin = origin(&runtime, name);
+        // Owner registration precedes the control listener accepting requests.
+        wait_until(|| {
+            assert!(
+                process.0.try_wait().unwrap().is_none(),
+                "{name}: {}",
+                fs::read_to_string(project.join("lifecycle.log")).unwrap()
+            );
+            client()
+                .get(format!("{origin}/__devhost__/stack-info"))
+                .call()
+                .is_ok_and(|response| response.status() == 200)
+        });
         if ready {
             super::lifecycle::ready(&origin);
         } else {

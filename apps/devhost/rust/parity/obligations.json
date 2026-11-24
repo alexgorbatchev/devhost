@@ -708,8 +708,8 @@
       "effect": "Stop targets only matching process-start identities and live descendants.",
       "failure": "A reused PID or corrupt identity must never authorize a signal.",
       "cleanup": "Join owned process groups; preserve unrelated sentinel.",
-      "evidence": ["stack", "process-regression"],
-      "remaining": "Add external-binary descendant and wrong-start-identity sentinel comparison.",
+      "evidence": ["stack", "process-regression", "processes"],
+      "remaining": "Final native receipts for external-binary cooperative/detached descendants and stale wrong-start-identity stack/hostname/port/route records with a live sentinel.",
       "status": "open"
     },
     {
@@ -721,7 +721,7 @@
       "failure": "TERM-ignoring children require bounded escalation.",
       "cleanup": "Verify helper death and no live stack owner remains.",
       "evidence": ["processes", "detach"],
-      "remaining": "Add external-binary TERM-ignoring descendant escalation comparison.",
+      "remaining": "Final native receipts for cooperative and TERM-ignoring ordinary/detached descendants, helper cancellation and signal exit statuses.",
       "status": "open"
     },
     {

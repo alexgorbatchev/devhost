@@ -1517,7 +1517,7 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
-      "blob": "74f55cf12bb0d4cb1772676378e485c52f7da99f",
+      "blob": "2bbf3b982d80b99063d7b2d116a49f47b87f69b6",
       "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
     },
     {
@@ -1537,7 +1537,7 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "739152d1ebbb30d25bb92c78716cfc80b043aeca",
+      "blob": "3e663e4592009407b9635da0f21028e56161d24d",
       "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry."
     },
     {

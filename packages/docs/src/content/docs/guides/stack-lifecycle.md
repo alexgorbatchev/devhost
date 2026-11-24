@@ -305,7 +305,9 @@ Stopping is best-effort and depends on the platform:
 - On macOS and elsewhere, it finds descendants by walking the process tree, which can miss a process that detached.
 - On every platform, after a service with a port stops, devhost watches that port for 2 seconds and stops any process it started that binds it again. A restart therefore takes about 2 seconds longer. Outside Linux this needs `lsof`.
 
-A service that daemonizes or detaches itself cannot be stopped this way; use [daemon mode](../managed-daemon-style-services/). If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.
+The experimental Rust CLI checks the current process tree before sending shutdown signals, including children that have just entered a separate session. It verifies tracked process identities before signaling them. Children that ignore termination are killed after the service's shutdown grace period.
+
+Use [daemon mode](../managed-daemon-style-services/) for a service whose detached process can outlive descendant tracking. If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.
 
 ## Related pages
 
