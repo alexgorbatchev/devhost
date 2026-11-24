@@ -355,6 +355,162 @@ fn response_on_port(port: u16, host: &str) -> Option<String> {
 }
 
 #[test]
+fn reload_claim_conflicts_preserve_both_stacks_and_removal_releases_resources() {
+    let runtime = Runtime::start();
+    let listeners: Vec<_> = (0..2).map(|_| fixture_ports::reserve_listener()).collect();
+    let ports: Vec<_> = listeners
+        .iter()
+        .map(|listener| listener.local_addr().unwrap().port())
+        .collect();
+    let mut projects = Vec::new();
+    let mut manifests = Vec::new();
+    for (index, name) in ["claims-a", "claims-b", "claims-replacement"]
+        .into_iter()
+        .enumerate()
+    {
+        let project = runtime.root.path().join(name);
+        fs::create_dir_all(project.join("public")).unwrap();
+        fs::write(project.join("public/note.txt"), format!("live {name}")).unwrap();
+        fs::write(project.join("worker.py"), r#"import http.server, os, pathlib, signal, sys
+def terminate(signum, frame):
+    pathlib.Path('worker.term').write_text('TERM')
+    sys.exit(0)
+signal.signal(signal.SIGTERM, terminate)
+os.chdir('public')
+server = http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler)
+pathlib.Path('../worker.pid.pending').write_text(str(os.getpid()))
+pathlib.Path('../worker.pid.pending').replace('../worker.pid')
+server.serve_forever()
+"#).unwrap();
+        let port = ports[usize::from(index == 1)];
+        let host = if index == 1 { "claims-b" } else { "claims-a" };
+        manifests.push(format!("name={name:?}\n[worktrees]\nenabled=false\n[services.keeper]\nserve='public'\nhost='{name}-keeper'\n[services.worker]\ncommand=['python3','worker.py']\nhost='{host}'\nport={port}\nhealth.http='/note.txt'\nhealth.interval=25\n"));
+        fs::write(project.join("devhost.toml"), &manifests[index]).unwrap();
+        projects.push(project);
+    }
+    drop(listeners);
+    let mut first = launch(&runtime, &projects[0], &[]);
+    let mut second = launch(&runtime, &projects[1], &[]);
+    wait_until(|| response(&runtime, "claims-a.localhost").as_deref() == Some("live claims-a"));
+    wait_until(|| response(&runtime, "claims-b.localhost").as_deref() == Some("live claims-b"));
+    let pids: Vec<i32> = projects[..2]
+        .iter()
+        .map(|project| {
+            fs::read_to_string(project.join("worker.pid"))
+                .unwrap()
+                .parse()
+                .unwrap()
+        })
+        .collect();
+    let assert_unchanged = || {
+        for (index, host) in ["claims-a.localhost", "claims-b.localhost"]
+            .into_iter()
+            .enumerate()
+        {
+            assert!(procid::is_process_alive(pids[index]));
+            assert_eq!(
+                fs::read_to_string(projects[index].join("worker.pid")).unwrap(),
+                pids[index].to_string()
+            );
+            assert_eq!(
+                response(&runtime, host),
+                Some(format!(
+                    "live claims-{}",
+                    if index == 0 { "a" } else { "b" }
+                ))
+            );
+        }
+    };
+    let first_manifest = projects[0].join("devhost.toml");
+    fs::write(
+        &first_manifest,
+        manifests[0].replace("host='claims-a'", "host='claims-b'"),
+    )
+    .unwrap();
+    wait_log(&projects[0], "claims-b.localhost is already claimed");
+    assert_unchanged();
+    fs::write(
+        &first_manifest,
+        manifests[0].replace(&format!("port={}", ports[0]), &format!("port={}", ports[1])),
+    )
+    .unwrap();
+    wait_log(
+        &projects[0],
+        &format!(
+            "configuration reload rejected: 127.0.0.1:{} is already",
+            ports[1]
+        ),
+    );
+    assert_unchanged();
+    let log = fs::read_to_string(projects[0].join("lifecycle.log")).unwrap();
+    assert!(
+        log.matches("configuration reload rejected:").count() >= 2,
+        "{log}"
+    );
+
+    fs::write(
+        &first_manifest,
+        manifests[0].split_once("[services.worker]").unwrap().0,
+    )
+    .unwrap();
+    wait_until(|| !procid::is_process_alive(pids[0]));
+    wait_until(|| std::net::TcpStream::connect(("127.0.0.1", ports[0])).is_err());
+    wait_until(|| response(&runtime, "claims-a.localhost").as_deref() != Some("live claims-a"));
+    wait_log(&projects[0], "configuration reloaded:");
+    assert_eq!(
+        fs::read_to_string(projects[0].join("public/worker.term")).unwrap(),
+        "TERM"
+    );
+    assert_eq!(
+        response(&runtime, "claims-a-keeper.localhost").as_deref(),
+        Some("live claims-a")
+    );
+    assert_eq!(
+        response(&runtime, "claims-b.localhost").as_deref(),
+        Some("live claims-b")
+    );
+    assert!(procid::is_process_alive(pids[1]));
+    assert!(first.0.try_wait().unwrap().is_none());
+
+    // Reusing the removed service's host and fixed port proves both claims were released.
+    let mut replacement = launch(&runtime, &projects[2], &[]);
+    wait_until(|| {
+        assert!(
+            replacement.0.try_wait().unwrap().is_none(),
+            "replacement exited: {}\nfirst stack: {}",
+            fs::read_to_string(projects[2].join("lifecycle.log")).unwrap_or_default(),
+            fs::read_to_string(projects[0].join("lifecycle.log")).unwrap_or_default()
+        );
+        response(&runtime, "claims-a.localhost").as_deref() == Some("live claims-replacement")
+    });
+    let replacement_pid = fs::read_to_string(projects[2].join("worker.pid"))
+        .unwrap()
+        .parse::<i32>()
+        .unwrap();
+    assert_ne!(replacement_pid, pids[0]);
+    assert_eq!(
+        response(&runtime, "claims-b.localhost").as_deref(),
+        Some("live claims-b")
+    );
+    let stop_one = |project: &Path, process: &mut Process| {
+        let output = runtime
+            .command()
+            .current_dir(project)
+            .arg("stop")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        wait_until(|| process.0.try_wait().unwrap().is_some());
+    };
+    stop_one(&projects[2], &mut replacement);
+    stop_one(&projects[0], &mut first);
+    stop(&runtime, &projects[1], &mut second);
+    for pid in [pids[0], pids[1], replacement_pid] {
+        assert!(!procid::is_process_alive(pid));
+    }
+}
+
+#[test]
 fn machine_config_watch_rejects_invalid_routing_and_applies_caddy_port_without_restart() {
     let runtime = Runtime::start();
     let project = runtime.root.path().join("machine-watch");

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 04:35
+last_modified: 2026-11-24 04:40
 status: current
 ---
 
@@ -112,6 +112,12 @@ is live. Invalid ports and a changed local suffix must preserve the working
 route. A valid HTTP-port update and its reversal must move the listener while
 preserving the Caddy and supervisor processes. The same assertions run against
 the unchanged Go oracle, repaired Go, and optimized Rust.
+
+Cross-stack reload cases reject another stack's hostname and fixed port while
+both original workers and routes remain live. After a successful removal is
+announced, the removed worker must be dead and a third stack must be able to
+reuse its hostname and port. The original stack's retained service and the
+unmodified second stack must stay available throughout.
 
 `just rust test --test stack_commands` checks live owner lookup, manifest identity,
 foreground and detached supervisor replacement, launch environment and directory

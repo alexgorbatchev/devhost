@@ -769,7 +769,7 @@
       "failure": "Conflicting claim or validation failure cannot withdraw working routes.",
       "cleanup": "Remove old claims/routes only after accepted replacement.",
       "evidence": ["lifecycle"],
-      "remaining": "Add cross-stack claim conflict and removed-service differential checks.",
+      "remaining": "Final native receipts for cross-stack hostname/port claim rejection and accepted removal with live host/port reuse.",
       "status": "open"
     },
     {
