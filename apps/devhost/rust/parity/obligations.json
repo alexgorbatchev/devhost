@@ -733,7 +733,7 @@
       "failure": "Opaque bytes cannot terminate the reader or panic.",
       "cleanup": "Stop daemon, verify death and rebind listener.",
       "evidence": ["processes"],
-      "remaining": "Add retained-tail bounds comparison beyond invalid-byte continuation.",
+      "remaining": "Final native receipts for inherited pipes, invalid-byte continuation and bounded retained-tail comparison.",
       "status": "open"
     },
     {
@@ -744,8 +744,8 @@
       "effect": "No failed session remains registered or routed.",
       "failure": "A late child exit cannot leave claimed ports or serve success.",
       "cleanup": "Join all children and verify own routes, claims and listeners are removed.",
-      "evidence": ["serve", "detach", "stack-start-stop"],
-      "remaining": "Add multi-service partial-start rollback comparison.",
+      "evidence": ["serve", "detach", "stack-start-stop", "processes"],
+      "remaining": "Final native receipts for explicit-dependency partial-start rollback and route/port/process cleanup.",
       "status": "open"
     },
     {
@@ -757,7 +757,7 @@
       "failure": "An unreadable or invalid include retains last valid configuration.",
       "cleanup": "Stop replacement and old children and remove watch state.",
       "evidence": ["lifecycle"],
-      "remaining": "Add machine config watch runtime comparison.",
+      "remaining": "Final native receipts for machine-config rejection and live shared-Caddy port updates without process restart.",
       "status": "open"
     },
     {

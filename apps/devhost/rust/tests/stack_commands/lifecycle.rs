@@ -340,17 +340,96 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
 }
 
 fn response(runtime: &Runtime, host: &str) -> Option<String> {
+    response_on_port(runtime.settings.http_port, host)
+}
+
+fn response_on_port(port: u16, host: &str) -> Option<String> {
     client()
-        .get(format!(
-            "http://127.0.0.1:{}/note.txt",
-            runtime.settings.http_port
-        ))
+        .get(format!("http://127.0.0.1:{port}/note.txt"))
         .header("Host", host)
         .call()
         .ok()?
         .body_mut()
         .read_to_string()
         .ok()
+}
+
+#[test]
+fn machine_config_watch_rejects_invalid_routing_and_applies_caddy_port_without_restart() {
+    let runtime = Runtime::start();
+    let project = runtime.root.path().join("machine-watch");
+    fs::create_dir_all(project.join("public")).unwrap();
+    fs::write(
+        project.join("public/note.txt"),
+        "live machine configuration",
+    )
+    .unwrap();
+    fs::write(
+        project.join("devhost.toml"),
+        "name='machine-watch'\n[worktrees]\nenabled=false\n[services.files]\nserve='public'\nhost='machine-watch'\n",
+    )
+    .unwrap();
+    let config_path = runtime.config.join("config.toml");
+    let original = fs::read_to_string(&config_path).unwrap();
+    let caddy_pid_path = runtime.state().join("caddy/caddy.pid");
+    let caddy_pid = fs::read_to_string(&caddy_pid_path).unwrap();
+    let mut process = launch(&runtime, &project, &[]);
+    let host = "machine-watch.localhost";
+    wait_until(|| response(&runtime, host).as_deref() == Some("live machine configuration"));
+
+    fs::write(&config_path, "[caddy]\nhttpsPort=0\n").unwrap();
+    wait_log(
+        &project,
+        "caddy.httpsPort must be an integer between 1 and 65535.",
+    );
+    assert_eq!(
+        response(&runtime, host).as_deref(),
+        Some("live machine configuration")
+    );
+    fs::write(
+        &config_path,
+        format!("domainSuffix='.changed.localhost'\n{original}"),
+    )
+    .unwrap();
+    wait_log(
+        &project,
+        "local domainSuffix changed while this stack is running;",
+    );
+    assert_eq!(
+        response(&runtime, host).as_deref(),
+        Some("live machine configuration")
+    );
+    assert_ne!(
+        response(&runtime, "machine-watch.changed.localhost").as_deref(),
+        Some("live machine configuration")
+    );
+
+    let listener = fixture_ports::reserve_listener();
+    let port = listener.local_addr().unwrap().port();
+    let changed = original.replace(
+        &format!("httpPort = {}", runtime.settings.http_port),
+        &format!("httpPort = {port}"),
+    );
+    assert_ne!(changed, original);
+    drop(listener);
+    fs::write(&config_path, changed).unwrap();
+    wait_until(|| response_on_port(port, host).as_deref() == Some("live machine configuration"));
+    wait_log(&project, "Applied the shared Caddy settings from ");
+    wait_until(|| std::net::TcpStream::connect(("127.0.0.1", runtime.settings.http_port)).is_err());
+    assert_eq!(fs::read_to_string(&caddy_pid_path).unwrap(), caddy_pid);
+    assert!(process.0.try_wait().unwrap().is_none());
+
+    // Restore through the same watcher before cleanup uses the original settings.
+    fs::write(&config_path, original).unwrap();
+    wait_until(|| response(&runtime, host).as_deref() == Some("live machine configuration"));
+    wait_until(|| std::net::TcpStream::connect(("127.0.0.1", port)).is_err());
+    assert_eq!(fs::read_to_string(&caddy_pid_path).unwrap(), caddy_pid);
+    assert!(process.0.try_wait().unwrap().is_none());
+    stop(&runtime, &project, &mut process);
+    assert_ne!(
+        response(&runtime, host).as_deref(),
+        Some("live machine configuration")
+    );
 }
 
 #[test]

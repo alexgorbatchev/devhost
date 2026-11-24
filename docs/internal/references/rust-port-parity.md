@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 04:00
+last_modified: 2026-11-24 04:35
 status: current
 ---
 
@@ -100,6 +100,18 @@ stale stack, hostname, port and route records use the sentinel's PID with a wron
 process-start identity to verify that inspection, stop and restart leave it alive.
 Shutdown signaling reads a current process tree before the parent can exit;
 background polling retains its shared snapshot.
+
+The same suite holds a failing service behind a file handshake until its healthy
+dependency is listening and routed. Detached startup then fails and must stop
+the dependency, release its listener and owner records, remove its route, and
+leave the shared Caddy running. The console shows at most 30 retained log lines;
+the full log preserves all 40 emitted lines and the failure marker is removed.
+
+The lifecycle suite changes the watched machine configuration while a file route
+is live. Invalid ports and a changed local suffix must preserve the working
+route. A valid HTTP-port update and its reversal must move the listener while
+preserving the Caddy and supervisor processes. The same assertions run against
+the unchanged Go oracle, repaired Go, and optimized Rust.
 
 `just rust test --test stack_commands` checks live owner lookup, manifest identity,
 foreground and detached supervisor replacement, launch environment and directory

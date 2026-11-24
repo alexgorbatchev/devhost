@@ -20,6 +20,124 @@ fn pid(project: &Path, name: &str) -> i32 {
 }
 
 #[test]
+fn partial_detached_start_rolls_back_healthy_dependency_and_retains_bounded_tail() {
+    use sha2::{Digest, Sha256};
+
+    let runtime = Runtime::start();
+    let project = project(
+        &runtime,
+        "partial-rollback",
+        "[worktrees]\nenabled=false\n[services.good]\ncommand=['python3','good.py']\nhost='rollback-good.localhost'\nport='auto'\nhealth.interval=25\nhealth.timeout=5000\n[services.bad]\ncommand=['python3','bad.py']\ndependsOn=['good']\nport='auto'\nhealth.interval=25\nhealth.timeout=5000\n",
+    );
+    fs::write(
+        project.join("good.py"),
+        r#"import os, pathlib, signal, socket, sys
+def terminate(signum, frame):
+    pathlib.Path('good.term').write_text('TERM')
+    sys.exit(0)
+signal.signal(signal.SIGTERM, terminate)
+s = socket.socket()
+s.bind(('127.0.0.1', int(os.environ['PORT'])))
+s.listen(10)
+pathlib.Path('good.port').write_text(str(s.getsockname()[1]))
+pathlib.Path('good.pid.pending').write_text(str(os.getpid()))
+pathlib.Path('good.pid.pending').replace('good.pid')
+while True:
+    connection, _ = s.accept()
+    connection.recv(1)
+    connection.close()
+"#,
+    )
+    .unwrap();
+    fs::write(
+        project.join("bad.py"),
+        r#"import pathlib, sys, time
+pathlib.Path('bad.waiting').touch()
+while not pathlib.Path('fail-now').exists(): time.sleep(0.01)
+for i in range(1, 41): print(f'rollback-line-{i:02d}', file=sys.stderr, flush=True)
+sys.exit(4)
+"#,
+    )
+    .unwrap();
+    let mut process = super::lifecycle::launch(&runtime, &project, &["--detach"]);
+    wait_until(|| project.join("good.pid").exists());
+    let good = pid(&project, "good.pid");
+    let _cleanup = WorkerCleanup(
+        devhost_rust::services::containment::ServiceContainment::start(
+            good,
+            devhost_rust::services::containment::create_service_containment_token(),
+        )
+        .unwrap(),
+    );
+    wait_until(|| project.join("bad.waiting").exists());
+    assert!(process.0.try_wait().unwrap().is_none());
+    let port: u16 = fs::read_to_string(project.join("good.port"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!(std::net::TcpStream::connect(("127.0.0.1", port)).is_ok());
+    assert!(procid::is_process_alive(good));
+    let caddy_config = || {
+        ureq::get(format!("http://{}/config/", runtime.settings.admin_address))
+            .call()
+            .unwrap()
+            .body_mut()
+            .read_to_string()
+            .unwrap()
+    };
+    wait_until(|| caddy_config().contains("rollback-good.localhost"));
+    fs::write(project.join("fail-now"), "fail").unwrap();
+    wait_until(|| process.0.try_wait().unwrap().is_some());
+    let console = fs::read_to_string(project.join("lifecycle.log")).unwrap();
+    assert!(!process.0.wait().unwrap().success(), "{console}");
+    assert!(console.contains("Startup log tail:"), "{console}");
+    assert!(
+        console.contains("devhost: ERR: service bad did not become ready; full log:"),
+        "{console}"
+    );
+    let emitted: Vec<_> = console
+        .lines()
+        .filter_map(|line| line.split_once("rollback-line-").map(|(_, number)| number))
+        .collect();
+    assert!(!emitted.is_empty() && emitted.len() <= 30, "{console}");
+    assert!(!emitted.contains(&"01"), "{console}");
+    assert!(emitted.contains(&"40"), "{console}");
+    let manifest = fs::canonicalize(project.join("devhost.toml")).unwrap();
+    let digest = Sha256::digest(manifest.to_string_lossy().as_bytes());
+    let stem = format!("stack-{digest:x}");
+    let retained = runtime.state().join("logs").join(format!("{stem}.log"));
+    assert!(console.contains(retained.to_str().unwrap()), "{console}");
+    let log = fs::read_to_string(retained).unwrap();
+    for i in 1..=40 {
+        assert!(log.contains(&format!("rollback-line-{i:02}")), "{log}");
+    }
+    assert!(
+        !runtime
+            .state()
+            .join("logs")
+            .join(format!("{stem}.failure.json"))
+            .exists()
+    );
+    wait_until(|| !procid::is_process_alive(good));
+    assert_eq!(
+        fs::read_to_string(project.join("good.term")).unwrap(),
+        "TERM"
+    );
+    assert!(TcpListener::bind(("127.0.0.1", port)).is_ok());
+    assert!(
+        read_live_stacks(&runtime.state().join("caddy"))
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        read_live_stack_owners(&runtime.state().join("caddy"))
+            .unwrap()
+            .is_empty()
+    );
+    assert!(!caddy_config().contains("rollback-good.localhost"));
+}
+
+#[test]
 fn stale_process_identities_never_authorize_stop_or_restart_signals() {
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path();
