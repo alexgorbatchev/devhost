@@ -388,6 +388,13 @@
       "qualification": "Unchanged Go nested cwd and literal environment failures are classified explicitly; repaired Go and optimized Rust must pass."
     },
     {
+      "id": "health-cancellation",
+      "path": "apps/devhost/rust/tests/stack_commands/lifecycle.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands lifecycle::pending_http_health_request_is_canceled_before_backend_timeout -- --exact with each comparison executable",
+      "qualification": "An accepted HTTP health request remains unanswered through shutdown; control reads remain available, no service becomes ready, and service/registration ownership is removed within five seconds."
+    },
+    {
       "id": "config-directories",
       "path": "apps/devhost/rust/tests/stack_commands/config.rs",
       "kind": "native-shared",
@@ -656,8 +663,8 @@
       "effect": "Supervisor and probe exit promptly without reporting readiness.",
       "failure": "A hung backend cannot prevent cancellation.",
       "cleanup": "Join probe and service children and close sockets.",
-      "evidence": ["detach", "health-regression"],
-      "remaining": "Run the pending-health cancellation fixture against Go, not just Rust APIs.",
+      "evidence": ["detach", "health-regression", "health-cancellation"],
+      "remaining": "Retain final native receipts for the external-CLI pending HTTP cancellation fixture against all three binaries.",
       "status": "open"
     },
     {

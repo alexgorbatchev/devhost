@@ -92,6 +92,101 @@ pub(super) fn stop(runtime: &Runtime, project: &Path, process: &mut Process) {
 }
 
 #[test]
+fn pending_http_health_request_is_canceled_before_backend_timeout() {
+    use std::io::BufRead;
+
+    let runtime = Runtime::start();
+    let listener = fixture_ports::reserve_listener();
+    listener.set_nonblocking(true).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let project = runtime.root.path().join("http-cancel");
+    fs::create_dir(&project).unwrap();
+    fs::write(
+        project.join("devhost.toml"),
+        format!("name='http-cancel'\n[worktrees]\nenabled=false\n[services.worker]\ncommand=['sh','-c','printf %s $$ > worker.pid; exec sleep 300']\nport='auto'\n[services.worker.health]\nhttp='http://127.0.0.1:{port}/health'\ninterval=30000\ntimeout=60000\n"),
+    )
+    .unwrap();
+    let mut process = launch(&runtime, &project, &["--detach"]);
+    let mut accepted = None;
+    wait_until(|| {
+        assert!(
+            process.0.try_wait().unwrap().is_none(),
+            "{}",
+            fs::read_to_string(project.join("lifecycle.log")).unwrap()
+        );
+        match listener.accept() {
+            Ok((stream, _)) => {
+                accepted = Some(stream);
+                true
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => false,
+            Err(error) => panic!("accept health request: {error}"),
+        }
+    });
+    let pending = accepted.unwrap();
+    pending
+        .set_read_timeout(Some(Duration::from_secs(3)))
+        .unwrap();
+    let mut pending = std::io::BufReader::new(pending);
+    let mut request = String::new();
+    pending.read_line(&mut request).unwrap();
+    assert_eq!(request, "GET /health HTTP/1.1\r\n");
+    let worker_pid = fs::read_to_string(project.join("worker.pid"))
+        .unwrap()
+        .parse::<i32>()
+        .unwrap();
+    let origin = origin(&runtime, "http-cancel");
+    let snapshot = body(&mut get(&origin, "stack-info"));
+    assert_eq!(snapshot["starting"], true, "{snapshot}");
+    assert!(
+        snapshot["services"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|service| service["state"] != "ready"),
+        "{snapshot}"
+    );
+    let started = Instant::now();
+    // SAFETY: this is the detached-start parent spawned by this fixture.
+    assert_eq!(
+        unsafe { libc::kill(process.0.id() as i32, libc::SIGTERM) },
+        0
+    );
+    let deadline = started + Duration::from_secs(5);
+    let status = loop {
+        if let Some(status) = process.0.try_wait().unwrap() {
+            break status;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "shutdown waited for the unresponsive HTTP peer: {}",
+            fs::read_to_string(project.join("lifecycle.log")).unwrap()
+        );
+        thread::sleep(Duration::from_millis(20));
+    };
+    assert!(!status.success());
+    // Keep the peer open until shutdown completes: EOF must not release the probe.
+    drop(pending);
+    assert!(!procid::is_process_alive(worker_pid));
+    assert!(
+        read_live_stacks(&runtime.state().join("caddy"))
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        read_live_stack_owners(&runtime.state().join("caddy"))
+            .unwrap()
+            .is_empty()
+    );
+    let log = fs::read_to_string(project.join("lifecycle.log")).unwrap();
+    assert!(log.contains("Startup log tail:"), "{log}");
+    assert!(
+        log.contains("received SIGTERM (signal 15) before the stack was ready; full log:"),
+        "{log}"
+    );
+}
+
+#[test]
 fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
     let runtime = Runtime::start();
     let project = runtime.root.path().join("selection-contract");
