@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 08:59
+last_modified: 2026-11-24 09:11
 status: current
 ---
 
@@ -97,6 +97,9 @@ Panel cases check manifest-hashed private storage, invalid-input rejection,
 corruption recovery and failed replacement preserving unrelated state. Shutdown
 cases check conversation closure and whole-stack shutdown against both peers,
 which record ignored TERM and stay alive even after stdin EOF until killed.
+Supervisor replacement uses the selected executable's `restart-all`, verifies
+old peers exit and live session IDs return 404, preserves saved panel positions,
+and starts fresh replay without resending native input.
 
 Replay journals are private, unlinked temporary files in both implementations.
 They retain live-session replay and disappear when their owning supervisor exits;

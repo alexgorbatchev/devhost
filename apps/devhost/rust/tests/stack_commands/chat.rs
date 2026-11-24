@@ -163,6 +163,10 @@ impl ChatFixture {
     }
 
     async fn socket(&self, id: &str) -> ChatSocket {
+        self.replay(id).await.0
+    }
+
+    async fn replay(&self, id: &str) -> (ChatSocket, Value) {
         let mut request = format!(
             "ws://127.0.0.1:{}/__devhost__/ws/chat?chatTarget=project&sessionId={id}",
             self.port
@@ -176,8 +180,8 @@ impl ChatFixture {
             .await
             .unwrap()
             .0;
-        chat_until(&mut socket, |value| value["type"] == "snapshot").await;
-        socket
+        let snapshot = chat_until(&mut socket, |value| value["type"] == "snapshot").await;
+        (socket, snapshot)
     }
 
     fn close(&self, id: &str) {
@@ -232,6 +236,149 @@ impl ChatFixture {
             );
         }
     }
+}
+
+#[test]
+fn native_chat_supervisor_replacement_drops_live_replay_and_preserves_panel() {
+    use super::control::{body, get};
+
+    let mut fixture = start_chat("normal");
+    let io = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let mut sessions = Vec::new();
+    io.block_on(async {
+        for harness in ["codex", "claude-code"] {
+            let id = fixture.session(harness);
+            let mut socket = fixture.socket(&id).await;
+            chat_send(&mut socket, json!({"type":"send","commandId":"private-before-replacement","text":"Private receipt before replacement"})).await;
+            let receipt = chat_until(&mut socket, |value| value["type"] == "command_result").await;
+            assert!(receipt.get("error").is_none(), "{receipt}");
+            assert_eq!(receipt["delivery"], if harness == "codex" { "queued" } else { "started" });
+            drop(socket);
+            let (socket, snapshot) = fixture.replay(&id).await;
+            assert!(snapshot["events"].as_array().unwrap().len() > 2);
+            assert!(snapshot["events"].as_array().unwrap().iter().any(|event| event["payload"]["method"] == "turn/started" || event["payload"]["type"] == "user"), "accepted input is missing from native replay: {snapshot}");
+            drop(socket);
+            let peer = if harness == "codex" { "codex" } else { "claude" };
+            let pid = fs::read_to_string(fixture.project.join(format!("{peer}-ready"))).unwrap().parse::<i32>().unwrap();
+            assert!(procid::is_process_alive(pid));
+            sessions.push((harness, id, pid, fixture.packets(harness)));
+        }
+    });
+    let panel = json!({"position":{"left":24,"top":48}});
+    assert_eq!(
+        fixture
+            .client
+            .put(format!("{}/__devhost__/chat/panel", fixture.origin))
+            .header("Origin", &fixture.origin)
+            .header("Content-Type", "application/json")
+            .send(panel.to_string())
+            .unwrap()
+            .status(),
+        204
+    );
+    let output = fixture
+        .runtime
+        .command()
+        .current_dir(&fixture.project)
+        .arg("restart-all")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert!(
+        !String::from_utf8_lossy(&output.stdout).contains("Private receipt before replacement")
+    );
+    assert!(
+        !String::from_utf8_lossy(&output.stderr).contains("Private receipt before replacement")
+    );
+    wait_until(|| fixture.stack.0.try_wait().unwrap().is_some());
+    let mut owner = None;
+    wait_until(|| {
+        owner = read_live_stacks(&fixture.runtime.state().join("caddy"))
+            .unwrap()
+            .into_iter()
+            .find(|stack| {
+                stack.name == "chat"
+                    && stack.pid != fixture.stack.0.id() as i32
+                    && stack.control_port > 0
+            });
+        owner.is_some()
+    });
+    let owner = owner.unwrap();
+    fixture.port = owner.control_port;
+    fixture.origin = format!("http://127.0.0.1:{}", fixture.port);
+    let listed = body(&mut get(
+        &fixture.origin,
+        "chat/sessions?chatTarget=project",
+    ));
+    assert_eq!(listed["sessions"], json!([]), "{listed}");
+    let restored = body(&mut get(&fixture.origin, "chat/panel"));
+    for axis in ["left", "top"] {
+        assert_eq!(
+            restored["position"][axis].as_f64(),
+            panel["position"][axis].as_f64()
+        );
+    }
+    io.block_on(async {
+        for (harness, id, pid, packets) in sessions {
+            assert!(
+                !procid::is_process_alive(pid),
+                "old native peer survived supervisor replacement"
+            );
+            assert_eq!(
+                fixture.packets(harness),
+                packets,
+                "replacement resent private native input"
+            );
+            let mut request = format!(
+                "ws://127.0.0.1:{}/__devhost__/ws/chat?chatTarget=project&sessionId={id}",
+                fixture.port
+            )
+            .into_client_request()
+            .unwrap();
+            request
+                .headers_mut()
+                .insert("Origin", fixture.origin.parse().unwrap());
+            match async_tungstenite::tokio::connect_async(request).await {
+                Err(async_tungstenite::tungstenite::Error::Http(response)) => {
+                    assert_eq!(response.status(), 404)
+                }
+                result => panic!("replaced live session remained accessible: {result:?}"),
+            }
+            let id = fixture.session(harness);
+            let (socket, snapshot) = fixture.replay(&id).await;
+            assert!(
+                snapshot["events"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|event| event["payload"]["method"] != "turn/started"
+                        && event["payload"]["type"] != "user"),
+                "old native delivery appeared in new replay: {snapshot}"
+            );
+            assert!(
+                !snapshot
+                    .to_string()
+                    .contains("Private receipt before replacement"),
+                "old live journal leaked into a new session"
+            );
+            assert!(!snapshot.to_string().contains("private-before-replacement"));
+            fixture.close(&id);
+            drop(socket);
+        }
+    });
+    let output = fixture
+        .runtime
+        .command()
+        .current_dir(&fixture.project)
+        .arg("stop")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    wait_until(|| !owner.is_alive());
+    fixture.stop();
 }
 
 async fn chat_send(socket: &mut ChatSocket, value: Value) {

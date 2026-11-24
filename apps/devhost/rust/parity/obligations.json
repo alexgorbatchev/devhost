@@ -1726,7 +1726,7 @@
       "failure": "Corrupt journal cannot fabricate acknowledgements.",
       "cleanup": "Close sessions and release the unlinked journal descriptor; native provider conversation history remains a separate store.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Compare supervisor replacement dropping live sessions and starting fresh replay journals; retain native receipts for reconnect, private logs and internal journal-error regression checks. Persisted-journal restart is not the Go contract.",
+      "remaining": "Retain final native receipts for the shared supervisor-replacement comparison, reconnect/private-log assertions and internal journal-error regression checks. Actual restart-all drops old live IDs and native peers, preserves panel state, creates fresh replay and sends no input twice. Persisted-journal restart is not the Go contract.",
       "status": "open"
     },
     {
