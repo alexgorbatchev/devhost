@@ -118,7 +118,7 @@ Verify the real dotfiles override manager separately with a private home, config
 
 ```sh
 bun apps/devhost/scripts/verifyRustOverride.ts \
-  /path/to/dotfiles /path/to/known-go/devhost /path/to/optimized-rust/devhost \
+  /path/to/dotfiles-cli /path/to/known-go/devhost /path/to/optimized-rust/devhost \
   /path/to/new-evidence-directory
 ```
 
@@ -155,7 +155,7 @@ Explicit operator actions and required permissions:
 After a tagged Rust release completes:
 
 1. Verify GitHub Release assets with `gh release view v<version> --json assets`: confirm all five `.tar.gz` archives (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) and `SHA256SUMS` exist.
-2. Download the host archive and `SHA256SUMS`, verify with `sha256sum -c --ignore-missing SHA256SUMS`, and verify the archive contains `devhost`, `README.md`, `LICENSE`, and `THIRD_PARTY_LICENSES.txt`.
+2. Download the host archive and `SHA256SUMS`, verify with `sha256sum -c --ignore-missing SHA256SUMS` on Linux (or `shasum -a 256 --check --ignore-missing SHA256SUMS` on macOS), and verify the archive contains `devhost`, `README.md`, `LICENSE`, and `THIRD_PARTY_LICENSES.txt`.
 3. Run the extracted executable in an isolated `DEVHOST_CONFIG_DIR` and `DEVHOST_STATE_DIR` (ephemeral Caddy ports) to verify `--version`, `--help`, `caddy start`, `start --detach`, HTTPS routing and `/__devhost__/config.json` + `/__devhost__/inject.js`, `restart-all`, `stop`, and `caddy stop`.
 4. Confirm the `docs` job succeeded and GitHub Pages serves the released version's documentation.
 

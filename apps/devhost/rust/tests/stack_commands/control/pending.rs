@@ -15,7 +15,7 @@ fn project(runtime: &Runtime) -> PathBuf {
     fs::write(project.join("watched/input"), "initial").unwrap();
     fs::write(
         project.join("gated-health.py"),
-        r#"import http.server, os, pathlib, signal, time
+        r#"import http.server, os, pathlib, signal, socketserver, time
 launches = pathlib.Path('launches')
 with launches.open('a') as output:
     output.write(str(os.getpid()) + '\n')
@@ -42,7 +42,8 @@ class Health(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'healthy')
-http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), Health).serve_forever()
+socketserver.TCPServer.allow_reuse_address = True
+socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), Health).serve_forever()
 "#,
     )
     .unwrap();

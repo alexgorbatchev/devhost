@@ -424,7 +424,11 @@ async fn worktrees(State(handle): State<RuntimeHandle>, request: Request<Body>) 
                         Ok(health) => health,
                         Err(error) => return diagnostic(StatusCode::INTERNAL_SERVER_ERROR, &error),
                     };
-                    if !repositories.is_empty() {
+                    if repositories.is_empty() {
+                        if let Some(object) = health.as_object_mut() {
+                            object.remove("repositories");
+                        }
+                    } else {
                         health["repositories"] = serde_json::json!(repositories);
                     }
                     health
@@ -597,9 +601,22 @@ mod tests {
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();
-        write!(stream, "{method} {path} HTTP/1.1\r\n{headers}Content-Type: application/json\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}", body.len()).unwrap();
+        if let Err(error) = write!(
+            stream,
+            "{method} {path} HTTP/1.1\r\n{headers}Content-Type: application/json\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        ) && !matches!(
+            error.kind(),
+            std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
+        ) {
+            panic!("write request failed: {error}");
+        }
         let mut response = String::new();
-        stream.read_to_string(&mut response).unwrap();
+        if let Err(error) = stream.read_to_string(&mut response)
+            && !(error.kind() == std::io::ErrorKind::ConnectionReset && !response.is_empty())
+        {
+            panic!("read response failed: {error}");
+        }
         response
     }
 

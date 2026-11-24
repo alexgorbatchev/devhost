@@ -214,7 +214,8 @@ empty sanitized labels, length truncation and random session identifiers.
 
 The stack-command suite also runs on macOS. Process ownership there uses the
 kernel's microsecond start timestamp in the same decimal format as Go; launch
-capture uses `sysinfo` for arguments, environment, and working directory. Native
+capture uses `KERN_PROCARGS2` for arguments and environment and `sysinfo` for
+the working directory. Native
 process snapshots track descendants, and listener discovery uses `lsof`, matching
 the Go platform dependency. Cross-target compilation checks these code paths but
 does not replace native macOS execution before platform acceptance.

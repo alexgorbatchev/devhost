@@ -20,7 +20,8 @@ async fn activity_event(
     expected: &str,
     matches: impl Fn(&Value) -> bool,
 ) -> Value {
-    activity_event_within(socket, expected, Duration::from_secs(5), matches).await
+    // Bound above the 10s fallback transcript poll when macOS FSEvents coalesces rapid writes.
+    activity_event_within(socket, expected, Duration::from_secs(15), matches).await
 }
 
 async fn activity_event_within(

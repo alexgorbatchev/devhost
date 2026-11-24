@@ -17,14 +17,14 @@ Until that approval is granted, the checked-in Go build (`just devhost compile`)
 Replace the single Linux Go cross-compile job with a matrix that runs the shared repository checks and native Rust checks, builds all five archives through `just rust build-release-artifacts`, verifies checksums/licenses/provenance, uploads the five archives plus `SHA256SUMS`, and keeps the existing downstream `docs` job unchanged:
 
 1. **Preflight & validation job (`verify`)**:
-   - Keep `fetch-depth: 0`, Bun (`package.json`), Go (`apps/devhost/go.mod`), Rust (`apps/devhost/rust/rust-toolchain.toml`), and Just setup.
+   - Keep `fetch-depth: 0`, Bun (`package.json`), Go (`apps/devhost/go.mod`), Rust (`apps/devhost/rust/rust-toolchain.toml` with `rustfmt`, `clippy`, and `llvm-tools-preview` components), and Just setup.
    - Keep tag derivation (`RELEASE_VERSION="${GITHUB_REF_NAME#v}"`) and `apps/devhost/metadata.json` equality check.
-   - Install dependencies (`bun install --frozen-lockfile`), Playwright Chromium (`just ui install-browser`), and Linux test tools (`ffmpeg`, `unzip`, `xvfb`).
+   - Install dependencies (`bun install --frozen-lockfile`), Playwright Chromium (`just ui install-browser`), Linux test tools (`ffmpeg`, `unzip`, `xvfb`), `cargo-llvm-cov`, and native `caddy` and `chisel` binaries required by `just rust check`.
    - Run `just check` and `just rust check` (which includes formatting, strict Clippy, and the 90% first-party coverage floor).
    - Run `bun apps/devhost/scripts/verifyRustParity.ts` (until the Go runtime is retired in a later cleanup).
 2. **Native packaging matrix (`package`, `needs: verify`)**:
-   - `ubuntu-latest` (`linux-x64`, `linux-x64-musl`, `linux-arm64`, `linux-arm64-musl`, or split native `ubuntu-24.04-arm` for native ARM64 smoke): install Zig + `cargo-zigbuild` and Rust targets, run `just rust build-release-artifacts --targets=<slice> --output=apps/devhost/dist/release-<slice>`.
-   - `macos-latest` (`darwin-arm64`): run `just rust build-release-artifacts --targets=darwin-arm64 --output=apps/devhost/dist/release-darwin-arm64`.
+   - `ubuntu-latest` (`linux-x64`, `linux-x64-musl`, `linux-arm64`, `linux-arm64-musl`, or split native `ubuntu-24.04-arm` for native ARM64 smoke): install Zig + `cargo-zigbuild`, Rust targets, and native `caddy` (used by `verifyRustReleaseRuntime.ts`), then run `just rust build-release-artifacts --targets=<slice> --output=apps/devhost/dist/release-<slice>`.
+   - `macos-latest` (`darwin-arm64`): install native `caddy`, then run `just rust build-release-artifacts --targets=darwin-arm64 --output=apps/devhost/dist/release-darwin-arm64`.
    - Each job uploads its verified `.tar.gz` archives, `SHA256SUMS`, and `provenance.json` as workflow artifacts.
 3. **Publish job (`publish`, `needs: [verify, package]`)**:
    - Download all five archive artifacts, merge and verify `SHA256SUMS` (`sha256sum -c`), assert all five archive suffixes (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) are present and every archive contains `devhost`, `README.md`, `LICENSE`, and `THIRD_PARTY_LICENSES.txt`.
@@ -39,13 +39,16 @@ Switch `dev-bootstrap` to build the Rust executable with the stamped development
 ```just
 # Build and register a protected devhost development override
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
+    just devhost build-devtools-bundle
     base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)" && \
       revision="$(git rev-parse --short HEAD)" && \
       DEVHOST_BUILD_VERSION="999.0.0-dev--${base#v}+$revision" \
       DEVHOST_BUILD_SOURCE_DIRECTORY="{{ justfile_directory() }}" \
-      just rust build-release
+      cargo build --manifest-path apps/devhost/rust/Cargo.toml --release --locked --bin devhost
     bun run ./apps/devhost/scripts/devBootstrap.ts
 ```
+
+Note: `just rust build-release` (`apps/devhost/scripts/buildRustRelease.ts`) intentionally overwrites `DEVHOST_BUILD_VERSION` with `metadata.json` and clears `DEVHOST_BUILD_SOURCE_DIRECTORY` so production release binaries never carry checkout stamps. `dev-bootstrap` therefore invokes `cargo build --release --locked --bin devhost` directly after `just devhost build-devtools-bundle`.
 
 Update `apps/devhost/scripts/devBootstrap.ts` line 58 default binary path from `../bin/devhost` to `../rust/target/release/devhost` (preserving the same `--version` probe and `dotfiles tool dev use devhost` registration contract).
 

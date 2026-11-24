@@ -6,7 +6,7 @@ pub(super) fn claim_project(runtime: &Runtime, name: &str, hosts: &[&str]) -> Pa
     fs::write(project.join("index.html"), name).unwrap();
     fs::write(
         project.join("backend.py"),
-        "import http.server, os\nhttp.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n",
+        "import http.server, os, socketserver\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n",
     )
     .unwrap();
     fs::write(
@@ -34,19 +34,41 @@ fn registration(runtime: &Runtime, host: &str) -> PathBuf {
 
 #[track_caller]
 pub(super) fn routed_body(runtime: &Runtime, host: &str) -> String {
-    let mut response = control::client()
-        .get(format!("http://127.0.0.1:{}/", runtime.settings.http_port))
-        .header("Host", host)
-        .call()
-        .unwrap_or_else(|error| {
-            panic!(
-                "routed request for {host} failed: {error:?}; Caddy: {}",
-                fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log"))
-                    .unwrap_or_default()
-            )
-        });
-    assert_eq!(response.status(), 200);
-    response.body_mut().read_to_string().unwrap()
+    let mut last_error = None;
+    for attempt in 0..5 {
+        match control::client()
+            .get(format!("http://127.0.0.1:{}/", runtime.settings.http_port))
+            .header("Host", host)
+            .header("Connection", "close")
+            .call()
+        {
+            Ok(mut response) => {
+                assert_eq!(response.status(), 200);
+                return response.body_mut().read_to_string().unwrap();
+            }
+            Err(ureq::Error::Io(error))
+                if attempt < 4
+                    && matches!(
+                        error.kind(),
+                        std::io::ErrorKind::UnexpectedEof
+                            | std::io::ErrorKind::ConnectionReset
+                            | std::io::ErrorKind::ConnectionRefused
+                    ) =>
+            {
+                last_error = Some(ureq::Error::Io(error));
+                thread::sleep(Duration::from_millis(25));
+            }
+            Err(error) => {
+                last_error = Some(error);
+                break;
+            }
+        }
+    }
+    panic!(
+        "routed request for {host} failed: {:?}; Caddy: {}",
+        last_error.unwrap(),
+        fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log")).unwrap_or_default()
+    );
 }
 
 pub(super) fn claim_ready(runtime: &Runtime, project: &Path, name: &str, process: &mut Process) {

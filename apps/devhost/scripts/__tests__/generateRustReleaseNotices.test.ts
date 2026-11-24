@@ -91,3 +91,29 @@ it("includes pinned Apple framework license declarations and the full offered Ap
     await expect(generateRustReleaseNotices(packageMetadata, artifactLog)).rejects.toThrow("No bundled license text");
   }
 });
+
+it("omits the first-party devhost-rust crate from third-party notices", async () => {
+  const packageMetadata = metadata();
+  const rootManifestPath = join(import.meta.dir, "../../rust/Cargo.toml");
+  packageMetadata.packages.push({
+    id: "path+file:///repo/apps/devhost/rust#devhost-rust@0.0.14",
+    name: "devhost-rust",
+    version: "0.0.14",
+    license: "MIT",
+    license_file: null,
+    repository: null,
+    source: null,
+    manifest_path: rootManifestPath,
+  });
+  await Bun.write(join(directoryPath, "LICENSE"), "Fixture permission notice\n");
+  const log = [
+    artifactLog,
+    JSON.stringify({
+      reason: "compiler-artifact",
+      package_id: "path+file:///repo/apps/devhost/rust#devhost-rust@0.0.14",
+    }),
+  ].join("\n");
+  const notices = await generateRustReleaseNotices(packageMetadata, log);
+  expect(notices).toContain("p 1.2.3");
+  expect(notices).not.toContain("devhost-rust");
+});

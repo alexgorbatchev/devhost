@@ -130,12 +130,14 @@ const commandServe = [
 ];
 const stubbornDaemonHelper = "processes::interrupt_escalates_for_a_term_ignoring_daemon_start_helper";
 const pendingControlRead = "control::pending::reads_remain_responsive_while_restart_waits_for_http_health";
+// Unchanged Go v0.0.20 predates the agent-watcher v1.0.2 pinned-cursor readiness fix (verified on go-repaired and rust-optimized).
+const agentActivity = "agents::native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped";
 for (const binary of binaries) {
   const isOracle = binary.name === "go-oracle";
   const isGo = binary.name !== "rust-optimized";
   const unsupportedOracleListeners = isOracle && process.platform === "darwin";
   const exclusions = isOracle
-    ? [duplicate, legacy, nestedIncludes, literalEnvironment, exhaustedPort, pendingControlRead]
+    ? [duplicate, legacy, nestedIncludes, literalEnvironment, exhaustedPort, pendingControlRead, agentActivity]
     : [];
   if (isGo) exclusions.push(stubbornDaemonHelper);
   if (unsupportedOracleListeners) exclusions.push(...commandServe);

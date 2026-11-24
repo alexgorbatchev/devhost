@@ -36,7 +36,7 @@ fn path_precedence_aliases_directory_and_unknown_sni_follow_native_routes() {
     fs::create_dir(&project).unwrap();
     fs::write(
         project.join("routed-backend.py"),
-        r#"import http.server, json, os
+        r#"import http.server, json, os, socketserver
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         body = json.dumps({'service': os.environ['ROUTE_SERVICE'], 'path': self.path}).encode()
@@ -45,7 +45,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-http.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), Handler).serve_forever()
+socketserver.TCPServer.allow_reuse_address = True
+socketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), Handler).serve_forever()
 "#,
     )
     .unwrap();

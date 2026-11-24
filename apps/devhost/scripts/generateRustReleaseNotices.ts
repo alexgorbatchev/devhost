@@ -74,6 +74,10 @@ export async function generateRustReleaseNotices(metadata: unknown, artifactLog:
     const item = packages.get(id);
     if (!item) throw new Error(`Compiled package is missing from Cargo metadata: ${id}`);
     const directoryPath = dirname(item.manifest_path);
+    // Root LICENSE is packaged separately in each archive; omit the first-party crate from third-party notices.
+    if (item.name === "devhost-rust" && directoryPath === join(repositoryDirectoryPath, "apps/devhost/rust")) {
+      continue;
+    }
     const licenseFilePaths = new Set<string>();
     for (const entry of await readdir(directoryPath, { withFileTypes: true })) {
       if (entry.isFile() && /^(LICENSE|LICENCE|COPYING|COPYRIGHT|NOTICE|UNLICENSE)([.-]|$)/i.test(entry.name)) {
@@ -81,9 +85,6 @@ export async function generateRustReleaseNotices(metadata: unknown, artifactLog:
       }
     }
     if (item.license_file) licenseFilePaths.add(resolve(directoryPath, item.license_file));
-    if (item.name === "devhost-rust" && directoryPath === join(repositoryDirectoryPath, "apps/devhost/rust")) {
-      licenseFilePaths.add(join(repositoryDirectoryPath, "LICENSE"));
-    }
     // These crates omit their upstream license file. The checked-in override is pinned to their crate VCS revision.
     if (
       (item.name === "include_dir" || item.name === "include_dir_macros") &&
@@ -105,7 +106,7 @@ export async function generateRustReleaseNotices(metadata: unknown, artifactLog:
     }
     if (!licenseFilePaths.size)
       throw new Error(`No bundled license text for ${item.name} ${item.version} (${item.license ?? "unspecified"}).`);
-    const source = item.source ?? (item.name === "devhost-rust" ? "this repository" : "vendored dependency");
+    const source = item.source ?? "vendored dependency";
     sections.push(
       `${item.name} ${item.version}\nLicense: ${item.license ?? "see license text"}\nSource: ${source}\nRepository: ${item.repository ?? "this repository"}`,
     );

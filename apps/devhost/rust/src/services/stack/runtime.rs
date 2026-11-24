@@ -120,22 +120,31 @@ impl Runtime<'_> {
                         content,
                         result,
                     } => {
-                        let _ = result.send(self.check_config(&path, &content));
+                        let outcome = self.check_config(&path, &content);
+                        self.publish_live();
+                        let _ = result.send(outcome);
                     }
                     RuntimeRequest::Start { names, result } => {
-                        let _ = result.send(self.start_services(&names));
+                        let outcome = self.start_services(&names);
+                        self.publish_live();
+                        let _ = result.send(outcome);
                     }
                     RuntimeRequest::RestartStack { result } => {
-                        let _ = result.send(self.restart_stack());
+                        let outcome = self.restart_stack();
+                        self.publish_live();
+                        let _ = result.send(outcome);
                     }
                     RuntimeRequest::Restart { names, result } => {
-                        let _ = result.send(self.restart(&names));
+                        let outcome = self.restart(&names);
+                        self.publish_live();
+                        let _ = result.send(outcome);
                     }
                     RuntimeRequest::Worktrees { operation, result } => {
-                        let _ = result.send(self.worktree_operation(operation));
+                        let outcome = self.worktree_operation(operation);
+                        self.publish_live();
+                        let _ = result.send(outcome);
                     }
                 }
-                self.publish_live();
                 if self.cancel.load(Ordering::Relaxed) {
                     break;
                 }

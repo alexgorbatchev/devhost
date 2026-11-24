@@ -43,7 +43,7 @@ fn failed_caddy_restart_releases_a_concurrent_route_withdrawal() {
     let stopped_project = claim_project(&runtime, "restart-stop", &["restart-stop.localhost"]);
     fs::write(
         stopped_project.join("backend.py"),
-        "import http.server, os, pathlib, signal, sys\ndef stop(*_):\n pathlib.Path('stop-entered').write_text('')\n sys.exit(0)\nsignal.signal(signal.SIGTERM, stop)\nhttp.server.HTTPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n",
+        "import http.server, os, pathlib, signal, socketserver, sys\ndef stop(*_):\n pathlib.Path('stop-entered').write_text('')\n sys.exit(0)\nsignal.signal(signal.SIGTERM, stop)\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1', int(os.environ['PORT'])), http.server.SimpleHTTPRequestHandler).serve_forever()\n",
     )
     .unwrap();
     let mut keeper = launch(&runtime, &keeper_project, &[]);
