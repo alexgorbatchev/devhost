@@ -416,7 +416,7 @@ fn detach_live_cli_start_idempotency_and_stop() {
     fs::write(
         &server_py,
         format!(
-            r#"import faulthandler, http.server, os
+            r#"import faulthandler, http.server, os, socketserver
 with open({dump:?}, "w") as f:
     for k in sorted(os.environ):
         f.write(f"{{k}}={{os.environ[k]}}\n")
@@ -430,7 +430,7 @@ class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 faulthandler.dump_traceback_later(2, repeat=True)
-server = http.server.HTTPServer(("127.0.0.1", int(os.environ["PORT"])), H)
+server = socketserver.TCPServer(("127.0.0.1", int(os.environ["PORT"])), H)
 faulthandler.cancel_dump_traceback_later()
 server.serve_forever()
 "#,
@@ -588,13 +588,13 @@ fn detach_contention_failure_cleanup_and_signals() {
     let ok_py = project.join("good.py");
     fs::write(
         &ok_py,
-        r#"import faulthandler, http.server, os
+        r#"import faulthandler, http.server, os, socketserver
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
     def log_message(self, *args): pass
 faulthandler.dump_traceback_later(2, repeat=True)
-server = http.server.HTTPServer(("127.0.0.1", int(os.environ["PORT"])), H)
+server = socketserver.TCPServer(("127.0.0.1", int(os.environ["PORT"])), H)
 faulthandler.cancel_dump_traceback_later()
 server.serve_forever()
 "#,
@@ -883,7 +883,7 @@ fn detach_late_exit_and_launch_and_external_failures() {
     fs::write(
         &slow_py,
         format!(
-            r#"import faulthandler, http.server, os, signal, sys, time
+            r#"import faulthandler, http.server, os, signal, socketserver, sys, time
 with open({pid_path:?}, "w") as f:
     f.write(str(os.getpid()))
 def on_term(*args):
@@ -895,7 +895,7 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
     def log_message(self, *args): pass
 faulthandler.dump_traceback_later(2, repeat=True)
-server = http.server.HTTPServer(("127.0.0.1", int(os.environ["PORT"])), H)
+server = socketserver.TCPServer(("127.0.0.1", int(os.environ["PORT"])), H)
 faulthandler.cancel_dump_traceback_later()
 server.serve_forever()
 "#,
@@ -1311,14 +1311,14 @@ fn detach_symlink_manifest_and_append_logs_across_restarts() {
     let server_py = project.join("server.py");
     fs::write(
         &server_py,
-        r#"import faulthandler, http.server, os
+        r#"import faulthandler, http.server, os, socketserver
 print("boot-marker", flush=True)
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
     def log_message(self, *args): pass
 faulthandler.dump_traceback_later(2, repeat=True)
-server = http.server.HTTPServer(("127.0.0.1", int(os.environ["PORT"])), H)
+server = socketserver.TCPServer(("127.0.0.1", int(os.environ["PORT"])), H)
 faulthandler.cancel_dump_traceback_later()
 server.serve_forever()
 "#,

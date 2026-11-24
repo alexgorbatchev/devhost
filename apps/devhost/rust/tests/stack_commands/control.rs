@@ -316,6 +316,7 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
         "{}",
         response.body_mut().read_to_string().unwrap()
     );
+    wait_until(|| launches() >= 2);
     lifecycle::ready(&origin);
     assert_eq!(launches(), 2, "service restart launches exactly once");
     assert_eq!(
@@ -323,6 +324,7 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
         500
     );
     assert_eq!(post(&origin, "restart-stack", json!({})).status(), 204);
+    wait_until(|| launches() >= 3);
     lifecycle::ready(&origin);
     assert_eq!(launches(), 3, "whole-stack restart launches exactly once");
     assert!(process.as_mut().unwrap().0.try_wait().unwrap().is_none());
