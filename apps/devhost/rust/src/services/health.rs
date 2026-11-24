@@ -367,6 +367,12 @@ fn probe_http_cancelable(url: &str, timeout: Duration, cancel: &AtomicBool) -> O
                 let client = Client::builder(TokioExecutor::new()).build_http::<Empty<Bytes>>();
                 client.request(request).await
             }
+            .inspect_err(|error| {
+                #[cfg(test)]
+                eprintln!("HTTP health probe failed: {error:?}");
+                #[cfg(not(test))]
+                let _ = error;
+            })
             .is_ok_and(|response| response.status().is_success())
         };
         tokio::select! {

@@ -154,8 +154,12 @@ pub fn is_process_alive(pid: i32) -> bool {
     {
         return false;
     }
-    // Preserve a successful existence probe when inspection is restricted.
-    read_macos_info(pid).map_or(true, |info| info.pbi_status != libc::SZOMB)
+    match read_macos_info(pid) {
+        Ok(info) => info.pbi_status != libc::SZOMB,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => false,
+        // Preserve a successful existence probe when inspection is restricted.
+        Err(_) => true,
+    }
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]

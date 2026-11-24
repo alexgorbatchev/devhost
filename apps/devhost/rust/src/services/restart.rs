@@ -1,8 +1,10 @@
+#[cfg(any(target_os = "linux", test))]
+use std::os::unix::ffi::OsStringExt;
 use std::{
     ffi::{CString, OsString},
     fs::{self, DirBuilder, File, OpenOptions},
     os::unix::{
-        ffi::{OsStrExt, OsStringExt},
+        ffi::OsStrExt,
         fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt},
         process::CommandExt,
     },
@@ -13,6 +15,8 @@ use std::{
 };
 
 use super::detach::{DETACHED_LOG_ENV, STACK_LOG_ENV};
+#[cfg(any(target_os = "macos", test))]
+mod macos;
 use crate::{
     caddy::stacks::{LiveStack, read_live_stacks, signal_live_stack},
     cliout::{self, ServiceOutput},
@@ -332,14 +336,14 @@ fn capture_launch(
         true,
         ProcessRefreshKind::nothing()
             .without_tasks()
-            .with_cmd(UpdateKind::Always)
-            .with_cwd(UpdateKind::Always)
-            .with_environ(UpdateKind::Always),
+            .with_cwd(UpdateKind::Always),
     );
     let process = system
         .process(pid)
         .ok_or("read launch arguments: process unavailable")?;
-    let args = process.cmd();
+    let launch = macos::read_launch(stack.pid)
+        .map_err(|error| format!("read launch arguments and environment: {error}"))?;
+    let args = &launch.args;
     if args.len() < 2 || (args[1] != "start" && args[1] != "serve") {
         return Err("expected a devhost start or serve process".to_owned());
     }
@@ -349,18 +353,7 @@ fn capture_launch(
     if !launch_directory_exists(cwd, stack, retire_missing)? {
         return Ok(None);
     }
-    let environment: Vec<_> = process
-        .environ()
-        .iter()
-        .filter_map(|entry| {
-            let bytes = entry.as_bytes();
-            let index = bytes.iter().position(|byte| *byte == b'=')?;
-            Some((
-                OsString::from_vec(bytes[..index].to_vec()),
-                OsString::from_vec(bytes[index + 1..].to_vec()),
-            ))
-        })
-        .collect();
+    let environment = launch.environment;
     if environment.is_empty() {
         return Err("the operating system did not provide the launch environment".to_owned());
     }
