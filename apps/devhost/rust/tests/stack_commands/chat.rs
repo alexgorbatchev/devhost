@@ -8,6 +8,9 @@ use futures_util::StreamExt;
 
 type ChatSocket = WebSocketStream<ConnectStream>;
 
+#[path = "chat/validation.rs"]
+mod validation;
+
 struct ChatFixture {
     stack: Process,
     runtime: Runtime,

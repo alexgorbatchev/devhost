@@ -1737,7 +1737,7 @@
       "failure": "Invalid image/body is rejected before provider inference.",
       "cleanup": "Remove private image files/journal after closing session.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Expand shared input validation and tool-context coverage; capture browser annotations separately.",
+      "remaining": "Linux external CLI acceptance rejects malformed/unknown-field/empty input, invalid or mismatched images and workflow-expanded oversized messages without native dispatch. Both provider protocols receive exact page/marker/source context plus project workflow and image data; public logs exclude private content. Browser context construction/capture, authenticated providers and final native receipts remain.",
       "status": "open"
     },
     {

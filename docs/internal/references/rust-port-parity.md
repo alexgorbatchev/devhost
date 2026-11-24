@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:46
+last_modified: 2026-11-24 11:49
 status: current
 ---
 
@@ -93,6 +93,14 @@ delivery, reconnect replay, ordered sends, turn-steering races, interrupts,
 approval during a pending acknowledgement, exact native approval IDs, stale
 approval rejection, and queued, rejected or unconfirmed delivery without a
 second inference. The timeout cases exercise the actual acknowledgement deadline.
+
+The chat validation fixture rejects malformed, empty and unknown-field commands,
+invalid or mismatched image data, and messages that exceed the size limit only
+after workflow instructions are appended. Rejected inputs never reach either
+native peer. Accepted page context, including markers and source locations,
+arrives unchanged with the project workflow and image in both provider protocols;
+public stack logs omit the private content. This checks text/image transport;
+the browser constructs and captures annotation context separately.
 Panel cases check manifest-hashed private storage, invalid-input rejection,
 corruption recovery and failed replacement preserving unrelated state. Shutdown
 cases check conversation closure and whole-stack shutdown against both peers,
