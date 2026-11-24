@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 09:38
+last_modified: 2026-11-24 09:42
 status: current
 ---
 
@@ -294,12 +294,17 @@ without automatic respawning, concurrent starts of an unselected service, and
 routed traffic renewing idle shutdown. Negative durations are supplied as
 separate CLI arguments. Reads and retained routes remain responsive during
 pending health checks; every fixture stops its services and releases ownership.
+Unexpected recovery restart failures retain the worker's current port, socket
+states and visible process owners alongside the response and lifecycle logs.
 
 `just rust test --test files_live` checks native file-server shutdown and restart,
 including a child paused between fork and exec with an inherited listener.
-Port reservations shut down their sockets before close, and file-server shutdown
-releases the listening socket across inherited descriptors. Close-on-exec alone
-does not release those copies while a child is still preparing to execute.
+Idle-client shutdown checks a real replacement file server on the same port,
+using its reuse-address policy while retaining exclusive live listener ownership.
+Linux socket shutdown releases the listening address across inherited descriptors;
+macOS requires joining the child that owns the inherited copy before rebinding.
+Close-on-exec alone does not release those copies while a child is still
+preparing to execute.
 
 The shared `stack_commands files::` HTTP checks compare live file edits, MIME,
 GET/HEAD, malformed and overflowing ranges, multipart boundaries and lengths,

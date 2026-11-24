@@ -113,11 +113,56 @@ fn restart(origin: &str, project: &Path) -> ureq::http::Response<ureq::Body> {
         .send(json!({"serviceName":"worker"}).to_string())
         .unwrap_or_else(|error| {
             panic!(
-                "restart failed after {:?}: {error}; log: {}",
+                "restart failed after {:?}: {error}; log: {}; sockets: {}",
                 started.elapsed(),
-                fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default()
+                fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default(),
+                worker_sockets(origin),
             )
         })
+}
+
+fn worker_sockets(origin: &str) -> String {
+    let snapshot = client()
+        .get(format!("{origin}/__devhost__/stack-info"))
+        .call()
+        .map_err(|error| error.to_string())
+        .and_then(|mut response| {
+            response
+                .body_mut()
+                .read_to_string()
+                .map_err(|error| error.to_string())
+        })
+        .and_then(|text| serde_json::from_str::<Value>(&text).map_err(|error| error.to_string()));
+    let snapshot = match snapshot {
+        Ok(snapshot) => snapshot,
+        Err(error) => return format!("worker snapshot unavailable: {error}"),
+    };
+    let port = snapshot["services"]
+        .as_array()
+        .and_then(|services| services.iter().find(|service| service["name"] == "worker"))
+        .and_then(|service| service["port"].as_u64());
+    let Some(port) = port else {
+        return format!("missing worker port: {snapshot}");
+    };
+    #[cfg(target_os = "linux")]
+    let output = Command::new("ss")
+        .args(["-tanp", &format!("( sport = :{port} or dport = :{port} )")])
+        .output();
+    #[cfg(target_os = "macos")]
+    let output = Command::new("lsof")
+        .args(["-nP", &format!("-iTCP:{port}")])
+        .output();
+    match output {
+        Ok(output) => format!(
+            "port {port}; status {}; stdout: {}; stderr: {}; snapshot: {snapshot}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ),
+        Err(error) => {
+            format!("port {port}; socket inspection failed: {error}; snapshot: {snapshot}")
+        }
+    }
 }
 
 #[test]
@@ -164,9 +209,10 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
     assert_eq!(
         restarted.status(),
         200,
-        "restart response: {}; lifecycle: {}",
+        "restart response: {}; lifecycle: {}; sockets: {}",
         response_text(&runtime, name, &mut restarted),
-        fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default()
+        fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default(),
+        worker_sockets(&origin),
     );
     ready(&origin);
     assert_eq!(routed_status(&runtime, name)["phase"], "ready");
@@ -202,9 +248,10 @@ fn foreground_timeout_and_crash_remain_recoverable_without_automatic_respawn() {
     assert_eq!(
         restarted.status(),
         200,
-        "restart response: {}; lifecycle: {}",
+        "restart response: {}; lifecycle: {}; sockets: {}",
         response_text(&runtime, name, &mut restarted),
-        fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default()
+        fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default(),
+        worker_sockets(&origin),
     );
     ready(&origin);
     assert_eq!(launches(&project).len(), 4);

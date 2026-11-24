@@ -277,7 +277,11 @@ fn file_server_shutdown_closes_idle_clients_and_releases_port() {
             ) => {}
         result => panic!("idle connection remained open: {result:?}"),
     }
-    assert!(TcpListener::bind(("127.0.0.1", port)).is_ok());
+    // Use the same reuse-address semantics as a real service replacement.
+    // A plain listener can reject a released port while connections are in TIME_WAIT.
+    let mut replacement = FileServer::start(root.path(), &format!("127.0.0.1:{port}")).unwrap();
+    assert!(FileServer::start(root.path(), &format!("127.0.0.1:{port}")).is_err());
+    replacement.stop();
     assert!(FileServer::start(&root.path().join("missing"), "127.0.0.1:0").is_err());
     let occupied = TcpListener::bind("127.0.0.1:0").unwrap();
     assert!(FileServer::start(root.path(), &occupied.local_addr().unwrap().to_string()).is_err());
