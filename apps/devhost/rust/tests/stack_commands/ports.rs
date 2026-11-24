@@ -47,6 +47,28 @@ fn fixed_port_collision_never_retries() {
     run_case(Collision::Fixed);
 }
 
+fn release_reservation(listener: TcpListener) {
+    // Closing our descriptor alone leaves a concurrent child's forked copy bound.
+    #[cfg(target_os = "linux")]
+    socket2::SockRef::from(&listener)
+        .shutdown(std::net::Shutdown::Both)
+        .unwrap();
+    drop(listener);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn reservation_release_unbinds_inherited_socket_copies() {
+    let listener = fixture_ports::reserve_listener();
+    let address = listener.local_addr().unwrap();
+    let inherited = listener.try_clone().unwrap();
+    release_reservation(listener);
+    let replacement = TcpListener::bind(address)
+        .expect("reservation must unbind even while a forked child retains a descriptor");
+    drop(inherited);
+    drop(replacement);
+}
+
 fn run_case(case: Collision) {
     let runtime = Runtime::start();
     let (name, automatic, failures, count, successful) = match case {
@@ -66,7 +88,7 @@ fn run_case(case: Collision) {
         fixed_port.to_string()
     };
     let fixed = if automatic {
-        drop(fixed);
+        release_reservation(fixed);
         None
     } else {
         Some(fixed)
@@ -158,7 +180,16 @@ fn run_case(case: Collision) {
             .iter()
             .all(|attempt| !procid::is_process_alive(attempt["pid"].as_i64().unwrap() as i32))
     });
-    drop(fixed);
+    if let Some(listener) = fixed {
+        // The conflicting listener belongs to the caller, not the stopped stack.
+        assert_eq!(
+            TcpListener::bind(listener.local_addr().unwrap())
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::AddrInUse
+        );
+        release_reservation(listener);
+    }
     for port in ports {
         let socket =
             socket2::Socket::new(socket2::Domain::IPV4, socket2::Type::STREAM, None).unwrap();
