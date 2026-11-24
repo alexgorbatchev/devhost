@@ -210,11 +210,12 @@ fn bash_completion_resolves_commands_and_flags_in_a_real_shell() {
     let script = temp.path().join("completion.bash");
     std::fs::write(&script, stdout(invoke(&["completion", "bash"], "1", "100"))).unwrap();
     let selected = binary().canonicalize().unwrap();
-    let path = std::env::join_paths(
-        std::iter::once(selected.parent().unwrap().to_path_buf()).chain(std::env::split_paths(
-            &std::env::var_os("PATH").unwrap_or_default(),
-        )),
-    )
+    let bin = temp.path().join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    std::os::unix::fs::symlink(selected, bin.join("devhost")).unwrap();
+    let path = std::env::join_paths(std::iter::once(bin).chain(std::env::split_paths(
+        &std::env::var_os("PATH").unwrap_or_default(),
+    )))
     .unwrap();
     readline::assert_completion(temp.path(), &script, &path);
 }
