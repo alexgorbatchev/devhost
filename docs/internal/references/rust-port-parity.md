@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:29
+last_modified: 2026-11-24 11:35
 status: current
 ---
 
@@ -249,6 +249,15 @@ fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
 250 ms minimum interval; frame counts do not establish sampling cadence because
 unchanged readings are deduplicated.
+
+The `control::editor::` fixture checks all four editor selections and live
+enablement changes without restarting the service. Two clients receive cursor
+locators, clear events and stack metadata; malformed payloads and foreign origins
+are rejected, and shutdown closes both clients with code 1001. Disabling the
+browser editor feature leaves cursor transport available. Nonempty locators are
+transported without backend filesystem validation. Neither backend starts an
+editor process: the shared browser UI navigates to the selected editor's URL
+handler. Native browser and OS-handler acceptance is a separate boundary.
 
 The `proxy::routes::` fixture compares native HTTP and HTTPS routing over host
 aliases, exact paths, wildcard boundaries, root fallback, and an isolated second

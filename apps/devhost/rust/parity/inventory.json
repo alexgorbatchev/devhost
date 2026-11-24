@@ -881,7 +881,7 @@
         "start/restart service and whole stack mutations",
         "local request and WebSocket origin guards",
         "health/log/resource streams, bounded retention and shutdown close codes",
-        "react-highlight cursor/editor event channels",
+        "editor configuration and react-highlight cursor transport",
         "responsive reads while mutations or health I/O are pending"
       ],
       "rust": [

@@ -1,5 +1,7 @@
 use super::*;
 
+#[path = "control/editor.rs"]
+mod editor;
 #[path = "control/logs.rs"]
 mod logs;
 #[path = "control/pending.rs"]

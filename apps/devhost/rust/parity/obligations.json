@@ -395,6 +395,13 @@
       "qualification": "An accepted HTTP health request remains unanswered through shutdown; control reads remain available, no service becomes ready, and service/registration ownership is removed within five seconds."
     },
     {
+      "id": "editor-channel",
+      "path": "apps/devhost/rust/tests/stack_commands/control/editor.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands control::editor:: with each comparison executable",
+      "qualification": "Four editor selections and live enablement toggles, two-client cursor and clear broadcasts, foreign-origin and malformed-payload rejection, opaque locator transport, no service restart and shutdown code1001. Browser URL-handler invocation remains separate."
+    },
+    {
       "id": "proxy-origins",
       "path": "apps/devhost/rust/tests/stack_commands/proxy.rs",
       "kind": "native-shared",
@@ -1412,13 +1419,13 @@
     {
       "id": "control.5",
       "feature": "control",
-      "contract": "react-highlight cursor/editor event channels",
+      "contract": "editor configuration and react-highlight cursor transport",
       "trigger": "Enable editor integration and exchange highlight cursor events.",
-      "effect": "Cursor updates and editor channel schemas match.",
-      "failure": "Wrong origin, invalid path or unsupported event is rejected.",
+      "effect": "Editor selections and enablement update live; cursor locators, clear events and metadata broadcast to attached clients. The shared browser UI opens the selected editor URL handler.",
+      "failure": "Foreign origins, malformed cursor payloads, empty locators and unsupported HTTP methods are rejected. Nonempty locator strings are transported without backend filesystem validation.",
       "cleanup": "Close editor/client sockets and stop stack.",
-      "evidence": ["control"],
-      "remaining": "Add native editor process launch acceptance separate from wire cursor exchange.",
+      "evidence": ["control", "editor-channel"],
+      "remaining": "Linux external CLI acceptance covers four editor selections, live enablement toggles without service restart, two-client cursor and clear broadcasts, origin/payload guards and shutdown code1001. Final native source/archive and browser-to-OS editor URL-handler acceptance remain; neither backend launches an editor process.",
       "status": "open"
     },
     {
