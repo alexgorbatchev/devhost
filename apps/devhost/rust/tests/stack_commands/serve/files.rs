@@ -1,4 +1,69 @@
 use super::*;
+use std::{
+    io::{Read, Write},
+    net::{SocketAddr, TcpStream},
+};
+
+fn file_clients(runtime: &Runtime, host: &str) -> (SocketAddr, Vec<TcpStream>) {
+    let registration = fs::read_dir(runtime.state().join("caddy/routes/.registrations"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "json")
+        })
+        .map(|path| serde_json::from_slice::<Value>(&fs::read(path).unwrap()).unwrap())
+        .find(|record| record["host"] == host)
+        .unwrap();
+    let address: SocketAddr = format!("127.0.0.1:{}", registration["appPort"])
+        .parse()
+        .unwrap();
+    let mut clients: Vec<_> = (0..3)
+        .map(|_| {
+            let client = TcpStream::connect(address).unwrap();
+            client
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .unwrap();
+            client
+                .set_write_timeout(Some(Duration::from_secs(2)))
+                .unwrap();
+            client
+        })
+        .collect();
+    clients[1].write_all(b"GET / HTTP/1.1\r\nHost:").unwrap();
+    clients[2]
+        .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .unwrap();
+    let mut response = Vec::new();
+    while !response.ends_with(b"first standalone document") {
+        let mut bytes = [0; 4096];
+        let count = clients[2].read(&mut bytes).unwrap();
+        assert_ne!(count, 0, "persistent response ended before its file body");
+        response.extend_from_slice(&bytes[..count]);
+    }
+    assert!(response.starts_with(b"HTTP/1.1 200"));
+    (address, clients)
+}
+
+fn released_file_listener(address: SocketAddr, clients: Vec<TcpStream>) {
+    for mut client in clients {
+        match client.read(&mut [0]) {
+            Ok(0) => {}
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::ConnectionAborted
+                ) => {}
+            result => panic!("stopped file session retained a client: {result:?}"),
+        }
+    }
+    let replacement =
+        socket2::Socket::new(socket2::Domain::IPV4, socket2::Type::STREAM, None).unwrap();
+    replacement.set_reuse_address(true).unwrap();
+    replacement.bind(&address.into()).unwrap();
+    replacement.listen(1).unwrap();
+    assert!(TcpListener::bind(address).is_err());
+}
 
 fn spawn(runtime: &Runtime, directory: &Path, arguments: &[&str], log_name: &str) -> Process {
     let log = fs::File::create(directory.join(log_name)).unwrap();
@@ -117,7 +182,9 @@ fn file_sessions_bypass_invalid_manifests_and_preserve_concurrent_host_owners() 
         2
     );
 
+    let (address, clients) = file_clients(&runtime, first_host);
     stop(&runtime, first_host, &mut first);
+    released_file_listener(address, clients);
     assert!(!first_owner.is_alive());
     assert_ne!(
         response(&runtime, first_host).as_deref(),
@@ -132,6 +199,27 @@ fn file_sessions_bypass_invalid_manifests_and_preserve_concurrent_host_owners() 
         fs::read_to_string(runtime.state().join("caddy/caddy.pid")).unwrap(),
         caddy_pid
     );
+    fs::write(
+        project.join("first/index.html"),
+        "replacement standalone document",
+    )
+    .unwrap();
+    let mut replacement = spawn(
+        &runtime,
+        &project,
+        &["serve", "-d", first_host, "--dir", "first"],
+        "replacement.log",
+    );
+    wait_until(|| {
+        response(&runtime, first_host).as_deref() == Some("replacement standalone document")
+    });
+    assert_ne!(live(&runtime, first_host).pid, first_owner.pid);
+    assert_eq!(live(&runtime, second_host).pid, second_owner.pid);
+    assert_eq!(
+        response(&runtime, second_host).as_deref(),
+        Some("second standalone document")
+    );
+    stop(&runtime, first_host, &mut replacement);
     stop(&runtime, second_host, &mut second);
     assert!(
         read_live_stacks(&runtime.state().join("caddy"))

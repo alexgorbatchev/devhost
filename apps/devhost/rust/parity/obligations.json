@@ -1685,11 +1685,11 @@
       "feature": "files",
       "contract": "release listeners and inherited descriptors on shutdown/restart",
       "trigger": "Stop/restart with idle HTTP clients and a fork retaining the file listener.",
-      "effect": "Listener is released promptly and replacement can bind.",
-      "failure": "Inherited descriptor cannot keep shutdown/restart blocked.",
+      "effect": "Shutdown closes idle clients and releases the owned listener. Linux shutdown releases inherited socket copies; macOS replacement waits until the forked child releases its descriptor.",
+      "failure": "Idle, partial-header and keepalive clients cannot keep shutdown blocked; platform-specific inherited-descriptor lifetime is explicit.",
       "cleanup": "Join fork/client/server and confirm port rebound.",
       "evidence": ["files-regression", "stack"],
-      "remaining": "Run inherited-descriptor case through both external CLIs.",
+      "remaining": "Linux external CLI acceptance compares idle, partial-header and persistent-client shutdown, exact-port rebind, owned route removal and replacement alongside an untouched session. Deterministic inherited-listener regression runs at the native socket boundary, where the fork occurs. Final native source/archive receipts remain.",
       "status": "open"
     },
     {

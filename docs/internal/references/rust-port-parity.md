@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:39
+last_modified: 2026-11-24 11:46
 status: current
 ---
 
@@ -266,6 +266,14 @@ listing entry and source while escaping script boundaries and fallback markup.
 Private files and escaping symlinks stay inaccessible, and preview writes are
 rejected. The embedded-assets fixture separately rejects production previews.
 These HTTP checks do not establish browser script-execution safety.
+
+The standalone file-session fixture holds idle, partial-header and persistent
+HTTP clients directly on the real file listener. Stopping the session must
+disconnect each client and allow its exact port to bind again. A replacement
+serves updated content while the other session and Caddy retain their owners.
+The deterministic fork-descriptor regression runs at the native socket boundary:
+Linux listener shutdown releases inherited copies, while macOS rebind waits for
+the forked child to close its descriptor.
 
 The `proxy::routes::` fixture compares native HTTP and HTTPS routing over host
 aliases, exact paths, wildcard boundaries, root fallback, and an isolated second
