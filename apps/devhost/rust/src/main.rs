@@ -287,6 +287,7 @@ fn start_command() -> Command {
             nonempty_env(Arg::new("idle-timeout"), "DEVHOST_IDLE_TIMEOUT")
                 .long("idle-timeout")
                 .short('i')
+                .allow_hyphen_values(true)
                 .value_name("duration")
                 .help("Stop the stack after this long without traffic, e.g. 30s or 1m."),
         )
@@ -868,6 +869,28 @@ fn write_failure(mode: Mode, failure: Failure) -> io::Result<ExitCode> {
 #[cfg(test)]
 mod argument_tests {
     use super::*;
+
+    #[test]
+    fn negative_idle_durations_accept_long_and_short_flags() {
+        for flag in ["--idle-timeout", "-i"] {
+            let args = start_command()
+                .try_get_matches_from(["start", flag, "-1ns", "--detach", "web"])
+                .unwrap();
+            assert_eq!(args.get_one::<String>("idle-timeout").unwrap(), "-1ns");
+            assert!(args.get_flag("detach"));
+            assert_eq!(
+                args.get_many::<String>("service")
+                    .unwrap()
+                    .collect::<Vec<_>>(),
+                ["web"]
+            );
+        }
+        assert!(
+            start_command()
+                .try_get_matches_from(["start", "--idle-timeout", "-1ns", "--unknown"])
+                .is_err()
+        );
+    }
 
     #[test]
     fn short_flags_and_explicit_booleans_use_the_native_parser() {

@@ -53,6 +53,8 @@ mod ports;
 mod processes;
 #[path = "stack_commands/proxy.rs"]
 mod proxy;
+#[path = "stack_commands/recovery.rs"]
+mod recovery;
 #[path = "stack_commands/serve.rs"]
 mod serve;
 #[path = "stack_commands/upgrade.rs"]

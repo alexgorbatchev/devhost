@@ -274,7 +274,7 @@ idleTimeout = "1h"
 
 `devhost start --idle-timeout 30m` and `DEVHOST_IDLE_TIMEOUT` set it too; the flag wins over the variable, which wins over the manifest. A saved change to `idleTimeout` applies at once unless the flag or variable sets it.
 
-Zero and negative durations disable idle shutdown, including in the experimental Rust CLI.
+Zero and negative durations disable idle shutdown, including in the experimental Rust CLI. For example, `devhost start --idle-timeout -1s` (or `-i -1s`) disables it for that run, including with `--detach`.
 
 Each of these counts as activity and restarts the countdown:
 

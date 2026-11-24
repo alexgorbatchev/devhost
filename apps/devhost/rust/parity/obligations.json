@@ -421,6 +421,13 @@
       "kind": "shared-cli",
       "selector": "cargo test --test stack_commands health:: with each comparison executable; compatibility::https_health_negotiates_http2_and_rejects_non_success_status covers HTTPS timing",
       "qualification": "Process readiness ignores network timing; refused TCP probes honor intervals, retry limits and deadlines; HTTP and HTTP/2 HTTPS recover after two failed probes and fail within the configured deadline while retaining unavailable state. All children and listeners are joined."
+    },
+    {
+      "id": "recovery",
+      "path": "apps/devhost/rust/tests/stack_commands/recovery.rs",
+      "kind": "native-cli",
+      "selector": "recovery::",
+      "qualification": "Run identical actual-CLI fixtures against unchanged Go, repaired Go and optimized Rust; final native receipts remain required."
     }
   ],
   "cases": [
@@ -780,8 +787,8 @@
       "effect": "Recovery page stays available and service becomes ready after valid recovery.",
       "failure": "Failed startup must not report healthy or wedge control reads.",
       "cleanup": "Stop recovered child and owned callback/control listeners.",
-      "evidence": ["compatibility", "documents"],
-      "remaining": "Add crash-respawn and startup-timeout recovery comparisons.",
+      "evidence": ["compatibility", "documents", "recovery"],
+      "remaining": "Final native receipts for foreground health timeout, explicit recovery and failed recovery retry. Crashed foreground services remain stopped until an explicit restart; routed requests do not respawn them.",
       "status": "open"
     },
     {
@@ -792,8 +799,8 @@
       "effect": "Requests start only eligible services; states move through starting/restarting/ready.",
       "failure": "Concurrent requests must not duplicate launches.",
       "cleanup": "Join requests and stop lazily launched children.",
-      "evidence": ["lifecycle", "reload-regression"],
-      "remaining": "Add shared request-driven on-demand/retry/dirty-state fixture.",
+      "evidence": ["lifecycle", "reload-regression", "recovery"],
+      "remaining": "Concurrent explicit start requests and responsive reads during pending health are compared; add dirty/restarting configuration and browser-driven start comparisons, then retain final native receipts.",
       "status": "open"
     },
     {
@@ -804,8 +811,8 @@
       "effect": "Traffic renews positive timeout; negative duration disables idle stop.",
       "failure": "No request must race an idle stop into an orphaned child.",
       "cleanup": "Stop restarted idle service and release its claim.",
-      "evidence": ["compatibility", "reload-regression"],
-      "remaining": "Negative parsing is compared; add positive request-driven idle lifecycle comparison.",
+      "evidence": ["compatibility", "reload-regression", "recovery"],
+      "remaining": "Final native receipts for routed traffic renewing a positive deadline, idle cleanup and separate negative CLI duration disabling shutdown.",
       "status": "open"
     },
     {

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 04:40
+last_modified: 2026-11-24 06:15
 status: current
 ---
 
@@ -183,6 +183,13 @@ loopback server.
 Use isolated live stacks for readiness, service-start, restart, configuration
 save, and browser acceptance comparisons. Check written configuration on disk
 as well as the browser's save result.
+
+`just rust test --test stack_commands recovery::` compares foreground startup
+health timeouts, explicit recovery and failed-recovery retries, crash status
+without automatic respawning, concurrent starts of an unselected service, and
+routed traffic renewing idle shutdown. Negative durations are supplied as
+separate CLI arguments. Reads and retained routes remain responsive during
+pending health checks; every fixture stops its services and releases ownership.
 
 `just rust test --test files_live` checks native file-server shutdown and restart,
 including a child paused between fork and exec with an inherited listener.

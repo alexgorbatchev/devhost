@@ -1517,8 +1517,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
-      "blob": "2bbf3b982d80b99063d7b2d116a49f47b87f69b6",
-      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
+      "blob": "b38e8291f01458e51e2d9be8ec6a6a4508e73eea",
+      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences. Separate negative idle durations are accepted by the experimental Rust CLI, including detached forwarding."
     },
     {
       "path": "packages/docs/src/content/docs/reference/cli.md",
@@ -1537,8 +1537,8 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "3e663e4592009407b9635da0f21028e56161d24d",
-      "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry."
+      "blob": "36e85ad87451e419d21aad99dff3756fd4fcdc10",
+      "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry. Separate negative idle durations are accepted by the experimental Rust CLI, including detached forwarding."
     },
     {
       "path": "apps/devhost/internal/devtools/document_injection.go",
