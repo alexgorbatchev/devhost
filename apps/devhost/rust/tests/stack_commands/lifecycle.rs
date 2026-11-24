@@ -415,8 +415,57 @@ server.serve_forever()
     drop(listeners);
     let mut first = launch(&runtime, &projects[0], &[]);
     let mut second = launch(&runtime, &projects[1], &[]);
-    wait_until(|| response(&runtime, "claims-a.localhost").as_deref() == Some("live claims-a"));
-    wait_until(|| response(&runtime, "claims-b.localhost").as_deref() == Some("live claims-b"));
+    let wait_route = |index: usize, process: &mut Process| {
+        let name = ["claims-a", "claims-b"][index];
+        let started = Instant::now();
+        let deadline = started + Duration::from_secs(15);
+        loop {
+            let result = client()
+                .get(format!(
+                    "http://127.0.0.1:{}/note.txt",
+                    runtime.settings.http_port
+                ))
+                .header("Host", &format!("{name}.localhost"))
+                .call()
+                .map(|mut response| {
+                    let status = response.status();
+                    let headers = response.headers().clone();
+                    (status, headers, response.body_mut().read_to_string())
+                });
+            if matches!(&result, Ok((_, _, Ok(body))) if body == &format!("live {name}")) {
+                return;
+            }
+            let status = process.0.try_wait().unwrap();
+            if status.is_some() || Instant::now() >= deadline {
+                let logs: Vec<_> = projects[..2]
+                    .iter()
+                    .map(|project| {
+                        (
+                            project,
+                            fs::read_to_string(project.join("lifecycle.log")).unwrap_or_default(),
+                        )
+                    })
+                    .collect();
+                let response = result.map(|(status, headers, body)| {
+                    (
+                        status,
+                        headers,
+                        body.map(|text| text.chars().take(1024).collect::<String>()),
+                    )
+                });
+                panic!(
+                    "initial route {name} did not become ready after {:?}; supervisor: {status:?}; response (first1024characters): {response:?}; worker ports: {ports:?}; stacks: {logs:?}; owners: {:?}; Caddy: {}",
+                    started.elapsed(),
+                    read_live_stack_owners(&runtime.state().join("caddy")),
+                    fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log"))
+                        .unwrap_or_default()
+                );
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+    };
+    wait_route(0, &mut first);
+    wait_route(1, &mut second);
     let pids: Vec<i32> = projects[..2]
         .iter()
         .map(|project| {
