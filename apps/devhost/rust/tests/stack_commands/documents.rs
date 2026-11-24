@@ -182,7 +182,11 @@ fn external_proxy_preserves_document_bytes_headers_recovery_and_backend_ownershi
                 .contains_key("content-security-policy-report-only")
         );
         assert!(!response.headers().contains_key("content-encoding"));
-        assert_eq!(bytes(&mut response), expected, "{path}");
+        assert_eq!(
+            bytes(&mut response),
+            expected,
+            "document bytes changed for {path}"
+        );
     }
     let mut response = request(&runtime, "/large");
     assert_eq!(response.status(), 200);
@@ -279,7 +283,11 @@ fn embedded_assets_obey_version_compression_condition_and_method_contracts() {
         .get(format!("{origin}/__devhost__/inject.js?foo=1&v="))
         .call()
         .unwrap();
-    assert_eq!(response.status(), 307);
+    assert_eq!(
+        response.status(),
+        307,
+        "asset discovery response: {response:?}"
+    );
     assert_eq!(response.headers()["cache-control"], "no-store");
     let location = response.headers()["location"].to_str().unwrap();
     assert!(location.starts_with("/__devhost__/inject.js?foo=1&v="));

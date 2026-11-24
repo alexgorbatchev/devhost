@@ -195,8 +195,16 @@ fn included_groups_dependencies_always_start_watches_and_start_stopped_match() {
             .unwrap()
             .lines()
             .count()
-            == 4
+            >= 4
     });
+    assert_eq!(
+        fs::read_to_string(project.join("launches"))
+            .unwrap()
+            .lines()
+            .count(),
+        4,
+        "a duplicate restart batch must restart web exactly once"
+    );
     assert!(!procid::is_process_alive(old_pid));
     assert!(
         !health(&origin)["services"]

@@ -36,6 +36,11 @@ coverage: assets
 
 check: fmt-check lint coverage
 
+# Both binaries use the same native fixtures; evidence records explicit oracle defects.
+[no-cd]
+comparisons oracle repaired rust-binary output: assets
+    bash {{source_directory()}}/../../../test-support/runTests.sh bun {{source_directory()}}/../scripts/verifyRustComparisons.ts '{{oracle}}' '{{repaired}}' '{{rust-binary}}' '{{output}}'
+
 build: assets
     cargo build --locked
 

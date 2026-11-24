@@ -33,14 +33,22 @@ impl Machine {
             caddy.admin_address, caddy.http_enabled, caddy.http_port, caddy.https_port, relay.url(), credentials, relay.fingerprint, relay.reverse_port,
         )).unwrap();
         let machine = Self { root, caddy };
+        let mut startup = Vec::new();
         caddy::start_in_directory(
             &machine.root.path().join("state/caddy"),
             &machine.caddy,
             Mode::Agent,
-            &mut Vec::new(),
+            &mut startup,
             true,
         )
-        .unwrap();
+        .unwrap_or_else(|error| {
+            panic!(
+                "{error:?}\n{}\n{}",
+                String::from_utf8_lossy(&startup),
+                fs::read_to_string(machine.root.path().join("state/caddy/caddy.stderr.log"))
+                    .unwrap_or_default()
+            )
+        });
         machine
     }
 
@@ -341,7 +349,13 @@ fn saturated_preview_connections_leave_readiness_and_new_leases_available() {
             socket.read_exact(&mut byte).unwrap();
             response.push(byte[0]);
         }
-        assert!(response.starts_with(b"HTTP/1.1 200"));
+        assert!(
+            response.starts_with(b"HTTP/1.1 200"),
+            "preview response with {} held connections: {}\n{}",
+            connections.len(),
+            String::from_utf8_lossy(&response),
+            alpha.logs()
+        );
         let mut body = vec![0; "capacity-alpha content".len()];
         socket.read_exact(&mut body).unwrap();
         assert_eq!(body, b"capacity-alpha content");

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-23 16:33
-last_modified: 2026-11-23 22:53
+last_modified: 2026-11-23 23:03
 status: current
 ---
 
@@ -32,7 +32,7 @@ When Go changes, inspect the range, identify every affected behavior in the inve
 
 ## Repeatable verification
 
-Build the Go oracle at the pinned commit in an isolated checkout with `just cli --version`; its executable is `apps/devhost/bin/source/devhost`. Build the optimized Rust candidate with `just rust build-release`. Follow the [Rust Anything record/replay procedure](rust-port-parity.md#record-and-replay-with-rust-anything) for every `apps/devhost/rust/tests/*.jsonl` corpus. Record and replay anew when either reference or corpus changes. Help wording and generated completion script bytes vary by CLI framework; compare command/flag availability, exit status, streams and completion behavior separately.
+Build the Go oracle at the pinned commit in an isolated checkout with `just devhost compile`; its executable is `apps/devhost/bin/devhost`. Build the optimized Rust candidate with `just rust build-release`. Follow the [Rust Anything record/replay procedure](rust-port-parity.md#record-and-replay-with-rust-anything) for every `apps/devhost/rust/tests/*.jsonl` corpus. Record and replay anew when either reference or corpus changes. Help wording and generated completion script bytes vary by CLI framework; compare command/flag availability, exit status, streams and completion behavior separately. The maintained comparison runner snapshots each binary before execution so other builds cannot replace a candidate during validation.
 
 Run the shared native scenarios against both binaries:
 
@@ -42,6 +42,8 @@ DEVHOST_STACK_TEST_BINARY=/absolute/path/to/go/devhost just rust test --test sta
 just rust test --test remote_transport
 DEVHOST_REMOTE_TEST_BINARY=/absolute/path/to/go/devhost just rust test --test remote_transport
 ```
+
+The maintained `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>` recipe runs the corpora and shared native fixtures with retained hashes, logs and explicit assertions for the unchanged oracle's two known defects. Repaired Go and optimized Rust must pass those fixtures. CI runs the recipe on hosted Linux x64, Linux ARM64 and macOS ARM64, checks current-Go inventory drift, and uses the pinned Rust toolchain; Linux x64 additionally checks the declared minimum compiler and 90% first-party line/function coverage. Candidate packaging is a separate manual input and uploads unpublished artifacts only.
 
 Then run `just rust check` for first-party formatting, Clippy and 90% line/function coverage, and `just check` for the shared Go, UI, docs and workflow checks. Coverage measures exercised implementation, not feature completeness. Preserve the actual command output, exit code, duration, platform, both full revisions and binary/input hashes with each comparison. A dirty build needs its patch or source hash alongside the base commit; never label it as the unchanged base revision.
 

@@ -18,7 +18,7 @@ To run devhost from source without installing it, use `just cli <args>`, or `jus
 
 ## Try the Rust port
 
-From a checkout that contains `apps/devhost/rust`, use Rust 1.98 or later to run the experimental CLI:
+From a checkout that contains `apps/devhost/rust`, install rustup and use the toolchain pinned in `apps/devhost/rust/rust-toolchain.toml` to run the experimental CLI. The declared minimum Rust version is 1.98; CI also checks Rust 1.98.1:
 
 ```bash
 just setup
@@ -28,6 +28,8 @@ just rust run --help
 The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy commands, local and remote `start` and `stop`, `serve`, and `stack list`, `stack find`, and [`stack info`](../../reference/cli/#stacks). It also supports stack replacement with `stack restart` and global `restart-all` on Linux and macOS; see [Restart after upgrading](../../guides/stack-lifecycle/#restart-after-upgrading-devhost) for the command differences. Manifests can use includes and native directory services. Pass `service list --startable` to omit services marked `alwaysStart`. The command reads `--manifest` first, then `DEVHOST_MANIFEST`, then searches upward from the current directory for `devhost.toml`, stopping at the Git repository boundary.
 
 Build its separate executable at `apps/devhost/rust/target/debug/devhost` with `just rust build`. The Rust run, build, and validation recipes refresh the embedded browser assets, so a fresh checkout needs no manual asset generation after setup. `just rust check` checks formatting, Clippy, and native tests with 90% line and function coverage for first-party Rust sources. Root `just fix` formats the first-party Rust package alongside the other workspaces.
+
+CI runs the Rust checks and executable comparisons on hosted Linux x64, Linux ARM64 and macOS ARM64 alongside the shared repository checks. The comparison recipe is `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>`; it requires Rust Anything 3.3.0 and preserves logs, hashes and explicit differences from the unchanged Go reference. The [release runbook](https://github.com/alexgorbatchev/devhost/blob/main/apps/devhost/RELEASE.md) describes the setup and candidate workflow.
 
 Build an optimized native candidate with `just rust build-release`, then run `apps/devhost/rust/target/release/devhost --version`. This embeds the version from `apps/devhost/metadata.json` and the production browser assets. In a GitHub tag build, the tag must match that version. The executable runs independently of the checkout. Debug builds and the protected development override below keep their existing commands; published releases still use Go while Rust acceptance is in progress.
 

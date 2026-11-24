@@ -24,6 +24,9 @@ use devhost_rust::{
 };
 use serde_json::{Value, json};
 
+#[path = "support/ports.rs"]
+mod fixture_ports;
+
 #[path = "stack_commands/agents.rs"]
 mod agents;
 #[path = "stack_commands/chat.rs"]
@@ -230,7 +233,7 @@ impl Runtime {
         let listeners: Vec<_> = (0..3)
             .map(|_| {
                 loop {
-                    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+                    let listener = fixture_ports::reserve_listener();
                     if allocated.insert(listener.local_addr().unwrap().port()) {
                         break listener;
                     }
@@ -259,14 +262,22 @@ impl Runtime {
             settings,
             config,
         };
+        let mut startup = Vec::new();
         caddy::start_in_directory(
             &runtime.state().join("caddy"),
             &runtime.settings,
             Mode::Agent,
-            &mut Vec::new(),
+            &mut startup,
             true,
         )
-        .unwrap();
+        .unwrap_or_else(|error| {
+            panic!(
+                "{error:?}\n{}\n{}",
+                String::from_utf8_lossy(&startup),
+                fs::read_to_string(runtime.state().join("caddy/caddy.stderr.log"))
+                    .unwrap_or_default()
+            )
+        });
         drop(allocated);
         runtime
     }

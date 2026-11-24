@@ -19,13 +19,16 @@ const AUTH: &str = "machine:private-test-credential";
 #[path = "remote_transport/lifecycle.rs"]
 mod lifecycle;
 
+#[path = "support/ports.rs"]
+mod fixture_ports;
+
 fn free_port() -> u16 {
     // Keep fixture endpoints distinct even when the OS immediately reuses a
     // released ephemeral port while another test has not started its server.
     static PORTS: std::sync::Mutex<std::collections::BTreeSet<u16>> =
         std::sync::Mutex::new(std::collections::BTreeSet::new());
     loop {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let listener = fixture_ports::reserve_listener();
         let port = listener.local_addr().unwrap().port();
         if PORTS.lock().unwrap().insert(port) {
             return port;

@@ -486,6 +486,20 @@ async fn payload(socket: &mut Socket) -> Value {
     serde_json::from_str(message(socket).await.to_text().unwrap()).unwrap()
 }
 
+async fn closing_message(socket: &mut Socket) -> Message {
+    // Updates sent before shutdown remain ordered ahead of the close frame.
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let received = message(socket).await;
+            if !received.is_text() {
+                return received;
+            }
+        }
+    })
+    .await
+    .expect("websocket did not close within the shutdown deadline")
+}
+
 #[test]
 fn websocket_streams_deliver_retained_logs_health_cursor_resources_and_close_on_reload() {
     let fixture = Fixture::new();
@@ -567,7 +581,7 @@ fn websocket_streams_deliver_retained_logs_health_cursor_resources_and_close_on_
         let mut disabled = fixture.manifest.clone();
         disabled.devtools.resources.enabled = false;
         fixture.handle.live.update_manifest(&disabled);
-        let Message::Close(Some(close)) = message(&mut resources).await else {
+        let Message::Close(Some(close)) = closing_message(&mut resources).await else {
             panic!("expected disabled close")
         };
         assert_eq!(u16::from(close.code), 1000);
@@ -581,11 +595,7 @@ fn websocket_streams_deliver_retained_logs_health_cursor_resources_and_close_on_
         );
         fixture.handle.live.events.stopping.send_replace(true);
         for socket in [&mut logs, &mut health, &mut cursor] {
-            let mut close = message(socket).await;
-            while close.is_text() {
-                close = message(socket).await;
-            }
-            let Message::Close(Some(close)) = close else {
+            let Message::Close(Some(close)) = closing_message(socket).await else {
                 panic!("expected shutdown close")
             };
             assert_eq!(u16::from(close.code), 1001);
