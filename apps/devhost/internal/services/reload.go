@@ -250,7 +250,9 @@ func (r *stackRuntime) applyConfiguration(ctx context.Context, next manifest.Man
 	if err := r.updateRemote(ctx, *r.manifest); err != nil {
 		return rollback(err)
 	}
+	r.manifestMu.Lock()
 	r.configured = &next
+	r.manifestMu.Unlock()
 	r.removeRetiredServices()
 	r.finishReloadWorktrees()
 	r.manifestMu.Lock()

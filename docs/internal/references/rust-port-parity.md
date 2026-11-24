@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:49
+last_modified: 2026-11-24 11:05
 status: current
 ---
 
@@ -249,6 +249,14 @@ fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
 250 ms minimum interval; frame counts do not establish sampling cadence because
 unchanged readings are deduplicated.
+
+The pending-control fixture holds a real backend HTTP health response during a
+restart. It repeatedly reads stack-info, browser configuration, the self snapshot,
+the rendered directory, and editable files within two seconds, then releases health
+and verifies exactly one replacement launch. The unchanged Go reference has an
+exact timeout assertion for its self snapshot: its configuration-file reader holds
+the lifecycle operation lock. Repaired Go and optimized Rust must pass the full
+scenario.
 
 The log fixture emits gated bursts of 1024 and 4096 real service stdout lines.
 Fresh connections retain exactly the last 512 entries in order. During the larger

@@ -1542,8 +1542,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/reference/control-api.md",
-      "blob": "1f283aec6a10bf91e845d92d394868c655b34a29",
-      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
+      "blob": "d984b4f7d24b55798b40a0dae8dc8d6172183e94",
+      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences. Document responsive directory and file discovery during pending health while retaining lifecycle serialization for validation and saves."
     },
     {
       "path": "packages/docs/src/content/docs/reference/output.md",
@@ -1562,8 +1562,8 @@
     },
     {
       "path": "apps/devhost/internal/services/runtime.go",
-      "reason": "Verified Go repair deduplicates validated restart batches in dependency order. The unchanged Go20 oracle repeats a restart for duplicate names; Rust and repaired Go restart each requested service once. Failed automatic startup retries also publish the final assigned manifest so snapshots and subsequent service references retain the attempted port.",
-      "blob": "e5e10989de83e7bacbb9a2c370bb4564f1f2e688"
+      "reason": "Verified Go repair deduplicates validated restart batches in dependency order. The unchanged Go20 oracle repeats a restart for duplicate names; Rust and repaired Go restart each requested service once. Failed automatic startup retries also publish the final assigned manifest so snapshots and subsequent service references retain the attempted port. Allow checkReady under the published manifest snapshot lock as well as the lifecycle operation lock; readiness writers hold both.",
+      "blob": "6eea0e41fac73fd585937f1616721baa64594a13"
     },
     {
       "path": "packages/docs/src/content/docs/stacks/recovery.md",
@@ -1584,6 +1584,21 @@
       "path": "packages/docs/src/content/docs/reference/chat-api.md",
       "blob": "c821a424c01a684bf4cc05e5249608faec66e041",
       "reason": "Documents the shared live-agent activity contract that per-stream cursor state is private to the OS account and removed after watcher shutdown; Rust now requests owner-only temporary directories to match Go."
+    },
+    {
+      "path": "apps/devhost/internal/services/config_editor.go",
+      "blob": "d062c597f3e2cfe5bba4b1dcfa95392ff2f87c7e",
+      "reason": "Read published configuration metadata without holding the lifecycle operation lock; shared pending-health CLI acceptance reproduces the unchanged Go timeout and passes repaired Go and optimized Rust."
+    },
+    {
+      "path": "apps/devhost/internal/services/stack.go",
+      "blob": "306bb69564d43a817f6914770f0ad781d555df87",
+      "reason": "Synchronize startup and shutdown readiness transitions with read-only configuration snapshots."
+    },
+    {
+      "path": "apps/devhost/internal/services/reload.go",
+      "blob": "df8e780c03e6005a8ba4e81518fd11affb1046fc",
+      "reason": "Publish the accepted configuration pointer under the manifest snapshot lock for concurrent read-only file discovery."
     }
   ],
   "branchAdditions": [

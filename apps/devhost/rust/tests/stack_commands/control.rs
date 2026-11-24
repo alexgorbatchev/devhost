@@ -2,6 +2,8 @@ use super::*;
 
 #[path = "control/logs.rs"]
 mod logs;
+#[path = "control/pending.rs"]
+mod pending;
 #[path = "control/resources.rs"]
 mod resources;
 

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 10:18
+last_modified: 2026-11-24 11:05
 status: current
 ---
 
@@ -219,7 +219,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Other third-party devtools: Redux Toolkit, Zustand, Vue, the TanStack shell, React Hook Form, Jotai                                                                                                       | `integrations/*.md`                                                                                | No demo                                                               |
 | Open component source                                                                                                                                                                                     | `guides/devtools.md`, "Open component source"                                                      | No demo                                                               |
 | Automatic idle timeout, including zero/negative values and detached starts                                                                                                                                | `guides/stack-lifecycle.md`, "Stop automatically when idle"                                        | No demo                                                               |
-| Config editor: edit, check, and save the manifest, its includes, and `config.toml`; conflicts on disk                                                                                                     | `guides/devtools.md`, "Config editor"                                                              | No demo                                                               |
+| Config editor: edit, check, and save the manifest, its includes, and `config.toml`; conflicts on disk; file discovery and directory snapshots stay responsive during restart                              | `guides/devtools.md`, "Config editor"; `reference/control-api.md`                                  | No demo                                                               |
 | Rejected reloads shown below the toolbar                                                                                                                                                                  | `guides/devtools.md`, "Rejected reloads"                                                           | No demo                                                               |
 | Control API, refusing requests from other sites and chat requests without a page                                                                                                                          | `reference/control-api.md`, "Security model"                                                       | No demo                                                               |
 

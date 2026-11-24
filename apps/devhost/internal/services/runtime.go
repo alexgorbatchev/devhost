@@ -144,6 +144,7 @@ func (r *stackRuntime) publish() {
 	}
 }
 
+// checkReady requires operationMu or manifestMu. Readiness transitions hold both.
 func (r *stackRuntime) checkReady() error {
 	if r.shuttingDown {
 		return fmt.Errorf("devhost is shutting down")

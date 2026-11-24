@@ -129,11 +129,14 @@ const commandServe = [
   "serve::command_startup_rejects_exit_and_missing_http_without_leaving_sessions",
 ];
 const stubbornDaemonHelper = "processes::interrupt_escalates_for_a_term_ignoring_daemon_start_helper";
+const pendingControlRead = "control::pending::reads_remain_responsive_while_restart_waits_for_http_health";
 for (const binary of binaries) {
   const isOracle = binary.name === "go-oracle";
   const isGo = binary.name !== "rust-optimized";
   const unsupportedOracleListeners = isOracle && process.platform === "darwin";
-  const exclusions = isOracle ? [duplicate, legacy, nestedIncludes, literalEnvironment, exhaustedPort] : [];
+  const exclusions = isOracle
+    ? [duplicate, legacy, nestedIncludes, literalEnvironment, exhaustedPort, pendingControlRead]
+    : [];
   if (isGo) exclusions.push(stubbornDaemonHelper);
   if (unsupportedOracleListeners) exclusions.push(...commandServe);
   await run(
@@ -150,6 +153,12 @@ for (const binary of binaries) {
     );
   }
   if (isOracle) {
+    await run(
+      "go-oracle-pending-control-read",
+      cargo("stack_commands", pendingControlRead, "--", "--exact"),
+      binary.path,
+      "pending restart blocked stacks/self: timeout: global",
+    );
     await run(
       "go-oracle-exhausted-port",
       cargo("stack_commands", exhaustedPort, "--", "--exact"),

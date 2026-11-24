@@ -63,6 +63,8 @@ The chat endpoints are described in the [Chat API](../chat-api/).
 
 The stack-directory routes `/__devhost__/stacks` and `/__devhost__/stacks/self` accept `GET` and `HEAD`. The first renders the running-stack directory, optionally filtered by `?q=`, and the second returns this stack's directory entry as JSON. They require machine configuration for the directory and local access; `stackDirectoryAllowRemote` can allow remote reads of the directory, but never its private self entry.
 
+Directory snapshots and configuration-file discovery remain available while a service restart waits for health. Configuration validation and saves wait for the lifecycle operation to finish.
+
 ### Status codes
 
 | Code                         | When                                                                                                                           |
