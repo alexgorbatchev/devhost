@@ -699,11 +699,19 @@ fn caddy_trust_and_start_error_paths_match_cli_contracts() {
     let start_human = run(&["caddy", "start"], "0");
     assert_eq!(start_human.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&start_human.stderr);
-    assert!(stderr.contains("without privileged-port setup"), "{stderr}");
-    assert!(
-        stderr.contains("devhost caddy privileged-ports"),
-        "{stderr}"
-    );
+    let (summary, hint) = if cfg!(target_os = "macos") {
+        (
+            "loopback without privileges on macOS",
+            "Use wildcard listeners",
+        )
+    } else {
+        (
+            "without privileged-port setup",
+            "devhost caddy privileged-ports",
+        )
+    };
+    assert!(stderr.contains(summary), "{stderr}");
+    assert!(stderr.contains(hint), "{stderr}");
 
     // Foreign running admin API rejects both start and trust
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();

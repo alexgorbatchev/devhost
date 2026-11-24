@@ -64,7 +64,22 @@ impl Fixture {
         if origin {
             request = request.header("Origin", format!("http://127.0.0.1:{}", self.port()));
         }
-        let mut response = agent.run(request.body(body).unwrap()).unwrap();
+        let mut response = agent
+            .run(request.body(body).unwrap())
+            .unwrap_or_else(|error| {
+                let protocol: Vec<_> = ["codex-input.jsonl", "claude-input.jsonl"]
+                    .map(|name| {
+                        (
+                            name,
+                            fs::read_to_string(self.root.path().join(name)).unwrap_or_default(),
+                        )
+                    })
+                    .into();
+                panic!(
+                    "{method} {path} failed: {error}; scenario={:?}; native input={protocol:?}",
+                    fs::read_to_string(self.root.path().join("scenario"))
+                );
+            });
         (
             response.status().as_u16(),
             response.body_mut().read_to_string().unwrap(),

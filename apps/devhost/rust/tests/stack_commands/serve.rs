@@ -174,6 +174,7 @@ fn command_routes_keep_alias_and_port_qualifiers_as_listeners_change() {
     let _process = start(&runtime, &directory, false);
     let session = session(&runtime);
     let alias = format!("{}.localhost", session.name);
+    wait_until(|| response(&runtime, &alias).as_deref() == Some("command serve fixture"));
     let ports: Value =
         serde_json::from_slice(&fs::read(directory.join("ports.json")).unwrap()).unwrap();
     let first = ports["first"].as_u64().unwrap();
@@ -182,11 +183,26 @@ fn command_routes_keep_alias_and_port_qualifiers_as_listeners_change() {
     let second = fs::read_to_string(directory.join("second-port")).unwrap();
     let first_host = format!("{}-{first}.localhost", session.name);
     let second_host = format!("{}-{second}.localhost", session.name);
-    wait_until(|| {
-        [alias.as_str(), &first_host, &second_host]
+    let deadline = Instant::now() + Duration::from_secs(15);
+    loop {
+        let responses = [alias.as_str(), &first_host, &second_host]
             .iter()
-            .all(|host| response(&runtime, host).as_deref() == Some("command serve fixture"))
-    });
+            .map(|host| (*host, response(&runtime, host)))
+            .collect::<Vec<_>>();
+        if responses
+            .iter()
+            .all(|(_, body)| body.as_deref() == Some("command serve fixture"))
+        {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "routes: {responses:?}; sessions: {:?}; log: {}",
+            read_live_stacks(&runtime.state().join("caddy")),
+            fs::read_to_string(directory.join("serve.log")).unwrap()
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
     fs::write(directory.join("close-first"), "").unwrap();
     wait_until(|| directory.join("first-closed").exists());
     wait_until(|| {

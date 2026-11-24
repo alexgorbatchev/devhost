@@ -409,15 +409,25 @@ mod tests {
         watch.update(inputs).unwrap();
         fs::write(&path, "edited again").unwrap();
         changed(&mut watch);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
-            let until = Instant::now() + Duration::from_millis(300);
-            while Instant::now() < until {
-                assert!(!watch.poll().unwrap());
-                thread::sleep(Duration::from_millis(10));
-            }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn manifest_watch_ignores_permission_changes() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("config.toml");
+        fs::write(&path, "initial").unwrap();
+        let mut watch = InputWatch::new(Inputs {
+            files: vec![path.clone()],
+            patterns: Vec::new(),
+        })
+        .unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        let until = Instant::now() + Duration::from_secs(1);
+        while Instant::now() < until {
+            assert!(!watch.poll().unwrap());
+            thread::sleep(Duration::from_millis(10));
         }
     }
 
