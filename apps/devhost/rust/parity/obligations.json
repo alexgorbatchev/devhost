@@ -392,7 +392,7 @@
       "path": "apps/devhost/rust/tests/stack_commands/config.rs",
       "kind": "native-shared",
       "selector": "cargo test --test stack_commands config:: with each comparison executable",
-      "qualification": "Private HOME, config and state; rejected selected configurations prevent Caddy mutation."
+      "qualification": "Private HOME/config/state; suffix and listener boundaries reject before mutation; generated defaults and ordered errors; normalized live HTTP/HTTPS routing and port release."
     }
   ],
   "cases": [
@@ -536,8 +536,8 @@
       "effect": "Only configured listeners and hostnames respond.",
       "failure": "Invalid listeners/settings fail before mutation.",
       "cleanup": "Stop owned Caddy and rebind all fixture ports.",
-      "evidence": ["caddy", "stack"],
-      "remaining": "Add full suffix and invalid listener matrix against both binaries.",
+      "evidence": ["caddy", "stack", "config-directories"],
+      "remaining": "Retain final native receipts for the shared suffix/listener matrix and normalized custom-port HTTP/HTTPS routing.",
       "status": "open"
     },
     {
@@ -560,8 +560,8 @@
       "effect": "Defaults and ordered field diagnostics agree.",
       "failure": "Manifest cannot override machine Caddy policy.",
       "cleanup": "Remove read-only corpus fixtures.",
-      "evidence": ["caddy-stop", "manifest-full-schema"],
-      "remaining": "Add explicit sorted multi-error/default comparison.",
+      "evidence": ["caddy-stop", "manifest-full-schema", "config-directories"],
+      "remaining": "Retain final native receipts for effective rendered defaults and ordered aggregate errors.",
       "status": "open"
     },
     {
