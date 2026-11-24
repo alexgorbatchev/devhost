@@ -652,7 +652,7 @@
       "failure": "Certificate and handshake failures never certify health.",
       "cleanup": "Join TLS peer and stop stack.",
       "evidence": ["compatibility", "relay"],
-      "remaining": "Verify untrusted health-certificate rejection separately from relay backend trust.",
+      "remaining": "Retain final native receipts for HTTP/2 success/failure and untrusted health-certificate rejection before HTTP, independently of relay backend trust.",
       "status": "open"
     },
     {

@@ -45,12 +45,21 @@ fn start_inherits_opaque_environment_values_and_accepts_negative_idle_timeout() 
 
 #[test]
 fn https_health_negotiates_http2_and_rejects_non_success_status() {
+    verify_https_health(true);
+}
+
+#[test]
+fn https_health_rejects_an_untrusted_certificate_before_sending_http() {
+    verify_https_health(false);
+}
+
+fn verify_https_health(trusted_certificate: bool) {
     use rustls_pki_types::pem::PemObject;
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path();
     let cert = root.join("server.pem");
     let key = root.join("key.pem");
-    let authority = if cfg!(target_os = "macos") {
+    let authority = if cfg!(target_os = "macos") && trusted_certificate {
         let trusted = std::env::var_os("DEVHOST_HEALTH_TRUST_DIR")
             .map(PathBuf::from)
             .expect("macOS HTTPS health comparison requires a trusted isolated certificate fixture; see the Rust parity runbook");
@@ -99,6 +108,8 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
     let (shutdown, done) = tokio::sync::oneshot::channel();
     let statuses = Arc::new(Mutex::new(Vec::new()));
     let observed = statuses.clone();
+    let attempts = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let observed_attempts = attempts.clone();
     let server = thread::spawn(move || {
         tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async move {
             let listener = tokio::net::TcpListener::from_std(listener).unwrap();
@@ -110,6 +121,7 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
                     _ = &mut done => break,
                     socket = listener.accept() => {
                         let (socket, _) = socket.unwrap();
+                        observed_attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         let acceptor = acceptor.clone();
                         let observed = observed.clone();
                         connections.spawn(async move {
@@ -141,14 +153,29 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
     let _server = Server(Some(shutdown), Some(server));
     let caddy = LiveCaddyGuard::start(root);
     let config = write_config(root, &caddy.settings);
-    for path in ["/ok", "/unavailable"] {
+    let paths: &[&str] = if trusted_certificate {
+        &["/ok", "/unavailable"]
+    } else {
+        &["/ok"]
+    };
+    for &path in paths {
         fs::write(root.join("devhost.toml"), format!("name='h2-health'\n[services.worker]\ncommand=['sleep','30']\nport='auto'\nhost='h2-health'\n[services.worker.health]\nhttp='https://127.0.0.1:{port}{path}'\ninterval=50\ntimeout=1000\nretries=1\n")).unwrap();
+        let selected_authority = if trusted_certificate {
+            authority.clone()
+        } else {
+            // Supply a valid, unrelated CA so rejection exercises the TLS
+            // handshake rather than an unreadable trust configuration.
+            caddy
+                .caddy_dir
+                .join("storage/pki/authorities/local/root.crt")
+        };
+        assert!(selected_authority.is_file());
         let mut process = ServeProcess(Some(
             Command::new(binary())
                 .arg("start")
                 .current_dir(root)
                 .env("AGENT", "1")
-                .env("SSL_CERT_FILE", &authority)
+                .env("SSL_CERT_FILE", &selected_authority)
                 .env("SSL_CERT_DIR", root.join("empty-ca-directory"))
                 .env("DEVHOST_CONFIG_DIR", config.parent().unwrap())
                 .env("DEVHOST_STATE_DIR", root.join("state"))
@@ -161,15 +188,21 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
                 .unwrap(),
         ));
         assert!(
-            wait_until(Duration::from_secs(8), || statuses
-                .lock()
-                .unwrap()
-                .contains(&if path == "/ok" { 200 } else { 503 })),
+            wait_until(Duration::from_secs(8), || {
+                if trusted_certificate {
+                    statuses
+                        .lock()
+                        .unwrap()
+                        .contains(&if path == "/ok" { 200 } else { 503 })
+                } else {
+                    attempts.load(std::sync::atomic::Ordering::SeqCst) > 0
+                }
+            }),
             "stdout: {}\nstderr: {}",
             fs::read_to_string(root.join("stdout")).unwrap(),
             fs::read_to_string(root.join("stderr")).unwrap()
         );
-        if path == "/ok" {
+        if trusted_certificate && path == "/ok" {
             assert!(
                 wait_until(Duration::from_secs(5), || {
                     caddy::stacks::read_live_stacks(&caddy.caddy_dir)
@@ -226,6 +259,9 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
                 fs::read_to_string(root.join("stdout")).unwrap(),
                 fs::read_to_string(root.join("stderr")).unwrap()
             );
+        }
+        if !trusted_certificate {
+            assert!(statuses.lock().unwrap().is_empty());
         }
         assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
     }
