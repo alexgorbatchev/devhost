@@ -1221,7 +1221,7 @@
       "failure": "Failed restart cannot certify the old process or mutate a newer generation.",
       "cleanup": "Join old/current processes; preserve CA and remove fixture state.",
       "evidence": ["caddy", "caddy-generation"],
-      "remaining": "Failed-stop and no-op restart comparisons pass against unchanged Go, repaired Go and optimized Rust: the old PID/receipt remain, then three concurrent retry requests perform one real restart while preserving the CA. Concurrent route mutation during a failed restart and final native source/archive acceptance remain.",
+      "remaining": "Failed-stop and no-op restart comparisons preserve the old PID/receipt, then three concurrent retries perform one real restart while preserving the CA. A gated failed restart also releases a concurrent route withdrawal without changing the keeper route, PID, CA or old receipt. Final native source/archive acceptance remains.",
       "status": "open"
     },
     {

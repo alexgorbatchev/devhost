@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 12:08
+last_modified: 2026-11-24 12:41
 status: current
 ---
 
@@ -123,8 +123,14 @@ receipt. With a real managed Caddy running at an older policy generation, reject
 stop commands and no-op replacements must preserve the old process receipt.
 Three concurrent retries must perform one real restart and retain the local CA.
 Set `DEVHOST_CADDY_TEST_BINARY` to the absolute Go or Rust executable to compare
-this same fixture. Route mutation during a failed restart requires a separate
-comparison.
+this same fixture.
+
+`just rust test --test stack_commands proxy::mutations::failed_caddy_restart_releases_a_concurrent_route_withdrawal -- --exact`
+holds a generation-triggered restart at its native stop command while another
+stack terminates its backend. The stop must remain pending until the failed
+restart releases the lifecycle lock, then withdraw only its own route. The other
+stack's route, Caddy PID, CA and old runtime receipt remain intact. Set
+`DEVHOST_STACK_TEST_BINARY` to compare the same fixture against either executable.
 
 `just rust test --test stack_commands caddy_commands::foreign_runtime_is_preserved_and_trust_commands_use_only_the_selected_state -- --exact`
 points a second state directory at a live private Caddy admin address. Its start,
