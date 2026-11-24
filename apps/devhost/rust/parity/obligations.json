@@ -522,10 +522,10 @@
       "contract": "Bash/Zsh/Fish/PowerShell completion registration",
       "trigger": "Generate Bash/Zsh/Fish/PowerShell scripts; invoke candidate completion in each native shell.",
       "effect": "Scripts register the command and offer commands, subcommands and flags.",
-      "failure": "Extra arguments fail; unsupported-shell exit status requires an explicit compatibility decision.",
+      "failure": "Extra arguments and unsupported shell names fail with exit status 1 (accepted difference from Cobra's help+0 in Go 0.0.20).",
       "cleanup": "Close PTY and join shell.",
       "evidence": ["readline", "cli-shared", "cli-regression"],
-      "remaining": "Retain final native-platform receipts. Linux native Zsh/Fish/PowerShell checks against all three executables are retained in the task record; unsupported-shell exit status still requires a compatibility decision.",
+      "remaining": "Retain final native-platform receipts. Linux native Zsh/Fish/PowerShell checks against all three executables are retained; unsupported-shell rejection (exit 1) is accepted and enforced by cli-regression.",
       "status": "open"
     },
     {
@@ -537,7 +537,7 @@
       "failure": "Invalid invocation points to usage without success output.",
       "cleanup": "No state or process is created.",
       "evidence": ["cli-shared", "cli-regression"],
-      "remaining": "Retain final native-platform receipts; unsupported-shell exit status is pending a compatibility decision.",
+      "remaining": "Retain final native-platform receipts; unsupported-shell rejection (exit 1) is accepted.",
       "status": "open"
     },
     {

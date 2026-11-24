@@ -273,10 +273,6 @@ jobs:
           path: .state/ci-rust-comparisons/
           if-no-files-found: warn
           retention-days: 7
-      - name: Remove disposable macOS HTTPS health trust
-        if: always() && runner.os == 'macOS'
-        timeout-minutes: 2
-        run: bash test-support/macosHealthTrust.sh cleanup
 
   rust-candidates:
     if: github.event_name == 'workflow_dispatch' && inputs.rustCandidates && !inputs.selfHosted
@@ -426,7 +422,3 @@ jobs:
           path: apps/devhost/dist/rust-candidates/ci/
           if-no-files-found: error
           retention-days: 7
-      - name: Remove disposable macOS HTTPS health trust
-        if: always() && runner.os == 'macOS'
-        timeout-minutes: 2
-        run: bash test-support/macosHealthTrust.sh cleanup

@@ -1497,7 +1497,7 @@
     },
     {
       "path": "packages/docs/src/content/docs/development/building.md",
-      "blob": "f214cbaee3c1724c20bd78f5ab0d0e5aac760cda",
+      "blob": "1a1c8da4b13de8e0ca7b8c40d0c460cd8e853161",
       "reason": "Documents Rust candidates, native comparisons, the explicit trusted HTTPS fixture prerequisite on macOS and source-run checkout metadata."
     },
     {
