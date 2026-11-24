@@ -512,7 +512,9 @@ directory, use devhost restart-all.
 const restartAllDescription = `Restart every running manifest stack and standalone serve
 session in the selected state directory with the devhost
 executable running this command. Run this from any folder
-after installing a new version.
+after installing a new version. Instances whose launch
+directory was removed are stopped. The remaining instances
+are restarted.
 
 ` + restartBehaviorDescription
 

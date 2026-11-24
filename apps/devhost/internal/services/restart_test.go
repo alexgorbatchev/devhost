@@ -95,6 +95,43 @@ func startRestartFixture(t *testing.T, state, manifestPath string) caddy.LiveSta
 	return caddy.LiveStack{}
 }
 
+func stopRestartFixturesOnCleanup(t *testing.T, paths caddy.Paths, originalPIDs ...int) {
+	t.Helper()
+	t.Cleanup(func() {
+		stacks, err := caddy.ReadLiveStacks(paths)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for _, stack := range stacks {
+			if slices.Contains(originalPIDs, stack.PID) {
+				continue // Original fixtures already have cleanup registered.
+			}
+			if err := stack.Signal(paths, syscall.SIGTERM); err != nil {
+				t.Error(err)
+				continue
+			}
+			deadline := time.Now().Add(10 * time.Second)
+			for processExists(stack.PID) && time.Now().Before(deadline) {
+				time.Sleep(restartPollInterval)
+			}
+			if processExists(stack.PID) {
+				t.Errorf("replacement %d did not stop", stack.PID)
+				if err := stack.Signal(paths, syscall.SIGKILL); err != nil {
+					t.Error(err)
+					continue
+				}
+			}
+			p, err := os.FindProcess(stack.PID)
+			if err != nil {
+				t.Error(err)
+				continue
+			}
+			_, _ = p.Wait()
+		}
+	})
+}
+
 func TestRestartStacksPreservesLaunchAndScope(t *testing.T) {
 	for _, all := range []bool{false, true} {
 		t.Run(strconv.FormatBool(all), func(t *testing.T) {
@@ -103,33 +140,7 @@ func TestRestartStacksPreservesLaunchAndScope(t *testing.T) {
 			manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
 			target := startRestartFixture(t, state, manifestPath)
 			other := startRestartFixture(t, state, "") // Standalone serve sessions have no manifest.
-			t.Cleanup(func() {
-				stacks, err := caddy.ReadLiveStacks(paths)
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				for _, stack := range stacks {
-					if err := stack.Signal(paths, syscall.SIGTERM); err != nil {
-						t.Error(err)
-					}
-				}
-				deadline := time.Now().Add(10 * time.Second)
-				for _, stack := range stacks {
-					for processExists(stack.PID) && time.Now().Before(deadline) {
-						time.Sleep(restartPollInterval)
-					}
-					if processExists(stack.PID) {
-						t.Errorf("fixture %d did not stop", stack.PID)
-					}
-					if stack.PID != target.PID && stack.PID != other.PID {
-						p, err := os.FindProcess(stack.PID)
-						if err == nil {
-							_, _ = p.Wait()
-						}
-					}
-				}
-			})
+			stopRestartFixturesOnCleanup(t, paths, target.PID, other.PID)
 			var output strings.Builder
 			if err := RestartStacks(RestartStacksOptions{All: all, ManifestPath: manifestPath}, map[string]string{"DEVHOST_STATE_DIR": state}, &output); err != nil {
 				t.Fatal(err)
@@ -217,6 +228,40 @@ func TestRestartCaptureFailureLeavesAllStacksRunning(t *testing.T) {
 	}
 	if slices.ContainsFunc(entries, func(e os.DirEntry) bool { return strings.HasPrefix(e.Name(), "restart-") }) {
 		t.Fatal("failed capture left scratch logs")
+	}
+}
+
+func TestRestartAllRetiresSessionWithDeletedWorkingDirectory(t *testing.T) {
+	state := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(state)
+	orphan := startRestartFixture(t, state, "")
+	manifestPath := filepath.Join(t.TempDir(), "devhost.toml")
+	healthy := startRestartFixture(t, state, manifestPath)
+	stopRestartFixturesOnCleanup(t, paths, orphan.PID, healthy.PID)
+	data, err := os.ReadFile(filepath.Join(state, strconv.Itoa(orphan.PID)+".trace"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var trace restartTrace
+	if err := json.Unmarshal(data, &trace); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(trace.Directory); err != nil {
+		t.Fatal(err)
+	}
+	var output strings.Builder
+	if err := RestartStacks(RestartStacksOptions{All: true}, map[string]string{"DEVHOST_STATE_DIR": state}, &output); err != nil {
+		t.Fatal(err)
+	}
+	stacks, err := caddy.ReadLiveStacks(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if orphan.Alive() || healthy.Alive() || len(stacks) != 1 || stacks[0].ManifestPath != manifestPath {
+		t.Fatalf("expected just the healthy replacement, got %#v", stacks)
+	}
+	if !strings.Contains(output.String(), fmt.Sprintf("Stopped %s (PID %d)", orphan.Name, orphan.PID)) {
+		t.Fatalf("output did not report stopping the orphan: %s", &output)
 	}
 }
 
