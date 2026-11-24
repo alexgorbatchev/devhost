@@ -1,9 +1,11 @@
 import { fileURLToPath } from "node:url";
 import inventory from "../rust/parity/inventory.json";
+import obligations from "../rust/parity/obligations.json";
 
 const rootPath = fileURLToPath(new URL("../../../", import.meta.url));
 
 type GitTreeEntry = [string, string];
+type BehaviorContract = { feature: string; contract: string };
 
 function git(...args: string[]): string {
   const result = Bun.spawnSync(["git", ...args], { cwd: rootPath, stdout: "pipe", stderr: "pipe" });
@@ -41,6 +43,44 @@ export async function verifyRustParity(reference: string): Promise<void> {
       .filter(([path]) => path !== undefined && isContract(path)),
   );
   const failures: string[] = [];
+  if (obligations.goSha !== inventory.goSha) failures.push("Obligation map uses a different Go reference");
+  const evidenceIds = new Set<string>();
+  for (const evidence of obligations.evidence) {
+    if (evidenceIds.has(evidence.id)) failures.push(`Duplicate evidence ${evidence.id}`);
+    evidenceIds.add(evidence.id);
+    if (!evidence.kind || !evidence.selector || !(await Bun.file(`${rootPath}/${evidence.path}`).exists())) {
+      failures.push(`Incomplete obligation evidence ${evidence.id}`);
+    }
+  }
+  const contracts = new Map(
+    inventory.features.flatMap((feature) =>
+      feature.contracts.map((contract, index): [string, BehaviorContract] => [
+        `${feature.id}.${index + 1}`,
+        { feature: feature.id, contract },
+      ]),
+    ),
+  );
+  const caseIds = new Set<string>();
+  for (const obligation of obligations.cases) {
+    const expected = contracts.get(obligation.id);
+    if (caseIds.has(obligation.id)) failures.push(`Duplicate obligation ${obligation.id}`);
+    caseIds.add(obligation.id);
+    if (expected?.feature !== obligation.feature || expected.contract !== obligation.contract) {
+      failures.push(`Changed or unknown obligation ${obligation.id}`);
+    }
+    if (
+      ![obligation.trigger, obligation.effect, obligation.failure, obligation.cleanup, obligation.remaining].every(
+        Boolean,
+      ) ||
+      !obligation.evidence.length ||
+      obligation.evidence.some((id) => !evidenceIds.has(id))
+    ) {
+      failures.push(`Incomplete acceptance case ${obligation.id}`);
+    }
+  }
+  for (const id of contracts.keys()) {
+    if (!caseIds.has(id)) failures.push(`Unassigned behavior obligation ${id}`);
+  }
   const ids = new Set<string>();
   const assigned = new Set<string>();
   const branchDifferences = new Map(inventory.branchDifferences.map((source) => [source.path, source]));
@@ -71,7 +111,7 @@ export async function verifyRustParity(reference: string): Promise<void> {
   }
   if (failures.length) throw new Error(failures.join("\n"));
   console.log(
-    `Inventory complete: ${inventory.features.length} feature groups, ${sources.size} Go source/document contracts, Go ${referenceSha}.`,
+    `Inventory complete: ${inventory.features.length} feature groups, ${sources.size} Go source/document contracts, ${caseIds.size} acceptance cases, Go ${referenceSha}.`,
   );
   console.log(
     "This checks inventory integrity, not behavior. Run the comparisons and native checks in docs/internal/references/rust-port-feature-matrix.md.",

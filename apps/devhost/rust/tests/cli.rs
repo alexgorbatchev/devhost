@@ -72,6 +72,36 @@ fn help_entry_points_obey_mode_and_terminal_width() {
 }
 
 #[test]
+fn help_aliases_modes_width_and_error_streams_match_public_contract() {
+    let human = stdout(invoke(&["--help"], "0", "100"));
+    let agent = stdout(invoke(&["--help"], "1", "100"));
+    assert!(!human.contains(ALERT));
+    assert!(agent.starts_with(ALERT));
+    assert_ne!(stdout(invoke(&["--help"], "0", "45")), human);
+    for args in [vec![], vec!["--help"], vec!["-h"], vec!["help"]] {
+        assert_eq!(stdout(invoke(&args, "0", "100")), human);
+        for mode in ["1", "true", " YeS "] {
+            for width in ["45", "100"] {
+                assert_eq!(stdout(invoke(&args, mode, width)), agent);
+            }
+        }
+    }
+    // Cobra treats an unsupported completion shell as a successful help request.
+    // The Rust-only diagnostic regression below retains its stricter rejection.
+    for args in invalid_invocations()
+        .into_iter()
+        .filter(|args| args.as_slice() != ["completion", "unknown"])
+    {
+        for mode in ["0", "1"] {
+            let output = invoke(&args, mode, "100");
+            assert_eq!(output.status.code(), Some(1), "{args:?}: {output:?}");
+            assert!(output.stdout.is_empty(), "{args:?}: {output:?}");
+            assert!(!output.stderr.is_empty(), "{args:?}: {output:?}");
+        }
+    }
+}
+
+#[test]
 fn serve_rejects_invalid_domains_ports_and_conflicting_inputs() {
     for args in [
         vec!["serve"],
@@ -145,9 +175,8 @@ fn completion_installation_help_covers_all_shells() {
     }
 }
 
-#[test]
-fn invalid_arguments_report_to_stderr_and_point_to_usage() {
-    for args in [
+fn invalid_invocations() -> [Vec<&'static str>; 10] {
+    [
         vec!["bun"],
         vec!["caddy", "restart"],
         vec!["start", "--bogus"],
@@ -158,7 +187,12 @@ fn invalid_arguments_report_to_stderr_and_point_to_usage() {
         vec!["completion", "bash", "extra"],
         vec!["completion", "fish", "--no-descriptions=perhaps"],
         vec!["serve", "--port", "oops"],
-    ] {
+    ]
+}
+
+#[test]
+fn invalid_arguments_report_to_stderr_and_point_to_usage() {
+    for args in invalid_invocations() {
         for mode in ["0", "1"] {
             let output = invoke(&args, mode, "100");
             assert_eq!(output.status.code(), Some(1), "{args:?}: {output:?}");

@@ -333,6 +333,16 @@ fn saturated_preview_connections_leave_readiness_and_new_leases_available() {
     let machine = Machine::new(&relay);
     let mut alpha = machine.start("capacity-alpha", false);
     let worker = machine.worker();
+    // The startup URL can be logged before the relay's first backend route is ready.
+    wait(|| {
+        request(
+            relay.reverse_port,
+            "GET",
+            "capacity-alpha.preview.example.test",
+            "/note.txt",
+        )
+        .starts_with("HTTP/1.1 200")
+    });
     let mut connections = Vec::new();
     for _ in 0..128 {
         let mut socket = TcpStream::connect(("127.0.0.1", relay.reverse_port)).unwrap();

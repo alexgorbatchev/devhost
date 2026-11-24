@@ -79,6 +79,7 @@ async function run(name: string, command: string[], binary: string, expectedFail
       DEVHOST_REMOTE_TEST_BINARY: binary,
       DEVHOST_CLI_TEST_BINARY: binary,
       DEVHOST_CADDY_TEST_BINARY: binary,
+      DEVHOST_CLI_TEST_VERSION: Bun.spawnSync([binary, "--version"]).stdout.toString().trim(),
     },
     stdin: "ignore",
     stdout: "pipe",
@@ -151,8 +152,28 @@ for (const binary of binaries) {
     await run(`${binary.name}-${test}`, cargo("detach_lifecycle", test, "--", "--exact"), binary.path);
   }
   await run(
-    `${binary.name}-readline`,
-    cargo("cli", "bash_completion_resolves_commands_and_flags_in_a_real_shell", "--", "--exact"),
+    `${binary.name}-cli`,
+    cargo(
+      "cli",
+      "--",
+      "--skip",
+      "help_entry_points_obey_mode_and_terminal_width",
+      "--skip",
+      "completion_installation_help_covers_all_shells",
+      "--skip",
+      "invalid_arguments_report_to_stderr_and_point_to_usage",
+    ),
+    binary.path,
+  );
+  await run(
+    `${binary.name}-command-tree`,
+    [
+      "bun",
+      resolve(root, "apps/devhost/scripts/verifyRustCommandTree.ts"),
+      binaries[0]!.path,
+      binary.path,
+      resolve(output, `${binary.name}-help.json`),
+    ],
     binary.path,
   );
 }

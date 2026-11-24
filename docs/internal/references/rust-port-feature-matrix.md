@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-23 16:33
-last_modified: 2026-11-23 23:03
+last_modified: 2026-11-23 23:55
 status: current
 ---
 
@@ -20,6 +20,8 @@ bun apps/devhost/scripts/verifyRustParity.ts
 ```
 
 The check rejects an advanced Go reference, new/unassigned production sources or public documents, changed reference hashes, unexplained working-tree differences, duplicate assignments and missing implementation/test paths. An explicit reference may be passed as the final argument. Intentional port-branch changes to shared Go code or documentation have separate hashes and explanations; they do not modify the oracle.
+
+The [acceptance map](../../../apps/devhost/rust/parity/obligations.json) expands all 120 grouped obligations into concrete triggers, effects, failure behavior, cleanup and evidence selectors. Each case names the remaining gap. Its evidence definitions distinguish shared external-CLI comparisons, Rust regressions, shared frontend components and build-only contracts. All cases remain open until their complete contract has execution receipts or an explicit shared-component justification; the map is an acceptance plan, not a pass report. The inventory check rejects missing, duplicate or stale obligations and broken evidence references.
 
 When Go changes, inspect the range, identify every affected behavior in the inventory, repair the Rust implementation and rerun the affected comparisons before recording new hashes. Do not regenerate hashes merely to silence the check. The catch-up range contains release-only commits, command-backed serving and named-session controls, the project/global restart scope split, and global retirement of instances whose launch directory was removed. The behavior changes have shared executable scenarios. The v0.0.19-to-v0.0.20 range adds preflight validation of file-serving roots during global restart; the shared renamed-root scenario passes both executables. The port branch also repairs two Go defects reproduced in comparisons: closing-tag injection uses original document-byte offsets, and duplicate names in a service restart batch restart each service once. These repairs are recorded separately from the unchanged Go oracle.
 
@@ -44,6 +46,10 @@ DEVHOST_REMOTE_TEST_BINARY=/absolute/path/to/go/devhost just rust test --test re
 ```
 
 The maintained `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>` recipe runs the corpora and shared native fixtures with retained hashes, logs and explicit assertions for the unchanged oracle's two known defects. Repaired Go and optimized Rust must pass those fixtures. CI runs the recipe on hosted Linux x64, Linux ARM64 and macOS ARM64, checks current-Go inventory drift, and uses the pinned Rust toolchain; Linux x64 additionally checks the declared minimum compiler and 90% first-party line/function coverage. Candidate packaging is a separate manual input and uploads unpublished artifacts only.
+
+The runner also walks all 26 public help entry points and compares command names and short/long flag availability. It runs the shared CLI validation, precedence, skill, stamped-version and native Bash Readline cases against each executable. Three additional Rust regressions retain framework-specific help layout, installation instructions and diagnostic wording; those are excluded from the shared subset. Flag types/defaults and invalid inputs require semantic cases rather than equal help prose. Each binary's version is checked against its own stamp.
+
+One semantic CLI difference remains unresolved: an unsupported completion shell prints help and exits successfully in Go 0.0.20, while Rust reports an error with status 1. The shared invalid-input assertions exclude that case pending an explicit compatibility decision; the Rust diagnostic regression still requires rejection. The four supported shell generators remain in the shared checks.
 
 Then run `just rust check` for first-party formatting, Clippy and 90% line/function coverage, and `just check` for the shared Go, UI, docs and workflow checks. Coverage measures exercised implementation, not feature completeness. Preserve the actual command output, exit code, duration, platform, both full revisions and binary/input hashes with each comparison. A dirty build needs its patch or source hash alongside the base commit; never label it as the unchanged base revision.
 
