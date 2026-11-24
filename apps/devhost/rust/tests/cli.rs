@@ -208,7 +208,9 @@ fn invalid_arguments_report_to_stderr_and_point_to_usage() {
 fn bash_completion_resolves_commands_and_flags_in_a_real_shell() {
     let temp = tempfile::tempdir().unwrap();
     let script = temp.path().join("completion.bash");
+    readline::phase("generate completion script");
     std::fs::write(&script, stdout(invoke(&["completion", "bash"], "1", "100"))).unwrap();
+    readline::phase("completion script generated; resolve selected executable");
     let selected = binary().canonicalize().unwrap();
     let bin = temp.path().join("bin");
     std::fs::create_dir(&bin).unwrap();
@@ -217,7 +219,9 @@ fn bash_completion_resolves_commands_and_flags_in_a_real_shell() {
         &std::env::var_os("PATH").unwrap_or_default(),
     )))
     .unwrap();
+    readline::phase("isolated executable ready; open interactive shell");
     readline::assert_completion(temp.path(), &script, &path);
+    readline::phase("completion fixture joined");
 }
 
 #[test]

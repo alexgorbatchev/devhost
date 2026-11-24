@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 """Native wire-protocol peer for Rust chat integration tests; no model inference."""
+with open(__file__ + ".boot", "w") as boot:
+    boot.write("interpreter entered before imports\n")
+
 import json
 import os
 import pathlib

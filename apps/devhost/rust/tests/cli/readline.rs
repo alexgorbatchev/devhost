@@ -15,6 +15,12 @@ struct Shell {
     terminal: File,
 }
 
+pub(super) fn phase(message: impl std::fmt::Display) {
+    // Write directly so a hung test retains its last phase before libtest finishes.
+    let mut stderr = std::io::stderr().lock();
+    writeln!(stderr, "Readline fixture: {message}").unwrap();
+}
+
 impl Shell {
     fn until(&mut self, marker: &[u8]) -> Vec<u8> {
         let deadline = Instant::now() + Duration::from_secs(8);
@@ -31,6 +37,7 @@ impl Shell {
                 events: libc::POLLIN,
                 revents: 0,
             };
+            phase(format_args!("poll for {}", String::from_utf8_lossy(marker)));
             // SAFETY: the descriptor belongs to this fixture and is valid for this call.
             let result = unsafe {
                 libc::poll(
@@ -39,6 +46,10 @@ impl Shell {
                     remaining.as_millis().min(i32::MAX as u128) as i32,
                 )
             };
+            phase(format_args!(
+                "poll returned {result}; events={}; read PTY next",
+                descriptor.revents
+            ));
             if result < 0
                 && std::io::Error::last_os_error().kind() == std::io::ErrorKind::Interrupted
             {
@@ -51,6 +62,7 @@ impl Shell {
             );
             let mut buffer = [0; 65536];
             let count = self.terminal.read(&mut buffer).expect("read Bash PTY");
+            phase(format_args!("PTY read {count} bytes"));
             assert!(
                 count > 0,
                 "Bash exited: {}",
@@ -64,11 +76,18 @@ impl Shell {
 
 impl Drop for Shell {
     fn drop(&mut self) {
+        phase(format_args!("kill Bash group {}", self.child.id()));
         // SAFETY: this unreaped child owns its session and cannot have a reused PID.
-        unsafe {
-            libc::kill(-(self.child.id() as i32), libc::SIGKILL);
+        let result = unsafe { libc::kill(-(self.child.id() as i32), libc::SIGKILL) };
+        if result < 0 {
+            phase(format_args!(
+                "group kill failed: {}",
+                std::io::Error::last_os_error()
+            ));
         }
-        self.child.wait().expect("join Bash fixture");
+        phase("join Bash child");
+        let status = self.child.wait().expect("join Bash fixture");
+        phase(format_args!("Bash joined: {status}"));
     }
 }
 
@@ -88,6 +107,7 @@ bind 'set show-all-if-ambiguous on'
 bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
 "#).unwrap();
     let (mut master, mut slave) = (-1, -1);
+    phase("open PTY");
     let mut size = libc::winsize {
         ws_row: 40,
         ws_col: 180,
@@ -109,6 +129,7 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
     );
     // SAFETY: openpty returned new, uniquely owned descriptors.
     let (terminal, slave) = unsafe { (File::from_raw_fd(master), File::from_raw_fd(slave)) };
+    phase("PTY opened; set close-on-exec");
     for descriptor in [&terminal, &slave] {
         // SAFETY: both descriptors remain open; prevent the master leaking into Bash.
         assert_eq!(
@@ -140,11 +161,17 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
             Ok(())
         });
     }
+    phase("spawn Bash with a controlling terminal");
     let mut shell = Shell {
         child: command.spawn().expect("spawn interactive Bash"),
         terminal,
     };
+    phase(format_args!(
+        "Bash spawned: {}; await prompt",
+        shell.child.id()
+    ));
     shell.until(b"__DEVHOST_COMPLETION_READY__ ");
+    phase("initial prompt received");
     for (line, expected, expanded) in [
         ("devhost ca", vec!["caddy"], "devhost caddy "),
         (
@@ -158,6 +185,7 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
             "devhost start --",
         ),
     ] {
+        phase(format_args!("probe {line:?}"));
         shell
             .terminal
             .write_all(format!("{line}\t\x18\x12").as_bytes())
@@ -185,5 +213,6 @@ bind -x '"\C-x\C-r":printf "\nREADLINE_VALUE:%s\n" "$READLINE_LINE"'
         );
         // Clear the editable command without executing it or racing asynchronous SIGINT handling.
         shell.terminal.write_all(b"\x15").unwrap();
+        phase(format_args!("probe accepted: {line:?}"));
     }
 }
