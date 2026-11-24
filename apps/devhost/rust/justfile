@@ -2,10 +2,10 @@ set dotenv-load := false
 
 [default]
 run *args: assets
-    cargo run --locked -- {{args}}
+    DEVHOST_BUILD_SOURCE_DIRECTORY='{{clean(source_directory() / "../../..")}}' cargo run --locked -- {{args}}
 
 run-ai *args: assets
-    AGENT=1 cargo run --locked -- {{args}}
+    AGENT=1 DEVHOST_BUILD_SOURCE_DIRECTORY='{{clean(source_directory() / "../../..")}}' cargo run --locked -- {{args}}
 
 test *args: assets
     bash ../../../test-support/runTests.sh cargo test --locked {{args}}

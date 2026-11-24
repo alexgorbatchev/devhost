@@ -1482,8 +1482,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/development/building.md",
-      "blob": "33db7b590d445791bedb52f7342fa65320cd4410",
-      "reason": "Documents Rust candidates, native comparisons and the explicit trusted HTTPS fixture prerequisite on macOS."
+      "blob": "f214cbaee3c1724c20bd78f5ab0d0e5aac760cda",
+      "reason": "Documents Rust candidates, native comparisons, the explicit trusted HTTPS fixture prerequisite on macOS and source-run checkout metadata."
     },
     {
       "path": "packages/docs/src/content/docs/guides/annotations.md",
@@ -1537,8 +1537,8 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "36e85ad87451e419d21aad99dff3756fd4fcdc10",
-      "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry. Separate negative idle durations are accepted by the experimental Rust CLI, including detached forwarding."
+      "blob": "107edd3bd9c612b8903ba1c5cfa322a2d3bea9c2",
+      "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry. Separate negative idle durations are accepted by the experimental Rust CLI, including detached forwarding. Development source selection preserves explicit override precedence and unavailable recorded-checkout fallback."
     },
     {
       "path": "apps/devhost/internal/devtools/document_injection.go",

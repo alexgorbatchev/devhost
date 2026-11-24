@@ -29,6 +29,8 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 The experimental Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` from the repository root to keep its binary separate from the Go development executable.
 
+Rust `run` and `run-ai` stamp the checkout with compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`. For a standalone development executable, set that variable while invoking `just rust build`. The runtime `DEVHOST_DEV_SOURCE_DIR` takes precedence; a missing stamped checkout warns and serves embedded assets. `build-release` clears the source stamp so optimized candidates remain independent of the build checkout.
+
 Use `just rust build-release` for an optimized native candidate at `apps/devhost/rust/target/release/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig. This command builds a candidate; the Go publisher and `just dev-bootstrap` remain the production and protected-development entrypoints.
 
 Run `just setup` for a fresh checkout. Rust run, build, test, lint, and coverage recipes refresh the generated browser assets before Cargo embeds them; direct Cargo commands require those assets to exist already.

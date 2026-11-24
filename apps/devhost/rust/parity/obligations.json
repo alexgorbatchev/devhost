@@ -435,6 +435,13 @@
       "kind": "shared-cli",
       "selector": "cargo test --locked --test stack_commands documents::source::",
       "qualification": "Explicit source checkout discovery, serialized stale/missing bundle rebuilds, build failure and missing-output retry, source-only preview access and read-only actions; stamped checkout fallback and hostile payloads remain separate."
+    },
+    {
+      "id": "stamped-source-assets",
+      "path": "apps/devhost/rust/tests/stack_commands/documents/source/stamped.rs",
+      "kind": "shared-cli",
+      "selector": "cargo test --locked --test stack_commands documents::source::stamped:: -- --ignored",
+      "qualification": "Requires separately stamped executables and DEVHOST_STAMP_TEST_CHECKOUT. Checks actual CLI recorded source selection, relative override precedence, invalid explicit rejection and missing recorded checkout embedded fallback. Native platform receipts remain required."
     }
   ],
   "cases": [
@@ -1526,8 +1533,8 @@
       "effect": "Only valid checkout supplies live assets and source behavior.",
       "failure": "Unusable development source reports fallback/error per contract.",
       "cleanup": "Remove only fixture checkout and owned generated bundle.",
-      "evidence": ["asset-regression", "source-assets"],
-      "remaining": "Compare stamped source checkout selection and unavailable stamped checkout fallback through the CLI; explicit environment checkout rebuild and rejection cases are shared.",
+      "evidence": ["asset-regression", "source-assets", "stamped-source-assets"],
+      "remaining": "Retain native platform receipts for the stamped executable fixture; local Linux comparisons cover recorded selection, explicit precedence and rejection, and embedded fallback.",
       "status": "open"
     },
     {

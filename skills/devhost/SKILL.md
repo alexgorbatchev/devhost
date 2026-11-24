@@ -4,7 +4,7 @@ description: Use when running devhost, serving static files or Markdown, launchi
 author: alexgorbatchev
 metadata:
   created_on: 2026-06-26 14:23
-  last_modified: 2026-11-24 03:59
+  last_modified: 2026-11-24 07:55
   status: current
 ---
 
@@ -17,6 +17,8 @@ Use `serve = "packages/design"` in a service table to run the built-in file serv
 ## Command Line
 
 Read on-demand devtools asset rebuild notices and every line of compiler diagnostics with the same stack prefix and output formatting as other foreground stack logs.
+
+Set `DEVHOST_DEV_SOURCE_DIR` to a valid devhost checkout for live devtools assets; relative paths resolve from the manifest's directory, or the launch directory for standalone `serve`. This override takes precedence over a development executable's recorded checkout. An invalid explicit override fails startup. An unavailable recorded checkout prints a warning and serves the embedded assets.
 
 Run `devhost` with `AGENT=1`: help becomes `key: value` text, and a failed command reports the complete error with `devhost: ERR:`. Without it, a failure uses `devhost | [ERROR]` and, where the next step is known, an `[INFO]` hint with the same prefix. Failure lines and warnings (`WARN:`, or `[WARN]` without `AGENT=1`) go to stderr. Stop-command progress also uses the `devhost` log label. Devhost-owned diagnostics fold home-directory paths to `~` or `~/...`; child output, machine-readable lists, and certificates retain their original bytes and paths. Exit code `0` means success and `1` a failure. A foreground `devhost start` ended by a signal exits with `128` plus the signal number: `130` after Ctrl-C, `143` after SIGTERM. `devhost start --detach` exits `1` when a signal cancels its wait.
 

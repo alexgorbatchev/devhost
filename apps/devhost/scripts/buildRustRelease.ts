@@ -68,6 +68,7 @@ export async function buildRustRelease(options: IBuildRustReleaseOptions = {}): 
       env: {
         ...process.env,
         DEVHOST_BUILD_VERSION: version,
+        DEVHOST_BUILD_SOURCE_DIRECTORY: "",
         TMPDIR: temporaryDirectoryPath,
         CARGO_ENCODED_RUSTFLAGS: encodedFlags,
       },

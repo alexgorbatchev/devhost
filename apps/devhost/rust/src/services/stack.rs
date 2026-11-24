@@ -516,7 +516,7 @@ pub fn start_stack(
         let (dev_source, warning) = crate::devtools::dev_source::load_dev_source_checkout(
             &environment,
             &manifest.manifest_directory,
-            None,
+            option_env!("DEVHOST_BUILD_SOURCE_DIRECTORY").map(Path::new),
         )?;
         if let Some(warning) = warning {
             options.output.log_stdout(&manifest.name, &warning);

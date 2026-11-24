@@ -11,6 +11,7 @@ Public Astro + Starlight docs workspace for `devhost`, published to GitHub Pages
 - Check package-local validations: `just docs check`
 - Document experimental Rust commands in `development/building.md` and qualify differences in the owning CLI reference or guide; the published Go CLI remains the default contract.
 - Rust build instructions start with `just setup`; Rust execution and validation recipes refresh generated browser assets before compilation. Document `just rust build` for debug executables and `just rust build-release` for versioned optimized candidates; the Go release and protected-development entrypoints remain active until cutover.
+- Rust `run` and `run-ai` record their checkout for live devtools assets; release candidates clear that source stamp. Document override precedence and missing-checkout fallback in `development/building.md`.
 - Candidate packaging uses `just rust build-release-artifacts`; keep its prerequisites, target subset flag, separate output, checksum/provenance and native-acceptance limitations in `development/building.md` and the contributor release runbook.
 - Build the static site: `just docs build`
 - Preview the production build: `just docs preview`

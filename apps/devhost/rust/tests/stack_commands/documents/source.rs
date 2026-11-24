@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "source/stamped.rs"]
+mod stamped;
+
 fn script(origin: &str) -> String {
     let mut response = control::get(origin, "inject.js");
     assert_eq!(response.status(), 200);
@@ -14,16 +17,19 @@ fn runs(checkout: &Path) -> usize {
         .count()
 }
 
-fn launch(runtime: &Runtime, project: &Path) -> Process {
+fn launch(runtime: &Runtime, project: &Path, checkout: Option<&str>) -> Process {
     let log = File::create(project.join("lifecycle.log")).unwrap();
     let mut command = runtime.command();
     command
         .current_dir(project)
         .args(["start", "--local"])
-        .env("DEVHOST_DEV_SOURCE_DIR", "checkout")
+        .env_remove("DEVHOST_DEV_SOURCE_DIR")
         .stdin(Stdio::null())
         .stdout(log.try_clone().unwrap())
         .stderr(log);
+    if let Some(checkout) = checkout {
+        command.env("DEVHOST_DEV_SOURCE_DIR", checkout);
+    }
     // SAFETY: setsid is async-signal-safe and establishes fixture ownership.
     unsafe {
         command.pre_exec(|| {
@@ -56,7 +62,7 @@ fn source_checkout_rebuilds_serially_retries_failures_and_limits_preview_mutatio
         "name='source-contract'\n[services.worker]\ncommand=['sleep','300']\nhealth.process=true\n",
     )
     .unwrap();
-    let mut process = launch(&runtime, &project);
+    let mut process = launch(&runtime, &project, Some("checkout"));
     wait_until(|| {
         assert!(
             process.0.try_wait().unwrap().is_none(),

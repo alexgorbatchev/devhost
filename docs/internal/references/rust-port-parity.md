@@ -222,7 +222,27 @@ requests serialize one build, and failed or missing build output retries on the
 next request. The same fixture checks invalid checkout rejection, development
 preview access, read-only preview actions, and continued live-stack readiness.
 The embedded-asset fixture verifies that production mode returns 404 for previews.
-Stamped-checkout fallback and hostile preview payloads require separate evidence.
+Hostile preview payloads require separate evidence.
+
+The ignored `documents::source::stamped::` fixture checks recorded checkout
+selection, relative explicit override precedence, invalid explicit override
+rejection, and unavailable recorded checkout fallback through the actual CLI.
+Choose an absolute, absent fixture directory whose parent exists. Build the Rust
+executable with `DEVHOST_BUILD_SOURCE_DIRECTORY` set to that path using `just rust
+build`; build each Go executable with its documented `compile` recipe and the
+`build-source-directory` Just variable set to the same path. Preserve each binary
+before building another. Run the fixture separately against each executable:
+
+```sh
+DEVHOST_STAMP_TEST_CHECKOUT=/absolute/absent-fixture-checkout \
+DEVHOST_STACK_TEST_BINARY=/absolute/stamped-executable \
+just rust test --test stack_commands documents::source::stamped:: -- --ignored
+```
+
+The fixture refuses an existing checkout directory and removes only the one it
+creates. Run these comparisons serially because they share the recorded path.
+Ordinary source and distribution comparisons leave this case ignored: standalone
+release candidates deliberately omit development checkout metadata.
 
 `just rust test --test devtools_assets_injection` checks native document
 injection and recovery-page proxying. The recovery callback owns its own Tokio
