@@ -45,6 +45,8 @@ The response keeps the original status code and is never cached. The page waits 
 
 A single-service restart keeps the service's automatic port, so other services that refer to it stay correct. It succeeds only when the new process is healthy and its routes are updated; otherwise devhost restores the previous route and the restart can be retried.
 
+A restart request that names several services validates the whole selection before stopping any service, then restarts each selected service once in dependency order. Repeated names count as one selection.
+
 ### Restart Stack
 
 **Restart Stack** stops every managed service in reverse dependency order, assigns new automatic ports, rebuilds commands and environments that refer to them, and starts everything again in dependency order. It keeps:

@@ -181,6 +181,7 @@ func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error
 	}
 	serviceNames = append([]string{}, serviceNames...)
 	sort.Slice(serviceNames, func(i, j int) bool { return order[serviceNames[i]] < order[serviceNames[j]] })
+	serviceNames = slices.Compact(serviceNames)
 	for _, name := range serviceNames {
 		for _, repo := range r.worktrees.snapshot() {
 			if repo.Error == "" {
