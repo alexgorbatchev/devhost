@@ -402,6 +402,13 @@
       "qualification": "Four IPv4/IPv6 bind hosts and both proxyLocalOrigin settings; app and document Host/Origin/forwarded headers, foreign-origin rejection, external ownership and backend-loss recovery."
     },
     {
+      "id": "proxy-routes",
+      "path": "apps/devhost/rust/tests/stack_commands/proxy/routes.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands proxy::routes:: with each comparison executable",
+      "qualification": "Native HTTP/HTTPS exact and wildcard path precedence, root fallback, aliases, host isolation, preserved upstream paths, rejected nested overlaps, private control guard, directory methods and unknown-SNI TLS rejection."
+    },
+    {
       "id": "port-retries",
       "path": "apps/devhost/rust/tests/stack_commands/ports.rs",
       "kind": "native-shared",
@@ -1216,8 +1223,8 @@
       "effect": "Specific route ordering, upstream paths and forwarded headers agree.",
       "failure": "Conflicting hosts/paths cannot route to another stack silently.",
       "cleanup": "Withdraw only fixture routes before joining backends.",
-      "evidence": ["documents", "serve", "relay"],
-      "remaining": "Add direct overlapping path/hostname precedence comparison.",
+      "evidence": ["documents", "serve", "relay", "proxy-routes"],
+      "remaining": "Linux external CLI acceptance compares native HTTP/HTTPS root fallback, exact and wildcard path boundaries, preserved upstream paths/query, host aliases and isolation, private control precedence and rejected nested nonroot overlaps. Final native source/archive acceptance remains.",
       "status": "open"
     },
     {
@@ -1264,8 +1271,8 @@
       "effect": "Other stack routes survive replacement; directory/404 responses follow configuration.",
       "failure": "Unknown hostname has no service route and cannot gain an unauthorized certificate.",
       "cleanup": "Stop all fixture owners and isolated Caddy.",
-      "evidence": ["stack", "files", "caddy-regression"],
-      "remaining": "Add directory and unknown-SNI policy comparison against both binaries.",
+      "evidence": ["stack", "files", "caddy-regression", "proxy-routes"],
+      "remaining": "Linux external CLI acceptance compares the native root directory with no-store, path/method rejection and unknown-SNI TLS handshake failure using only the private CA. Existing stack fixtures cover simultaneous owners. Final native source/archive acceptance remains.",
       "status": "open"
     },
     {

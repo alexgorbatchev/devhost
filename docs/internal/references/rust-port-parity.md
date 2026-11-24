@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:05
+last_modified: 2026-11-24 11:18
 status: current
 ---
 
@@ -249,6 +249,14 @@ fields, close existing sockets normally when sampling is disabled, reject new
 attachments, and allow memory-only re-enablement. These cases use the supported
 250 ms minimum interval; frame counts do not establish sampling cadence because
 unchanged readings are deduplicated.
+
+The `proxy::routes::` fixture compares native HTTP and HTTPS routing over host
+aliases, exact paths, wildcard boundaries, root fallback, and an isolated second
+host. Upstream paths and queries remain intact. Nested nonroot overlaps fail
+manifest validation; routed stack-info stays private to the loopback listener.
+The real root directory rejects non-root paths and writes. An unknown hostname
+fails the TLS handshake with the fixture CA selected, rather than merely failing
+certificate validation or returning an HTTP error. No OS trust is installed.
 
 The pending-control fixture holds a real backend HTTP health response during a
 restart. It repeatedly reads stack-info, browser configuration, the self snapshot,

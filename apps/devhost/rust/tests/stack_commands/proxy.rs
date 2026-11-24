@@ -2,6 +2,9 @@ use super::documents::Backend;
 use super::lifecycle::{launch, ready, stop};
 use super::*;
 
+#[path = "proxy/routes.rs"]
+mod routes;
+
 #[test]
 fn bind_hosts_and_local_origin_translation_preserve_external_backend_ownership() {
     let runtime = Runtime::start();
