@@ -7,13 +7,14 @@ use std::{
     process::ExitCode,
 };
 
-use clap::builder::{PossibleValuesParser, TypedValueParser};
 use clap::{Arg, ArgAction, Command, error::ErrorKind, value_parser};
 use cli_command_kit::{
     HelpOptions, Mode, QuickstartItem, SkillSource, TechInfo, setup, write_skill,
 };
 use devhost_rust::{
-    Failure, caddy, cliout, config, machine, manifest, paths,
+    Failure, caddy,
+    cli::boolean_arg,
+    cliout, config, machine, manifest, paths,
     services::{
         detach::{
             DETACHED_LOG_ENV, DetachedStartOptions, STACK_LOG_ENV, start_detached_stack,
@@ -81,7 +82,8 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
             .subcommand(completion::command())
             .subcommand(
                 Command::new("restart-all")
-                    .about("Restart every running stack with the current executable"),
+                    .about("Restart every running stack with the current executable")
+                    .long_about("Restart every registered stack and serve session with the current executable.\nInstances whose launch directory was removed are stopped. A file serve session\nwhose served directory cannot be opened is left running and reported as a failure.\nOther instances are restarted."),
             ),
         mode,
         &options,
@@ -310,22 +312,6 @@ fn stop_command() -> Command {
             boolean_arg("worktrees")
                 .short('w')
                 .help("Stop stacks in every worktree of this Git repository."),
-        )
-}
-
-fn boolean_arg(name: &'static str) -> Arg {
-    Arg::new(name)
-        .long(name)
-        .action(ArgAction::Set)
-        .num_args(0..=1)
-        .require_equals(true)
-        .default_missing_value("true")
-        .default_value("false")
-        .value_parser(
-            PossibleValuesParser::new([
-                "true", "false", "1", "0", "t", "f", "T", "F", "TRUE", "FALSE", "True", "False",
-            ])
-            .map(|value| matches!(value.as_str(), "true" | "1" | "t" | "T" | "TRUE" | "True")),
         )
 }
 

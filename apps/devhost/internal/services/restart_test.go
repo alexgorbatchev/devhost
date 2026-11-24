@@ -19,6 +19,7 @@ import (
 )
 
 const restartHelperVariable = "DEVHOST_TEST_RESTART_HELPER"
+const restartHelperExitMarker = "exit-before-register"
 
 type restartTrace struct {
 	Args      []string
@@ -37,6 +38,9 @@ func runRestartHelper() int {
 	directory, err := os.Getwd()
 	if err != nil {
 		return 4
+	}
+	if _, err := os.Stat(filepath.Join(directory, restartHelperExitMarker)); err == nil {
+		return 9
 	}
 	trace, err := json.Marshal(restartTrace{Args: os.Args[1:], Directory: directory, Value: os.Getenv("DEVHOST_TEST_RESTART_VALUE")})
 	if err != nil {
@@ -57,12 +61,15 @@ func runRestartHelper() int {
 	return 0
 }
 
-func startRestartFixture(t *testing.T, state, manifestPath string) caddy.LiveStack {
+func startRestartFixture(t *testing.T, state, manifestPath string, serveArgs ...string) caddy.LiveStack {
 	t.Helper()
 	directory := t.TempDir()
 	args := []string{"start", "--manifest", "./devhost.toml", "web"}
 	if manifestPath == "" {
 		args = []string{"serve", "--dir", ".", "--domain", "docs.localhost"}
+		if len(serveArgs) > 0 {
+			args = append([]string{"serve"}, serveArgs...)
+		}
 	}
 	command := exec.Command(os.Args[0], args...)
 	command.Dir = directory
@@ -93,6 +100,58 @@ func startRestartFixture(t *testing.T, state, manifestPath string) caddy.LiveSta
 	}
 	t.Fatal("fixture did not register")
 	return caddy.LiveStack{}
+}
+
+func TestRestartAllKeepsFileSessionWithUnavailableServedDirectory(t *testing.T) {
+	state := t.TempDir()
+	paths := caddy.CreateManagedCaddyPaths(state)
+	servedDirectory := filepath.Join(t.TempDir(), "storybook-static")
+	if err := os.Mkdir(servedDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	original := startRestartFixture(t, state, "", "--dir="+servedDirectory, "-d", "docs.localhost")
+	healthy := startRestartFixture(t, state, "")
+	stopRestartFixturesOnCleanup(t, paths, original.PID, healthy.PID)
+	if err := os.Remove(servedDirectory); err != nil {
+		t.Fatal(err)
+	}
+
+	var output strings.Builder
+	err := RestartStacks(RestartStacksOptions{All: true}, map[string]string{"DEVHOST_STATE_DIR": state}, &output)
+	if !original.Alive() {
+		t.Fatal("restart stopped the session with an unavailable served directory")
+	}
+	if err == nil || !strings.Contains(err.Error(), "left running") || !strings.Contains(err.Error(), servedDirectory) {
+		t.Fatalf("error = %v, want the unavailable directory and that the session was left running", err)
+	}
+	stacks, err := caddy.ReadLiveStacks(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stacks) != 2 || healthy.Alive() {
+		t.Fatalf("healthy session was not replaced: %v", stacks)
+	}
+}
+
+func TestRestartReportsReplacementExitStatus(t *testing.T) {
+	state := t.TempDir()
+	manifest := filepath.Join(t.TempDir(), "devhost.toml")
+	original := startRestartFixture(t, state, manifest)
+	data, err := os.ReadFile(filepath.Join(state, strconv.Itoa(original.PID)+".trace"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var trace restartTrace
+	if err := json.Unmarshal(data, &trace); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(trace.Directory, restartHelperExitMarker), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err = RestartStacks(RestartStacksOptions{ManifestPath: manifest}, map[string]string{"DEVHOST_STATE_DIR": state}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "replacement exited before its control server registered (exit status 9)") {
+		t.Fatalf("error = %v, want replacement exit status 9", err)
+	}
 }
 
 func stopRestartFixturesOnCleanup(t *testing.T, paths caddy.Paths, originalPIDs ...int) {

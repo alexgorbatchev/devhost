@@ -1,7 +1,7 @@
 #![cfg(any(target_os = "linux", target_os = "macos"))]
 
 use std::{
-    fs::{self, OpenOptions},
+    fs::{self, File, OpenOptions},
     net::TcpListener,
     os::unix::{
         fs::{PermissionsExt, symlink},
@@ -28,10 +28,20 @@ use serde_json::{Value, json};
 mod agents;
 #[path = "stack_commands/chat.rs"]
 mod chat;
+#[path = "stack_commands/control.rs"]
+mod control;
+#[path = "stack_commands/documents.rs"]
+mod documents;
+#[path = "stack_commands/files.rs"]
+mod files;
 #[path = "stack_commands/info.rs"]
 mod info;
+#[path = "stack_commands/lifecycle.rs"]
+mod lifecycle;
 #[path = "stack_commands/serve.rs"]
 mod serve;
+#[path = "stack_commands/worktrees.rs"]
+mod worktrees;
 
 fn binary() -> PathBuf {
     std::env::var_os("DEVHOST_STACK_TEST_BINARY")
@@ -586,6 +596,87 @@ fn global_restart_works_outside_a_project_and_preserves_serve_sessions() {
         assert_ne!(replacement.pid, stack.pid);
         assert!(replacement.control_port > 0);
     }
+}
+
+#[test]
+fn global_restart_preserves_an_unavailable_file_root_and_replaces_healthy_sessions() {
+    let runtime = Runtime::start();
+    let (healthy, _healthy) = runtime.start_stack("healthy", false);
+    let files = runtime.root.path().join("file root");
+    fs::create_dir(&files).unwrap();
+    fs::write(files.join("index.html"), "retained file root").unwrap();
+    let log = File::create(runtime.root.path().join("files.log")).unwrap();
+    let mut command = runtime.command();
+    command
+        .current_dir(runtime.root.path())
+        .args(["serve", "--dir"])
+        .arg(&files)
+        .args(["--domain", "retained.localhost"])
+        .stdin(Stdio::null())
+        .stdout(log.try_clone().unwrap())
+        .stderr(log);
+    // SAFETY: the fixture owns this child and its new session.
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setsid() < 0 {
+                Err(std::io::Error::last_os_error())
+            } else {
+                Ok(())
+            }
+        });
+    }
+    let _files = Process(command.spawn().unwrap());
+    let response = || {
+        ureq::get(format!("http://127.0.0.1:{}/", runtime.settings.http_port))
+            .header("Host", "retained.localhost")
+            .call()
+            .ok()?
+            .body_mut()
+            .read_to_string()
+            .ok()
+    };
+    wait_until(|| response().as_deref() == Some("retained file root"));
+    let caddy = runtime.state().join("caddy");
+    let before = read_live_stacks(&caddy).unwrap();
+    let file_session = before
+        .iter()
+        .find(|stack| stack.manifest_path.is_empty())
+        .unwrap();
+    fs::rename(&files, runtime.root.path().join("moved files")).unwrap();
+    assert_eq!(response().as_deref(), Some("retained file root"));
+    let output = runtime
+        .command()
+        .current_dir(runtime.root.path())
+        .arg("restart-all")
+        .output()
+        .unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(
+        file_session.is_alive(),
+        "restart stopped the pinned file root: {output:?}"
+    );
+    let error = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        error.contains("left running") && error.contains(files.to_str().unwrap()),
+        "{error}"
+    );
+    wait_until(|| {
+        fs::read_to_string(healthy.join("launches"))
+            .unwrap()
+            .lines()
+            .count()
+            == 2
+    });
+    assert_eq!(response().as_deref(), Some("retained file root"));
+    let after = read_live_stacks(&caddy).unwrap();
+    assert_eq!(after.len(), 2);
+    assert!(
+        before
+            .iter()
+            .filter(|stack| !stack.manifest_path.is_empty())
+            .all(|stack| !stack.is_alive())
+    );
+    assert!(after.iter().any(|stack| stack.pid == file_session.pid));
 }
 
 #[test]

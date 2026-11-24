@@ -1,4 +1,5 @@
 pub mod caddy;
+pub mod cli;
 pub mod cliout;
 pub mod config;
 pub mod devtools;

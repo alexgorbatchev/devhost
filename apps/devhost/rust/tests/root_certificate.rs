@@ -1,9 +1,19 @@
-use std::{fs, path::Path, process::Command};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 const CERTIFICATE_PATH: &str = "caddy/storage/pki/authorities/local/root.crt";
 
+fn binary() -> PathBuf {
+    std::env::var_os("DEVHOST_CLI_TEST_BINARY")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_BIN_EXE_devhost")))
+}
+
 fn command(root: &Path) -> Command {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_devhost"));
+    let mut command = Command::new(binary());
     command
         .current_dir(root)
         .args(["caddy", "print-root-cert"])
@@ -77,7 +87,7 @@ fn reports_missing_state_and_certificates_without_creating_directories() {
 #[test]
 fn caddy_group_prints_help_without_starting_a_server() {
     let fixture = tempfile::tempdir().unwrap();
-    let output = Command::new(env!("CARGO_BIN_EXE_devhost"))
+    let output = Command::new(binary())
         .arg("caddy")
         .current_dir(fixture.path())
         .output()

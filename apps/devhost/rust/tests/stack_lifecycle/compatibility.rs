@@ -1,5 +1,11 @@
 use super::*;
 
+fn binary() -> PathBuf {
+    std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_BIN_EXE_devhost")))
+}
+
 #[test]
 fn start_inherits_opaque_environment_values_and_accepts_negative_idle_timeout() {
     let fixture = tempfile::tempdir().unwrap();
@@ -8,7 +14,7 @@ fn start_inherits_opaque_environment_values_and_accepts_negative_idle_timeout() 
     let config = write_config(root, &caddy.settings);
     fs::write(root.join("devhost.toml"), "name='opaque'\n[devtools]\nidleTimeout='-1s'\n[services.worker]\ncommand=['sh','-c','printf %s \"$OPAQUE\" > opaque; printf %s \"$cwd\" > literal; exec sleep 30']\nhealth.process=true\n[services.worker.env]\ncwd='literal-value'\n").unwrap();
     let mut process = ServeProcess(Some(
-        Command::new(env!("CARGO_BIN_EXE_devhost"))
+        Command::new(binary())
             .arg("start")
             .current_dir(root)
             .env("AGENT", "1")
@@ -130,7 +136,7 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
     for path in ["/ok", "/unavailable"] {
         fs::write(root.join("devhost.toml"), format!("name='h2-health'\n[services.worker]\ncommand=['sleep','30']\nport='auto'\nhost='h2-health'\n[services.worker.health]\nhttp='https://127.0.0.1:{port}{path}'\ninterval=50\ntimeout=1000\nretries=1\n")).unwrap();
         let mut process = ServeProcess(Some(
-            Command::new(env!("CARGO_BIN_EXE_devhost"))
+            Command::new(binary())
                 .arg("start")
                 .current_dir(root)
                 .env("AGENT", "1")
@@ -185,13 +191,32 @@ fn https_health_negotiates_http2_and_rejects_non_success_status() {
             )
             .unwrap()
             .contains("startup health check failed")));
-            assert!(
-                !caddy::stacks::read_live_stacks(&caddy.caddy_dir)
+            assert!(wait_until(Duration::from_secs(8), || {
+                caddy::stacks::read_live_stacks(&caddy.caddy_dir)
                     .unwrap()
                     .iter()
-                    .any(|owner| owner.ready)
+                    .any(|owner| {
+                        ureq::get(format!(
+                            "http://127.0.0.1:{}/__devhost__/stack-info",
+                            owner.control_port
+                        ))
+                        .call()
+                        .ok()
+                        .and_then(|mut response| response.body_mut().read_to_string().ok())
+                        .and_then(|body| serde_json::from_str::<serde_json::Value>(&body).ok())
+                        .is_some_and(|snapshot| {
+                            snapshot["starting"] == false
+                                && snapshot["services"][0]["state"] != "ready"
+                        })
+                    })
+            }));
+            assert_eq!(
+                process.stop(libc::SIGINT).code(),
+                Some(130),
+                "stdout: {}\nstderr: {}",
+                fs::read_to_string(root.join("stdout")).unwrap(),
+                fs::read_to_string(root.join("stderr")).unwrap()
             );
-            assert_eq!(process.stop(libc::SIGINT).code(), Some(130));
         }
         assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
     }

@@ -44,6 +44,7 @@ struct StackLaunch {
 enum RestartAction {
     Replace(StackLaunch),
     Retire(LiveStack),
+    Preserve(LiveStack, String),
 }
 
 /// Replace selected supervisors with the current executable. `None` selects
@@ -111,6 +112,10 @@ pub fn restart_stacks(
             launches.push(RestartAction::Retire(stack));
             continue;
         };
+        if let Err(error) = validate_serve_launch(&args, &cwd) {
+            launches.push(RestartAction::Preserve(stack, error));
+            continue;
+        }
         let log_path = directory.path().join(format!("{}.log", stack.pid));
         let log = OpenOptions::new()
             .create_new(true)
@@ -133,6 +138,13 @@ pub fn restart_stacks(
     for action in launches {
         let launch = match action {
             RestartAction::Replace(launch) => launch,
+            RestartAction::Preserve(stack, error) => {
+                errors.push(format!(
+                    "restart {} (PID {}), left running: {error}",
+                    stack.name, stack.pid
+                ));
+                continue;
+            }
             RestartAction::Retire(stack) => {
                 match stop_stack(&stack, &caddy_dir) {
                     Ok(()) => output
@@ -180,6 +192,27 @@ pub fn restart_stacks(
 }
 
 type CapturedLaunch = (Vec<OsString>, PathBuf, Vec<(OsString, OsString)>);
+
+fn validate_serve_launch(args: &[OsString], cwd: &Path) -> Result<(), String> {
+    if args.first().is_none_or(|arg| arg != "serve") {
+        return Ok(());
+    }
+    let parsed = crate::cli::serve_command()
+        .try_get_matches_from(args)
+        .map_err(|error| error.to_string())?;
+    if parsed.get_one::<i32>("port").is_some() || parsed.get_many::<String>("command").is_some() {
+        return Ok(());
+    }
+    let root = cwd.join(
+        parsed
+            .get_one::<PathBuf>("dir")
+            .map(PathBuf::as_path)
+            .unwrap_or(Path::new(".")),
+    );
+    crate::files::FileHandler::open(&root)
+        .map(drop)
+        .map_err(|error| format!("{}: {error}", cliout::display_path(&root.to_string_lossy())))
+}
 
 fn launch_directory_exists(
     directory: &Path,
@@ -498,6 +531,36 @@ mod tests {
     use cli_command_kit::Mode;
     use serde_json::json;
     use std::{io, process::Child};
+
+    #[test]
+    fn restart_preflight_uses_serve_arguments_and_opens_only_file_roots() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path();
+        fs::create_dir(root.join("public")).unwrap();
+        for args in [
+            vec!["start"],
+            vec!["serve", "-d", "files.localhost"],
+            vec!["serve", "--dir=public", "-d", "files.localhost"],
+            vec!["serve", "-p", "1234", "-d", "port.localhost"],
+            vec!["serve", "--name", "worker", "--", "echo", "--dir=missing"],
+        ] {
+            let args: Vec<_> = args.into_iter().map(OsString::from).collect();
+            validate_serve_launch(&args, root).unwrap();
+        }
+        for directory in [root.join("missing"), root.join("public/absent")] {
+            let error = validate_serve_launch(
+                &[
+                    "serve".into(),
+                    "--dir".into(),
+                    directory.clone().into_os_string(),
+                ],
+                root,
+            )
+            .unwrap_err();
+            assert!(error.contains(directory.to_str().unwrap()), "{error}");
+        }
+        assert!(validate_serve_launch(&["serve".into(), "--unknown".into()], root).is_err());
+    }
 
     struct Process(Child);
     impl Drop for Process {

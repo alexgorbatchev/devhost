@@ -15,7 +15,9 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/caddy"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cli"
 	"github.com/alexgorbatchev/devhost/apps/devhost/internal/cliout"
+	"github.com/alexgorbatchev/devhost/apps/devhost/internal/files"
 )
 
 const restartPollInterval = 100 * time.Millisecond
@@ -33,6 +35,7 @@ type stackLaunch struct {
 	environment      []string
 	log              *os.File
 	directoryMissing bool
+	preflightErr     error
 }
 
 // RestartStacks replaces running supervisors with this executable. Launch
@@ -92,6 +95,10 @@ func RestartStacks(options RestartStacksOptions, environment map[string]string, 
 			}
 			continue
 		}
+		if launch.preflightErr != nil {
+			failures = append(failures, fmt.Errorf("restart %s (PID %d), left running: %w", launch.stack.Name, launch.stack.PID, launch.preflightErr))
+			continue
+		}
 		cliout.Log(stdout, "devhost", fmt.Sprintf("Restarting %s (PID %d); log: %s", launch.stack.Name, launch.stack.PID, launch.log.Name()))
 		if err := replaceStack(launch, paths, executable, stdout); err != nil {
 			failures = append(failures, fmt.Errorf("restart %s (PID %d), log %s: %w", launch.stack.Name, launch.stack.PID, launch.log.Name(), err))
@@ -117,7 +124,7 @@ func captureStackLaunches(stacks []caddy.LiveStack, paths caddy.Paths, stopMissi
 		if captureErr != nil {
 			return launches, fmt.Errorf("capture %s (PID %d); no stacks were stopped: %w", stack.Name, stack.PID, captureErr)
 		}
-		if !launch.directoryMissing {
+		if !launch.directoryMissing && launch.preflightErr == nil {
 			if directory == "" {
 				directory, err = os.MkdirTemp(paths.StateDirectoryPath, "restart-")
 				if err != nil {
@@ -191,7 +198,30 @@ func captureStackLaunch(stack caddy.LiveStack, stopMissingDirectory bool) (stack
 	if stack.ManifestPath == "" {
 		launchArgs = preserveServeSession(launchArgs, stack.Name)
 	}
-	return stackLaunch{stack: stack, args: launchArgs, directory: directory, environment: environment}, nil
+	launch := stackLaunch{stack: stack, args: launchArgs, directory: directory, environment: environment}
+	if launchArgs[0] == "serve" {
+		launch.preflightErr = validateServeLaunch(launch)
+	}
+	return launch, nil
+}
+
+func validateServeLaunch(launch stackLaunch) error {
+	parsed, err := cli.ParseCommandLineArguments(launch.args, io.Discard, io.Discard)
+	if err != nil {
+		return err
+	}
+	if parsed.Kind != cli.KindServe || parsed.Port != 0 || len(parsed.Command) > 0 {
+		return nil
+	}
+	directory := parsed.Directory
+	if !filepath.IsAbs(directory) {
+		directory = filepath.Join(launch.directory, directory)
+	}
+	handler, err := files.Open(directory)
+	if err != nil {
+		return err
+	}
+	return handler.Close()
 }
 
 func preserveServeSession(args []string, name string) []string {
@@ -273,8 +303,11 @@ func replaceStack(launch stackLaunch, paths caddy.Paths, executable string, stdo
 			}
 		}
 		if !processExists(child.Pid) {
-			_, waitErr := child.Wait()
-			return fmt.Errorf("replacement exited before its control server registered: %v", waitErr)
+			status, waitErr := child.Wait()
+			if waitErr != nil {
+				return fmt.Errorf("wait for replacement before its control server registered: %w", waitErr)
+			}
+			return fmt.Errorf("replacement exited before its control server registered (%s)", status)
 		}
 		if time.Now().After(deadline) {
 			return fmt.Errorf("replacement PID %d has not registered after %s; it remains running, inspect its log", child.Pid, restartRegistrationTimeout)

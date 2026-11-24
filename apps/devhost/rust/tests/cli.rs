@@ -1,10 +1,20 @@
 use std::process::{Command, Output};
 
+#[cfg(unix)]
+#[path = "cli/readline.rs"]
+mod readline;
+
+fn binary() -> std::path::PathBuf {
+    std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into())
+}
+
 const ALERT: &str = "ALERT: Agents must read `AGENT=1 devhost skill` before using this tool.";
 const SKILL: &str = "Install the devhost skill using the Skills CLI:\n\n  npx skills add alexgorbatchev/devhost --skill devhost\n\nSkill:\n\n  https://github.com/alexgorbatchev/devhost/tree/main/skills/devhost\n";
 
 fn invoke(args: &[&str], agent: &str, columns: &str) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_devhost"))
+    Command::new(binary())
         .args(args)
         .env("AGENT", agent)
         .env("COLUMNS", columns)
@@ -21,7 +31,8 @@ fn stdout(output: Output) -> String {
 
 #[test]
 fn version_is_bare_in_either_mode() {
-    let version = option_env!("DEVHOST_BUILD_VERSION").unwrap_or("dev");
+    let version = std::env::var("DEVHOST_CLI_TEST_VERSION")
+        .unwrap_or_else(|_| option_env!("DEVHOST_BUILD_VERSION").unwrap_or("dev").into());
     for flag in ["--version", "-v"] {
         for agent in ["0", "1"] {
             assert_eq!(stdout(invoke(&[flag], agent, "80")), format!("{version}\n"));
@@ -87,16 +98,12 @@ fn serve_rejects_invalid_domains_ports_and_conflicting_inputs() {
 }
 
 #[test]
-fn completion_scripts_and_installation_help_cover_all_shells() {
-    for (shell, registration, installation) in [
-        ("bash", "complete -", "bash-completion/completions/devhost"),
-        ("zsh", "compdef _devhost devhost", "${fpath[1]}/_devhost"),
-        (
-            "fish",
-            "complete -c devhost",
-            "fish/completions/devhost.fish",
-        ),
-        ("powershell", "Register-ArgumentCompleter", "$PROFILE"),
+fn completion_scripts_register_all_shells_without_private_commands() {
+    for (shell, registration) in [
+        ("bash", "complete -"),
+        ("zsh", "compdef _devhost devhost"),
+        ("fish", "complete -c devhost"),
+        ("powershell", "Register-ArgumentCompleter"),
     ] {
         let script = stdout(invoke(&["completion", shell], "1", "100"));
         assert!(
@@ -108,9 +115,6 @@ fn completion_scripts_and_installation_help_cover_all_shells() {
             !script.contains("_remote-worker"),
             "{shell}: private worker leaked"
         );
-        let help = stdout(invoke(&["completion", shell, "--help"], "0", "100"));
-        assert!(help.contains(installation), "{shell}: {help}");
-        assert!(help.contains("--no-descriptions"), "{shell}: {help}");
         let no_descriptions = stdout(invoke(
             &["completion", shell, "--no-descriptions"],
             "1",
@@ -124,6 +128,20 @@ fn completion_scripts_and_installation_help_cover_all_shells() {
     let group = stdout(invoke(&["completion"], "0", "100"));
     for shell in ["bash", "zsh", "fish", "powershell"] {
         assert!(group.contains(shell), "{group}");
+    }
+}
+
+#[test]
+fn completion_installation_help_covers_all_shells() {
+    for (shell, installation) in [
+        ("bash", "bash-completion/completions/devhost"),
+        ("zsh", "${fpath[1]}/_devhost"),
+        ("fish", "fish/completions/devhost.fish"),
+        ("powershell", "$PROFILE"),
+    ] {
+        let help = stdout(invoke(&["completion", shell, "--help"], "0", "100"));
+        assert!(help.contains(installation), "{shell}: {help}");
+        assert!(help.contains("--no-descriptions"), "{shell}: {help}");
     }
 }
 
@@ -152,44 +170,19 @@ fn invalid_arguments_report_to_stderr_and_point_to_usage() {
 }
 
 #[test]
+#[cfg(unix)]
 fn bash_completion_resolves_commands_and_flags_in_a_real_shell() {
     let temp = tempfile::tempdir().unwrap();
     let script = temp.path().join("completion.bash");
     std::fs::write(&script, stdout(invoke(&["completion", "bash"], "1", "100"))).unwrap();
-    for (line, words, index, expected) in [
-        ("devhost ca", "devhost ca", "1", vec!["caddy"]),
-        (
-            "devhost caddy ",
-            "devhost caddy ''",
-            "2",
-            vec!["download", "trust-remote"],
-        ),
-        (
-            "devhost start --",
-            "devhost start --",
-            "2",
-            vec!["--manifest", "--idle-timeout", "--remote"],
-        ),
-    ] {
-        let output = Command::new("bash")
-            .args(["--noprofile", "--norc", "-c"])
-            .arg(format!(
-                "source \"$1\"\nCOMP_WORDS=({words})\nCOMP_CWORD={index}\nCOMP_LINE=$2\nCOMP_POINT=${{#COMP_LINE}}\nread -ra registration <<< \"$(complete -p devhost)\"\n\"${{registration[${{#registration[@]}}-2]}}\" devhost \"${{COMP_WORDS[COMP_CWORD]}}\" \"${{COMP_WORDS[COMP_CWORD-1]}}\"\nprintf '%s\\n' \"${{COMPREPLY[@]}}\""
-            ))
-            .arg("completion-test")
-            .arg(&script)
-            .arg(line)
-            .env_remove("BASH_ENV")
-            .output()
-            .unwrap();
-        let candidates = stdout(output);
-        for candidate in expected {
-            assert!(
-                candidates.lines().any(|line| line == candidate),
-                "{line:?}: {candidates}"
-            );
-        }
-    }
+    let selected = binary().canonicalize().unwrap();
+    let path = std::env::join_paths(
+        std::iter::once(selected.parent().unwrap().to_path_buf()).chain(std::env::split_paths(
+            &std::env::var_os("PATH").unwrap_or_default(),
+        )),
+    )
+    .unwrap();
+    readline::assert_completion(temp.path(), &script, &path);
 }
 
 #[test]
@@ -209,7 +202,7 @@ fn boolean_values_and_manifest_precedence_match_cli_contract() {
         ("0", "api\nworker\n"),
         ("False", "api\nworker\n"),
     ] {
-        let output = Command::new(env!("CARGO_BIN_EXE_devhost"))
+        let output = Command::new(binary())
             .args(["service", "list", "-m"])
             .arg(&manifest)
             .arg(format!("--startable={value}"))
@@ -223,7 +216,7 @@ fn boolean_values_and_manifest_precedence_match_cli_contract() {
         (vec!["--startable", "--startable=false"], "api\nworker\n"),
         (vec!["--startable=false", "-s"], "api\n"),
     ] {
-        let output = Command::new(env!("CARGO_BIN_EXE_devhost"))
+        let output = Command::new(binary())
             .args(["service", "list"])
             .args(args)
             .env("AGENT", "1")

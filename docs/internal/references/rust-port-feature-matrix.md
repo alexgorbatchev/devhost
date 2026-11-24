@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-23 16:33
-last_modified: 2026-11-23 16:33
+last_modified: 2026-11-23 22:53
 status: current
 ---
 
@@ -8,7 +8,7 @@ status: current
 
 The Rust port has implementations and executable checks for the feature groups below. This is an inventory of the Go contract and the available evidence, not a declaration that every platform or user journey has passed.
 
-The reference is Go `49745a033f849a6113067567c7915b0132bff4ba`, the commit behind `v0.0.19`. The [machine-readable inventory](../../../apps/devhost/rust/parity/inventory.json) assigns all 231 production Go source files and public contract documents to 24 feature groups. It records Git blob hashes, individual behavior obligations, Rust implementation paths and test sources. Go test fixtures and test-only support packages are excluded from the production inventory; their behaviors inform the checks. Shared frontend source remains in the same repository and bundle.
+The reference is Go `fa2ffb9402319a81721d53717614cf8bea61fad6`, the commit behind `v0.0.20`. The [machine-readable inventory](../../../apps/devhost/rust/parity/inventory.json) assigns all 231 production Go source files and public contract documents to 24 feature groups. It records Git blob hashes, individual behavior obligations, Rust implementation paths and test sources. Go test fixtures and test-only support packages are excluded from the production inventory; their behaviors inform the checks. Shared frontend source remains in the same repository and bundle.
 
 ## Detect omitted or changed contracts
 
@@ -21,7 +21,7 @@ bun apps/devhost/scripts/verifyRustParity.ts
 
 The check rejects an advanced Go reference, new/unassigned production sources or public documents, changed reference hashes, unexplained working-tree differences, duplicate assignments and missing implementation/test paths. An explicit reference may be passed as the final argument. Intentional port-branch changes to shared Go code or documentation have separate hashes and explanations; they do not modify the oracle.
 
-When Go changes, inspect the range, identify every affected behavior in the inventory, repair the Rust implementation and rerun the affected comparisons before recording new hashes. Do not regenerate hashes merely to silence the check. The catch-up range contains release-only commits, command-backed serving and named-session controls, the project/global restart scope split, and global retirement of instances whose launch directory was removed. The behavior changes have shared executable scenarios.
+When Go changes, inspect the range, identify every affected behavior in the inventory, repair the Rust implementation and rerun the affected comparisons before recording new hashes. Do not regenerate hashes merely to silence the check. The catch-up range contains release-only commits, command-backed serving and named-session controls, the project/global restart scope split, and global retirement of instances whose launch directory was removed. The behavior changes have shared executable scenarios. The v0.0.19-to-v0.0.20 range adds preflight validation of file-serving roots during global restart; the shared renamed-root scenario passes both executables. The port branch also repairs two Go defects reproduced in comparisons: closing-tag injection uses original document-byte offsets, and duplicate names in a service restart batch restart each service once. These repairs are recorded separately from the unchanged Go oracle.
 
 ## Evidence levels
 
@@ -32,7 +32,7 @@ When Go changes, inspect the range, identify every affected behavior in the inve
 
 ## Repeatable verification
 
-Build the Go oracle at the pinned commit in an isolated checkout with `just cli --version`; its executable is `apps/devhost/bin/source/devhost`. Build Rust with `just rust build`. Follow the [Rust Anything record/replay procedure](rust-port-parity.md#record-and-replay-with-rust-anything) for every `apps/devhost/rust/tests/*.jsonl` corpus. Record and replay anew when either reference or corpus changes. Help wording and generated completion script bytes vary by CLI framework; compare command/flag availability, exit status, streams and completion behavior separately.
+Build the Go oracle at the pinned commit in an isolated checkout with `just cli --version`; its executable is `apps/devhost/bin/source/devhost`. Build the optimized Rust candidate with `just rust build-release`. Follow the [Rust Anything record/replay procedure](rust-port-parity.md#record-and-replay-with-rust-anything) for every `apps/devhost/rust/tests/*.jsonl` corpus. Record and replay anew when either reference or corpus changes. Help wording and generated completion script bytes vary by CLI framework; compare command/flag availability, exit status, streams and completion behavior separately.
 
 Run the shared native scenarios against both binaries:
 
@@ -45,20 +45,22 @@ DEVHOST_REMOTE_TEST_BINARY=/absolute/path/to/go/devhost just rust test --test re
 
 Then run `just rust check` for first-party formatting, Clippy and 90% line/function coverage, and `just check` for the shared Go, UI, docs and workflow checks. Coverage measures exercised implementation, not feature completeness. Preserve the actual command output, exit code, duration, platform, both full revisions and binary/input hashes with each comparison. A dirty build needs its patch or source hash alongside the base commit; never label it as the unchanged base revision.
 
+Additional shared executable fixtures live in `tests/stack_commands/{files,control,worktrees,documents,lifecycle}.rs`, `tests/stack_lifecycle/compatibility.rs`, `tests/cli/readline.rs` and `tests/root_certificate.rs`. Linux x86_64 runs against Go v0.0.20 and optimized Rust cover file responses and traversal, configuration editing and control WebSockets, saved Git worktree switching, opaque environment values, HTTP/2 health recovery, detached startup, native Bash completion, certificate lookup and Caddy generation receipts. Reload fixtures cover rejected manifests, newly discovered include globs and route recovery. Selection and document fixtures also pass against repaired Go; the unchanged oracle retains the duplicate-restart and legacy-HTML defects described above. These runs expand the evidence without closing the remaining per-obligation mapping or native, browser, authenticated and external acceptance.
+
 The command-tree comparison walks all 26 visible Go command help entries and compares subcommands and long/short flag names with Rust. Rust Anything inputs cover flags and errors; native scenarios cover runtime effects. Parser type labels, usage layout and prose remain framework-specific.
 
 ## Platform and external acceptance
 
-| Environment                | Evidence                                                                    | Remaining acceptance                                                                                         |
-| -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Linux x86_64               | Native Rust suites, shared Go/Rust stack and relay scenarios, Rust Anything | Full browser journeys and authenticated provider sessions are separate checks.                               |
-| Linux arm64                | Cross-target compilation                                                    | Run the native comparison suites on an arm64 host.                                                           |
-| macOS x86_64               | Cross-target compilation                                                    | Run native process/listener, signal, restart, file, trust and shared comparison suites.                      |
-| macOS arm64                | Cross-target compilation                                                    | Run the same native macOS comparisons on Apple silicon.                                                      |
-| External relay             | Native local Chisel relay scenarios                                         | Verify deployment-specific DNS, browser authentication and external network behavior on an authorized relay. |
-| Authenticated Codex/Claude | Local protocol peers and shared HTTP/WebSocket scenarios                    | Exercise an authenticated installed harness; protocol peers perform no inference.                            |
-| Browser integrations       | Shared frontend suites and native Rust asset/control tests                  | Complete browser user journeys against Rust for every listed integration.                                    |
-| Rust distribution          | Development build and cross-target compilation                              | Release archives, signing/trust and installed-upgrade acceptance before replacing the Go release.            |
+| Environment                | Evidence                                                                    | Remaining acceptance                                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linux x86_64               | Native Rust suites, shared Go/Rust stack and relay scenarios, Rust Anything | Full browser journeys and authenticated provider sessions are separate checks.                                                               |
+| Linux arm64                | Native candidate packaging and HTTPS smoke acceptance                       | Run the native comparison suites on an arm64 host.                                                                                           |
+| macOS x86_64               | Cross-target compilation                                                    | Run native process/listener, signal, restart, file, trust and shared comparison suites.                                                      |
+| macOS arm64                | Native candidate packaging and HTTPS smoke acceptance                       | Run the same native macOS comparisons on Apple silicon.                                                                                      |
+| External relay             | Native local Chisel relay scenarios                                         | Verify deployment-specific DNS, browser authentication and external network behavior on an authorized relay.                                 |
+| Authenticated Codex/Claude | Local protocol peers and shared HTTP/WebSocket scenarios                    | Exercise an authenticated installed harness; protocol peers perform no inference.                                                            |
+| Browser integrations       | Shared frontend suites and native Rust asset/control tests                  | Complete browser user journeys against Rust for every listed integration.                                                                    |
+| Rust distribution          | Development build and cross-target compilation                              | Five native-built candidate archives pass layout, licenses, provenance, HTTPS and cleanup checks; installed-upgrade acceptance remains open. |
 
 Unavailable hosts or accounts leave these rows unverified. Keep their acceptance work open; do not convert an implementation inventory into a complete-port claim.
 

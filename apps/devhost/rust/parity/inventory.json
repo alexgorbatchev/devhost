@@ -1,5 +1,5 @@
 {
-  "goSha": "49745a033f849a6113067567c7915b0132bff4ba",
+  "goSha": "fa2ffb9402319a81721d53717614cf8bea61fad6",
   "features": [
     {
       "id": "cli",
@@ -15,9 +15,14 @@
         "apps/devhost/rust/src/main.rs",
         "apps/devhost/rust/src/serve_cli.rs",
         "apps/devhost/rust/src/cliout.rs",
-        "apps/devhost/rust/src/completion.rs"
+        "apps/devhost/rust/src/completion.rs",
+        "apps/devhost/rust/src/cli.rs"
       ],
-      "checks": ["apps/devhost/rust/tests/cli.rs", "apps/devhost/rust/tests/cli-precedence.jsonl"],
+      "checks": [
+        "apps/devhost/rust/tests/cli.rs",
+        "apps/devhost/rust/tests/cli-precedence.jsonl",
+        "apps/devhost/rust/tests/cli/readline.rs"
+      ],
       "comparison": "Rust Anything and native shell regression; framework-specific help/completion bytes excluded",
       "go": [
         {
@@ -30,7 +35,7 @@
         },
         {
           "path": "apps/devhost/internal/cli/parse.go",
-          "blob": "70b054e8e434d319c74821b9d4ee7426a1c7c5d4"
+          "blob": "69f7d4f7bef01b73887f235e9a068f1164dffac8"
         },
         {
           "path": "apps/devhost/internal/cli/remote.go",
@@ -186,7 +191,8 @@
         "apps/devhost/rust/tests/service_list.rs",
         "apps/devhost/rust/tests/manifest_full.rs",
         "apps/devhost/rust/tests/service-validation.jsonl",
-        "apps/devhost/rust/tests/service-list.jsonl"
+        "apps/devhost/rust/tests/service-list.jsonl",
+        "apps/devhost/rust/tests/stack_commands/lifecycle.rs"
       ],
       "comparison": "Rust Anything and Rust regression",
       "go": [
@@ -222,7 +228,11 @@
         "cancellation of pending health probes"
       ],
       "rust": ["apps/devhost/rust/src/services/health.rs", "apps/devhost/rust/src/services/stack.rs"],
-      "checks": ["apps/devhost/rust/tests/stack_lifecycle.rs", "apps/devhost/rust/tests/detach_lifecycle.rs"],
+      "checks": [
+        "apps/devhost/rust/tests/stack_lifecycle.rs",
+        "apps/devhost/rust/tests/detach_lifecycle.rs",
+        "apps/devhost/rust/tests/stack_lifecycle/compatibility.rs"
+      ],
       "comparison": "Rust regression; source correspondence",
       "go": [
         {
@@ -370,7 +380,8 @@
       ],
       "checks": [
         "apps/devhost/rust/tests/stack_lifecycle/runtime.rs",
-        "apps/devhost/rust/tests/stack_lifecycle/compatibility.rs"
+        "apps/devhost/rust/tests/stack_lifecycle/compatibility.rs",
+        "apps/devhost/rust/tests/stack_commands/lifecycle.rs"
       ],
       "comparison": "Rust regression; source correspondence",
       "go": [
@@ -480,7 +491,7 @@
         },
         {
           "path": "apps/devhost/internal/services/restart.go",
-          "blob": "04b600095a9c105d67f45ce544138f8428665ed4"
+          "blob": "c7ccf7bd13f9a6e9842b7e462d8ec6de056b6a48"
         },
         {
           "path": "apps/devhost/internal/services/stack_directory.go",
@@ -509,7 +520,8 @@
       ],
       "checks": [
         "apps/devhost/rust/tests/stack_lifecycle/worktrees.rs",
-        "apps/devhost/rust/src/services/worktrees/tests.rs"
+        "apps/devhost/rust/src/services/worktrees/tests.rs",
+        "apps/devhost/rust/tests/stack_commands/worktrees.rs"
       ],
       "comparison": "Rust regression; source correspondence",
       "go": [
@@ -557,7 +569,11 @@
         "preserve external services on session stop"
       ],
       "rust": ["apps/devhost/rust/src/services/serve.rs", "apps/devhost/rust/src/serve_cli.rs"],
-      "checks": ["apps/devhost/rust/tests/stack_lifecycle.rs", "apps/devhost/rust/tests/stack_commands.rs"],
+      "checks": [
+        "apps/devhost/rust/tests/stack_lifecycle.rs",
+        "apps/devhost/rust/tests/stack_commands.rs",
+        "apps/devhost/rust/tests/stack_commands/files.rs"
+      ],
       "comparison": "Shared Go/Rust supervisor replacement; Rust file-serving regression",
       "go": [
         {
@@ -872,7 +888,11 @@
         "apps/devhost/rust/src/services/control.rs",
         "apps/devhost/rust/src/services/stack/live.rs"
       ],
-      "checks": ["apps/devhost/rust/src/devtools/control_tests.rs", "apps/devhost/rust/tests/stack_commands/info.rs"],
+      "checks": [
+        "apps/devhost/rust/src/devtools/control_tests.rs",
+        "apps/devhost/rust/tests/stack_commands/info.rs",
+        "apps/devhost/rust/tests/stack_commands/control.rs"
+      ],
       "comparison": "Shared Go/Rust stack-info scenarios; Rust native protocol regression",
       "go": [
         {
@@ -915,7 +935,10 @@
         "refresh live settings and configuration status"
       ],
       "rust": ["apps/devhost/rust/src/devtools/config_files.rs", "apps/devhost/rust/src/devtools/configuration.rs"],
-      "checks": ["apps/devhost/rust/src/devtools/control_tests.rs"],
+      "checks": [
+        "apps/devhost/rust/src/devtools/control_tests.rs",
+        "apps/devhost/rust/tests/stack_commands/control.rs"
+      ],
       "comparison": "Rust regression; source correspondence",
       "go": [
         {
@@ -941,7 +964,10 @@
         "platform disk readers and resource stream updates"
       ],
       "rust": ["apps/devhost/rust/src/devtools/resources.rs", "apps/devhost/rust/src/devtools/resource_disk.rs"],
-      "checks": ["apps/devhost/rust/src/devtools/control_tests.rs"],
+      "checks": [
+        "apps/devhost/rust/src/devtools/control_tests.rs",
+        "apps/devhost/rust/tests/stack_commands/control.rs"
+      ],
       "comparison": "Rust regression; source correspondence",
       "go": [
         {
@@ -976,7 +1002,10 @@
         "development source checkout discovery and rebuild"
       ],
       "rust": ["apps/devhost/rust/src/devtools/assets.rs", "apps/devhost/rust/src/devtools/dev_source.rs"],
-      "checks": ["apps/devhost/rust/tests/devtools_assets_injection.rs"],
+      "checks": [
+        "apps/devhost/rust/tests/devtools_assets_injection.rs",
+        "apps/devhost/rust/tests/stack_commands/documents.rs"
+      ],
       "comparison": "Rust native asset tests; shared UI bundle checks, no full Go/Rust browser journey comparison",
       "go": [
         {
@@ -1022,7 +1051,10 @@
         "apps/devhost/rust/src/devtools/directory.rs",
         "apps/devhost/rust/src/statuspage.rs"
       ],
-      "checks": ["apps/devhost/rust/tests/devtools_assets_injection.rs"],
+      "checks": [
+        "apps/devhost/rust/tests/devtools_assets_injection.rs",
+        "apps/devhost/rust/tests/stack_commands/documents.rs"
+      ],
       "comparison": "Rust regression; source correspondence",
       "go": [
         {
@@ -1078,7 +1110,11 @@
         "apps/devhost/rust/src/files/confined.rs",
         "apps/devhost/rust/src/files/content.rs"
       ],
-      "checks": ["apps/devhost/rust/tests/files_live.rs", "apps/devhost/rust/tests/devtools_assets_injection.rs"],
+      "checks": [
+        "apps/devhost/rust/tests/files_live.rs",
+        "apps/devhost/rust/tests/devtools_assets_injection.rs",
+        "apps/devhost/rust/tests/stack_commands/files.rs"
+      ],
       "comparison": "Rust regression; source correspondence",
       "go": [
         {
@@ -1334,7 +1370,7 @@
         },
         {
           "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
-          "blob": "73a8400f351808e55ad66de8833239a5b5b769e9"
+          "blob": "ae0406053cce72b924beaab4568048ba4a39a451"
         },
         {
           "path": "packages/docs/src/content/docs/guides/troubleshooting.md",
@@ -1410,7 +1446,7 @@
         },
         {
           "path": "skills/devhost/SKILL.md",
-          "blob": "d3e0ee13c2fdbb9949c05db6a9957f5196a82101"
+          "blob": "fa7ccbf30c3fd9d64a150b52c1f76d5893bf5d06"
         },
         {
           "path": "skills/devhost/references/manifest-example.md",
@@ -1449,8 +1485,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/devtools.md",
-      "blob": "eff5d1e2f737209dd30332177c046083baadfecf",
-      "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
+      "reason": "Documents verified byte-preserving HTML injection and explicit experimental Rust compression and document-size differences.",
+      "blob": "b0808a44b9ffd56794a3939360b0ca884192114b"
     },
     {
       "path": "packages/docs/src/content/docs/guides/environment-variables.md",
@@ -1474,7 +1510,7 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
-      "blob": "79d63e2df41f53e7cfed055b0f0401acdd5e55e3",
+      "blob": "74f55cf12bb0d4cb1772676378e485c52f7da99f",
       "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
     },
     {
@@ -1494,8 +1530,23 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "dd51ec59722e2c8cdc772efaa07908b69abea931",
+      "blob": "aa83d7b5b9e422519f62b05e215365c8eb29b5b1",
       "reason": "Shared operator contract documents verified Rust behavior, completion installation and portability differences."
+    },
+    {
+      "path": "apps/devhost/internal/devtools/document_injection.go",
+      "reason": "Verified Go repair preserves original document-byte offsets when searching for a mixed-case closing body tag; legacy-encoded HTML passes shared native wire checks and real-browser acceptance. The unchanged Go20 oracle retains the reproduced defect.",
+      "blob": "3cde64fcf75e17794321272078bd1c5fc84c3361"
+    },
+    {
+      "path": "apps/devhost/internal/services/runtime.go",
+      "reason": "Verified Go repair deduplicates validated restart batches in dependency order. The unchanged Go20 oracle repeats a restart for duplicate names; Rust and repaired Go restart each requested service once.",
+      "blob": "0218d207f96b33bd23bc2bdda780d8035e6dfa5f"
+    },
+    {
+      "path": "packages/docs/src/content/docs/stacks/recovery.md",
+      "reason": "Documents validation-before-mutation and one restart per distinct selected service, verified by native Go/Rust control scenarios.",
+      "blob": "a5d6b8d79b341a809f73fb0d68b797ced7c82db6"
     }
   ]
 }

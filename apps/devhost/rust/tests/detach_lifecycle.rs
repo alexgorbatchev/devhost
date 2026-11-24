@@ -457,7 +457,9 @@ process = true
     )
     .unwrap();
 
-    let bin = env!("CARGO_BIN_EXE_devhost");
+    let selected = std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into());
+    let bin = &selected;
     let out = Command::new(bin)
         .args(["start", "--detach", "--idle-timeout", "5m", "--", "web"])
         .current_dir(&project)
@@ -622,7 +624,9 @@ interval = 50
     )
     .unwrap();
 
-    let bin = env!("CARGO_BIN_EXE_devhost");
+    let selected = std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into());
+    let bin = &selected;
     let fail_out = Command::new(bin)
         .args(["start", "--detach"])
         .current_dir(&project)
@@ -861,7 +865,9 @@ fn detach_late_exit_and_launch_and_external_failures() {
     let state_dir = root.join("state");
     let home_dir = root.join("home");
     fs::create_dir_all(&home_dir).unwrap();
-    let bin = env!("CARGO_BIN_EXE_devhost");
+    let selected = std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into());
+    let bin = &selected;
 
     // 1. Late exit: `early` exits 5 after 150ms while `slow` waits 450ms to bind its port.
     let late_dir = root.join("late-exit");
@@ -1178,7 +1184,9 @@ interval = 50
         .open(root.join("cli.err"))
         .unwrap();
 
-    let bin = env!("CARGO_BIN_EXE_devhost");
+    let selected = std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into());
+    let bin = &selected;
     let mut child = Command::new(bin)
         .args(["start", "--detach"])
         .current_dir(&project)
@@ -1333,7 +1341,9 @@ interval = 50
     symlink(&project, &linked_dir).unwrap();
     let linked_manifest = linked_dir.join("devhost.toml");
 
-    let bin = env!("CARGO_BIN_EXE_devhost");
+    let selected = std::env::var_os("DEVHOST_STACK_TEST_BINARY")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_devhost").into());
+    let bin = &selected;
     let run_cli = |args: &[&str]| {
         Command::new(bin)
             .args(args)
