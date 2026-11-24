@@ -1560,8 +1560,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/start/serve.md",
-      "blob": "d503b1f186945edab0ff8113443f2e3735dd8a6a",
-      "reason": "Documents the system lsof requirement for Go command listener discovery on macOS."
+      "blob": "6e5a91ad5e3e68450343e6c31021e6b2358b3c61",
+      "reason": "Documents native file-server fixed-port reuse after HTTP requests and the macOS lsof requirement for Go command listener discovery."
     }
   ],
   "branchAdditions": [

@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
-    fs,
-    net::TcpListener,
+    fs, io,
+    net::{TcpListener, ToSocketAddrs},
     os::unix::fs::DirBuilderExt,
     path::{Path, PathBuf},
     sync::{
@@ -16,6 +16,7 @@ use axum::{
     http::{HeaderMap, Method, Uri},
     routing::any,
 };
+use socket2::{Domain, Protocol, Socket, Type};
 use tokio::sync::oneshot;
 
 use super::{
@@ -41,10 +42,7 @@ impl FileServer {
     pub fn start(directory: &Path, address: &str) -> Result<Self, String> {
         let handler = FileHandler::open(directory)?;
         let listener =
-            TcpListener::bind(address).map_err(|error| format!("start file listener: {error}"))?;
-        listener
-            .set_nonblocking(true)
-            .map_err(|error| format!("start file listener: {error}"))?;
+            bind_file_listener(address).map_err(|error| format!("start file listener: {error}"))?;
         let shutdown_listener = listener
             .try_clone()
             .map_err(|error| format!("duplicate file listener for shutdown: {error}"))?;
@@ -123,6 +121,32 @@ impl Drop for FileServer {
     fn drop(&mut self) {
         self.stop();
     }
+}
+
+fn bind_file_listener(address: &str) -> io::Result<TcpListener> {
+    let mut last_error =
+        io::Error::new(io::ErrorKind::InvalidInput, "no socket addresses resolved");
+    for address in address.to_socket_addrs()? {
+        let bind = || {
+            let socket = Socket::new(
+                Domain::for_address(address),
+                Type::STREAM,
+                Some(Protocol::TCP),
+            )?;
+            // Match Go's listener behavior: recently closed HTTP connections
+            // must not hold a service's fixed port through TIME_WAIT.
+            socket.set_reuse_address(true)?;
+            socket.bind(&address.into())?;
+            socket.listen(128)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket.into())
+        };
+        match bind() {
+            Ok(listener) => return Ok(listener),
+            Err(error) => last_error = error,
+        }
+    }
+    Err(last_error)
 }
 
 pub fn start_serve(

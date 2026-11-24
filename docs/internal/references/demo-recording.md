@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 01:31
+last_modified: 2026-11-24 01:44
 status: current
 ---
 
@@ -152,7 +152,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Project stack restart and global binary replacement. `restart-all` stops instances with a removed working directory and retains file sessions with an unavailable served directory.         | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"                                                                             | **No demo**                                      |
 | Serve files or a port without a manifest; confined file browser, index/README fallback, breadcrumbs, Markdown first paint and list markers, and preview gallery                             | `start/serve.md`, `development/page-previews.md`                                                                                           | **No demo**                                      |
 | Launch a command with inferred session hostnames, discovered HTTP ports (Go uses system lsof on macOS), detached startup, session inspection and stop                                       | `start/serve.md`, "Launch a command"                                                                                                       | **No demo**                                      |
-| Native manifest `serve` services with automatic ports and the stack service lifecycle                                                                                                       | `start/serve.md`, "Serve a folder in a stack"                                                                                              | **No demo**                                      |
+| Native manifest `serve` services with automatic or fixed ports, immediate fixed-port reuse after HTTP shutdown and the stack service lifecycle                                              | `start/serve.md`, "Serve a folder in a stack"                                                                                              | **No demo**                                      |
 | Managed Caddy defaults to all IPv4/IPv6 interfaces with HTTPS only                                                                                                                          | `guides/shared-managed-caddy-settings.md`, "Settings"                                                                                      | No demo                                          |
 | Managed TLS issues certificates only for configured service and stack-directory hostnames; unknown HTTPS names fail TLS, while enabled HTTP keeps its 404 fallback                          | `guides/managed-caddy.md`, "Hostnames and DNS"                                                                                             | No demo                                          |
 | Prefixed, screened Caddy diagnostics and actionable startup failures                                                                                                                        | `guides/troubleshooting.md`, "Caddy is unavailable or cannot start"; `reference/output.md`, "Caddy's lines"                                | No demo                                          |

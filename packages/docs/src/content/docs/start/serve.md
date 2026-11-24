@@ -69,6 +69,8 @@ The service defaults to an automatic port and the loopback bind address. You can
 
 Devhost owns the file server directly. Starting, stopping, restarting, manifest reloads, and worktree switches use the stack's normal service lifecycle. Files are read live, so edits need only a browser reload. `serve` replaces `command`; it rejects `cwd`, child-process `env`, `injectPort`, `lifecycle`, `proxyLocalOrigin`, `watch`, `managed = false`, and process-only health checks. The served directory also supplies the service's project directory for editor and chat tools.
 
+A fixed file-server port can be reused after the service stops, including after it has served HTTP requests. Another live listener on that address still prevents the service from starting.
+
 ## Route a running server
 
 ```bash

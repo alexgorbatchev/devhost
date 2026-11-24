@@ -295,6 +295,7 @@ fn file_server_restarts_after_closing_an_http_connection() {
     fs::write(root.path().join("note.txt"), "served content").unwrap();
     let mut server = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
     let address = format!("127.0.0.1:{}", server.port());
+    assert!(FileServer::start(root.path(), &address).is_err());
     let mut client = TcpStream::connect(&address).unwrap();
     client
         .set_read_timeout(Some(Duration::from_secs(2)))
@@ -317,7 +318,7 @@ fn file_server_restarts_after_closing_an_http_connection() {
 }
 
 #[test]
-fn file_server_restarts_while_a_child_retains_its_inherited_listener() {
+fn file_server_restarts_when_inherited_listener_is_released() {
     use std::{io::Write, os::fd::AsRawFd, os::unix::net::UnixStream};
 
     struct Child {
@@ -358,7 +359,13 @@ fn file_server_restarts_while_a_child_retains_its_inherited_listener() {
     let child = Child { pid, release };
     drop(held);
     server.stop();
+    #[cfg(target_os = "macos")]
+    {
+        assert!(FileServer::start(root.path(), &address).is_err());
+        drop(child);
+    }
     let mut replacement = FileServer::start(root.path(), &address).unwrap();
     replacement.stop();
+    #[cfg(not(target_os = "macos"))]
     drop(child);
 }
