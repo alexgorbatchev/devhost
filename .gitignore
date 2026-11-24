@@ -1,4 +1,5 @@
 .cache/
+.zig-cache/
 node_modules/
 dist
 /apps/devhost/bin/
