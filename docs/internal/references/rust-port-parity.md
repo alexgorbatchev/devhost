@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:11
+last_modified: 2026-11-24 10:18
 status: current
 ---
 
@@ -317,8 +317,8 @@ run with range requests; failed and unchanged responses must omit file data.
 partial scan failures, checkout and subagent filtering, attention ordering,
 request guards, worktree selection, bounded event projection, history suppression,
 and joined watcher shutdown. Activity clients own separate temporary cursor,
-session, and database checkpoint files; shutdown joins each watcher before those
-files are removed.
+session, and database checkpoint files in an owner-only directory; shutdown joins
+each watcher before those files are removed.
 
 `just rust test --test stack_commands agents::` starts an isolated native stack
 and checks discovery and activity HTTP/WebSocket contracts against real process
@@ -327,15 +327,17 @@ scope, sibling-prefix and stale-identity exclusion, private identifiers, partial
 discovery failures with five-second cache expiry, unknown-target rejection,
 malformed transcript recovery, bounded multibyte activity, subagent lifecycle
 and appended input, reconnect history suppression, changed-identity detachment
-on both open clients, and shutdown without stopping foreign harness processes. Linux also
+on both open clients, worktree selection while existing streams retain their
+original checkout, owner-only cursor state and joined removal, rejection of
+stopped worktree groups, and shutdown without stopping foreign harness processes. Linux also
 uses a harness with non-UTF-8 argv. Set
 `DEVHOST_STACK_TEST_BINARY` to the Go oracle executable to run the same scenarios
 against Go. Immediate input after the activity stream announces a session is a
 readiness assertion: preparing the initial transcript cursor afterward can lose
 that input when history is suppressed. The pinned Go watcher has this race;
 passing retries do not establish acceptance. Validate its dependency repair
-before accepting Go comparison receipts. Worktree-target activity still needs
-shared executable acceptance.
+before accepting Go comparison receipts. Retain final native-platform receipts
+for the selected-worktree and cursor-cleanup assertions as well.
 
 ## Native completion and argument tests
 

@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf, sync::Arc, time::Duration};
+use std::{io, os::unix::fs::PermissionsExt, path::PathBuf, sync::Arc, time::Duration};
 
 use axum::{
     body::Body,
@@ -125,6 +125,7 @@ pub(super) async fn websocket(
     }
     let state = match tempfile::Builder::new()
         .prefix("devhost-agent-activity-")
+        .permissions(std::fs::Permissions::from_mode(0o700))
         .tempdir()
     {
         Ok(state) => state,

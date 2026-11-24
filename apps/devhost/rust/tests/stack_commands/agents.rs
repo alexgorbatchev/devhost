@@ -2,6 +2,19 @@ use super::*;
 
 type ActivitySocket = async_tungstenite::WebSocketStream<async_tungstenite::tokio::ConnectStream>;
 
+fn activity_directories() -> std::collections::BTreeSet<PathBuf> {
+    fs::read_dir(std::env::temp_dir())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.file_name()
+                .unwrap()
+                .as_encoded_bytes()
+                .starts_with(b"devhost-agent-activity-")
+        })
+        .collect()
+}
+
 async fn activity_event(
     socket: &mut ActivitySocket,
     expected: &str,
@@ -81,7 +94,28 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
     fs::create_dir_all(&sessions).unwrap();
     let broken_database = home.join("private-opencode.db");
     fs::write(&broken_database, "not a sqlite database").unwrap();
-    fs::write(project.join("devhost.toml"), "name='activity'\n[devtools.chat]\nenabled=true\n[services.web]\ncommand=['sleep','300']\nhealth.process=true\n").unwrap();
+    fs::create_dir(project.join("public")).unwrap();
+    fs::write(project.join("public/note.txt"), "activity checkout").unwrap();
+    fs::write(project.join("devhost.toml"), "name='activity'\n[devtools.chat]\nenabled=true\n[services.web]\nserve='public'\nhost='activity.localhost'\n").unwrap();
+    worktrees::git(&project, &["init", "-b", "main"]);
+    worktrees::git(&project, &["add", "devhost.toml", "public"]);
+    worktrees::git(
+        &project,
+        &[
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.test",
+            "commit",
+            "-m",
+            "fixture",
+        ],
+    );
+    let linked = runtime.root.path().join("linked activity");
+    worktrees::git(
+        &project,
+        &["worktree", "add", "-b", "feature", linked.to_str().unwrap()],
+    );
     #[cfg(target_os = "linux")]
     let harness = opaque_harness();
     #[cfg(not(target_os = "linux"))]
@@ -92,6 +126,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
     let sibling = sleeper();
     let stale = sleeper();
     let empty = sleeper();
+    let linked_agent = sleeper();
     let nested = project.join("nested");
     let sibling_directory = runtime.root.path().join("activity-sibling");
     fs::create_dir(&nested).unwrap();
@@ -116,6 +151,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         ),
         ("stale", &stale, project.as_path(), "waiting", 1),
         ("empty", &empty, Path::new(""), "waiting", 0),
+        ("linked", &linked_agent, linked.as_path(), "waiting", 0),
     ] {
         let separate_transcript = project.join(format!("{name}.jsonl"));
         fs::write(&separate_transcript, "").unwrap();
@@ -153,6 +189,11 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
     let mut stack = Process(command.spawn().unwrap());
     let mut port = 0;
     wait_until(|| {
+        assert!(
+            stack.0.try_wait().unwrap().is_none(),
+            "{}",
+            fs::read_to_string(project.join("stack.log")).unwrap()
+        );
         if let Some(stack) = read_live_stacks(&runtime.state().join("caddy"))
             .unwrap()
             .iter()
@@ -272,6 +313,7 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         .enable_all()
         .build()
         .unwrap();
+    let prior_activity_directories = activity_directories();
     io.block_on(async {
         use futures_util::StreamExt;
         let refused = async_tungstenite::tokio::connect_async(format!(
@@ -323,23 +365,66 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
             let exited = activity_event_within(stream, "changed parent identity detaches activity", Duration::from_secs(10), |value| value["eventType"] == "run_exited" && value["pid"] == harness.0.id()).await;
             assert!(exited.get("text").is_none());
         }
+        let repository = control::body(&mut control::get(&url, "worktrees"))["repositories"][0].clone();
+        assert_eq!(repository["serviceNames"], json!(["web"]));
+        assert_eq!(control::post(&url, "worktrees", json!({"repositoryId":repository["id"],"path":linked})).status(), 200);
+        lifecycle::ready(&url);
+        let query: String = url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("chatTarget", "project")
+            .append_pair("pageURL", "https://activity.localhost/")
+            .finish();
+        let listed = control::body(&mut control::get(&url, &format!("agents?{query}")));
+        assert_eq!(listed["agents"].as_array().unwrap().len(), 1, "{listed}");
+        assert_eq!(listed["agents"][0]["key"], format!("claude-code:{}", linked_agent.0.id()));
+        let (mut selected, _) = async_tungstenite::tokio::connect_async(format!(
+            "ws://127.0.0.1:{port}/__devhost__/ws/agents/activity?{query}"
+        )).await.unwrap();
+        activity_event(&mut selected, "selected worktree run_started", |value| value["eventType"] == "run_started" && value["pid"] == linked_agent.0.id()).await;
+        let owned_activity_directories: Vec<_> = activity_directories().difference(&prior_activity_directories).cloned().collect();
+        assert_eq!(owned_activity_directories.len(), 3);
+        for directory in &owned_activity_directories {
+            assert_eq!(fs::metadata(directory).unwrap().permissions().mode() & 0o777, 0o700);
+        }
+        // Existing streams retain their original checkout; new streams follow selection.
+        for (name, text) in [("working", "private original checkout input"), ("linked", "private selected checkout input")] {
+            let mut file = OpenOptions::new().append(true).open(project.join(format!("{name}.jsonl"))).unwrap();
+            writeln!(file, "{}", json!({"type":"user","message":{"role":"user","content":text}})).unwrap();
+        }
+        for stream in [&mut socket, &mut reconnected] {
+            let event = activity_event(stream, "original checkout retained", |value| value["eventType"] == "turn_start").await;
+            assert_eq!(event["pid"], working.0.id());
+            assert_eq!(event["text"], "private original checkout input");
+        }
+        let event = activity_event(&mut selected, "selected checkout input", |value| value["eventType"] == "turn_start").await;
+        assert_eq!(event["pid"], linked_agent.0.id());
+        assert_eq!(event["text"], "private selected checkout input");
         reconnected.close(None).await.unwrap();
         unsafe {
             libc::kill(stack.0.id() as i32, libc::SIGTERM);
         }
-        let closed = tokio::time::timeout(Duration::from_secs(5), socket.next())
-            .await
-            .unwrap()
-            .unwrap()
-            .unwrap();
-        let async_tungstenite::tungstenite::Message::Close(Some(close)) = closed else {
-            panic!("expected shutdown close: {closed:?}")
-        };
-        assert_eq!(u16::from(close.code), 1001);
+        for stream in [&mut socket, &mut selected] {
+            let closed = tokio::time::timeout(Duration::from_secs(5), stream.next())
+                .await
+                .unwrap()
+                .unwrap()
+                .unwrap();
+            let async_tungstenite::tungstenite::Message::Close(Some(close)) = closed else {
+                panic!("expected shutdown close: {closed:?}")
+            };
+            assert_eq!(u16::from(close.code), 1001);
+        }
+        wait_until(|| owned_activity_directories.iter().all(|path| !path.exists()));
     });
     wait_until(|| stack.0.try_wait().unwrap().is_some());
     for process in [
-        &harness, &working, &unknown, &idle, &sibling, &stale, &empty,
+        &harness,
+        &working,
+        &unknown,
+        &idle,
+        &sibling,
+        &stale,
+        &empty,
+        &linked_agent,
     ] {
         assert!(
             procid::is_process_alive(process.0.id() as i32),
@@ -351,6 +436,8 @@ fn native_agent_discovery_and_activity_keep_sessions_private_and_checkout_scoped
         !log.contains("private old history")
             && !log.contains("private appended subagent input")
             && !log.contains("private appended after reconnect")
+            && !log.contains("private original checkout input")
+            && !log.contains("private selected checkout input")
             && !log.contains('🦀')
     );
     assert!(

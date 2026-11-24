@@ -10,7 +10,7 @@ mod saved;
 #[path = "worktrees/submodule.rs"]
 mod submodule;
 
-fn git(directory: &Path, args: &[&str]) {
+pub(super) fn git(directory: &Path, args: &[&str]) {
     let output = Command::new("git")
         .arg("-C")
         .arg(directory)

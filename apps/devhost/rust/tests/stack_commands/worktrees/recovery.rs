@@ -58,6 +58,28 @@ fn failed_restoration_stops_every_member_until_a_member_retries_the_whole_group(
     assert_eq!(stopped["runningPath"], "", "{stopped}");
     assert!(!stopped["error"].as_str().unwrap().is_empty());
     assert!(linked.join("fail").exists());
+    for path in ["agents", "agents/activity"] {
+        let mut response = get(&origin, &format!("{path}?chatTarget=project"));
+        assert_eq!(response.status(), 400);
+        let diagnostic = response.body_mut().read_to_string().unwrap();
+        assert!(diagnostic.contains("stopped"), "{path}: {diagnostic}");
+    }
+    let io = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    io.block_on(async {
+        let rejected = async_tungstenite::tokio::connect_async(format!(
+            "{}/__devhost__/ws/agents/activity?chatTarget=project",
+            origin.replace("http://", "ws://")
+        ))
+        .await
+        .unwrap_err();
+        let async_tungstenite::tungstenite::Error::Http(response) = rejected else {
+            panic!("expected stopped repository rejection: {rejected}")
+        };
+        assert_eq!(response.status(), 400);
+    });
     for (checkout, host, text) in [
         (&project, "worktree-contract.localhost", "main checkout"),
         (&linked, "worktree-contract.localhost", "feature checkout"),

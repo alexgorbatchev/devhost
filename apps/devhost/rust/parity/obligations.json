@@ -1816,8 +1816,8 @@
       "effect": "Selected checkout controls scope; stopped groups are refused; shutdown is joined.",
       "failure": "Unavailable worktree cannot leak another repository's activity.",
       "cleanup": "Close stream and join watcher before removing selection/cursors.",
-      "evidence": ["agents-regression", "worktrees"],
-      "remaining": "Add shared worktree-target activity/cursor cleanup fixture.",
+      "evidence": ["agents", "agents-regression", "worktrees"],
+      "remaining": "Shared external-CLI fixtures switch the routed service checkout, require existing streams to retain the original checkout and new streams to select the new checkout, reject HTTP/activity WebSocket requests for a stopped worktree group, and require distinct owner-only cursor directories to disappear after joined shutdown without stopping foreign agents. Retain final native-platform receipts and dependency-integrated Go acceptance.",
       "status": "open"
     },
     {
