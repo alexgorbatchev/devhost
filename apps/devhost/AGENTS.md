@@ -39,6 +39,8 @@ just rust check
 
 Root `just fix` formats first-party Rust with `cargo fmt --package devhost-rust`, preserving vendored dependency formatting. Coverage builds use line-table debug information in their separate instrumented target; normal development builds retain their configured debug information and incremental state. The experimental package has its own checks; root `just check` continues checking the released Go app and browser workspaces. Compare ported features against the Go revision and record evidence as described in [Go baseline for the Rust port](../../docs/internal/references/rust-port-parity.md).
 
+The [feature matrix](../../docs/internal/references/rust-port-feature-matrix.md) maps Go contracts to Rust code and executable checks. From the repository root, run `bun apps/devhost/scripts/verifyRustParity.ts` to detect reference drift, unassigned source files, stale hashes, or missing evidence paths. This verifies the inventory; run the listed behavioral and platform checks separately.
+
 ## Development workflow
 
 From the repository root, build and register a protected development override for the dotfiles-managed `devhost` shim:

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-23 10:26
+last_modified: 2026-11-23 16:33
 status: current
 ---
 
@@ -20,6 +20,8 @@ The kickoff backlog includes manifest watch paths relative to service working di
 There are no verified Rust features at kickoff. Record a separate tested Go SHA for each feature as comparison evidence becomes available.
 
 ## Feature verification
+
+For a whole-port pass, start with the [Go-derived feature matrix](rust-port-feature-matrix.md). Its machine-readable inventory accounts for every production Go file, public documentation page, example manifest, README and distributed skill at the reviewed reference. Run its integrity check before accepting comparisons; a passing inventory does not establish behavioral parity.
 
 Use the CLI and output references, the distributed skill, the Go implementation and tests, and the browser control and chat protocol references to identify behavior affected by a slice. Compare the Go and Rust executables on matching inputs with separate configuration, state, ports, temporary directories, and subprocess ownership. Compare the relevant exit codes, output streams, state changes, protocol messages, and cleanup. Normalize variable values such as process IDs and temporary paths only where their exact values are outside the contract. Run platform-dependent comparisons on the applicable platform.
 
@@ -86,11 +88,17 @@ delivery, reconnect replay, conversation closure, and stack cleanup against Go.
 foreground and detached supervisor replacement, launch environment and directory
 preservation, private restart logs, and replacement of file-serving sessions.
 Set `DEVHOST_STACK_TEST_BINARY` to the absolute Go oracle executable to compare
-the same scenarios. The comparison maps Rust's global `restart-all` to Go's older
-`stack restart --all` spelling and excludes the explicitly changed project-scoped
-`--all` scenario. Use a Go revision that preserves registration timestamps across
+the same scenarios. Both implementations now use `restart-all` for global
+replacement and `stack restart --all` for the current project. The suite checks
+both scopes, including manifest-free file and command sessions. Use a Go revision that preserves registration timestamps across
 unchanged reloads; older versions can refuse a valid global restart while their
 initial manifest check rewrites a registration.
+
+The command-session cases launch a real HTTP server and an unsupported TCP listener,
+wait for HTTP readiness, add and close listeners, verify stable short aliases and
+port-qualified names, inspect and stop named sessions, replace the supervisor, and
+check failed-start cleanup. `command-serve.jsonl` compares validation, missing-session
+errors and short flags with Rust Anything.
 
 The stack-command suite also runs on macOS. Process ownership there uses the
 kernel's microsecond start timestamp in the same decimal format as Go; launch
