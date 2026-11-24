@@ -4,6 +4,8 @@ use super::*;
 
 #[path = "proxy/claims.rs"]
 mod claims;
+#[path = "proxy/mutations.rs"]
+mod mutations;
 #[path = "proxy/routes.rs"]
 mod routes;
 

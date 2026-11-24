@@ -416,6 +416,13 @@
       "qualification": "Live sentinel with stale start identities cannot retain a hostname or receive a signal. Real live claims and registrations independently reject foreign takeover with either killZombies setting; stopping the owner releases the hosts for a new stack."
     },
     {
+      "id": "proxy-mutations",
+      "path": "apps/devhost/rust/tests/stack_commands/proxy/mutations.rs",
+      "kind": "native-shared",
+      "selector": "cargo test --test stack_commands proxy::mutations:: with each comparison executable",
+      "qualification": "Concurrent native orphan-owner recovery, stop and rejected foreign takeover preserve an untouched live route and Caddy PID; stale registration cleanup preserves a live sentinel, and one zombie identity receives exactly one cleanup attempt."
+    },
+    {
       "id": "port-retries",
       "path": "apps/devhost/rust/tests/stack_commands/ports.rs",
       "kind": "native-shared",
@@ -1266,8 +1273,8 @@
       "effect": "Route updates serialize and remove only stale own registrations.",
       "failure": "A failed lock/mutation cannot erase another stack's route.",
       "cleanup": "Join concurrent commands and confirm remaining routes are healthy.",
-      "evidence": ["stack", "caddy-regression"],
-      "remaining": "Add concurrent CLI mutation and zombie-record comparison.",
+      "evidence": ["stack", "caddy-regression", "proxy-mutations"],
+      "remaining": "Linux shared external CLI acceptance concurrently stops a stack, reclaims a live orphan owner and rejects a foreign takeover while an untouched route stays healthy. The shared Caddy PID is preserved, stale registration cleanup leaves a live sentinel untouched, and zombie cleanup logs exactly one attempt per identity. Final native source/archive acceptance remains.",
       "status": "open"
     },
     {

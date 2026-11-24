@@ -1,6 +1,6 @@
 use super::*;
 
-fn claim_project(runtime: &Runtime, name: &str, hosts: &[&str]) -> PathBuf {
+pub(super) fn claim_project(runtime: &Runtime, name: &str, hosts: &[&str]) -> PathBuf {
     let project = runtime.root.path().join(name);
     fs::create_dir(&project).unwrap();
     fs::write(project.join("index.html"), name).unwrap();
@@ -32,7 +32,7 @@ fn registration(runtime: &Runtime, host: &str) -> PathBuf {
         .unwrap_or_else(|| panic!("no registration for {host}"))
 }
 
-fn routed_body(runtime: &Runtime, host: &str) -> String {
+pub(super) fn routed_body(runtime: &Runtime, host: &str) -> String {
     let mut response = control::client()
         .get(format!("http://127.0.0.1:{}/", runtime.settings.http_port))
         .header("Host", host)
@@ -42,7 +42,7 @@ fn routed_body(runtime: &Runtime, host: &str) -> String {
     response.body_mut().read_to_string().unwrap()
 }
 
-fn claim_ready(runtime: &Runtime, project: &Path, name: &str, process: &mut Process) {
+pub(super) fn claim_ready(runtime: &Runtime, project: &Path, name: &str, process: &mut Process) {
     wait_until(|| {
         assert!(
             process.0.try_wait().unwrap().is_none(),

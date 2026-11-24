@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:26
+last_modified: 2026-11-24 11:29
 status: current
 ---
 
@@ -263,6 +263,15 @@ sentinel PID and a stale start identity. A new stack reclaims the hosts while th
 sentinel survives. A real live owner's claim and registration independently reject
 another manifest with either `killZombies` setting; the existing route remains
 healthy. After the owner stops, a new stack can serve those hostnames.
+
+The `proxy::mutations::` fixture removes a real live owner's registry publication
+while preserving its claims, then concurrently starts a replacement, stops a
+second stack, and attempts a foreign takeover of a third stack. The third route
+stays healthy throughout. The orphan receives exactly one zombie cleanup attempt;
+the stopped route disappears, the replacement route serves, and Caddy keeps its
+PID. A stale registration sharing a live sentinel PID is removed without signaling
+the sentinel. Local foreground readiness comes from the control API, not the
+registry's detached/remote readiness field.
 
 The pending-control fixture holds a real backend HTTP health response during a
 restart. It repeatedly reads stack-info, browser configuration, the self snapshot,
