@@ -12,7 +12,7 @@ fn start_inherits_opaque_environment_values_and_accepts_negative_idle_timeout() 
     let root = fixture.path();
     let caddy = LiveCaddyGuard::start(root);
     let config = write_config(root, &caddy.settings);
-    fs::write(root.join("devhost.toml"), "name='opaque'\n[devtools]\nidleTimeout='-1s'\n[services.worker]\ncommand=['sh','-c','printf %s \"$OPAQUE\" > opaque; printf %s \"$cwd\" > literal; exec sleep 30']\nhealth.process=true\n[services.worker.env]\ncwd='literal-value'\n").unwrap();
+    fs::write(root.join("devhost.toml"), "name='opaque'\n[devtools]\nidleTimeout='-1s'\n[services.worker]\ncommand=['sh','-c','printf %s \"$OPAQUE\" > opaque; printf %s \"$cwd\" > literal; : > ready; exec sleep 30']\nhealth.process=true\n[services.worker.env]\ncwd='literal-value'\n").unwrap();
     let mut process = ServeProcess(Some(
         Command::new(binary())
             .arg("start")
@@ -31,7 +31,7 @@ fn start_inherits_opaque_environment_values_and_accepts_negative_idle_timeout() 
             .unwrap(),
     ));
     assert!(
-        wait_until(Duration::from_secs(10), || root.join("literal").exists()),
+        wait_until(Duration::from_secs(10), || root.join("ready").exists()),
         "{}",
         fs::read_to_string(root.join("stderr")).unwrap()
     );
