@@ -1,8 +1,10 @@
 use std::{
     fs,
+    os::unix::fs::PermissionsExt,
     path::Path,
     process::{Command, Output},
     thread,
+    time::{Duration, Instant},
 };
 
 #[path = "support/ports.rs"]
@@ -38,6 +40,8 @@ fn succeeded(output: Output) -> String {
 struct Cleanup<'a>(&'a Path);
 impl Drop for Cleanup<'_> {
     fn drop(&mut self) {
+        // A failed assertion must restore the real command before stopping Caddy.
+        let _ = fs::remove_file(self.0.join("state/caddy/caddy"));
         let _ = cli(self.0, "stop");
     }
 }
@@ -48,7 +52,7 @@ fn native_cli_restart_receipt_and_settings_contract_matches_go() {
     let root = fixture.path();
     fs::create_dir(root.join("config")).unwrap();
     // Retain reservations together until the configuration is ready.
-    let listeners: Vec<_> = (0..4).map(|_| fixture_ports::reserve_listener()).collect();
+    let mut listeners: Vec<_> = (0..4).map(|_| fixture_ports::reserve_listener()).collect();
     let ports: Vec<_> = listeners
         .iter()
         .map(|listener| listener.local_addr().unwrap().port())
@@ -60,16 +64,74 @@ fn native_cli_restart_receipt_and_settings_contract_matches_go() {
         )
     };
     fs::write(root.join("config/config.toml"), config(ports[0])).unwrap();
+    // Accept TCP connections without answering HTTP, exercising the admin deadline.
+    let unreachable_admin = listeners.remove(0);
     drop(listeners);
     let _cleanup = Cleanup(root);
-    succeeded(cli(root, "start"));
     let directory = root.join("state/caddy");
+    fs::create_dir_all(&directory).unwrap();
+    let launcher = directory.join("caddy");
+    let write_launcher = |text| {
+        fs::write(&launcher, text).unwrap();
+        fs::set_permissions(&launcher, fs::Permissions::from_mode(0o700)).unwrap();
+    };
+    write_launcher("#!/bin/sh\nexit 0\n");
+    let started = Instant::now();
+    let unreachable = cli(root, "start");
+    let elapsed = started.elapsed();
+    assert!(!unreachable.status.success(), "{unreachable:?}");
+    assert!(
+        String::from_utf8_lossy(&unreachable.stderr).contains("did not become ready"),
+        "{unreachable:?}"
+    );
+    assert!(elapsed >= Duration::from_millis(1500), "{elapsed:?}");
+    assert!(elapsed < Duration::from_secs(6), "{elapsed:?}");
+    assert!(!directory.join("runtime.json").exists());
+    assert!(!directory.join("applied.json").exists());
+    fs::remove_file(&launcher).unwrap();
+    drop(unreachable_admin);
+    succeeded(cli(root, "start"));
     let receipt = fs::read(directory.join("runtime.json")).unwrap();
     let value: serde_json::Value = serde_json::from_slice(&receipt).unwrap();
     assert_eq!(value["restartGeneration"], 1);
     assert!(value["pid"].as_i64().unwrap() > 0);
     assert!(!value["startIdentity"].as_str().unwrap().is_empty());
     let ca = fs::read(directory.join("storage/pki/authorities/local/root.crt")).unwrap();
+    let pid = fs::read_to_string(directory.join("caddy.pid")).unwrap();
+    let applied = fs::read(directory.join("applied.json")).unwrap();
+    let mut older = value.clone();
+    older["restartGeneration"] = 0.into();
+    let older = serde_json::to_vec(&older).unwrap();
+    fs::write(directory.join("runtime.json"), &older).unwrap();
+    write_launcher("#!/bin/sh\necho 'stop rejected' >&2\nexit 1\n");
+    let rejected = cli(root, "start");
+    assert!(!rejected.status.success(), "{rejected:?}");
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("Caddy stop failed"));
+    assert_eq!(fs::read(directory.join("runtime.json")).unwrap(), older);
+    assert_eq!(fs::read(directory.join("applied.json")).unwrap(), applied);
+    assert_eq!(
+        fs::read_to_string(directory.join("caddy.pid")).unwrap(),
+        pid
+    );
+    devhost_rust::caddy::ensure_admin_available(&format!("127.0.0.1:{}", ports[0])).unwrap();
+    write_launcher(&format!(
+        "#!/bin/sh\nif [ \"$1\" = start ]; then printf '%s' '{}' > caddy.pid; fi\nexit 0\n",
+        pid.trim()
+    ));
+    let no_op = cli(root, "start");
+    assert!(!no_op.status.success(), "{no_op:?}");
+    assert!(
+        String::from_utf8_lossy(&no_op.stderr).contains("did not start a fresh process"),
+        "{no_op:?}"
+    );
+    assert_eq!(fs::read(directory.join("runtime.json")).unwrap(), older);
+    assert_eq!(
+        fs::read_to_string(directory.join("caddy.pid"))
+            .unwrap()
+            .trim(),
+        pid.trim()
+    );
+    fs::remove_file(&launcher).unwrap();
     fs::remove_file(directory.join("runtime.json")).unwrap();
     let outputs = thread::scope(|scope| {
         let starts: Vec<_> = (0..3).map(|_| scope.spawn(|| cli(root, "start"))).collect();

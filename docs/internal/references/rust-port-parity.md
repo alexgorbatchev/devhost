@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:38
+last_modified: 2026-11-24 10:42
 status: current
 ---
 
@@ -107,6 +107,16 @@ they do not provide replay across supervisor replacement. Native provider
 conversation history and saved panel positions use separate storage contracts.
 
 ## Native stack-command tests
+
+`just rust test --test caddy_generation native_cli_restart_receipt_and_settings_contract_matches_go -- --exact`
+checks readiness against an admin endpoint that accepts TCP but never answers
+HTTP. The CLI must fail within six seconds and leave no runtime or applied-settings
+receipt. With a real managed Caddy running at an older policy generation, rejected
+stop commands and no-op replacements must preserve the old process receipt.
+Three concurrent retries must perform one real restart and retain the local CA.
+Set `DEVHOST_CADDY_TEST_BINARY` to the absolute Go or Rust executable to compare
+this same fixture. Route mutation during a failed restart requires a separate
+comparison.
 
 `just rust test --test detach_lifecycle detach_live_cli_start_idempotency_and_stop -- --exact`
 races three detached CLI starts for one manifest while its service waits behind
