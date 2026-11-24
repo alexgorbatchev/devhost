@@ -29,6 +29,8 @@ The Rust CLI provides help, `--version`, `skill`, `service list`, managed Caddy 
 
 Build its separate executable at `apps/devhost/rust/target/debug/devhost` with `just rust build`. The Rust run, build, and validation recipes refresh the embedded browser assets, so a fresh checkout needs no manual asset generation after setup. `just rust check` checks formatting, Clippy, and native tests with 90% line and function coverage for first-party Rust sources. Root `just fix` formats the first-party Rust package alongside the other workspaces.
 
+Build an optimized native candidate with `just rust build-release`, then run `apps/devhost/rust/target/release/devhost --version`. This embeds the version from `apps/devhost/metadata.json` and the production browser assets. In a GitHub tag build, the tag must match that version. The executable runs independently of the checkout. Debug builds and the protected development override below keep their existing commands; published releases still use Go while Rust acceptance is in progress.
+
 On Linux and macOS, `start --detach` waits for services, routes, and any configured remote connection to become ready, prints the supervisor PID, service URLs, and log path, and leaves the stack running. Repeating the command reports the existing stack; `stop` shuts it down. Startup failures print the attempt's log tail and stop its services.
 
 Use `serve --name notes --detach -- npm run dev` to start a command, discover its HTTP listeners, and publish a named session. Inspect it with `stack info --session <session>`, list sessions with `stack list --sessions`, and stop one with `stop --session <session>`. The [serve guide](../../start/serve/) covers naming, startup timeouts, and port-qualified routes.

@@ -29,6 +29,8 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 The experimental Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` from the repository root to keep its binary separate from the Go development executable.
 
+Use `just rust build-release` for an optimized native candidate at `apps/devhost/rust/target/release/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig. This command builds a candidate; the Go publisher and `just dev-bootstrap` remain the production and protected-development entrypoints.
+
 Run `just setup` for a fresh checkout. Rust run, build, test, lint, and coverage recipes refresh the generated browser assets before Cargo embeds them; direct Cargo commands require those assets to exist already.
 
 Use `just rust test-affected <base>` to select the Rust package from changed source, fixtures, embedded UI/design assets, or shared test inputs. This is one Cargo package; changes with uncertain internal impact select its enclosing package. Use `just rust test <args>` for focused feedback. Run its package gate with formatting, Clippy, and at least 90% line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):

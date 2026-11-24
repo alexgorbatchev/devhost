@@ -1439,8 +1439,8 @@
     },
     {
       "path": "packages/docs/src/content/docs/development/building.md",
-      "blob": "7d324a7ef31f77cd167b0cfb4b25484fa46324d6",
-      "reason": "Documents experimental Rust commands and validation, including command-backed serve and named-session controls, alongside the released Go build instructions."
+      "blob": "72c542dce62eba37773a9c1c74a1e043c2365e5a",
+      "reason": "Documents experimental Rust commands and validation, including optimized metadata-stamped candidate builds, alongside unchanged Go production and development-override entrypoints."
     },
     {
       "path": "packages/docs/src/content/docs/guides/annotations.md",

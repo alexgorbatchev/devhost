@@ -7,6 +7,14 @@ publish = false
 license = "MIT"
 default-run = "devhost"
 
+# Optimize production throughput while preserving unwinding used by lifecycle cleanup.
+# Development and test profiles keep Cargo's debug and incremental defaults.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+
 [[bin]]
 name = "devhost"
 path = "src/main.rs"

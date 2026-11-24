@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-15 17:13
+last_modified: 2026-11-23 21:02
 status: current
 ---
 
@@ -54,6 +54,21 @@ just dev-bootstrap
 ```
 
 This builds the current checkout and registers a protected development copy with dotfiles, preserving the managed release payload. See [Use a protected development build](../../packages/docs/src/content/docs/development/building.md#use-a-protected-development-build) for prerequisites, selecting a different dotfiles project, and returning to managed releases. The build reports `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`); plain `just devhost compile` and release builds retain the metadata version.
+
+## Optimized Rust candidate
+
+From a prepared checkout, build a separate native candidate:
+
+```sh
+just rust build-release
+./apps/devhost/rust/target/release/devhost --version
+```
+
+This refreshes production browser assets and runs a locked Cargo release build. The authoritative version is `apps/devhost/metadata.json`; a GitHub tag build rejects a different tag. The release profile uses optimization level 3, thin LTO, one codegen unit, and stripped debug information. It preserves unwinding for lifecycle cleanup and remaps checkout and Cargo source paths in diagnostics. Normal development builds preserve their debug and incremental defaults.
+
+Pass `--target <installed Rust triple>` to select another target. `--cross` selects `cargo zigbuild` and requires cargo-zigbuild, Zig, and the target's platform prerequisites. Cargo's configured target directory determines the output location. A packaged candidate uses embedded assets and requires no source checkout.
+
+This command leaves the Go release publisher and the protected Go development override selected. Rust candidates require their separate parity, packaging, and native acceptance before production cutover.
 
 ## Local release artifacts
 

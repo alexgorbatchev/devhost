@@ -39,6 +39,10 @@ check: fmt-check lint coverage
 build: assets
     cargo build --locked
 
+# Versioned, optimized executable; leaves debug builds and installed tools alone.
+build-release *args: assets
+    bun ../scripts/buildRustRelease.ts {{args}}
+
 # Keep include_dir! and include_str! inputs available on fresh checkouts.
 assets:
     just --justfile ../../../justfile devhost build-devtools-bundle

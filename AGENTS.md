@@ -10,6 +10,7 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Prepare the workspace dependencies and embedded bundle: `just setup`
 - Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`, first-party Rust formatting through `just rust fmt`)
 - Check the experimental Rust CLI: `just rust check`; run or build it with `just rust run <args>` or `just rust build`. Run `just setup` on fresh checkouts; Rust execution and validation recipes refresh embedded browser assets. Its package checks remain separate from the released Go CLI checks.
+- Build a versioned, optimized Rust candidate with `just rust build-release`; the native executable is `apps/devhost/rust/target/release/devhost`. Metadata and release tags must agree. This candidate command leaves the Go publisher and protected development override in place.
 - Refresh the generated embedded devtools bundle and standalone page scripts and stylesheets: `just devhost build-devtools-bundle`
 - Check `devhost` app-only validations: `just devhost check`
 - Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just cli <args>` is the human-mode equivalent); they forward to `devhost run-ai` and `devhost run`, respectively
