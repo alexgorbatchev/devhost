@@ -29,6 +29,8 @@ mod fixture_ports;
 
 #[path = "stack_commands/agents.rs"]
 mod agents;
+#[path = "stack_commands/caddy.rs"]
+mod caddy_commands;
 #[path = "stack_commands/chat.rs"]
 mod chat;
 #[path = "stack_commands/config.rs"]

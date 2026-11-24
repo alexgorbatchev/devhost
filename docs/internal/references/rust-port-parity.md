@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 11:49
+last_modified: 2026-11-24 11:54
 status: current
 ---
 
@@ -125,6 +125,14 @@ Three concurrent retries must perform one real restart and retain the local CA.
 Set `DEVHOST_CADDY_TEST_BINARY` to the absolute Go or Rust executable to compare
 this same fixture. Route mutation during a failed restart requires a separate
 comparison.
+
+`just rust test --test stack_commands caddy_commands::foreign_runtime_is_preserved_and_trust_commands_use_only_the_selected_state -- --exact`
+points a second state directory at a live private Caddy admin address. Its start,
+stop and trust commands must refuse ownership while preserving the original PID,
+CA and file route. An owned recording executable then verifies trust arguments,
+the password prompt and failure diagnostics without invoking a host trust tool.
+Stopping the selected owner removes its runtime files and preserves its CA.
+Actual OS trust installation and removal still require disposable-host acceptance.
 
 `just rust test --test detach_lifecycle detach_live_cli_start_idempotency_and_stop -- --exact`
 races three detached CLI starts for one manifest while its service waits behind

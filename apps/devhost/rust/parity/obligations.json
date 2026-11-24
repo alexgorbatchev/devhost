@@ -1196,8 +1196,8 @@
       "effect": "Owned runtime stops; foreign identity is preserved; certificate lookup uses selected state.",
       "failure": "Unavailable trust material reports a diagnostic without changing host trust.",
       "cleanup": "Use isolated trust inputs; join owned runtime only.",
-      "evidence": ["caddy", "certificate", "caddy-lifecycle"],
-      "remaining": "Add differential foreign-runtime stop protection and isolated trust-install probes.",
+      "evidence": ["caddy", "certificate", "caddy-lifecycle", "stack"],
+      "remaining": "Native CLI comparisons cover foreign-state start/stop/trust refusal, selected-state stop and recording-executable trust arguments, prompt and failure diagnostics. Actual OS trust installation and removal require disposable-host acceptance.",
       "status": "open"
     },
     {
