@@ -18,17 +18,12 @@ cleanup() {
   [[ -d "$fixture_dir" ]] || return 0
   local failed=0
   if [[ -f "$fixture_dir/trust-attempted" ]]; then
-    if [[ ! -f "$fixture_dir/trust-removed" ]]; then
-      if sudo security remove-trusted-cert -d "$fixture_dir/root.pem"; then
-        touch "$fixture_dir/trust-removed"
-      else
-        failed=1
-      fi
-    fi
     local fingerprint
     fingerprint="$(openssl x509 -in "$fixture_dir/root.pem" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')"
     if [[ ! -f "$fixture_dir/certificate-removed" ]]; then
-      if sudo security delete-certificate -Z "$fingerprint" /Library/Keychains/System.keychain; then
+      printf 'Removing health fixture certificate and trust: %s\n' "$fingerprint"
+      # Root's -t removes both user and admin trust before deleting this item.
+      if sudo -n security delete-certificate -t -Z "$fingerprint" /Library/Keychains/System.keychain; then
         touch "$fixture_dir/certificate-removed"
       else
         failed=1
@@ -53,7 +48,7 @@ case "${1:-}" in
     printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=serverAuth' 'subjectAltName=IP:127.0.0.1' > "$fixture_dir/server.ext"
     openssl x509 -req -in "$fixture_dir/server.csr" -CA "$fixture_dir/root.pem" -CAkey "$fixture_dir/root.key" -CAcreateserial -days 1 -extfile "$fixture_dir/server.ext" -out "$fixture_dir/server.pem"
     touch "$fixture_dir/trust-attempted"
-    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$fixture_dir/root.pem"
+    sudo -n security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$fixture_dir/root.pem"
     ;;
   cleanup) cleanup ;;
   *) echo 'Expected prepare or cleanup.' >&2; exit 1 ;;

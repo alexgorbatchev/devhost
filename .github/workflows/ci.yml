@@ -216,6 +216,7 @@ jobs:
           echo "DEVHOST_TEST_BASH_COMPLETION=$(brew --prefix bash-completion@2)/share/bash-completion/bash_completion" >> "$GITHUB_ENV"
       - name: Prepare disposable macOS HTTPS health trust
         if: runner.os == 'macOS'
+        timeout-minutes: 2
         run: bash test-support/macosHealthTrust.sh prepare
       - name: Cache Bun dependency downloads
         uses: actions/cache@v5
@@ -274,6 +275,7 @@ jobs:
           retention-days: 7
       - name: Remove disposable macOS HTTPS health trust
         if: always() && runner.os == 'macOS'
+        timeout-minutes: 2
         run: bash test-support/macosHealthTrust.sh cleanup
 
   rust-candidates:
@@ -374,6 +376,7 @@ jobs:
           echo "DEVHOST_TEST_BASH_COMPLETION=$(brew --prefix bash-completion@2)/share/bash-completion/bash_completion" >> "$GITHUB_ENV"
       - name: Prepare disposable macOS HTTPS health trust
         if: runner.os == 'macOS'
+        timeout-minutes: 2
         run: bash test-support/macosHealthTrust.sh prepare
       - name: Cache Bun dependency downloads
         uses: actions/cache@v5
@@ -425,4 +428,5 @@ jobs:
           retention-days: 7
       - name: Remove disposable macOS HTTPS health trust
         if: always() && runner.os == 'macOS'
+        timeout-minutes: 2
         run: bash test-support/macosHealthTrust.sh cleanup
