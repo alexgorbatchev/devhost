@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-24 00:57
+last_modified: 2026-11-24 13:25
 status: current
 ---
 
@@ -134,7 +134,32 @@ For rollback, invoke `/absolute/path/to/known-go/devhost restart-all` with the s
 
 Binary rollback normally reuses current persistent state. Restore a backup only while all affected owners and shared Caddy are stopped, and restore config, worktree/panel files or Caddy storage selectively to their original paths. Preserve the current files privately before replacement. Runtime PID/start-identity receipts, registrations, lock files and live control ports describe processes that no longer exist; regenerate them through normal startup instead of restoring them from a backup. Preserve the CA as a unit; replacing it changes the trust identity. No state migration or trust-store reset is part of the candidate procedure.
 
-The eventual production switch requires a separately approved change to `publish.yml`: retain version/tag validation and the shared repository checks, require the Rust checks and native comparisons, build through the Rust candidate packager on its native matrix, collect the five verified archives with their checksums/licenses/provenance, then use the existing release upload and released-docs deployment. Prepare the concrete workflow diff and tested Go rollback procedure for approval before selecting that publisher. A candidate CI artifact is not a production release.
+### Rollback triggers, operator actions, and required permissions
+
+Trigger an immediate rollback to the retained known-good Go binary if any of the following occur during or after a cutover:
+
+- Any post-release probe fails (wrong `--version`, checksum mismatch, missing archive or `THIRD_PARTY_LICENSES.txt`, broken HTTPS/Caddy routing, or broken embedded devtools/chat/worktree lifecycle).
+- `restart-all` fails to replace running stacks cleanly or leaves routed services unreachable.
+- Native platform checks show unexpected process leaks, route loss, or data corruption in `config.toml`, `worktrees/`, `chat-panels/`, or `caddy/storage/`.
+
+Explicit operator actions and required permissions:
+
+- **Tagging and GitHub Release publication**: requires Git push access and GitHub Releases write permission (`gh auth status`).
+- **System binary installation (`/usr/local/bin/devhost`)**: requires `sudo` (or write access to a user-owned `PATH` directory).
+- **Linux low ports (`devhost caddy privileged-ports`)**: requires `sudo` (`setcap cap_net_bind_service=+ep`) whenever the managed Caddy binary is replaced.
+- **System CA trust (`devhost caddy trust` / `trust-remote`)**: requires an interactive terminal and local admin/keychain authorization; never run implicitly by automation.
+- **Protected development override (`dotfiles tool dev use` / `off`)**: requires write access to the selected dotfiles project and its development store; no `sudo` is required.
+
+### Post-release probes (after approved Rust cutover)
+
+After a tagged Rust release completes:
+
+1. Verify GitHub Release assets with `gh release view v<version> --json assets`: confirm all five `.tar.gz` archives (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) and `SHA256SUMS` exist.
+2. Download the host archive and `SHA256SUMS`, verify with `sha256sum -c --ignore-missing SHA256SUMS`, and verify the archive contains `devhost`, `README.md`, `LICENSE`, and `THIRD_PARTY_LICENSES.txt`.
+3. Run the extracted executable in an isolated `DEVHOST_CONFIG_DIR` and `DEVHOST_STATE_DIR` (ephemeral Caddy ports) to verify `--version`, `--help`, `caddy start`, `start --detach`, HTTPS routing and `/__devhost__/config.json` + `/__devhost__/inject.js`, `restart-all`, `stop`, and `caddy stop`.
+4. Confirm the `docs` job succeeded and GitHub Pages serves the released version's documentation.
+
+The eventual production switch requires a separately approved change to `publish.yml` and the local build/bootstrap entrypoints; see [Prepared Rust production cutover switch](../../docs/internal/references/rust-cutover-switch.md) for the exact reviewable switch diff. Retain version/tag validation and the shared repository checks, require the Rust checks and native comparisons, build through the Rust candidate packager on its native matrix, collect the five verified archives with their checksums/licenses/provenance, then use the existing release upload and released-docs deployment. A candidate CI artifact is not a production release.
 
 ## Local release artifacts
 

@@ -1520,8 +1520,8 @@
       "effect": "Platform reader reports live capacity and shutdown releases its worker.",
       "failure": "Unreadable filesystem reports bounded failure.",
       "cleanup": "Join resource worker and close filesystem handles.",
-      "evidence": ["resource-regression"],
-      "remaining": "Run native platform resource comparison against both binaries.",
+      "evidence": ["control", "resource-regression"],
+      "remaining": "Shared native WebSocket resource checks compare live disk capacity, byte-unit percentages, live disk toggles, and clean stream shutdown across Linux and macOS; retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1533,7 +1533,7 @@
       "failure": "Absent asset and unsupported method return correct status.",
       "cleanup": "Stop stack and release all asset connections.",
       "evidence": ["assets"],
-      "remaining": "Shared frontend is identical; browser loading acceptance remains separate.",
+      "remaining": "Linux browser journeys verified production no-store config.json, immutable gzip inject.js/chunks/Redux assets, and zero browser console errors against Go v0.0.20 and optimized Rust (blind visual review ACCEPT 10/10); retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1617,7 +1617,7 @@
       "failure": "Invalid payload cannot execute injected script.",
       "cleanup": "Close page clients and stop server.",
       "evidence": ["documents", "files", "shared-pages"],
-      "remaining": "Run full browser page journeys against Rust; shared rendering alone does not prove server payloads.",
+      "remaining": "Linux browser journeys verified standalone 404, crashed-service recovery with browser restart, running-stack directory, and rendered Markdown/file pages against Go v0.0.20 and optimized Rust (blind visual review ACCEPT 10/10); retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1629,7 +1629,7 @@
       "failure": "Production build or unauthorized path cannot expose source previews.",
       "cleanup": "Stop temporary source-mode server.",
       "evidence": ["document-regression", "shared-pages", "source-assets"],
-      "remaining": "Linux external CLI acceptance compares hostile preview filename/listing/breadcrumb/Markdown source round-trips, escaped JSON script boundaries and fallback text, private/symlink path denial and read-only actions. Embedded production preview denial is shared. Final native source/archive and browser script-execution acceptance remain.",
+      "remaining": "Linux external CLI and browser journeys verified hostile Markdown script non-execution (window.__devhostXss undefined), javascript: link neutralization, and embedded production preview denial; retain final native source/archive receipts.",
       "status": "open"
     },
     {
@@ -1641,7 +1641,7 @@
       "failure": "Missing/unreadable paths return controlled status pages.",
       "cleanup": "Close root handles after stopping server; remove fixture tree.",
       "evidence": ["files"],
-      "remaining": "Add explicit breadcrumb and unsafe Markdown link browser acceptance.",
+      "remaining": "Linux browser journeys verified directory listing, subdirectory breadcrumbs, and unsafe javascript: Markdown link neutralization against Go v0.0.20 and optimized Rust; retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1677,7 +1677,7 @@
       "failure": "Malformed Markdown or storage failure cannot expose script execution.",
       "cleanup": "Close browser/profile and stop server.",
       "evidence": ["files", "shared-pages"],
-      "remaining": "Markdown payload is compared; preference and browser rendering require browser journey acceptance.",
+      "remaining": "Linux browser journeys verified Markdown front-matter/GFM rendering and Show source/Show rendered localStorage persistence across reload against Go v0.0.20 and optimized Rust; retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1701,7 +1701,7 @@
       "failure": "Unavailable harness or discovery timeout returns bounded error.",
       "cleanup": "Close sessions and reap every peer process.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Run authenticated installed providers separately; peers perform no inference.",
+      "remaining": "Authenticated installed Codex (0.171.0) and Claude Code (2.1.325) passed end-to-end discovery, model selection, open/send/stream/steer/interrupt/close, reconnect replay, native approval denial, parallel sessions, worktree isolation, provider exit recovery, and zero orphan cleanup through optimized Rust; retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1737,7 +1737,7 @@
       "failure": "Invalid image/body is rejected before provider inference.",
       "cleanup": "Remove private image files/journal after closing session.",
       "evidence": ["chat", "chat-regression"],
-      "remaining": "Linux external CLI acceptance rejects malformed/unknown-field/empty input, invalid or mismatched images and workflow-expanded oversized messages without native dispatch. Both provider protocols receive exact page/marker/source context plus project workflow and image data; public logs exclude private content. Browser context construction/capture, authenticated providers and final native receipts remain.",
+      "remaining": "Linux external CLI acceptance and authenticated Codex/Claude runs verified PNG image and annotation/project context delivery, workflow instructions, private log hygiene, and browser chat/annotation toolbar rendering; retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1857,7 +1857,7 @@
       "failure": "Denied capture or provider error leaves recoverable UI state.",
       "cleanup": "Close browser and provider, stop stack and remove profile.",
       "evidence": ["shared-ui", "chat"],
-      "remaining": "Complete browser journey against optimized Rust and authenticated provider acceptance.",
+      "remaining": "Linux browser journeys (blind visual review ACCEPT 10/10) and authenticated Codex/Claude sessions passed against optimized Rust; retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1869,7 +1869,7 @@
       "failure": "Failed save/disconnected stream reports recoverable state.",
       "cleanup": "Close UI channels/browser and stop stack.",
       "evidence": ["shared-ui", "control"],
-      "remaining": "Complete end-to-end browser journeys against optimized Rust.",
+      "remaining": "Linux end-to-end browser journeys (toolbar, config editor, worktrees, chat/annotations, recovery, 404, directory, Markdown/XSS, disabled features, multi-stack) passed against Go v0.0.20 and optimized Rust (blind visual review ACCEPT 10/10); retain final native platform receipts.",
       "status": "open"
     },
     {
@@ -1881,7 +1881,7 @@
       "failure": "Absent or incompatible host framework does not break toolbar.",
       "cleanup": "Close host app, browser and observer/channel consumers.",
       "evidence": ["shared-ui"],
-      "remaining": "Shared implementation is unchanged; test each real framework integration against Rust-served assets.",
+      "remaining": "Linux browser journeys verified real playground React + TanStack Router/Query/Devtools + React Hook Form + Jotai + Redux/Zustand integrations, standalone /__devhost__/redux monitor, and Vue host injection against Go v0.0.20 and optimized Rust; retain final native platform receipts.",
       "status": "open"
     },
     {
