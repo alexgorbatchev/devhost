@@ -447,8 +447,8 @@
       "id": "resource-cadence",
       "path": "docs/internal/references/rust-port-parity.md",
       "kind": "native-observation",
-      "selector": "Native control tests: Linux CPU cadence acceptance",
-      "qualification": "Retained native strace receipts compare unchanged Go20, repaired Go and optimized Rust; path-filtered actual CPU reads establish Linux scheduling independently of deduplicated WebSocket frames. macOS and other resource readouts remain separate acceptance."
+      "selector": "Native control tests: Linux CPU, memory and disk cadence acceptance",
+      "qualification": "Retained native strace receipts compare unchanged Go20, repaired Go and optimized Rust; path-filtered CPU/memory reads and disk-reader invocation witnesses establish Linux scheduling independently of deduplicated WebSocket frames. Disk traces do not count individual filesystem capacity syscalls. Native macOS scheduling remains separate acceptance."
     }
   ],
   "cases": [
@@ -1481,7 +1481,7 @@
       "failure": "Invalid duration or resource settings are rejected.",
       "cleanup": "Close stream and join old/new sampler schedules.",
       "evidence": ["control", "resource-regression", "resource-cadence"],
-      "remaining": "Live toggles and Linux CPU scheduling have differential evidence, including 1 s without a browser, live 250 ms, restored 1 s, no reads while disabled and 250 ms after reenablement. Retain final native receipts; add macOS cadence and memory/disk scheduling acceptance. The supported minimum remains 250 ms.",
+      "remaining": "Live toggles and Linux CPU, memory and disk scheduling have differential evidence, including 1 s without a browser, live 250 ms, restored 1 s, no reads while disabled and 250 ms after reenablement. Disk traces witness reader invocations rather than each filesystem capacity syscall. Retain final native receipts and add native macOS cadence acceptance. The supported minimum remains 250 ms.",
       "status": "open"
     },
     {

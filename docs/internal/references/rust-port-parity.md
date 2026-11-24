@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 10:18
+last_modified: 2026-11-24 10:32
 status: current
 ---
 
@@ -232,17 +232,23 @@ attachments, and allow memory-only re-enablement. These cases use the supported
 unchanged readings are deduplicated.
 
 For Linux cadence acceptance, trace the selected external executable's actual
-`read` and `pread64` calls on `/proc/stat` with `strace -f -ttt -yy -P /proc/stat`.
-Use an isolated CPU-only stack and private Caddy ports. Measure a 1 s interval
+`read` and `pread64` calls with `strace -f -ttt -yy -P <path>`. Select
+`/proc/stat` for CPU, `/proc/meminfo` for memory, or `/proc/filesystems` for disk.
+Use an isolated stack with only the selected resource enabled and private Caddy
+ports. Measure a 1 s interval
 without a browser, change it live to 250 ms, restore 1 s, disable sampling, then
 re-enable 250 ms. Exclude reload transitions from each measurement window. Join
 unfinished and resumed syscall lines by thread ID; count only successful reads
-whose bytes begin with the aggregate `cpu` row. This avoids counting EOF reads
-or subsequent pages as samples. Retain phase boundaries, individual read times,
+whose bytes begin with the aggregate `cpu` row, `MemTotal:`, or the host's first
+filesystem row, respectively. This avoids counting EOF reads or subsequent pages
+as samples. The disk trace witnesses reader invocations: both native readers read
+the filesystem list once per invocation; it does not measure every filesystem
+capacity syscall. Verify that reader behavior against the pinned dependencies
+and the actual first row before selecting the disk prefix. Retain phase boundaries, individual read times,
 interval bounds, script and trace hashes, selected binary hashes, wire payload
 checks, and identity-aware cleanup evidence for all three executables. These
-traces establish Linux CPU scheduling only; native macOS scheduling and the other
-readouts require separate evidence. Exclude instrumented runs from performance
+traces establish Linux CPU, memory, and disk scheduling only; native macOS
+scheduling requires separate evidence. Exclude instrumented runs from performance
 benchmarks.
 
 `just rust test --test stack_commands documents::source::` compares explicit
