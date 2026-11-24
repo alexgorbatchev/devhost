@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 06:15
+last_modified: 2026-11-24 13:25
 status: current
 ---
 
@@ -128,6 +128,9 @@ replacement and `stack restart --all` for the current project. The suite checks
 both scopes, including manifest-free file and command sessions. Use a Go revision that preserves registration timestamps across
 unchanged reloads; older versions can refuse a valid global restart while their
 initial manifest check rewrites a registration.
+An unexpected launch-capture failure must leave every live owner running and remove
+partial restart logs. The shared fixture verifies this with a stack, a file-serving
+session and a registered process that is not a devhost command.
 
 The command-session cases launch a real HTTP server and an unsupported TCP listener,
 wait for HTTP readiness, add and close listeners, verify stable short aliases and
@@ -161,6 +164,12 @@ rollback, unavailable checkout recovery, and disabling worktrees. Failed
 restoration leaves the repository stopped; restarting one member retries its
 whole group. These fixtures own and join their services before removing their
 temporary directories.
+
+The shared `stack_commands` worktree fixture runs against each comparison
+executable. It checks switching to a locked detached checkout and default-branch
+discovery with absent, agreeing and conflicting remote HEAD references, alongside
+rollback, saved-selection restoration and disabling worktrees. A Git worktree lock
+protects a checkout from pruning; it does not make a valid checkout unavailable.
 
 ## Native control tests
 

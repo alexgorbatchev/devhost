@@ -77,6 +77,33 @@ fn linked_worktree_switch_rollback_restore_and_disable_match() {
         repository["serviceNames"] == json!(["files"])
     });
     assert_eq!(repository["configuredPath"], project.to_str().unwrap());
+    assert_eq!(repository["defaultBranch"], "");
+    for remote in ["origin", "upstream"] {
+        let reference = format!("refs/remotes/{remote}/release/stable");
+        git(&project, &["update-ref", &reference, "HEAD"]);
+        git(
+            &project,
+            &[
+                "symbolic-ref",
+                &format!("refs/remotes/{remote}/HEAD"),
+                &reference,
+            ],
+        );
+    }
+    git(&linked, &["checkout", "--detach"]);
+    git(&project, &["worktree", "lock", linked.to_str().unwrap()]);
+    let metadata = body(&mut get(&origin, "worktrees"));
+    let refreshed = &metadata["repositories"][0];
+    assert_eq!(refreshed["defaultBranch"], "release/stable");
+    let checkout = refreshed["worktrees"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| entry["path"] == linked.to_str().unwrap())
+        .unwrap();
+    assert_eq!(checkout["detached"], true);
+    assert_eq!(checkout["available"], true);
+    assert_eq!(checkout["branch"], "");
     assert_eq!(
         post(
             &origin,
@@ -92,6 +119,25 @@ fn linked_worktree_switch_rollback_restore_and_disable_match() {
         snapshot["repositories"][0]["runningPath"],
         linked.to_str().unwrap()
     );
+    git(
+        &project,
+        &["update-ref", "refs/remotes/upstream/trunk", "HEAD"],
+    );
+    git(
+        &project,
+        &[
+            "symbolic-ref",
+            "refs/remotes/upstream/HEAD",
+            "refs/remotes/upstream/trunk",
+        ],
+    );
+    let conflicting = body(&mut get(&origin, "worktrees"));
+    assert_eq!(conflicting["repositories"][0]["defaultBranch"], "");
+    assert_eq!(
+        conflicting["repositories"][0]["runningPath"],
+        linked.to_str().unwrap()
+    );
+    assert_eq!(content(&runtime).as_deref(), Some("feature checkout"));
     let stack = read_live_stacks(&runtime.state().join("caddy"))
         .unwrap()
         .into_iter()
@@ -164,5 +210,10 @@ fn linked_worktree_switch_rollback_restore_and_disable_match() {
         read_live_stacks(&runtime.state().join("caddy"))
             .unwrap()
             .is_empty()
+    );
+    git(&project, &["worktree", "unlock", linked.to_str().unwrap()]);
+    git(
+        &project,
+        &["worktree", "remove", "--force", linked.to_str().unwrap()],
     );
 }

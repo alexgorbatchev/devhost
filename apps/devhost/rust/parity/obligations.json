@@ -848,7 +848,7 @@
       "failure": "No late acknowledgement may survive parent cancellation.",
       "cleanup": "Join helper/supervisor groups and remove partial owner records.",
       "evidence": ["detach", "detach-regression"],
-      "remaining": "Run late-exit failure diagnostics through both external CLIs.",
+      "remaining": "None beyond final native platform acceptance; maintained comparisons exercise late child exit, missing executable and unavailable external service through all three CLIs.",
       "status": "open"
     },
     {
@@ -908,7 +908,7 @@
       "failure": "Capture failure must abort before stopping any instance.",
       "cleanup": "Join old/new owners and remove only fixture-owned routes.",
       "evidence": ["stack"],
-      "remaining": "Add explicit unexpected launch-capture failure preserves-all fixture.",
+      "remaining": "None beyond final native platform acceptance; unexpected capture failure preserves a registered stack, standalone file server and live non-devhost sentinel.",
       "status": "open"
     },
     {
@@ -932,7 +932,7 @@
       "failure": "Unexpected capture failure stops nothing and returns a diagnostic.",
       "cleanup": "Remove orphan route/record, preserve Caddy PID and join replacements.",
       "evidence": ["stack"],
-      "remaining": "Add explicit capture-failure sentinel coverage alongside existing missing-path cases.",
+      "remaining": "None beyond final native platform acceptance; capture failure stops no owner and removes partial restart logs alongside the existing missing-path cases.",
       "status": "open"
     },
     {
@@ -941,10 +941,10 @@
       "contract": "linked, detached, locked and submodule checkouts",
       "trigger": "Discover real linked, detached, locked and submodule checkouts.",
       "effect": "Worktree identity and eligibility match Git state.",
-      "failure": "Locked/missing/invalid targets are rejected safely.",
+      "failure": "Missing or invalid targets are rejected safely; a Git lock protects a valid checkout from pruning without making it unavailable.",
       "cleanup": "Remove linked checkouts through Git after stopping their services.",
       "evidence": ["worktrees", "worktree-regression"],
-      "remaining": "Linked runtime path is compared; add detached/locked/submodule CLI differential cases.",
+      "remaining": "Linked and locked detached runtime paths are compared; add submodule CLI differential cases and final native platform acceptance.",
       "status": "open"
     },
     {
@@ -956,7 +956,7 @@
       "failure": "Invalid saved selection reports unavailable group without partial start.",
       "cleanup": "Restore fixture repository and remove private selection file.",
       "evidence": ["worktrees"],
-      "remaining": "Add explicit default-branch discovery variants.",
+      "remaining": "Default-branch discovery compares absent, agreeing and conflicting remote HEAD references; add invalid saved selection CLI differential coverage and final native platform acceptance.",
       "status": "open"
     },
     {

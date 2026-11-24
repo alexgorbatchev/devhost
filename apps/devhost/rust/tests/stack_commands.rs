@@ -707,6 +707,63 @@ fn global_restart_preserves_an_unavailable_file_root_and_replaces_healthy_sessio
 }
 
 #[test]
+fn global_restart_capture_failure_preserves_every_live_owner_and_removes_partial_logs() {
+    let runtime = Runtime::start();
+    let (healthy, _healthy) = runtime.start_stack("capture-healthy", false);
+    let _serve = runtime.start_serve();
+    wait_until(|| runtime.serve_response().as_deref() == Some("preserved serve session"));
+    let sentinel = sleeper();
+    record(
+        &runtime.state(),
+        "stacks/capture-sentinel.json",
+        json!({
+            "stackName":"z-capture-sentinel",
+            "manifestPath":runtime.root.path().join("sentinel/devhost.toml"),
+            "ownerPid":sentinel.0.id(),
+            "createdAt":"2026-11-24T00:00:00Z"
+        }),
+    );
+    let caddy = runtime.state().join("caddy");
+    let before = read_live_stacks(&caddy).unwrap();
+    assert_eq!(before.len(), 3);
+    let output = runtime
+        .command()
+        .current_dir(runtime.root.path())
+        .arg("restart-all")
+        .output()
+        .unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    let error = String::from_utf8_lossy(&output.stderr);
+    assert!(error.contains("no stacks were stopped"), "{error}");
+    assert!(
+        error.contains("expected a devhost start or serve process"),
+        "{error}"
+    );
+    assert!(before.iter().all(|stack| stack.is_alive()));
+    assert_eq!(read_live_stacks(&caddy).unwrap(), before);
+    assert_eq!(
+        fs::read_to_string(healthy.join("launches"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
+    assert_eq!(
+        runtime.serve_response().as_deref(),
+        Some("preserved serve session")
+    );
+    assert!(!fs::read_dir(runtime.state()).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .file_name()
+            .as_encoded_bytes()
+            .starts_with(b"restart-")
+    }));
+    // Remove synthetic metadata before the sentinel's RAII guard joins it.
+    fs::remove_file(caddy.join("stacks/capture-sentinel.json")).unwrap();
+}
+
+#[test]
 fn global_restart_retires_deleted_launch_directories_and_restarts_healthy_stacks() {
     let runtime = Runtime::start();
     let (healthy, _healthy) = runtime.start_stack("healthy", false);

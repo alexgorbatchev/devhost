@@ -201,6 +201,7 @@ for (const binary of binaries) {
     "detach_live_cli_start_idempotency_and_stop",
     "detach_live_sigterm_cancels_startup_promptly",
     "detach_symlink_manifest_and_append_logs_across_restarts",
+    "detach_late_exit_and_launch_and_external_failures",
   ]) {
     await run(`${binary.name}-${test}`, cargo("detach_lifecycle", test, "--", "--exact"), binary.path);
   }
