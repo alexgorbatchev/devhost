@@ -41,6 +41,11 @@ struct StackLaunch {
     log_path: PathBuf,
 }
 
+enum RestartAction {
+    Replace(StackLaunch),
+    Retire(LiveStack),
+}
+
 /// Replace selected supervisors with the current executable. `None` selects
 /// every stack in the state directory; a manifest selects only that project.
 pub fn restart_stacks(
@@ -96,12 +101,16 @@ pub fn restart_stacks(
         .map_err(|error| format!("create restart logs: {error}"))?;
     let mut launches = Vec::with_capacity(stacks.len());
     for stack in stacks {
-        let (args, cwd, environment) = capture_launch(&stack).map_err(|error| {
+        let captured = capture_launch(&stack, manifest.is_none()).map_err(|error| {
             format!(
                 "capture {} (PID {}); no stacks were stopped: {error}",
                 stack.name, stack.pid
             )
         })?;
+        let Some((args, cwd, environment)) = captured else {
+            launches.push(RestartAction::Retire(stack));
+            continue;
+        };
         let log_path = directory.path().join(format!("{}.log", stack.pid));
         let log = OpenOptions::new()
             .create_new(true)
@@ -109,19 +118,40 @@ pub fn restart_stacks(
             .mode(0o600)
             .open(&log_path)
             .map_err(|error| format!("create restart log: {error}"))?;
-        launches.push(StackLaunch {
+        launches.push(RestartAction::Replace(StackLaunch {
             stack,
             args,
             directory: cwd,
             environment,
             log,
             log_path,
-        });
+        }));
     }
     // Runtime logs remain available to the replacement and for failure diagnosis.
     let _retained_logs = directory.keep();
     let mut errors = Vec::new();
-    for launch in launches {
+    for action in launches {
+        let launch = match action {
+            RestartAction::Replace(launch) => launch,
+            RestartAction::Retire(stack) => {
+                match stop_stack(&stack, &caddy_dir) {
+                    Ok(()) => output
+                        .log_stdout_checked(
+                            "devhost",
+                            &format!(
+                                "Stopped {} (PID {}) because its launch directory was removed.",
+                                stack.name, stack.pid
+                            ),
+                        )
+                        .map_err(|error| error.to_string())?,
+                    Err(error) => errors.push(format!(
+                        "stop {} (PID {}) with missing launch directory: {error}",
+                        stack.name, stack.pid
+                    )),
+                }
+                continue;
+            }
+        };
         output
             .log_stdout_checked(
                 "devhost",
@@ -151,6 +181,24 @@ pub fn restart_stacks(
 
 type CapturedLaunch = (Vec<OsString>, PathBuf, Vec<(OsString, OsString)>);
 
+fn launch_directory_exists(
+    directory: &Path,
+    stack: &LiveStack,
+    retire_missing: bool,
+) -> Result<bool, String> {
+    match fs::metadata(directory) {
+        Ok(info) if info.is_dir() => Ok(true),
+        Ok(_) => Err("launch working directory is not a directory".to_owned()),
+        Err(error) if retire_missing && error.kind() == std::io::ErrorKind::NotFound => {
+            if !stack.is_alive() {
+                return Err("stack process changed during capture".to_owned());
+            }
+            Ok(false)
+        }
+        Err(error) => Err(format!("read launch working directory: {error}")),
+    }
+}
+
 fn preserve_serve_session(mut args: Vec<OsString>, stack: &LiveStack) -> Vec<OsString> {
     if !stack.manifest_path.is_empty() || args.first().is_none_or(|arg| arg != "serve") {
         return args;
@@ -173,7 +221,10 @@ fn preserve_serve_session(mut args: Vec<OsString>, stack: &LiveStack) -> Vec<OsS
 }
 
 #[cfg(target_os = "linux")]
-fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
+fn capture_launch(
+    stack: &LiveStack,
+    retire_missing: bool,
+) -> Result<Option<CapturedLaunch>, String> {
     let mut ancestor = std::process::id() as i32;
     while ancestor > 1 {
         if ancestor == stack.pid {
@@ -195,8 +246,8 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
     }
     let cwd = fs::read_link(directory.join("cwd"))
         .map_err(|error| format!("read launch working directory: {error}"))?;
-    if !cwd.is_dir() {
-        return Err("launch working directory is not a directory".to_owned());
+    if !launch_directory_exists(&cwd, stack, retire_missing)? {
+        return Ok(None);
     }
     let bytes = fs::read(directory.join("environ"))
         .map_err(|error| format!("read launch environment: {error}"))?;
@@ -215,15 +266,18 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
     if !stack.is_alive() {
         return Err("stack process changed during capture".to_owned());
     }
-    Ok((
+    Ok(Some((
         preserve_serve_session(preserve_launch_mode(&args[1..], stack.remote), stack),
         cwd,
         environment,
-    ))
+    )))
 }
 
 #[cfg(target_os = "macos")]
-fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
+fn capture_launch(
+    stack: &LiveStack,
+    retire_missing: bool,
+) -> Result<Option<CapturedLaunch>, String> {
     use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
 
     let mut ancestor = std::process::id() as i32;
@@ -259,8 +313,8 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
     let cwd = process
         .cwd()
         .ok_or("read launch working directory: unavailable")?;
-    if !cwd.is_dir() {
-        return Err("launch working directory is not a directory".to_owned());
+    if !launch_directory_exists(cwd, stack, retire_missing)? {
+        return Ok(None);
     }
     let environment: Vec<_> = process
         .environ()
@@ -280,15 +334,18 @@ fn capture_launch(stack: &LiveStack) -> Result<CapturedLaunch, String> {
     if !stack.is_alive() {
         return Err("stack process changed during capture".to_owned());
     }
-    Ok((
+    Ok(Some((
         preserve_serve_session(preserve_launch_mode(&args[1..], stack.remote), stack),
         cwd.to_owned(),
         environment,
-    ))
+    )))
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn capture_launch(_stack: &LiveStack) -> Result<CapturedLaunch, String> {
+fn capture_launch(
+    _stack: &LiveStack,
+    _retire_missing: bool,
+) -> Result<Option<CapturedLaunch>, String> {
     Err("capturing a running stack launch is not implemented for this platform".to_owned())
 }
 
@@ -359,9 +416,14 @@ fn replace_stack(
     executable: &Path,
     output: &ServiceOutput,
 ) -> Result<(), String> {
-    signal_live_stack(caddy_dir, &launch.stack)?;
+    stop_stack(&launch.stack, caddy_dir)?;
+    start_replacement(launch, caddy_dir, executable, output)
+}
+
+fn stop_stack(stack: &LiveStack, caddy_dir: &Path) -> Result<(), String> {
+    signal_live_stack(caddy_dir, stack)?;
     let deadline = Instant::now() + STOP_TIMEOUT;
-    while launch.stack.is_alive() {
+    while stack.is_alive() {
         if Instant::now() >= deadline {
             return Err(
                 "stack is still stopping after 15s; replacement was not started".to_owned(),
@@ -369,6 +431,15 @@ fn replace_stack(
         }
         thread::sleep(POLL_INTERVAL);
     }
+    Ok(())
+}
+
+fn start_replacement(
+    launch: &StackLaunch,
+    caddy_dir: &Path,
+    executable: &Path,
+    output: &ServiceOutput,
+) -> Result<(), String> {
     let mut command = Command::new(executable);
     command
         .args(&launch.args)
@@ -565,28 +636,28 @@ mod tests {
         let fixture = tempfile::tempdir().unwrap();
         let child = process(fixture.path(), false);
         let mut live = stack(child.0.id() as i32);
-        let (args, directory, environment) = capture_launch(&live).unwrap();
+        let (args, directory, environment) = capture_launch(&live, false).unwrap().unwrap();
         assert_eq!(args, ["start", "--remote=false", "--local=true"]);
         assert_eq!(directory, fixture.path());
         assert!(!environment.is_empty());
         live.owner_start_identity = "wrong-process".to_owned();
         assert_eq!(
-            capture_launch(&live).unwrap_err(),
+            capture_launch(&live, false).unwrap_err(),
             "stack process changed during capture"
         );
         assert!(
-            capture_launch(&stack(std::process::id() as i32))
+            capture_launch(&stack(std::process::id() as i32), false)
                 .unwrap_err()
                 .contains("cannot restart an ancestor")
         );
         assert!(
-            capture_launch(&stack(i32::MAX))
+            capture_launch(&stack(i32::MAX), false)
                 .unwrap_err()
                 .contains("read launch arguments")
         );
         let empty = process(fixture.path(), true);
         assert!(
-            capture_launch(&stack(empty.0.id() as i32))
+            capture_launch(&stack(empty.0.id() as i32), false)
                 .unwrap_err()
                 .contains("did not provide the launch environment")
         );
@@ -596,9 +667,14 @@ mod tests {
         fs::remove_file(removed.join("start")).unwrap();
         fs::remove_dir(&removed).unwrap();
         assert!(
-            capture_launch(&stack(lost.0.id() as i32))
+            capture_launch(&stack(lost.0.id() as i32), false)
                 .unwrap_err()
                 .contains("working directory")
+        );
+        assert!(
+            capture_launch(&stack(lost.0.id() as i32), true)
+                .unwrap()
+                .is_none()
         );
     }
 

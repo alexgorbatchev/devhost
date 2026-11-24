@@ -1,5 +1,5 @@
 {
-  "goSha": "0a20d756bd9eafa8b6dd016e40d08a118a71f7d0",
+  "goSha": "49745a033f849a6113067567c7915b0132bff4ba",
   "features": [
     {
       "id": "cli",
@@ -30,7 +30,7 @@
         },
         {
           "path": "apps/devhost/internal/cli/parse.go",
-          "blob": "b4bcbc81753167d53e707f6c1f824aab2d4aa065"
+          "blob": "70b054e8e434d319c74821b9d4ee7426a1c7c5d4"
         },
         {
           "path": "apps/devhost/internal/cli/remote.go",
@@ -459,7 +459,8 @@
         "project stack restart and explicit manifest precedence",
         "project-scoped stack restart --all",
         "global restart-all from any directory",
-        "preserve environment, cwd, argv, log privacy and session identity"
+        "preserve environment, cwd, argv, log privacy and session identity",
+        "global restart retires missing launch directories and continues healthy replacements; unexpected capture failure stops nothing"
       ],
       "rust": [
         "apps/devhost/rust/src/services/restart.rs",
@@ -479,7 +480,7 @@
         },
         {
           "path": "apps/devhost/internal/services/restart.go",
-          "blob": "6eb21af34aabc889237ce475e4046600b77e728d"
+          "blob": "04b600095a9c105d67f45ce544138f8428665ed4"
         },
         {
           "path": "apps/devhost/internal/services/stack_directory.go",
@@ -1333,7 +1334,7 @@
         },
         {
           "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
-          "blob": "3b3912fd0339ad548bbfddb28bd944fcff8f5d66"
+          "blob": "73a8400f351808e55ad66de8833239a5b5b769e9"
         },
         {
           "path": "packages/docs/src/content/docs/guides/troubleshooting.md",
@@ -1409,7 +1410,7 @@
         },
         {
           "path": "skills/devhost/SKILL.md",
-          "blob": "86ab5c22d31a962c7462ceb71ace278bfe8809d5"
+          "blob": "d3e0ee13c2fdbb9949c05db6a9957f5196a82101"
         },
         {
           "path": "skills/devhost/references/manifest-example.md",
@@ -1473,7 +1474,7 @@
     },
     {
       "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
-      "blob": "a98a21c43743567291d6242c2a422fa936ffa1fa",
+      "blob": "79d63e2df41f53e7cfed055b0f0401acdd5e55e3",
       "reason": "Existing Rust port documentation adds experimental build instructions, tested behavior and explicit Go/Rust differences."
     },
     {
@@ -1493,7 +1494,7 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "26dd46258252e15061610b120af1133476e474f2",
+      "blob": "dd51ec59722e2c8cdc772efaa07908b69abea931",
       "reason": "Shared operator contract documents verified Rust behavior, completion installation and portability differences."
     }
   ]

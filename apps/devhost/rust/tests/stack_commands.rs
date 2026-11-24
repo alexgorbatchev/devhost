@@ -587,3 +587,54 @@ fn global_restart_works_outside_a_project_and_preserves_serve_sessions() {
         assert!(replacement.control_port > 0);
     }
 }
+
+#[test]
+fn global_restart_retires_deleted_launch_directories_and_restarts_healthy_stacks() {
+    let runtime = Runtime::start();
+    let (healthy, _healthy) = runtime.start_stack("healthy", false);
+    let (removed, _removed) = runtime.start_stack("removed", false);
+    let _serve = runtime.start_serve();
+    let caddy = runtime.state().join("caddy");
+    let before = read_live_stacks(&caddy).unwrap();
+    assert_eq!(before.len(), 3);
+    fs::remove_dir_all(&removed).unwrap();
+    fs::remove_dir_all(runtime.root.path().join("served files")).unwrap();
+
+    // A project-specific capture failure still aborts before stopping anything.
+    let output = runtime
+        .command()
+        .current_dir(runtime.root.path())
+        .args(["stack", "restart", "--manifest"])
+        .arg(removed.join("devhost.toml"))
+        .output()
+        .unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(before.iter().all(|stack| stack.is_alive()));
+
+    let output = runtime
+        .command()
+        .current_dir(runtime.root.path())
+        .arg("restart-all")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for stack in before.iter().filter(|stack| stack.name != "healthy") {
+        assert!(
+            stdout.contains(&format!("Stopped {} (PID {})", stack.name, stack.pid)),
+            "{stdout}"
+        );
+    }
+    wait_until(|| {
+        fs::read_to_string(healthy.join("launches"))
+            .unwrap()
+            .lines()
+            .count()
+            == 2
+    });
+    assert!(before.iter().all(|stack| !stack.is_alive()));
+    let after = read_live_stacks(&caddy).unwrap();
+    assert_eq!(after.len(), 1);
+    assert_eq!(after[0].name, "healthy");
+    assert!(after[0].control_port > 0);
+}
