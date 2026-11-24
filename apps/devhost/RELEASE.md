@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-24 00:21
+last_modified: 2026-11-24 00:57
 status: current
 ---
 
@@ -103,6 +103,36 @@ just rust comparisons /path/to/go-oracle /path/to/repaired-go/devhost /path/to/o
 ```
 
 The unchanged oracle's legacy-document and duplicate-restart defects are asserted separately. Repaired Go and optimized Rust must pass the corresponding fixtures. Any other failure fails the gate; source hashes and coverage do not replace executed comparisons.
+
+The gate also starts a Go stack and a Rust stack together in private state, replaces both through the optimized Rust executable's `restart-all`, and rolls both back through the unchanged Go executable. It verifies the selected process executable, included manifests, linked-worktree selections, saved chat-panel positions, discovery and unchanged Caddy CA/key material and machine config. Concurrent mixed-version Caddy starts share one runtime; both clients refuse a newer runtime generation and preserve unrelated processes with reused PID records. A second fixture fails one replacement with an invalid manifest, keeps the healthy stack available, recovers a killed Rust supervisor through Go and completes the Go rollback. Its candidate executables are immutable snapshots. It changes neither installed tools nor system trust. Repeat these fixtures with absolute paths:
+
+```sh
+DEVHOST_UPGRADE_GO_BINARY=/path/to/known-go/devhost \
+DEVHOST_UPGRADE_RUST_BINARY=/path/to/optimized-rust/devhost \
+just rust test --test stack_commands upgrade:: -- --ignored
+```
+
+Chat event journals are unlinked temporary files owned by each running supervisor in both implementations. Their replay cursors are scoped to that live session; restarting a supervisor ends those streams. Persistent provider history and saved panel positions have separate ownership. A rollback must preserve config, worktree selections, provider data and Caddy storage; copying state cannot restore an ended in-memory chat stream.
+
+Verify the real dotfiles override manager separately with a private home, config, generated store and PATH. This stages the known Go executable through a private manual tool definition; it does not exercise the public download installer. It checks managed selection, immutable Rust registration, failed registration, protected updates, missing-payload errors and return to the original Go payload. The evidence directory must be new; the temporary profile is removed on success or failure:
+
+```sh
+bun apps/devhost/scripts/verifyRustOverride.ts \
+  /path/to/dotfiles /path/to/known-go/devhost /path/to/optimized-rust/devhost \
+  /path/to/new-evidence-directory
+```
+
+### Upgrade and rollback order
+
+Before an approved production switch, retain absolute paths and SHA-256 hashes for the known Go executable and candidate, and record `stack list`, `serve list`, each launch directory and its arguments. Select the same config and state directories for every command: `DEVHOST_CONFIG_DIR` and `DEVHOST_STATE_DIR` override the XDG defaults. Different profiles need separate records and recovery commands.
+
+Create a private backup of machine config, manifest/include sources, `worktrees/`, `chat-panels/` and `caddy/storage/` under that profile's state directory. Caddy storage contains private CA keys; preserve permissions and keep it out of logs and public artifacts. Take a consistent offline backup of Caddy storage only after stopping the affected stacks, standalone sessions and shared Caddy. Coordinate this interruption across every stack using that state directory. Provider histories and credentials live outside devhost's state and retain their provider-specific backup policy.
+
+After native acceptance and production approval, register the reviewed executable through `dotfiles tool dev use devhost --bin devhost=/absolute/path/to/candidate --version <candidate-version>` in the intended dotfiles project. Clear the shell's command cache, verify `command -v devhost` and `devhost --version`, then invoke `/absolute/path/to/candidate restart-all` with the recorded config/state environment. Verify the stack/session inventory and routed health before declaring the switch complete. A required Caddy policy restart affects every stack sharing the proxy; preserve its storage and trust material.
+
+For rollback, invoke `/absolute/path/to/known-go/devhost restart-all` with the same environment, verify discovery and routed health, then run `dotfiles tool dev off devhost` to restore the managed shim and check its PATH/version. If the managed release is not the recorded Go build, keep using its absolute executable until the installer selects the verified Go payload. A nonzero global restart can leave healthy replacements running: repair the failed manifest or launch directory, start that stack with the known Go executable and its recorded arguments, then repeat the Go global restart. After a supervisor crash, its stale PID registration is not a recovery plan; start the affected manifest explicitly and verify the surviving stacks remain available.
+
+Binary rollback normally reuses current persistent state. Restore a backup only while all affected owners and shared Caddy are stopped, and restore config, worktree/panel files or Caddy storage selectively to their original paths. Preserve the current files privately before replacement. Runtime PID/start-identity receipts, registrations, lock files and live control ports describe processes that no longer exist; regenerate them through normal startup instead of restoring them from a backup. Preserve the CA as a unit; replacing it changes the trust identity. No state migration or trust-store reset is part of the candidate procedure.
 
 The eventual production switch requires a separately approved change to `publish.yml`: retain version/tag validation and the shared repository checks, require the Rust checks and native comparisons, build through the Rust candidate packager on its native matrix, collect the five verified archives with their checksums/licenses/provenance, then use the existing release upload and released-docs deployment. Prepare the concrete workflow diff and tested Go rollback procedure for approval before selecting that publisher. A candidate CI artifact is not a production release.
 

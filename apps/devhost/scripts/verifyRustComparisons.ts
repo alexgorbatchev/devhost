@@ -1,4 +1,4 @@
-import { chmod, copyFile, mkdir } from "node:fs/promises";
+import { chmod, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import inventory from "../rust/parity/inventory.json";
 
@@ -32,7 +32,7 @@ await mkdir(resolve(output, "binaries"));
 const binaries = await Promise.all(
   candidates.map(async (candidate) => {
     const path = resolve(output, "binaries", candidate.name);
-    await copyFile(candidate.path, path);
+    await Bun.write(path, Bun.file(candidate.path));
     await chmod(path, 0o755);
     return { name: candidate.name, sourcePath: candidate.path, path };
   }),
@@ -79,6 +79,8 @@ async function run(name: string, command: string[], binary: string, expectedFail
       DEVHOST_REMOTE_TEST_BINARY: binary,
       DEVHOST_CLI_TEST_BINARY: binary,
       DEVHOST_CADDY_TEST_BINARY: binary,
+      DEVHOST_UPGRADE_GO_BINARY: binaries[0]!.path,
+      DEVHOST_UPGRADE_RUST_BINARY: binaries[2]!.path,
       DEVHOST_CLI_TEST_VERSION: Bun.spawnSync([binary, "--version"]).stdout.toString().trim(),
     },
     stdin: "ignore",
@@ -194,6 +196,7 @@ for (const binary of binaries) {
     binary.path,
   );
 }
+await run("mixed-version-upgrade-rollback", cargo("stack_commands", "upgrade::", "--", "--ignored"), binaries[2]!.path);
 const toolVersion = Bun.spawnSync(["rust-anything", "--version"]);
 if (toolVersion.exitCode !== 0 || toolVersion.stdout.toString().trim() !== "rust-anything 3.3.0") {
   throw new Error("Rust Anything 3.3.0 is required.");
