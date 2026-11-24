@@ -513,8 +513,9 @@ const restartAllDescription = `Restart every running manifest stack and standalo
 session in the selected state directory with the devhost
 executable running this command. Run this from any folder
 after installing a new version. Instances whose launch
-directory was removed are stopped. The remaining instances
-are restarted.
+directory was removed are stopped. A file serve session
+whose served directory cannot be opened is left running
+and reported as a failure. Other instances are restarted.
 
 ` + restartBehaviorDescription
 

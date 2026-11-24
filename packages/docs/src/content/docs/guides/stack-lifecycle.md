@@ -251,7 +251,7 @@ After installing a new devhost executable, replace the running supervisors:
 devhost restart-all
 ```
 
-Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables). `restart-all` stops instances whose launch directory was removed and restarts the remaining instances.
+Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables). `restart-all` stops instances whose launch working directory was removed. If a file serve session's working directory still exists but its served directory cannot be opened, the command reports the path and leaves the original session running. Other instances are still restarted.
 
 To restart a single project, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`.
 
