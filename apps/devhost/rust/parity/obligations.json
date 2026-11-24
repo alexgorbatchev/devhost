@@ -450,9 +450,9 @@
       "trigger": "Pass explicit and environment manifests, Boolean values and short flags.",
       "effect": "Explicit manifest wins; values and defaults select identical services.",
       "failure": "Invalid Boolean, missing value and conflicting flags fail.",
-      "cleanup": "Read-only cases leave fixture files unchanged.",
-      "evidence": ["cli-precedence", "command-serve"],
-      "remaining": "Add native successful short-flag lifecycle assertions where not covered by corpus.",
+      "cleanup": "Read-only cases preserve fixture files; successful lifecycle cases join owned supervisors and remove their routes and registrations.",
+      "evidence": ["cli-precedence", "command-serve", "stack-start-stop"],
+      "remaining": "None beyond final native platform acceptance; successful short-flag lifecycle compares explicit manifest and idle-timeout flags against invalid environment values, Boolean short flags, service filtering, selected-service routes, stack info and stop from outside the project in both output modes.",
       "status": "open"
     },
     {
@@ -944,7 +944,7 @@
       "failure": "Missing or invalid targets are rejected safely; a Git lock protects a valid checkout from pruning without making it unavailable.",
       "cleanup": "Remove linked checkouts through Git after stopping their services.",
       "evidence": ["worktrees", "worktree-regression"],
-      "remaining": "Linked and locked detached runtime paths are compared; add submodule CLI differential cases and final native platform acceptance.",
+      "remaining": "None beyond final native platform acceptance; shared CLI cases cover linked, locked detached and submodule checkouts, owning-manifest fallback and checkout-local precedence.",
       "status": "open"
     },
     {
@@ -953,10 +953,10 @@
       "contract": "repository grouping, default branch and saved selections",
       "trigger": "Enable repository grouping and save a selection away from default branch.",
       "effect": "All members switch together; saved selection restores after supervisor replacement.",
-      "failure": "Invalid saved selection reports unavailable group without partial start.",
+      "failure": "Malformed, relative or empty-identity saved selections reject startup before ownership; a valid selection whose checkout disappeared leaves the whole group unavailable without partial start.",
       "cleanup": "Restore fixture repository and remove private selection file.",
       "evidence": ["worktrees"],
-      "remaining": "Default-branch discovery compares absent, agreeing and conflicting remote HEAD references; add invalid saved selection CLI differential coverage and final native platform acceptance.",
+      "remaining": "None beyond final native platform acceptance; default-branch variants, invalid saved selections and explicit whole-group recovery from a removed checkout are compared.",
       "status": "open"
     },
     {
@@ -968,7 +968,7 @@
       "failure": "Unrelated owners cannot be stopped by a selection.",
       "cleanup": "Stop both fixture stacks and remove checkout registrations.",
       "evidence": ["worktrees", "worktree-regression"],
-      "remaining": "Add occupied-owner and missing-checkout runtime comparison.",
+      "remaining": "None beyond final native platform acceptance; shared CLI cases validate current owner identity, reject stale or unrelated requests, stop the competing owner before a separate switch, and recover a missing selection without stale routes.",
       "status": "open"
     },
     {
@@ -980,7 +980,7 @@
       "failure": "Failed restoration leaves the group stopped, never half-switched.",
       "cleanup": "Join failed/rolled-back children and clean claims.",
       "evidence": ["worktrees", "worktree-regression"],
-      "remaining": "Existing differential checks failed path selection; add failed restoration and stopped-group retry.",
+      "remaining": "None beyond final native platform acceptance; shared CLI cases fail both the requested start and restoration, verify every member remains stopped, and retry the whole group through one member.",
       "status": "open"
     },
     {
@@ -992,7 +992,7 @@
       "failure": "Invalid worktree mode fails without stopping unrelated services.",
       "cleanup": "Stop all fixture-owned checkouts and remove selections.",
       "evidence": ["worktrees", "stack-start-stop"],
-      "remaining": "Add live stop --worktrees across two repository groups.",
+      "remaining": "None beyond final native platform acceptance; shared CLI cases stop both owners in one repository family, preserve an independent repository, and reject the mode outside Git without stopping it.",
       "status": "open"
     },
     {
@@ -1003,8 +1003,8 @@
       "effect": "Session bypasses manifest discovery and uses local-only routing.",
       "failure": "Missing domain or remote-incompatible mode fails before launch.",
       "cleanup": "Stop standalone session and remove own route.",
-      "evidence": ["files", "command-serve", "cli-regression"],
-      "remaining": "Add invalid neighbouring-manifest and local-only route comparison.",
+      "evidence": ["files", "command-serve", "cli-regression", "serve"],
+      "remaining": "None beyond final native platform acceptance; shared CLI fixtures serve beside invalid neighbouring and explicit override manifests and verify local-only owner registration.",
       "status": "open"
     },
     {
@@ -1015,8 +1015,8 @@
       "effect": "File bytes or external response are routed under the explicit domain.",
       "failure": "Conflicting dir/port/command arguments are rejected.",
       "cleanup": "Close owned file listener; external listener remains until fixture closes it.",
-      "evidence": ["files", "documents", "cli-regression"],
-      "remaining": "Add explicit external-port serve CLI mode comparison.",
+      "evidence": ["files", "documents", "cli-regression", "serve"],
+      "remaining": "None beyond final native platform acceptance; shared CLI fixtures compare explicit/default directories and short domain/port flags against a real external HTTP listener.",
       "status": "open"
     },
     {
@@ -1027,8 +1027,8 @@
       "effect": "Their routes and owner records stay independent; Caddy remains live.",
       "failure": "Duplicate host conflict cannot replace a foreign session.",
       "cleanup": "Stop both sessions, then owned Caddy and rebind ports.",
-      "evidence": ["stack", "files"],
-      "remaining": "Add concurrent file-session host-claim conflict comparison.",
+      "evidence": ["stack", "files", "serve"],
+      "remaining": "None beyond final native platform acceptance; concurrent file sessions reject a duplicate host without changing either original owner or route, and stopping one preserves the other and Caddy.",
       "status": "open"
     },
     {
@@ -1039,8 +1039,8 @@
       "effect": "Its route disappears while the external server PID stays alive.",
       "failure": "Failed backend route does not authorize killing external process.",
       "cleanup": "Owner joins external backend after verifying preservation.",
-      "evidence": ["documents"],
-      "remaining": "External manifest backend is compared; add standalone external-port session variant.",
+      "evidence": ["documents", "serve"],
+      "remaining": "None beyond final native platform acceptance; stopping a standalone external-port session withdraws its route while its backend remains alive and serves the same response directly.",
       "status": "open"
     },
     {
@@ -1052,7 +1052,7 @@
       "failure": "Invalid mixed input mode exits nonzero.",
       "cleanup": "Stop command process group and withdraw session route.",
       "evidence": ["serve", "command-serve"],
-      "remaining": "Add explicit argv-with-spaces comparison alongside existing shell command fixture.",
+      "remaining": "None beyond final native platform acceptance; the same real HTTP peer records argv containing spaces, an empty value, a literal shell variable and a quote through direct argv and a single quoted shell command.",
       "status": "open"
     },
     {
@@ -1064,7 +1064,7 @@
       "failure": "Malformed private session ID is rejected.",
       "cleanup": "Stop named sessions and remove registration.",
       "evidence": ["serve", "command-serve"],
-      "remaining": "Add repository-name and sanitation matrix comparison.",
+      "remaining": "None beyond final native platform acceptance; shared live sessions compare cwd, local Git directory, origin remote and entrypoint repository names, empty sanitized names, 48-character truncation and unique eight-digit hexadecimal session identifiers.",
       "status": "open"
     },
     {

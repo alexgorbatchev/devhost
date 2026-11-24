@@ -656,3 +656,92 @@ fn rejected_reload_preserves_routes_and_new_include_glob_recovers_match() {
     );
     stop(&runtime, &project, &mut process);
 }
+
+#[test]
+fn successful_short_flags_select_and_stop_the_explicit_manifest_in_both_output_modes() {
+    let runtime = Runtime::start();
+    let project = runtime.root.path().join("short lifecycle flags");
+    fs::create_dir_all(project.join("public")).unwrap();
+    fs::write(project.join("public/note.txt"), "short flag selection").unwrap();
+    let manifest = project.join("devhost.toml");
+    fs::write(&manifest, "name='short-flags'\n[worktrees]\nenabled=false\n[services.files]\nserve='public'\nhost='short-files'\n[services.always]\nserve='public'\nhost='short-always'\nalwaysStart=true\n[services.spare]\nserve='public'\nhost='short-spare'\n").unwrap();
+    for agent in ["0", "1"] {
+        let command = || {
+            let mut command = runtime.command();
+            command
+                .current_dir(runtime.root.path())
+                .env("AGENT", agent)
+                .env(
+                    "DEVHOST_MANIFEST",
+                    "/missing-explicit-override/devhost.toml",
+                )
+                .env("DEVHOST_IDLE_TIMEOUT", "invalid-duration");
+            command
+        };
+        let selected = command()
+            .args(["service", "list", "-s", "-m"])
+            .arg(&manifest)
+            .output()
+            .unwrap();
+        assert!(selected.status.success(), "{selected:?}");
+        assert_eq!(
+            String::from_utf8(selected.stdout).unwrap(),
+            "files\nspare\n"
+        );
+        let started = command()
+            .args(["start", "-l", "-r=false", "-d=false", "-i", "0", "-m"])
+            .arg(&manifest)
+            .args(["--detach", "files"])
+            .output()
+            .unwrap();
+        assert!(started.status.success(), "{started:?}");
+        wait_until(|| {
+            response(&runtime, "short-files.localhost").as_deref() == Some("short flag selection")
+        });
+        assert_eq!(
+            response(&runtime, "short-always.localhost").as_deref(),
+            Some("short flag selection")
+        );
+        assert_ne!(
+            response(&runtime, "short-spare.localhost").as_deref(),
+            Some("short flag selection")
+        );
+        let live = read_live_stacks(&runtime.state().join("caddy")).unwrap();
+        assert_eq!(live.len(), 1);
+        assert_eq!(live[0].manifest_path, manifest.to_str().unwrap());
+        assert!(!live[0].remote);
+        let info = command()
+            .args(["stack", "info", "-m"])
+            .arg(&manifest)
+            .output()
+            .unwrap();
+        assert!(info.status.success(), "{info:?}");
+        assert!(
+            String::from_utf8_lossy(&info.stdout).contains("files"),
+            "{info:?}"
+        );
+        let stopped = command()
+            .args(["stop", "-m"])
+            .arg(&manifest)
+            .output()
+            .unwrap();
+        assert!(stopped.status.success(), "{stopped:?}");
+        wait_until(|| !live[0].is_alive());
+        assert!(
+            read_live_stacks(&runtime.state().join("caddy"))
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            read_live_stack_owners(&runtime.state().join("caddy"))
+                .unwrap()
+                .is_empty()
+        );
+        for host in ["short-files.localhost", "short-always.localhost"] {
+            assert_ne!(
+                response(&runtime, host).as_deref(),
+                Some("short flag selection")
+            );
+        }
+    }
+}

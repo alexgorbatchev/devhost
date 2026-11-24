@@ -1,5 +1,11 @@
 use super::*;
 
+#[path = "serve/files.rs"]
+mod files;
+
+#[path = "serve/names.rs"]
+mod names;
+
 const SERVER: &str = r#"import http.server, json, os, pathlib, signal, socket, threading, time
 root = pathlib.Path.cwd()
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -165,6 +171,7 @@ fn command_sessions_discover_http_and_support_named_controls() {
         response(&runtime, &host).as_deref(),
         Some("command serve fixture")
     );
+    names::compare_names_and_argument_boundaries(&runtime);
 }
 
 #[test]

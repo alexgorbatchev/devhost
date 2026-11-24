@@ -1,6 +1,15 @@
 use super::control::{body, client, get, origin, post};
 use super::*;
 
+#[path = "worktrees/owners.rs"]
+mod owners;
+#[path = "worktrees/recovery.rs"]
+mod recovery;
+#[path = "worktrees/saved.rs"]
+mod saved;
+#[path = "worktrees/submodule.rs"]
+mod submodule;
+
 fn git(directory: &Path, args: &[&str]) {
     let output = Command::new("git")
         .arg("-C")
@@ -18,12 +27,16 @@ fn git(directory: &Path, args: &[&str]) {
 }
 
 fn content(runtime: &Runtime) -> Option<String> {
+    content_at(runtime, "worktree-contract.localhost")
+}
+
+fn content_at(runtime: &Runtime, host: &str) -> Option<String> {
     client()
         .get(format!(
             "http://127.0.0.1:{}/note.txt",
             runtime.settings.http_port
         ))
-        .header("Host", "worktree-contract.localhost")
+        .header("Host", host)
         .call()
         .ok()?
         .body_mut()

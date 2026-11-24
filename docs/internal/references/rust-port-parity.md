@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-20 19:52
-last_modified: 2026-11-24 13:25
+last_modified: 2026-11-24 06:12
 status: current
 ---
 
@@ -132,11 +132,28 @@ An unexpected launch-capture failure must leave every live owner running and rem
 partial restart logs. The shared fixture verifies this with a stack, a file-serving
 session and a registered process that is not a devhost command.
 
+Successful short-flag lifecycle cases run from outside the project in human and
+agent modes. They compare explicit manifest and idle-timeout flags against invalid
+environment values, Boolean short flags, service filtering, selected-service
+routes, stack information and stopping the explicitly selected manifest.
+
+The standalone file cases serve explicit and default directories beside malformed
+manifests, including an invalid explicit manifest override. They compare short
+domain and port flags, local-only owner registration, two simultaneous file
+sessions, duplicate-host rejection, and stopping one session while the other and
+Caddy remain live. The external-port case withdraws only the session's route on
+stop, then checks that the independently owned backend still serves its response
+directly.
+
 The command-session cases launch a real HTTP server and an unsupported TCP listener,
 wait for HTTP readiness, add and close listeners, verify stable short aliases and
 port-qualified names, inspect and stop named sessions, replace the supervisor, and
 check failed-start cleanup. `command-serve.jsonl` compares validation, missing-session
 errors and short flags with Rust Anything.
+The named-session fixture also compares direct argv and a quoted shell command
+with spaces, empty arguments, literal shell variables and quotes. Live name cases
+cover cwd, local repository, origin remote and entrypoint repository inference,
+empty sanitized labels, length truncation and random session identifiers.
 
 The stack-command suite also runs on macOS. Process ownership there uses the
 kernel's microsecond start timestamp in the same decimal format as Go; launch
@@ -167,9 +184,17 @@ temporary directories.
 
 The shared `stack_commands` worktree fixture runs against each comparison
 executable. It checks switching to a locked detached checkout and default-branch
-discovery with absent, agreeing and conflicting remote HEAD references, alongside
-rollback, saved-selection restoration and disabling worktrees. A Git worktree lock
-protects a checkout from pruning; it does not make a valid checkout unavailable.
+discovery with absent, agreeing and conflicting remote HEAD references. Real
+submodule checkouts exercise owning-manifest fallback and checkout-local manifest
+precedence. Invalid saved selections reject startup before claiming ownership;
+a valid selection whose checkout disappeared leaves every group member stopped
+until an explicit recovery. Competing-owner requests validate repository,
+checkout and owner identity, then stop that owner before a separate switch.
+Failed startup and failed restoration leave the whole group stopped; restarting
+one member retries every member. Family-wide stop preserves an independent Git
+repository. These cases run alongside saved-selection restoration and disabling
+worktrees. A Git worktree lock protects a checkout from pruning; it does not make
+a valid checkout unavailable.
 
 ## Native control tests
 
