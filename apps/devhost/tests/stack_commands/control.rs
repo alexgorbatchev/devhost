@@ -51,6 +51,13 @@ pub(super) fn body(response: &mut ureq::http::Response<ureq::Body>) -> Value {
     serde_json::from_str(&response.body_mut().read_to_string().unwrap()).unwrap()
 }
 
+pub(super) fn reload_count(project: &Path) -> usize {
+    fs::read_to_string(project.join("original.log"))
+        .unwrap()
+        .matches("configuration reloaded:")
+        .count()
+}
+
 fn enable_editor(project: &Path, origin: &str) -> String {
     let manifest = project.join("devhost.toml");
     let content = format!(
@@ -287,7 +294,9 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
         "{}\n[devtools.resources]\nenabled=true\n[devtools.resources.cpu]\nenabled=true\npollInterval='250ms'\n[devtools.resources.memory]\nenabled=true\npollInterval='250ms'\n[devtools.resources.disk]\nenabled=true\npollInterval='250ms'\n",
         fs::read_to_string(&manifest).unwrap()
     );
+    let before = reload_count(&project);
     fs::write(&manifest, content).unwrap();
+    wait_until(|| reload_count(&project) > before);
     wait_until(|| body(&mut get(&origin, "config.json"))["resourcesEnabled"] == true);
     let mut response = get(&origin, "config.json");
     assert_eq!(response.headers()["cache-control"], "no-store");

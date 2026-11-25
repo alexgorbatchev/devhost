@@ -113,19 +113,13 @@ time.sleep(300)
         .lines()
         .find(|line| line.starts_with("command = "))
         .unwrap();
-    let reloads = || {
-        fs::read_to_string(project.join("original.log"))
-            .unwrap()
-            .matches("configuration reloaded:")
-            .count()
-    };
-    let before = reloads();
+    let before = reload_count(project);
     fs::write(
         &manifest,
         content.replace(original, "command = ['python3', '-u', 'log-bursts.py']"),
     )
     .unwrap();
-    wait_until(|| reloads() > before);
+    wait_until(|| reload_count(project) > before);
     assert_eq!(
         post(origin, "restart-service", json!({"serviceName":"worker"})).status(),
         200

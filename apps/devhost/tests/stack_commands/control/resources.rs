@@ -14,7 +14,9 @@ fn resource_toggles_update_live_fields_close_disabled_streams_and_allow_reenable
     lifecycle::ready(&origin);
     let manifest = project.join("devhost.toml");
     let base = fs::read_to_string(&manifest).unwrap();
+    let before = reload_count(&project);
     configure(&manifest, &base, true, true, true);
+    wait_until(|| reload_count(&project) > before);
     wait_until(|| body(&mut get(&origin, "config.json"))["resourcesEnabled"] == true);
     let mut request = format!(
         "{}/__devhost__/ws/resources",
