@@ -19,13 +19,17 @@
 .mock .ts-targets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto 1fr auto;gap:6px;min-height:150px}
 /* A library's devtools panel docked at the page's bottom edge */
 .mock .ts-lib{border-top:1px solid var(--line);background:var(--card);padding:6px 8px;font-size:11px;color:var(--mute);min-height:64px}
+/* A narrow wrapped dock (320-390 px): two balanced rows separated by a horizontal divider */
+.mock .ts-narrow{display:flex;flex-direction:column;border:1px solid var(--edge);border-radius:6px;background:var(--raised);font-size:11px;max-width:20rem}
+.mock .ts-narrow .nrow{display:flex;align-items:center;gap:6px;padding:3px 6px;flex-wrap:nowrap}
+.mock .ts-narrow .nrow + .nrow{border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
 <header class="page">
 <nav class="top"><a href="index.html">← All flows</a><a href="../toolbar-shell-current.html">Today's flow diagram</a><a href="../toolbar-shell-proposed.html">Proposed flow diagram</a><a href="../proposals/toolbar-shell.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
 <h1>The toolbar itself</h1>
-<p><b>TLDR:</b> The dock (the bar and its notices) mounts where each person last put it, takes only the clicks it draws, keeps every notice in view beside panels, docked chat and the collapsed badge, is one chord and one Tab stop away from the keyboard, and says when the page's own dialog pauses it.</p>
+<p><b>TLDR:</b> The dock (the bar and its notices) mounts where each person last put it, takes only the clicks it draws, keeps every notice in view beside panels, docked chat and the collapsed badge, reserves the minimap edge for every popover, uses &gt;=3:1 button borders and a visible chevron affordance, prefixes app tab titles during waits or failures, adapts to 320 px phones and remote sign-in, is one chord and one Tab stop away from the keyboard, and says when the page's own dialog pauses it.</p>
 <p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
 </header>
 <div class="key"><div>
@@ -49,16 +53,16 @@
 <div class="apptxt">Acme Shop · Products · Running shoes · Trail jackets …</div>
 <div class="corner">
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="apptxt box" style="margin:0;flex:none;white-space:nowrap">[ Add to cart ]</span><span class="n">2</span><span class="banner" style="margin:0;min-width:0">◆ web's dev server, Vite, reloads this page when files change <span class="btn">Disable Reloads</span> <span class="btn">Dismiss</span></span></div>
-<div class="row" style="justify-content:flex-end"><span class="n">1</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">CPU 42%</span><span class="seg">RAM 61%</span><span class="seg">Disk 380 GiB free</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">1</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">CPU 42%</span><span class="seg">RAM 61%</span><span class="seg">Disk 380 GiB free</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
-<div class="work small muted">Each item's tooltip and accessible description name its reach: Services, Worktrees and Config "the whole stack"; Running agents and Chat "this checkout"; CPU, RAM and Disk "this machine"; Hold Reloads and the third-party launchers "this page". <span class="n">3</span></div>
+<div class="work small muted">Each item's tooltip and accessible description name its reach: Services, Worktrees and Config "the whole stack"; Running agents and Chat "this worktree"; CPU, RAM and Disk "devbox"; Hold Reloads and the third-party launchers "this page". <span class="n">3</span></div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>chat, service status, launchers and the config editor off; resources on</span></div>
 <div class="pg" style="min-height:90px">
 <div class="corner">
-<div class="row" style="justify-content:flex-end"><span class="n">4</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">CPU 42%</span><span class="seg">RAM 61%</span><span class="seg">Disk 380 GiB free</span><span class="seg">Hold Reloads</span></div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">4</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">CPU 42%</span><span class="seg">RAM 61%</span><span class="seg">Disk 380 GiB free</span><span class="seg">Hold Reloads</span></div></div>
 </div>
 </div>
 </div>
@@ -70,13 +74,13 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 </div>
 </div>
 <div class="cap"><h2>1. Open a page: the dock mounts where this person left it</h2>
-<p>devhost still injects its toolbar into every HTML page of the stack, inside a Shadow DOM in the page's top layer, and <code>/__devhost__/config.json</code> is still read with <code>no-store</code>, so a reload always sees current settings. What changes: the response carries this person's layout record, the readouts alone are enough to inject the toolbar, and only what devhost draws takes the page's clicks. Defaults: bottom right and expanded unless the manifest or the person's layout says otherwise; <b>Hold Reloads</b> on, as today.</p>
+<p>devhost still injects its toolbar into every HTML page of the stack, inside a Shadow DOM in the page's top layer, and <code>/__devhost__/config.json</code> is still read with <code>no-store</code>, so a reload always sees current settings. What changes: the response carries this person's layout record, resolved machine name (<code>O61</code>), merged bindings (<code>O17</code>) and remote auth state (<code>O36</code>), the readouts alone are enough to inject the toolbar, and only what devhost draws takes the page's clicks. Defaults: bottom right and expanded unless the manifest or the person's layout says otherwise; <b>Hold Reloads</b> on, as today.</p>
 <ol><li><span class="n">1</span> The dock, the bar and its notice stack together, mounts at the placement in the layout record: here the manifest's bottom right, until this person moves it (step 7). It is never drawn first somewhere else, and it is one landmark named "devhost" (<code>SURF-7</code>, <code>KEY-3</code>, <code>CC-5</code>).</li>
 <li><span class="n">2</span> Only the visible bar, each notice card, open panels and docked surfaces take pointer input. The dock's own box takes none, so the app's own [ Add to cart ] beside the notice takes the click, and Select Elements marks it; today an invisible strip there swallows both (<code>SURF-11</code>, <code>SEL-9</code>).</li>
-<li><span class="n">3</span> Every bar item names what it reaches in its tooltip and accessible description (<code>SEL-3</code>).</li>
-<li><span class="n">4</span> The bar renders whenever any segment has something to show: with only the readouts on, it shows CPU, RAM, Disk and <b>Hold Reloads</b>, and the reload hold keeps holding. Turning a feature off removes its segment and nothing else; a segment with nothing to show right now keeps its place, as Running agents does with "No agents in this checkout" (<code>SEL-11</code>, <code>STATE-2</code>).</li>
-<li><span class="n">5</span> A save that turns toolbar features off applies to open pages in place, asks nothing, and its outcome line names each toolbar change, never only "configuration reloaded". <code>[devtools].enabled = false</code> is the one master switch: new page loads get no script, open pages remove the toolbar and stop holding reloads, and the line says both (<code>SEL-11</code>, <code>REV-10</code>, <code>FB-3</code>).</li></ol>
-<p class="fixes">Fixes page-context-03, toolbar-shell-03 · Backend: the layout record in <code>config.json</code> (Backend 1, <code>CC-5</code>); injection for every feature and <code>[devtools].enabled</code> (Backend 2); the toolbar changes in the reload's outcome line (Backend 3, <code>CC-22</code>)</p></div>
+<li><span class="n">3</span> Every bar item names what it reaches in its tooltip and accessible description, using "this worktree" (<code>WORD-11</code>) and "devbox" from <code>machineName</code> or the host name (<code>SEL-3</code>, <code>O61</code>).</li>
+<li><span class="n">4</span> The bar renders whenever any segment has something to show: with only the readouts on, it shows CPU, RAM, Disk and <b>Hold Reloads</b>, and the reload hold keeps holding. Turning a feature off removes its segment and nothing else; a segment with nothing to show right now keeps its place, as Running agents does with "No agents in this worktree" (<code>SEL-11</code>, <code>STATE-2</code>, <code>WORD-11</code>).</li>
+<li><span class="n">5</span> A save that turns toolbar features off applies to open pages in place, asks nothing, and its outcome line names each toolbar change, never only "configuration reloaded". <code>[devtools].enabled = false</code> is the one master switch: new page loads get no script, open pages remove the toolbar, restore any prefixed tab title and stop holding reloads, and the line says so (<code>SEL-11</code>, <code>REV-10</code>, <code>FB-3</code>, <code>O16</code>).</li></ol>
+<p class="fixes">Fixes page-context-03, toolbar-shell-03 · Backend: the layout record, machine name and auth state in <code>config.json</code> (Backend 1, 8, <code>CC-5</code>, <code>CC-39</code>); injection for every feature and <code>[devtools].enabled</code> (Backend 2); the toolbar changes in the reload's outcome line (Backend 3, <code>CC-22</code>)</p></div>
 </section>
 
 <section class="step" id="reach-the-dock">
@@ -91,7 +95,7 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 <div class="corner" style="margin:0">
 <div class="banner" style="margin:0">◆ web's dev server, Vite, reloads this page when files change <span class="btn">Disable Reloads</span> <span class="btn">Dismiss</span></div>
 <div class="banner info" style="margin:0">◐ Restart Stack · 3 of 6 started · 5 s <span class="n">4</span></div>
-<div class="row" style="justify-content:flex-end"><span class="n">2</span><div class="tbar oneline"><span class="seg focusring"><b>Acme Shop</b></span><span class="seg">◐ ◐ ◐ ● ● ● ▾</span><span class="seg"><span class="btn off">2 changed ↻</span></span><span class="seg">main ~/acme ▾</span><span class="seg">CPU 42%</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div><span class="n">3</span></div>
+<div class="row" style="justify-content:flex-end"><span class="n">2</span><div class="tbar oneline"><span class="seg focusring"><b>Acme Shop ▾</b></span><span class="seg">◐ ◐ ◐ ● ● ● ▾</span><span class="seg"><span class="btn off">2 changed ↻</span></span><span class="seg">main ▾</span><span class="seg">CPU 42%</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div><span class="n">3</span></div>
 </div>
 </div>
 </div>
@@ -111,7 +115,7 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 <div class="corner at-top">
 <div class="box" style="margin:0">
 <div class="corner at-top" style="margin:0">
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
 <div class="row" style="justify-content:flex-end"><span class="n">7</span><div class="banner" style="margin:0">◆ Reload blocked <span class="btn">Reload</span> <span class="btn">✕</span></div></div>
 </div>
 </div>
@@ -120,26 +124,25 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>KEY-3</code> fixes the order "notice stack, bar" and also asks for the drawn order; with the dock at the top the notices are drawn below the bar, so this proposal follows the drawn order there: the bar, then the notices. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>2. Reach the dock from the keyboard</h2>
+<div class="cap"><h2>2. Reach the dock from the keyboard</h2>
 <p>Every bar item and notice keeps its place and its pointer behavior. What changes: one chord reaches the dock from anywhere, and the dock is one landmark whose bar is one Tab stop instead of the page's last dozen. Keys: Alt+Ctrl+B; ArrowLeft, ArrowRight, Home and End on the bar; Enter, Space, or ArrowUp (dock at the bottom) or ArrowDown (dock at the top) opens an item's panel or menu; Tab and Shift+Tab leave the bar (<code>KEY-3</code>, <code>KEY-4</code>).</p>
 <ol><li><span class="n">1</span> The notice stack and the bar form one complementary landmark named "devhost". Its DOM and Tab order follow its drawn order: with the dock at the bottom, each notice's actions come first, then the bar, then the pinned log panel and docked chat (<code>KEY-3</code>).</li>
 <li><span class="n">2</span> Alt+Ctrl+B moves focus from anywhere on the page to the bar item focused last, else the stack name (<code>KEY-3</code>).</li>
 <li><span class="n">3</span> The bar is one Tab stop built on the toolbar pattern: the arrow keys walk every item, each readout included, and Tab leaves it (<code>KEY-4</code>).</li>
-<li><span class="n">4</span> An unavailable item stays in place as an arrow stop, <code>aria-disabled</code>, its reason as its accessible description: here Restart Changed's icon while "Restart Stack is running · 3 of 6 started", said once as visible text in the notice stack, the dock's status line. This flow ships <code>Button</code>'s unavailable state for every flow; a focused control that becomes unavailable keeps focus (<code>MENU-3</code>, <code>HOLD-1</code>, <code>HOLD-3</code>, <code>KEY-11</code>).</li>
+<li><span class="n">4</span> An unavailable item stays in place as an arrow stop, <code>aria-disabled</code>, its reason as its accessible description: here Restart Changed's icon while "Restart Stack is running · 3 of 6 started", said once as visible text in the notice stack, the dock's status line. This flow ships <code>Button</code>'s unavailable state and <code>--dh-input-line</code> (&gt;=3:1) default borders for every flow; a focused control that becomes unavailable keeps focus (<code>MENU-3</code>, <code>HOLD-1</code>, <code>HOLD-3</code>, <code>KEY-11</code>, <code>ACT-13</code>).</li>
 <li><span class="n">5</span> Hints come from one binding registry, shown in the platform's notation and outside the accessible name (<code>KEY-13</code>, <code>BAR-4</code>).</li>
 <li><span class="n">6</span> Pressed again, the chord moves on to the pinned log panel while it is open, then to docked chat's composer, and from the last of these back to the element that had focus before the first press (<code>KEY-3</code>).</li>
-<li><span class="n">7</span> With the dock at the top, the notices are drawn below the bar, so the bar comes first in DOM and Tab order (<code>KEY-3</code>).</li></ol>
-<p class="fixes">Fixes keyboard-and-screen-reader-05 · Backend: none here; the manifest accepts <code>focusToolbar</code> with step 6's grammar (Backend 5)</p></div>
+<li><span class="n">7</span> With the dock at the top, the notices are drawn below the bar, so DOM and Tab order put the bar first, then the notices, followed by the pinned log panel and docked chat (<code>KEY-3</code>).</li></ol>
+<p class="fixes">Fixes keyboard-and-screen-reader-05 · Backend: none here; the manifest and <code>config.toml</code> accept <code>focusToolbar</code> with step 6's grammar (Backend 5, <code>O17</code>)</p></div>
 </section>
 
 <section class="step" id="read-the-bar">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › the bar's items, in order</b><span>one row on the page</span></div>
+<div class="bar"><b>devhost › Acme Shop › the bar's items, in order</b><span>one row on acceptance viewports</span></div>
 <div class="work">
 <table class="t"><thead><tr><th style="width:28%">Item</th><th style="width:42%">Shows</th><th style="width:30%">Owning flow</th></tr></thead><tbody>
-<tr><td>Stack name <span class="n">1</span></td><td>dh mark, Acme Shop</td><td>toolbar-shell</td></tr>
+<tr><td>Stack name <span class="n">1</span></td><td>dh mark, Acme Shop ▾</td><td>toolbar-shell</td></tr>
 <tr><td>Services</td><td>● ● ● ● ● ● ▾, 2 changed ↻</td><td>services-panel</td></tr>
 <tr><td>Worktrees</td><td>main ~/acme ▾</td><td>worktree-switch</td></tr>
 <tr><td>CPU, RAM, Disk</td><td>CPU 42%, RAM 86% high ▴</td><td>toolbar-shell</td></tr>
@@ -152,57 +155,62 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › the bar's readouts</b><span>RAM opened with Enter</span></div>
+<div class="bar"><b>devhost › Acme Shop › the bar's readouts on devbox</b><span>RAM opened with Enter (O48, O61)</span></div>
 <div class="pg" style="min-height:120px">
 <div class="corner">
-<div class="popover" data-for="t-ram" style="width:min(100%,32rem)"><i class="caret-dn" style="right:249px"></i>
+<div class="popover" data-for="t-ram" style="width:min(100%,32rem)"><i class="caret-dn" style="right:242px"></i>
 <div class="from">Opened from the RAM readout with Enter</div>
-<div class="row"><b>RAM: 41.5 of 48 GiB used</b><span class="n">3</span></div>
+<div class="row"><b>RAM on devbox: 41.5 of 48 GiB used</b><span class="n">3</span></div>
 <div>This stack: 3.2 GiB · web 2.1 GiB, api 0.8 GiB, worker 0.3 GiB</div>
 <div>Other programs: 38.3 GiB</div>
 <div>Last 60 s: ▅▅▆▆▆▅▆▆▇▆ · lowest 84% · highest 88% · average 86%</div>
 <div><b>Busy because of other programs: this stack uses 7% of RAM</b></div>
 </div>
-<div class="row" style="justify-content:flex-end"><span class="n">2</span><div class="tbar oneline"><span class="seg">CPU 42%</span><span class="seg open" id="t-ram">RAM 86% high ▴</span><span class="seg">Disk 27 GiB free very low ▾▾</span></div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">2</span><div class="tbar oneline"><span class="seg">CPU 42%</span><span class="seg open" id="t-ram">RAM 86% high ▴</span><span class="seg">Disk 8 GiB free very low ▾▾</span></div></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Platform Staging, 40 services, readouts and launchers on</b><span>the bar's fit sequence as the window narrows</span></div>
+<div class="bar"><b>devhost › Acme Platform Staging, 40 services, readouts and launchers on</b><span>fit sequence and 320 px narrow dock</span></div>
 <div class="work small">
 <div class="muted">1. Services: one dot per service gives way to the fixed-width summary <span class="n">4</span></div>
 <div class="row"><span class="tbar oneline"><span class="seg">▲ ✕ ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ●…</span></span>→<span class="tbar oneline"><span class="seg">38/40 · 2 failed: flood, s27 ▾</span></span></div>
 <div class="muted" style="margin-top:6px">2. The third-party launchers fold into one Devtools control</div>
 <div class="row"><span class="tbar oneline"><span class="seg">Redux</span><span class="seg">TanStack</span></span>→<span class="tbar oneline"><span class="seg">Devtools ▾</span></span></div>
 <div class="muted" style="margin-top:6px">3. CPU, RAM and Disk fold into one Host item with the highest level</div>
-<div class="row"><span class="tbar oneline"><span class="seg">CPU 42%</span><span class="seg">RAM 86% high ▴</span><span class="seg">Disk 27 GiB free very low ▾▾</span></span>→<span class="tbar oneline"><span class="seg">Host very low ▾▾</span></span></div>
+<div class="row"><span class="tbar oneline"><span class="seg">CPU 42%</span><span class="seg">RAM 86% high ▴</span><span class="seg">Disk 8 GiB free very low ▾▾</span></span>→<span class="tbar oneline"><span class="seg">Host very low ▾▾</span></span></div>
 <div class="muted" style="margin-top:6px">4. The stack name and the branch shorten in the middle</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme Platform Staging</b></span></span>→<span class="tbar oneline"><span class="seg"><b>Acme…Staging</b></span></span></div>
+<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme Platform Staging ▾</b></span></span>→<span class="tbar oneline"><span class="seg"><b>Acme…Staging ▾</b></span></span></div>
 <div class="muted" style="margin-top:6px">5. Items from the bar's end inward move into More, never Chat or the Services trigger <span class="n">5</span></div>
-<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme…Staging</b></span><span class="seg">38/40 · 2 failed ▾</span><span class="seg">main ▾</span><span class="seg">Host very low ▾▾</span><span class="seg">Devtools ▾</span><span class="seg">More ▾</span><span class="seg">Chat</span></span></div>
-<div class="muted">at 1280×800 under 200% zoom (640×400 CSS pixels): More holds Running agents and Hold Reloads</div>
+<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme…Staging ▾</b></span><span class="seg">38/40 · 2 failed ▾</span><span class="seg">main ▾</span><span class="seg">Host very low ▾▾</span><span class="seg">Devtools ▾</span><span class="seg">More ▾</span><span class="seg">Chat</span></span></div>
+<div class="muted">at 1280×800 under 200% zoom (640×400 CSS px): More holds Running agents and Hold Reloads</div>
+<div class="muted" style="margin-top:6px">6. Below 640 px (320/390 px phone): Host compacts and horizontal dividers separate wrapped rows (no orphan Disk row) <span class="n">6</span></div>
+<div class="ts-narrow">
+<div class="nrow"><b>dh Acme… ▾</b><span class="sp"></span><span>38/40 · 2 failed ▾</span><span class="btn">Chat</span></div>
+<div class="nrow"><span>Host very low ▾▾</span><span class="sp"></span><span>Hold Reloads</span><span>More ▾</span></div>
+</div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › the bar in forced colors</b><span>each state keeps a shape, a border or a word</span></div>
+<div class="bar"><b>devhost › Acme Shop › button contrast and forced colors</b><span>&gt;=3:1 borders in dark and light; shapes in forced colors</span></div>
 <div class="work small">
-<div class="row"><span class="tbar oneline"><span class="seg" style="border:1px solid var(--ink)">☑ Hold Reloads</span></span><span class="muted">pressed: inset border and check mark</span><span class="tbar oneline"><span class="seg">☐ Hold Reloads</span></span><span class="muted">unpressed</span><span class="n">6</span></div>
+<div class="row"><span class="btn" style="border-color:var(--edge)">Chat</span><span class="btn" style="border-color:var(--edge)">Restart Changed</span><span class="btn" style="border-color:var(--edge)">Restart Stack</span><span class="muted">default borders use <code>--dh-input-line</code> (&gt;=3:1 both themes)</span><span class="n">7</span></div>
+<div class="row" style="margin-top:4px"><span class="tbar oneline"><span class="seg" style="border:1px solid var(--ink)">☑ Hold Reloads</span></span><span class="muted">pressed: inset border and check mark</span><span class="tbar oneline"><span class="seg">☐ Hold Reloads</span></span><span class="muted">unpressed</span></div>
 <div class="row" style="margin-top:4px"><span class="tbar oneline"><span class="seg">RAM 86% high ▴</span><span class="seg"><span class="btn off">2 changed ↻</span></span></span><span class="muted">a level keeps its mark and word; an unavailable item takes the disabled look with its reason</span></div>
 <div class="row" style="margin-top:4px"><span class="banner bad" style="margin:0;border:1px solid var(--bad)">✕ api exited with code 1</span><span class="banner" style="margin:0">◆ Reload blocked</span><span class="muted">a failure notice has a border and a glyph</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the readout levels (a 10 s average, 70% and 90% with hysteresis, Disk's free-space floors) have no product decision yet, and sizes in GiB follow <code>WORD-8</code> while the RAM patch keeps GB for Disk as desktops show it. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: no rule says what the bar does when its items still do not fit after the compact forms of <code>SURF-10</code>; the last step, <b>More</b>, is this proposal's. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>3. Read the bar and its readouts</h2>
-<p>The bar still reads, from its start: the stack name, Services, Worktrees, CPU, RAM and Disk, Config, the launchers, Running agents, <b>Hold Reloads</b> and Chat, and the readouts still measure the whole machine and hide while their stream is down. Each segment is its own flow's; this flow owns the bar they sit in: its order, its fit, its keyboard model and its shared looks. Keys: each readout is an arrow stop; Enter or Space opens its details with focus on their first line; Escape closes them and returns focus to the readout (<code>KEY-4</code>, <code>KEY-6</code>, <code>KEY-8</code>).</p>
-<ol><li><span class="n">1</span> The order stays as today. The changed badge's restart icon and Alt+Ctrl+R act on the set Restart Changed names (<code>SEL-1</code>, <code>SEL-2</code>); Config's tooltip reads "Edit this stack's configuration: its manifest files and the devhost config file" (<code>WORD-1</code>).</li>
-<li><span class="n">2</span> Each readout is a bar item button labelled by its figure. Its level follows a steadied reading, never one 2 s sample: CPU averages the last 10 s, high from 70% (back below 65%), very high from 90% held for 10 s (back below 85%); Disk reads free space, low below 10% free, very low below 5% or 10 GiB. A level shows its word and a mark of its own, ▴ ▴▴ ▾ ▾▾, never a service state's glyph or the failed look (<code>ACT-13</code>).</li>
-<li><span class="n">3</span> Its details, a popover anchored to it, give the machine's figures, this stack's share with its top three services, the other programs, the last 60 s with their lowest, highest and average as text, and one verdict sentence. Sizes use binary units with their names (<code>WORD-8</code>, <code>SURF-2</code>, <code>KEY-12</code>).</li>
+<div class="cap"><h2>3. Read the bar and its readouts</h2>
+<p>The bar still reads, from its start: the stack name, Services, Worktrees, CPU, RAM and Disk, Config, the launchers, Running agents, <b>Hold Reloads</b> and Chat, and the readouts still measure the whole machine running the stacks (<code>devbox</code>, <code>O61</code>) and hide while their stream is down. Each segment is its own flow's; this flow owns the bar they sit in: its order, its fit, its keyboard model and its shared looks. Keys: each readout is an arrow stop; Enter or Space opens its details with focus on their first line; Escape closes them and returns focus to the readout (<code>KEY-4</code>, <code>KEY-6</code>, <code>KEY-8</code>).</p>
+<ol><li><span class="n">1</span> The order stays as today, with a visible chevron on the stack name button. The changed badge's restart icon and Alt+Ctrl+R act on the set Restart Changed names (<code>SEL-1</code>, <code>SEL-2</code>); Config's tooltip reads "Edit this stack's configuration: its manifest files and the devhost config file" (<code>WORD-1</code>).</li>
+<li><span class="n">2</span> Each readout is a bar item button labelled by its figure, following calibrated <code>O48</code> levels: CPU averages the last 20 s, high at 70% (back below 65%) and very high at 90% (back below 85%) with no extra hold; RAM takes each reading, high at 75% (back below 70%) and very high at 90% held 10 s (back below 85%); Disk reads free space on any disk size, low below 20 GiB and very low below 10 GiB (each clearing 1 GiB above its floor). A level shows its word and a mark of its own, ▴ ▴▴ ▾ ▾▾, never a service state's glyph or the failed look (<code>ACT-13</code>, <code>O48</code>).</li>
+<li><span class="n">3</span> Its details, a popover anchored to it, give <code>devbox</code>'s figures (Disk noting it excludes purgeable space), this stack's share with its top three services via Rust <code>sysinfo</code>, the other programs, the last 60 s with their lowest, highest and average as text, and one verdict sentence. Sizes use binary GiB units (<code>WORD-8</code>, <code>SURF-2</code>, <code>KEY-12</code>, <code>O61</code>).</li>
 <li><span class="n">4</span> The bar keeps one row at every acceptance viewport by a fit test at the current width, never a count, in this order until its items fit; the Services summary is services-panel's form and <b>Devtools</b> third-party-devtools' (<code>SURF-9</code>, <code>SURF-10</code>, <code>BAR-1</code>).</li>
 <li><span class="n">5</span> <b>More</b> sits at the bar's end; each item in it keeps its label, state and binding. At 640×400 CSS pixels the bar shows the summary, <b>Devtools</b> and <b>Host</b>, every item stays reachable and every pointer target is at least 24 by 24 CSS pixels (<code>SURF-9</code>, <code>O8</code>).</li>
-<li><span class="n">6</span> In forced colors every state keeps a shape and a word: <b>Hold Reloads</b> pressed against unpressed, each readout level, available against unavailable items, a failure notice against a neutral one, the badge's looks (step 8) and the focus ring; <code>forced-color-adjust: none</code> applies only to state glyphs (<code>ACT-13</code>).</li></ol>
-<p class="fixes">Fixes toolbar-shell-04, keyboard-and-screen-reader-04 · Backend: this stack's share in the resources stream, still to be settled (Backend 7)</p></div>
+<li><span class="n">6</span> At 320 and 390 CSS pixels, chat, approvals and notices take their phone layout (<code>O8</code>), no toolbar surface overflows horizontally, host resource meters compact into <b>Host</b> (or <b>More</b>), and horizontal dividers separate wrapped dock rows so no orphan Disk row appears.</li>
+<li><span class="n">7</span> Default devtools button borders switch from <code>--dh-line</code> (1.63:1 dark / 1.57:1 light) to <code>--dh-input-line</code> (&gt;=3:1 in both themes, updating <code>constants.ts</code> and <code>devtools.html</code>); in forced colors every state keeps a shape and a word, with <code>forced-color-adjust: none</code> on state glyphs only (<code>ACT-13</code>).</li></ol>
+<p class="fixes">Fixes toolbar-shell-04, keyboard-and-screen-reader-04, serve-command-09 · Backend: this stack's share in the resources stream via Rust <code>sysinfo</code> (Backend 7, <code>O48</code>)</p></div>
 </section>
 
 <section class="step" id="beside-the-notices">
@@ -220,7 +228,7 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 </div>
 <div class="popover ts-over" data-for="t-agents" style="margin-top:-4.6rem"><i class="caret-dn" style="right:90.6px"></i>
 <div class="from">Opened from Running agents with Enter</div>
-<div class="row"><b>Agents in this checkout · 2</b><span class="n">2</span></div>
+<div class="row"><b>Agents in this worktree · 2</b><span class="n">2</span></div>
 <div class="row">Claude Code · Fix the nav header · working</div>
 <div class="row">Codex · fix-nav ~/acme/.worktrees/fix-nav · idle</div>
 <div class="row"><span class="btn">Watch Live Activity</span></div>
@@ -230,7 +238,7 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 <div class="banner" style="margin:0">◆ Reload blocked <span class="btn">Reload</span> <span class="btn">✕</span></div>
 <div class="banner" style="margin:0">◆ web's dev server, Vite, reloads this page when files change <span class="btn">Disable Reloads</span> <span class="btn">Dismiss</span></div>
 </div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg open" id="t-agents">Running agents</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg open" id="t-agents">Running agents</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -246,7 +254,7 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 <div class="corner" style="margin:0">
 <div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Restart</span></div>
 <div class="banner" style="margin:0">◆ Reload blocked <span class="btn">Reload</span> <span class="btn">✕</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -255,30 +263,31 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 <div class="pg" style="min-height:120px;padding-bottom:0">
 <div class="apptxt">Acme Shop · Products …</div>
 <div class="corner">
-<div class="row" style="justify-content:flex-end"><span class="n">5</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">5</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div></div>
 </div>
 <div class="ts-lib" style="margin:0 -10px">TanStack Router devtools · the library's own panel, resize handle on its top edge</div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › the right edge, and two temporary moves</b></div>
+<div class="bar"><b>devhost › the right edge, minimap inset and narrow viewports</b></div>
 <div class="work small">
-<div class="row"><span class="muted">window edge</span>←<span class="chip">minimap strip</span><span class="chip">pinned log panel</span><span class="chip acc">dock and docked chat</span><span class="n">6</span></div>
+<div class="row"><span class="muted">window edge</span>←<span class="chip">minimap strip (12 px)</span><span class="chip">pinned log panel</span><span class="chip acc">dock, popovers and chat</span><span class="n">6</span></div>
+<div class="row" style="margin-top:6px"><span class="muted">ToolbarPopover right inset:</span><span class="chip">reserves --devhost-minimap-collapsed-width at 320, 390, 640 and desktop widths</span></div>
 <div class="row" style="margin-top:6px"><span class="muted">a focused page button under the dock:</span><span class="chip acc">dock and chat at the other end of the edge</span></div>
-<div class="row" style="margin-top:6px"><span class="muted">640×400 CSS pixels, three notices:</span><span class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Restart</span></span><span class="btn">2 more</span><span class="n">7</span></div>
+<div class="row" style="margin-top:6px"><span class="muted">640×400 and 320 px phone, three notices:</span><span class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Restart</span></span><span class="btn">2 More</span><span class="n">7</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><h2>4. Open a panel, a menu or chat without covering a notice</h2>
-<p>Panels stay native popovers anchored to their trigger, one at a time, dismissed by Escape, a click outside or Tab past their last control; docked chat and the Configuration window keep their places and their behavior. What changes: the dock publishes one inset, the distance from its edge to the far edge of the notice stack, and every surface reads it, so nothing devhost draws covers a notice. The notices' order, count and "N more" are notices-and-feedback's; their place is this flow's. Keys: on open, focus moves to a panel's filter when it has one, else its first control; Tab past the last control or Shift+Tab before the first closes the panel and returns focus to its trigger; Escape closes only the innermost layer and never collapses the toolbar, dismisses a notice or answers anything (<code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
+<div class="cap"><h2>4. Open a panel, a menu or chat without covering a notice or the minimap</h2>
+<p>Panels stay native popovers anchored to their trigger, one at a time, dismissed by Escape, a click outside or Tab past their last control; docked chat and the Configuration window keep their places and their behavior. What changes: the dock publishes one inset, the distance from its edge to the far edge of the notice stack, every surface reads it so nothing devhost draws covers a notice, and <code>ToolbarPopover</code> reserves <code>--devhost-minimap-collapsed-width</code> so no popover overlaps the right-edge minimap. The notices' order, count and "N More" / "Show Fewer" are notices-and-feedback's; their place is this flow's. Keys: on open, focus moves to a panel's filter when it has one, else its first control; Tab past the last control or Shift+Tab before the first closes the panel and returns focus to its trigger; Escape closes only the innermost layer and never collapses the toolbar, dismisses a notice or answers anything (<code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
 <ol><li><span class="n">1</span> The notice stack sits beside the bar, between it and every other devhost surface, in every placement, and its buttons take their own clicks with any panel or chat open (<code>SURF-1</code>, <code>FB-8</code>).</li>
 <li><span class="n">2</span> A toolbar panel opens beyond the notice stack, on its trigger's side, and an open panel, the Running agents list included, paints above docked chat (<code>SURF-1</code>, <code>SURF-2</code>, <code>CC-1</code>).</li>
 <li><span class="n">3</span> Docked chat docks beyond the notice stack on its own edge and never covers the bar's row; with chat expanded, <b>Disable Reloads</b> stays visible and its popover opens without collapsing or moving chat (<code>SURF-1</code>, <code>SURF-6</code>, <code>O2</code>).</li>
 <li><span class="n">4</span> The Configuration window's height is capped by the dock's inset, so every notice's text stays readable beside it while the window holds Tab and makes the notices inert (<code>SURF-4</code>, <code>KEY-7</code>).</li>
 <li><span class="n">5</span> While a library's devtools panel is docked at the bottom edge, the dock sits on its top edge, or at the top of the window when the panel is taller than half of it, and follows its resize handle; it returns to the person's placement when the panel closes, and the move is never saved (<code>SURF-1</code>, <code>SURF-7</code>).</li>
-<li><span class="n">6</span> Along the right edge, from the window edge inward: the minimap strip, the pinned log panel while it is open, then the dock and docked chat. While a page element under the dock or chat has focus, both step aside to the other end of their edge and come back when focus leaves, never saved (<code>SURF-5</code>, <code>SURF-9</code>).</li>
-<li><span class="n">7</span> When the surfaces beside the dock cannot keep their header, a first row and their actions in view, the stack shows its first notice and folds the rest into "N more", which expands in place in the same order (<code>FB-8</code>, <code>SURF-9</code>).</li></ol>
-<p class="fixes">Fixes chat-compose-04, config-editor-11, notices-and-feedback-03, reload-and-agents-05, third-party-devtools-01 · Backend: none; the dock's inset is published on the page (<code>CC-1</code>)</p></div>
+<li><span class="n">6</span> Along the right edge, from the window edge inward: the minimap strip, the pinned log panel while it is open, then the dock, every open <code>ToolbarPopover</code> (reserving <code>--devhost-minimap-collapsed-width</code> at 320 px, 390 px, 640 px and desktop widths) and docked chat. While a page element under the dock or chat has focus, both step aside to the other end of their edge and come back when focus leaves, never saved (<code>SURF-5</code>, <code>SURF-9</code>, <code>O8</code>).</li>
+<li><span class="n">7</span> When the surfaces beside the dock cannot keep their header, a first row and their actions in view, the stack shows its first notice and folds the rest into "N More", which expands in place in the same order with "Show Fewer" to fold again; at 320 CSS px, chat, approval prompts and notices use their phone layout without horizontal overflow (<code>FB-8</code>, <code>SURF-9</code>, <code>WORD-3</code>, <code>O8</code>).</li></ol>
+<p class="fixes">Fixes chat-compose-04, config-editor-11, notices-and-feedback-03, reload-and-agents-05, third-party-devtools-01, serve-command-09 · Backend: none; the dock's inset and minimap width are published on the page (<code>CC-1</code>)</p></div>
 </section>
 
 <section class="step" id="type-into-devhost">
@@ -291,9 +300,9 @@ Applied devhost.toml: turned off the devhost toolbar · Hold Reloads no longer h
 <div class="popover" data-for="t-wt" style="width:min(100%,26rem)"><i class="caret-dn" style="right:180.5px"></i>
 <div class="from">Opened from Worktrees with Enter</div>
 <div class="row"><span class="in focusring" style="flex:1">feature/login</span><span class="n">1</span></div>
-<div class="muted">1 checkout matches · the list is worktree-switch's</div>
+<div class="muted">1 worktree matches · the list is worktree-switch's</div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open" id="t-wt">main ~/acme ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open" id="t-wt">main ~/acme ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -336,7 +345,7 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="work small"><span class="n">1</span> <span class="muted">printed again on each hot reload that keeps the value, in agent output and in the stack's log</span></div>
 </div>
 <div class="win">
-<div class="bar"><b>docs › guides/devtools.md › Keyboard</b><span>read from the binding registry</span></div>
+<div class="bar"><b>docs › guides/devtools.md › Keyboard</b><span>read from the binding registry (O17: config.toml overrides devhost.toml)</span></div>
 <div class="work">
 <table class="t"><thead><tr><th style="width:14%">macOS</th><th style="width:22%">Elsewhere</th><th style="width:26%">Setting</th><th>Does</th></tr></thead><tbody>
 <tr><td>⌃⌥R</td><td>Ctrl+Alt+R</td><td>restartServices</td><td>Restart Changed <span class="n">2</span></td></tr>
@@ -345,7 +354,7 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <tr><td>⌃⌥C</td><td>Ctrl+Alt+C</td><td>chat</td><td>Chat's composer</td></tr>
 <tr><td>⌃⌥.</td><td>Ctrl+Alt+.</td><td>stopTurn</td><td>Stop Turn</td></tr>
 </tbody></table>
-<div class="small muted" style="margin-top:6px">Clashes: Windows Magnifier resizes its lens with Ctrl+Alt+R while it runs; VoiceOver takes every Control+Option chord. Rebind under <code>[devtools.shortcuts]</code>. <span class="n">3</span></div>
+<div class="small muted" style="margin-top:6px">Clashes: Windows Magnifier resizes its lens with Ctrl+Alt+R while it runs; VoiceOver takes every Control+Option chord. Rebind for yourself under <code>[devtools.shortcuts]</code> in <code>~/.config/devhost/config.toml</code> (overrides <code>devhost.toml</code> binding by binding). <span class="n">3</span></div>
 </div>
 </div>
 <div class="win">
@@ -353,19 +362,18 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="pg" style="min-height:96px">
 <div class="apptxt">Products · Name: Trail jacket® ‸ <span class="muted">AltGr+R typed ®</span> <span class="n">4</span></div>
 <div class="corner">
-<div class="tbar"><span class="seg"><b>Acme Admin</b></span><span class="seg">● ● ● ▾</span><span class="seg">2 changed ↻</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Admin ▾</b></span><span class="seg">● ● ● ▾</span><span class="seg">2 changed ↻</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: treating elements whose role is textbox, searchbox, combobox or spinbutton as text entry is a proposed exception to <code>KEY-1</code>, whose list names only input, textarea, select and editable content. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>6. Use the page-wide chords</h2>
-<p>Alt+Ctrl+R still restarts the changed services and stays suspended in the page's fields and editable content, and every chord's action is also a control, so a chord the desktop or VoiceOver takes costs only the shortcut. What changes: devhost binds a family of four Alt+Ctrl chords, each configurable under <code>[devtools.shortcuts]</code>, from one registry that drives the handlers, the hints, <code>aria-keyshortcuts</code> and the docs. Chords act in the page scope, also under the page's own modal dialog, and are suspended in text entry and while a devhost menu or modal dialog is open (<code>KEY-1</code>, <code>KEY-2</code>).</p>
-<ol><li><span class="n">1</span> One grammar on both sides: modifiers <code>ctrl</code>, <code>alt</code>, <code>shift</code>, <code>meta</code> (or <code>cmd</code>) in any case, plus one letter, digit or named key from one list (<code>enter</code>, <code>escape</code>, <code>f1</code> to <code>f12</code> …). Every value the manifest accepts fires, so <code>"ctrl+shift+enter"</code> works; a value devhost cannot use prints one warning naming the key, the file and line, the value and the binding in effect, and never falls back silently (<code>KEY-2</code>, <code>CC-29</code>).</li>
+<div class="cap"><h2>6. Use the page-wide chords</h2>
+<p>Alt+Ctrl+R still restarts the changed services and stays suspended in the page's fields and editable content, and every chord's action is also a control, so a chord the desktop or VoiceOver takes costs only the shortcut. What changes: devhost binds a family of four Alt+Ctrl chords, each configurable under <code>[devtools.shortcuts]</code> in <code>devhost.toml</code> (team default) and overridden binding by binding in <code>~/.config/devhost/config.toml</code> (<code>O17</code>, <code>CC-39</code>), from one registry that drives the handlers, the hints, <code>aria-keyshortcuts</code> and the docs. Chords act in the page scope, also under the page's own modal dialog, and are suspended in text entry and while a devhost menu or modal dialog is open (<code>KEY-1</code>, <code>KEY-2</code>).</p>
+<ol><li><span class="n">1</span> One grammar on both sides: modifiers <code>ctrl</code>, <code>alt</code>, <code>shift</code>, <code>meta</code> (or <code>cmd</code>) in any case, plus one letter, digit, period (<code>.</code> or <code>period</code>, canonical token <code>.</code>, <code>code: "Period"</code> so <code>stopTurn = "alt+ctrl+."</code> is accepted) or named key from one list (<code>enter</code>, <code>escape</code>, <code>f1</code> to <code>f12</code> …). Every value validation accepts fires, so <code>"ctrl+shift+enter"</code> and <code>"alt+ctrl+."</code> work; a value devhost cannot use prints one warning naming the key, the file and line, the value and the binding in effect, and never falls back silently (<code>KEY-2</code>, <code>CC-29</code>).</li>
 <li><span class="n">2</span> <code>guides/devtools.md</code> gains one Keyboard section listing every binding in both notations. Restart Changed restarts the changed services or, when none changed, the page's own service, as services-panel's button names it; setting <code>restartServices = "alt+ctrl+y"</code> changes the handler, the hint and <code>aria-keyshortcuts</code> together (<code>KEY-13</code>, <code>SEL-2</code>).</li>
-<li><span class="n">3</span> The section names the clashes a person may meet and how to rebind. Whether a person can override the team's bindings from their own devhost config file is <code>O17</code> (<code>KEY-2</code>, <code>KEY-13</code>).</li>
-<li><span class="n">4</span> A chord event whose <code>key</code> is a printable character other than the bound key's own is typed text: on Windows, AltGr+R typing ® reaches the cell untouched, with nothing restarted. Elements whose role is textbox, searchbox, combobox or spinbutton count as text entry; a grid does not, so the chord keeps working while the grid is navigated (<code>KEY-1</code>, <code>KEY-2</code>).</li></ol>
-<p class="fixes">Fixes toolbar-shell-08, toolbar-shell-12 · Backend: one shortcut grammar resolved on the server, with its warnings (Backend 5, <code>CC-29</code>)</p></div>
+<li><span class="n">3</span> The section names the clashes a person may meet and how to override the team's bindings in <code>~/.config/devhost/config.toml</code> under <code>[devtools.shortcuts]</code> without changing <code>devhost.toml</code> (<code>KEY-2</code>, <code>KEY-13</code>, <code>O17</code>, <code>CC-39</code>).</li>
+<li><span class="n">4</span> A chord event whose <code>key</code> is a printable character other than the bound key's own is typed text: on Windows, AltGr+R typing ® reaches the cell untouched, with nothing restarted. Elements whose role is <code>textbox</code>, <code>searchbox</code>, <code>combobox</code> or <code>spinbutton</code> count as text entry; a <code>grid</code> does not, so the chord keeps working while the grid is navigated (<code>KEY-1</code>, <code>KEY-2</code>).</li></ol>
+<p class="fixes">Fixes toolbar-shell-08, toolbar-shell-12 · Backend: one shortcut grammar with <code>config.toml</code> overrides resolved on the server and warnings (Backend 5, <code>O17</code>, <code>CC-29</code>, <code>CC-39</code>)</p></div>
 </section>
 
 <section class="step" id="move-or-collapse">
@@ -384,17 +392,16 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="row">✓ Bottom Right <span class="n">2</span></div>
 </div>
 <div class="ts-above">
-<div class="popover menu" data-for="t-stack" style="width:22rem"><i class="caret-dn" style="left:43.6px"></i>
+<div class="popover menu" data-for="t-stack" style="width:22rem"><i class="caret-dn" style="left:50px"></i>
 <div class="from">Opened from the stack name with Enter</div>
 <div class="row"><b>Acme Shop · main ~/acme</b></div>
 <div class="row open" id="t-moveto">Move to<span class="sp"></span>›</div>
 <div class="row">Collapse</div>
 <div class="row muted">Reset to Manifest Default</div>
 <div class="small muted" style="padding:0 4px 3px">Already where devhost.toml puts it: bottom right, expanded <span class="n">3</span></div>
-<div class="sep"></div>
-<div class="row">All Stacks on This Machine <span class="n">4</span></div>
+<div class="row">All Stacks on devbox <span class="n">4</span></div>
 </div>
-<div class="row"><div class="tbar oneline"><span class="seg open" id="t-stack"><span class="muted">dh</span> <b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div><span class="n">1</span></div>
+<div class="row"><div class="tbar oneline"><span class="seg open" id="t-stack"><span class="muted">dh</span> <b>Acme Shop</b> ▾</span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div><span class="n">1</span></div>
 </div>
 </div>
 </div>
@@ -407,7 +414,7 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <span class="chip" style="grid-area:1/1;justify-self:start;align-self:start">Top Left</span>
 <span class="chip" style="grid-area:1/3;justify-self:end;align-self:start">Top Right</span>
 <div class="apptxt" style="grid-area:2/1/3/4;align-self:center">Acme Shop · Products …</div>
-<span class="row" style="grid-area:3/1;justify-self:start;align-self:end"><span class="chip acc">Bottom Left · release here</span><span class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span></span><span class="n">5</span></span>
+<span class="row" style="grid-area:3/1;justify-self:start;align-self:end"><span class="chip acc">Bottom Left · release here</span><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span></span><span class="n">5</span></span>
 <span class="chip" style="grid-area:3/2;justify-self:center;align-self:end">Bottom Center</span>
 <span class="chip" style="grid-area:3/3;justify-self:end;align-self:end">Bottom Right</span>
 </div>
@@ -418,34 +425,43 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="pg" style="min-height:96px">
 <div class="apptxt">Acme Admin · Orders …</div>
 <div class="corner at-left">
-<div class="row"><span class="tbar oneline"><span class="seg"><b>dh</b></span></span><span class="muted">named "Acme Shop: running, expand devhost toolbar"</span><span class="n">6</span></div>
+<div class="row"><span class="tbar oneline"><span class="seg"><b>dh</b> ▴</span></span><span class="muted">named "Acme Shop: running, expand devhost toolbar"</span><span class="n">6</span></div>
 </div>
 </div>
 </div>
+<div class="win">
+<div class="bar"><b>devhost › remote browser states (O36, O59)</b><span>unauthenticated vs authenticated remote browser</span></div>
+<div class="work small">
+<div class="muted">Unauthenticated remote browser: app stays usable, gated controls unavailable, nothing starts <span class="n">7</span></div>
+<div class="row"><div class="tbar"><span class="seg"><span class="muted">dh</span> <b>Acme Shop</b></span><span class="seg muted" style="white-space:normal">Sign in with passkey or pair this browser to use devhost here</span><span class="seg"><span class="btn pri">Sign In with Passkey</span></span></div></div>
+<div class="muted" style="margin-top:6px">Authenticated remote browser (30-day idle __Host- cookie): stack name menu ends, after a separator, with:</div>
+<div class="row"><span class="chip">All Stacks on devbox</span><span class="muted">|</span><span class="chip">Sign Out This Browser</span><span class="muted">(or Unpair This Browser for a paired fallback session)</span></div>
 </div>
-<div class="cap"><div class="banner">Open conflict: this proposal puts <b>All Stacks on This Machine</b> alone after a separator; <code>MENU-2</code> keeps a lone item after a separator for a destructive last item, and the pattern page draws it in the toolbar group. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>7. Move or collapse the toolbar for yourself</h2>
+</div>
+</div>
+<div class="cap"><h2>7. Move, collapse or sign out of the toolbar for yourself</h2>
 <p>The manifest's <code>[devtools.status].position</code> stays the team's default placement, and nothing the person does here changes the manifest or browser storage. What changes: placement and collapse become the person's own, saved at once for this stack on every hostname, and reachable from the keyboard. Today: 5 steps through the shared devhost.toml for the whole team. Proposed: 2 steps, once, for this person only. The move is its own outcome, with no notice and no Undo control: <b>Move to</b> the previous placement, the badge or <b>Reset to Manifest Default</b> reverses it. Keys: Enter, Space or the arrow toward the menu opens it with focus on <b>Move to</b>; ArrowUp and ArrowDown move, Home and End jump, a letter jumps; ArrowRight opens the submenu and ArrowLeft closes it; Escape closes the innermost menu and returns focus to its trigger, or, after a pointer open, to the page element that had it; Tab or Shift+Tab closes the menu with focus on the stack name (<code>KEY-8</code>, <code>KEY-10</code>, <code>KEY-5</code>).</p>
-<ol><li><span class="n">1</span> The stack name button shows the dh mark and "Acme Shop", its accessible name begins with that name, "Acme Shop, devhost menu", and it opens the stack name menu (<code>aria-haspopup="menu"</code>) instead of collapsing the toolbar (<code>KEY-4</code>, <code>MENU-1</code>, <code>WORD-2</code>).</li>
+<ol><li><span class="n">1</span> The stack name button shows the dh mark, "Acme Shop" and a visible chevron affordance (▾) inside a &gt;=3:1 boundary; its accessible name begins with that name, "Acme Shop, devhost menu", and it opens the stack name menu (<code>aria-haspopup="menu"</code>) instead of collapsing directly (<code>KEY-4</code>, <code>MENU-1</code>, <code>WORD-2</code>).</li>
 <li><span class="n">2</span> <b>Move to</b>'s submenu lists the five placements with the current one checked; <b>Collapse</b> and <b>Reset to Manifest Default</b> follow it (<code>MENU-1</code>, <code>SURF-7</code>, <code>WORD-3</code>).</li>
 <li><span class="n">3</span> When the layout already matches the manifest, <b>Reset to Manifest Default</b> is unavailable with its reason as a line under it (<code>MENU-3</code>).</li>
-<li><span class="n">4</span> <b>All Stacks on This Machine</b> opens the stack directory in the same tab; devhost never opens a browser (<code>MENU-1</code>, <code>SURF-15</code>).</li>
+<li><span class="n">4</span> <b>All Stacks on devbox</b> joins the menu's group directly (no separator on this machine, <code>MENU-2</code>), naming the machine from <code>machineName</code> in <code>config.toml</code> else the host name (<code>O61</code>), and opens the stack directory in the same tab; devhost never opens a browser (<code>MENU-1</code>, <code>SURF-15</code>).</li>
 <li><span class="n">5</span> Pressing the stack name or the collapsed badge and moving 8 px or more shows the five drop targets; releasing over one places the dock there; Escape during the drag puts it back and saves nothing; a press without movement opens the menu, or expands the badge (<code>SURF-7</code>, <code>KEY-12</code>).</li>
-<li><span class="n">6</span> The choice saves at once through <code>PUT /__devhost__/layout</code>, the control server's record for this manifest, or for this served folder in a serve session, with chat's dragged position: every hostname of the stack mounts it, every open tab follows within a second, a teammate still gets the manifest's placement, and it never depends on chat being on. A <code>PUT</code> whose response is lost is never resent; the page reads the record again. While the connection is lost, the dock still moves on this page and the menu says "Not saved: devhost is not reachable from this page" (<code>SURF-7</code>, <code>REV-12</code>, <code>HOLD-2</code>).</li></ol>
-<p class="fixes">Fixes toolbar-shell-02, toolbar-shell-09 · Backend: the layout record and <code>GET</code> and <code>PUT /__devhost__/layout</code> (Backend 1, <code>CC-5</code>); five placements in the manifest (Backend 6)</p></div>
+<li><span class="n">6</span> The choice saves at once through <code>PUT /__devhost__/layout</code>, the control server's record for this manifest, or for this served folder in a serve session, with chat's dragged position: every hostname of the stack mounts it, every open tab follows within a second, a teammate still gets the manifest's placement, and it never depends on chat being on. Collapsed, the badge shows a visible expand chevron (▴). A <code>PUT</code> whose response is lost is never resent; the page reads the record again. While the connection is lost, the dock still moves on this page and the menu says "Not saved: devhost is not reachable from this page" (<code>SURF-7</code>, <code>REV-12</code>, <code>HOLD-2</code>).</li>
+<li><span class="n">7</span> From another environment, an unauthenticated remote browser sees "Sign in with passkey or pair this browser to use devhost here" with <b>Sign In with Passkey</b> (and <code>devhost pair</code> fallback); an authenticated remote browser gets every control plus <b>Sign Out This Browser</b> (or <b>Unpair This Browser</b>) after a separator at the end of the stack name menu (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>MENU-2</code>, <code>O36</code>, <code>O59</code>).</li></ol>
+<p class="fixes">Fixes toolbar-shell-02, toolbar-shell-09, serve-command-09 · Backend: the layout record and <code>GET</code> and <code>PUT /__devhost__/layout</code> (Backend 1, <code>CC-5</code>); five placements in the manifest (Backend 6); <code>machineName</code> and remote auth state (Backend 8, <code>O36</code>, <code>O59</code>, <code>O61</code>, <code>CC-39</code>)</p></div>
 </section>
 
 <section class="step" id="collapsed">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>collapsed; api failed, web changed</span></div>
+<div class="bar"><b>tab › (1) failed · Acme Shop</b><span>collapsed; api failed, web changed; tab title prefixed (O16)</span></div>
 <div class="pg" style="min-height:140px">
 <div class="apptxt">Acme Shop · Products …</div>
 <div class="corner">
 <div class="banner bad" style="margin:0">▲ api failed its health check <span class="btn">Restart</span></div>
 <div class="row" style="justify-content:flex-end"><span class="n">2</span><span class="banner" style="margin:0">◆ web's dev server, Vite, reloads this page when files change <span class="btn">Disable Reloads</span></span></div>
-<div class="row" style="justify-content:flex-end"><span class="n">1</span><span class="tbar oneline"><span class="seg">▲ <b>dh</b> · 1 failed · 1 changed</span></span></div>
-<div class="muted small">named "1 failed: api · 1 changed: web, Acme Shop, expand devhost toolbar"</div>
+<div class="row" style="justify-content:flex-end"><span class="n">1</span><span class="tbar oneline"><span class="seg">▲ <b>dh</b> · 1 failed · 1 changed ▴</span></span></div>
+<div class="muted small">named "1 failed: api · 1 changed: web, Acme Shop, expand devhost toolbar" · tab title restores to "Acme Shop" when cleared</div>
 </div>
 </div>
 </div>
@@ -453,35 +469,35 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="bar"><b>devhost › the collapsed badge in other states</b><span>one-line notices beside it</span></div>
 <div class="work small">
 <div class="muted">a routine restart, here Alt+Ctrl+R restarting web: the badge keeps its look <span class="n">3</span></div>
-<div class="row"><span class="banner info" style="margin:0">◐ Restart Changed · web · 0 of 1 restarted · 2 s</span><span class="tbar oneline"><span class="seg"><b>dh</b></span></span></div>
+<div class="row"><span class="banner info" style="margin:0">◐ Restart Changed · web · 0 of 1 restarted · 2 s</span><span class="tbar oneline"><span class="seg"><b>dh</b> ▴</span></span></div>
 <div class="muted" style="margin-top:6px">the connection lost, then the stack stopped <span class="n">4</span></div>
-<div class="row"><span class="banner" style="margin:0">? Lost connection to devhost; retrying <span class="btn">Retry Now</span></span><span class="tbar oneline"><span class="seg">? <b>dh</b> · Lost connection, last seen 16:24</span></span></div>
-<div class="row" style="margin-top:4px"><span class="tbar oneline"><span class="seg">■ <b>dh</b> · Acme Shop stopped at 16:24 by devhost stop</span></span><span class="muted">Start it with devhost start in ~/acme</span></div>
-<div class="muted" style="margin-top:6px">four conditions: three lines, then "1 more" <span class="n">5</span></div>
+<div class="row"><span class="banner" style="margin:0">? Lost connection to devhost; retrying <span class="btn">Retry Now</span></span><span class="tbar oneline"><span class="seg">? <b>dh</b> · Lost connection, last seen 16:24 ▴</span></span></div>
+<div class="row" style="margin-top:4px"><span class="tbar oneline"><span class="seg">■ <b>dh</b> · Acme Shop stopped at 16:24 by devhost stop ▴</span></span><span class="muted">Start it with devhost start in ~/acme</span></div>
+<div class="muted" style="margin-top:6px">four conditions: three lines, then "1 More" <span class="n">5</span></div>
 <div class="row"><span class="banner bad" style="margin:0">▲ api failed its health check <span class="btn">Restart</span></span><span class="banner" style="margin:0">◆ devhost.toml line 12 not applied <span class="btn">Edit</span></span></div>
-<div class="row" style="margin-top:4px"><span class="banner" style="margin:0">◆ Claude Code is waiting for you <span class="btn">Answer</span></span><span class="btn">1 more</span><span class="tbar oneline"><span class="seg">▲ <b>dh</b> · 1 failed · devhost.toml not applied · 1 waiting for you · +1</span></span></div>
+<div class="row" style="margin-top:4px"><span class="banner" style="margin:0">◆ Claude Code is waiting for you <span class="btn">Answer</span></span><span class="btn">1 More</span><span class="tbar oneline"><span class="seg">▲ <b>dh</b> · 1 failed · devhost.toml not applied · 1 waiting for you · +1 ▴</span></span></div>
 <div class="muted" style="margin-top:6px">Reload blocked dismissed while the reload is still held <span class="n">6</span></div>
-<div class="row"><span class="tbar oneline"><span class="seg">◆ <b>dh</b> · 1 reload held</span></span><span class="muted">collapsed</span><span class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads · 1 held</span></span><span class="muted">expanded</span></div>
+<div class="row"><span class="tbar oneline"><span class="seg">◆ <b>dh</b> · 1 reload held ▴</span></span><span class="muted">collapsed</span><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads · 1 held</span></span><span class="muted">expanded</span></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › the expanded bar</b><span>a decision card pending, chat closed</span></div>
+<div class="bar"><b>tab › (1) waiting · Acme Shop</b><span>expanded bar, decision card pending, chat closed (O16)</span></div>
 <div class="work small">
-<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">◆ Running agents</span><span class="seg">Hold Reloads</span><span class="seg">◆ Chat</span></span><span class="muted">named "Chat: waiting for you"</span><span class="n">7</span></div>
-<div class="row" style="margin-top:4px"><span class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">◐ Running agents</span><span class="seg">Hold Reloads</span><span class="seg">◐ Chat</span></span><span class="muted">named "Chat: working"</span></div>
+<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">◆ Running agents</span><span class="seg">Hold Reloads</span><span class="seg">◆ Chat</span></span><span class="muted">named "Chat: waiting for you"</span><span class="n">7</span></div>
+<div class="row" style="margin-top:4px"><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">◐ Running agents</span><span class="seg">Hold Reloads</span><span class="seg">◐ Chat</span></span><span class="muted">named "Chat: working" · tab title unprefixed</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><h2>8. Work with the toolbar collapsed</h2>
-<p>Collapsing still shrinks the bar to one control in the dock's corner, and expanding brings back every segment as it was. What changes: the collapsed badge says whatever needs the person, keeps every actionable notice beside it, and reads the published state, so a routine restart never looks like a failure. Keys: the badge is the collapsed bar's one Tab stop and Alt+Ctrl+B's target; Enter or Space expands it; each one-line notice's action is a Tab stop after it (<code>KEY-3</code>, <code>KEY-4</code>).</p>
-<ol><li><span class="n">1</span> Collapsed, the bar is one badge, a button with the dh mark and the stack's attention state in <code>ACT-7</code>'s order: the lost connection or the proxy offline; a failed, exited or blocked service; a configuration change not applied; an agent waiting for the person; a held or blocked reload; a changed service; else healthy, with no text. Its text lists up to three, then "+N"; its accessible name adds the names, the stack and the action. It counts the whole stack, services left out of the run included, and its shapes and words come from services-panel's shared service state indicator and state-words module (<code>SURF-8</code>, <code>ACT-6</code>, <code>ACT-13</code>, <code>WORD-5</code>, <code>WORD-6</code>, <code>SURF-14</code>).</li>
+<div class="cap"><h2>8. Work with the toolbar collapsed and watch background tabs</h2>
+<p>Collapsing still shrinks the bar to one control in the dock's corner, and expanding brings back every segment as it was. What changes: the collapsed badge carries a visible expand chevron, says whatever needs the person, keeps every actionable notice beside it, reads the published state so a routine restart never looks like a failure, and app pages prefix the browser tab's title while a waiting agent or failure persists (<code>O16</code>, <code>ACT-7</code>). Keys: the badge is the collapsed bar's one Tab stop and Alt+Ctrl+B's target; Enter or Space expands it; each one-line notice's action is a Tab stop after it (<code>KEY-3</code>, <code>KEY-4</code>).</p>
+<ol><li><span class="n">1</span> Collapsed, the bar is one badge, a button with the dh mark, an expand chevron (▴) and the stack's attention state in <code>ACT-7</code>'s order: the lost connection or the proxy offline; a failed, exited or blocked service; a configuration change not applied; an agent waiting for the person; a held or blocked reload; a changed service; else healthy, with no status text. Its text lists up to three, then "+N"; its accessible name adds the names, the stack and the action. It counts the whole stack, services left out of the run included, and its shapes and words come from services-panel's shared service state indicator and state-words module (<code>SURF-8</code>, <code>ACT-6</code>, <code>ACT-13</code>, <code>WORD-5</code>, <code>WORD-6</code>, <code>SURF-14</code>).</li>
 <li><span class="n">2</span> Every actionable notice stays beside the badge in its one-line form with its lead action, in <code>FB-8</code>'s order; the hot reload notice keeps its line with <b>Disable Reloads</b>, whose popover anchors to that line (<code>SURF-8</code>, <code>MENU-5</code>, <code>O2</code>).</li>
 <li><span class="n">3</span> While devhost restarts, starts, stops or switches services, the badge keeps its look and the operation's activity line shows beside it with the transitional shape the expanded bar's dots use; a service that exits or fails changes the badge at once (<code>ACT-3</code>, <code>FB-1</code>, <code>WORD-4</code>).</li>
 <li><span class="n">4</span> The lost connection leads and draws nothing as down; a stopped stack shows its end with its time, reason and the command that starts it again, never failed services (<code>ACT-5</code>, <code>ACT-10</code>, <code>HOLD-2</code>).</li>
-<li><span class="n">5</span> At most three lines, then "N more"; "Answer" opens docked chat on the decision card in one activation; each line clears when its condition ends, and a notice that arrives while collapsed is announced once (<code>FB-8</code>, <code>REV-9</code>, <code>ACT-7</code>, <code>FB-9</code>).</li>
+<li><span class="n">5</span> At most three lines, then "N More" (expanding in place with "Show Fewer"); "Answer" opens docked chat on the decision card in one activation; each line clears when its condition ends, and a notice that arrives while collapsed is announced once (<code>FB-8</code>, <code>REV-9</code>, <code>ACT-7</code>, <code>FB-9</code>, <code>WORD-3</code>).</li>
 <li><span class="n">6</span> A notice dismissed while its condition lasts leaves its marker: in the badge's text while collapsed, on its owning control while expanded, such as reload-control's held count on <b>Hold Reloads</b> (<code>SURF-8</code>, <code>UNDO-3</code>).</li>
-<li><span class="n">7</span> Expanded, Chat and the Running agents trigger show an agent waiting for the person in a look and a name of their own, distinct from working's spinner, from the state agent-chat and running-agents pass to the bar (<code>SURF-8</code>, <code>WORD-6</code>).</li></ol>
-<p class="fixes">Fixes toolbar-shell-01, toolbar-shell-10 · Backend: none; the badge reads services-panel's published service state</p></div>
+<li><span class="n">7</span> Expanded, Chat and the Running agents trigger show an agent waiting for the person in a look and a name of their own, distinct from working's spinner, from the state agent-chat and running-agents pass to the bar. While a waiting agent or failure persists, devhost also prefixes the app page's tab title ("(1) waiting · Acme Shop" or "(1) failed · Acme Shop") and restores the app's own title when cleared (<code>SURF-8</code>, <code>WORD-6</code>, <code>ACT-7</code>, <code>O16</code>).</li></ol>
+<p class="fixes">Fixes toolbar-shell-01, toolbar-shell-10 · Backend: none; the badge and tab title read services-panel's published service state and chat's waiting state</p></div>
 </section>
 
 <section class="step" id="page-dialog">
@@ -498,7 +514,7 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="banner info" style="margin:0">Paused while this page's dialog is open</div>
 <div class="banner" style="margin:0">◆ Reload blocked <span class="btn focusring">Reload</span> <span class="btn">✕</span></div>
 </div></div>
-<div class="row" style="justify-content:flex-end"><span class="n">3</span><div class="tbar paused oneline"><span class="seg"><b>Acme Admin</b></span><span class="seg">● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">3</span><div class="tbar paused oneline"><span class="seg"><b>Acme Admin ▾</b></span><span class="seg">● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -512,9 +528,9 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 <div class="row"><b>Acme Shop · 6 of 6 running</b></div>
 <div class="row">● web · running <span class="sp"></span><span class="btn">Restart</span></div>
 <div class="row">● api · running <span class="sp"></span><span class="btn">Restart</span></div>
-<div class="box" style="margin:6px 0 0">Restart all 6 services with new automatic ports? Took 14 s last time. <span class="btn focusring">Cancel</span> <span class="btn">Restart Stack</span> <span class="n">4</span></div>
+<div class="box" style="margin:6px 0 0"><div>Restart all 6 services with new automatic ports? Took 14 s last time.</div><div class="row" style="justify-content:flex-end;margin-top:4px"><span class="n">4</span><span class="btn">Restart Stack</span><span class="btn focusring">Cancel</span></div></div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open" id="t-svc">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg open" id="t-svc">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -530,48 +546,53 @@ devtools.shortcuts.restartServices "ctrl+enterr" in devhost.toml line 31 is not 
 
 <section class="changes">
 <div><h3>Removed</h3><ul>
-<li>Collapsing on a click of the stack name, and the collapsed dot that reads service health only and turns red for every restart</li>
-<li>Notices hidden while collapsed, under toolbar panels and under docked chat</li>
+<li>Collapsing on a click of the borderless stack name, and the collapsed dot that reads service health only and turns red for every restart</li>
+<li>Notices hidden while collapsed, under toolbar panels and under docked chat; popovers overlapping the right-edge minimap</li>
+<li>1.63:1 dark / 1.57:1 light <code>--dh-line</code> default button borders and ragged 4-row narrow wrapped docks with an orphan Disk row</li>
 <li>The dock's empty box taking the page's clicks</li>
-<li>The four-feature render gate that also stopped the reload hold, and the inject gate that leaves out the readouts</li>
-<li>Readout alarms from single 2 s samples in the failed service's red, with a native title as their only detail</li>
+<li>The four-feature render gate that also stopped the reload hold, and the Rust inject gate that leaves out the readouts</li>
+<li>Readout alarms from single 2 s samples and Disk used percentages in the failed service's red, with a native title as their only detail</li>
 <li>The silent fallback for an unusable shortcut, and "Click the page to give it the keyboard back"</li>
 </ul></div>
 <div><h3>Merged</h3><ul>
 <li>The notice stack and the bar: one landmark, "devhost", in drawn order</li>
 <li>Placement, collapsed state and chat's dragged position: one layout record, replacing <code>/__devhost__/chat/panel</code></li>
-<li>Every binding's handler, hint, <code>aria-keyshortcuts</code> and docs line: one registry</li>
+<li>Every binding's handler, hint, <code>aria-keyshortcuts</code> and docs line: one registry fed by <code>config.toml</code> over <code>devhost.toml</code> (<code>O17</code>)</li>
 </ul></div>
 <div><h3>New</h3><ul>
-<li>The stack name menu (<b>Move to</b>, <b>Collapse</b>, <b>Reset to Manifest Default</b>, <b>All Stacks on This Machine</b>), dragging and five placements</li>
-<li>Alt+Ctrl+B and its focus cycle, <code>/__devhost__/keys.js</code>, the docs' Keyboard section and warnings for unusable chords</li>
-<li>The paused state with scripted-dialog detection, and the dock's published inset</li>
-<li>The fit sequence with <b>Host</b>, <b>Devtools</b> and <b>More</b>; readout details with this stack's share and a verdict</li>
-<li>One-line notices beside the badge, forced-colors rules, <code>[devtools].enabled</code> and <code>Button</code>'s unavailable state</li>
+<li>The stack name menu (<b>Move to</b>, <b>Collapse</b>, <b>Reset to Manifest Default</b>, <b>All Stacks on devbox</b>, and remote <b>Sign Out This Browser</b> / <b>Unpair This Browser</b>), visible chevron affordances, dragging and five placements</li>
+<li>Unauthenticated remote toolbar state ("Sign in with passkey or pair this browser to use devhost here", <code>O36</code>)</li>
+<li>App-page tab-title prefixing while a waiting agent or failure persists, restored when cleared (<code>O16</code>, <code>ACT-7</code>)</li>
+<li>Alt+Ctrl+B and its focus cycle, <code>/__devhost__/keys.js</code>, per-person <code>[devtools.shortcuts]</code> and <code>machineName</code> in <code>config.toml</code>, the docs' Keyboard section and warnings for unusable chords</li>
+<li>The paused state with scripted-dialog detection, the dock's published inset, and <code>ToolbarPopover</code> reserving <code>--devhost-minimap-collapsed-width</code></li>
+<li>The fit sequence with <b>Host</b>, <b>Devtools</b> and <b>More</b>; 320 px phone layout for notices/chat/approvals and narrow-dock row dividers; readout details with <code>devbox</code>'s figures, this stack's share and a verdict</li>
+<li>One-line notices beside the badge, forced-colors rules, <code>[devtools].enabled</code> and <code>Button</code>'s <code>--dh-input-line</code> borders and unavailable state</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
-<li>The stack name opens its menu, its accessible name begins with the stack name, and collapse is saved</li>
-<li>Panels and docked chat open beyond the notice stack; an open panel paints above docked chat (<code>CC-1</code>)</li>
+<li>The stack name opens its menu, shows a visible chevron affordance, its accessible name begins with the stack name, and collapse is saved</li>
+<li>Panels and docked chat open beyond the notice stack; an open panel paints above docked chat (<code>CC-1</code>) and clears the right-edge minimap</li>
+<li>Default button borders use <code>--dh-input-line</code> (&gt;=3:1 in both themes); working copies are named worktrees everywhere (<code>WORD-11</code>)</li>
 <li>The bar is one Tab stop; keys after a click on the toolbar reach the page, and keys typed into devhost stop at the window (<code>CC-28</code>)</li>
 <li>An AltGr character is text; <code>[devtools.status].position</code> takes five placements; the readouts alone inject the toolbar</li>
-<li>Disk reads free space, sizes are in GiB and levels follow a steadied reading (<code>WORD-8</code>)</li>
+<li>Calibrated <code>O48</code> levels: CPU 20 s average, RAM 75%/90% per reading, Disk &lt;20 GiB / &lt;10 GiB free floors (1 GiB band), binary GiB units (<code>WORD-8</code>)</li>
 <li>Under the page's modal dialog the bar shows its paused state; a page popover no longer covers an open panel (<code>CC-3</code>)</li>
 </ul></div>
 <div><h3>Kept</h3><ul>
-<li>Shadow DOM isolation: the host takes no pointer events and each surface opts back in</li>
+<li>Shadow DOM isolation: the host takes no pointer events and each surface opts back in (with <code>O16</code>'s tab-title prefix as the one explicit exception)</li>
 <li>The top layer above the page's popovers and modal dialogs, now re-entered with an open panel</li>
 <li>Every devtools setting reaches open pages without a reload; <code>config.json</code> stays <code>no-store</code>; the manifest's position stays the team default</li>
 <li>Panels are native popovers, one at a time, closed by Escape or a click outside; keys typed into devtools never reach the page</li>
-<li>Readouts hide while their stream is down and measure the whole machine; the restart chord stays suspended in page fields</li>
+<li>Readouts hide while their stream is down and measure the whole machine running the stacks; the restart chord stays suspended in page fields</li>
 <li>Chat works in the page's native modal; devhost never removes a page dialog's <code>aria-hidden</code>, <code>inert</code> or focus trap, and never opens a browser</li>
 </ul></div>
 <div><h3>Backend work</h3><ul>
 <li>The layout record and <code>GET</code> and <code>PUT /__devhost__/layout</code> (Backend 1, <code>CC-5</code>)</li>
 <li>Injection for every feature with <code>[devtools].enabled</code>, and the reload's toolbar-change line (Backend 2, 3, <code>CC-22</code>)</li>
 <li><code>/__devhost__/keys.js</code> first in <code>&lt;head&gt;</code> (Backend 4, <code>CC-28</code>)</li>
-<li>One shortcut grammar resolved on the server, with warnings (Backend 5, <code>CC-29</code>)</li>
+<li>One shortcut grammar with <code>config.toml</code> overrides resolved on the server and warnings (Backend 5, <code>O17</code>, <code>CC-29</code>, <code>CC-39</code>)</li>
 <li>Five placements in the manifest (Backend 6)</li>
-<li>This stack's share in the resources stream, still to be settled (Backend 7)</li>
+<li>This stack's share in the Rust <code>sysinfo</code> resources stream reusing verified process trees (Backend 7, <code>O48</code>)</li>
+<li><code>machineName</code> in <code>config.toml</code> and remote auth state in <code>config.json</code> and health stream (Backend 8, <code>O36</code>, <code>O59</code>, <code>O61</code>, <code>CC-39</code>)</li>
 </ul></div>
 </section>
 </main>
