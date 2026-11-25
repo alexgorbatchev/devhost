@@ -50,7 +50,15 @@ export function StackDirectoryPage({ stacks, query }: IStackDirectoryPageProps):
             </Badge>
           </div>
         </div>
-        <form role="search" method="get" className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <form
+          role="search"
+          method="get"
+          className={
+            query
+              ? "grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+              : "grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+          }
+        >
           <Field>
             <FieldLabel htmlFor={id}>Filter stacks</FieldLabel>
             <Input id={id} type="search" name="q" defaultValue={query} placeholder="Stack, service, URL, or path" />

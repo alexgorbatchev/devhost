@@ -33,13 +33,13 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
   const id = useId();
   return (
     <section data-testid="StackDirectoryCard" aria-labelledby={id}>
-      <Card size="sm" density="compact">
+      <Card size="sm">
         <CardHeader>
           <CardTitle>
             <h2 id={id}>{stack.name}</h2>
           </CardTitle>
           <CardDescription>
-            <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 text-xs">
+            <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 text-xs">
               <dt>Directory</dt>
               <dd className="break-all">{stack.directory || stack.manifestPath || "—"}</dd>
             </dl>
@@ -58,7 +58,7 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
             {!!stack.services.length && (
               <Table layout="fixed" density="compact" aria-label={`${stack.name} services`}>
                 <colgroup>
-                  <col className="w-28 sm:w-44" />
+                  <col className="w-28 sm:w-56" />
                   <col className="hidden w-28 sm:table-column" />
                   <col />
                 </colgroup>
@@ -76,7 +76,9 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
                     <TableRow key={service.name}>
                       <TableCell>
                         <div className="flex flex-col items-start gap-1 py-1">
-                          <h3 className="max-w-full text-sm font-medium whitespace-normal break-all">{service.name}</h3>
+                          <h3 className="max-w-full text-sm font-medium whitespace-normal break-words">
+                            {service.name}
+                          </h3>
                           <p className="text-xs text-muted-foreground whitespace-normal sm:hidden">{service.status}</p>
                         </div>
                       </TableCell>
@@ -86,16 +88,8 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
                       <TableCell>
                         <div className="flex min-w-0 flex-col items-start gap-1 py-1">
                           {service.urls.map((url) => (
-                            <ButtonLink
-                              key={url}
-                              href={url}
-                              title={url}
-                              variant="link"
-                              align="start"
-                              fullWidth
-                              size="inline"
-                            >
-                              <span className="min-w-0 flex-1 break-all text-left font-mono text-sm whitespace-normal">
+                            <ButtonLink key={url} href={url} title={url} variant="link" align="start" size="inline">
+                              <span className="min-w-0 break-all text-left font-mono text-sm whitespace-normal">
                                 {url}
                               </span>
                               <ArrowUpRightIcon data-icon="inline-end" aria-hidden="true" />
@@ -131,7 +125,7 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="flex min-w-0 flex-col gap-2 pt-2">
-                  <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <dt>Root manifest</dt>
                     <dd className="break-all">{stack.manifestPath || "Manifest-free file or port session"}</dd>
                     {stack.startedAt && (
@@ -147,9 +141,9 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
                         data-testid="StackDirectoryCard--file-toggle"
                         render={<Button variant="outline" size="content" align="start" fullWidth />}
                       >
-                        <span className="grid min-w-0 flex-1 grid-cols-[5rem_minmax(0,1fr)] gap-x-3 text-left">
-                          <span>{config.kind} ·</span>
-                          <span className="break-all">{config.path}</span>
+                        <span className="flex min-w-0 flex-1 items-baseline gap-1.5 text-left">
+                          <span className="shrink-0 text-muted-foreground">{config.kind} ·</span>
+                          <span className="min-w-0 break-all">{config.path}</span>
                         </span>
                         <ChevronDownIcon data-icon="inline-end" />
                       </CollapsibleTrigger>
@@ -171,7 +165,7 @@ export function StackDirectoryCard({ stack }: IStackDirectoryCardProps): ReactEl
                 </div>
               </CollapsibleContent>
             </Collapsible>
-            <p className="text-xs text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               Current files on disk. Rejected edits can differ from the running configuration.
             </p>
           </div>

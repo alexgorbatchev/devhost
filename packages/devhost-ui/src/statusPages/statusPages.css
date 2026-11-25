@@ -40,3 +40,13 @@
 :where(.markdown-body ul, .markdown-body ol) {
   list-style-type: revert;
 }
+
+[data-testid="StackDirectoryCard"] th:first-child,
+[data-testid="StackDirectoryCard"] td:first-child {
+  padding-left: 0;
+}
+
+[data-testid="StackDirectoryCard"] [aria-expanded="true"] [data-icon="inline-end"],
+[data-testid="StackDirectoryCard"] [data-panel-open] [data-icon="inline-end"] {
+  transform: rotate(180deg);
+}
