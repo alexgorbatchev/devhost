@@ -94,7 +94,7 @@ http = "http://127.0.0.1:3001/ok"
     assert_eq!(manifest.services["web"].path.as_deref(), Some("/"));
     assert_eq!(manifest.services["api"].path.as_deref(), Some("/api/*"));
 
-    // Invalid shortcut falls back to default (matching Go)
+    // Invalid shortcut falls back to the default.
     fs::write(
         root.join("devhost.toml"),
         "name = 's'\n[devtools.shortcuts]\nrestartServices = 'INVALID!'\n[services.web]\ncommand = ['w']\nport = 3000\n",

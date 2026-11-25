@@ -341,7 +341,7 @@ fn agent_value(value: &str) -> String {
 }
 
 fn quote(value: &str) -> String {
-    // Go's diagnostic quoting keeps printable Unicode but escapes controls.
+    // Diagnostic quoting keeps printable Unicode while escaping control characters.
     let mut quoted = String::from("\"");
     for character in value.chars() {
         match character {

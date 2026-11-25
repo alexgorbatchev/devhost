@@ -221,7 +221,7 @@ pub fn resolve_watch_path(cwd: &Path, watch: &str) -> PathBuf {
     }
 }
 
-// Parse Go's time.ParseDuration syntax (e.g., "250ms", "1m30s", "2.5s", "0").
+// Parse shorthand duration syntax (e.g., "250ms", "1m30s", "2.5s", "0").
 pub fn parse_go_duration(raw: &str) -> Result<Duration, String> {
     let mut s = raw;
     if s.is_empty() {

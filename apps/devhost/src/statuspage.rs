@@ -94,7 +94,7 @@ pub struct Stack {
     pub error: String,
 }
 
-// Go encodes an unpopulated slice as null in cross-supervisor directory replies.
+// Accept null lists from older supervisor directory replies as empty vectors.
 fn null_list<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Vec<T>, D::Error> {

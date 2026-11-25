@@ -327,7 +327,7 @@ fn panel_recovers_corrupt_state_and_reports_unwritable_storage() {
         "{:x}.json",
         Sha256::digest(manifest.manifest_path.as_os_str().as_encoded_bytes())
     ));
-    // The Go panel store uses this same directory, manifest hash and JSON shape.
+    // Verify the panel store directory, manifest SHA-256 filename, and JSON shape.
     fs::write(&path, r#"{"position":{"left":123,"top":45}}"#).unwrap();
     let (status, body) = fixture.request("GET", "/__devhost__/chat/panel", "", false);
     assert_eq!(status, 200);

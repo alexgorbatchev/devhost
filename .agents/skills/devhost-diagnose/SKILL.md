@@ -4,7 +4,7 @@ description: Diagnose issues in running devhost instances, including routed apps
 author: alexgorbatchev
 metadata:
   created_on: 2026-10-13 17:00
-  last_modified: 2026-10-25 11:23
+  last_modified: 2026-11-25 14:30
   status: current
 ---
 
@@ -32,8 +32,8 @@ For a silent feature, first determine whether it is mounted and enabled. Treat a
 | Symptom | First evidence | Source to inspect if needed |
 | --- | --- | --- |
 | Holding Alt does nothing | `chatEnabled` and `annotationEnabled` in `/__devhost__/config.json`, presence of the chat panel | `packages/devhost-ui/src/devtools/components/App.tsx`; `packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx` |
-| Toolbar missing | Routed document, injected entry request, config request, `#devhost-devtools-host` and its shadow root | `apps/devhost/src/devtools/injection.rs`; `packages/devhost-ui/src/devtools/startDevtools.ts` |
-| Service fails or recovery stays open | Startup health target and timeout, preceding stack logs, service state, route readiness | `packages/docs/src/content/docs/stacks/recovery.md`; `apps/devhost/internal/services/` |
+| Toolbar missing | Routed document, injected entry request, config request, `#devhost-devtools-host` and its shadow root | `apps/devhost/src/devtools/document_injection.rs`; `packages/devhost-ui/src/devtools/startDevtools.ts` |
+| Service fails or recovery stays open | Startup health target and timeout, preceding stack logs, service state, route readiness | `packages/docs/src/content/docs/stacks/recovery.md`; `apps/devhost/src/services/` |
 | Logs, resources, queues, or highlights stop updating | Relevant feature flag and same-origin WebSocket lifecycle | `packages/docs/src/content/docs/reference/control-api.md`; corresponding UI feature and server handler |
 | Source edits do not appear | Executable actually running, injected asset URLs, configured source checkout | `apps/devhost/src/devtools/dev_source.rs`; `apps/devhost/src/devtools/assets.rs` |
 
@@ -48,7 +48,7 @@ For Alt selection specifically:
 
 Use the agent-browser skill for a separate browser session. Inspect an already-open Chrome session only with the user's explicit approval and the chrome-cdp skill. Use a unique diagnostic session and close only that session afterward.
 
-1. Inspect the rendered document and network requests. Injection is document-sensitive: a plain curl request can return HTML without the injected script while a browser navigation receives it. Do not conclude injection is broken from curl alone; inspect `document.scripts`, the browser response, and the host shadow root. Inspect `apps/devhost/internal/caddy/proxy_origin.go` for the document routing matcher.
+1. Inspect the rendered document and network requests. Injection is document-sensitive: a plain curl request can return HTML without the injected script while a browser navigation receives it. Do not conclude injection is broken from curl alone; inspect `document.scripts`, the browser response, and the host shadow root. Inspect `apps/devhost/src/caddy/routes.rs` for the document routing matcher.
 2. Confirm `/__devhost__/inject.js`, its lazy chunks, and `/__devhost__/config.json` load successfully. Configuration is fetched with `cache: "no-store"` and served separately from versioned assets; searching the JavaScript bundle for instance settings is not a configuration check.
 3. Drive the reported interaction and assert its observable outcome, such as a target highlight appearing while Alt is held. Capture console errors and failed network requests, but do not equate an empty console with success. Synthetic keyboard events can isolate a listener; they do not prove that physical keyboard input reaches it.
 4. For connection failures, inspect the relevant `/__devhost__/ws/` request and messages using the routed origin and its HTTP/HTTPS scheme. Verify the current handler before inventing an HTTP health or logs endpoint. Native browser control reconnects explicitly; other documented UI event connections reconnect automatically.

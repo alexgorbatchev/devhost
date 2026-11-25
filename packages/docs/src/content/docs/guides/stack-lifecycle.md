@@ -308,7 +308,7 @@ Stopping is best-effort and depends on the platform:
 - On Linux and macOS, devhost checks each tracked process's start time before it signals it. Once a process exits, the system can give its PID to an unrelated program; devhost neither signals that program nor waits for it. Other platforms go by PID alone.
 - On every platform, after a service with a port stops, devhost watches that port for 2 seconds and stops any process it started that binds it again. A restart therefore takes about 2 seconds longer. Outside Linux this needs `lsof`.
 
-The experimental Rust CLI checks the current process tree before sending shutdown signals, including children that have just entered a separate session. It verifies tracked process identities before signaling them. Children that ignore termination are killed after the service's shutdown grace period.
+devhost checks the current process tree before sending shutdown signals, including children that have just entered a separate session. It verifies tracked process identities before signaling them. Children that ignore termination are killed after the service's shutdown grace period.
 
 Use [daemon mode](../managed-daemon-style-services/) for a service whose detached process can outlive descendant tracking. If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.
 

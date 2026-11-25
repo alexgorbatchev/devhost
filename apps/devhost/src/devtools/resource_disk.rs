@@ -6,8 +6,8 @@ pub(super) fn read() -> Result<Value, String> {
     let disks = Disks::new_with_refreshed_list_specifics(DiskRefreshKind::nothing().with_storage());
     #[cfg(target_os = "linux")]
     {
-        // sysinfo includes virtual mounts such as Docker overlays. The Go
-        // reader selects storage filesystems supported by this kernel instead.
+        // sysinfo includes virtual mounts such as Docker overlays; filter to
+        // block-backed storage filesystems listed in /proc/filesystems instead.
         let supported = std::fs::read_to_string("/proc/filesystems")
             .map_err(|error| format!("listing supported filesystems: {error}"))?;
         let supported = storage_filesystems(&supported);

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-20 20:36
-last_modified: 2026-10-21 01:33
+last_modified: 2026-11-25 14:35
 status: current
 ---
 
@@ -20,7 +20,7 @@ The shared library exports `@alexgorbatchev/shadcn/assistant-ui`, `@alexgorbatch
 
 Devhost imports the shared library rather than maintaining a second component copy. Its `agentChat` feature owns native harness transport and runtime adaptation; `annotationComposer` owns element selection, and `visualAnnotations` owns drawings and tab capture.
 
-The Go-side bundle builder resolves the existing main and Redux entrypoints from the UI package's exports. Component entrypoints are library boundaries rather than additional served scripts. Keep unused showcase dependencies out of a consumer's import graph, while retaining required styles and registration when the owning component is used. Verify this with actual consumer builds, including both small components and components with runtime registration.
+The bundle builder in `apps/devhost/scripts/` resolves the existing main and Redux entrypoints from the UI package's exports. Component entrypoints are library boundaries rather than additional served scripts. Keep unused showcase dependencies out of a consumer's import graph, while retaining required styles and registration when the owning component is used. Verify this with actual consumer builds, including both small components and components with runtime registration.
 
 ## Styling and injection
 
@@ -48,11 +48,11 @@ Codex's [app-server protocol](https://learn.chatgpt.com/docs/app-server) uses `i
 
 Claude's [Agent SDK reference](https://code.claude.com/docs/en/agent-sdk/typescript) documents the initialization response's `models` list. The maintained SDK's exported wire types specify a `control_request` envelope with `request_id` and `request: { subtype: "initialize" }`; the corresponding `control_response` contains the initialization payload. Use the returned model `value` and `displayName`. Preserve the configured CLI's settings and authentication. Do not use `--bare`, which intentionally skips that configuration.
 
-The Go chat tests exercise conversation commands, permission responses, image validation, cancellation, process cleanup, session isolation, and native command receipts. Browser hook tests cover reconnects and draft recovery. Native tab-capture acceptance sends an actual annotated browser PNG, checks that chat chrome is absent, and verifies capture tracks stop. A real Codex conversation probe also returned a reply. Live Claude inference remains unverified in this environment because the configured CLI reports that login is required; native initialization, model reset, user replay, and error delivery are verified separately.
+The Rust chat tests exercise conversation commands, permission responses, image validation, cancellation, process cleanup, session isolation, and native command receipts. Browser hook tests cover reconnects and draft recovery. Native tab-capture acceptance sends an actual annotated browser PNG, checks that chat chrome is absent, and verifies capture tracks stop. A real Codex conversation probe also returned a reply. Live Claude inference remains unverified in this environment because the configured CLI reports that login is required; native initialization, model reset, user replay, and error delivery are verified separately.
 
 ## Verification
 
-Run focused component stories and required full validation in the shared library's workspace. Devhost integration separately requires `just ui check` and affected Go checks. Changes to dependencies or directory layout also require root `just check`. Format through each repository's root `just fix`. Shared-library checks do not prove that browser chat, harness execution, or annotated tab capture works in devhost.
+Run focused component stories and required full validation in the shared library's workspace. Devhost integration separately requires `just ui check` and affected `just devhost` checks. Changes to dependencies or directory layout also require root `just check`. Format through each repository's root `just fix`. Shared-library checks do not prove that browser chat, harness execution, or annotated tab capture works in devhost.
 
 Stories exercise native interactions and meaningful component states. Test callbacks, rejection and retry, selection limits, disabled states, keyboard focus, and the actual assistant-ui runtime where a component requires it. Light/dark injection tests verify computed contrast and that portaled content stays in the same shadow root as its trigger. A screenshot or a component merely importing does not establish those behavior contracts.
 

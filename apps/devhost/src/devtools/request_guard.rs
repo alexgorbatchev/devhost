@@ -35,8 +35,8 @@ pub fn check_cross_origin(
         .and_then(|v| v.to_str().ok())
         .filter(|value| !value.is_empty())
     {
-        // Go's CrossOriginProtection compares the authority, irrespective of scheme.
-        // Uri preserves its spelling, including case, for the same comparison.
+        // Compare the Origin authority against Host irrespective of scheme;
+        // Uri preserves its spelling, including case, for exact matching.
         let same_host = origin
             .parse::<http::Uri>()
             .ok()

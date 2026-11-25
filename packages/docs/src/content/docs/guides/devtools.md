@@ -29,7 +29,7 @@ The toolbar appears when at least one devtools feature is on, and most are on by
 
 With all of them off except `resources`, devhost injects nothing. Startup and recovery pages work either way. Every setting applies to open pages as soon as you save the manifest.
 
-Document injection preserves HTML's original character encoding and inserts the toolbar before the last closing body tag, including mixed-case tags. The experimental Rust proxy also decodes gzip and deflate before adding the toolbar and accepts documents larger than 64 MiB. Other content encodings pass through without injection.
+Document injection preserves HTML's original character encoding, decodes gzip and deflate before adding the toolbar, inserts the toolbar before the last closing body tag (including mixed-case tags), and accepts documents larger than 64 MiB. Other content encodings pass through without injection.
 
 ## The toolbar
 

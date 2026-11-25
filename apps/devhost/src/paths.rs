@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-// Match Go's filepath.Clean without opening or following filesystem entries.
+// Lexically normalize a path without opening or following filesystem entries.
 pub fn clean(path: &Path) -> PathBuf {
     let mut result = PathBuf::new();
     for component in path.components() {
@@ -25,7 +25,7 @@ pub fn clean(path: &Path) -> PathBuf {
     result
 }
 
-// Match Go's caddy.ManifestIdentity: absolute with symlinks resolved, falling back
+// Resolve the manifest to an absolute symlink-resolved path, falling back
 // to resolving the parent directory when the manifest file itself was deleted.
 pub fn manifest_identity(path: &Path) -> PathBuf {
     let absolute = if path.is_absolute() {

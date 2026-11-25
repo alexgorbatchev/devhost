@@ -8,7 +8,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
-      "revision": "b2496c7459ac103a50fb3842b741d145b7c7d18d",
+      "revision": "bea147f374edd1114c2856c20e37c6cc33c63594",
       "link_mode": "local-only"
     }
   },
@@ -29,7 +29,7 @@
       "sublabel": "Hostname + path routing",
       "pos": [400, 40],
       "size": [190, 76],
-      "sources": [{ "path": "apps/devhost/internal/caddy/routes.go", "line": 619, "end_line": 645 }]
+      "sources": [{ "path": "apps/devhost/src/caddy/routes.rs", "line": 956, "end_line": 995 }]
     },
     {
       "id": "document",
@@ -38,7 +38,7 @@
       "sublabel": "Inject enabled HTML",
       "pos": [790, 40],
       "size": [190, 76],
-      "sources": [{ "path": "apps/devhost/internal/devtools/document_injection.go", "line": 40, "end_line": 103 }]
+      "sources": [{ "path": "apps/devhost/src/devtools/document_injection.rs", "line": 61, "end_line": 110 }]
     },
     {
       "id": "control",
@@ -47,7 +47,7 @@
       "sublabel": "Assets, health, logs, actions",
       "pos": [400, 280],
       "size": [190, 76],
-      "sources": [{ "path": "apps/devhost/internal/devtools/server.go", "line": 327, "end_line": 356 }]
+      "sources": [{ "path": "apps/devhost/src/devtools/server.rs", "line": 34, "end_line": 100 }]
     },
     {
       "id": "app",
@@ -56,7 +56,7 @@
       "sublabel": "Command, cwd, environment",
       "pos": [790, 280],
       "size": [190, 76],
-      "sources": [{ "path": "apps/devhost/internal/services/stack.go", "line": 1091, "end_line": 1108 }]
+      "sources": [{ "path": "apps/devhost/src/services/stack.rs", "line": 1468, "end_line": 1515 }]
     },
     {
       "id": "supervisor",
@@ -66,9 +66,9 @@
       "pos": [790, 510],
       "size": [190, 76],
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 1124, "end_line": 1156 },
-        { "path": "apps/devhost/internal/services/routes.go", "line": 23, "end_line": 78 },
-        { "path": "apps/devhost/internal/services/selection.go", "line": 48, "end_line": 84 }
+        { "path": "apps/devhost/src/services/stack.rs", "line": 509, "end_line": 540 },
+        { "path": "apps/devhost/src/services/stack/documents.rs", "line": 19, "end_line": 65 },
+        { "path": "apps/devhost/src/services/resolve.rs", "line": 190, "end_line": 218 }
       ]
     },
     {
@@ -78,7 +78,7 @@
       "sublabel": "Services + dependencies",
       "pos": [400, 510],
       "size": [190, 76],
-      "sources": [{ "path": "apps/devhost/internal/services/selection.go", "line": 48, "end_line": 84 }]
+      "sources": [{ "path": "apps/devhost/src/services/resolve.rs", "line": 190, "end_line": 218 }]
     }
   ],
   "connections": [

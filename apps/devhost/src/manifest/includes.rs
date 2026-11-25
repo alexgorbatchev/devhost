@@ -217,7 +217,7 @@ fn include_patterns(raw: &Value) -> Result<Vec<String>, String> {
 }
 
 fn glob_pattern(pattern: &str) -> String {
-    // Go's filepath.Glob treats consecutive stars like one wildcard, including
+    // Collapse consecutive stars into one single-segment wildcard, including
     // when they occupy an entire path component.
     let mut output = String::with_capacity(pattern.len());
     let mut bracket = false;

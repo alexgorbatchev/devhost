@@ -88,8 +88,8 @@ fn help_aliases_modes_width_and_error_streams_match_public_contract() {
             }
         }
     }
-    // Cobra in Go 0.0.20 treats an unsupported completion shell as a successful help request.
-    // Rust intentionally rejects unknown shell names with exit status 1 (enforced in the Rust regression below).
+    // Unsupported completion shell names fail with exit status 1 and a stderr
+    // diagnostic (checked by invalid_arguments_report_to_stderr_and_point_to_usage below).
     for args in invalid_invocations()
         .into_iter()
         .filter(|args| args.as_slice() != ["completion", "unknown"])

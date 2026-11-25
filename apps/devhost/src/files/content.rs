@@ -49,8 +49,8 @@ impl FileContent {
         let Content::File(file) = &self.content else {
             return None;
         };
-        // HTTP dates have second precision; Go compares modification times at
-        // that precision too, including edits within one filesystem tick.
+        // Truncate modification times to HTTP-date second precision so conditional
+        // requests compare consistently across sub-second filesystem ticks.
         let seconds = file
             .last_modified()?
             .duration_since(UNIX_EPOCH)

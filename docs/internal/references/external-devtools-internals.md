@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-25 10:59
-last_modified: 2026-10-28 09:37
+last_modified: 2026-11-25 14:30
 status: current
 ---
 
@@ -120,12 +120,12 @@ Host-mounted aggregation is scoped to launchers, not panels. devhost may hide su
 
 ## Redux Toolkit and Zustand
 
-Source: `packages/devhost-ui/src/devtools/features/reduxDevtools/` and `apps/devhost/internal/devtools/redux_assets.go`.
+Source: `packages/devhost-ui/src/devtools/features/reduxDevtools/` and `apps/devhost/src/devtools/assets.rs`.
 
 ### Inspector and assets
 
 - The popup uses the public upstream App unchanged. It owns its panel layout and Emotion styles in its own document; no inspector stylesheet or font reaches the host page. devhost owns only explicit producer registration, transport, setup feedback, and the popup's lifecycle.
-- The compiled Go app serves the registration module (`/__devhost__/redux.js`), inspector module, and emitted inspector stylesheet. Unversioned production module and style requests redirect to content-versioned URLs with one-year immutable caching; source-checkout requests stay uncached and rebuild the requested asset. Failed source builds return HTTP 503.
+- The compiled devhost binary serves the registration module (`/__devhost__/redux.js`), inspector module, and emitted inspector stylesheet. Unversioned production module and style requests redirect to content-versioned URLs with one-year immutable caching; source-checkout requests stay uncached and rebuild the requested asset. Failed source builds return HTTP 503.
 - Inside this repository the typed source export is `@alexgorbatchev/devhost-ui/redux`. The served module does not require publishing or installing the private UI package.
 
 ### Upstream contract

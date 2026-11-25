@@ -288,7 +288,7 @@ fn caddy_stop_rejects_invalid_config_and_active_stack_directory_host_claim() {
     assert!(not_found.contains("https://web.localhost/app"));
     assert!(!not_found.contains("orphan.localhost"));
 
-    // Active route on stackDirectoryHost causes an error (matching Go)
+    // Active route on stackDirectoryHost causes an error.
     fs::write(
         state.join("routes/.registrations/devhost.localhost.json"),
         format!(
@@ -309,7 +309,7 @@ fn caddy_stop_rejects_invalid_config_and_active_stack_directory_host_claim() {
     );
     fs::remove_file(state.join("routes/.registrations/devhost.localhost.json")).unwrap();
 
-    // Active host claim on stackDirectoryHost causes an error (matching Go)
+    // Active host claim on stackDirectoryHost causes an error.
     fs::create_dir_all(state.join("routes/.host-claims")).unwrap();
     fs::write(
         state.join("routes/.host-claims/devhost.localhost.json"),

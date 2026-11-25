@@ -59,8 +59,6 @@ mod proxy;
 mod recovery;
 #[path = "stack_commands/serve.rs"]
 mod serve;
-#[path = "stack_commands/upgrade.rs"]
-mod upgrade;
 #[path = "stack_commands/worktrees.rs"]
 mod worktrees;
 

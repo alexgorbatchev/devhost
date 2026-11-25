@@ -121,7 +121,7 @@ pub(super) async fn serve(
     }));
     tokio::pin!(response);
     // The response-header limit starts after the producer has finished, so
-    // streaming uploads retain Go's independent upload and response lifetimes.
+    // streaming uploads keep independent upload and response lifetimes.
     let response = tokio::select! {
         biased;
         response = &mut response => Ok(response),

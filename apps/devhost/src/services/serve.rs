@@ -133,8 +133,8 @@ fn bind_file_listener(address: &str) -> io::Result<TcpListener> {
                 Type::STREAM,
                 Some(Protocol::TCP),
             )?;
-            // Match Go's listener behavior: recently closed HTTP connections
-            // must not hold a service's fixed port through TIME_WAIT.
+            // Enable SO_REUSEADDR so recently closed HTTP connections
+            // do not hold a service's fixed port through TIME_WAIT.
             socket.set_reuse_address(true)?;
             socket.bind(&address.into())?;
             socket.listen(128)?;

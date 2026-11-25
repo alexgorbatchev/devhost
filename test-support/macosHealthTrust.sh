@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Go uses Security.framework on macOS rather than SSL_CERT_FILE. This fixture
+# macOS TLS verification uses Security.framework rather than SSL_CERT_FILE. This fixture
 # belongs only to disposable hosted runners, never a contributor's trust store.
 if [[ "$(uname -s)" != Darwin || "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted ]]; then
   echo 'The health-check trust fixture requires a disposable GitHub-hosted macOS runner.' >&2
