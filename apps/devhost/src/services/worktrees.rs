@@ -324,7 +324,8 @@ impl Group {
         Ok(configuration)
     }
 
-    fn directories(&self, root: &Path) -> Result<Vec<WorktreeDirectory>, String> {
+    /// Reports why `root` is no longer a checkout of this repository: it is gone, or Git places it elsewhere.
+    fn belongs(&self, root: &Path) -> Result<(), String> {
         let repository = discover_git_repository(root)?;
         if repository.root != root || repository.common_dir != self.repository.common_dir {
             return Err(format!(
@@ -332,6 +333,11 @@ impl Group {
                 root.display()
             ));
         }
+        Ok(())
+    }
+
+    fn directories(&self, root: &Path) -> Result<Vec<WorktreeDirectory>, String> {
+        self.belongs(root)?;
         let configuration = self.configuration(root)?;
         super::resolve::resolve_service_order(&configuration)?
             .into_iter()
@@ -349,6 +355,17 @@ impl Group {
         self.view.default_branch = git::default_branch(&self.repository.common_dir)?;
         for entry in &mut entries {
             if !entry.reason.is_empty() {
+                continue;
+            }
+            if !self.view.running_path.is_empty() && entry.path == self.view.running_path {
+                // Hot reload owns the manifest of the checkout the stack runs: it rejects an
+                // invalid edit and keeps the accepted manifest running. Judge that checkout only
+                // by whether it is still part of this repository, because refresh_worktrees stops
+                // the repository's services when it is not.
+                match self.belongs(Path::new(&entry.path)) {
+                    Ok(()) => entry.available = true,
+                    Err(error) => entry.reason = error,
+                }
                 continue;
             }
             match self.directories(Path::new(&entry.path)) {

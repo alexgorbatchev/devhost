@@ -481,6 +481,11 @@ impl Runtime<'_> {
             .unwrap_or_default())
     }
 
+    /// Reconciles checkout availability with the running groups.
+    /// Stops a repository's services only when the checkout they run is gone:
+    /// deleted, no longer registered with Git, or part of another repository.
+    /// A problem in that checkout's manifest belongs to hot reload, which keeps
+    /// the accepted manifest running.
     fn refresh_worktrees(&mut self) -> Result<(), String> {
         let worktrees = self.worktrees.as_mut().expect("enabled worktrees");
         worktrees.refresh()?;

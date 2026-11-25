@@ -192,15 +192,25 @@ fn selected_manifest_reload_refresh_recovery_and_disabling_follow_the_selected_c
             .contains(&json!("worker"))
     );
     assert_content(&caddy, "feature");
-    fs::remove_dir_all(linked.join("web")).unwrap();
+    fs::remove_dir_all(&linked).unwrap();
     let failed = snapshot(&caddy);
     assert_eq!(failed["runningPath"], "");
     assert!(failed["error"].as_str().unwrap().contains("unavailable"));
     assert!(stack.restart(&["web"]).is_err());
     assert_switch_ok(&caddy, &id, &project);
     assert_content(&caddy, "main");
-    fs::create_dir(linked.join("web")).unwrap();
-    fs::write(linked.join("web/note.txt"), "feature web").unwrap();
+    git(&project, &["worktree", "prune"]);
+    git(
+        &project,
+        &["worktree", "add", linked.to_str().unwrap(), "feature"],
+    );
+    for name in ["api", "web"] {
+        fs::write(
+            linked.join(name).join("note.txt"),
+            format!("feature {name}"),
+        )
+        .unwrap();
+    }
     fs::write(linked.join("devhost.toml"), &body).unwrap();
     assert_switch_ok(&caddy, &id, &linked);
     fs::write(
@@ -234,6 +244,69 @@ fn selected_manifest_reload_refresh_recovery_and_disabling_follow_the_selected_c
     )
     .0 == 200));
     assert_eq!(snapshot(&caddy)["selectedPath"], project.to_str().unwrap());
+    stack.stop();
+}
+
+#[test]
+fn worktree_list_leaves_a_rejected_running_manifest_to_hot_reload() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path();
+    let caddy = LiveCaddyGuard::start(root);
+    let (project, linked, body) = repository(root);
+    let mut stack = Stack::start(root, &caddy, None);
+    let id = snapshot(&caddy)["id"].clone();
+    assert_switch_ok(&caddy, &id, &linked);
+    assert_content(&caddy, "feature");
+
+    // Inactive checkout with an invalid manifest stays unavailable.
+    fs::write(project.join("devhost.toml"), "[services.api]\ncommand = [").unwrap();
+    // Save a rejected edit to the running checkout's manifest; hot reload rejects it.
+    fs::write(
+        linked.join("devhost.toml"),
+        body.replace("dependsOn = ['api']", "dependOn = ['api']"),
+    )
+    .unwrap();
+    stack.wait_log("configuration reload rejected");
+
+    let (status, health) = request(&caddy, "GET", None);
+    assert_eq!(status, 200, "{health}");
+    let repo = &health["repositories"][0];
+    assert!(
+        repo["error"].as_str().unwrap_or_default().is_empty(),
+        "{repo}"
+    );
+    assert_eq!(repo["selectedPath"], linked.to_str().unwrap());
+    assert_eq!(repo["runningPath"], linked.to_str().unwrap());
+    let worktrees = repo["worktrees"].as_array().unwrap();
+    let running = worktrees
+        .iter()
+        .find(|entry| entry["path"] == linked.to_str().unwrap())
+        .unwrap();
+    assert_eq!(running["available"], true, "{running}");
+    assert!(
+        running["reason"].as_str().unwrap_or_default().is_empty(),
+        "{running}"
+    );
+    let inactive = worktrees
+        .iter()
+        .find(|entry| entry["path"] == project.to_str().unwrap())
+        .unwrap();
+    assert_eq!(inactive["available"], false, "{inactive}");
+    assert!(
+        !inactive["reason"].as_str().unwrap().is_empty(),
+        "{inactive}"
+    );
+    assert!(
+        !stack
+            .stdout
+            .text()
+            .contains("is unavailable; choose a checkout")
+    );
+    assert_content(&caddy, "feature");
+    assert!(
+        health["configuration"].to_string().contains("dependOn"),
+        "{health}"
+    );
     stack.stop();
 }
 

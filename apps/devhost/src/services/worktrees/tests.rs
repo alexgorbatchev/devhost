@@ -411,3 +411,41 @@ fn missing_configured_linked_checkout_keeps_the_previous_repository_identity() {
         .unwrap();
     assert_eq!(missing.snapshot()[0].id, id);
 }
+
+#[test]
+fn refresh_judges_running_checkout_only_by_repository_membership() {
+    let fixture = Fixture::new();
+    let mut worktrees = fixture.worktrees();
+    worktrees.finish(&BTreeMap::new());
+    fs::write(
+        fixture.root.join("devhost.toml"),
+        "[services.api]\ncommand = [",
+    )
+    .unwrap();
+    fs::remove_dir_all(fixture.root.join("web")).unwrap();
+    fs::write(
+        fixture.linked.join("devhost.toml"),
+        "[services.api]\ncommand = [",
+    )
+    .unwrap();
+    worktrees.refresh().unwrap();
+    let repo = worktrees.snapshot().remove(0);
+    let running = repo
+        .worktrees
+        .iter()
+        .find(|entry| entry.path == fixture.root.to_str().unwrap())
+        .unwrap();
+    assert!(
+        running.available && running.reason.is_empty(),
+        "{running:?}"
+    );
+    let inactive = repo
+        .worktrees
+        .iter()
+        .find(|entry| entry.path == fixture.linked.to_str().unwrap())
+        .unwrap();
+    assert!(
+        !inactive.available && !inactive.reason.is_empty(),
+        "{inactive:?}"
+    );
+}
