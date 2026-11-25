@@ -23,6 +23,8 @@ env = { NODE_ENV = "development", API_URL = "{{ services.api.url }}" }
 
 Each service inherits devhost's environment, plus its `env` table, plus the variables below. To pass a value that another service gets at startup, such as an automatic port, use a [service reference](../service-references/) like the one above.
 
+On Unix, the experimental Rust CLI passes non-UTF-8 environment names and values through to child processes. Manifest templates use UTF-8 text; opaque values are unavailable to template expansion.
+
 ## Variables devhost sets
 
 | Variable                | Set when                               | Value                                                                                                                         |

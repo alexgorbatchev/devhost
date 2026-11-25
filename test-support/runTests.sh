@@ -9,8 +9,9 @@ TEST_PID=
 # The inherited marker finds detached helpers even after a test panic reparents
 # them. Never print or retain the process environments used for that inspection.
 live_groups() {
+  local previous="${1//$'\n'/ }"
   ps "${PS_ENVIRONMENT[@]}" -o pid= -o ppid= -o pgid= -o stat= -o command= |
-    awk -v root="$TEST_PID" -v caller="$OWN_GROUP" -v previous="$1" '
+    awk -v root="$TEST_PID" -v caller="$OWN_GROUP" -v previous="$previous" '
       BEGIN {
         split(previous, ids)
         for (id in ids) known[ids[id]] = 1

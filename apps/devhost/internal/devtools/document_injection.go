@@ -188,11 +188,12 @@ func isHTMLResponse(response *http.Response) bool {
 func injectDevtoolsScript(document string) string {
 	const injectedTag = `<script type="module" src="` + injectedScriptPath + `"></script>`
 
-	lowerDocument := strings.ToLower(document)
-	closingBodyIndex := strings.LastIndex(lowerDocument, "</body>")
-	if closingBodyIndex == -1 {
-		return document + injectedTag
+	// Search the original bytes: Unicode case conversion can change their length.
+	const closingBody = "</body>"
+	for index := strings.LastIndexByte(document, '<'); index >= 0; index = strings.LastIndexByte(document[:index], '<') {
+		if len(document)-index >= len(closingBody) && strings.EqualFold(document[index:index+len(closingBody)], closingBody) {
+			return document[:index] + injectedTag + document[index:]
+		}
 	}
-
-	return document[:closingBodyIndex] + injectedTag + document[closingBodyIndex:]
+	return document + injectedTag
 }

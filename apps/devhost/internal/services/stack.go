@@ -256,8 +256,10 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	defer func() {
 		cancelLifecycle()
 		state.operationMu.Lock()
+		state.manifestMu.Lock()
 		state.shuttingDown = true
 		wasReady := state.ready
+		state.manifestMu.Unlock()
 		state.operationMu.Unlock()
 		if state.remoteLease != nil {
 			cleanupError = appendCleanupError(cleanupError, state.remoteLease.Close())
@@ -594,7 +596,9 @@ func StartStack(manifest *ResolvedManifest, serviceOrder []string, options Start
 	state.manifestMu.Unlock()
 	// Keep browser mutations out of the final readiness snapshot.
 	state.operationMu.Lock()
+	state.manifestMu.Lock()
 	state.ready = true
+	state.manifestMu.Unlock()
 	if options.Launch.Detached {
 		err = state.publishDetachedReady(lifecycleCtx, paths)
 	} else if manifest.Remote != nil || options.commandServe != nil {

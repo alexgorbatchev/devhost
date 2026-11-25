@@ -67,6 +67,8 @@ source <(devhost completion zsh)    # after compinit
 devhost completion fish | source
 ```
 
+In PowerShell, run `devhost completion powershell | Out-String | Invoke-Expression`. Regenerate installed scripts after upgrading devhost so they include the current commands and flags. The experimental Rust CLI supports the same four shell choices and `--no-descriptions`; its scripts and argument diagnostics use clap's native format. Invalid arguments exit `1`, write diagnostics to stderr, and point to command help.
+
 ## Exit codes
 
 | Code                                        | When                                                                                                                                                                                                      |
@@ -77,6 +79,8 @@ devhost completion fish | source
 | `143`                                       | A foreground stack or `devhost serve` session stopped by `SIGTERM`.                                                                                                                                       |
 
 A stack that cannot stop all of its services exits non-zero and lists what is still running.
+
+`devhost stack info` inspects the stack resolved from the current directory, `--manifest`, or `DEVHOST_MANIFEST`, including a path to an included manifest. Services that were deliberately left stopped do not make the stack unready. A service that is starting, restarting, unhealthy, or exited makes the command exit `1`.
 
 ## Environment variables
 

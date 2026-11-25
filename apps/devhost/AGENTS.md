@@ -25,6 +25,34 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 - Do not leave docs, README, or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
 
+## Rust CLI
+
+The shipping Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` (also forwarded from root `just cli` and `just run-ai`).
+
+Rust `run` and `run-ai` stamp the checkout with compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`. For a standalone development executable, set that variable while invoking `just rust build`. The runtime `DEVHOST_DEV_SOURCE_DIR` takes precedence; a missing stamped checkout warns and serves embedded assets. `build-release` clears the source stamp so optimized release executables remain independent of the build checkout.
+
+Use `just rust build-release` for an optimized native release binary at `apps/devhost/rust/target/release/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig. `just devhost compile` remains available to build the retained Go reference/rollback executable (`golang` tag baseline).
+
+Run `just setup` for a fresh checkout. Rust run, build, test, lint, and coverage recipes refresh the generated browser assets before Cargo embeds them; direct Cargo commands require those assets to exist already.
+
+`just rust build-release-artifacts` builds the five existing distribution targets as candidates, with the established executable/archive layout plus compiled-dependency licenses, SHA-256 checksums and source/toolchain provenance. Use `--targets=<comma-separated archive suffixes>` for a subset and `--output=<new directory>` for an explicit output. Linux GNU uses cargo-zigbuild's glibc 2.28 baseline; musl must be static. Build the macOS archive on macOS and verify its system-library dependencies, minimum OS and ad-hoc signature. Existing candidate directories are never overwritten. See `RELEASE.md` for prerequisites and native acceptance.
+
+Use `just rust test-affected <base>` to select the Rust package from changed source, fixtures, embedded UI/design assets, or shared test inputs. This is one Cargo package; changes with uncertain internal impact select its enclosing package. Use `just rust test <args>` for focused feedback. Run its package gate with formatting, Clippy, and at least 90% line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):
+
+```bash
+just rust check
+```
+
+Root `just fix` formats first-party Rust with `cargo fmt --package devhost-rust`, preserving vendored dependency formatting. Coverage builds use line-table debug information in their separate instrumented target; normal development builds retain their configured debug information and incremental state. The experimental package has its own checks; root `just check` continues checking the released Go app and browser workspaces. Compare ported features against the Go revision and record evidence as described in [Go baseline for the Rust port](../../docs/internal/references/rust-port-parity.md).
+
+The [feature matrix](../../docs/internal/references/rust-port-feature-matrix.md) maps Go contracts to Rust code and executable checks. From the repository root, run `bun apps/devhost/scripts/verifyRustParity.ts` to detect reference drift, unassigned source files, stale hashes, missing evidence paths, or incomplete acceptance-case assignments in `rust/parity/obligations.json`. This verifies inventory integrity; case plans and Rust regressions alone do not establish behavior parity. Run the listed behavioral and platform checks separately. Cargo uses the pinned `rust/rust-toolchain.toml` toolchain. CI requires hosted native Rust checks and comparisons on Linux x64, Linux ARM64, macOS ARM64 and macOS Intel, with Linux x64 coverage and Rust 1.98.1 minimum-version checking.
+
+Use `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>` from the root after building the three binaries. The oracle checkout must match `rust/parity/inventory.json` without tracked changes. The runner records input/binary hashes, platform, revisions, per-command results and logs, replays every Rust Anything corpus, and exercises shared native fixtures. Each command writes stdout and stderr directly to its evidence files; `pending-command.json` identifies an unfinished command after cancellation. Duplicate restarts and legacy-document corruption have exact oracle failure assertions. On macOS, the oracle's unsupported listener API has a separate failure assertion; repaired Go and optimized Rust must pass every command-serving scenario. Readline tests bind `devhost` on an isolated PATH to the selected executable. Reconcile new semantic differences rather than expanding the allowlist to obtain a green check.
+
+Run `just rust distribution-comparisons <candidate-directory> <clean-Go-oracle-checkout> <repaired-Go-binary> <new-evidence-directory>` to apply that gate to each archive executable on its native host. It verifies archive and binary hashes, retains distribution provenance with comparison receipts, and removes temporary extractions. Candidate CI runs both GNU and musl executables on each Linux architecture and the Apple-silicon executable on macOS.
+
+On macOS, the shared HTTPS health fixture requires `DEVHOST_HEALTH_TRUST_DIR` with a trusted `root.pem` and its `server.pem`/`server.key` for `127.0.0.1`. Hosted CI creates its own temporary CA on disposable GitHub-hosted macOS VMs through `test-support/macosHealthTrust.sh prepare` and relies on disposable VM teardown for final removal of the temporary trust record; that script refuses contributor machines. Follow the [native HTTPS fixture procedure](../../docs/internal/references/rust-port-parity.md#native-https-health-fixture) before running this test locally; never install its CA implicitly.
+
 ## Development workflow
 
 From the repository root, build and register a protected development override for the dotfiles-managed `devhost` shim:
@@ -34,7 +62,7 @@ just dev-bootstrap
 just dev-bootstrap /path/to/dotfiles
 ```
 
-The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) version override and a `build-source-directory` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just devhost compile` retains the metadata version.
+The default target is `~/.dotfiles`. The command rebuilds the embedded devtools bundle and compiles `apps/devhost/rust/target/release/devhost` with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) `DEVHOST_BUILD_VERSION` override and a `DEVHOST_BUILD_SOURCE_DIRECTORY` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just rust build-release` retains the metadata version and clears the source stamp.
 
 Run the app from source in the current directory with agent-facing output (`AGENT=1`); `just devhost run` is the human-mode equivalent:
 

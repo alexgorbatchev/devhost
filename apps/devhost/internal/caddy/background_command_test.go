@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -51,6 +52,21 @@ func TestBackgroundCommandRetainsChildOutput(t *testing.T) {
 	}
 	if ctx.Err() != nil {
 		t.Fatal("startup waited for the background child")
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "child.pid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	group, err := syscall.Getpgid(pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if group == syscall.Getpgrp() {
+		t.Fatal("background child shares the foreground terminal process group")
 	}
 }
 

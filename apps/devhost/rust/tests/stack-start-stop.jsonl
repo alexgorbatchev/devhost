@@ -1,0 +1,12 @@
+{"name":"start-local-and-remote-mutually-exclusive","args":["start","--local","--remote"],"env":{"AGENT":"1"}}
+{"name":"start-wrong-manifest-name","args":["start","--manifest","bad.toml"],"env":{"AGENT":"1"}}
+{"name":"start-invalid-idle-timeout-agent","args":["start","--idle-timeout","bogus"],"env":{"AGENT":"1","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"start-invalid-idle-timeout-human","args":["start","--idle-timeout","bogus"],"env":{"AGENT":"","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"start-unknown-service-agent","args":["start","missing"],"env":{"AGENT":"1","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"start-unknown-service-human","args":["start","missing"],"env":{"AGENT":"","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"start-remote-unconfigured-human","args":["start","--remote"],"env":{"AGENT":"","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\nhost = \"web\"\n"}}
+{"name":"start-caddy-unavailable-human","args":["start"],"env":{"AGENT":"","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"cfg/config.toml":"[caddy]\nadminAddress = \"127.0.0.1:0\"\n","devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\nhost = \"web\"\n"}}
+{"name":"stop-no-active-stack-agent","args":["stop"],"env":{"AGENT":"1","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"stop-no-active-stack-human","args":["stop"],"env":{"AGENT":"","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"stop-worktrees-outside-git","args":["stop","--worktrees"],"env":{"AGENT":"1","DEVHOST_CONFIG_DIR":"cfg","DEVHOST_STATE_DIR":"state"},"files":{"devhost.toml":"name = \"demo\"\n[services.web]\ncommand = [\"echo\"]\nport = 3000\n"}}
+{"name":"stop-wrong-manifest-name","args":["stop","--manifest","bad.toml"],"env":{"AGENT":"1"}}

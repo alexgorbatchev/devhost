@@ -29,6 +29,8 @@ stop = ["./scripts/mailpit-devctl", "stop"]
 
 When the stack starts, devhost runs `status` first. If it exits `0`, the daemon is already running and devhost skips `start`; otherwise it runs `start`. Either way, devhost then waits for the health check and adds the routes. On shutdown and on every restart it runs `stop`.
 
+In the experimental Rust CLI, a daemon can keep its launcher's stdout and stderr open: startup continues when the launcher exits, and daemon logs remain visible until the service stops. Interrupting startup also sends the running lifecycle helper a termination signal, escalating to a kill after the shutdown grace period if it ignores termination. If startup fails and its cleanup also fails, devhost reports both errors and retries the daemon's cleanup when the stack shuts down.
+
 ## Rules
 
 - `start` and `stop` are required; `status` is optional.

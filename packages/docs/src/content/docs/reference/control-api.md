@@ -2,7 +2,7 @@
 title: "Control API"
 ---
 
-Read stack status, control services, and connect your own tooling to a running app. The toolbar uses these HTTP and WebSocket routes under `/__devhost__/` on the app’s hostname. They exist only while at least one devtools feature is on.
+Read stack status, control services, and connect your own tooling to a running app. The toolbar uses these HTTP and WebSocket routes under `/__devhost__/` on the app’s hostname. Browser routes exist while at least one devtools feature is on; private stack inspection also works with devtools off.
 
 ## Request routing
 
@@ -56,6 +56,16 @@ An authenticating proxy in front of devhost still applies its own rules; a sign-
 | `/__devhost__/redux.js`                 | `GET`         | Store registration module; see [Redux Toolkit and Zustand](../../integrations/redux/)                          |
 
 The chat endpoints are described in the [Chat API](../chat-api/).
+
+### Private stack inspection
+
+`GET` or `HEAD /__devhost__/stack-info` returns the current stack name, startup state, manifest files, and service states. It accepts local callers on the stack's loopback control listener, such as `http://127.0.0.1:<port>`, and rejects remote forwarded clients and mismatched browser origins. It stays available with devtools off. Prefer [`devhost stack info`](../cli/#stacks) to discover and inspect the current stack from a shell.
+
+The stack-directory routes `/__devhost__/stacks` and `/__devhost__/stacks/self` accept `GET` and `HEAD`. The first renders the running-stack directory, optionally filtered by `?q=`, and the second returns this stack's directory entry as JSON. They require machine configuration for the directory and local access; `stackDirectoryAllowRemote` can allow remote reads of the directory, but never its private self entry.
+
+Directory snapshots and configuration-file discovery remain available while a service restart waits for health. Configuration validation and saves wait for the lifecycle operation to finish.
+
+During a service restart, stack snapshots report `starting` while the old process stops and its replacement waits for health. The health stream keeps `restarting: true` until the replacement becomes ready.
 
 ### Status codes
 

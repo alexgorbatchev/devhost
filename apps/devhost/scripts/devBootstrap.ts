@@ -55,6 +55,9 @@ if (import.meta.main) {
   if (dotfilesPath === undefined) {
     throw new Error("Run this script through just dev-bootstrap.");
   }
-  const destinationPath = await devBootstrap(fileURLToPath(new URL("../bin/devhost", import.meta.url)), dotfilesPath);
+  const destinationPath = await devBootstrap(
+    fileURLToPath(new URL("../rust/target/release/devhost", import.meta.url)),
+    dotfilesPath,
+  );
   console.log(`Registered local devhost build at ${destinationPath}`);
 }

@@ -50,11 +50,13 @@ The diagram has three stages. The films are made and published by hand, and only
 
 ### Binaries
 
-Pushing a tag such as `v0.0.2` starts `.github/workflows/publish.yml`. The workflow fails unless the tag matches the version in `apps/devhost/metadata.json`. The hosted Linux runner installs Playwright Chromium, FFmpeg (including `ffprobe`), unzip, and Xvfb for the native media and headed-browser tests. It then runs `just check`, builds the release archives, creates the GitHub release for the tag, and uploads the archives to it.
+Pushing a tag such as `v0.0.21` starts `.github/workflows/publish.yml`. The workflow fails unless the tag matches the version in `apps/devhost/metadata.json`.
 
-The Go checks include `logpolicy`, a type-aware analyzer that enforces the shared `internal/cliout` output boundary. Run `just devhost lint-logging` to check it alone. Diagnostics use the shared logger; machine-readable command results, child logs, HTTP responses, and file contents retain their separate output contracts.
+1. **Verification (`verify`)**: The hosted Linux runner installs Playwright Chromium, FFmpeg (including `ffprobe`), unzip, Xvfb, the pinned Rust toolchain, `cargo-llvm-cov`, Caddy, and Chisel, then runs `just check`, `just rust check` (formatting, strict Clippy, and 90% first-party line/function coverage), and Go-oracle inventory verification against the `golang` tag.
+2. **Native packaging (`package`)**: A three-host matrix (`ubuntu-24.04`, `ubuntu-24.04-arm`, and `macos-15`) runs `just rust build-release-artifacts` to produce all five archives (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) with Zig/glibc-2.28 and static-musl checks, `THIRD_PARTY_LICENSES.txt`, `SHA256SUMS`, provenance, and matching-host runtime smoke verification.
+3. **Publication (`publish`)**: The publish job downloads all five archives, merges and verifies `SHA256SUMS` (`sha256sum -c`), checks every archive's exact four-file layout (`devhost`, `README.md`, `LICENSE`, `THIRD_PARTY_LICENSES.txt`), creates the GitHub Release, and uploads all five archives and `SHA256SUMS`.
 
-`just devhost test` runs `go test -count=1 ./...`, including when invoked through `just check` locally or in CI. Every Go test runs afresh because the integration suite observes live processes, ports, and kernel state. This also prevents Go from recording and later validating millions of Linux `/proc` observations as test-cache inputs. Compiled packages still use Go's build cache.
+`just check` still validates the retained Go reference code, including `logpolicy` (`just devhost lint-logging`) and `go test -count=1 ./...`. Every Go test runs afresh because the integration suite observes live processes, ports, and kernel state.
 
 ### Documentation site
 

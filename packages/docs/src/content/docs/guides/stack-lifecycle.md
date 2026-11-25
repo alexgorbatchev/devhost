@@ -274,6 +274,8 @@ idleTimeout = "1h"
 
 `devhost start --idle-timeout 30m` and `DEVHOST_IDLE_TIMEOUT` set it too; the flag wins over the variable, which wins over the manifest. A saved change to `idleTimeout` applies at once unless the flag or variable sets it.
 
+Zero and negative durations disable idle shutdown, including in the experimental Rust CLI. For example, `devhost start --idle-timeout -1s` (or `-i -1s`) disables it for that run, including with `--detach`.
+
 Each of these counts as activity and restarts the countdown:
 
 - an open page with the devtools toolbar,
@@ -303,7 +305,9 @@ Stopping is best-effort and depends on the platform:
 - On macOS and elsewhere, it finds descendants by walking the process tree, which can miss a process that detached.
 - On every platform, after a service with a port stops, devhost watches that port for 2 seconds and stops any process it started that binds it again. A restart therefore takes about 2 seconds longer. Outside Linux this needs `lsof`.
 
-A service that daemonizes or detaches itself cannot be stopped this way; use [daemon mode](../managed-daemon-style-services/). If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.
+The experimental Rust CLI checks the current process tree before sending shutdown signals, including children that have just entered a separate session. It verifies tracked process identities before signaling them. Children that ignore termination are killed after the service's shutdown grace period.
+
+Use [daemon mode](../managed-daemon-style-services/) for a service whose detached process can outlive descendant tracking. If devhost cannot stop a service during shutdown, it exits non-zero and reports what is still running.
 
 ## Related pages
 

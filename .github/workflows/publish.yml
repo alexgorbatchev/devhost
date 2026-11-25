@@ -13,8 +13,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -35,6 +36,51 @@ jobs:
 
       - name: Setup Just
         uses: extractions/setup-just@v4
+
+      - name: Cache Rust toolchains
+        uses: actions/cache@v5
+        with:
+          path: ~/.rustup/toolchains
+          key: rust-toolchain-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}-publish
+
+      - name: Setup pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
+          rustup toolchain install "$channel" --profile minimal --component rustfmt,clippy,llvm-tools-preview --no-self-update
+          rustup default "$channel"
+
+      - name: Cache Rust dependencies and test objects
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/devhost/rust -> target
+          key: publish-verify-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}
+
+      - name: Cache native verification tools
+        id: tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/share/devhost-publish-verify-tools
+          key: publish-verify-tools-${{ runner.os }}-${{ runner.arch }}-caddy2.11.9-chisel1.12.0-cov0.9.1
+
+      - name: Install native verification tools
+        if: steps.tools.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_root="$HOME/.local/share/devhost-publish-verify-tools"
+          mkdir -p "$tool_root/bin"
+          GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
+          GOBIN="$tool_root/bin" go install github.com/jpillora/chisel@v1.12.0
+          cargo install --locked cargo-llvm-cov --version 0.9.1 --root "$tool_root"
+
+      - name: Add native tools to PATH
+        shell: bash
+        run: |
+          echo "$HOME/.local/share/devhost-publish-verify-tools/bin" >> "$GITHUB_PATH"
+          mkdir -p .cache/test-dependencies
+          cp "$HOME/.local/share/devhost-publish-verify-tools/bin/chisel" .cache/test-dependencies/chisel-v1.12.0
 
       - name: Derive release version from tag
         run: |
@@ -64,13 +110,155 @@ jobs:
       - name: Install test tools
         run: sudo apt-get update && sudo apt-get install -y ffmpeg unzip xvfb
 
-      - name: Verify package
+      - name: Verify repository and Rust quality gates
         env:
           CI: "false"
-        run: just check
+        run: |
+          set -euo pipefail
+          just check
+          just rust check
+          git fetch origin --tags
+          bun apps/devhost/scripts/verifyRustParity.ts golang
 
-      - name: Build release artifacts
-        run: just devhost build-release-artifacts
+  package:
+    needs: verify
+    name: Package (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            runner: ubuntu-24.04
+            targets: linux-x64,linux-x64-musl
+            rust-targets: x86_64-unknown-linux-gnu x86_64-unknown-linux-musl
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            targets: linux-arm64,linux-arm64-musl
+            rust-targets: aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
+          - platform: darwin-arm64
+            runner: macos-15
+            targets: darwin-arm64
+            rust-targets: aarch64-apple-darwin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Setup Just
+        uses: extractions/setup-just@v4
+
+      - name: Setup Go for native Caddy runtime verification
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: apps/devhost/go.mod
+          cache-dependency-path: apps/devhost/go.sum
+
+      - name: Setup Rust
+        shell: bash
+        run: |
+          set -euo pipefail
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
+          rustup toolchain install "$channel" --profile minimal --no-self-update
+          rustup default "$channel"
+          rustup target add ${{ matrix.rust-targets }}
+
+      - name: Cache Rust dependencies and release objects
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/devhost/rust -> target
+          key: publish-package-${{ matrix.platform }}
+
+      - name: Setup Zig
+        if: runner.os == 'Linux'
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - name: Cache packaging tools
+        id: tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/share/devhost-publish-package-tools
+          key: publish-package-tools-${{ runner.os }}-${{ runner.arch }}-rust1.99.1-zigbuild0.24.1-caddy2.11.9
+
+      - name: Install packaging tools
+        if: steps.tools.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_root="$HOME/.local/share/devhost-publish-package-tools"
+          mkdir -p "$tool_root/bin"
+          GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            cargo install --locked cargo-zigbuild --version 0.24.1 --root "$tool_root"
+          fi
+
+      - name: Add packaging tools to PATH
+        shell: bash
+        run: echo "$HOME/.local/share/devhost-publish-package-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies without browser setup
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Build and verify native release archives
+        run: just rust build-release-artifacts --targets=${{ matrix.targets }} --output=apps/devhost/dist/release-${{ matrix.platform }}
+
+      - name: Upload packaged release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.platform }}
+          path: apps/devhost/dist/release-${{ matrix.platform }}/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [verify, package]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download packaged release artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: release-*
+          path: dist-parts
+
+      - name: Assemble and verify all five release archives and SHA256SUMS
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p release-assets
+          cp dist-parts/release-*/*.tar.gz release-assets/
+          cat dist-parts/release-*/SHA256SUMS | sort -k2 > release-assets/SHA256SUMS
+          (cd release-assets && sha256sum -c SHA256SUMS)
+          for target in darwin-arm64 linux-x64 linux-arm64 linux-x64-musl linux-arm64-musl; do
+            archive="release-assets/devhost-v${version}-${target}.tar.gz"
+            test -f "$archive"
+            entries="$(tar -tzf "$archive" | grep -v '/$' | sort)"
+            expected="$(printf 'devhost-v%s-%s/%s\n' \
+              "$version" "$target" "LICENSE" \
+              "$version" "$target" "README.md" \
+              "$version" "$target" "THIRD_PARTY_LICENSES.txt" \
+              "$version" "$target" "devhost" | sort)"
+            if [[ "$entries" != "$expected" ]]; then
+              echo "Unexpected archive layout in $archive:" >&2
+              printf '%s\n' "$entries" >&2
+              exit 1
+            fi
+          done
 
       - name: Create GitHub Release
         env:
@@ -92,7 +280,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release upload "$GITHUB_REF_NAME" apps/devhost/dist/release/*.tar.gz --clobber
+          gh release upload "$GITHUB_REF_NAME" release-assets/*.tar.gz release-assets/SHA256SUMS --clobber
 
   # Deploys the docs built from the release tag, and only after the release exists.
   docs:

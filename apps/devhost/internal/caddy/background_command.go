@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 )
 
 // Caddy start passes stdout and stderr to its long-lived child. Use files rather
@@ -27,6 +28,8 @@ func runBackgroundCommand(command *exec.Cmd) CommandResult {
 	}
 	defer stderr.Close()
 	command.Stdout, command.Stderr, command.Stdin = stdout, stderr, os.Stdin
+	// Terminal interrupts stop the foreground session, not the shared proxy.
+	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	runErr := command.Run()
 	out, outErr := readCommandOutput(stdout, 0)
 	errout, errErr := readCommandOutput(stderr, 0)

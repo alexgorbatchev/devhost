@@ -13,29 +13,33 @@ import (
 // configFiles lists the files the config editor may change: the manifest the stack runs, the files it includes, and
 // the devhost config file. After a worktree switch, the manifest is the one in the selected checkout.
 func (r *stackRuntime) configFiles() ([]devtools.ConfigFileRef, error) {
-	r.operationMu.Lock()
-	defer r.operationMu.Unlock()
+	// Lifecycle operations can wait for health. Copy their published metadata
+	// without making read-only directory and editor requests wait with them.
+	r.manifestMu.RLock()
 	if err := r.checkReady(); err != nil {
+		r.manifestMu.RUnlock()
 		return nil, err
 	}
+	configured, watcher, configPath := r.configured, r.manifestWatch, r.configPath
+	r.manifestMu.RUnlock()
 	files := []devtools.ConfigFileRef{}
-	if r.configured != nil && r.manifestWatch != nil {
-		rootPath, err := filepath.Abs(r.configured.ManifestPath)
+	if configured != nil && watcher != nil {
+		rootPath, err := filepath.Abs(configured.ManifestPath)
 		if err != nil {
 			return nil, fmt.Errorf("resolve manifest path: %w", err)
 		}
 		files = append(files, devtools.ConfigFileRef{Path: rootPath, Kind: devtools.ConfigFileKindManifest})
 		// The watcher tracks what the last read reached, including files of a read that failed.
-		r.manifestWatch.inputsMu.RLock()
-		inputs := slices.Clone(r.manifestWatch.inputs.Files)
-		r.manifestWatch.inputsMu.RUnlock()
+		watcher.inputsMu.RLock()
+		inputs := slices.Clone(watcher.inputs.Files)
+		watcher.inputsMu.RUnlock()
 		for _, path := range inputs {
 			if !slices.ContainsFunc(files, func(file devtools.ConfigFileRef) bool { return file.Path == path }) {
 				files = append(files, devtools.ConfigFileRef{Path: path, Kind: devtools.ConfigFileKindInclude})
 			}
 		}
 	}
-	return append(files, devtools.ConfigFileRef{Path: r.configPath, Kind: devtools.ConfigFileKindConfig}), nil
+	return append(files, devtools.ConfigFileRef{Path: configPath, Kind: devtools.ConfigFileKindConfig}), nil
 }
 
 // checkConfigFile makes the checks a reload makes before it stops any service, with content in place of the file at

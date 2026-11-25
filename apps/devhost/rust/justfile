@@ -1,0 +1,63 @@
+set dotenv-load := false
+
+[default]
+run *args: assets
+    DEVHOST_BUILD_SOURCE_DIRECTORY='{{clean(source_directory() / "../../..")}}' cargo run --locked -- {{args}}
+
+run-ai *args: assets
+    AGENT=1 DEVHOST_BUILD_SOURCE_DIRECTORY='{{clean(source_directory() / "../../..")}}' cargo run --locked -- {{args}}
+
+test *args: assets
+    bash ../../../test-support/runTests.sh cargo test --locked {{args}}
+
+# Every test links this single library package. Cargo tracks its transitive inputs.
+test-affected base=`git merge-base HEAD origin/main`:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    changed="$(git diff --name-only "{{base}}" -- . ../../../packages/design ../../../packages/devhost-ui ../../../test-support ../../../bun.lock ../../../package.json ../../../patches; git ls-files --others --exclude-standard -- .)"
+    if [[ -z "$changed" ]]; then
+        echo 'No Rust package inputs changed; no tests selected.'
+        exit 0
+    fi
+    echo 'Selected devhost-rust: one Cargo package; source, fixtures, embedded UI/design assets, or shared test inputs changed.'
+    just test
+
+fmt:
+    cargo fmt --package devhost-rust
+
+fmt-check:
+    cargo fmt --package devhost-rust -- --check
+
+lint: assets
+    cargo clippy --all-targets --locked -- -D warnings
+
+coverage: assets
+    CARGO_PROFILE_DEV_DEBUG=line-tables-only CARGO_PROFILE_TEST_DEBUG=line-tables-only bash ../../../test-support/runTests.sh cargo llvm-cov --locked --fail-under-lines 90 --fail-under-functions 90
+
+check: fmt-check lint coverage
+
+# Both binaries use the same native fixtures; evidence records explicit oracle defects.
+[no-cd]
+comparisons oracle repaired rust-binary output: assets
+    bash {{source_directory()}}/../../../test-support/runTests.sh bun {{source_directory()}}/../scripts/verifyRustComparisons.ts '{{oracle}}' '{{repaired}}' '{{rust-binary}}' '{{output}}'
+
+# Compare each native GNU/musl/macOS archive executable, retaining its provenance.
+[no-cd]
+distribution-comparisons candidates oracle repaired output: assets
+    bash {{source_directory()}}/../../../test-support/runTests.sh bash {{source_directory()}}/../../../test-support/verifyRustCandidates.sh '{{candidates}}' '{{oracle}}' '{{repaired}}' '{{output}}'
+
+build: assets
+    cargo build --locked
+
+# Versioned, optimized executable; leaves debug builds and installed tools alone.
+build-release *args: assets
+    bun ../scripts/buildRustRelease.ts {{args}}
+
+# Candidate archives only; production publishing remains the Go release workflow.
+[no-cd]
+build-release-artifacts *args:
+    bun {{source_directory()}}/../scripts/buildRustReleaseArtifacts.ts {{args}}
+
+# Keep include_dir! and include_str! inputs available on fresh checkouts.
+assets:
+    just --justfile ../../../justfile devhost build-devtools-bundle

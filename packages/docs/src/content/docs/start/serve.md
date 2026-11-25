@@ -14,7 +14,7 @@ devhost serve --name dashboard "bun run dev"
 
 A quoted command runs through `/bin/sh -c`; arguments after `--` launch directly. The command inherits the current directory and exported environment. Application-specific dotenv loading stays with the application or shell.
 
-Devhost finds TCP listeners belonging to the command and its descendants, checks for an HTTP response, and prints the HTTPS URLs. Late listeners receive routes and closed listeners lose them. Other protocols remain unrouted and produce a waiting message. Any HTTP status, including a redirect or error, confirms HTTP support. HTTP checks use `HEAD /`; servers that stay silent on that request remain unrouted.
+Devhost finds TCP listeners belonging to the command and its descendants, checks for an HTTP response, and prints the HTTPS URLs. On macOS, the Go CLI uses the system `lsof` command for listener discovery; it must be available on `PATH`. Late listeners receive routes and closed listeners lose them. Other protocols remain unrouted and produce a waiting message. Any HTTP status, including a redirect or error, confirms HTTP support. HTTP checks use `HEAD /`; servers that stay silent on that request remain unrouted.
 
 The generated name comes from `--name`, otherwise from the Git repository containing an existing command entrypoint path, then the current directory's Git repository, then its directory name, finally `app`. Repository names use the `origin` repository name when available, otherwise the repository directory name. Entrypoint inference recognizes common script extensions and a path to the executable; options such as `--config` and ambiguous paths spanning repositories fall back to the current directory. Names are lowercased, sanitized, and shortened to fit a hostname label.
 
@@ -68,6 +68,8 @@ Relative directories resolve against the manifest that declares the service, inc
 The service defaults to an automatic port and the loopback bind address. You can set `port` and `bindHost` explicitly, add host aliases or path routes, configure HTTP or TCP health checks, and use dependencies and service selection. `alwaysStart = true` keeps it available when you select other services. Path routes match the original request path; they do not strip a prefix from file paths.
 
 Devhost owns the file server directly. Starting, stopping, restarting, manifest reloads, and worktree switches use the stack's normal service lifecycle. Files are read live, so edits need only a browser reload. `serve` replaces `command`; it rejects `cwd`, child-process `env`, `injectPort`, `lifecycle`, `proxyLocalOrigin`, `watch`, `managed = false`, and process-only health checks. The served directory also supplies the service's project directory for editor and chat tools.
+
+A fixed file-server port can be reused after the service stops, including after it has served HTTP requests. Another live listener on that address still prevents the service from starting.
 
 ## Route a running server
 

@@ -144,6 +144,7 @@ func (r *stackRuntime) publish() {
 	}
 }
 
+// checkReady requires operationMu or manifestMu. Readiness transitions hold both.
 func (r *stackRuntime) checkReady() error {
 	if r.shuttingDown {
 		return fmt.Errorf("devhost is shutting down")
@@ -181,6 +182,7 @@ func (r *stackRuntime) restart(ctx context.Context, serviceNames []string) error
 	}
 	serviceNames = append([]string{}, serviceNames...)
 	sort.Slice(serviceNames, func(i, j int) bool { return order[serviceNames[i]] < order[serviceNames[j]] })
+	serviceNames = slices.Compact(serviceNames)
 	for _, name := range serviceNames {
 		for _, repo := range r.worktrees.snapshot() {
 			if repo.Error == "" {
@@ -320,6 +322,11 @@ func (r *stackRuntime) start(ctx context.Context, name string, options runtimeSt
 		return nil
 	}
 	started, err := startServiceWithRetries(ctx, &attempt, serviceStartOptions{ServiceName: name, Exits: r.exits, Stack: r.options, Environment: r.environment, Control: r.control, AllowPortReassignment: options.AllowPortReassignment})
+	// Failed startup retains the final assigned address for recovery and for
+	// services that start afterward with references to this service.
+	r.manifestMu.Lock()
+	r.manifest.Services = attempt.Services
+	r.manifestMu.Unlock()
 	if err == nil && options.RefreshRoute {
 		err = r.routes.activate(started.service)
 		if err != nil {
@@ -341,7 +348,6 @@ func (r *stackRuntime) start(ctx context.Context, name string, options runtimeSt
 	}
 	r.manifestMu.Lock()
 	r.startedMu.Lock()
-	r.manifest.Services = attempt.Services
 	r.started = removeStartedService(r.started, findStartedService(r.started, name))
 	r.started = append(r.started, started)
 	r.startedMu.Unlock()

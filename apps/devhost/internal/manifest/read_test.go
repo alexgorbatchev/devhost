@@ -3,6 +3,7 @@ package manifest
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -498,6 +499,78 @@ func TestReadManifestWithIncludes(t *testing.T) {
 	}
 	if rootService["cwd"] != nil {
 		t.Fatalf("root-service cwd = %#v, want nil", rootService["cwd"])
+	}
+}
+
+func TestNestedIncludesRebaseDeclaringServicePathsOnce(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	files := map[string]string{
+		"devhost.toml":        "name='nested'\nincludes=['parts/one.toml']\n[services.root]\ncommand=['true']\ncwd='root-work'\n",
+		"parts/one.toml":      "includes=['deep/two.toml']\n[services.parent]\ncommand=['true']\ncwd='parent-work'\n",
+		"parts/deep/two.toml": "includes=['../../devhost.toml']\n[services.explicit]\ncommand=['true']\ncwd='../../work with spaces'\nwatch=['src/']\n[services.default]\ncommand=['true']\n[services.files]\nserve='../../public'\n",
+	}
+	for name, text := range files {
+		path := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, err := ReadManifest(filepath.Join(root, "devhost.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	services := raw.value["services"].(map[string]any)
+	cases := []struct {
+		service string
+		field   string
+		want    any
+	}{
+		{"root", "cwd", "root-work"},
+		{"parent", "cwd", filepath.Join("parts", "parent-work")},
+		{"explicit", "cwd", "work with spaces"},
+		{"explicit", "watch", []any{"src/"}},
+		{"default", "cwd", filepath.Join("parts", "deep")},
+		{"files", "serve", "public"},
+		{"files", "cwd", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.service+"/"+tc.field, func(t *testing.T) {
+			got := services[tc.service].(map[string]any)[tc.field]
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("%s.%s = %#v, want %#v", tc.service, tc.field, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIncludedServicePathsPreserveLiteralEnvironmentValues(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(root, "devhost.toml")
+	if err := os.WriteFile(manifestPath, []byte("includes=['sub/service.toml']\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "sub/service.toml"), []byte("[services.worker]\ncommand=['true']\ncwd='src'\n[services.worker.env]\ncwd='cache'\nserve='literal-root'\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := ReadManifest(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := raw.value["services"].(map[string]any)["worker"].(map[string]any)
+	if service["cwd"] != filepath.Join("sub", "src") {
+		t.Fatalf("service cwd = %#v, want sub/src", service["cwd"])
+	}
+	want := map[string]any{"cwd": "cache", "serve": "literal-root"}
+	if !reflect.DeepEqual(service["env"], want) {
+		t.Fatalf("service environment = %#v, want %#v", service["env"], want)
 	}
 }
 

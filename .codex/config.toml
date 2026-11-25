@@ -1,0 +1,3 @@
+[mcp_servers.rust-anything]
+command = "rust-anything"
+args = ["mcp"]

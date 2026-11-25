@@ -3043,7 +3043,8 @@ func runSpawnDetachedChildServerOnTermAndExitHelper() {
 	command.Env = append(os.Environ(),
 		"GO_WANT_HELPER_PROCESS=1",
 		"DEVHOST_HELPER_MODE=child-http-server",
-		"CHILD_PID_PATH="+os.Getenv("CHILD_PID_PATH"),
+		// The launcher publishes this PID; the child must not truncate its record.
+		"CHILD_PID_PATH=",
 		"PORT="+os.Getenv("PORT"),
 	)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -3128,8 +3129,10 @@ func runChildHTTPServerHelper() {
 		bindHost = "127.0.0.1"
 	}
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	if err := os.WriteFile(os.Getenv("CHILD_PID_PATH"), []byte(strconv.Itoa(os.Getpid())), 0o644); err != nil {
-		panic(err)
+	if path := os.Getenv("CHILD_PID_PATH"); path != "" {
+		if err := os.WriteFile(path, []byte(strconv.Itoa(os.Getpid())), 0o644); err != nil {
+			panic(err)
+		}
 	}
 
 	address := fmt.Sprintf("%s:%d", bindHost, port)
@@ -3142,7 +3145,9 @@ func runChildHTTPServerHelper() {
 	})}
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		// Helper output is discarded, so leave the reason where the test that started this server can read it.
-		_ = os.WriteFile(childServerErrorPath(os.Getenv("CHILD_PID_PATH")), []byte(err.Error()), 0o644) // best effort; the panic below still ends the helper
+		if path := os.Getenv("CHILD_PID_PATH"); path != "" {
+			_ = os.WriteFile(childServerErrorPath(path), []byte(err.Error()), 0o644) // best effort; the panic below still ends the helper
+		}
 		panic(err)
 	}
 }

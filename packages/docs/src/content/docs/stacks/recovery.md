@@ -45,6 +45,8 @@ The response keeps the original status code and is never cached. The page waits 
 
 A single-service restart keeps the service's automatic port, so other services that refer to it stay correct. It succeeds only when the new process is healthy and its routes are updated; otherwise devhost restores the previous route and the restart can be retried.
 
+A restart request that names several services validates the whole selection before stopping any service, then restarts each selected service once in dependency order. Repeated names count as one selection.
+
 ### Restart Stack
 
 **Restart Stack** stops every managed service in reverse dependency order, assigns new automatic ports, rebuilds commands and environments that refer to them, and starts everything again in dependency order. It keeps:
@@ -57,7 +59,7 @@ It uses the last manifest that was accepted, so an invalid edit on disk does not
 
 ## Port conflicts on restart
 
-Another process can take a service's automatic port while the service is stopped. The single-service restart then fails with an error that points to **Restart Stack**, which assigns a new port. Startup and hot reload retry this kind of conflict with another port on their own, up to three times.
+Another process can take a service's automatic port while the service is stopped. The single-service restart then fails with an error that points to **Restart Stack**, which assigns a new port. Startup and hot reload retry this kind of conflict with another port on their own, up to three times. If those retries fail, the stack's service details and references used by subsequently started services retain the last attempted port, so a later single-service restart uses that same address.
 
 **Restart Stack** cannot fix a conflict on a fixed port. Stop the process that holds it, or change the service's `port`.
 
