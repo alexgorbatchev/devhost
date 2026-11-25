@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="wireframe.css">
 <style>
 /* Docked chat and its parts, scoped to this page's mockups */
-.mock .side3{display:flex;gap:8px;align-items:flex-end;justify-content:flex-end;flex-wrap:nowrap;max-width:100%}
-.mock .side3>.ns{display:flex;flex-direction:column;gap:6px;flex:0 1 15rem;min-width:0}
 .mock .chat{display:flex;flex-direction:column;gap:5px;flex:none;width:min(100%,27rem);border:1px solid var(--line);border-radius:8px;box-shadow:inset 3px 0 var(--line);text-align:left}
+.mock .chat .chip{padding:0 6px}
+.mock .acts{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:center;margin-left:auto}
 .mock .chat.wide{width:100%}
 .mock .chat .hd{display:flex;flex-wrap:wrap;gap:4px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:4px}
 .mock .chat .hd b{margin-right:auto}
@@ -28,13 +28,19 @@
 .mock .cv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:start;padding:3px 2px;border-bottom:1px solid var(--rule)}
 .mock .cv>:last-child{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
 .mock .cv .sub{display:block;color:var(--mute);font-size:11px}
+.mock .btn:not(.pri){border-color:var(--edge)}
+/* 320 CSS px phone frame for O8 / O36 mobile chat, decision cards, and notices */
+.mock .phone{width:320px;max-width:100%;margin:0 auto;border:1px solid var(--edge);border-radius:8px;background:var(--bg);padding:8px;display:flex;flex-direction:column;gap:6px}
+.mock .phone .chat{width:100%}
+.mock .phone .banner,.mock .phone .tbar{width:100%;max-width:none;margin:0}
+.mock .phone .tbar{justify-content:space-between}
 </style>
 </head>
 <body>
 <header class="page">
 <nav class="top"><a href="index.html">← All flows</a><a href="../agent-chat-current.html">Today's flow diagram</a><a href="../agent-chat-proposed.html">Proposed flow diagram</a><a href="../proposals/agent-chat.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
 <h1>Chat with a coding agent</h1>
-<p><b>TLDR:</b> Before Send the composer names who answers, how the agent handles the message and which checkout it edits; a card pinned above the composer keeps every answer in view while Chat and the notices show the wait; and each turn ends with a receipt of the files it changed and its way back, with conversations named, listed across checkouts and resumable after a close or a stop.</p>
+<p><b>TLDR:</b> Before Send the composer names who answers, which of the two edit modes applies (<b>This worktree (live)</b> or <b>Make tickets</b>) and which worktree it edits; a card pinned above the composer keeps every answer (including the CLI's own standing approval) in view on desktop and 320 px phone screens while Chat, notices and the app tab title show the wait; each turn ends with a receipt of changed files, reload or restart hand-off, and way back; conversations are named, listed across worktrees and resumable; and remote browsers authenticate with one shared WebAuthn passkey (phone support included) or a one-time <code>devhost pair</code> fallback.</p>
 <p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
 </header>
 <div class="key"><div>
@@ -53,26 +59,24 @@
 <section class="step" id="open-chat">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>1600×1000: Alt+Ctrl+C pressed on the page</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>1600×1000: Alt+Ctrl+C pressed on the page</span></div>
 <div class="pg">
 <div class="apptxt">Acme Shop · header · product grid …</div>
 <div class="corner">
-<div class="side3">
-<div class="ns"><div class="toastrow" style="padding:0;align-items:center"><span class="n">1</span><div class="toast">Restarted api · 2.6 s</div></div></div>
 <div class="dock chat">
 <div class="hd"><b>New conversation</b><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span><span class="n">2</span></div>
 <div class="tr"><div class="muted">No conversations on this stack yet. Write a message to start one with Claude Code. <span class="n">3</span></div></div>
 <div class="muted">Send starts a new conversation with Claude Code · Haiku 4.5</div>
 <span class="in tx focusring"><span class="muted">Write a message</span></span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 </div>
-</div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="toastrow" style="padding:0;align-items:center;gap:4px"><span class="n">1</span><div class="toast">✓ Restarted api · 2.6 s</div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>1280×800: chat moved up and expanded</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>1280×800: chat moved up and expanded</span></div>
 <div class="pg" style="min-height:0">
 <div class="corner">
 <div class="dock chat">
@@ -82,33 +86,47 @@
 <div>The header now uses NavLink, so it no longer overlaps the logo.</div></div>
 <div class="muted">To: Fix the nav header · Claude Code · Haiku 4.5</div>
 <span class="in tx"><span class="muted">Write a message</span></span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>640×400 CSS px: 1280×800 at 200% zoom</span></div>
-<div class="pg" style="min-height:0;padding:8px 16px">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>640×400 CSS px (200% zoom) and 320 CSS px phone layout (O8)</span></div>
+<div class="work small">
+<div class="lab">640×400 CSS px: 1280×800 at 200% zoom</div>
 <div class="dock chat wide">
 <div class="hd"><b>Fix the nav header</b><span class="muted">Claude Code · idle</span><span class="btn">☰</span><span class="btn">✕</span><span class="n">5</span></div>
 <div class="muted">To: Fix the nav header · Claude Code · Haiku 4.5</div>
 <span class="in tx"><span class="muted">Write a message</span></span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/…/fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
 </div>
-<div class="tbar" style="align-self:flex-end"><span class="seg"><b>Acme Shop</b></span><span class="seg">5/6 ▾</span><span class="seg">Chat</span></div>
+<div class="row" style="justify-content:flex-end;margin-top:4px"><div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">5/6 ▾</span><span class="seg">Chat</span></div></div>
+<div class="lab">320 CSS px phone layout (O8, O36): docked chat, pinned card and notice stack with 0 overflow</div>
+<div class="phone">
+<div class="dock chat">
+<div class="hd"><b>Fix the nav header</b><span class="btn">☰</span><span class="btn">✕</span><span class="n">6</span></div>
+<div class="card"><div class="q">Edit src/header.tsx?</div>
+<div class="row" style="margin-top:4px"><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span></div></div>
+<span class="in tx" style="min-height:2em"><span class="muted">Write a message</span></span>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ▾</span><span class="btn pri" style="margin-left:auto">Send</span></div>
+</div>
+<div class="banner">◆ Claude Code is waiting for you · Fix the nav header · <span class="btn">Answer</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">4/6 ▾</span><span class="seg">◆ Chat</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the agent catalog's guard and cache, and the activity lines for people, change contract texts the reference gives no <code>CC-n</code>; the <code>network-exposure-01</code> stopgap's loopback rule does not name the catalog route yet. <a href="index.html#conflicts">See conflicts</a></div>
+</div>
+<div class="cap">
 <h2>1. Open chat</h2>
-<p><b>Chat</b> on the bar and pointing at an element or finishing a drawing (page-context's entry points) still open docked chat, which stays a non-modal region labelled "Chat" and stays open when focus leaves it; Alt+Ctrl+C is one more way to open it from the page. What changes is where it sits, what its header says and that opening it starts no agent CLI. Keys: Alt+Ctrl+C or <b>Chat</b> opens chat with focus in the composer, or focuses the composer while chat is docked; Escape there returns focus to the element that had it; Alt+Ctrl+B's cycle reaches the composer; <b>Move Chat Panel</b> moves with the arrow keys and Home returns it; hints read ⌃⌥C on macOS and Ctrl+Alt+C elsewhere, from the binding's one definition (<code>KEY-2</code>, <code>KEY-3</code>, <code>KEY-6</code>, <code>KEY-8</code>, <code>KEY-12</code>, <code>KEY-13</code>).</p>
+<p><b>Chat</b> on the bar and pointing at an element or finishing a drawing (page-context's entry points) still open docked chat, which stays a non-modal region labelled "Chat" and stays open when focus leaves it; Alt+Ctrl+C is one more way to open it from the page. What changes is where it sits, what its header says, its 320 px phone layout, and that opening it starts no agent CLI. Keys: Alt+Ctrl+C or <b>Chat</b> opens chat with focus in the composer, or focuses the composer while chat is docked; Escape there returns focus to the element that had it; Alt+Ctrl+B's cycle reaches the composer; <b>Move Chat Panel</b> moves with the arrow keys and Home returns it; bindings can be overridden per person in <code>~/.config/devhost/config.toml</code> (<code>O17</code>, <code>CC-39</code>), and hints read ⌃⌥C on macOS and Ctrl+Alt+C elsewhere from the one binding definition (<code>KEY-2</code>, <code>KEY-3</code>, <code>KEY-6</code>, <code>KEY-8</code>, <code>KEY-12</code>, <code>KEY-13</code>).</p>
 <ol><li><span class="n">1</span> Chat opens compact at the toolbar's edge beside the notice stack, never over it: no devhost surface covers a notice, the dock and chat shift inward past the minimap strip and the pinned log panel (step 4), and an open toolbar panel, the running agents list included, paints above chat (<code>SURF-1</code>, <code>SURF-5</code>, <code>CC-1</code>).</li>
 <li><span class="n">2</span> The header names the conversation the composer writes to by its title, the first line of its first message, with its agent and state word, or "New conversation" before the first <b>Send</b>; then the conversation list control (step 8), <b>New Conversation</b> as a text button, never a second + icon, <b>Expand Chat</b>, <b>Move Chat Panel</b> and <b>Close</b>, which hides the panel and stops nothing (<code>SEL-8</code>, <code>WORD-1</code>, <code>WORD-2</code>, <code>WORD-6</code>).</li>
-<li><span class="n">3</span> A stack with no conversation yet says so and how to start one. Opening reads the agent catalog devhost discovered for this stack and starts no agent CLI by itself: discovery runs once, when chat first opens for the stack, and again only on <b>Refresh Agents</b> (step 2), and the catalog answers only the stack's own pages (<code>STATE-2</code>).</li>
+<li><span class="n">3</span> A stack with no conversation yet says so and how to start one. Opening reads the agent catalog devhost discovered for this stack and starts no agent CLI by itself: discovery runs once, when chat first opens for the stack, and again only on <b>Refresh Agents</b> (step 2), and the catalog answers only this machine or authenticated remote browsers on the stack's own pages (<code>STATE-2</code>, <code>O36</code>).</li>
 <li><span class="n">4</span> Compact chat shows the latest message and its reply; <b>Expand Chat</b> shows the whole conversation. In every state (compact, expanded, dragged, after a resize) and at 1600×1000, 1280×800 and 900×900 in the light and the dark theme, the header, the composer row with <b>Send</b> and the mode control, and a pending card stay inside the viewport: a moved or expanded panel sizes itself to the room between its top and the window's bottom edge, or moves up until the composer fits; only the transcript scrolls, and a dragged panel never covers the bar's row (<code>SURF-6</code>, <code>SURF-9</code>).</li>
-<li><span class="n">5</span> At 1280×800 under 200% zoom (640×400 CSS pixels), and in any window below 900 px wide, chat takes the window's width less 16 px on each side and keeps the order header, conversation, card, composer (<code>O8</code>). Whether chat was open, its side, the conversation, the agent, the model and the unsent text come back per stack and page origin, never per checkout; its dragged position is saved per manifest on the control server through toolbar-shell's layout route, never in browser storage (<code>SEL-11</code>, <code>CC-9</code>, <code>SURF-7</code>, <code>CC-5</code>).</li></ol>
+<li><span class="n">5</span> At 1280×800 under 200% zoom (640×400 CSS pixels), and in any window below 900 px wide, chat takes the window's width less 16 px on each side and keeps the order header, conversation, card, composer (<code>O8</code>). Whether chat was open, its side, the conversation, the agent, the model and the unsent text come back per stack and page origin, never per worktree; its dragged position is saved per manifest on the control server through toolbar-shell's layout route, never in browser storage (<code>SEL-11</code>, <code>CC-9</code>, <code>SURF-7</code>, <code>CC-5</code>, <code>WORD-11</code>).</li>
+<li><span class="n">6</span> At the 320 CSS px phone layout (<code>O8</code>), docked chat, pinned decision cards (including standing approval) and notices stack cleanly with zero horizontal overflow and &gt;=24×24 CSS px tap targets so an authenticated phone (<code>O36</code>) can ask for a change, answer approvals and see the change.</li></ol>
 <p class="fixes">Fixes chat-compose-02, chat-compose-03, network-exposure-02 · Backend: the guarded, cached agent catalog with its refresh route (Backend 13); chat's position through the layout route (<code>CC-5</code>)</p></div>
 </section>
 
@@ -120,33 +138,32 @@
 <div class="dock chat wide">
 <div class="muted">To: Fix the nav header · Claude Code · Haiku 4.5 <span class="n">2</span></div>
 <span class="in tx"><span class="muted">Write a message</span></span>
-<div class="popover" style="margin-bottom:6px;width:min(100%,30rem)"><i class="caret-dn" style="left:77.9px"></i>
+<div class="popover" data-for="t-chip" style="margin-bottom:6px;width:min(100%,30rem)"><i class="caret-dn" style="left:74.9px"></i>
 <div class="from">Chat Settings, opened from the agent and model chip</div>
 <div class="fld"><span>Agent</span><span><span class="in focusring">Claude Code ▾</span></span></div>
-<div class="muted" style="margin-left:7rem">Codex · Not installed: devhost looks for codex on your PATH</div>
+<div class="muted" style="margin-left:7rem">Codex · Not installed: devhost looks for codex on devbox's PATH</div>
 <div class="fld"><span>Model</span><span><span class="in">Haiku 4.5 ▾</span></span></div>
 <div class="box" style="margin-left:7rem"><div>Configured default (Sonnet 4.5)</div><div style="background:var(--accbg)">Haiku 4.5 · fast, for small edits</div><div>Opus 4.1 · slower, for large changes</div></div>
 <div class="row"><span class="sp"></span><span class="btn">Refresh Agents</span><span class="n">1</span></div>
 </div>
-<div class="row"><span class="chip acc open">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc open" id="t-chip">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › docked chat</b><span>Enter on the mode control</span></div>
+<div class="bar"><b>devhost › Acme Shop › docked chat</b><span>Enter on the mode control (two modes only, O1)</span></div>
 <div class="work small">
 <div class="dock chat wide">
 <span class="in tx">Also keep the logo centred</span>
-<div class="popover" style="margin-bottom:6px;width:min(100%,40rem)"><i class="caret-dn" style="left:367.2px"></i>
+<div class="popover" data-for="t-mode" style="margin-bottom:6px;width:min(100%,38rem)"><i class="caret-dn" style="left:358.2px"></i>
 <div class="from">Edit mode, opened from the mode control</div>
-<div style="background:var(--accbg);padding:1px 4px">◉ This checkout (live) <span class="muted">· Edits the files this page runs; nothing is committed</span></div>
-<div style="padding:1px 4px">○ New worktree (review before merge) <span class="muted">· Works on a new branch in its own worktree and stops before merging</span></div>
+<div style="background:var(--accbg);padding:1px 4px">◉ This worktree (live) <span class="muted">· Edits the active worktree in place (main's included); nothing is committed</span></div>
 <div style="padding:1px 4px">○ Make tickets <span class="muted">· Files tickets for the problem and changes no files</span><span class="n">3</span></div>
 </div>
-<div class="row"><span class="row" style="flex-wrap:nowrap;min-width:0"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip open" style="white-space:normal;min-width:0">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span></span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="row" style="flex-wrap:nowrap;gap:4px;min-width:0"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip open" id="t-mode">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span></span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 <div class="muted">Asks before commands and edits (your Claude Code configuration) <span class="n">4</span></div>
-<div class="muted">▸ Added by devhost</div>
-<div class="muted">Previous message: New worktree (review before merge) in ~/acme/.worktrees/fix-nav-header</div>
+<div class="box" style="margin:0"><div class="muted">▾ Added by devhost</div><div class="meta">1. Team guidance ([devtools.chat].prompt): Run bun test after editing components.</div><div class="meta">2. This worktree (live): Edit files in the active worktree in place; leave changes uncommitted; never create worktrees, commit or merge (decides edit behavior whatever guidance above says).</div></div>
+<div class="muted">Previous message: Make tickets</div>
 </div>
 </div>
 </div>
@@ -159,7 +176,7 @@
 <div class="row"><span class="box" style="margin:0">▣ screenshot.png · 1.2 MiB <span class="btn">✕</span></span><span class="muted">Message 5.8 MiB of 8 MiB</span><span class="n">5</span></div>
 <div class="banner" style="margin:0">screenshot-2.png (4.1 MiB) was not attached: the message would be 10.6 MiB of its 8 MiB limit.</div>
 <div class="box" style="margin:0"><div>#1 button "Menu" · src/header.tsx</div><div>#2 a.nav-link · <span style="color:var(--warn)">#2 is no longer on this page</span> <span class="btn">Select Again</span><span class="btn">Remove</span><span class="n">6</span></div></div>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 <div class="muted">Asks before commands and edits (your Claude Code configuration)</div>
 <div class="muted">▸ Added by devhost</div>
 </div>
@@ -177,17 +194,17 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>SEL-1</code>'s component primitive names a Chat Settings dialog; this proposal makes it a popover anchored to the chip, as 2.4's decision rule and <code>KEY-7</code> require. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>2. Name the recipient, the mode and the context before Send</h2>
-<p>The proposal's steps 2 to 4, read together in the composer row before <b>Send</b>, all read only. Writing, pasting images and picking marks still work as today; what changes is that the row names who answers, how and where before anything leaves the page. Keys: the chip and the mode control are Tab stops in the composer row; Enter or Space opens either with focus in its first field; ArrowUp and ArrowDown move the highlighted option, Enter picks it and Escape closes the list, then the popover, with focus back on the control; keys typed into the composer never reach the page's listeners, and holding Alt alone starts Select Elements only from the first pointer move or after a 300 ms hold (<code>KEY-10</code>, <code>KEY-8</code>, <code>KEY-6</code>, <code>KEY-5</code>, <code>KEY-2</code>, <code>O34</code>, <code>CC-28</code>).</p>
-<ol><li><span class="n">1</span> The agent and model chip, a button whose accessible name is its text, opens Chat Settings as a popover anchored to it, dismissed by a click outside or Escape. <b>Agent</b> and <b>Model</b> are comboboxes whose options carry the catalog's description of each model; the first model option names what it resolves to ("Configured default (Sonnet 4.5)", else "Configured default: set in your Claude Code configuration"); an agent that is not installed stays listed, disabled, with its reason as text and accessible description; <b>Refresh Agents</b> discovers again. Default: the agent and model last chosen on this stack; on a first visit Codex when installed, else the first installed agent (<code>SEL-8</code>, <code>SURF-2</code>, <code>MENU-3</code>, <code>SEL-11</code>).</li>
+<p>The proposal's steps 2 to 4, read together in the composer row before <b>Send</b>, all read only. Writing, pasting images and picking marks still work as today; what changes is that the row names who answers, how and where before anything leaves the page. Keys: the chip and the mode control are Tab stops in the composer row; Enter or Space opens either with focus in its first field; ArrowUp and ArrowDown move the highlighted option, Enter picks it and Escape closes the list, then the popover, with focus back on the control; keys typed into the composer never reach the page's listeners, and holding Alt alone starts Select Elements only from the first pointer move or after a calibrated 400 ms hold (<code>KEY-10</code>, <code>KEY-8</code>, <code>KEY-6</code>, <code>KEY-5</code>, <code>KEY-2</code>, <code>O34</code>, <code>CC-28</code>).</p>
+<ol><li><span class="n">1</span> The agent and model chip, a button whose accessible name is its text, opens Chat Settings as a popover anchored to it, dismissed by a click outside or Escape. <b>Agent</b> and <b>Model</b> are comboboxes whose options carry the catalog's description of each model; the first model option names what it resolves to ("Configured default (Sonnet 4.5)", else "Configured default: set in your Claude Code configuration"); an agent that is not installed stays listed, disabled, naming <code>devbox</code>'s PATH (<code>O61</code>) as text and accessible description; <b>Refresh Agents</b> discovers again. Default: the agent and model last chosen on this stack; on a first visit Codex when installed, else the first installed agent (<code>SEL-8</code>, <code>SURF-2</code>, <code>MENU-3</code>, <code>SEL-11</code>, <code>O61</code>).</li>
 <li><span class="n">2</span> The recipient line above the composer names where the message goes, or that <b>Send</b> starts a new conversation (<code>SEL-8</code>).</li>
-<li><span class="n">3</span> The mode control shows the edit mode and the checkout it edits, by its checkout label. It is a select-only combobox with three options in the owner's words, each with its effect as visible text and accessible description. Default: <b>This checkout (live)</b> when the message carries page context, else the conversation's last mode, and <b>This checkout (live)</b> for a conversation's first message (<code>O1</code>, <code>O3</code>, <code>SEL-4</code>, <code>SEL-8</code>, <code>WORD-10</code>).</li>
-<li><span class="n">4</span> Under the row: the approval line, read from the agent CLI's own configuration, since devhost passes no approval policy; "Added by devhost", collapsed, holding the mode's own instructions and then the team's <code>[devtools.chat].prompt</code>, so nothing is appended out of sight; and, when the chosen mode differs from the previous message's, one line naming the earlier mode and worktree (<code>REV-6</code>, <code>O13</code>, <code>O35</code>, <code>O20</code>, <code>CC-10</code>).</li>
+<li><span class="n">3</span> The mode control shows the edit mode and the worktree it edits, by its worktree label. It is a select-only combobox with two options only — <b>This worktree (live)</b> and <b>Make tickets</b> — each with its effect as visible text and accessible description. Default: <b>This worktree (live)</b> when the message carries page context, else the conversation's last mode, and <b>This worktree (live)</b> for a conversation's first message (<code>O1</code>, <code>O3</code>, <code>SEL-4</code>, <code>SEL-8</code>, <code>WORD-10</code>, <code>WORD-11</code>).</li>
+<li><span class="n">4</span> Under the row: the approval line, read from the agent CLI's own configuration, since devhost passes no approval policy; "Added by devhost", collapsed by default and shown expanded here, holding the team's <code>[devtools.chat].prompt</code> first and then the chosen mode's instructions (<code>live</code> or <code>tickets</code>), which decide edit behavior whatever the guidance above says, so nothing is appended out of sight; and, when the chosen mode differs from the previous message's, one line naming the earlier mode (<code>REV-6</code>, <code>O13</code>, <code>O35</code>, <code>O20</code>, <code>CC-10</code>).</li>
 <li><span class="n">5</span> <b>Attach Image</b> and pasting add PNG and JPEG images as uncropped thumbnails with name and size, removable from the keyboard, and the message counts against its 8 MiB limit as it grows; an image that would pass the limit is refused when pasted, with one sentence naming it (<code>WORD-5</code>, <code>WORD-8</code>, <code>FAIL-2</code>).</li>
-<li><span class="n">6</span> Page context sits under the composer item by item: each mark's number, element and source file, and a mark whose element left the page flagged with <b>Select Again</b> and <b>Remove</b>; page-context owns the list. Page context tells the agent the page's URL, service and checkout; after a pick or a drawing, focus returns to the composer. The text stays in browser storage, and images and page context in the control server's draft record, so a reload devhost causes keeps them (<code>SEL-9</code>, <code>SURF-12</code>, <code>SEL-3</code>, <code>KEY-12</code>, <code>UNDO-2</code>, <code>CC-19</code>).</li>
+<li><span class="n">6</span> Page context sits under the composer item by item: each mark's number, element and source file, and a mark whose element left the page flagged with <b>Select Again</b> and <b>Remove</b>; page-context owns the list. Page context tells the agent the page's URL, service and worktree; after a pick or a drawing, focus returns to the composer. The text stays in browser storage, and images and page context in the control server's draft record (migrated to the new origin on <code>listeners-moving</code> port changes), so a reload devhost causes keeps them (<code>SEL-9</code>, <code>SURF-12</code>, <code>SEL-3</code>, <code>KEY-12</code>, <code>UNDO-2</code>, <code>CC-19</code>, <code>WORD-11</code>).</li>
 <li><span class="n">7</span> An open conversation's agent is fixed: choosing another agent never moves the next message silently, and the earlier conversation keeps running. A configuration that never asks shows in the warning style; one devhost cannot read says so (<code>SEL-8</code>, <code>REV-6</code>, <code>O13</code>).</li></ol>
-<p class="fixes">Fixes chat-compose-01, chat-compose-03, chat-conversations-04, chat-conversations-08, chat-checkout-switch-03, chat-checkout-switch-04 · Backend: <code>send</code>'s <code>mode</code> and the three instruction texts with the mode prompt keys (Backend 1; <code>CC-10</code>); the approval behavior in the catalog, still to be confirmed (Backend 5); the draft record (Backend 14; <code>CC-19</code>)</p></div>
+<p class="fixes">Fixes chat-compose-01, chat-compose-03, chat-conversations-04, chat-conversations-08, chat-checkout-switch-03, chat-checkout-switch-04 · Backend: <code>send</code>'s <code>mode</code> (<code>live</code> | <code>tickets</code>) + <code>pageContext</code> and team-first instruction order with mode prompt keys (Backend 1; <code>CC-10</code>); the approval behavior in the catalog (Backend 5, <code>O13</code>); the draft record with <code>listeners-moving</code> origin migration (Backend 14; <code>CC-19</code>)</p></div>
 </section>
 
 <section class="step" id="send">
@@ -199,12 +216,12 @@
 <div class="hd"><b>Fix the nav header</b><span class="muted">Claude Code · working</span><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span></div>
 <div class="tr">
 <div class="me">Fix the nav header<br>It overlaps the logo below 900 px; see #1.</div>
-<div class="meta">Mode: This checkout (live) · fix-nav <span class="n">2</span></div>
+<div class="meta">Mode: This worktree (live) · fix-nav <span class="n">2</span></div>
 <div class="meta">▸ Added by devhost · ▸ Page context: 2 marks</div>
 </div>
 <div class="muted">To: Fix the nav header · Claude Code · Haiku 4.5</div>
 <span class="in tx focusring"><span class="muted">Write a message</span></span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 </div>
 <div class="lab">The same message before the acknowledgement</div>
 <div class="me" style="max-width:27rem">Fix the nav header …<div class="meta">Not sent yet <span class="n">1</span></div></div>
@@ -217,7 +234,7 @@
 <div class="box" style="margin:0">Start a second agent in fix-nav ~/acme/.worktrees/fix-nav? Claude Code, which chat did not start, is working there, and both would edit the same files. <span class="n">3</span>
 <div class="row" style="margin-top:4px"><span class="sp"></span><span class="btn">Start Second Agent</span><span class="btn focusring">Cancel</span></div></div>
 <span class="in tx">Fix the nav header …</span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 </div>
 <div class="lab">After Cancel or Escape</div>
 <div class="muted">Not sent <span class="n">4</span></div>
@@ -239,20 +256,20 @@
 </div>
 </div>
 <div class="cap"><h2>3. Send</h2>
-<p>Enter or <b>Send</b> still sends, and the message still goes into the page's own checkout, as today. What changes is that it shows at once with its delivery state, records how it was sent, and asks only in two cases. Keys: Enter sends, Shift+Enter inserts a line break, and Enter during input-method composition never sends; in a question, focus and Enter start on the choice that changes nothing, and Escape cancels with focus back in the composer (<code>KEY-9</code>, <code>REV-4</code>, <code>KEY-8</code>).</p>
+<p>Enter or <b>Send</b> still sends, and the message still goes into the page's own worktree, as today. What changes is that it shows at once with its delivery state, records how it was sent, and asks only in two cases. Keys: Enter sends, Shift+Enter inserts a line break, and Enter during input-method composition never sends; in a question, focus and Enter start on the choice that changes nothing, and Escape cancels with focus back in the composer (<code>KEY-9</code>, <code>REV-4</code>, <code>KEY-8</code>).</p>
 <ol><li><span class="n">1</span> The message appears in the conversation at once as the person's, with "Not sent yet" until the server acknowledges it. Focus stays in the composer; the draft stays until the acknowledgement, then clears, and its images and page context leave the draft record with it (<code>STATE-1</code>, <code>UNDO-2</code>).</li>
-<li><span class="n">2</span> Under the message, the mode line with the checkout it edited, "Added by devhost" collapsed and the page context it carried, collapsed. devhost writes these as records of its own into the session's journal, so every page and every reload shows them. A new conversation starts with the chosen agent and model in the page's checkout; the browser never names a directory, and the conversation's title is the first line of this message (<code>UNDO-8</code>, <code>WORD-10</code>, <code>CC-40</code>, <code>SEL-8</code>, <code>CC-38</code>).</li>
-<li><span class="n">3</span> A second agent: a message in <b>This checkout (live)</b> that would start this conversation's agent where an agent chat did not start works or waits asks in place above the composer, with <b>Cancel</b> in the pressed control's place, focused and taking Enter, and <b>Start Second Agent</b> beside it; nothing shows as working while it asks. It asks when the conversation's agent would start, never again for follow-ups while that agent works. In the other two modes the recipient line names that agent instead ("Claude Code, started outside chat, also works in this checkout") and <b>Send</b> sends (<code>REV-3</code>, <code>REV-4</code>, <code>REV-6</code>, <code>CC-14</code>).</li>
+<li><span class="n">2</span> Under the message, the mode line with the worktree it edited, "Added by devhost" collapsed and the page context it carried, collapsed. devhost writes these as <code>record</code> frames of its own into the session's journal, so every page and every reload shows them. A new conversation starts with the chosen agent and model in the page's worktree; the browser never names a directory, and the conversation's title is the first line of this message (<code>UNDO-8</code>, <code>WORD-10</code>, <code>WORD-11</code>, <code>CC-40</code>, <code>SEL-8</code>, <code>CC-38</code>).</li>
+<li><span class="n">3</span> A second agent: a message in <b>This worktree (live)</b> that would start this conversation's agent where an agent chat did not start works or waits asks in place above the composer, with <b>Cancel</b> in the pressed control's place, focused and taking Enter, and <b>Start Second Agent</b> beside it; nothing shows as working while it asks. It asks when the conversation's agent would start, never again for follow-ups while that agent works. In <b>Make tickets</b> the recipient line names that agent instead ("Claude Code, started outside chat, also works in this worktree") and <b>Send</b> sends (<code>REV-3</code>, <code>REV-4</code>, <code>REV-6</code>, <code>CC-14</code>, <code>O1</code>).</li>
 <li><span class="n">4</span> <b>Cancel</b> and Escape keep the draft in the composer and leave the neutral line "Not sent", never an error; the next <b>Send</b> asks again while that agent works (<code>UNDO-4</code>, <code>WORD-7</code>).</li>
 <li><span class="n">5</span> A gone mark: a draft citing a mark whose element left the page asks with <b>Select Again</b> focused and <b>Send Anyway</b> (<code>REV-6</code>, <code>SEL-9</code>).</li>
 <li><span class="n">6</span> A send without an acknowledgement after 45 s reads <b>Delivery unconfirmed</b> and is never resent, by the owner's rule; a repeated command ID returns its first result (<code>FB-5</code>, <code>REV-12</code>).</li></ol>
-<p class="fixes">Fixes chat-approvals-04 · Backend: devhost's records in the session's journal (Backend 2; <code>CC-40</code>); <code>send</code>'s <code>mode</code> (Backend 1; <code>CC-10</code>); the second-agent question in place (<code>CC-14</code>)</p></div>
+<p class="fixes">Fixes chat-approvals-04 · Backend: devhost's records in the session's journal (Backend 2; <code>CC-40</code>); <code>send</code>'s <code>mode</code> and <code>pageContext</code> (Backend 1; <code>CC-10</code>); the second-agent question in place (<code>CC-14</code>)</p></div>
 </section>
 
 <section class="step" id="follow">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>12 s into the turn; a follow-up typed</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>12 s into the turn; a follow-up typed</span></div>
 <div class="pg">
 <div class="corner">
 <div class="dock chat">
@@ -265,9 +282,9 @@
 </div>
 <div class="stl">Claude Code is working · 12 s · 3 tool calls · 1 message not yet read<span class="sp"></span><span class="btn">Stop Turn</span><span class="n">2</span></div>
 <span class="in tx focusring">And the footer links</span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="muted">Joins the running turn; the agent reads it at its next step</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="muted">Joins the running turn; the agent reads it at its next step</span><span class="btn pri">Send</span></div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">◐ Chat</span><span class="n">3</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">◐ Chat</span><span class="n">3</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
 </div>
 </div>
 </div>
@@ -283,12 +300,12 @@
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>the pinned log panel open; the agent restarted api</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the pinned log panel open; the agent ran devhost service restart api</span></div>
 <div class="app" style="grid-template-columns:minmax(0,1fr) 15rem 12px;min-height:0">
 <div class="pg" style="min-height:150px">
 <div class="corner">
-<div class="toastrow" style="padding:0"><div class="toast">Restarted api · 2.6 s · from Claude Code, conversation Fix the nav header</div></div>
-<div class="row" style="justify-content:flex-end"><span class="n">7</span><span class="muted">docked chat sits here, beside the notice stack</span><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">◐ Chat</span></span></div>
+<div class="toastrow" style="padding:0"><div class="toast">✓ Restarted api · 2.6 s · from Claude Code, conversation Fix the nav header</div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">7</span><span class="muted">docked chat sits here, beside the notice stack</span><span class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">◐ Chat</span></span></div>
 </div>
 </div>
 <div class="dock"><h3>Logs</h3>
@@ -303,7 +320,7 @@
 <pre class="term">14:03:12 Chat · Claude Code (Haiku 4.5) in fix-nav · replied · changed 2 files · 29 s</pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: terminal and log lines name a conversation by agent, model and checkout, never by its first message, because log lines never hold message text; <code>WORD-4</code>'s example and log-minimap's chat lines name it by title. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>4. Follow the turn</h2>
 <p>The reply still streams into the conversation, and a follow-up is still accepted while the agent works without interrupting or approving anything, as today. What changes is that the turn's progress, every follow-up and every line the agent or its CLI adds say what they are. Keys: Enter sends a follow-up into the running turn; Alt+Ctrl+. stops the turn from the composer and docked chat (step 7) (<code>KEY-9</code>, <code>REV-6</code>).</p>
 <ol><li><span class="n">1</span> The reply streams into the transcript, which is <code>aria-busy</code> while it streams and never a live region; tool calls show as one line each in plain words (<code>FB-9</code>, <code>WORD-4</code>).</li>
@@ -311,19 +328,17 @@
 <li><span class="n">3</span> <b>Chat</b> on the bar shows a working agent with its spinner, accessible name "Chat: Claude Code working" (<code>SURF-8</code>).</li>
 <li><span class="n">4</span> Beside <b>Send</b>, a follow-up says it joins the running turn. Sent, it appears at once as the person's message: "Not sent yet" with <b>Take Back</b>, which puts it back into the composer, while it waits on this page for an earlier send's acknowledgement; then "Sent into the running turn" once the agent's CLI has it, after which only <b>Stop Turn</b> cancels it, with the turn (<code>REV-6</code>, <code>STATE-1</code>, <code>UNDO-4</code>).</li>
 <li><span class="n">5</span> A turn the agent starts by itself reads "The agent continued on its own", and compact chat keeps the reply to the person's message in view with a line for the extra reply; text the CLI adds shows as one collapsed line, never as a message the person sent (<code>WORD-10</code>).</li>
-<li><span class="n">6</span> The stack's terminal and log print one line when a conversation starts or ends, one when its agent starts waiting, and one per turn outcome, never the delivery steps, model changes, usage or IDs; the pinned log panel, which log-minimap owns, shows them under devhost's own source, and sits outside docked chat in the edge order minimap strip, log panel, then the dock and chat (<code>FB-10</code>, <code>FB-7</code>, <code>WORD-9</code>, <code>SURF-13</code>, <code>SURF-5</code>, <code>CC-40</code>).</li>
-<li><span class="n">7</span> devhost starts every chat agent with <code>AGENT=1</code> and <code>DEVHOST_CHAT_SESSION</code>, so a devhost command the agent runs gets agent output and its outcome is reported as the agent's; the agent restarts services with <code>devhost service</code> and reads outcomes with <code>devhost status</code>, which stack-run-stop builds (<code>REV-8</code>, <code>FB-11</code>, <code>ACT-1</code>, <code>MENU-6</code>, <code>SEL-7</code>).</li></ol>
+<li><span class="n">6</span> The stack's terminal and log print one line when a conversation starts or ends, one when its agent starts waiting, and one per turn outcome (naming agent, model and worktree label or CLI title, never message text), never the delivery steps, model changes, usage or IDs; the pinned log panel, which log-minimap owns, shows them under devhost's own source, and sits outside docked chat in the edge order minimap strip, log panel, then the dock and chat (<code>FB-10</code>, <code>FB-7</code>, <code>WORD-9</code>, <code>SURF-13</code>, <code>SURF-5</code>, <code>CC-40</code>).</li>
+<li><span class="n">7</span> devhost starts every chat agent with <code>AGENT=1</code> and <code>DEVHOST_CHAT_SESSION</code>, so a devhost command the agent runs gets agent output and its outcome is reported as the agent's; when asked, an agent inspects the stack with <code>devhost stack info</code> / <code>devhost status</code> (<code>O62</code>) and restarts services with <code>devhost service</code>, which stack-run-stop builds, never through browser routes (<code>REV-8</code>, <code>FB-11</code>, <code>ACT-1</code>, <code>MENU-6</code>, <code>SEL-7</code>, <code>O58</code>).</li></ol>
 <p class="fixes">Fixes chat-compose-2-02, chat-conversations-05, chat-conversations-06, journey-agent-fix-05, agent-cli-journey-06 · Backend: the agent's environment (Backend 12; <code>CC-13</code>); activity lines for people (Backend 15); devhost's records for delivery (Backend 2)</p></div>
 </section>
 
 <section class="step" id="answer">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>1280×800, compact chat: Claude Code asks to edit a file</span></div>
+<div class="bar"><b>tab › (1) waiting · Acme Shop</b><span>1280×800, compact chat: Claude Code asks to edit a file (O12, O16)</span></div>
 <div class="pg">
 <div class="corner">
-<div class="side3">
-<div class="ns"><div class="banner" style="margin:0">Claude Code waits for you: Edit src/header.tsx? · Fix the nav header <span class="btn">Answer</span> <span class="n">6</span></div></div>
 <div class="dock chat">
 <div class="hd"><b>Fix the nav header</b><span class="muted">Claude Code · waiting for you</span><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span></div>
 <div class="tr"><div class="meta">Edited src/nav.css</div></div>
@@ -331,89 +346,93 @@
 <div class="diff"><del>-  &lt;a className="nav" href="/"&gt;</del>
 <ins>+  &lt;NavLink className="nav" to="/"&gt;</ins></div>
 <span class="in" style="display:block">Use the existing NavLink</span><span class="n">2</span>
-<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span><span class="n">3</span></div></div>
+<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span><span class="n">3</span></div></div>
 <div class="stl">The request above waits for your answer; its Stop Turn ends the turn <span class="n">4</span></div>
 <span class="in tx focusring">And the footer links</span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
 </div>
-</div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">◆ Chat</span><span class="n">5</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:center"><span class="n">6</span><div class="banner" style="margin:0;min-width:0">◆ Claude Code is waiting for you · Fix the nav header · <span class="btn">Answer</span></div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">◆ Chat</span><span class="n">5</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
 </div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › docked chat › a command request, then the answers</b></div>
 <div class="work small">
-<div class="card" style="max-width:27rem"><div class="q">Run bun test? In web/ · to check the header renders <span class="n">7</span></div>
+<div class="card" style="max-width:30rem"><div class="q">Run bun test? In web/ · to check the header renders <span class="n">7</span></div>
 <span class="in" style="display:block"><span class="muted">Note for Claude Code (optional)</span></span>
-<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span></div></div>
+<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span></div></div>
 <div class="meta">You denied: Edit src/header.tsx · 13:23 · Use the existing NavLink</div>
 <div class="meta">Edit src/header.tsx · Denied</div>
-<div class="meta">You allowed once: Run bun test · 13:24 <span class="n">8</span></div>
+<div class="meta">You allowed for this session: Run bun test · 13:24 <span class="n">8</span></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>the toolbar collapsed while Claude Code waits</span></div>
+<div class="bar"><b>tab › (1) waiting · Acme Shop</b><span>the toolbar collapsed while Claude Code waits (O16)</span></div>
 <div class="pg" style="min-height:0">
-<div class="corner"><div class="row" style="justify-content:flex-end"><span class="banner" style="margin:0">Claude Code waits for you: Edit src/header.tsx? <span class="btn">Answer</span></span><span class="tbar"><span class="seg">◆ Acme Shop · waiting for you</span></span><span class="n">9</span></div></div>
+<div class="corner">
+<div class="row" style="justify-content:flex-end"><span class="banner" style="margin:0">◆ Claude Code is waiting for you · Fix the nav header · <span class="btn">Answer</span></span></div>
+<div class="row" style="justify-content:flex-end"><span class="tbar"><span class="seg">◆ <b>dh</b> · 1 waiting for you ▴</span></span><span class="n">9</span></div>
+</div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › checkout page</b><span>the page's own modal dialog is open</span></div>
+<div class="bar"><b>devhost › Acme Shop › cart page</b><span>the page's own modal dialog is open</span></div>
 <div class="scrim" style="min-height:0">
 <div class="dlg"><div class="hd"><h3>Edit shipping address</h3></div>
 <div class="body"><span class="muted">The app's own dialog: street, city, postcode …</span>
 <div class="corner" style="margin-top:8px">
-<div class="dock chat"><div class="card"><div class="row"><span class="q">Edit src/header.tsx?</span></div><div class="row"><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span></div></div></div>
+<div class="dock chat"><div class="card"><div class="row"><span class="q">Edit src/header.tsx?</span></div><div class="row"><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span></div></div></div>
 <span class="n">10</span>
 </div></div>
 <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>api exits while the card waits</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>api exits while the card waits</span></div>
 <div class="pg" style="min-height:0">
-<div class="corner"><div class="row" style="justify-content:flex-end"><span class="banner bad" style="margin:0">api exited with code 1 at 14:02</span><span class="n">11</span><span class="muted">docked chat stays open with its card</span></div></div>
+<div class="corner"><div class="row" style="justify-content:flex-end"><span class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02</span><span class="n">11</span><span class="muted">docked chat stays open with its card</span></div></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>REV-9</code> lists the card's arrow stops without the Deny note; this proposal places the note between <b>Details</b> and <b>Deny</b>. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>5. Answer the agent</h2>
-<p>devhost still relays every approval and question and never answers or pre-approves one, and an answered or cancelled request still cannot be answered again, as today. What changes is that the request shows what will change with every answer in view, the wait shows wherever the person looks, and each answer leaves a line. Keys: the card is one Tab stop: Tab or Shift+Tab into it, from the composer included, focuses its question; ArrowUp and ArrowDown move between <b>Details</b>, the note, <b>Deny</b>, <b>Allow Once</b> and <b>Stop Turn</b>, and in the note ArrowLeft and ArrowRight move the caret; Tab leaves the card. Enter in the note denies with it, Shift+Enter inserts a line break, and Escape in the note returns to the question with nothing answered; no other key answers (<code>REV-9</code>, <code>KEY-8</code>, <code>KEY-9</code>, <code>KEY-10</code>).</p>
-<ol><li><span class="n">1</span> A decision card is pinned between the conversation and the composer, outside any scroll area, so every answer is visible without scrolling in compact chat at every acceptance viewport. It leads with a plain question naming the tool and its target, then the checkout-relative path and a unified diff in a region of capped height that scrolls on its own. Several pending requests show their count and are answered in arrival order (<code>SURF-6</code>, <code>REV-9</code>).</li>
+<p>devhost still relays every approval and question and never answers or pre-approves one itself, and an answered or cancelled request still cannot be answered again, as today. What changes is that the request shows what will change with every answer (including the agent CLI's own standing approval when offered) in view, the wait shows wherever the person looks (the app tab title included, <code>O16</code>), and each answer leaves a line. Keys: the card is one Tab stop: Tab or Shift+Tab into it, from the composer included, focuses its question; ArrowUp and ArrowDown move between <b>Details</b>, the note, <b>Deny</b>, <b>Allow Once</b>, <b>Allow for This Session</b> (when offered) and <b>Stop Turn</b>, and in the note ArrowLeft and ArrowRight move the caret; Tab leaves the card. Enter in the note denies with it, Shift+Enter inserts a line break, and Escape in the note returns to the question with nothing answered; no other key answers or approves a standing approval (<code>REV-9</code>, <code>O12</code>, <code>KEY-8</code>, <code>KEY-9</code>, <code>KEY-10</code>).</p>
+<ol><li><span class="n">1</span> A decision card is pinned between the conversation and the composer, outside any scroll area, so every answer is visible without scrolling in compact chat at every acceptance viewport and at the 320 px phone layout. It leads with a plain question naming the tool and its target, then the worktree-relative path and a unified diff in a region of capped height that scrolls on its own. Several pending requests show their count and are answered in arrival order (<code>SURF-6</code>, <code>REV-9</code>, <code>O8</code>).</li>
 <li><span class="n">2</span> The note, "Note for Claude Code (optional)": <b>Deny</b> sends it with the denial. Claude Code receives it as the denial's message; Codex receives the decline, then the note as a message into the running turn, shown as the person's message without devhost's instructions; an empty note denies with no message, and devhost no longer sends "Denied by the user." (<code>REV-9</code>, <code>CC-16</code>).</li>
-<li><span class="n">3</span> <b>Deny</b>, <b>Allow Once</b> and <b>Stop Turn</b>, with the native request under <b>Details</b>. No answer is a default: an arriving card never takes focus from a field being typed in, and is announced once, "Claude Code waits for you: Edit src/header.tsx?". There is no "don't ask again"; standing approvals stay in the agent CLI's own configuration (<code>KEY-6</code>, <code>FB-9</code>, <code>O12</code>).</li>
+<li><span class="n">3</span> <b>Deny</b>, <b>Allow Once</b>, the agent CLI's own standing approval when the CLI offers one (<b>Allow for This Session</b> — session-only, granted by the person, never persisted across restart, <code>O12</code>), and <b>Stop Turn</b>, with the native request under <b>Details</b>. No answer is a default: an arriving card never takes focus from a field being typed in, and is announced once, "Claude Code is waiting for you: Edit src/header.tsx?" (<code>KEY-6</code>, <code>FB-9</code>, <code>O12</code>, <code>CC-16</code>).</li>
 <li><span class="n">4</span> While a card waits, the status line says that the card's <b>Stop Turn</b> ends the turn in place of its own, so there is one, and Alt+Ctrl+. stops nothing (<code>KEY-9</code>).</li>
-<li><span class="n">5</span> Waiting is a condition: <b>Chat</b> takes the waiting look ◆, a shape distinct from the working spinner ◐ in both themes and in forced colors, with the accessible name "Chat: Claude Code waiting for you"; the running agents trigger and Watch Live Activity show the same wait (<code>ACT-7</code>, <code>ACT-13</code>, <code>SURF-8</code>).</li>
-<li><span class="n">6</span> The notice stack shows the wait with <b>Answer</b>, which opens docked chat with focus on the card's question in one activation. The condition clears when the request is answered, cancelled or its turn ends, from any tab, and its clearing is announced once (<code>FB-8</code>, <code>REV-9</code>, <code>ACT-7</code>, <code>FB-9</code>).</li>
-<li><span class="n">7</span> A command request shows the exact command, its working directory relative to the checkout and the agent's stated reason; a question shows its options and <b>Submit Answers</b> the same way (<code>REV-9</code>).</li>
-<li><span class="n">8</span> Each answer leaves a line where it was given, recorded in the session's journal and shown after every reload; a denied call reads "Denied" in the neutral style, never with the success check. An answer from a second tab to a request already answered is refused with the current state, "Already answered in another tab: You allowed once: Run bun test · 13:24" (<code>REV-9</code>, <code>UNDO-8</code>, <code>WORD-7</code>, <code>REV-13</code>, <code>CC-40</code>).</li>
-<li><span class="n">9</span> Collapsed, the toolbar keeps the waiting notice in its one-line form beside the badge, whose look follows the attention order (<code>SURF-8</code>, <code>ACT-7</code>).</li>
+<li><span class="n">5</span> Waiting is a condition: <b>Chat</b> takes the waiting look ◆, a shape distinct from the working spinner ◐ in both themes and in forced colors, with the accessible name "Chat: Claude Code waiting for you"; the app page's tab title prefixes "(1) waiting · Acme Shop" (restored when cleared, <code>O16</code>); and the running agents trigger, stack directory deep link (<code>GET /__devhost__/chat/open?session=&lt;id&gt;</code>) and Watch Live Activity show the same wait (<code>ACT-6</code>, <code>ACT-7</code>, <code>ACT-13</code>, <code>SURF-8</code>, <code>O16</code>).</li>
+<li><span class="n">6</span> The notice stack shows the wait with <b>Answer</b> (and no <b>Dismiss</b>), which opens docked chat with focus on the card's question in one activation. The condition clears when the request is answered, cancelled or its turn ends, from any tab, and its clearing is announced once (<code>FB-8</code>, <code>REV-9</code>, <code>ACT-7</code>, <code>FB-9</code>).</li>
+<li><span class="n">7</span> A command request shows the exact command, its working directory relative to the worktree and the agent's stated reason; a question shows its options and <b>Submit Answers</b> the same way (<code>REV-9</code>).</li>
+<li><span class="n">8</span> Each answer leaves a line where it was given, recorded in the session's journal and shown after every reload; a denied call reads "Denied" in the neutral style, never with the success check. An answer from a second tab to a request already answered is refused with the current state, "Already answered in another tab: You allowed once: Run bun test · 13:24" (<code>REV-9</code>, <code>O12</code>, <code>UNDO-8</code>, <code>WORD-7</code>, <code>REV-13</code>, <code>CC-40</code>).</li>
+<li><span class="n">9</span> Collapsed, the toolbar keeps the waiting notice in its one-line form above the badge (<code>◆ dh · 1 waiting for you ▴</code>), whose look follows the attention order, while the app tab title keeps its waiting prefix (<code>SURF-8</code>, <code>ACT-7</code>, <code>O16</code>).</li>
 <li><span class="n">10</span> While the page shows a modal dialog, native or scripted, chat moves into it with the notice stack and keeps working, card included (<code>SURF-11</code>).</li>
 <li><span class="n">11</span> An exit while chat holds a draft, a card or a working agent opens the crash view minimized, as its notice, which startup-and-recovery owns; while the crash view is open, chat and the notice stack stay operable inside its Tab cycle. While the Configuration window is open, chat is inert, and an agent that starts waiting is announced from inside the window and named in its header (<code>SURF-3</code>, <code>SURF-4</code>, <code>KEY-7</code>).</li></ol>
-<p class="fixes">Fixes chat-approvals-01, chat-compose-2-01, journey-agent-fix-02, chat-approvals-02, chat-approvals-03, chat-approvals-05, chat-approvals-07 · Backend: the approval projection from the request the page already receives (Backend 4); the Deny note (Backend 3; <code>CC-16</code>); answer records in the journal (Backend 2; <code>CC-40</code>)</p></div>
+<p class="fixes">Fixes chat-approvals-01, chat-compose-2-01, journey-agent-fix-02, chat-approvals-02, chat-approvals-03, chat-approvals-05, chat-approvals-07 · Backend: the approval projection with CLI standing-approval options (Backend 4, <code>O12</code>); the Deny note and standing-approval forwarding (Backend 3; <code>CC-16</code>); answer records in the journal (Backend 2; <code>CC-40</code>); deep-link route (Backend 6; <code>CC-38</code>)</p></div>
 </section>
 
 <section class="step" id="receipt">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>the live-mode turn ended; the page reloaded the header itself</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the live-mode turn ended; watch paths marked api changed (O58)</span></div>
 <div class="pg">
 <div class="apptxt">Acme Shop · header, now clear of the logo · product grid …</div>
 <div class="corner">
 <div class="dock chat">
 <div class="hd"><b>Fix the nav header</b><span class="muted">Claude Code · idle</span><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span></div>
 <div class="tr">
-<div class="me">Fix the nav header …<div class="meta">Mode: This checkout (live) · fix-nav</div></div>
+<div class="me">Fix the nav header …<div class="meta">Mode: This worktree (live) · fix-nav</div></div>
 <div>The header now uses NavLink, so it no longer overlaps the logo.</div>
 <div class="rcpt">Changed 2 files: src/header.tsx, src/nav.css · not committed <span class="n">1</span>
+<div class="row" style="margin-top:3px"><span>api runs the old code until it restarts</span><span class="btn pri">Restart Changed</span><span class="n">5</span></div>
 <div class="row" style="margin-top:3px"><span class="btn">Copy Reverse Patch</span><span class="btn">Ask to Undo</span><span class="n">2</span></div>
 <div class="meta">Claude Code also ran 2 commands; files they wrote are not listed <span class="n">3</span></div></div>
 </div>
 <span class="in tx"><span class="muted">Write a message</span></span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span></div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">1 changed ↻</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
 </div>
 </div>
 </div>
@@ -424,38 +443,44 @@
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › docked chat › the receipt in the other two modes</b></div>
+<div class="bar"><b>devhost › docked chat › reloads at turn end (O56, O57) and Make tickets (O11, O21)</b></div>
 <div class="work small">
-<div class="lab">New worktree (review before merge)</div>
-<div class="rcpt">Committed on fix-nav-header in ~/acme/.worktrees/fix-nav-header · not merged <span class="n">5</span>
-<div class="row" style="margin-top:3px"><span class="btn">Switch and Restart Stack</span></div></div>
-<div class="lab">The same receipt once the stack runs from fix-nav-header</div>
-<div class="row"><span class="btn">Return to Configured Checkout</span></div>
-<div class="lab">Make tickets</div>
+<div class="lab">Hold Reloads on, not typing (O57): devhost applies held reloads once at turn end</div>
+<div class="rcpt">Changed 2 files · page reloaded to show them <span class="muted">(reloaded page shows notice "Reloaded to show Claude Code's change")</span> <span class="n">6</span></div>
+<div class="lab">Hold Reloads on, typing in composer or page field (O57): waits without reloading</div>
+<div class="rcpt">The page reload this change needs waits for you <span class="btn pri">Reload Now</span></div>
+<div class="lab">After Disable Reloads took effect (O56): Disable Reloads wins — never auto-reloads</div>
+<div class="rcpt">Changed 2 files: src/header.tsx, src/nav.css · Reload to see the change <span class="btn pri">Reload Page</span> <span class="n">7</span></div>
+<div class="lab">Make tickets: filed tickets</div>
 <div>Filed 2 tickets: <a>Nav header overlaps the logo below 900 px</a> · <a>Mobile menu ignores Escape</a></div>
-<div class="meta">Changed no files <span class="n">6</span></div>
+<div class="meta">Changed no files <span class="n">8</span></div>
+<div class="lab">Make tickets without ticket capability (O21): changes no files, no drafts</div>
+<div>I cannot make tickets in this worktree — no ticket tool is configured.</div>
+<div class="meta">Changed no files</div>
 <div class="lab">Make tickets, when the agent changed a file anyway</div>
 <div class="banner" style="margin:0">Make tickets changed 1 file: src/header.tsx <span class="btn">Copy Reverse Patch</span><span class="btn">Ask to Undo</span></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › storefront page</b><span>chat closed while the turn ran</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>chat closed while the turn ran</span></div>
 <div class="pg" style="min-height:0">
-<div class="corner"><div class="row" style="justify-content:flex-end"><span class="n">7</span><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat · reply ready</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></span></div></div>
+<div class="corner"><div class="row" style="justify-content:flex-end"><span class="n">9</span><span class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat · reply ready</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></span></div></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: while chat is closed a turn reports on <b>Chat</b>, never as an activity line, a proposed exception to <code>FB-1</code>; and <b>Copy Reverse Patch</b>, <b>Ask to Undo</b> and this page's other new labels are proposed for <code>WORD-2</code>'s list. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>6. Read the receipt</h2>
-<p>The agent still edits through its own tools, and devhost still runs no Git command for chat and never commits, stashes or reverts for the agent, as today. What changes is that the turn ends with a receipt that says what changed, where, and the way back; there is no Undo of devhost's own for an agent's edits, which is the way back the outcome names (<code>UNDO-5</code>). Keys: the receipt's actions are ordinary Tab stops after the reply (<code>KEY-10</code>).</p>
-<ol><li><span class="n">1</span> Under the reply to the person's latest message, the receipt lists the files the agent changed, built from the edit events in the session's journal with no Git command; in <b>This checkout (live)</b> the edits stay uncommitted, and the page's own dev server shows them through its reloads (<code>UNDO-5</code>, <code>O19</code>, <code>O22</code>).</li>
+<p>The agent still edits through its own tools, and devhost still runs no Git command for chat and never commits, stashes or reverts for the agent, as today. What changes is that the turn ends with a receipt that says what changed, any reload or restart left to see it (<code>FB-12</code>), and the way back; there is no Undo of devhost's own for an agent's edits, which is the way back the outcome names (<code>UNDO-5</code>). Keys: the receipt's actions are ordinary Tab stops after the reply (<code>KEY-10</code>).</p>
+<ol><li><span class="n">1</span> Under the reply to the person's latest message, the receipt lists the files the agent changed, built from the edit events in the session's journal with no Git command; in <b>This worktree (live)</b> the edits stay uncommitted in the active worktree (<code>UNDO-5</code>, <code>O1</code>, <code>O19</code>, <code>O22</code>).</li>
 <li><span class="n">2</span> <b>Copy Reverse Patch</b> copies the reverse of the agent's own edits; <b>Ask to Undo</b> writes a follow-up for the agent. devhost never offers a whole-file restore, which would also discard the person's own uncommitted changes (<code>UNDO-5</code>, <code>O22</code>).</li>
 <li><span class="n">3</span> When the agent ran commands, the receipt says that files they wrote are not listed (<code>O22</code>).</li>
 <li><span class="n">4</span> <b>Ask to Undo</b> puts its text into the composer, unsent, with focus there (<code>UNDO-5</code>).</li>
-<li><span class="n">5</span> A worktree-mode turn names its branch and the worktree that holds its edits, unmerged; <b>Switch and Restart Stack</b> opens worktree-switch's checkout list with that worktree picked, so its switch button is the second step and the switch's question about other work applies; once switched, <b>Return to Configured Checkout</b> leads back, after which the conversation takes messages again. The merge happens only when the person asks for it in a message (<code>UNDO-5</code>, <code>O1</code>, <code>REV-2</code>, <code>REV-3</code>, <code>SEL-8</code>, <code>SURF-15</code>).</li>
-<li><span class="n">6</span> A <b>Make tickets</b> turn shows the agent's list of filed tickets by title and link, or its drafts as text when it could not file them, and "Changed no files"; a file it changed anyway shows in the warning style with the live receipt's way back (<code>O11</code>, <code>O21</code>, <code>UNDO-5</code>).</li>
-<li><span class="n">7</span> The receipt is the turn's one outcome, in chat, where its progress showed. While chat is closed, <b>Chat</b> carries the turn instead: working, waiting for you, then "reply ready" until chat opens, and no activity line repeats it; a waiting agent still raises its notice. The end is announced once: "Claude Code replied: The header now uses NavLink. Changed 2 files." (<code>FB-1</code>, <code>FB-2</code>, <code>FB-9</code>, <code>ACT-7</code>).</li></ol>
-<p class="fixes">Fixes nothing on its own; the receipt is new · Backend: the turn's receipt from the journal's edit events, after one recorded turn per harness confirms their coverage (Backend 11, <code>O22</code>)</p></div>
+<li><span class="n">5</span> When the turn's edits marked services changed through their <code>watch</code> paths, the receipt names them ("api runs the old code until it restarts") with <b>Restart Changed</b>, handing off to services-panel's selector; the agent never restarts services automatically as the turn's last step, and services without <code>watch</code> paths go unnamed (<code>O58</code>, <code>FB-12</code>).</li>
+<li><span class="n">6</span> While <b>Hold Reloads</b> is on (and reloads are not disabled under <code>O56</code>), a turn that changed files applies held reloads once at turn end ("Changed 2 files · page reloaded to show them"), unless focus is in a text field (page field or chat composer), where nothing reloads and the receipt leads with "The page reload this change needs waits for you" and <b>Reload Now</b> (<code>O57</code>, <code>FB-12</code>, <code>UNDO-2</code>).</li>
+<li><span class="n">7</span> Once <b>Disable Reloads</b> has taken effect, Disable Reloads wins: devhost never auto-reloads after a later turn, and each turn that changed files ends with "Reload to see the change" and <b>Reload Page</b> (<code>O56</code>, <code>O2</code>, <code>WORD-2</code>).</li>
+<li><span class="n">8</span> A <b>Make tickets</b> turn shows the agent's list of filed tickets by title and link with "Changed no files", or says it cannot make tickets while changing no files (no drafts, <code>O21</code>); a file it changed anyway shows in the warning style with the live receipt's way back (<code>O11</code>, <code>O21</code>, <code>UNDO-5</code>).</li>
+<li><span class="n">9</span> The receipt is the turn's one outcome, in chat, where its progress showed. While chat is closed, <b>Chat</b> carries the turn instead: working, waiting for you, then "reply ready" until chat opens, and no activity line repeats it; a waiting agent still raises its notice. The end is announced once: "Claude Code replied: The header now uses NavLink. Changed 2 files." (<code>FB-1</code>, <code>FB-2</code>, <code>FB-9</code>, <code>ACT-7</code>).</li></ol>
+<p class="fixes">Fixes nothing on its own; the receipt is new · Backend: the turn's receipt and watch-changed services from the journal's edit events (Backend 11, <code>O22</code>, <code>O58</code>)</p></div>
 </section>
 
 <section class="step" id="stop">
@@ -470,7 +495,7 @@
 <div class="meta">You stopped this turn after 29 s · 12 tool calls ran <span class="btn">Continue</span><span class="n">2</span></div>
 </div>
 <span class="in tx focusring">And the footer links</span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn pri">Send</span><span class="n">4</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span><span class="n">4</span></span></div>
 </div>
 <div class="lab">The status line a moment before, with Stop Turn in its own place</div>
 <div class="stl" style="max-width:27rem">Claude Code is working · 29 s · 12 tool calls<span class="sp"></span><span class="btn focusring">Stop Turn</span><span class="n">1</span></div>
@@ -487,17 +512,17 @@
 <div class="hd"><b>Fix the nav header</b><span class="muted">closed · Claude Code exited</span><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">✕</span></div>
 <div class="tr">
 <div>The header now uses NavLink, and the spacing</div>
-<div class="banner bad" style="margin:0">Claude Code exited with code 1 at 14:02 before finishing this reply. The conversation is kept up to here. <span class="btn">Resume</span><span class="btn">Copy Error</span><span class="n">6</span></div>
+<div class="banner bad" style="margin:0">✕ Claude Code exited with code 1 at 14:02 before finishing this reply. The conversation is kept up to here. <span class="btn">Resume</span><span class="btn">Copy Error</span><span class="n">6</span></div>
 </div>
 <div class="muted">Send resumes this conversation</div>
 <span class="in tx"><span class="muted">Write a message</span></span>
-<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
+<div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
 </div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>7. Stop the turn</h2>
-<p><b>Stop Turn</b> still interrupts within a second through the agent CLI's own interrupt and keeps the conversation, as today. What changes is that a stop reads as a stop, never as a failure, Escape no longer stops a turn, and a process that dies says so. Keys: Alt+Ctrl+. stops the turn from the composer and docked chat while no card waits; Escape never stops a turn; <b>Continue</b> and <b>Resume</b> are ordinary buttons (<code>KEY-8</code>, <code>KEY-9</code>).</p>
+<p><b>Stop Turn</b> still interrupts within a second through the agent CLI's own interrupt and keeps the conversation, as today. What changes is that a stop reads as a stop, never as a failure, Escape no longer stops a turn, and a process that dies says so. Keys: Alt+Ctrl+. (<code>stopTurn = "alt+ctrl+."</code>) stops the turn from the composer and docked chat while no card waits; Escape never stops a turn; <b>Continue</b> and <b>Resume</b> are ordinary buttons (<code>KEY-8</code>, <code>KEY-9</code>, <code>O17</code>).</p>
 <ol><li><span class="n">1</span> <b>Stop Turn</b> sits in the status line, or on a waiting card (step 5), and keeps focus while it stops the turn (<code>KEY-9</code>, <code>KEY-11</code>, <code>UNDO-4</code>).</li>
 <li><span class="n">2</span> The turn ends with a neutral line naming who stopped it and after how long, with <b>Continue</b>, which starts a new turn in the same conversation; no red diagnostic, no "[Request interrupted by user]" shown as the person's message and no error state (<code>FAIL-5</code>, <code>WORD-4</code>, <code>WORD-7</code>, <code>UNDO-4</code>).</li>
 <li><span class="n">3</span> A message sent into the turn that the agent's events never show it reading ends with "Not read: you stopped the turn first"; a message the agent answered carries no such line (<code>STATE-1</code>).</li>
@@ -513,15 +538,14 @@
 <div class="bar"><b>devhost › Acme Shop › docked chat</b><span>the conversation list control pressed with Enter</span></div>
 <div class="work small">
 <div class="dock chat wide">
-<div class="hd"><b>Fix the nav header</b><span class="muted">Claude Code · waiting for you</span><span class="row" style="flex-wrap:nowrap;gap:4px;margin-left:auto"><span class="btn open">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span></span></div>
-<div class="popover"><i class="caret-up" style="right:241.6px"></i>
-<div class="from">Conversation list, opened from its control in the header</div>
-<div class="row"><span class="btn">New Conversation</span><span class="in focusring" style="flex:1"><span class="muted">Filter by title, agent or checkout</span></span><span class="n">2</span></div>
+<div class="hd"><b>Fix the nav header</b><span class="muted">Claude Code · waiting for you</span><span class="row" style="flex-wrap:nowrap;gap:4px;margin-left:auto"><span class="btn open" id="t-conv">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span></span></div>
+<div class="popover" data-for="t-conv"><i class="caret-up" style="right:240.6px"></i>
+<div class="from">Conversation list, opened from its control in the header <span class="n">1</span></div>
+<div class="row"><span class="btn">New Conversation</span><span class="in focusring" style="flex:1"><span class="muted">Filter by title, agent or worktree</span></span><span class="n">2</span></div>
 <div class="cv"><span>Fix the nav header<span class="sub">Claude Code · Haiku 4.5 · fix-nav ~/acme/.worktrees/fix-nav · 14:02 · waiting for you</span></span><span><span class="btn">Close Conversation</span><span class="btn">Copy ID</span></span></div>
 <div class="cv"><span>Mobile menu ignores Escape<span class="sub">Codex · gpt-5 · fix-nav ~/acme/.worktrees/fix-nav · 13:40 · idle</span></span><span><span class="btn">Close Conversation</span><span class="btn">Copy ID</span></span></div>
-<div class="cv"><span>Checkout page spacing<span class="sub">Claude Code · Sonnet 4.5 · main ~/acme · 11:15 · working</span></span><span><span class="btn">Close Conversation</span><span class="btn">Copy ID</span></span></div>
+<div class="cv"><span>Cart page spacing<span class="sub">Claude Code · Sonnet 4.5 · main ~/acme · 11:15 · working</span></span><span><span class="btn">Close Conversation</span><span class="btn">Copy ID</span></span></div>
 <div class="cv"><span>Footer links<span class="sub">Claude Code · Haiku 4.5 · main ~/acme · 09:30 · closed · Acme Shop stopped at 16:24</span></span><span><span class="btn">Resume</span><span class="btn">Copy ID</span><span class="n">3</span></span></div>
-<span class="n">1</span>
 </div>
 </div>
 </div>
@@ -532,17 +556,17 @@
 <div class="lab">Closed: the transcript stays, read-only</div>
 <div class="meta">Closed by you · 14:10 <span class="n">4</span></div>
 <div class="lab">After a stack restart, the close request fails</div>
-<div class="banner bad" style="margin:0">Could not close Fix the nav header: devhost did not answer. Its agent may still be running. <span class="btn">Copy Error</span><span class="btn">Close Conversation</span></div>
+<div class="banner bad" style="margin:0">✕ Could not close Fix the nav header: devhost did not answer. Its agent may still be running. <span class="btn">Copy Error</span><span class="btn">Close Conversation</span></div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › docked chat</b><span>a conversation of main ~/acme picked from the list</span></div>
 <div class="work small">
 <div class="dock chat">
-<div class="hd"><b>Checkout page spacing</b><span class="muted">Claude Code · working</span><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">✕</span></div>
-<div class="tr"><div class="meta">Edited src/checkout.css</div></div>
+<div class="hd"><b>Cart page spacing</b><span class="muted">Claude Code · working</span><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">✕</span></div>
+<div class="tr"><div class="meta">Edited src/cart.css</div></div>
 <div class="stl">Claude Code is working · 41 s · 5 tool calls<span class="sp"></span><span class="btn">Stop Turn</span></div>
-<div class="box" style="margin:0">Checkout page spacing runs in main ~/acme; this page runs fix-nav ~/acme/.worktrees/fix-nav. <span class="btn">New Conversation</span><span class="n">5</span></div>
+<div class="box" style="margin:0">Cart page spacing runs in main ~/acme; this page runs fix-nav ~/acme/.worktrees/fix-nav. <span class="btn">New Conversation</span><span class="n">5</span></div>
 <span class="in tx">Fix the nav header …</span>
 </div>
 </div>
@@ -556,10 +580,10 @@
 <div class="lab">The chat socket dropped while the stack runs</div>
 <div class="stl" style="border-top:0;padding-top:0">Lost connection to this conversation; reconnecting<span class="btn">Retry Now</span><span class="sp"></span><span class="btn off">Stop Turn</span><span class="btn pri off">Send</span><span class="n">7</span></div>
 <div class="lab">Chat turned off in the manifest while a conversation works</div>
-<div class="banner" style="margin:0">Chat is off: Fix the nav header is still working</div>
+<div class="banner" style="margin:0">◆ Chat is off: Fix the nav header is still working</div>
 <div class="stl" style="border-top:0">Chat is off in devhost.toml ([devtools.chat] enabled = false); running conversations stay reachable until they end<span class="sp"></span><span class="btn">Stop Turn</span><span class="btn pri off">Send</span><span class="n">8</span></div>
-<div class="lab">No agent CLI on this machine</div>
-<div class="stl" style="border-top:0;padding-top:0">No coding agent found: devhost looks for codex and claude on your PATH. Install one, then press Refresh Agents.<span class="sp"></span><span class="btn">Refresh Agents</span><span class="btn pri off">Send</span><span class="n">9</span></div>
+<div class="lab">No agent CLI on devbox (O61)</div>
+<div class="stl" style="border-top:0;padding-top:0">No coding agent found: devhost looks for codex and claude on devbox's PATH. Install one, then press Refresh Agents.<span class="sp"></span><span class="btn">Refresh Agents</span><span class="btn pri off">Send</span><span class="n">9</span></div>
 </div>
 </div>
 <div class="win">
@@ -571,72 +595,122 @@
 <div class="row">Could not load conversations: devhost did not answer. <span class="btn">Retry</span><span class="muted">showing the list from 14:12</span><span class="n">10</span></div>
 <div class="lab">The running agents list, which running-agents owns</div>
 <div class="cv"><span><a>Fix the nav header</a><span class="sub">Claude Code in chat · fix-nav ~/acme/.worktrees/fix-nav · waiting for you</span></span><span></span></div>
-<div class="muted">Watch Live Activity, in its own tab, shows each turn and the wait, and says that answers are given in the page's chat <span class="n">11</span></div>
+<div class="muted">Watch Live Activity opens on 127.0.0.1 locally and on devhost.acme.test for authenticated remote browsers (O55), showing each turn and the wait, and says answers are given in the page's chat <span class="n">11</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>FB-4</code> calls a conversation a stop ended "ended", while <code>WORD-6</code>'s conversation states are working, waiting for you, idle and closed; this proposal keeps closed with its cause. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>8. Manage conversations</h2>
-<p>A person still starts, switches between, closes and resumes conversations, and closing still ends the agent's process and drops its pending requests, as today. What changes is that conversations are named and listed across every checkout of the stack, a close keeps the transcript, and nothing that still runs or remembers disappears. Keys: the list puts its filter first, then each row's actions as Tab stops in row order, each named with its target ("Resume Footer links"); Escape, a click outside, Tab past its last control or picking a conversation closes the list and returns focus to its control in the header, or, when it was opened with the pointer, to the element that had focus before (<code>KEY-10</code>, <code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
-<ol><li><span class="n">1</span> The conversation list opens from the header as a popover anchored to its control. It lists every conversation of the stack, this page's checkout first, then by last activity, each row naming its title, agent and model, checkout label, start time and state word with a cause where it has one; the conversation ID sits behind <b>Copy ID</b> (<code>SURF-2</code>, <code>MENU-1</code>, <code>SEL-8</code>, <code>SEL-4</code>, <code>WORD-6</code>).</li>
-<li><span class="n">2</span> <b>New Conversation</b> heads the list. Once the rows overflow, a filter appears, focused on open, matching title, agent and checkout as the person types (<code>SEL-10</code>, <code>SURF-10</code>, <code>WORD-2</code>).</li>
-<li><span class="n">3</span> Each row's actions follow its name: <b>Close Conversation</b> on an open one, <b>Resume</b> on a closed one, which continues the same conversation with its history and title in its own checkout. Conversations a stack stop ended stay listed as closed with their cause and <b>Resume</b> when the stack starts again, from the record devhost keeps after a stop (<code>UNDO-4</code>, <code>O23</code>, <code>CC-38</code>).</li>
+<p>A person still starts, switches between, closes and resumes conversations, and closing still ends the agent's process and drops its pending requests, as today. What changes is that conversations are named and listed across every worktree of the stack, a close keeps the transcript, and nothing that still runs or remembers disappears. Keys: the list puts its filter first, then each row's actions as Tab stops in row order, each named with its target ("Resume Footer links"); Escape, a click outside, Tab past its last control or picking a conversation closes the list and returns focus to its control in the header, or, when it was opened with the pointer, to the element that had focus before (<code>KEY-10</code>, <code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
+<ol><li><span class="n">1</span> The conversation list opens from the header as a popover anchored to its control. It lists every conversation of the stack, this page's worktree first, then by last activity, each row naming its title, agent and model, worktree label, start time and state word with a cause where it has one; the conversation ID sits behind <b>Copy ID</b> (<code>SURF-2</code>, <code>MENU-1</code>, <code>SEL-8</code>, <code>SEL-4</code>, <code>WORD-6</code>, <code>WORD-11</code>).</li>
+<li><span class="n">2</span> <b>New Conversation</b> heads the list. Once the rows overflow, a filter appears, focused on open, matching title, agent and worktree as the person types (<code>SEL-10</code>, <code>SURF-10</code>, <code>WORD-2</code>).</li>
+<li><span class="n">3</span> Each row's actions follow its name: <b>Close Conversation</b> on an open one, <b>Resume</b> on a closed one, which continues the same conversation with its history and title in its own worktree. Conversations a stack stop ended stay listed as closed with their cause and <b>Resume</b> when the stack starts again, from the metadata-only record devhost keeps for 24 hours after a stop (<code>UNDO-4</code>, <code>O15</code>, <code>O23</code>, <code>CC-38</code>).</li>
 <li><span class="n">4</span> <b>Close Conversation</b> never asks: it ends the agent's process and turn, keeps the transcript, read-only, and leaves a line. A close that fails says so in words where it was pressed, with <b>Copy Error</b> holding the server's text and <b>Close Conversation</b> still available, never a raw response body (<code>REV-1</code>, <code>REV-3</code>, <code>FAIL-2</code>).</li>
-<li><span class="n">5</span> A conversation of another checkout, after a switch or picked from the list, shows its transcript, its cards and <b>Stop Turn</b>, and takes no message from this page: in place of <b>Send</b> the composer names both checkouts and offers <b>New Conversation</b>, which starts one in this page's checkout and keeps the draft; devhost never moves a conversation to another checkout. After a switch, the agent, model, mode, open state and draft stay as they were (<code>SEL-8</code>, <code>SEL-5</code>, <code>SEL-11</code>, <code>CC-38</code>, <code>CC-9</code>).</li>
-<li><span class="n">6</span> After <code>devhost stop</code>, every conversation stays listed as closed with its cause; <b>Send</b>, every answer and <b>Stop Turn</b> are unavailable with the one reason the status stream sent, said once in the status line and given to each as its accessible description; the draft stays. When the stack runs again, the page says "Connected again" once and lists the ended conversations with <b>Resume</b> (<code>HOLD-1</code>, <code>HOLD-2</code>, <code>ACT-10</code>, <code>ACT-5</code>).</li>
+<li><span class="n">5</span> A conversation of another worktree, after a switch or picked from the list, shows its transcript, its cards and <b>Stop Turn</b>, and takes no message from this page: in place of <b>Send</b> the composer names both worktrees and offers <b>New Conversation</b>, which starts one in this page's worktree and keeps the draft; devhost never moves a conversation to another worktree. After a switch, the agent, model, mode, open state and draft stay as they were (<code>SEL-8</code>, <code>SEL-5</code>, <code>SEL-11</code>, <code>CC-38</code>, <code>CC-9</code>, <code>WORD-11</code>).</li>
+<li><span class="n">6</span> After <code>devhost stop</code>, every conversation stays listed as closed with its cause; <b>Send</b>, every answer and <b>Stop Turn</b> are unavailable with the one reason the status stream sent, said once in the status line and given to each as its accessible description; the draft stays. When the stack runs again, the page says "Connected again" once and lists the ended conversations with <b>Resume</b>; multi-stack commands (<code>devhost stop --worktrees</code>, <code>devhost restart-all</code>, <code>devhost upgrade</code>) ask only while a turn works or waits (<code>HOLD-1</code>, <code>HOLD-2</code>, <code>ACT-10</code>, <code>ACT-5</code>, <code>O18</code>, <code>O33</code>).</li>
 <li><span class="n">7</span> When the chat socket drops, <b>Send</b>, every answer and <b>Stop Turn</b> are unavailable with one reason and <b>Retry Now</b>; sends in flight settle as <b>Delivery unconfirmed</b>; reconnecting replays the history and any pending request. "Reconnect before sending." is gone. When the page loses its status stream, conversations keep their last known state with "last seen 16:24", never drawn closed or failed (<code>HOLD-1</code>, <code>HOLD-5</code>, <code>REV-12</code>, <code>STATE-3</code>).</li>
 <li><span class="n">8</span> With chat turned off in the manifest, conversations already running keep running: a notice names each with its state, <b>Chat</b> stays on the bar while one runs, its approvals stay answerable and its turn stoppable until it ends; only new conversations and messages are refused, with the setting named (<code>HOLD-5</code>, <code>CC-18</code>).</li>
-<li><span class="n">9</span> With no agent CLI installed, <b>Send</b> is unavailable with that reason and <b>Refresh Agents</b> beside it; the draft stays. Service operations and a rejected manifest block nothing in chat (<code>HOLD-5</code>, <code>MENU-3</code>, <code>HOLD-3</code>, <code>HOLD-6</code>).</li>
+<li><span class="n">9</span> With no agent CLI on <code>devbox</code>'s PATH (<code>O61</code>), <b>Send</b> is unavailable with that reason and <b>Refresh Agents</b> beside it; the draft stays. Service operations and a rejected manifest block nothing in chat; a deleted worktree shows its blocked sentence led by <b>Return to Configured Worktree</b> (<code>HOLD-5</code>, <code>MENU-3</code>, <code>HOLD-3</code>, <code>HOLD-4</code>, <code>HOLD-6</code>, <code>O61</code>).</li>
 <li><span class="n">10</span> Opening a conversation shows its header at once and "Loading" with its title where the transcript goes, never a blank panel or "Working…"; a list that cannot load keeps what it showed, marked with its age, under one sentence with <b>Retry</b>, and a repeated failure updates the same line with its count (<code>STATE-1</code>, <code>STATE-4</code>, <code>FAIL-4</code>).</li>
-<li><span class="n">11</span> Hand-offs: the running agents list names chat's own conversations by title and opens docked chat on one in one activation; Watch Live Activity shows each turn, labelled Reply, Tool call, Result and Denied, and a waiting agent until it is answered (<code>SURF-15</code>, <code>REV-9</code>, <code>WORD-10</code>).</li></ol>
-<p class="fixes">Fixes chat-conversations-01, chat-conversations-02, chat-conversations-03, chat-conversations-09, chat-checkout-switch-01, chat-approvals-08, chat-compose-2-05 · Backend: sessions across the stack's checkouts (Backend 6; <code>CC-38</code>); close and resume keeping the conversation (Backend 8); chat off keeping running conversations (Backend 7; <code>CC-18</code>); the conversation record after a stop, still to be decided (Backend 9, <code>O23</code>)</p></div>
+<li><span class="n">11</span> Hand-offs: the running agents list names chat's own conversations by title and opens docked chat on one in one activation; Watch Live Activity opens on <code>127.0.0.1</code> locally and on the stack directory's hostname for authenticated remote browsers (<code>O55</code>), shows each turn, labelled Reply, Tool call, Result and Denied, and a waiting agent until it is answered (<code>SURF-15</code>, <code>REV-9</code>, <code>WORD-10</code>, <code>O55</code>).</li></ol>
+<p class="fixes">Fixes chat-conversations-01, chat-conversations-02, chat-conversations-03, chat-conversations-09, chat-checkout-switch-01, chat-approvals-08, chat-compose-2-05 · Backend: sessions across the stack's worktrees (Backend 6; <code>CC-38</code>); close and resume keeping the conversation (Backend 8); chat off keeping running conversations (Backend 7; <code>CC-18</code>); the metadata-only conversation record after a stop (Backend 9, <code>O23</code>)</p></div>
+</section>
+
+<section class="step" id="remote-auth">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop--devbox.devhost.acme.test</b><span>unauthenticated remote or relayed browser (O36, HOLD-7)</span></div>
+<div class="pg" style="min-height:110px">
+<div class="apptxt">Acme Shop · storefront stays usable while gated controls stay blocked …</div>
+<div class="corner">
+<div class="tbar"><span class="seg"><span class="muted">dh</span> <b>Acme Shop</b></span><span class="seg muted" style="white-space:normal">Sign in with passkey or pair this browser to use devhost here</span><span class="seg"><span class="btn pri">Sign In with Passkey</span></span><span class="n">1</span></div>
+<div class="meta">Fallback: run <code>devhost pair</code> on devbox for a one-time 10 min link</div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Phone (320 CSS px) › devhost--devbox.devhost.acme.test</b><span>shared WebAuthn passkey sign-in on iOS/Android (O36, O8)</span></div>
+<div class="work small">
+<div class="phone">
+<div class="box" style="margin:0"><b>Sign in to devhost on devbox</b>
+<div class="meta">Passkey for <code>devhost.acme.test</code> (iCloud Passwords, Google Password Manager, 1Password, Bitwarden or QR/hybrid)</div>
+<div class="row" style="margin-top:6px"><span class="btn pri">Sign In with Passkey</span><span class="n">2</span></div>
+<div class="meta" style="margin-top:4px">Issues a 30-day idle <code>__Host-</code> cookie and returns you to <code>shop--devbox.devhost.acme.test</code>.</div>
+</div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › authenticated remote browser › stack name menu &amp; CLI (O59)</b></div>
+<div class="work small">
+<div class="lab">Stack name menu on an authenticated remote browser ends, after a separator, with:</div>
+<div class="row"><span class="chip">All Stacks on devbox</span><span class="muted">|</span><span class="chip">Sign Out This Browser</span><span class="muted">(or Unpair This Browser for a paired fallback session)</span><span class="n">3</span></div>
+<div class="lab">Terminal › devbox: active remote sessions (no SSH-host column)</div>
+<pre class="term">$ devhost passkey list
+ID        METHOD   BROWSER              CREATED       LAST USED              RELAY
+s_8f2a1c  passkey  Safari / iOS 19      2026-11-20    2026-11-25 · 10.0.1.9  yes
+s_4d9e0b  pair     Chrome / macOS       2026-11-24    2026-11-25 · LAN       no
+Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all <span class="n">4</span></pre>
+</div>
+</div>
+</div>
+<div class="cap">
+<h2>9. Use chat from another device or over a relay</h2>
+<p>Local browsers, CLI agents and local scripts keep working over loopback without signing in, as today. What changes is that remote and relayed browsers can no longer reach chat or other control routes unauthenticated — relayed requests carry a connector marker stripped by Caddy on direct hits, so they never count as this machine — while the person's own phone or laptop signs in once per machine with one shared WebAuthn passkey under an owned parent HTTPS domain (or a one-time <code>devhost pair</code> fallback link) and uses every control identically (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>O59</code>).</p>
+<ol><li><span class="n">1</span> An unauthenticated remote or relayed client sees the app working normally and one toolbar state: "Sign in with passkey or pair this browser to use devhost here", offering <b>Sign In with Passkey</b> when a passkey is configured for the domain plus <code>devhost pair</code> instructions; every gated route returns <code>403</code> with that sentence and starts nothing (<code>HOLD-7</code>, <code>O36</code>).</li>
+<li><span class="n">2</span> One shared WebAuthn passkey under a dedicated parent HTTPS subdomain (<code>devhost.acme.test</code>), whose non-secret public key syncs via <code>~/.config/devhost/config.toml</code> (<code>CC-39</code>), authenticates every devhost machine via pure-Rust <code>webauthn-rs 0.6.x</code> (zero OpenSSL) on four control routes on the reserved hostname (<code>/__devhost__/auth/passkey/register/{start,finish}</code> and <code>login/{start,finish}</code>). Phone support on iOS and Android is mandatory via synced passkeys and cross-device hybrid/QR sign-in (caBLE), paired with <code>O8</code>'s 320 px phone layout. Standalone status pages report actionable errors for untrusted TLS, plain HTTP, local-only hostnames and missing platform authenticators (<code>O36</code>, <code>O8</code>).</li>
+<li><span class="n">3</span> Sign-in mints a 30-day idle host-only <code>__Host-</code> session cookie (<code>Secure</code>, <code>HttpOnly</code>, <code>SameSite=Strict</code>, mode-<code>0600</code> per-machine store, propagated per stack hostname through the reserved-host hop that the relay forwards). Authenticated remote browsers get full controls plus <b>Sign Out This Browser</b> (passkey) or <b>Unpair This Browser</b> (paired fallback) after a separator in the stack name menu (<code>O59</code>, <code>MENU-2</code>).</li>
+<li><span class="n">4</span> <code>devhost passkey register|export|import|list|revoke</code> and <code>devhost pair</code> list every active remote session (auth method, browser/OS, created, last used and network, relayed or not — with no SSH-host column) and revoke one or all immediately. One-time 10-minute <code>devhost pair</code> links stay for initial passkey enrollment bootstrapping, hostnames outside the shared HTTPS parent domain (local-only domains, <code>.local</code>, LAN IPs, plain HTTP) and lockout recovery. Ships together with <code>O39</code> (macOS <code>bindHost</code>) (<code>O36</code>, <code>O59</code>, <code>HOLD-8</code>).</li></ol>
+<p class="fixes">Fixes network-exposure-01, relay-previews-03 · Backend: unified three-state remote-auth classifier, relay marker header and reverse-listener hardening, pure-Rust <code>webauthn-rs 0.6.x</code> shared-domain passkey routes and status pages, 30-day idle <code>__Host-</code> session store, and <code>devhost passkey</code> / <code>devhost pair</code> fallback (Backend 16; <code>O36</code>, <code>O59</code>, <code>CC-39</code>)</p></div>
 </section>
 
 <section class="changes">
 <div><h3>Removed</h3><ul>
-<li>The worktree-and-merge workflow appended out of sight to every message</li>
+<li>The worktree-and-merge workflow appended out of sight to every message and the New worktree edit mode (<code>O1</code>)</li>
+<li>Unauthenticated network and relay access to chat and gated control routes (<code>O36</code>)</li>
 <li>The gear's Chat Settings dialog, its Conversation picker and the second + icon</li>
 <li>Escape stopping a turn, Stop Generating and Send moving into its place</li>
 <li>"Waiting for your response…" with raw JSON above the answers; "Denied by the user." sent for the person</li>
 <li>A stop reported as an error; "Reconnect before sending."; raw server text such as "404 page not found"</li>
-<li>Conversation labels made of the agent and a 32-character ID; discovery on every toolbar load</li>
+<li>Conversation labels made of the agent and a 32-character ID; discovery on every toolbar load; "checkout" as a working-copy noun (<code>WORD-11</code>)</li>
 </ul></div>
 <div><h3>Merged</h3><ul>
 <li>The Conversation picker and the footer's Close Conversation become one list in the header</li>
 <li>Stop Generating, Escape and the card's Stop Turn become one Stop Turn with Alt+Ctrl+.</li>
-<li>The spinner on Chat, the waiting notice, the collapsed badge and the running agents trigger read one waiting state</li>
+<li>The spinner on Chat, the waiting notice, the collapsed badge, the app tab-title prefix and the running agents trigger read one waiting state</li>
 </ul></div>
 <div><h3>New</h3><ul>
-<li>The edit mode control with its checkout, "Added by devhost", the approval line and a mode line on every message</li>
-<li>The recipient line and the agent and model chip</li>
-<li>The decision card with the diff or command, a Deny note, answer lines and Answer from the notice</li>
-<li>The turn's receipt with its changed files and its way back per mode</li>
-<li>Conversations named, listed across checkouts, kept after a close or a stop and resumable; Continue and Take Back</li>
-<li>Alt+Ctrl+C and Alt+Ctrl+.; image sizes against the 8 MiB limit</li>
+<li>Shared-domain WebAuthn passkey (<code>webauthn-rs 0.6.x</code>, mandatory phone support) + <code>devhost pair</code> fallback, 30-day idle <code>__Host-</code> sessions, relay marker header, and unauthenticated toolbar state (<code>O36</code>, <code>O59</code>)</li>
+<li>320 CSS px phone layout for docked chat, decision cards and notices (<code>O8</code>)</li>
+<li>The two-mode edit control with its worktree, "Added by devhost" (team prompt first, <code>O35</code>), the approval line (<code>O13</code>) and a mode line on every message</li>
+<li>The decision card with diff or command, Deny note, CLI standing approval (<b>Allow for This Session</b>, <code>O12</code>), answer lines, Answer from the notice, app tab-title prefix (<code>O16</code>), and <code>/__devhost__/chat/open</code> deep link</li>
+<li>The turn receipt with changed files, Copy Reverse Patch, Ask to Undo, <b>Restart Changed</b> for watch-changed services (<code>O58</code>), turn-end held reload flush with typing guard (<code>O57</code>), and <b>Reload Page</b> after Disable Reloads (<code>O56</code>)</li>
+<li>Conversations named, listed across worktrees, kept after a close or a stop (<code>O23</code>) and resumable; Continue and Take Back</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li>Escape in the composer leaves a page-context mode, else returns focus to the page (<code>KEY-8</code>, <code>CC-29</code>)</li>
-<li>Chat's settings and draft are kept per stack and page origin, so a switch keeps them (<code>CC-9</code>)</li>
-<li>The second-agent question asks only in This checkout (live) and leaves "Not sent" (<code>CC-14</code>)</li>
+<li>Chat's settings and draft are kept per stack and page origin (migrated on <code>listeners-moving</code>), so a switch or port change keeps them (<code>CC-9</code>, <code>CC-19</code>)</li>
+<li>The second-agent question asks only in This worktree (live) and leaves "Not sent" (<code>CC-14</code>)</li>
 <li>Close keeps the transcript and Resume continues the same conversation (<code>CC-38</code>)</li>
-<li>Chat off keeps running conversations reachable (<code>CC-18</code>); Deny carries the person's note (<code>CC-16</code>)</li>
-<li>The Disable Reloads request starts a new conversation unless the person picks an open one (<code>O27</code>)</li>
+<li>Chat off keeps running conversations reachable (<code>CC-18</code>); Deny carries the person's note and cards offer CLI standing approval (<code>CC-16</code>, <code>O12</code>)</li>
+<li>Make tickets without ticket capability changes no files and says it cannot make tickets (no drafts, <code>O21</code>); Disable Reloads starts a new conversation unless an open one is picked (<code>O27</code>)</li>
 </ul></div>
 <div><h3>Kept</h3><ul>
-<li>devhost never answers or pre-approves; an answered request cannot be answered again</li>
+<li>devhost never answers or pre-approves itself; an answered request cannot be answered again</li>
+<li>Local loopback browsers and CLI agents keep working without signing in (<code>O36</code>)</li>
 <li>Delivery unconfirmed and no resend; the draft stays until the acknowledgement</li>
 <li>A reload or a closed tab never stops a turn; the page reconnects with the history</li>
-<li>The page never names a directory; send goes only into the page's checkout; the control guard and size limits stay</li>
+<li>The page never names a directory; send goes only into the page's worktree; the control guard and size limits stay</li>
 <li>The CLI's own authentication, settings and approvals; no Git command; SIGTERM then SIGKILL after 2 s</li>
 <li>Activity lines never hold messages; chat works inside the page's modal dialog</li>
 </ul></div>
 <div><h3>Backend work</h3><ul>
-<li><code>send</code>'s <code>mode</code> and per-mode instructions (Backend 1; <code>CC-10</code>)</li>
-<li>devhost's records in the session's journal; the Deny note; the approval projection (Backend 2 to 4; <code>CC-40</code>, <code>CC-16</code>)</li>
-<li>Sessions across checkouts, chat off, close and resume, the record after a stop (Backend 6 to 9; <code>CC-38</code>, <code>CC-18</code>)</li>
-<li>Stops and exits recorded as such; the turn's receipt (Backend 10, 11; <code>CC-24</code>)</li>
-<li><code>AGENT=1</code>, the guarded cached catalog, the draft record, activity lines (Backend 12 to 15; <code>CC-13</code>, <code>CC-19</code>)</li>
-<li>The approval behavior in the catalog, still to be confirmed (Backend 5, <code>O13</code>)</li>
+<li><code>send</code>'s <code>mode</code> (<code>live</code> | <code>tickets</code>) + <code>pageContext</code> and team-first instruction order (Backend 1; <code>CC-10</code>)</li>
+<li>devhost's journal <code>record</code> frames; Deny note + CLI standing approval; approval projection; catalog approval behavior (Backend 2–5; <code>CC-40</code>, <code>CC-16</code>, <code>O12</code>, <code>O13</code>)</li>
+<li>Sessions across worktrees + <code>/__devhost__/chat/open</code>, chat off, close and resume, metadata-only record after stop (Backend 6–9; <code>CC-38</code>, <code>CC-18</code>, <code>O23</code>)</li>
+<li>Stops and exits recorded as such; turn receipt + watch-changed services (Backend 10, 11; <code>CC-24</code>, <code>O22</code>, <code>O58</code>)</li>
+<li><code>AGENT=1</code>, guarded cached catalog, draft record with origin migration, activity lines (Backend 12–15; <code>CC-13</code>, <code>CC-19</code>)</li>
+<li>Unified remote auth: classifier, relay marker, <code>webauthn-rs 0.6.x</code> passkey, 30-day <code>__Host-</code> sessions, <code>devhost passkey</code> &amp; <code>devhost pair</code> (Backend 16; <code>O36</code>, <code>O59</code>)</li>
 </ul></div>
 </section>
 </main>

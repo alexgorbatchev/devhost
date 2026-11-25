@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -23,7 +23,7 @@
           "label": "Backend operation"
         },
         "security": {
-          "label": "Recovery step, handled in place"
+          "label": "Recovery or boundary, handled in place"
         }
       }
     }
@@ -47,7 +47,7 @@
     },
     {
       "id": "recovery",
-      "label": "Recovery in place",
+      "label": "Recovery & auth",
       "variant": "exception"
     }
   ],
@@ -87,9 +87,9 @@
       "col": 0,
       "type": "external",
       "label": "Chat or Alt+Ctrl+C",
-      "sublabel": "beside the notice stack",
+      "sublabel": "beside notices · 320px",
       "tag": "chat-compose-02",
-      "explanation": "Chat on the bar, Alt+Ctrl+C on the page, or an element pick or a drawing opens docked chat compact with focus in the composer; pressed while chat is docked, either focuses the composer, and Escape there returns focus to the element that had it (KEY-2, KEY-6, KEY-8). Chat sits at the toolbar's edge beside the notice stack, never over it, in SURF-5's edge order, and an open toolbar panel paints above it (SURF-1, SURF-5, CC-1; chat-compose-04 is toolbar-shell's). In every chat state and at every acceptance viewport the header, the composer row with Send and the mode control, and a pending decision card stay in the viewport: a moved or expanded panel sizes itself to the room it has or moves up until the composer fits, and only the transcript scrolls (SURF-6, SURF-9; chat-compose-02). The header names the conversation by its title with its agent and state word, or 'New conversation', then the conversation list, New Conversation, Expand Chat, Move Chat Panel and Close, which stops nothing (SEL-8, WORD-2, WORD-6). Whether chat was open, its side, the conversation, agent, model and draft come back per stack and page origin, never per checkout (SEL-11, CC-9).",
+      "explanation": "Chat on the bar, Alt+Ctrl+C on the page, or an element pick or drawing opens docked chat compact with focus in the composer; pressed while docked, either focuses the composer, and Escape returns focus to the page (KEY-2, KEY-6, KEY-8). Chat sits beside the notice stack, never over it, in SURF-5's edge order, and an open toolbar panel paints above it (SURF-1, CC-1). In every state and at 1600x1000, 1280x800, 900x900, 640x400 (200% zoom) and the 320 CSS px phone layout (O8), header, composer with Send and mode control, and any pending decision card fit inside the viewport with zero overflow and only the transcript scrolling (SURF-6, SURF-9; chat-compose-02). Header names the conversation by title with agent and state word, or 'New conversation', then conversation list, New Conversation, Expand Chat, Move Chat Panel and Close (SEL-8, WORD-2, WORD-6). Open state, side, conversation, agent, model and draft come back per stack and page origin, never per worktree (SEL-11, CC-9, WORD-11); bindings override per person in config.toml (O17).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
@@ -117,9 +117,9 @@
       "col": 0,
       "type": "frontend",
       "label": "Images and page context",
-      "sublabel": "sizes · marks · of 8 MiB",
+      "sublabel": "sizes · marks · 8 MiB",
       "tag": "chat-conversations-04",
-      "explanation": "Attach Image, a paperclip in the composer apart from New Conversation, and pasting add PNG and JPEG images, each an uncropped thumbnail with its name and size ('screenshot.png · 1.2 MiB'), removable from the keyboard, while the composer counts 'Message 5.8 MiB of 8 MiB' (WORD-5, WORD-8; chat-compose-03, chat-conversations-04). An image that would pass the limit is refused when pasted, naming itself, its size and the limit, never blaming a snapshot (FAIL-2). Page context sits under the composer item by item: each mark's number, element and source file, a gone mark flagged with Select Again and Remove (REV-6, SEL-9, SURF-12); page-context owns that list (page-context-07) and restores marks after a reload (journey-agent-fix-04). It tells the agent the page's URL, service and checkout (SEL-3), and focus returns to the composer after a pick (KEY-12). The unsent text stays in browser storage, and images and page context in the control server's draft record per stack, page origin and conversation, so a reload devhost causes keeps them (UNDO-2, CC-19, Backend 14).",
+      "explanation": "Attach Image, a paperclip in the composer apart from New Conversation, and pasting add PNG and JPEG images, each an uncropped thumbnail with name and size ('screenshot.png · 1.2 MiB'), removable from the keyboard, while the composer counts 'Message 5.8 MiB of 8 MiB' (WORD-5, WORD-8; chat-compose-03, chat-conversations-04). An image that would exceed 8 MiB is refused when pasted, naming itself, its size and the limit, never blaming a snapshot (FAIL-2). Page context sits under the composer item by item with gone marks flagged for Select Again and Remove (REV-6, SEL-9, SURF-12; page-context-07, journey-agent-fix-04). It tells the agent the page's URL, service and worktree (SEL-3, WORD-11), focus returns to the composer after a pick (KEY-12), and holding Alt alone starts Select Elements only on pointer move or after O34's calibrated 400 ms hold. Unsent text stays in browser storage and images + page context stay in /__devhost__/chat/draft per stack, page origin and conversation, migrated to the new origin on listeners-moving port changes (UNDO-2, CC-19, Backend 14).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/hooks/useAgentChat.ts",
@@ -147,21 +147,21 @@
       "col": 0,
       "type": "backend",
       "label": "Agent catalog, cached",
-      "sublabel": "read only · first open",
+      "sublabel": "auth · cached · refresh",
       "tag": "network-exposure-02",
-      "explanation": "GET /__devhost__/chat/harnesses answers from a catalog cached per stack and checkout, so page loads, tabs and hot reloads start no agent CLI: the page reads it when chat first opens, and Refresh Agents (POST /__devhost__/chat/harnesses/refresh, through the control guard) discovers again, concurrent requests joined to one discovery per agent. It refuses with 403 a request whose Sec-Fetch-Site is cross-site or same-site or whose Origin names another host, and applies the stack's Host rule, as the config routes do for reads (Backend 13; network-exposure-02). Which clients reach the route at all is the network-exposure-01 stopgap's loopback rule, which names this route too; whether a serve session's chat is on is serve-folder's (serve-folder-04). The catalog also publishes whether each agent asks before commands and edits, as its own configuration says, or that devhost could not read it, for the composer's approval line ([discuss] Backend 5, O13).",
+      "explanation": "GET /__devhost__/chat/harnesses enforces O36's client authentication check (this machine or authenticated remote browser) and answers from a catalog cached per stack and worktree, so page loads, tabs and hot reloads start no agent CLI: the page reads it when chat first opens, and Refresh Agents (POST /__devhost__/chat/harnesses/refresh) discovers again with concurrent requests joined to one discovery per agent. It refuses with 403 unauthenticated remote clients, cross-site or same-site Sec-Fetch-Site, foreign Origin, or unrecognized Host (Backend 13, Backend 16; network-exposure-01, network-exposure-02, relay-previews-03). The catalog also publishes whether each agent asks before commands and edits per its own CLI configuration, or that devhost could not read it, for the composer's approval line (Backend 5, O13), and missing CLIs name devbox's PATH (O61).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_server.go",
-          "line": 51,
-          "end_line": 65,
+          "path": "apps/devhost/src/devtools/chat/transport.rs",
+          "line": 88,
+          "end_line": 105,
           "label": "Replaces: both CLIs started on every GET"
         },
         {
-          "path": "apps/devhost/internal/devtools/request_guard.go",
-          "line": 22,
-          "end_line": 27,
-          "label": "Replaces: guard skips requests that read"
+          "path": "apps/devhost/src/devtools/request_guard.rs",
+          "line": 20,
+          "end_line": 22,
+          "label": "Replaces: guard skips GET requests"
         }
       ]
     },
@@ -171,9 +171,9 @@
       "col": 1,
       "type": "frontend",
       "label": "Recipient and edit mode",
-      "sublabel": "agent · mode · checkout",
+      "sublabel": "live / tickets · worktree",
       "tag": "chat-compose-01",
-      "explanation": "The composer row names who answers and how before Send (SEL-8, REV-6). The chip 'Claude Code · Haiku 4.5' opens Chat Settings as a popover anchored to it, with Agent and Model comboboxes whose options carry each model's description, the first naming what 'Configured default' resolves to (SURF-2, KEY-10; chat-compose-01). The recipient line reads 'To: Fix the nav header · Claude Code · Haiku 4.5'; a conversation's agent is fixed, so choosing another says 'Send starts a new conversation with Codex' before Send (chat-conversations-08). The mode control reads 'This checkout (live) · fix-nav ~/acme/.worktrees/fix-nav', with New worktree (review before merge) and Make tickets, each with its effect (O1, SEL-4, WORD-10): live by default with page context, else the conversation's last mode (O3). 'Added by devhost' shows the mode's text, then the team's prompt (O35, CC-10), so nothing is appended out of sight (journey-agent-fix-01, chat-approvals-06: their stopgap ships first). The approval line says whether the agent asks first, in a warning style when it never does (O13; chat-checkout-switch-04).",
+      "explanation": "The composer row names who answers and how before Send (SEL-8, REV-6). The chip 'Claude Code · Haiku 4.5' opens Chat Settings as an anchored popover with Agent and Model comboboxes showing each model's description, resolving 'Configured default', and naming devbox's PATH for missing CLIs (SURF-2, KEY-10, O61; chat-compose-01). The recipient line names the target conversation; an open conversation's agent is fixed so choosing another says 'Send starts a new conversation with Codex' (chat-conversations-08). The mode control offers exactly two modes (O1): This worktree (live) ('Edits the active worktree in place (main's included); nothing is committed', default with page context and on first message, O3) and Make tickets ('Files tickets for the problem and changes no files', O11, O21), naming the worktree by its SEL-4 label (WORD-11). 'Added by devhost' shows team [devtools.chat].prompt first, then mode instructions (O35, CC-10); a mode change shows 'Previous message: Make tickets' (O20). The approval line shows whether the CLI asks first (O13; chat-checkout-switch-04).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/components/ChatSettings.tsx",
@@ -203,7 +203,7 @@
       "label": "Question before Send",
       "sublabel": "Cancel focused · Not sent",
       "tag": "chat-approvals-04",
-      "explanation": "A Send never asks except in two cases, each in place above the composer, the draft kept in the composer and nothing shown as working (REV-6, REV-4, SURF-2). A second agent: when a message in This checkout (live) would start this conversation's agent where an agent chat did not start works or waits, 'Start a second agent in fix-nav ~/acme/.worktrees/fix-nav? Claude Code, which chat did not start, is working there, and both would edit the same files.' with Cancel focused, which Enter takes, and Start Second Agent (REV-3, CC-14). Cancel or Escape leaves 'Not sent', never an error, and returns focus to the composer; it asks when the conversation's agent would start, never again for its follow-ups, and in the other two modes the recipient line names that agent and Send sends (chat-approvals-04). A gone mark: 'Send with #2 missing? Its element is no longer on this page.' with Select Again focused and Send Anyway (SEL-9).",
+      "explanation": "A Send never asks except in two cases, each in place above the composer with the draft kept and nothing shown as working (REV-6, REV-4, SURF-2). A second agent: when a message in This worktree (live) would start this conversation's agent where an agent chat did not start works or waits, 'Start a second agent in fix-nav ~/acme/.worktrees/fix-nav? Claude Code, which chat did not start, is working there, and both would edit the same files.' with Cancel focused, which Enter takes, and Start Second Agent (REV-3, CC-14, WORD-11). Cancel or Escape leaves 'Not sent', never an error, and returns focus to the composer; it asks when the conversation's agent would start, never again for its follow-ups, and in Make tickets the recipient line names that agent and Send sends (chat-approvals-04). A gone mark: 'Send with #2 missing? Its element is no longer on this page.' with Select Again focused and Send Anyway (SEL-9).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/components/ChatDecisionPrompt.tsx",
@@ -230,27 +230,27 @@
       "lane": "backend",
       "col": 2,
       "type": "backend",
-      "label": "send with its mode",
-      "sublabel": "one write: asks the agent",
+      "label": "send with mode",
+      "sublabel": "live | tickets · context",
       "tag": "agent-cli-journey-06",
-      "explanation": "For a new conversation, POST /__devhost__/chat/sessions starts the chosen agent and model in the page's checkout; the browser never names a directory (CC-38). send over /__devhost__/ws/chat carries mode (live, worktree or tickets), required; the server appends the mode's instructions, then [devtools.chat].prompt, and journals record frames for the mode, page context, added text and delivery beside the native events (Backend 1, Backend 2, CC-10, CC-40, UNDO-8). The message shows at once with 'Not sent yet', then 'Mode: This checkout (live) · fix-nav' with 'Added by devhost' collapsed (STATE-1, WORD-10); no acknowledgement in 45 s reads Delivery unconfirmed and is never resent (FB-5, REV-12). Every chat agent starts with AGENT=1 and DEVHOST_CHAT_SESSION, so a devhost command it runs gets agent output and is reported as the agent's (Backend 12, CC-13; agent-cli-journey-06). The Disable Reloads request arrives here in live mode and starts a new conversation unless its popover names an open one (O27, REV-5); its result is reload-control's (reload-and-agents-02).",
+      "explanation": "For a new conversation, POST /__devhost__/chat/sessions (gated by O36) starts the chosen agent and model in the page's worktree; the browser never names a directory (CC-38). send over /__devhost__/ws/chat carries mode (live or tickets, required; worktree rejected under O1) and optional structured pageContext; the server appends team [devtools.chat].prompt first, then the mode's instructions (O35), renders pageContext, and journals record frames for mode, page-context, added-text and delivery beside native events (Backend 1, Backend 2, CC-10, CC-40, UNDO-8). The message shows at once with 'Not sent yet', then 'Mode: This worktree (live) · fix-nav' and collapsed 'Added by devhost' (STATE-1, WORD-10); no acknowledgement in 45 s reads Delivery unconfirmed and is never resent (FB-5, REV-12). Every chat agent starts with AGENT=1 and DEVHOST_CHAT_SESSION so devhost CLI commands report as the agent's (Backend 12, CC-13, O62; agent-cli-journey-06). Disable Reloads sends here in live mode starting a new conversation unless its popover names an open one (O27, REV-5).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_server.go",
-          "line": 252,
-          "end_line": 258,
+          "path": "apps/devhost/src/devtools/chat/transport.rs",
+          "line": 386,
+          "end_line": 397,
           "label": "Replaces: one prompt appended to every message"
         },
         {
-          "path": "apps/devhost/internal/manifest/chat.go",
-          "line": 3,
-          "end_line": 5,
+          "path": "apps/devhost/src/manifest/types.rs",
+          "line": 9,
+          "end_line": 9,
           "label": "Replaces: default worktree, commit, merge main"
         },
         {
-          "path": "apps/devhost/internal/devtools/chat_process.go",
-          "line": 62,
-          "end_line": 72,
+          "path": "apps/devhost/src/devtools/chat/process.rs",
+          "line": 60,
+          "end_line": 90,
           "label": "Replaces: agent environment without AGENT=1"
         }
       ]
@@ -290,10 +290,10 @@
       "lane": "ask",
       "col": 3,
       "type": "external",
-      "label": "Waiting look and notice",
-      "sublabel": "Answer opens the card",
+      "label": "Waiting look & notice",
+      "sublabel": "Answer · (1) waiting",
       "tag": "chat-approvals-03",
-      "explanation": "An agent waiting for the person is a condition (ACT-7). Chat takes the waiting look, a shape distinct from the working spinner in both themes and in forced colors, never told by color alone, named 'Chat: Claude Code waiting for you' (ACT-13, SURF-8); the collapsed badge shows it in ACT-7's order; and the notice stack shows 'Claude Code waits for you: Edit src/header.tsx? · Fix the nav header' with Answer, which opens docked chat with focus on the card's question in one activation, kept in its one-line form beside the collapsed badge (FB-8, REV-9; chat-approvals-03). The running agents trigger and Watch Live Activity show the same wait (running-agents). The wait is announced once when it starts and once when it clears, on an answer, a cancel or the turn's end, from any tab (FB-9); while the Configuration window is open, it is announced from inside the window (SURF-4).",
+      "explanation": "An agent waiting for the person is a condition (ACT-7). Chat takes the waiting shape ◆ distinct from the working spinner in both themes and forced colors, named 'Chat: Claude Code waiting for you' (ACT-13, SURF-8); the collapsed badge shows '◆ dh · 1 waiting for you ▴'; the notice stack shows '◆ Claude Code is waiting for you · Fix the nav header' with Answer (no Dismiss), opening docked chat on the card in one activation (FB-8, REV-9; chat-approvals-03); and both devhost pages and app pages prefix their browser tab title ('(1) waiting · Acme Shop', restored when cleared, O16). A waiting agent on a stack directory card links to GET /__devhost__/chat/open?session=<id> (303 to the stack's primary page, opening the card with a clean URL, ACT-6, CC-38). Watch Live Activity shows the wait on 127.0.0.1 locally and on the stack directory hostname for authenticated remote browsers (O55). The wait announces once on start and once on clear (FB-9; inside Configuration window under SURF-4).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
@@ -315,9 +315,9 @@
       "col": 3,
       "type": "frontend",
       "label": "Decision card, pinned",
-      "sublabel": "Edit header.tsx? · diff",
+      "sublabel": "diff · Deny · Session",
       "tag": "chat-approvals-01",
-      "explanation": "A request is a card pinned between the conversation and the composer, outside any scroll area, every answer in view without scrolling in compact chat at every acceptance viewport (SURF-6, REV-9; chat-approvals-01, with its duplicates chat-compose-2-01 and journey-agent-fix-02). It leads with 'Edit src/header.tsx?', then a checkout-relative path and a unified diff in a capped region, or the exact command, its folder and the agent's reason ('Run bun test? In web/ · to check the header renders'), then 'Note for Claude Code (optional)', Deny, Allow Once and Stop Turn, the native request under Details (Backend 4; chat-approvals-02). A question shows its options and Submit Answers the same way. No answer is a default: an arriving card takes no focus and is announced once (KEY-6, FB-9); it is one Tab stop entered on its question, the arrows move between Details, the note, Deny, Allow Once and Stop Turn, Enter in the note denies and Escape there returns to the question (KEY-8, KEY-9, KEY-10). Several read '1 of 2 requests'. No standing approvals (O12).",
+      "explanation": "A request is a card pinned between the conversation and the composer, outside any scroll area, every answer in view without scrolling at every acceptance viewport and the 320 CSS px phone layout (SURF-6, REV-9, O8; chat-approvals-01, with duplicates chat-compose-2-01 and journey-agent-fix-02). It leads with 'Edit src/header.tsx?', worktree-relative path and unified diff in a capped scrollable region, or exact command, folder and agent's reason ('Run bun test? In web/ · to check the header renders'), then 'Note for Claude Code (optional)', Deny, Allow Once, the agent CLI's own standing approval when offered (Allow for This Session, session-only, never persisted, O12), and Stop Turn, with the native request under Details (Backend 4; chat-approvals-02). No answer is a default: an arriving card takes no focus and announces once (KEY-6, FB-9); it is one Tab stop entered on its question, arrows move through Details, note, Deny, Allow Once, standing approval and Stop Turn, Enter in the note denies, Escape returns to the question, and no key approves standing approval (KEY-8, KEY-9, KEY-10).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/layouts/AgentChatBody.tsx",
@@ -344,10 +344,10 @@
       "lane": "backend",
       "col": 3,
       "type": "backend",
-      "label": "respond with the answer",
-      "sublabel": "one write · Deny's note",
+      "label": "respond with answer",
+      "sublabel": "Deny note · session OK",
       "tag": "chat-approvals-07",
-      "explanation": "respond answers one request once; an answer from a second tab to a request already answered or cancelled is refused with the current state, 'Already answered in another tab: You allowed once: Run bun test · 13:24', and nothing is sent twice (REV-12, REV-13). Deny carries the note: Claude Code receives it as the denial's message; Codex, whose answers carry no text, gets the decline and then the note as a message into the running turn, shown as the person's message with its delivery state and without devhost's instructions; an empty note denies with no message, and devhost never sends 'Denied by the user.' (Backend 3, CC-16; chat-approvals-07). Each answer leaves a line where it was given, 'You denied: Edit src/header.tsx · 13:23 · Use the existing NavLink', journaled as an answer record and shown after every reload; a denied call reads Denied in the neutral style, never with the success check (UNDO-8, WORD-7, CC-40; chat-approvals-05). devhost still answers and pre-approves nothing itself (owner rule).",
+      "explanation": "respond answers one request once (gated by O36); an answer from a second tab to a request already answered or cancelled is refused with the current state, 'Already answered in another tab: You allowed once: Run bun test · 13:24', and nothing is sent twice (REV-12, REV-13). Deny carries the note: Claude Code receives it as the denial's message; Codex, whose answers carry no text, gets the decline and then the note as a message into the running turn without devhost's instructions; an empty note denies with no message, and devhost never sends 'Denied by the user.' (Backend 3, CC-16; chat-approvals-07). When the person chooses the CLI's standing-approval option (Allow for This Session), respond forwards that CLI option so later matching requests in the session proceed without prompting (O12). Each answer leaves a journaled record line ('You denied: Edit src/header.tsx · 13:23 · Use the existing NavLink', 'You allowed for this session: Run bun test · 13:24'); denied calls read Denied neutrally (UNDO-8, WORD-7, CC-40; chat-approvals-05).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/readChatApproval.ts",
@@ -377,12 +377,12 @@
       "label": "You stopped this turn",
       "sublabel": "neutral line · Continue",
       "tag": "chat-compose-2-03",
-      "explanation": "Stop Turn in the status line or on a decision card, or Alt+Ctrl+. in the composer and docked chat, ends the turn within a second through the CLI's own interrupt; Escape never does (KEY-8, KEY-9). While a card waits, the status line says that the card's Stop Turn ends the turn, so it is the only one, and Alt+Ctrl+. stops nothing. The turn ends with 'You stopped this turn after 29 s · 12 tool calls ran' and Continue, which starts a new turn in the same conversation: no red diagnostic, no '[Request interrupted by user]' as the person's message, no error state, and the terminal reads 'Chat · Claude Code in fix-nav · stopped by you · 29 s' (FAIL-5, WORD-4, WORD-7, CC-24, Backend 10; chat-compose-2-03). The draft stays and Send keeps its own place, so a second press cannot send it (KEY-11). A message the agent never read ends 'Not read: you stopped the turn first' (STATE-1). This step's undo is local: Continue (UNDO-4).",
+      "explanation": "Stop Turn in the status line or on a decision card, or Alt+Ctrl+. (stopTurn = 'alt+ctrl+.', O17) in the composer and docked chat, ends the turn within a second through the CLI's own interrupt; Escape never does (KEY-8, KEY-9). While a card waits, the status line says that the card's Stop Turn ends the turn, so it is the only one, and Alt+Ctrl+. stops nothing. The turn ends with 'You stopped this turn after 29 s · 12 tool calls ran' and Continue, which starts a new turn in the same conversation: no red diagnostic, no '[Request interrupted by user]' as the person's message, no error state, and the terminal reads 'Chat · Claude Code in fix-nav · stopped by you · 29 s' (FAIL-5, WORD-4, WORD-7, CC-24, Backend 10; chat-compose-2-03). The draft stays and Send keeps its own place, so a second press cannot send it (KEY-11). A message the agent never read ends 'Not read: you stopped the turn first' (STATE-1). This step's undo is local: Continue (UNDO-4).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_sessions.go",
-          "line": 437,
-          "end_line": 445,
+          "path": "apps/devhost/src/devtools/chat/session.rs",
+          "line": 444,
+          "end_line": 458,
           "label": "Replaces: interrupt result sets status error"
         },
         {
@@ -405,9 +405,9 @@
       "col": 4,
       "type": "frontend",
       "label": "Changed 2 files",
-      "sublabel": "patch · Ask to Undo",
+      "sublabel": "patch · reload · Restart",
       "tag": "chat-conversations-05",
-      "explanation": "Compact chat shows the reply to the person's latest message and the turn's receipt, built from the journal's edit events with no Git command (O22, UNDO-5, [discuss] Backend 11). Live: 'Changed 2 files: src/header.tsx, src/nav.css · not committed' with Copy Reverse Patch and Ask to Undo, which puts an undo request into the composer, unsent, and 'Claude Code also ran 2 commands; files they wrote are not listed' (O19). Worktree: 'Committed on fix-nav-header in ~/acme/.worktrees/fix-nav-header · not merged' with Switch and Restart Stack (O1, SURF-15). Make tickets: the agent's tickets or drafts and 'Changed no files' (O11, O21). The receipt is the turn's one outcome; while chat is closed, Chat carries it as 'reply ready' with no activity line (FB-2; proposed exception to FB-1). It is announced once, 'Claude Code replied: The header now uses NavLink. Changed 2 files.' (FB-9), and the terminal and log print one line, 'Chat · Claude Code (Haiku 4.5) in fix-nav · replied · changed 2 files · 29 s' (FB-10, Backend 15; chat-conversations-05). There is no Undo: devhost names the way back (UNDO-5).",
+      "explanation": "Compact chat shows the reply and turn receipt built from journal edit events with no Git command (O22, UNDO-5, Backend 11, FB-12). Live: 'Changed 2 files: src/header.tsx, src/nav.css · not committed' with Copy Reverse Patch, Ask to Undo, and command caveat (O19); watch-changed services read 'api runs the old code until it restarts' with Restart Changed, never restarted automatically by the agent (O58). With Hold Reloads on (and reloads not disabled), held reloads apply once at turn end ('page reloaded to show them') unless focus is in a text field or composer, where 'The page reload this change needs waits for you' + Reload Now lead (O57); after Disable Reloads, turns never auto-reload and end with 'Reload to see the change' + Reload Page (O56). Make tickets lists filed tickets or says it cannot make tickets while changing no files (no drafts, O11, O21). While chat is closed, Chat carries 'reply ready' with no activity line (FB-1, FB-2); announced once (FB-9); terminal prints one line per turn (FB-10, Backend 15; chat-conversations-05).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/components/CompactChat.tsx",
@@ -416,15 +416,15 @@
           "label": "Replaces: latest reply, whichever turn"
         },
         {
-          "path": "apps/devhost/internal/devtools/chat_log.go",
-          "line": 53,
-          "end_line": 61,
+          "path": "apps/devhost/src/devtools/chat/session.rs",
+          "line": 304,
+          "end_line": 318,
           "label": "Replaces: every line names a 32-hex session"
         },
         {
-          "path": "apps/devhost/internal/devtools/chat_log.go",
-          "line": 69,
-          "end_line": 71,
+          "path": "apps/devhost/src/devtools/chat/activity.rs",
+          "line": 20,
+          "end_line": 331,
           "label": "Replaces: one line per delivery step"
         }
       ]
@@ -437,7 +437,7 @@
       "label": "Conversation list",
       "sublabel": "Close keeps it · Resume",
       "tag": "chat-conversations-02",
-      "explanation": "The conversation list opens from chat's header as a popover anchored to its control (SURF-2, MENU-1): every conversation of the stack, this page's checkout first, then by last activity, each row 'Fix the nav header · Claude Code · Haiku 4.5 · fix-nav ~/acme/.worktrees/fix-nav · 14:02 · waiting for you', the ID behind Copy ID, and a filter once it overflows (SEL-8, SEL-4, SEL-10, WORD-6; chat-conversations-01). Close Conversation never asks: it ends the agent's process and turn, keeps the transcript read-only in the list and leaves 'Closed by you · 14:10'; Resume continues the same conversation with its history and title in its own checkout (REV-1, UNDO-4, CC-38, Backend 8; chat-conversations-02). A close that fails says so where it was pressed, 'Could not close Fix the nav header: devhost did not answer. Its agent may still be running.', with Copy Error and Close Conversation still available (FAIL-2; chat-conversations-09). New Conversation heads the list; row actions are Tab stops named with their target (KEY-10, KEY-6). This step's undo is local: Resume (UNDO-4).",
+      "explanation": "The conversation list opens from chat's header as an anchored popover (SURF-2, MENU-1): every conversation of the stack, this page's worktree first, then by last activity, each row 'Fix the nav header · Claude Code · Haiku 4.5 · fix-nav ~/acme/.worktrees/fix-nav · 14:02 · waiting for you', ID behind Copy ID, and a filter once it overflows (SEL-8, SEL-4, SEL-10, WORD-6, WORD-11; chat-conversations-01). Close Conversation never asks: it ends the agent's process and turn, keeps the transcript read-only in the list and leaves 'Closed by you · 14:10'; Resume continues the same conversation with its history and title in its own worktree (REV-1, UNDO-4, CC-38, Backend 8; chat-conversations-02). A close that fails says so where it was pressed, 'Could not close Fix the nav header: devhost did not answer. Its agent may still be running.', with Copy Error and Close Conversation still available (FAIL-2; chat-conversations-09). New Conversation heads the list; row actions are Tab stops named with their target (KEY-10, KEY-6). Local undo: Resume (UNDO-4).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/formatChatSessionLabel.ts",
@@ -446,10 +446,10 @@
           "label": "Replaces: agent and a 32-hex ID as the label"
         },
         {
-          "path": "apps/devhost/internal/devtools/chat_server.go",
-          "line": 96,
-          "end_line": 111,
-          "label": "Replaces: list in map order, unsorted"
+          "path": "apps/devhost/src/devtools/chat/session.rs",
+          "line": 249,
+          "end_line": 257,
+          "label": "Replaces: list filtered to one root, unsorted"
         },
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/createAgentChatClient.ts",
@@ -464,22 +464,52 @@
       "lane": "recovery",
       "col": 4,
       "type": "security",
-      "label": "Another checkout's chat",
+      "label": "Another worktree's chat",
       "sublabel": "kept · New Conversation",
       "tag": "chat-checkout-switch-01",
-      "explanation": "After a worktree switch, or Switch and Restart Stack from a worktree receipt, a conversation of another checkout of the stack stays listed under its checkout label with its transcript, its decision cards and Stop Turn: its approvals stay answerable and its turn stoppable from this page, and Chat and the collapsed badge keep their waiting look (SEL-5, SEL-8, CC-38, Backend 6; chat-checkout-switch-01). It takes no message from this page, because send goes only into the page's checkout: in place of Send the composer reads 'Fix the nav header runs in main ~/acme; this page runs fix-nav ~/acme/.worktrees/fix-nav.' with New Conversation in this checkout, the draft kept; devhost never moves a conversation, and Return to Configured Checkout lets it take messages again (UNDO-5). The agent, model, mode, open state and draft stay through the switch, kept per stack (SEL-11, CC-9; chat-checkout-switch-03). worktree-switch's reach line names working and waiting conversations before a switch (chat-checkout-switch-02), and its outcome names those left behind (FB-4).",
+      "explanation": "After a worktree switch, or when picking another worktree's conversation from the list, that conversation stays listed under its worktree label with its transcript, decision cards and Stop Turn: its approvals stay answerable and its turn stoppable from this page, and Chat, the collapsed badge and the app tab title keep their waiting state (SEL-5, SEL-8, CC-38, O16, WORD-11, Backend 6; chat-checkout-switch-01). It takes no message from this page, because send goes only into the page's worktree: in place of Send the composer reads 'Cart page spacing runs in main ~/acme; this page runs fix-nav ~/acme/.worktrees/fix-nav.' with New Conversation in this worktree, keeping the draft; devhost never moves a conversation to another worktree. The agent, model, mode, open state and draft stay through the switch, kept per stack (SEL-11, CC-9; chat-checkout-switch-03). worktree-switch's reach line names working and waiting conversations before a switch (chat-checkout-switch-02), and its outcome names those left behind (FB-4).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_project.go",
-          "line": 12,
-          "end_line": 19,
-          "label": "Replaces: chat root follows the page's checkout"
+          "path": "apps/devhost/src/devtools/project_context.rs",
+          "line": 42,
+          "end_line": 91,
+          "label": "Replaces: chat root follows the page's worktree"
         },
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
           "line": 104,
           "end_line": 114,
-          "label": "Replaces: chat settings keyed by checkout path"
+          "label": "Replaces: chat settings keyed by worktree path"
+        }
+      ]
+    },
+    {
+      "id": "remoteAuth",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Remote browser auth",
+      "sublabel": "passkey · pair · 403",
+      "tag": "network-exposure-01",
+      "explanation": "Local loopback browsers and CLI agents stay trusted without signing in; relayed requests are stamped by the relay connector (stripped by Caddy on direct hits, with the connector's reverse listener loopback-bounded) so they never count as this machine (relay-previews-03). Unauthenticated remote clients receive 403 on all gated control routes and see one toolbar state: 'Sign in with passkey or pair this browser to use devhost here' while the app stays usable (HOLD-7, HOLD-8; network-exposure-01). Remote browsers — phones on iOS/Android mandatory via synced passkeys or hybrid/QR caBLE plus laptops — sign in once per machine with one shared WebAuthn passkey under an owned parent HTTPS subdomain (pure-Rust webauthn-rs 0.6.x, zero OpenSSL, non-secret public key synced in config.toml, 4 routes on the reserved hostname, devhost passkey CLI) or a one-time 10 min devhost pair fallback link, minting 30-day idle host-only __Host- cookies revocable via devhost passkey/pair or Sign Out / Unpair This Browser (O36, O59, Backend 16; ships with O39).",
+      "sources": [
+        {
+          "path": "apps/devhost/src/devtools/server.rs",
+          "line": 344,
+          "end_line": 361,
+          "label": "Replaces: loopback check fooled by relay"
+        },
+        {
+          "path": "apps/devhost/src/remote/proxy.rs",
+          "line": 58,
+          "end_line": 71,
+          "label": "Replaces: relay refuses only config writes"
+        },
+        {
+          "path": "apps/devhost/src/remote/proxy.rs",
+          "line": 101,
+          "end_line": 109,
+          "label": "Replaces: relay adds no origin marker header"
         }
       ]
     },
@@ -491,12 +521,12 @@
       "label": "Agent exited mid-reply",
       "sublabel": "cause · Resume leads",
       "tag": "chat-compose-2-04",
-      "explanation": "When the agent's CLI exits during a turn, the cut-off reply ends with its cause and what was kept, 'Claude Code exited with code 1 at 14:02 before finishing this reply. The conversation is kept up to here.', never as a finished reply (FAIL-3, WORD-8; chat-compose-2-04). The header reads 'closed · Claude Code exited'; Resume leads, Copy Error holds the CLI's last diagnostic lines, and the recipient line says 'Send resumes this conversation' (MENU-5, FAIL-2, UNDO-4). The server publishes the exit code, or the signal by name with its status, its time and the last diagnostic lines it already keeps as the conversation's closed cause (Backend 10, CC-24). On macOS an idle Claude Code conversation that a stop ends reads 'closed · Acme Shop stopped', never a failed process, because an EPERM from killpg on an exited, unreaped group counts as stopped (chat-conversations-03). The failure stays until it is dismissed or the conversation resumes, through a reconnect and a reload (FB-6).",
+      "explanation": "When the agent's CLI exits during a turn, the cut-off reply ends with its cause and what was kept, 'Claude Code exited with code 1 at 14:02 before finishing this reply. The conversation is kept up to here.', never as a finished reply (FAIL-3, WORD-8; chat-compose-2-04). The header reads 'closed · Claude Code exited'; Resume leads, Copy Error holds the CLI's last diagnostic lines, and the recipient line says 'Send resumes this conversation' (MENU-5, FAIL-2, UNDO-4). The server publishes the exit code, or the signal by name with its status, its time and the last diagnostic lines it already keeps as the conversation's closed cause (Backend 10, CC-24). On macOS an idle Claude Code conversation that a stop ends reads 'closed · Acme Shop stopped', never a failed process, because an EPERM from group signalling on an exited, unreaped group counts as stopped (chat-conversations-03). The failure stays until dismissed or resumed, through a reconnect and reload (FB-6).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_sessions.go",
-          "line": 234,
-          "end_line": 246,
+          "path": "apps/devhost/src/devtools/chat/session.rs",
+          "line": 217,
+          "end_line": 228,
           "label": "Replaces: exit sets status error"
         },
         {
@@ -506,9 +536,9 @@
           "label": "Replaces: footer shows only agent and status"
         },
         {
-          "path": "apps/devhost/internal/devtools/chat_process.go",
-          "line": 161,
-          "end_line": 170,
+          "path": "apps/devhost/src/devtools/chat/process.rs",
+          "line": 139,
+          "end_line": 171,
           "label": "Replaces: EPERM on an exited group is a failure"
         }
       ]
@@ -521,7 +551,7 @@
       "label": "Connection lost",
       "sublabel": "writes off · draft kept",
       "tag": "chat-compose-2-05",
-      "explanation": "When the chat socket drops while the stack runs, the page reconnects with back-off; meanwhile Send, every answer and Stop Turn are unavailable with 'Lost connection to this conversation; reconnecting', said once in the composer's status line with Retry Now and given to each blocked control as its accessible description (HOLD-1, HOLD-5, MENU-3; chat-compose-2-05). Sends in flight settle as Delivery unconfirmed and are never resent (REV-12); the draft, images and page context stay (UNDO-2); reconnecting replays the history and any pending request, and 'Connected again' is announced once (ACT-5, FB-9). 'Reconnect before sending.' is gone. When the page loses its status stream, every chat write takes the page's one reason, 'Lost connection to devhost; retrying' unless the stream named its cause, and conversations stay listed with 'last seen 16:24', never drawn as closed or failed (HOLD-2, STATE-3); notices-and-feedback owns that notice. Service operations block nothing in chat (HOLD-3).",
+      "explanation": "When the chat socket drops while the stack runs, the page reconnects with back-off; meanwhile Send, every answer and Stop Turn are unavailable with 'Lost connection to this conversation; reconnecting', said once in the composer's status line with Retry Now and given to each blocked control as its accessible description (HOLD-1, HOLD-5, MENU-3; chat-compose-2-05). Sends in flight settle as Delivery unconfirmed and are never resent (REV-12); the draft, images and page context stay (UNDO-2); reconnecting replays the history and any pending request, and 'Connected again' is announced once, pausing if unfocused on arrival via document.hasFocus() (ACT-5, FB-9, O14, O53). 'Reconnect before sending.' is gone. When the page loses its status stream, every chat write takes the page's one reason, 'Lost connection to devhost; retrying' unless the stream named its cause, and conversations stay listed with 'last seen 16:24', never drawn as closed or failed (HOLD-2, STATE-3). Service operations block nothing in chat (HOLD-3).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/createAgentChatClient.ts",
@@ -539,12 +569,12 @@
       "label": "Chat off or no agent",
       "sublabel": "running ones reachable",
       "tag": "chat-approvals-08",
-      "explanation": "With [devtools.chat] enabled = false, conversations already running keep running: a notice names each, 'Chat is off: Fix the nav header is still working', Chat stays on the bar while one runs, and its approvals stay answerable and its turn stoppable until it ends (HOLD-5, CC-18, CC-38, Backend 7; chat-approvals-08). Send is unavailable with 'Chat is off in devhost.toml ([devtools.chat] enabled = false); running conversations stay reachable until they end', and the draft stays; new conversations wait until chat is on again. With no agent CLI installed, Send reads 'No coding agent found: devhost looks for codex and claude on your PATH. Install one, then press Refresh Agents.', with Refresh Agents beside it (MENU-3, HOLD-1). A deleted page checkout makes Send unavailable with the repository's one blocked sentence, led by Return to Configured Checkout (HOLD-4, MENU-5); a rejected manifest blocks nothing (HOLD-6).",
+      "explanation": "With [devtools.chat] enabled = false, conversations already running keep running: a notice names each, 'Chat is off: Fix the nav header is still working', Chat stays on the bar while one runs, and its approvals stay answerable and its turn stoppable until it ends (HOLD-5, CC-18, CC-38, Backend 7; chat-approvals-08). Send is unavailable with 'Chat is off in devhost.toml ([devtools.chat] enabled = false); running conversations stay reachable until they end', and the draft stays; new conversations wait until chat is on again. With no agent CLI on devbox's PATH (O61), Send reads 'No coding agent found: devhost looks for codex and claude on devbox's PATH. Install one, then press Refresh Agents.', with Refresh Agents beside it (MENU-3, HOLD-1). A deleted page worktree makes Send unavailable with the repository's one blocked sentence, led by Return to Configured Worktree (HOLD-4, O43, MENU-5, WORD-11); a rejected manifest blocks nothing (HOLD-6).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_server.go",
-          "line": 27,
-          "end_line": 37,
+          "path": "apps/devhost/src/devtools/server.rs",
+          "line": 245,
+          "end_line": 258,
           "label": "Replaces: chat off answers 404 on every route"
         }
       ]
@@ -557,12 +587,12 @@
       "label": "Ended by a stack stop",
       "sublabel": "closed · Resume later",
       "tag": "chat-conversations-03",
-      "explanation": "devhost stop ends every conversation of the stack without waiting for a turn, and its output names the conversations it ended (FB-4, REV-7; stack-run-stop owns the command's words and the rest of chat-conversations-03). An open page keeps every conversation listed as 'closed · Acme Shop stopped at 16:24 by devhost stop'; Send, every answer and Stop Turn are unavailable with the one reason the status stream sent, 'Acme Shop stopped. Start it with devhost start in ~/acme', in the composer's status line and as each control's accessible description, and the draft stays (HOLD-1, HOLD-2, ACT-10). When the stack runs again, the page reconnects, says 'Connected again' once, and lists the ended conversations as closed with their cause and Resume, from the record O23 keeps without message text; resuming one continues the CLI's own saved conversation ([discuss] Backend 9, UNDO-4, CC-38; chat-conversations-03). devhost stop --worktrees and devhost stack restart --all ask, or refuse without a terminal or under AGENT=1, only while a turn works or waits (REV-7, O33).",
+      "explanation": "devhost stop ends every conversation of the stack without waiting for a turn, and its output names the conversations it ended (FB-4, REV-7; stack-run-stop owns the command's words and the rest of chat-conversations-03). An open page keeps every conversation listed as 'closed · Acme Shop stopped at 16:24 by devhost stop'; Send, every answer and Stop Turn are unavailable with the one reason the status stream sent, 'Acme Shop stopped. Start it with devhost start in ~/acme', in the composer's status line and as each control's accessible description, and the draft stays (HOLD-1, HOLD-2, ACT-10). When the stack runs again, the page reconnects, says 'Connected again' once, and lists the ended conversations as closed with their cause and Resume, from the metadata-only record O23 keeps without message text for O15's 24-hour window; resuming one continues the CLI's own saved conversation (Backend 9, UNDO-4, CC-38; chat-conversations-03). devhost stop --worktrees, devhost restart-all and devhost upgrade ask, or refuse without a terminal or under AGENT=1 unless --yes, only while a turn works or waits (REV-7, O18, O33).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/chat_sessions.go",
-          "line": 80,
-          "end_line": 101,
+          "path": "apps/devhost/src/devtools/chat/mod.rs",
+          "line": 104,
+          "end_line": 118,
           "label": "Replaces: stop closes every session and journal"
         },
         {
@@ -603,14 +633,18 @@
       "to": "send",
       "label": "Send (live)",
       "role": "main",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "left"
     },
     {
       "id": "composer-question",
       "from": "composer",
       "to": "question",
       "label": "other agent works",
-      "role": "branch"
+      "role": "branch",
+      "fromSide": "right",
+      "toSide": "top"
     },
     {
       "id": "question-send",
@@ -638,7 +672,7 @@
       "id": "card-respond",
       "from": "card",
       "to": "respond",
-      "label": "Allow Once",
+      "label": "Allow Once / Session",
       "role": "main",
       "variant": "emphasis"
     },
@@ -679,6 +713,13 @@
       "role": "error"
     },
     {
+      "id": "send-remoteAuth",
+      "from": "send",
+      "to": "remoteAuth",
+      "label": "unauthenticated",
+      "role": "error"
+    },
+    {
       "id": "receipt-convs",
       "from": "receipt",
       "to": "convs",
@@ -689,7 +730,7 @@
       "id": "receipt-otherCkout",
       "from": "receipt",
       "to": "otherCkout",
-      "label": "switch to worktree",
+      "label": "worktree switched",
       "role": "branch"
     },
     {
@@ -715,74 +756,70 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: the worktree-and-merge prompt appended out of sight (CC-10); the Chat Settings dialog and its Conversation picker; the second + icon; Escape stopping a turn; Stop Generating; 'Denied by the user.'; a stop shown as an error; raw JSON above the answers; random 32-character conversation labels; 13 terminal lines per turn; discovery on every toolbar load; Close emptying the panel; 'Reconnect before sending.' with no way to reconnect; raw server text as an error",
-        "Merged: the Conversation picker and Close Conversation into one conversation list with New Conversation and Resume; Stop Generating, Escape and the card's Stop Turn into one Stop Turn on Alt+Ctrl+.; the spinner, the notice, the collapsed badge and the running agents trigger into one waiting state that leads to one decision card",
-        "New: the edit mode with the checkout label and 'Added by devhost' (O1); the recipient line, the agent and model chip and the approval line; a mode line on every sent message; devhost's records in the journal (CC-40); the pinned decision card with the diff or command, a Deny note and answer lines; the turn's receipt with its way back (O22); conversations across checkouts, kept after a stop; Continue, Take Back, Alt+Ctrl+C; image sizes; the draft record; AGENT=1; a guarded, cached catalog",
-        "Changed: Escape never stops a turn (CC-29); storage per stack and page origin (CC-9); the second-agent question only in live mode, Cancel focused (CC-14); every conversation of the stack listed, send only into the page's checkout (CC-38); Close keeps the conversation; chat off keeps running ones reachable (CC-18); Chat Settings is a popover; Deny carries a note (CC-16); prompt follows each mode's instructions (O35); Harness becomes Agent (CC-31); the Disable Reloads request starts a new conversation (O27)",
-        "Kept: conversations belong to the stack and survive reloads; devhost never answers or pre-approves; Delivery unconfirmed and no resend; a cancelled send returns its draft; the second-agent question; activity lines never hold message text; [devtools.chat] applies through hot reload; the page never names a directory; the control guard, the 64 KiB body, the 8 MiB frame and 16 queued sends; the CLI's own sign-in and settings; no Git command; SIGTERM then SIGKILL after 2 s; idle shutdown waits for a working or waiting agent; chat inside the page's modal dialog"
+        "Removed: the worktree-and-merge prompt appended out of sight and the New worktree edit mode (O1, CC-10); unauthenticated network and relay access to chat and gated controls (O36); the Chat Settings dialog and its Conversation picker; the second + icon; Escape stopping a turn; Stop Generating; 'Denied by the user.'; a stop shown as an error; raw JSON above answers; random 32-character conversation labels; 13 terminal lines per turn; discovery on every toolbar load; Close emptying the panel; 'Reconnect before sending.'; raw server text; 'checkout' as a working-copy noun (WORD-11)",
+        "Merged: the Conversation picker and Close Conversation into one conversation list with New Conversation and Resume; Stop Generating, Escape and the card's Stop Turn into one Stop Turn on Alt+Ctrl+.; the spinner, waiting notice, collapsed badge, app tab-title prefix and running agents trigger into one waiting state leading to one decision card",
+        "New: unified remote authentication via one shared WebAuthn passkey (webauthn-rs 0.6.x, mandatory phone support) + devhost pair fallback, relay marker header, 30-day idle __Host- cookies and unauthenticated toolbar state (O36, O59); 320 CSS px phone layout (O8); two-mode edit control with worktree label and 'Added by devhost' (team prompt first, O35); approval line (O13); journal record frames (CC-40); pinned decision card with diff/command, Deny note, CLI standing approval (O12), answer lines, app tab-title prefix (O16) and /__devhost__/chat/open deep link; turn receipt with Copy Reverse Patch, Ask to Undo, Restart Changed (O58), turn-end held reload flush (O57) and Reload Page (O56); cross-worktree resumable conversations (O23); Continue, Take Back, Alt+Ctrl+C, image sizes, draft record, AGENT=1, guarded cached catalog",
+        "Changed: Escape never stops a turn (CC-29); storage per stack and page origin with listeners-moving draft migration (CC-9, CC-19); second-agent question only in This worktree (live), Cancel focused (CC-14); every stack conversation listed, send only into the page's worktree (CC-38); Close keeps transcript; chat off keeps running ones reachable (CC-18); Deny carries a note and cards offer CLI standing approval (CC-16, O12); team prompt precedes live/tickets mode instructions (O35); Make tickets says it cannot make tickets with no drafts (O21); Harness becomes Agent (CC-31); Disable Reloads starts a new conversation unless an open one is picked (O27)",
+        "Kept: local loopback browsers and CLI agents stay trusted without signing in; conversations survive reloads; devhost never answers or pre-approves itself; Delivery unconfirmed and no resend; cancelled send keeps draft; activity lines never hold message text; [devtools.chat] applies on hot reload; page never names a directory; control guard, 64 KiB body, 8 MiB frame and 16 queued sends; CLI's own sign-in and settings; no Git command; SIGTERM then SIGKILL after 2 s; idle shutdown waits for working/waiting agents; chat inside page modal dialogs"
       ]
     },
     {
       "dot": "rose",
       "title": "Tickets this journey resolves",
       "items": [
+        "Remote auth & exposure: network-exposure-01 (P0), relay-previews-03 (P1), network-exposure-02 (P2)",
         "Open, fit and recipient: chat-compose-02 (P1), chat-compose-01, chat-checkout-switch-04, chat-conversations-08",
-        "Images, page context and the catalog: chat-conversations-04, chat-compose-03, network-exposure-02",
+        "Images, page context and composer: chat-conversations-04, chat-compose-03",
         "Send and the turn: chat-approvals-04, agent-cli-journey-06, chat-compose-2-02, chat-conversations-06, journey-agent-fix-05",
         "Waiting and the decision card: chat-approvals-01 (P1; with chat-compose-2-01 and journey-agent-fix-02), chat-approvals-02, chat-approvals-03, chat-approvals-05, chat-approvals-07",
         "Stop, receipt and conversations: chat-compose-2-03, chat-conversations-05, chat-conversations-02 (P1), chat-conversations-01, chat-conversations-09",
         "Recovery in place: chat-checkout-switch-01 (P1), chat-checkout-switch-03, chat-compose-2-04, chat-compose-2-05, chat-approvals-08, chat-conversations-03 (slice: ended conversations resumable; the rest: stack-run-stop)",
-        "Related, not covered: network-exposure-01 (P0, its own stopgap; timing is the owner's a2); journey-agent-fix-01 and chat-approvals-06 (P1, the stopgap that makes the built-in prompt edit this checkout ships first)",
-        "Related, not covered: serve-folder-04 (serve-folder); chat-checkout-switch-02 (worktree-switch); chat-compose-04 (toolbar-shell); journey-agent-fix-04 and page-context-07 (page-context); reload-and-agents-02 (reload-control)"
+        "Related, not covered: journey-agent-fix-01 and chat-approvals-06 (P1, prompt stopgap shipping first); serve-folder-04 (serve-folder); chat-checkout-switch-02 (worktree-switch); chat-compose-04 (toolbar-shell); journey-agent-fix-04 and page-context-07 (page-context); reload-and-agents-02 (reload-control)"
       ]
     },
     {
       "dot": "violet",
       "title": "Backend work",
       "items": [
-        "send gains mode (live, worktree, tickets), required; the mode's instructions, then [devtools.chat].prompt; [devtools.chat.modes.<mode>].prompt; one warning for a manifest that sets prompt (CC-10)",
-        "record frames in the session's journal: mode, page-context, added-text, answer with its note, stop, delivery; replayed in snapshot (CC-40)",
-        "respond gains note: Claude Code's denial message; Codex's decline, then the note into the turn (CC-16)",
-        "The approval projection: checkout-relative path and unified diff, or the command, its folder and reason; native request under Details",
-        "[discuss]: each agent's approval behavior in the catalog, confirmed on each CLI before the line ships (O13)",
-        "Sessions across the stack's checkouts with title, agent, model, mode, times, state and cause; send checks the page's checkout (CC-38)",
-        "Chat off keeps the session list, socket, respond, interrupt and close for running sessions (CC-18, CC-38)",
-        "Close keeps the record and journal; resume continues the same session ID (CC-38)",
-        "[discuss]: a conversation record per manifest after a stop, never message text (O23, CC-38)",
-        "A stop is a stop: interrupt ends idle with a stop record; an exit publishes its code or signal, time and last lines; EPERM on an exited group counts as stopped (CC-24)",
-        "[discuss]: the turn's receipt from the journal's edit events, no Git, after one recorded turn per harness (O22)",
-        "AGENT=1 and DEVHOST_CHAT_SESSION for every chat agent (CC-13)",
-        "The catalog cached per stack and checkout, POST refresh, 403 for cross-site requests and the Host rule",
-        "The draft record /__devhost__/chat/draft for images and page context (CC-19)",
-        "One terminal line per conversation start or end, wait and turn outcome; IDs and delivery steps only in agent output"
+        "Unified remote auth (O36, O59; ships with O39): three-state local/authenticated/unauthenticated classifier, relay marker header stripped by Caddy on direct hits, loopback-bounded reverse listener, pure-Rust webauthn-rs 0.6.x shared-domain passkey (4 routes on reserved host, status pages, devhost passkey CLI, non-secret public key in config.toml), 30-day idle __Host- session store, and devhost pair fallback",
+        "send gains mode (live or tickets, required; worktree rejected) and structured pageContext; [devtools.chat].prompt first, then mode instructions; [devtools.chat.modes.<mode>].prompt; one warning for manifests setting prompt (O1, O35, CC-10)",
+        "record frames in the session's journal: mode, page-context, added-text, answer (with Deny note or CLI standing approval), stop, delivery; replayed in snapshot (CC-40)",
+        "respond gains note (Claude Code denial message; Codex decline then steer without workflow instructions) and forwards CLI standing-approval choices (O12, CC-16)",
+        "Approval projection: worktree-relative path and unified diff, or command, folder and reason, plus any CLI standing-approval option; native request under Details",
+        "Catalog publishes each agent's approval behavior from CLI configuration (O13), cached per stack and worktree with POST refresh, O36 check, cross-site 403 and Host rule",
+        "Sessions across the stack's worktrees with title, agent, model, mode, times, state and cause; send checks page worktree; GET /__devhost__/chat/open?session=<id> 303 deep link (CC-38)",
+        "Chat off keeps session list, socket, respond, interrupt and close answering for running sessions; Close keeps record and journal; Resume continues same session ID (CC-18, CC-38)",
+        "Metadata-only conversation record per manifest after a stop (never message text) kept for O15's 24-hour window (O23, CC-38)",
+        "Stop recorded as stop, exit as exit with code or signal, time and last lines; EPERM on an exited group counts as stopped (CC-24); turn receipt + watch-changed services from journal edit events, no Git (O22, O58)",
+        "AGENT=1 and DEVHOST_CHAT_SESSION for every chat agent (CC-13); /__devhost__/chat/draft with listeners-moving origin migration (CC-19); one terminal line per start, end, wait and turn outcome"
       ]
     },
     {
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-9: chat storage per stack and page origin, never per checkout",
-        "CC-10: the edit mode's instructions replace the one worktree workflow; send gains mode; prompt follows each mode (O35)",
+        "CC-9: chat storage per stack and page origin, never per worktree",
+        "CC-10: two modes only (This worktree (live) and Make tickets), team prompt first then mode instructions, Make tickets says it cannot make tickets with no drafts, no live-mode agent restarts (O1, O21, O35, O58)",
         "CC-13 (this flow's part): chat agents run with AGENT=1 and DEVHOST_CHAT_SESSION",
-        "CC-14: the second-agent question only for This checkout (live), Cancel the default, Start Second Agent",
-        "CC-16: the request shows what will change; Deny can carry a note; each answer stays in the conversation",
+        "CC-14: second-agent question only for This worktree (live), Cancel default, Start Second Agent (WORD-11)",
+        "CC-16: decision card shows diff/command, Deny note, CLI standing approval (Allow for This Session, O12), and journaled answer lines",
         "CC-18: chat off keeps running conversations answerable and stoppable",
-        "CC-19 (chat's part): images and page context of an unsent message kept by the control server; the draft route",
-        "CC-29 (chat's part): Alt+Ctrl+C and Alt+Ctrl+.; Escape in the composer never stops a turn",
-        "CC-31 (chat's part): Stop Turn, Agent, Refresh Agents",
-        "CC-32 (chat's part): Conversation and Agent in CONTEXT.md",
-        "CC-38: every session of the stack listed; send only into the page's checkout; ended sessions resumable",
-        "CC-40: devhost's record frames; acknowledgements kept; activity lines unchanged",
-        "[discuss]: the catalog's rules, the activity lines for people, respond's note and the approval behavior need a CC-n beside CC-38 and CC-40",
-        "Depends on, landed by other flows: CC-1, CC-3, CC-5 and CC-28 (toolbar-shell); CC-15 (reload-control); CC-11, CC-12 and CC-23 (stack-run-stop); CC-33 (running-agents)"
+        "CC-19 (chat's part): unsent pasted images and page context in /__devhost__/chat/draft, migrated across listeners-moving port changes",
+        "CC-29 (chat's part): Alt+Ctrl+C and Alt+Ctrl+. (stopTurn = 'alt+ctrl+.'); Escape in composer never stops a turn (O17)",
+        "CC-31 & CC-32 (chat's part): Stop Turn, Agent, Refresh Agents; Conversation, Agent and Worktree in CONTEXT.md (WORD-11)",
+        "CC-38: every stack session listed, send only into page worktree, GET /__devhost__/chat/open deep link, metadata-only ended sessions resumable (O23)",
+        "CC-39 (this flow's part): shared-domain passkey public key and rpId in ~/.config/devhost/config.toml (O36)",
+        "CC-40: devhost record frames (including page-context and standing-approval answers); acknowledgements kept; activity lines without message text",
+        "Control API, Chat API, Remote Previews, Managed Caddy & Devtools docs: O36/O59 remote auth, catalog cache/guard, activity lines, O56/O57 turn-end reload rules",
+        "Depends on foundations: notices-and-feedback and toolbar-shell (CC-1, CC-3, CC-5, CC-28, CC-29, CC-39); seams with reload-control (CC-15), stack-run-stop (CC-11, CC-12, CC-23), running-agents (CC-33)"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
-        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6 (all O1-O63 settled)",
+        "Drawn from the current diagram and reconciled proposal; every source cites verified existing Rust or UI code a step reuses or replaces at 190a8bb5"
       ]
     }
   ]
