@@ -22,10 +22,18 @@ export const NewConversationStaysSelectedAfterReload: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await openSavedChatConversation(canvasElement);
+    const closeConversation = canvas.getByRole("button", { name: "Close Conversation" });
     const newConversation = canvas.getByRole("button", { name: "New Conversation" });
     const shareTab = canvas.getByRole("button", { name: "Share Tab" });
+    const actionsGroup = canvas.getByRole("group", { name: "Conversation actions" });
+    expect(actionsGroup).toContainElement(closeConversation);
+    expect(actionsGroup).toContainElement(shareTab);
+    expect(closeConversation.getBoundingClientRect().right).toBeLessThanOrEqual(
+      newConversation.getBoundingClientRect().left,
+    );
     expect(newConversation.getBoundingClientRect().right).toBeLessThanOrEqual(shareTab.getBoundingClientRect().left);
-    expect(canvas.getByRole("group", { name: "Conversation actions" })).toContainElement(shareTab);
+    expect(closeConversation.getBoundingClientRect().height).toBe(shareTab.getBoundingClientRect().height);
+    expect(newConversation.getBoundingClientRect().height).toBe(shareTab.getBoundingClientRect().height);
     await expect(newConversation).toBeEnabled();
     await userEvent.click(newConversation);
     await canvas.findByText("Chat with your configured coding agent.");
@@ -44,26 +52,31 @@ export const NewConversationStaysSelectedAfterReload: Story = {
   },
 };
 
-export const RunningConversationCannotBeReplaced: Story = {
+export const RunningConversationStillAllowsStartingAnother: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await openSavedChatConversation(canvasElement);
     deliverChatStatus("running");
     await canvas.findByText("codex · running");
-    await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeDisabled();
-    deliverChatStatus("idle");
+    const newConversation = canvas.getByRole("button", { name: "New Conversation" });
+    const stopButton = await canvas.findByRole("button", { name: "Stop Generating" });
+    const sendButton = canvas.getByRole("button", { name: "Send Message" });
+    expect(stopButton.getBoundingClientRect().height).toBe(sendButton.getBoundingClientRect().height);
+    expect(stopButton.getBoundingClientRect().width).toBe(sendButton.getBoundingClientRect().width);
+    await expect(newConversation).toBeEnabled();
+    await userEvent.click(newConversation);
+    await canvas.findByText("Chat with your configured coding agent.");
     await canvas.findByText("codex · idle");
-    await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();
   },
 };
 
-export const PendingRequestKeepsConversation: Story = {
+export const PendingRequestAllowsStartingAnotherConversation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await openSavedChatConversation(canvasElement);
     deliverChatStatus("requires_action");
     await canvas.findByText("codex · requires_action");
-    await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();
     deliverChatStatus("idle");
     await canvas.findByText("codex · idle");
     await expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();

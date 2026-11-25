@@ -7,7 +7,13 @@ describe("createDevtoolsSettingsStore", () => {
     const storage = factory_settingsStorage();
     const scope = { projectRootPath: "/shop", pageURL: "https://app.localhost/cart" };
     const first = createDevtoolsSettingsStore(scope, () => storage);
-    first.getState().updateChat({ isOpen: true, side: "left", draft: "Review cart", sessionId: "native-one" });
+    first.getState().updateChat({
+      isOpen: true,
+      isExpanded: true,
+      side: "left",
+      draft: "Review cart",
+      sessionId: "native-one",
+    });
     first.getState().updateChat({
       selectedHarness: "claude-code",
       selectedModel: "installed-model",

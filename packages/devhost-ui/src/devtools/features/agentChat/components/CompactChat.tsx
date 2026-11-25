@@ -68,7 +68,7 @@ export function CompactChat({
         </div>
         <ComposerPrimitive.Root render={<form className="shrink-0" />}>
           <ComposerPrimitive.AttachmentDropzone asChild>
-            <div className="flex flex-col gap-1 rounded-sm border border-input bg-background p-1.5">
+            <div className="flex flex-col gap-1 rounded-md border border-input bg-secondary p-1.5">
               <ComposerAttachments />
               <ComposerPrimitive.Input
                 ref={composerInputRef}
@@ -81,20 +81,20 @@ export function CompactChat({
               >
                 <textarea className="max-h-24 min-h-8 w-full resize-none bg-transparent p-1 text-sm placeholder:text-muted-foreground outline-none" />
               </ComposerPrimitive.Input>
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-between gap-1.5">
                 <ComposerAddAttachment />
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <ChatComposerActions />
                   <AuiIf condition={(state) => !state.composer.canCancel}>
                     <ComposerPrimitive.Send asChild>
-                      <Button size="icon-sm" aria-label="Send Message" title="Send Message">
+                      <Button size="icon" aria-label="Send Message" title="Send Message">
                         <Icon glyph={ArrowUpIcon} />
                       </Button>
                     </ComposerPrimitive.Send>
                   </AuiIf>
                   <AuiIf condition={(state) => state.composer.canCancel}>
                     <ComposerPrimitive.Cancel asChild>
-                      <Button size="icon-sm" aria-label="Stop Generating" title="Stop Generating">
+                      <Button size="icon" aria-label="Stop Generating" title="Stop Generating">
                         <Icon glyph={SquareIcon} size="sm" />
                       </Button>
                     </ComposerPrimitive.Cancel>

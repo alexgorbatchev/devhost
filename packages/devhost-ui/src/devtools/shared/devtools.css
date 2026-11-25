@@ -37,6 +37,48 @@
   padding-bottom: calc(var(--spacing) * 2);
 }
 
+/* Tighten native thread rhythm for compact devtools and collapse empty action-bar footers or renderless items. */
+[data-slot="aui_message-group"] {
+  row-gap: calc(var(--spacing) * 3);
+  margin-bottom: calc(var(--spacing) * 4);
+}
+
+[data-slot="aui_assistant-message-root"] {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  content-visibility: visible;
+}
+
+[data-slot="aui_user-message-root"] {
+  content-visibility: visible;
+}
+
+[data-slot="aui_assistant-message-footer"]:empty {
+  display: none;
+}
+
+[data-slot="aui_assistant-message-root"]:has(> [data-slot="aui_assistant-message-content"]:empty):has(
+    > [data-slot="aui_assistant-message-footer"]:empty
+  ) {
+  display: none;
+}
+
+/* Meet devtools contrast rules (4.5:1 placeholder, 3:1 control border) inside the native Thread composer. */
+[data-slot="aui_composer-shell"] {
+  border-color: var(--input);
+}
+
+.aui-composer-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Keep the native Thread's stop/cancel icon button square and equal in visual size to every other composer control. */
+.aui-composer-action-wrapper button:is([aria-label="Stop Generating"], [aria-label="Cancel Sending"]) {
+  width: var(--spacing-control);
+  padding-inline: 0;
+  background-clip: border-box;
+}
+
 /* The native Thread has no stop-icon slot. Keep its stop glyph and the compact composer's glyph consistent. */
 button[aria-label="Stop Generating"] > .lucide-square {
   width: 12px;

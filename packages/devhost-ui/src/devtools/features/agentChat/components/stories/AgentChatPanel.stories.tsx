@@ -387,12 +387,13 @@ export const ReloadRestoresConversationView: Story = {
     await expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(canvas.getByRole("button", { name: "Chat" }));
     await expect(canvas.getByRole("button", { name: "Move Chat To Right" })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Compact Chat" })).toBeVisible();
     await expect(await canvas.findByRole("textbox")).toHaveValue("Keep this unsent review");
-    await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
     const restored = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
     await waitFor(() => expect(restored.scrollTop).toBeCloseTo(position, 0));
     await userEvent.click(canvas.getByRole("button", { name: "Reload devtools" }));
     await expect(canvas.getByRole("button", { name: "Chat" })).toHaveAttribute("aria-expanded", "true");
+    await expect(canvas.getByRole("button", { name: "Compact Chat" })).toBeVisible();
     await expect(await canvas.findByRole("textbox")).toHaveValue("Keep this unsent review");
   },
 };
@@ -648,7 +649,7 @@ export const RepliesFollowUntilReaderScrollsBack: Story = {
     await userEvent.keyboard("{Escape}");
     await userEvent.click(canvas.getByRole("button", { name: "Expand Chat" }));
     const viewport = readChatViewport(canvas.getByRole("complementary", { name: "Agent chat" }));
-    for (let sequence = 1; sequence <= 40; sequence += 1) {
+    for (let sequence = 1; sequence <= 50; sequence += 1) {
       deliverChatReply(sequence);
       await canvas.findByText(`Live reply ${sequence}.`);
       await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(true));
@@ -658,16 +659,16 @@ export const RepliesFollowUntilReaderScrollsBack: Story = {
     await nativeUserEvent.wheel(viewport, { delta: { y: -150 } });
     await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(false));
     // The reader keeps their place: what they were reading stays where it was on screen.
-    const reading = canvas.getByText("Live reply 38.");
+    const reading = canvas.getByText("Live reply 48.");
     const readingTop = reading.getBoundingClientRect().top;
-    deliverChatReply(41);
-    await canvas.findByText("Live reply 41.");
+    deliverChatReply(51);
+    await canvas.findByText("Live reply 51.");
     expect(reading.getBoundingClientRect().top).toBeCloseTo(readingTop, 0);
     expect(isChatViewportAtBottom(viewport)).toBe(false);
     await nativeUserEvent.wheel(viewport, { delta: { y: 100000 } });
     await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(true));
-    deliverChatReply(42);
-    await canvas.findByText("Live reply 42.");
+    deliverChatReply(52);
+    await canvas.findByText("Live reply 52.");
     await waitFor(() => expect(isChatViewportAtBottom(viewport)).toBe(true));
   },
 };
@@ -845,5 +846,41 @@ export const CloseKeepsConversationToResume: Story = {
       "New conversation",
       "codex · saved-conversation · closed",
     ]);
+  },
+};
+
+export const HeaderShowsHarnessLogoSpinnerAndCompactState: Story = {
+  render: () => <ChatReloadScene />,
+  beforeEach: () => installChatReloadServer(fixture_toolSequenceEvents),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await openSavedChatConversation(canvasElement);
+    const panel = canvas.getByRole("complementary", { name: "Agent chat" });
+    const header = panel.querySelector("header");
+    expect(header).not.toBeNull();
+    expect(panel.querySelector("footer")).toBeNull();
+    // Idle Codex session renders the OpenAI logo in the header move button and status in the heading.
+    const moveHandle = within(header!).getByRole("button", { name: "Move Chat Panel" });
+    expect(within(moveHandle).getByTestId("OpenAILogo")).toBeVisible();
+    expect(within(header!).getByRole("status")).toHaveTextContent("codex · idle");
+    // Compact Chat button stays visually neutral when expanded (no aria-expanded gray background).
+    const compactButton = within(header!).getByRole("button", { name: "Compact Chat" });
+    expect(compactButton).not.toHaveAttribute("aria-expanded");
+    expect(getComputedStyle(compactButton).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    // Running status replaces the logo with a spinning progress icon.
+    deliverChatStatus("running");
+    await within(header!).findByText("codex · running");
+    expect(within(moveHandle).queryByTestId("OpenAILogo")).toBeNull();
+    expect(within(moveHandle).getByTestId("Icon").getAnimations()).toHaveLength(1);
+    deliverChatStatus("idle");
+    await within(header!).findByText("codex · idle");
+    expect(within(moveHandle).getByTestId("OpenAILogo")).toBeVisible();
+    // Switching harness to Claude Code shows the Claude logo in the header.
+    await userEvent.click(canvas.getByRole("button", { name: "Close Conversation" }));
+    await canvas.findByText("Agent Chat");
+    await userEvent.click(within(header!).getByRole("button", { name: "Chat Settings" }));
+    await chooseChatSetting(canvas, "Harness", "Claude Code");
+    await userEvent.keyboard("{Escape}");
+    expect(within(moveHandle).getByTestId("ClaudeLogo")).toBeVisible();
   },
 };

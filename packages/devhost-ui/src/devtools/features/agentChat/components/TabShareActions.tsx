@@ -1,4 +1,5 @@
 import { Button } from "@alexgorbatchev/shadcn";
+import { TooltipIconButton } from "@alexgorbatchev/shadcn/assistant-ui/tooltip-icon-button";
 import { CameraIcon, MonitorUpIcon, SquareIcon } from "lucide-react";
 import { useContext, type JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
@@ -10,19 +11,18 @@ export function TabShareActions(): JSX.Element | null {
   return (
     <div data-testid="TabShareActions" role="group" aria-label="Tab sharing" className="flex items-center gap-1.5">
       {sharing.stream ? (
-        <Button
-          size="icon-sm"
+        <TooltipIconButton
+          tooltip="Include Tab Snapshot"
+          side="top"
           variant={sharing.shouldIncludeSnapshot ? "secondary" : "ghost"}
-          aria-label="Include Tab Snapshot"
-          title="Include Tab Snapshot"
           aria-pressed={sharing.shouldIncludeSnapshot}
           onClick={() => sharing.setShouldIncludeSnapshot(!sharing.shouldIncludeSnapshot)}
         >
           <Icon glyph={CameraIcon} />
-        </Button>
+        </TooltipIconButton>
       ) : null}
       <Button
-        size="sm"
+        size="default"
         variant="outline"
         disabled={sharing.isRequesting}
         onClick={() => {

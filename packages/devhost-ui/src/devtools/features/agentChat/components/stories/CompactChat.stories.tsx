@@ -102,7 +102,7 @@ export const CompactReplyCycle: Story = {
       expect(command.text).toBe(text);
       acknowledgeChatSend(command.commandId);
       await waitFor(() => expect(canvas.getByRole("button", { name: "Close Conversation" })).toBeEnabled());
-      expect(canvas.getByRole("button", { name: "New Conversation" })).toBeDisabled();
+      expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();
       expect(latest.getByText("Working…")).toBeVisible();
       deliverChatStatus("running");
       await latest.findByText("Working…");
@@ -138,7 +138,7 @@ export const WaitingForNativeResponse: Story = {
     deliverChatStatus("requires_action");
     await latest.findByText("Waiting for your response…");
     expect(latest.queryByText(/^Reply 30:/)).toBeNull();
-    expect(canvas.getByRole("button", { name: "New Conversation" })).toBeDisabled();
+    expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();
     deliverChatStatus("idle");
     await latest.findByText(/^Reply 30:/);
     expect(canvas.getByRole("button", { name: "New Conversation" })).toBeEnabled();

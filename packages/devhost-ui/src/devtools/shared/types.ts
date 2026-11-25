@@ -18,6 +18,7 @@ export type AnnotationLayerPlacement = "above-devtools" | "below-devtools";
 
 export interface IChatViewSettings {
   isOpen: boolean;
+  isExpanded: boolean;
   target: ChatTarget;
   side: "left" | "right";
   selectedHarness: "codex" | "claude-code";

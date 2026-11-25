@@ -158,7 +158,7 @@ The history grows with the conversation. If devhost cannot write it, it stops th
 
 The page stores its chat state in `localStorage`, under keys starting with `devhost:settings:` that include the project directory and the page's origin. Pages that differ only in path, query, or fragment share it. It holds:
 
-- whether chat is open, its side, and the chat target,
+- whether chat is open, whether it is expanded or compact, its side, and the chat target,
 - the selected harness, model, and session,
 - the unsent text, until the send is acknowledged,
 - the conversation's scroll position,

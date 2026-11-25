@@ -32,12 +32,12 @@ Chat opens compact, showing a working spinner and then the latest reply. **Expan
 
 Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts. On phone-sized screens the panel stays docked. The **Chat** button shows a spinner while the agent works or waits for you.
 
-| To                            | Use                                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Stop the current turn         | **Stop Generating**, or **Escape** in the composer                                                      |
-| Start a separate conversation | **New Conversation** (+)                                                                                |
-| Switch conversations          | **Conversation** in **Chat Settings**                                                                   |
-| End a conversation's process  | **Close Conversation**. It stays in the list as `closed`; selecting it resumes the CLI's saved session. |
+| To                            | Use                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Stop the current turn         | **Stop Generating**, or **Escape** in the composer                                                                                   |
+| Start a separate conversation | **New Conversation** (compose icon next to **Share Tab**)                                                                            |
+| Switch conversations          | **Conversation** in **Chat Settings**                                                                                                |
+| End a conversation's process  | **Close Conversation** (trash icon in the composer). It stays in the list as `closed`; selecting it resumes the CLI's saved session. |
 
 You can send more messages while the agent works, including while it waits for an approval. Codex receives them as steering for the current turn, Claude Code as streaming input, and the agent decides when to use them. Sending never approves a pending tool or interrupts the agent. A model change applies from the next turn.
 
@@ -99,7 +99,7 @@ Edits apply to the next message, even in an open conversation. Expand **Workflow
 
 Conversations belong to the running stack, not the page. Reloading or closing the tab never stops a turn, and the page reconnects with the full history.
 
-After a reload, chat restores whether it was open, its side, your unsent text, the harness and model, the selected conversation, and the scroll position. That state is stored in the browser for each project and origin; pages that differ only in path, query, or fragment share it. A closed or missing conversation is never restarted on its own, and prompts or approvals are never sent again. Selections, drawings, screenshot shares, pasted images, and queued follow-ups do not survive a reload.
+After a reload, chat restores whether it was open, expanded or compact, its side, your unsent text, the harness and model, the selected conversation, and the scroll position. That state is stored in the browser for each project and origin; pages that differ only in path, query, or fragment share it. A closed or missing conversation is never restarted on its own, and prompts or approvals are never sent again. Selections, drawings, screenshot shares, pasted images, and queued follow-ups do not survive a reload.
 
 Stopping devhost ends every conversation's process. devhost keeps the history it streams back to pages in private temporary files on disk, which grow with the conversation and are freed when the stack stops. If writing them fails, devhost stops that conversation and reports an error. After a restart, resume a conversation through the CLI's own saved history.
 

@@ -1,20 +1,15 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Button } from "@alexgorbatchev/shadcn";
-import { lazy, Suspense, useEffect, useState, type JSX, type ReactNode, type Ref } from "react";
+import { ClaudeLogo } from "@alexgorbatchev/shadcn/assistant-ui/claude-logo";
+import { OpenAILogo } from "@alexgorbatchev/shadcn/assistant-ui/open-ai-logo";
+import { lazy, Suspense, useEffect, type JSX, type ReactNode, type Ref } from "react";
 import { useStore } from "zustand";
 import { cn } from "../../../../lib/utils";
 import { formatChatSessionLabel } from "../formatChatSessionLabel";
 import type { DevtoolsPosition } from "../../../shared/devtoolsConfig";
 import type { IAgentChatController } from "../types";
 import { ApprovalRequests } from "./ApprovalRequests";
-import {
-  ArrowLeftRightIcon,
-  ChevronDownIcon,
-  GripVerticalIcon,
-  Maximize2Icon,
-  Minimize2Icon,
-  XIcon,
-} from "lucide-react";
+import { ArrowLeftRightIcon, ChevronDownIcon, LoaderCircleIcon, Maximize2Icon, Minimize2Icon } from "lucide-react";
 import { Icon } from "../../../../components/ui/Icon";
 import { ChatDecisionPrompt } from "./ChatDecisionPrompt";
 import { ChatDeliveryStatus } from "./ChatDeliveryStatus";
@@ -59,8 +54,11 @@ export function AgentChatPanel({
   toolbarPosition = "bottom-right",
   toolbarEdgeInset = null,
 }: IAgentChatPanelProps): JSX.Element {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const isExpanded = useStore(chat.settingsStore, (state) => state.chat.isExpanded);
   const side = useStore(chat.settingsStore, (state) => state.chat.side);
+  const setIsExpanded = (expanded: boolean): void => {
+    chat.settingsStore.getState().updateChat({ isExpanded: expanded });
+  };
   const viewportProps = useChatScrollPosition({
     settingsStore: chat.settingsStore,
     isOpen: isOpen && isExpanded,
@@ -74,6 +72,17 @@ export function AgentChatPanel({
     chat.isConnecting ||
     chat.session?.status === "running" ||
     chat.session?.status === "requires_action";
+  const activeHarness = chat.session?.harness ?? chat.selectedHarness;
+  const sessionStatusText = chat.session
+    ? `${chat.session.harness} · ${chat.session.status}${chat.isConnected ? "" : " · reconnecting"}`
+    : null;
+  const headerBadge = isBusy ? (
+    <Icon glyph={LoaderCircleIcon} isSpinning />
+  ) : activeHarness === "claude-code" ? (
+    <ClaudeLogo />
+  ) : (
+    <OpenAILogo />
+  );
   useEffect(() => {
     onBusyChange?.(isBusy);
     return () => onBusyChange?.(false);
@@ -119,10 +128,14 @@ export function AgentChatPanel({
             title="Arrow Keys Move Chat, Home Returns It"
             onKeyDown={placement.onHandleKeyDown}
           >
-            <Icon glyph={GripVerticalIcon} />
+            {headerBadge}
           </Button>
-        ) : null}
-        <h2 className="flex-1 font-semibold">Agent Chat</h2>
+        ) : (
+          <span className="inline-flex size-control-sm shrink-0 items-center justify-center">{headerBadge}</span>
+        )}
+        <h2 className="min-w-0 flex-1 truncate font-semibold" title={sessionStatusText ?? "Agent Chat"}>
+          {sessionStatusText ? <span role="status">{sessionStatusText}</span> : "Agent Chat"}
+        </h2>
         {headerControls}
         <ChatSettings chat={chat} isBusy={isBusy} />
         <Button
@@ -130,7 +143,6 @@ export function AgentChatPanel({
           variant="ghost"
           aria-label={isExpanded ? "Compact Chat" : "Expand Chat"}
           title={isExpanded ? "Compact Chat" : "Expand Chat"}
-          aria-expanded={isExpanded}
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <Icon glyph={isExpanded ? Minimize2Icon : Maximize2Icon} />
@@ -222,26 +234,6 @@ export function AgentChatPanel({
           </Suspense>
         </AgentChatBody>
       </AssistantRuntimeProvider>
-      <footer className="flex shrink-0 items-center justify-between border-t border-border px-2 py-1 text-muted-foreground">
-        <span role="status">
-          {chat.session
-            ? `${chat.session.harness} · ${chat.session.status}${chat.isConnected ? "" : " · reconnecting"}`
-            : "Uses your configured CLI account"}
-        </span>
-        {chat.session ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={chat.isPreparing}
-            onClick={() => {
-              void chat.closeSession();
-            }}
-          >
-            <Icon glyph={XIcon} />
-            Close Conversation
-          </Button>
-        ) : null}
-      </footer>
     </aside>
   );
 }
