@@ -1,7 +1,11 @@
 use std::{
     fs::{self, DirBuilder, File, OpenOptions, TryLockError},
     io::{self, Write},
-    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
+    os::unix::{
+        fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt},
+        io::AsRawFd,
+        net::UnixStream,
+    },
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
     thread,
@@ -33,6 +37,8 @@ pub struct DaemonRecord {
     pub exe_path: String,
     #[serde(default)]
     pub exe_identity: String,
+    #[serde(default)]
+    pub context_fingerprint: String,
 }
 
 pub fn daemon_lock_path(state_dir: &Path) -> PathBuf {
@@ -47,8 +53,13 @@ pub fn daemon_log_path(state_dir: &Path) -> PathBuf {
     state_dir.join("daemon.log")
 }
 
+pub fn current_euid() -> u32 {
+    // SAFETY: geteuid takes no arguments and cannot fail.
+    unsafe { libc::geteuid() }
+}
+
 pub fn daemon_socket_path(state_dir: &Path, pid: i32) -> PathBuf {
-    let direct = state_dir.join(format!("daemon-{pid}.sock"));
+    let direct = state_dir.join("run").join(format!("daemon-{pid}.sock"));
     if direct.as_os_str().as_encoded_bytes().len() <= MAX_UNIX_SOCKET_PATH_BYTES {
         return direct;
     }
@@ -59,7 +70,158 @@ pub fn daemon_socket_path(state_dir: &Path, pid: i32) -> PathBuf {
         use std::fmt::Write as _;
         let _ = write!(prefix, "{byte:02x}");
     }
-    std::env::temp_dir().join(format!("dh-{prefix}-{pid}.sock"))
+    let uid = current_euid();
+    std::env::temp_dir()
+        .join(format!("dh-{uid}-{prefix}"))
+        .join(format!("d-{pid}.sock"))
+}
+
+/// Ensure the parent directory of `socket_path` exists, is not a symlink, is
+/// owned by the current effective UID, and has mode `0700` before `bind()`.
+pub fn ensure_private_socket_dir(socket_path: &Path) -> Result<(), String> {
+    let Some(dir) = socket_path.parent() else {
+        return Err(format!(
+            "daemon socket path has no parent directory: {}",
+            socket_path.display()
+        ));
+    };
+    if let Err(error) = DirBuilder::new().recursive(true).mode(0o700).create(dir) {
+        return Err(format!(
+            "create daemon socket directory {}: {error}",
+            dir.display()
+        ));
+    }
+    let meta = match fs::symlink_metadata(dir) {
+        Ok(meta) => meta,
+        Err(error) => {
+            return Err(format!(
+                "inspect daemon socket directory {}: {error}",
+                dir.display()
+            ));
+        }
+    };
+    if meta.file_type().is_symlink() || !meta.is_dir() {
+        return Err(format!(
+            "daemon socket directory {} is not a regular directory",
+            dir.display()
+        ));
+    }
+    let expected_uid = current_euid();
+    if meta.uid() != expected_uid {
+        return Err(format!(
+            "daemon socket directory {} is owned by UID {} instead of {}",
+            dir.display(),
+            meta.uid(),
+            expected_uid
+        ));
+    }
+    if meta.mode() & 0o077 != 0
+        && let Err(error) = fs::set_permissions(dir, fs::Permissions::from_mode(0o700))
+    {
+        return Err(format!(
+            "restrict daemon socket directory {} permissions: {error}",
+            dir.display()
+        ));
+    }
+    Ok(())
+}
+
+/// Verify that the connecting peer on a Unix domain socket runs as the same
+/// effective user ID as the daemon process.
+pub fn verify_peer_uid(stream: &UnixStream) -> Result<(), String> {
+    let expected = current_euid();
+    #[cfg(target_os = "linux")]
+    {
+        let mut cred = libc::ucred {
+            pid: 0,
+            uid: u32::MAX,
+            gid: u32::MAX,
+        };
+        let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
+        // SAFETY: getsockopt with SO_PEERCRED populates `cred` for the live socket fd.
+        let rc = unsafe {
+            libc::getsockopt(
+                stream.as_raw_fd(),
+                libc::SOL_SOCKET,
+                libc::SO_PEERCRED,
+                (&mut cred as *mut libc::ucred).cast(),
+                &mut len,
+            )
+        };
+        if rc != 0 {
+            return Err(format!(
+                "read socket peer credentials: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        if cred.uid != expected {
+            return Err(format!(
+                "rejected daemon connection from UID {} (expected {expected})",
+                cred.uid
+            ));
+        }
+        Ok(())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let mut euid: libc::uid_t = 0;
+        let mut egid: libc::gid_t = 0;
+        // SAFETY: getpeereid writes peer effective UID/GID for the live Unix socket fd.
+        let rc = unsafe { libc::getpeereid(stream.as_raw_fd(), &mut euid, &mut egid) };
+        if rc != 0 {
+            return Err(format!(
+                "read socket peer credentials: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        if euid != expected {
+            return Err(format!(
+                "rejected daemon connection from UID {euid} (expected {expected})"
+            ));
+        }
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let _ = (stream, expected);
+        Ok(())
+    }
+}
+
+/// Fingerprint the calling process's execution context (UID, Linux mount/network/user
+/// namespaces, seccomp, and NoNewPrivs) so sandboxed and unsandboxed environments do
+/// not share a single supervisor daemon across trust boundaries.
+pub fn execution_context_fingerprint() -> String {
+    let uid = current_euid();
+    #[cfg(target_os = "linux")]
+    {
+        let ns = |name: &str| {
+            fs::read_link(format!("/proc/self/ns/{name}"))
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_default()
+        };
+        let mut seccomp = String::new();
+        let mut no_new_privs = String::new();
+        if let Ok(status) = fs::read_to_string("/proc/self/status") {
+            for line in status.lines() {
+                if let Some(val) = line.strip_prefix("Seccomp:") {
+                    seccomp = val.trim().to_owned();
+                } else if let Some(val) = line.strip_prefix("NoNewPrivs:") {
+                    no_new_privs = val.trim().to_owned();
+                }
+            }
+        }
+        format!(
+            "uid={uid}|mnt={}|net={}|user={}|seccomp={seccomp}|nnp={no_new_privs}",
+            ns("mnt"),
+            ns("net"),
+            ns("user"),
+        )
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        format!("uid={uid}")
+    }
 }
 
 pub fn exe_identity(path: &Path) -> String {
@@ -101,6 +263,11 @@ pub fn read_live_daemon(state_dir: &Path) -> Option<DaemonRecord> {
     } else {
         None
     }
+}
+
+pub fn is_live_daemon_pid(state_dir: &Path, pid: i32) -> Option<DaemonRecord> {
+    let record = read_live_daemon(state_dir)?;
+    (record.pid == pid).then_some(record)
 }
 
 pub fn write_daemon_record(state_dir: &Path, record: &DaemonRecord) -> Result<(), String> {
@@ -183,18 +350,43 @@ pub fn acquire_daemon_lock(state_dir: &Path, timeout: Duration) -> Result<Daemon
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::fs::symlink;
 
     #[test]
-    fn socket_path_falls_back_to_short_temp_path_for_long_state_dirs() {
+    fn socket_path_falls_back_to_short_private_temp_dir_for_long_state_dirs() {
         let short = PathBuf::from("/tmp/dh-short");
         assert_eq!(
             daemon_socket_path(&short, 42),
-            PathBuf::from("/tmp/dh-short/daemon-42.sock")
+            PathBuf::from("/tmp/dh-short/run/daemon-42.sock")
         );
         let long = PathBuf::from(format!("/tmp/{}", "a".repeat(120)));
         let sock = daemon_socket_path(&long, 42);
         assert!(sock.as_os_str().as_encoded_bytes().len() <= MAX_UNIX_SOCKET_PATH_BYTES);
-        assert!(sock.to_string_lossy().ends_with("-42.sock"));
+        assert!(sock.to_string_lossy().ends_with("/d-42.sock"));
+    }
+
+    #[test]
+    fn private_socket_dir_enforces_0700_and_rejects_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock = dir.path().join("run/daemon-1.sock");
+        ensure_private_socket_dir(&sock).unwrap();
+        let meta = fs::symlink_metadata(dir.path().join("run")).unwrap();
+        assert_eq!(meta.mode() & 0o777, 0o700);
+
+        let real_target = dir.path().join("real");
+        fs::create_dir(&real_target).unwrap();
+        let link = dir.path().join("link-run");
+        symlink(&real_target, &link).unwrap();
+        let err = ensure_private_socket_dir(&link.join("daemon-1.sock")).unwrap_err();
+        assert!(err.contains("not a regular directory"), "{err}");
+    }
+
+    #[test]
+    fn peer_uid_and_context_fingerprint_succeed_for_current_process() {
+        let (a, _b) = UnixStream::pair().unwrap();
+        verify_peer_uid(&a).unwrap();
+        let fp = execution_context_fingerprint();
+        assert!(fp.starts_with(&format!("uid={}", current_euid())), "{fp}");
     }
 
     #[test]
@@ -211,9 +403,12 @@ mod tests {
             version: "test".to_owned(),
             exe_path: "/bin/devhost".to_owned(),
             exe_identity: "id".to_owned(),
+            context_fingerprint: execution_context_fingerprint(),
         };
         write_daemon_record(dir.path(), &record).unwrap();
-        assert_eq!(read_live_daemon(dir.path()), Some(record));
+        assert_eq!(read_live_daemon(dir.path()), Some(record.clone()));
+        assert_eq!(is_live_daemon_pid(dir.path(), pid), Some(record));
+        assert!(is_live_daemon_pid(dir.path(), pid + 1).is_none());
         remove_daemon_record_if_pid(dir.path(), pid + 1);
         assert!(read_daemon_record(dir.path()).is_some());
         remove_daemon_record_if_pid(dir.path(), pid);

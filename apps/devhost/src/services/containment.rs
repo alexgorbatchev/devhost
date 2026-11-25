@@ -26,14 +26,61 @@ static CONTAINMENT_TOKEN_COUNTER: AtomicU64 = AtomicU64::new(0);
 const MAX_ORPHAN_WATCHLIST: usize = 4096;
 
 #[cfg(target_os = "linux")]
+const UNTRACKED_ZOMBIE_REAP_GRACE: Duration = Duration::from_secs(1);
+
+fn direct_children() -> &'static Mutex<BTreeSet<i32>> {
+    static CHILDREN: OnceLock<Mutex<BTreeSet<i32>>> = OnceLock::new();
+    CHILDREN.get_or_init(|| Mutex::new(BTreeSet::new()))
+}
+
+/// Guard marking a PID as a directly spawned `Child` owned by devhost so neither
+/// sibling containment scans nor subreaper orphan reaping can steal its wait status.
+pub struct DirectChildGuard(i32);
+
+impl Drop for DirectChildGuard {
+    fn drop(&mut self) {
+        if self.0 > 0 {
+            direct_children()
+                .lock()
+                .expect("direct children lock")
+                .remove(&self.0);
+        }
+    }
+}
+
+pub fn register_direct_child(pid: i32) -> DirectChildGuard {
+    if pid > 0 {
+        direct_children()
+            .lock()
+            .expect("direct children lock")
+            .insert(pid);
+    }
+    DirectChildGuard(pid)
+}
+
+pub fn is_direct_child(pid: i32) -> bool {
+    pid > 0
+        && direct_children()
+            .lock()
+            .expect("direct children lock")
+            .contains(&pid)
+}
+
+#[cfg(target_os = "linux")]
 fn orphan_watchlist() -> &'static Mutex<BTreeMap<i32, String>> {
     static WATCHLIST: OnceLock<Mutex<BTreeMap<i32, String>>> = OnceLock::new();
     WATCHLIST.get_or_init(|| Mutex::new(BTreeMap::new()))
 }
 
 #[cfg(target_os = "linux")]
+fn untracked_zombies() -> &'static Mutex<BTreeMap<(i32, String), Instant>> {
+    static ZOMBIES: OnceLock<Mutex<BTreeMap<(i32, String), Instant>>> = OnceLock::new();
+    ZOMBIES.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+#[cfg(target_os = "linux")]
 fn try_reap_tracked_orphan(pid: i32, expected_identity: &str) -> bool {
-    if pid <= 0 {
+    if pid <= 0 || is_direct_child(pid) {
         return false;
     }
     let Ok(stat) = procid::read_linux_stat(pid) else {
@@ -54,11 +101,25 @@ fn try_reap_tracked_orphan(pid: i32, expected_identity: &str) -> bool {
     unsafe { libc::waitpid(pid, &mut status, libc::WNOHANG) == pid }
 }
 
-/// Reap exited reparented descendants that were tracked by this process's Linux subreaper.
+/// Reap exited reparented descendants in this process's Linux subreaper.
+/// Tracked descendants are reaped immediately; untracked reparented zombies
+/// (such as double-forked grandchildren without a token or beyond watchlist limits)
+/// are reaped after a short grace window, never touching registered direct `Child` PIDs.
 pub fn reap_orphaned_descendants() -> usize {
     #[cfg(target_os = "linux")]
     {
-        let mut reaped = 0;
+        reap_orphaned_descendants_with_grace(UNTRACKED_ZOMBIE_REAP_GRACE)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        0
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn reap_orphaned_descendants_with_grace(grace: Duration) -> usize {
+    let mut reaped = 0;
+    {
         let mut list = orphan_watchlist().lock().expect("orphan watchlist lock");
         list.retain(|&pid, identity| {
             if try_reap_tracked_orphan(pid, identity) {
@@ -68,12 +129,50 @@ pub fn reap_orphaned_descendants() -> usize {
             // Retain only while the tracked descendant is still alive with the same identity.
             matches_identity(pid, identity)
         });
-        reaped
     }
-    #[cfg(not(target_os = "linux"))]
-    {
-        0
+
+    let self_pid = std::process::id() as i32;
+    let Ok(entries) = fs::read_dir("/proc") else {
+        return reaped;
+    };
+    let now = Instant::now();
+    let mut observed = BTreeSet::new();
+    let mut zombies = untracked_zombies().lock().expect("untracked zombies lock");
+    for entry in entries.flatten() {
+        let Some(pid) = entry
+            .file_name()
+            .to_str()
+            .and_then(|name| name.parse::<i32>().ok())
+        else {
+            continue;
+        };
+        if pid <= 0 || is_direct_child(pid) {
+            continue;
+        }
+        let Ok(stat) = procid::read_linux_stat(pid) else {
+            continue;
+        };
+        if stat.parent_pid != self_pid || stat.state != b'Z' {
+            continue;
+        }
+        let Ok(identity) = procid::linux_stat_identity(&stat) else {
+            continue;
+        };
+        let key = (pid, identity);
+        observed.insert(key.clone());
+        let first_seen = *zombies.entry(key.clone()).or_insert(now);
+        if now.saturating_duration_since(first_seen) >= grace && !is_direct_child(pid) {
+            let mut status: libc::c_int = 0;
+            // SAFETY: `pid` has been observed as an unwaited zombie child of this
+            // subreaper across the grace window and is not a registered direct Child.
+            if unsafe { libc::waitpid(pid, &mut status, libc::WNOHANG) } == pid {
+                reaped += 1;
+                observed.remove(&key);
+            }
+        }
     }
+    zombies.retain(|key, _| observed.contains(key));
+    reaped
 }
 
 pub fn create_service_containment_token() -> String {
@@ -327,7 +426,7 @@ fn refresh_tracked_from_snapshot(
     for pid in roots {
         descendants.extend(collect_descendant_pids(snapshot, pid));
     }
-    for pid in collect_platform_containment_root_pids(children_by_parent, service_token) {
+    for pid in collect_platform_containment_root_pids(children_by_parent, root_pid, service_token) {
         if snapshot
             .identities
             .get(&pid)
@@ -507,6 +606,7 @@ fn read_process_snapshot() -> Result<ProcessSnapshot, String> {
 #[cfg(target_os = "linux")]
 fn collect_platform_containment_root_pids(
     children_by_parent: &BTreeMap<i32, Vec<i32>>,
+    root_pid: i32,
     service_token: &str,
 ) -> Vec<i32> {
     if service_token.is_empty() {
@@ -518,6 +618,9 @@ fn collect_platform_containment_root_pids(
     };
     let mut roots = Vec::new();
     for &pid in children {
+        if pid != root_pid && is_direct_child(pid) {
+            continue;
+        }
         if read_linux_process_env(pid, SERVICE_CONTAINMENT_TOKEN_ENV).as_deref()
             == Some(service_token)
         {
@@ -530,6 +633,7 @@ fn collect_platform_containment_root_pids(
 #[cfg(not(target_os = "linux"))]
 fn collect_platform_containment_root_pids(
     _children_by_parent: &BTreeMap<i32, Vec<i32>>,
+    _root_pid: i32,
     _service_token: &str,
 ) -> Vec<i32> {
     Vec::new()
@@ -958,6 +1062,52 @@ mod tests {
             "orphaned grandchild {grandchild_pid} should have been reaped"
         );
         containment.close();
+
+        // Untracked double-forked orphan (no token, never placed in orphan_watchlist)
+        // is also reaped after the grace window, while registered direct children are spared.
+        let untracked_file = dir.path().join("untracked.pid");
+        let mut untracked_parent = Command::new("sh")
+            .args([
+                "-c",
+                &format!(
+                    "sleep 0.1 & echo $! > {}.tmp && mv {}.tmp {}",
+                    untracked_file.to_string_lossy(),
+                    untracked_file.to_string_lossy(),
+                    untracked_file.to_string_lossy()
+                ),
+            ])
+            .spawn()
+            .unwrap();
+        let _ = untracked_parent.wait();
+        let wait_file = std::time::Instant::now() + Duration::from_secs(3);
+        while !untracked_file.exists() && std::time::Instant::now() < wait_file {
+            thread::sleep(Duration::from_millis(10));
+        }
+        let untracked_pid: i32 = fs::read_to_string(&untracked_file)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        let direct_child = Command::new("sh").args(["-c", "exit 0"]).spawn().unwrap();
+        let direct_pid = direct_child.id() as i32;
+        let _direct_guard = register_direct_child(direct_pid);
+        let reap_untracked_deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while procid::read_linux_stat(untracked_pid).is_ok() {
+            reap_orphaned_descendants_with_grace(Duration::from_millis(40));
+            if std::time::Instant::now() >= reap_untracked_deadline {
+                break;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        assert!(
+            procid::read_linux_stat(untracked_pid).is_err(),
+            "untracked orphaned grandchild {untracked_pid} should have been reaped"
+        );
+        let mut direct_child = direct_child;
+        assert!(
+            direct_child.wait().is_ok(),
+            "registered direct child must not be stolen by orphan reaper"
+        );
     }
 
     #[test]

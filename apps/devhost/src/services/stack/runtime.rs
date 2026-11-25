@@ -13,6 +13,7 @@ pub(super) struct Runtime<'a> {
     pub manifest: &'a mut ResolvedManifest,
     pub options: &'a StartStackOptions,
     pub environment: &'a BTreeMap<String, String>,
+    pub non_unicode_environment: &'a [(Vec<u8>, Vec<u8>)],
     pub launch: &'a LaunchMetadata,
     pub cancel: &'a AtomicBool,
     pub grace_period: Duration,
@@ -1135,6 +1136,7 @@ impl Runtime<'_> {
                     self.manifest,
                     &service,
                     self.environment,
+                    self.non_unicode_environment,
                     &self.options.output,
                     self.daemon_output,
                 ) {
@@ -1198,6 +1200,7 @@ impl Runtime<'_> {
                     self.manifest,
                     name,
                     self.environment,
+                    self.non_unicode_environment,
                     &self.options.output,
                     self.cancel,
                     self.daemon_output,
@@ -1211,6 +1214,7 @@ impl Runtime<'_> {
                     self.manifest,
                     name,
                     self.environment,
+                    self.non_unicode_environment,
                     &self.options.output,
                     self.grace_period,
                     ServiceStartContext {

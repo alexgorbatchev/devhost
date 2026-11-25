@@ -62,8 +62,19 @@ impl Process {
         if !environment.is_empty() {
             command.env_clear();
             for (key, value) in environment {
+                if key == crate::services::containment::SERVICE_CONTAINMENT_TOKEN_ENV
+                    || key == crate::services::detach::DETACHED_LOG_ENV
+                    || key == crate::services::detach::STACK_LOG_ENV
+                {
+                    continue;
+                }
                 command.env(key, value);
             }
+        } else {
+            command
+                .env_remove(crate::services::containment::SERVICE_CONTAINMENT_TOKEN_ENV)
+                .env_remove(crate::services::detach::DETACHED_LOG_ENV)
+                .env_remove(crate::services::detach::STACK_LOG_ENV);
         }
         if harness == CLAUDE {
             command
@@ -96,6 +107,7 @@ impl Process {
             .spawn()
             .map_err(|e| format!("start {harness}: {e}"))?;
         let pid = child.id() as i32;
+        let direct_child_guard = crate::services::containment::register_direct_child(pid);
         let input = child.stdin.take();
         let output = child.stdout.take().expect("piped chat stdout");
         let mut stderr = child.stderr.take().expect("piped chat stderr");
@@ -151,6 +163,7 @@ impl Process {
             }
             let _ = stderr_worker.join();
             let status = child.wait();
+            drop(direct_child_guard);
             worker.input.lock().expect("chat input").take();
             let message = failure.unwrap_or_else(|| {
                 format!(

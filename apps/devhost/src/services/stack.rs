@@ -138,6 +138,7 @@ pub struct StartStackOptions {
     pub caddy_dir: PathBuf,
     pub config_path: Option<PathBuf>,
     pub environment: BTreeMap<String, String>,
+    pub non_unicode_environment: Option<Vec<(Vec<u8>, Vec<u8>)>>,
     pub output: ServiceOutput,
     pub debug_caddy: bool,
     pub shutdown_grace_period: Option<Duration>,
@@ -370,6 +371,141 @@ impl ShutdownProgress {
     }
 }
 
+struct StackCleanup<'a> {
+    manifest: &'a mut ResolvedManifest,
+    caddy_dir: PathBuf,
+    stack_id: String,
+    manifest_path_str: String,
+    debug_caddy: bool,
+    grace_period: Duration,
+    environment: BTreeMap<String, String>,
+    non_unicode_environment: Vec<(Vec<u8>, Vec<u8>)>,
+    output: ServiceOutput,
+    stop_signal_forwarder: Arc<AtomicBool>,
+    signal_forwarder: Option<JoinHandle<()>>,
+    remote_lease: Option<crate::remote::Lease>,
+    started_services: Vec<StartedService>,
+    started_daemons: Vec<ResolvedService>,
+    daemon_output: DaemonOutput,
+    claimed_hosts: Vec<String>,
+    claimed_fixed_ports: Vec<(String, u16)>,
+    active_routes: Vec<ActivateRouteOptions>,
+    shutdown_progress: ShutdownProgress,
+    stack_registered: bool,
+    finished: bool,
+}
+
+impl StackCleanup<'_> {
+    fn run_cleanup(&mut self, was_ready: bool) -> Vec<String> {
+        self.finished = true;
+        self.stop_signal_forwarder.store(true, Ordering::SeqCst);
+        if let Some(handle) = self.signal_forwarder.take() {
+            let _ = handle.join();
+        }
+        // Centralized cleanup in exact order.
+        let mut cleanup_errors: Vec<String> = Vec::new();
+        if let Some(lease) = &mut self.remote_lease
+            && let Err(error) = lease.close()
+        {
+            cleanup_errors.push(error.to_string());
+        }
+        for started in &self.started_services {
+            self.shutdown_progress.stopping(&started.service.name);
+        }
+        if let Err(err) = stop_started_services(
+            &mut self.started_services,
+            self.grace_period,
+            &mut self.shutdown_progress,
+        ) {
+            cleanup_errors.push(err);
+        }
+        if let Err(err) = stop_daemon_lifecycle_services(
+            self.manifest,
+            &self.started_daemons,
+            &self.environment,
+            &self.non_unicode_environment,
+            &self.output,
+            &self.daemon_output,
+        ) {
+            cleanup_errors.push(err);
+        }
+
+        for host in &self.claimed_hosts {
+            if let Err(err) = routes::release_host_claim_for_stack(
+                &self.caddy_dir,
+                host,
+                &self.manifest_path_str,
+                &self.stack_id,
+            ) {
+                cleanup_errors.push(err);
+            }
+        }
+
+        if !self.active_routes.is_empty() {
+            let mut caddy_out = self.output.caddy_stderr_writer();
+            if let Err(err) = routes::replace_routes_for_stack(
+                &self.caddy_dir,
+                &self.active_routes,
+                &[],
+                &self.manifest_path_str,
+                &self.stack_id,
+                self.output.mode(),
+                &mut caddy_out,
+                !self.debug_caddy,
+            ) {
+                cleanup_errors.push(err);
+            }
+        }
+
+        for (bind_host, port) in &self.claimed_fixed_ports {
+            if let Err(err) = routes::release_fixed_port_claim_for_stack(
+                &self.caddy_dir,
+                bind_host,
+                *port,
+                &self.manifest_path_str,
+                &self.stack_id,
+            ) {
+                cleanup_errors.push(err);
+            }
+        }
+
+        if self.stack_registered
+            && let Err(err) = caddy::stacks::unregister_stack_for(&self.caddy_dir, &self.stack_id)
+        {
+            cleanup_errors.push(err);
+        }
+
+        if cleanup_errors.is_empty()
+            && (was_ready || !self.started_services.is_empty() || !self.started_daemons.is_empty())
+        {
+            self.output
+                .log_stdout(&self.manifest.name, "Stack stopped.");
+        }
+        cleanup_errors
+    }
+}
+
+impl Drop for StackCleanup<'_> {
+    fn drop(&mut self) {
+        if !self.finished {
+            // Avoid touching the original ServiceOutput during unwind: if the panic
+            // occurred while writing output, its mutex is poisoned and logging again
+            // inside Drop would double-panic and abort the entire shared daemon.
+            let sink = ServiceOutput::new(
+                self.output.mode(),
+                Box::new(std::io::sink()),
+                Box::new(std::io::sink()),
+                &[],
+            );
+            self.output = sink.clone();
+            self.shutdown_progress = ShutdownProgress::new(sink, self.manifest.name.clone());
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _ = self.run_cleanup(false);
+            }));
+        }
+    }
+}
+
 pub fn start_stack(
     manifest: &mut ResolvedManifest,
     service_order: &[String],
@@ -384,6 +520,10 @@ pub fn start_stack(
     } else {
         options.environment.clone()
     };
+    let non_unicode_environment = options
+        .non_unicode_environment
+        .clone()
+        .unwrap_or_else(crate::environment::non_unicode);
     let mut launch = std::mem::take(&mut options.launch);
     if launch.log_path.is_empty() && !launch.detached {
         launch = take_launch_metadata(&mut environment);
@@ -391,6 +531,7 @@ pub fn start_stack(
         environment.remove(DETACHED_LOG_ENV);
         environment.remove(STACK_LOG_ENV);
     }
+    crate::environment::strip_internal_vars(&mut environment);
     let grace_period = options
         .shutdown_grace_period
         .unwrap_or(SHUTDOWN_GRACE_PERIOD);
@@ -449,18 +590,32 @@ pub fn start_stack(
         None
     };
 
-    let mut started_services: Vec<StartedService> = Vec::new();
-    let mut started_daemons: Vec<ResolvedService> = Vec::new();
-    let daemon_output = DaemonOutput::default();
-    let mut claimed_hosts: Vec<String> = Vec::new();
-    let mut claimed_fixed_ports: Vec<(String, u16)> = Vec::new();
-    let mut active_routes: Vec<ActivateRouteOptions> = Vec::new();
-    let mut remote_lease = None;
-    let mut stack_registered = false;
-    let mut was_ready = false;
-    let mut shutdown_progress =
-        ShutdownProgress::new(options.output.clone(), manifest.name.clone());
     let manifest_path_str = manifest.manifest_path.to_string_lossy().into_owned();
+    let shutdown_progress = ShutdownProgress::new(options.output.clone(), manifest.name.clone());
+    let mut cleanup = StackCleanup {
+        manifest,
+        caddy_dir: options.caddy_dir.clone(),
+        stack_id: options.stack_id.clone(),
+        manifest_path_str: manifest_path_str.clone(),
+        debug_caddy: options.debug_caddy,
+        grace_period,
+        environment,
+        non_unicode_environment,
+        output: options.output.clone(),
+        stop_signal_forwarder,
+        signal_forwarder,
+        remote_lease: None,
+        started_services: Vec::new(),
+        started_daemons: Vec::new(),
+        daemon_output: DaemonOutput::default(),
+        claimed_hosts: Vec::new(),
+        claimed_fixed_ports: Vec::new(),
+        active_routes: Vec::new(),
+        shutdown_progress,
+        stack_registered: false,
+        finished: false,
+    };
+    let mut was_ready = false;
 
     let (exit_tx, exit_rx) = mpsc::channel::<ServiceExitResult>();
 
@@ -476,11 +631,11 @@ pub fn start_stack(
             None
         } else {
             super::worktrees::Worktrees::build(
-                manifest,
+                cleanup.manifest,
                 state,
                 None,
                 &options.stack_id,
-                &environment,
+                &cleanup.environment,
             )?
         };
         let mut blocked = BTreeMap::new();
@@ -494,27 +649,27 @@ pub fn start_stack(
                     let mut next = resolve_service_ports(
                         &configuration,
                         &PortResolutionOptions {
-                            requested: manifest.requested.clone(),
-                            domain_suffix: manifest.domain_suffix.clone(),
-                            remote_mode: manifest.remote.is_some(),
-                            remote: manifest.remote.clone(),
+                            requested: cleanup.manifest.requested.clone(),
+                            domain_suffix: cleanup.manifest.domain_suffix.clone(),
+                            remote_mode: cleanup.manifest.remote.is_some(),
+                            remote: cleanup.manifest.remote.clone(),
                             ..Default::default()
                         },
                     )?;
-                    next.manifest_path = manifest.manifest_path.clone();
-                    next.caddy = manifest.caddy.clone();
+                    next.manifest_path = cleanup.manifest.manifest_path.clone();
+                    next.caddy = cleanup.manifest.caddy.clone();
                     let groups = super::worktrees::Worktrees::build(
                         &next,
                         state,
                         Some(previous),
                         &options.stack_id,
-                        &environment,
+                        &cleanup.environment,
                     )?;
                     Ok::<_, String>((next, order, groups))
                 })();
                 match restored {
                     Ok((next, order, groups)) => {
-                        *manifest = next;
+                        *cleanup.manifest = next;
                         initial_order = order;
                         worktrees = groups;
                     }
@@ -530,27 +685,27 @@ pub fn start_stack(
                 }
             }
         }
-        options.configuration = manifest.configuration.clone();
+        options.configuration = cleanup.manifest.configuration.clone();
         for error in blocked.values().collect::<BTreeSet<_>>() {
-            options.output.log_stdout(&manifest.name, error);
+            options.output.log_stdout(&cleanup.manifest.name, error);
         }
 
         let control = options
             .runtime_control
             .take()
             .unwrap_or_else(|| super::control::RuntimeControl::channel().1);
-        control.live.initialize(manifest);
+        control.live.initialize(cleanup.manifest);
         let (dev_source, warning) = crate::devtools::dev_source::load_dev_source_checkout(
-            &environment,
-            &manifest.manifest_directory,
+            &cleanup.environment,
+            &cleanup.manifest.manifest_directory,
             option_env!("DEVHOST_BUILD_SOURCE_DIRECTORY").map(Path::new),
         )?;
         if let Some(warning) = warning {
-            options.output.log_stdout(&manifest.name, &warning);
+            options.output.log_stdout(&cleanup.manifest.name, &warning);
         }
         control.live.configure(&options.caddy_dir, dev_source);
         control.live.set_stack_id(options.stack_id.clone());
-        control.live.set_environment(environment.clone());
+        control.live.set_environment(cleanup.environment.clone());
         control
             .live
             .set_config_path(options.config_path.clone().or_else(|| config::path().ok()));
@@ -578,12 +733,12 @@ pub fn start_stack(
             &RegisterStackOptions {
                 stack_id: options.stack_id.clone(),
                 daemon_socket: options.daemon_socket.clone(),
-                remote: manifest.remote.is_some(),
+                remote: cleanup.manifest.remote.is_some(),
                 log_path: launch.log_path.clone(),
                 control_port: control_server.port(),
                 manifest_files,
                 manifest_path: manifest_path_str.clone(),
-                stack_name: manifest.name.clone(),
+                stack_name: cleanup.manifest.name.clone(),
             },
         ) {
             return Err(match err {
@@ -591,7 +746,7 @@ pub fn start_stack(
                 RegisterStackError::Other(msg) => StartStackError::Failure(msg.into()),
             });
         }
-        stack_registered = true;
+        cleanup.stack_registered = true;
 
         routes::cleanup_stale_registrations(&options.caddy_dir)?;
         routes::cleanup_stale_fixed_port_claims(&options.caddy_dir)?;
@@ -625,7 +780,7 @@ pub fn start_stack(
             && let Some(warning) = caddy::root_certificate_trust_warning(&options.caddy_dir)
         {
             options.output.log_stdout(
-                &manifest.name,
+                &cleanup.manifest.name,
                 &cliout::warning(options.output.mode(), &warning),
             );
         }
@@ -641,10 +796,10 @@ pub fn start_stack(
             ),
             &format!("apply the devhost config file {config_path_label}"),
         )?;
-        manifest.caddy = shared.caddy.clone();
+        cleanup.manifest.caddy = shared.caddy.clone();
 
         let mut zombie_cleanup = ZombieCleanup::default();
-        for service in manifest.services.values() {
+        for service in cleanup.manifest.services.values() {
             if service.port_source != "fixed" {
                 continue;
             }
@@ -657,27 +812,29 @@ pub fn start_stack(
                 port,
                 &manifest_path_str,
                 &options.stack_id,
-                manifest.kill_zombies,
+                cleanup.manifest.kill_zombies,
                 Some(&mut zombie_cleanup),
                 Some(&options.output),
             )?;
-            claimed_fixed_ports.push((service.bind_host.clone(), port));
+            cleanup
+                .claimed_fixed_ports
+                .push((service.bind_host.clone(), port));
         }
 
-        for host in collect_claimed_hosts(&manifest.services) {
+        for host in collect_claimed_hosts(&cleanup.manifest.services) {
             routes::claim_host_for_stack(
                 &options.caddy_dir,
                 &host,
                 &manifest_path_str,
                 &options.stack_id,
-                manifest.kill_zombies,
+                cleanup.manifest.kill_zombies,
                 Some(&mut zombie_cleanup),
                 Some(&options.output),
             )?;
-            claimed_hosts.push(host);
+            cleanup.claimed_hosts.push(host);
         }
 
-        let initial_routes = documents.routes(manifest)?;
+        let initial_routes = documents.routes(cleanup.manifest)?;
         caddy::ctx(
             routes::replace_routes_for_stack(
                 &options.caddy_dir,
@@ -691,10 +848,10 @@ pub fn start_stack(
             ),
             "replace stack routes",
         )?;
-        active_routes = initial_routes;
+        cleanup.active_routes = initial_routes;
 
-        if let Some(remote) = remote_options(manifest, &options.caddy_dir)? {
-            remote_lease = Some(
+        if let Some(remote) = remote_options(cleanup.manifest, &options.caddy_dir)? {
+            cleanup.remote_lease = Some(
                 crate::remote::Lease::acquire(&remote, &cancel)
                     .map_err(|error| format!("start remote previews: {error}"))?,
             );
@@ -702,21 +859,22 @@ pub fn start_stack(
 
         let mut watches =
             super::watch::ServiceWatches::new(control.dirty.clone(), options.output.clone());
-        for service in manifest.services.values() {
+        for service in cleanup.manifest.services.values() {
             if blocked.contains_key(&service.name) {
                 continue;
             }
-            watches.start(service, &manifest.name)?;
+            watches.start(service, &cleanup.manifest.name)?;
         }
         let mut manifest_watch = if options.serve_session {
             None
         } else {
-            let path = manifest
+            let path = cleanup
+                .manifest
                 .configuration
                 .as_ref()
                 .map(|configuration| &configuration.manifest_path)
-                .unwrap_or(&manifest.manifest_path);
-            let env_ref = (!environment.is_empty()).then_some(&environment);
+                .unwrap_or(&cleanup.manifest.manifest_path);
+            let env_ref = (!cleanup.environment.is_empty()).then_some(&cleanup.environment);
             let (_, inputs) = crate::manifest::read_with_inputs_env(path, env_ref);
             Some(super::watch::InputWatch::new(inputs)?)
         };
@@ -730,12 +888,12 @@ pub fn start_stack(
                 options.external_signal.as_deref(),
                 options.install_signal_handlers,
                 &options.output,
-                &manifest.name,
+                &cleanup.manifest.name,
             ) {
                 return Ok(SIGNAL_EXIT_CODE_BASE + sig);
             }
-            let Some(service) = manifest.services.get(service_name).cloned() else {
-                if manifest.stopped.contains_key(service_name) {
+            let Some(service) = cleanup.manifest.services.get(service_name).cloned() else {
+                if cleanup.manifest.stopped.contains_key(service_name) {
                     continue;
                 }
                 return Err(format!("unknown service: {service_name}").into());
@@ -743,43 +901,45 @@ pub fn start_stack(
 
             if is_managed_service(&service) {
                 if uses_daemon_lifecycle(&service) {
-                    started_daemons.push(service.clone());
+                    cleanup.started_daemons.push(service.clone());
                     if let Err(err) = start_daemon_lifecycle_service(
-                        manifest,
+                        cleanup.manifest,
                         service_name,
-                        &environment,
+                        &cleanup.environment,
+                        &cleanup.non_unicode_environment,
                         &options.output,
                         &cancel,
-                        &daemon_output,
+                        &cleanup.daemon_output,
                     ) {
                         if let Some(sig) = check_termination_signal(
                             &cancel,
                             options.external_signal.as_deref(),
                             options.install_signal_handlers,
                             &options.output,
-                            &manifest.name,
+                            &cleanup.manifest.name,
                         ) {
                             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                         }
                         let err = match stop_daemon_lifecycle_service(
-                            manifest,
+                            cleanup.manifest,
                             &service,
-                            &environment,
+                            &cleanup.environment,
+                            &cleanup.non_unicode_environment,
                             &options.output,
-                            &daemon_output,
+                            &cleanup.daemon_output,
                         ) {
                             Ok(()) => {
-                                started_daemons.retain(|s| s.name != service.name);
+                                cleanup.started_daemons.retain(|s| s.name != service.name);
                                 err
                             }
                             Err(cleanup_error) => format!("{err}\ncleanup: {cleanup_error}"),
                         };
-                        options.output.log_stdout(&manifest.name, &err);
+                        options.output.log_stdout(&cleanup.manifest.name, &err);
                         control.live.failed(service_name, &err);
                         if launch.detached {
                             return Err(fail_detached_not_ready(
                                 &launch,
-                                &manifest.name,
+                                &cleanup.manifest.name,
                                 &options.output,
                                 service_name,
                                 err,
@@ -790,9 +950,10 @@ pub fn start_stack(
                     }
                 } else {
                     match start_service_with_retries(
-                        manifest,
+                        cleanup.manifest,
                         service_name,
-                        &environment,
+                        &cleanup.environment,
+                        &cleanup.non_unicode_environment,
                         &options.output,
                         grace_period,
                         ServiceStartContext {
@@ -803,11 +964,11 @@ pub fn start_stack(
                         },
                     ) {
                         Ok(started) => {
-                            let updated_routes = documents.routes(manifest)?;
-                            if updated_routes != active_routes {
+                            let updated_routes = documents.routes(cleanup.manifest)?;
+                            if updated_routes != cleanup.active_routes {
                                 routes::replace_routes_for_stack(
                                     &options.caddy_dir,
-                                    &active_routes,
+                                    &cleanup.active_routes,
                                     &updated_routes,
                                     &manifest_path_str,
                                     &options.stack_id,
@@ -818,9 +979,9 @@ pub fn start_stack(
                                 .map_err(|err| {
                                     format!("refresh route for service {service_name}: {err}")
                                 })?;
-                                active_routes = updated_routes;
+                                cleanup.active_routes = updated_routes;
                             }
-                            started_services.push(started);
+                            cleanup.started_services.push(started);
                         }
                         Err(StartServiceError::Canceled) => {
                             if let Some(sig) = check_termination_signal(
@@ -828,7 +989,7 @@ pub fn start_stack(
                                 options.external_signal.as_deref(),
                                 options.install_signal_handlers,
                                 &options.output,
-                                &manifest.name,
+                                &cleanup.manifest.name,
                             ) {
                                 return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                             }
@@ -841,13 +1002,13 @@ pub fn start_stack(
                             if launch.detached {
                                 return Err(fail_detached_not_ready(
                                     &launch,
-                                    &manifest.name,
+                                    &cleanup.manifest.name,
                                     &options.output,
                                     service_name,
                                     message,
                                 ));
                             }
-                            options.output.log_stdout(&manifest.name, &message);
+                            options.output.log_stdout(&cleanup.manifest.name, &message);
                             control.live.failed(service_name, &message);
                             if let Some(exited) = exited_service {
                                 if let Some(code) = exited.read_exit_code() {
@@ -857,7 +1018,7 @@ pub fn start_stack(
                                         exit_state: exited.exit_state.clone(),
                                     });
                                 }
-                                started_services.push(*exited);
+                                cleanup.started_services.push(*exited);
                             }
                         }
                     }
@@ -866,7 +1027,7 @@ pub fn start_stack(
                 if launch.detached {
                     match wait_for_startup_health(
                         &service,
-                        &manifest.name,
+                        &cleanup.manifest.name,
                         &options.output,
                         &cancel,
                         || None,
@@ -878,7 +1039,7 @@ pub fn start_stack(
                                 options.external_signal.as_deref(),
                                 options.install_signal_handlers,
                                 &options.output,
-                                &manifest.name,
+                                &cleanup.manifest.name,
                             ) {
                                 return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                             }
@@ -887,7 +1048,7 @@ pub fn start_stack(
                         Err(HealthWaitError::Failed(err)) => {
                             return Err(fail_detached_not_ready(
                                 &launch,
-                                &manifest.name,
+                                &cleanup.manifest.name,
                                 &options.output,
                                 service_name,
                                 err,
@@ -898,25 +1059,27 @@ pub fn start_stack(
                 control.live.ready(service_name);
             }
 
-            if let Some(updated) = manifest.services.get(service_name)
+            if let Some(updated) = cleanup.manifest.services.get(service_name)
                 && !updated.hosts.is_empty()
                 && updated.port.is_some()
-                && let Some(warning) =
-                    read_loopback_bind_host_ambiguity_warning(updated, manifest.caddy.https_port)
+                && let Some(warning) = read_loopback_bind_host_ambiguity_warning(
+                    updated,
+                    cleanup.manifest.caddy.https_port,
+                )
             {
-                options.output.log_stdout(&manifest.name, &warning);
+                options.output.log_stdout(&cleanup.manifest.name, &warning);
             }
         }
 
-        log_service_urls(manifest, &options.output);
-        log_stopped_services(manifest, &options.output);
+        log_service_urls(cleanup.manifest, &options.output);
+        log_stopped_services(cleanup.manifest, &options.output);
 
         if let Some(sig) = check_termination_signal(
             &cancel,
             options.external_signal.as_deref(),
             options.install_signal_handlers,
             &options.output,
-            &manifest.name,
+            &cleanup.manifest.name,
         ) {
             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
         }
@@ -926,7 +1089,7 @@ pub fn start_stack(
                 options.external_signal.as_deref(),
                 options.install_signal_handlers,
                 &options.output,
-                &manifest.name,
+                &cleanup.manifest.name,
             ) {
                 return Ok(SIGNAL_EXIT_CODE_BASE + sig);
             }
@@ -935,11 +1098,11 @@ pub fn start_stack(
 
         let mut ready_notify = options.ready_notify.take();
         if launch.detached && options.command_serve_timeout.is_none() {
-            for started in &started_services {
+            for started in &cleanup.started_services {
                 if let Some(code) = started.read_exit_code() {
                     return Err(fail_detached_not_ready(
                         &launch,
-                        &manifest.name,
+                        &cleanup.manifest.name,
                         &options.output,
                         &started.service.name,
                         format!(
@@ -949,11 +1112,11 @@ pub fn start_stack(
                     ));
                 }
             }
-            for name in ordered_manifest_service_names(manifest) {
+            for name in ordered_manifest_service_names(cleanup.manifest) {
                 if blocked.contains_key(&name) {
                     continue;
                 }
-                let Some(service) = manifest.services.get(&name) else {
+                let Some(service) = cleanup.manifest.services.get(&name) else {
                     continue;
                 };
                 match probe_service_health(&service.health, &cancel) {
@@ -964,7 +1127,7 @@ pub fn start_stack(
                             options.external_signal.as_deref(),
                             options.install_signal_handlers,
                             &options.output,
-                            &manifest.name,
+                            &cleanup.manifest.name,
                         ) {
                             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                         }
@@ -976,7 +1139,7 @@ pub fn start_stack(
                             options.external_signal.as_deref(),
                             options.install_signal_handlers,
                             &options.output,
-                            &manifest.name,
+                            &cleanup.manifest.name,
                         ) {
                             return Ok(SIGNAL_EXIT_CODE_BASE + sig);
                         }
@@ -985,7 +1148,7 @@ pub fn start_stack(
                         }
                         return Err(fail_detached_not_ready(
                             &launch,
-                            &manifest.name,
+                            &cleanup.manifest.name,
                             &options.output,
                             &name,
                             format!(
@@ -995,7 +1158,7 @@ pub fn start_stack(
                     }
                 }
             }
-            let urls = collect_manifest_service_urls(manifest);
+            let urls = collect_manifest_service_urls(cleanup.manifest);
             caddy::stacks::set_stack_ready_for(
                 &options.caddy_dir,
                 &options.stack_id,
@@ -1004,8 +1167,8 @@ pub fn start_stack(
             if let Some(tx) = ready_notify.take() {
                 let _ = tx.send(urls);
             }
-        } else if manifest.remote.is_some() {
-            let urls = collect_manifest_service_urls(manifest);
+        } else if cleanup.manifest.remote.is_some() {
+            let urls = collect_manifest_service_urls(cleanup.manifest);
             caddy::stacks::set_stack_ready_for(
                 &options.caddy_dir,
                 &options.stack_id,
@@ -1019,11 +1182,11 @@ pub fn start_stack(
         } else if options.command_serve_timeout.is_none()
             && let Some(tx) = ready_notify.take()
         {
-            let _ = tx.send(collect_manifest_service_urls(manifest));
+            let _ = tx.send(collect_manifest_service_urls(cleanup.manifest));
         }
 
         was_ready = true;
-        control.live.update_manifest(manifest);
+        control.live.update_manifest(cleanup.manifest);
         if options.command_serve_timeout.is_none() {
             control.live.finish_startup();
         }
@@ -1037,22 +1200,23 @@ pub fn start_stack(
             watch.check();
         }
         runtime::Runtime {
-            manifest,
+            manifest: cleanup.manifest,
             options: &options,
-            environment: &environment,
+            environment: &cleanup.environment,
+            non_unicode_environment: &cleanup.non_unicode_environment,
             launch: &launch,
             cancel: &cancel,
             grace_period,
             exit_tx: &exit_tx,
             exit_rx: &exit_rx,
-            started: &mut started_services,
-            daemons: &mut started_daemons,
-            daemon_output: &daemon_output,
-            hosts: &mut claimed_hosts,
-            ports: &mut claimed_fixed_ports,
-            routes: &mut active_routes,
-            remote_lease: &mut remote_lease,
-            progress: &mut shutdown_progress,
+            started: &mut cleanup.started_services,
+            daemons: &mut cleanup.started_daemons,
+            daemon_output: &cleanup.daemon_output,
+            hosts: &mut cleanup.claimed_hosts,
+            ports: &mut cleanup.claimed_fixed_ports,
+            routes: &mut cleanup.active_routes,
+            remote_lease: &mut cleanup.remote_lease,
+            progress: &mut cleanup.shutdown_progress,
             control,
             control_port: control_server.port(),
             documents: &mut documents,
@@ -1065,90 +1229,12 @@ pub fn start_stack(
         .run(shared)
     })();
 
-    stop_signal_forwarder.store(true, Ordering::SeqCst);
-    if let Some(handle) = signal_forwarder {
-        let _ = handle.join();
-    }
     let run_result = match runtime_failure.lock().expect("runtime failure").take() {
         Some(error) => Err(StartStackError::from(error)),
         None => run_result,
     };
 
-    // Centralized cleanup in exact Go order.
-    let mut cleanup_errors: Vec<String> = Vec::new();
-    if let Some(lease) = &mut remote_lease
-        && let Err(error) = lease.close()
-    {
-        cleanup_errors.push(error.to_string());
-    }
-    for started in &started_services {
-        shutdown_progress.stopping(&started.service.name);
-    }
-    if let Err(err) =
-        stop_started_services(&mut started_services, grace_period, &mut shutdown_progress)
-    {
-        cleanup_errors.push(err);
-    }
-    if let Err(err) = stop_daemon_lifecycle_services(
-        manifest,
-        &started_daemons,
-        &environment,
-        &options.output,
-        &daemon_output,
-    ) {
-        cleanup_errors.push(err);
-    }
-
-    for host in &claimed_hosts {
-        if let Err(err) = routes::release_host_claim_for_stack(
-            &options.caddy_dir,
-            host,
-            &manifest_path_str,
-            &options.stack_id,
-        ) {
-            cleanup_errors.push(err);
-        }
-    }
-
-    if !active_routes.is_empty() {
-        let mut caddy_out = options.output.caddy_stderr_writer();
-        if let Err(err) = routes::replace_routes_for_stack(
-            &options.caddy_dir,
-            &active_routes,
-            &[],
-            &manifest_path_str,
-            &options.stack_id,
-            options.output.mode(),
-            &mut caddy_out,
-            !options.debug_caddy,
-        ) {
-            cleanup_errors.push(err);
-        }
-    }
-
-    for (bind_host, port) in &claimed_fixed_ports {
-        if let Err(err) = routes::release_fixed_port_claim_for_stack(
-            &options.caddy_dir,
-            bind_host,
-            *port,
-            &manifest_path_str,
-            &options.stack_id,
-        ) {
-            cleanup_errors.push(err);
-        }
-    }
-
-    if stack_registered
-        && let Err(err) = caddy::stacks::unregister_stack_for(&options.caddy_dir, &options.stack_id)
-    {
-        cleanup_errors.push(err);
-    }
-
-    if cleanup_errors.is_empty()
-        && (was_ready || !started_services.is_empty() || !started_daemons.is_empty())
-    {
-        options.output.log_stdout(&manifest.name, "Stack stopped.");
-    }
+    let cleanup_errors = cleanup.run_cleanup(was_ready);
 
     match (run_result, cleanup_errors.is_empty()) {
         (Ok(code), true) => Ok(code),
@@ -1238,6 +1324,7 @@ fn start_service_with_retries(
     manifest: &mut ResolvedManifest,
     service_name: &str,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     grace_period: Duration,
     context: ServiceStartContext<'_>,
@@ -1286,6 +1373,7 @@ fn start_service_with_retries(
             manifest,
             &service,
             environment,
+            non_unicode_environment,
             output,
             attempt_output.clone(),
         ) {
@@ -1381,6 +1469,7 @@ fn start_service_process(
     manifest: &ResolvedManifest,
     service: &ResolvedService,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     attempt_output: Arc<AttemptOutputLines>,
 ) -> Result<StartedService, String> {
@@ -1424,7 +1513,7 @@ fn start_service_process(
         .stderr(Stdio::piped())
         .process_group(0);
 
-    crate::environment::inherit_non_unicode(&mut cmd);
+    crate::environment::apply_non_unicode(&mut cmd, non_unicode_environment);
     let child_env = create_child_environment(
         environment,
         &service.env,
@@ -1448,11 +1537,13 @@ fn start_service_process(
     };
 
     let pid = child.id() as i32;
+    let direct_guard = crate::services::containment::register_direct_child(pid);
     let containment = match ServiceContainment::start(pid, token) {
         Ok(c) => c,
         Err(err) => {
             send_signal_to_group(pid, libc::SIGKILL);
             let _ = child.wait();
+            drop(direct_guard);
             return Err(format!("start service {} containment: {err}", service.name));
         }
     };
@@ -1483,6 +1574,7 @@ fn start_service_process(
     let waiter_state = exit_state.clone();
     let waiter = thread::spawn(move || {
         let code = wait_child_exit_code(&mut child);
+        drop(direct_guard);
         let (lock, cvar) = &*waiter_state;
         *waiter_time.lock().expect("exit time") = live::now();
         *lock.lock().expect("exit state lock") = Some(code);
@@ -1618,6 +1710,7 @@ fn start_daemon_lifecycle_service(
     manifest: &ResolvedManifest,
     service_name: &str,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     cancel: &AtomicBool,
     daemon_output: &DaemonOutput,
@@ -1625,8 +1718,14 @@ fn start_daemon_lifecycle_service(
     let Some(service) = manifest.services.get(service_name) else {
         return Err(format!("unknown service: {service_name}"));
     };
-    let running =
-        read_daemon_lifecycle_status(manifest, service, environment, output, Some(cancel))?;
+    let running = read_daemon_lifecycle_status(
+        manifest,
+        service,
+        environment,
+        non_unicode_environment,
+        output,
+        Some(cancel),
+    )?;
     if !running {
         run_service_command(
             manifest,
@@ -1634,6 +1733,7 @@ fn start_daemon_lifecycle_service(
             &service.lifecycle.start,
             "daemon start",
             environment,
+            non_unicode_environment,
             output,
             CommandOptions {
                 cancel: Some(cancel),
@@ -1652,6 +1752,7 @@ fn stop_daemon_lifecycle_service(
     manifest: &ResolvedManifest,
     service: &ResolvedService,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     daemon_output: &DaemonOutput,
 ) -> Result<(), String> {
@@ -1659,7 +1760,14 @@ fn stop_daemon_lifecycle_service(
         return Ok(());
     }
     if !service.lifecycle.status.is_empty() {
-        let running = read_daemon_lifecycle_status(manifest, service, environment, output, None)?;
+        let running = read_daemon_lifecycle_status(
+            manifest,
+            service,
+            environment,
+            non_unicode_environment,
+            output,
+            None,
+        )?;
         if !running {
             daemon_output.stop(&service.name);
             return Ok(());
@@ -1671,6 +1779,7 @@ fn stop_daemon_lifecycle_service(
         &service.lifecycle.stop,
         "daemon stop",
         environment,
+        non_unicode_environment,
         output,
         CommandOptions::default(),
     );
@@ -1684,6 +1793,7 @@ fn stop_daemon_lifecycle_services(
     manifest: &ResolvedManifest,
     daemons: &[ResolvedService],
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     daemon_output: &DaemonOutput,
 ) -> Result<(), String> {
@@ -1691,8 +1801,14 @@ fn stop_daemon_lifecycle_services(
     let mut errors = Vec::new();
     for service in daemons.iter().rev() {
         progress.stopping(&service.name);
-        let result =
-            stop_daemon_lifecycle_service(manifest, service, environment, output, daemon_output);
+        let result = stop_daemon_lifecycle_service(
+            manifest,
+            service,
+            environment,
+            non_unicode_environment,
+            output,
+            daemon_output,
+        );
         progress.stopped(&service.name, result.as_ref().err().map(String::as_str));
         if let Err(err) = result {
             errors.push(err);
@@ -1709,6 +1825,7 @@ fn read_daemon_lifecycle_status(
     manifest: &ResolvedManifest,
     service: &ResolvedService,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     cancel: Option<&AtomicBool>,
 ) -> Result<bool, String> {
@@ -1721,6 +1838,7 @@ fn read_daemon_lifecycle_status(
         &service.lifecycle.status,
         "daemon status",
         environment,
+        non_unicode_environment,
         output,
         CommandOptions {
             cancel,
@@ -1729,12 +1847,14 @@ fn read_daemon_lifecycle_status(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_service_command(
     manifest: &ResolvedManifest,
     service: &ResolvedService,
     command_args: &[String],
     command_label: &str,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     options: CommandOptions<'_>,
 ) -> Result<(), String> {
@@ -1744,6 +1864,7 @@ fn run_service_command(
         command_args,
         command_label,
         environment,
+        non_unicode_environment,
         output,
         options,
     )? {
@@ -1756,12 +1877,14 @@ fn run_service_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_service_command_status(
     manifest: &ResolvedManifest,
     service: &ResolvedService,
     command_args: &[String],
     command_label: &str,
     environment: &BTreeMap<String, String>,
+    non_unicode_environment: &[(Vec<u8>, Vec<u8>)],
     output: &ServiceOutput,
     options: CommandOptions<'_>,
 ) -> Result<bool, String> {
@@ -1779,7 +1902,7 @@ fn run_service_command_status(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .process_group(0);
-    crate::environment::inherit_non_unicode(&mut cmd);
+    crate::environment::apply_non_unicode(&mut cmd, non_unicode_environment);
     for (key, value) in create_child_environment(
         environment,
         &service.env,
@@ -1792,6 +1915,7 @@ fn run_service_command_status(
         cmd.spawn(),
         &format!("start service {} {command_label} command", service.name),
     )?;
+    let _direct_guard = crate::services::containment::register_direct_child(child.id() as i32);
     let attempt = Arc::new(AttemptOutputLines::default());
     let mut readers = Readers::default();
     if let Some(pipe) = child.stdout.take() {
@@ -2062,6 +2186,7 @@ fn create_child_environment(
     for (k, v) in injected {
         merged.insert(k.clone(), v.clone());
     }
+    crate::environment::strip_internal_vars(&mut merged);
     if let Some((k, v)) = extra {
         merged.insert(k.to_owned(), v.to_owned());
     }
@@ -2546,6 +2671,7 @@ process = true
             &mut crash_manifest,
             "crasher",
             &BTreeMap::new(),
+            &[],
             &output,
             Duration::from_millis(200),
             ServiceStartContext {
@@ -2578,6 +2704,7 @@ process = true
             &crash_manifest,
             &stubborn_svc,
             &BTreeMap::new(),
+            &[],
             &output,
             Arc::new(AttemptOutputLines::default()),
         )
@@ -2602,6 +2729,7 @@ process = true
                 &crash_manifest,
                 "bad-daemon",
                 &BTreeMap::new(),
+                &[],
                 &output,
                 &cancel,
                 &DaemonOutput::default(),
@@ -2615,6 +2743,7 @@ process = true
                 &crash_manifest,
                 &[bad_daemon],
                 &BTreeMap::new(),
+                &[],
                 &output,
                 &DaemonOutput::default(),
             )
@@ -2632,6 +2761,7 @@ process = true
                 &[],
                 "daemon start",
                 &BTreeMap::new(),
+                &[],
                 &output,
                 CommandOptions::default(),
             )

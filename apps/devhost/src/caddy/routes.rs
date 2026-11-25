@@ -579,6 +579,98 @@ pub fn cleanup_stale_registrations(caddy_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Remove host claims, fixed-port claims, and route registrations owned by
+/// `(owner_pid, manifest_path)` whose `owner_stack_id` is not present in
+/// `active_stack_ids`, syncing Caddy when any route was removed. Used when
+/// cleaning up orphaned records left under a live shared daemon without
+/// signaling the daemon process itself.
+pub fn release_orphaned_owner_records(
+    caddy_dir: &Path,
+    owner_pid: i32,
+    manifest_path: &str,
+    active_stack_ids: &BTreeSet<String>,
+    mode: Mode,
+    output: &mut impl io::Write,
+) -> Result<usize, String> {
+    let _lock = route_lock(caddy_dir)?;
+    let target_identity = crate::paths::manifest_identity(Path::new(manifest_path));
+    let mut removed = 0usize;
+
+    let host_claims_dir = caddy_dir.join("routes/.host-claims");
+    if host_claims_dir.exists() {
+        for path in files::json_files(&host_claims_dir, "read host claims directory")? {
+            let bytes = path_ctx(fs::read(&path), "read host claim", &path)?;
+            let claim: HostClaimRecord =
+                path_ctx(serde_json::from_slice(&bytes), "parse host claim", &path)?;
+            if claim.owner_pid == owner_pid
+                && crate::paths::manifest_identity(Path::new(&claim.manifest_path))
+                    == target_identity
+                && !active_stack_ids.contains(&claim.owner_stack_id)
+            {
+                remove_if_exists(&path)?;
+                removed += 1;
+            }
+        }
+    }
+
+    let port_claims_dir = caddy_dir.join("port-claims");
+    if port_claims_dir.exists() {
+        for path in files::json_files(&port_claims_dir, "read fixed port claims directory")? {
+            let bytes = path_ctx(fs::read(&path), "read fixed port claim", &path)?;
+            let claim: FixedPortClaimRecord = path_ctx(
+                serde_json::from_slice(&bytes),
+                "parse fixed port claim",
+                &path,
+            )?;
+            if claim.owner_pid == owner_pid
+                && crate::paths::manifest_identity(Path::new(&claim.manifest_path))
+                    == target_identity
+                && !active_stack_ids.contains(&claim.owner_stack_id)
+            {
+                remove_if_exists(&path)?;
+                removed += 1;
+            }
+        }
+    }
+
+    let mut affected_hosts = BTreeSet::new();
+    let registrations_dir = caddy_dir.join("routes/.registrations");
+    if registrations_dir.exists() {
+        for path in files::json_files(
+            &registrations_dir,
+            "read managed caddy registrations directory",
+        )? {
+            let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+            let record: RouteRegistration = path_ctx(
+                serde_json::from_slice(&bytes),
+                "parse managed route registration",
+                &path,
+            )?;
+            if record.owner_pid == owner_pid
+                && crate::paths::manifest_identity(Path::new(&record.manifest_path))
+                    == target_identity
+                && !active_stack_ids.contains(&record.owner_stack_id)
+            {
+                affected_hosts.insert(record.host);
+                remove_if_exists(&path)?;
+                removed += 1;
+            }
+        }
+    }
+
+    if !affected_hosts.is_empty() {
+        let (settings, running) = read_route_settings(caddy_dir)?;
+        for host in &affected_hosts {
+            sync_host_route(caddy_dir, host, &settings)?;
+        }
+        sync_not_found_site(caddy_dir, &settings)?;
+        if running {
+            reload_managed_caddy(caddy_dir, &settings.admin_address, mode, output, true)?;
+        }
+    }
+    Ok(removed)
+}
+
 pub fn replace_routes(
     caddy_dir: &Path,
     previous: &[ActivateRouteOptions],

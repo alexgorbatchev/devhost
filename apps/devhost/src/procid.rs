@@ -11,7 +11,7 @@ pub(crate) struct LinuxStat {
 }
 
 #[cfg(target_os = "linux")]
-pub(crate) fn start_identity(pid: i32) -> io::Result<String> {
+pub fn start_identity(pid: i32) -> io::Result<String> {
     if pid <= 0 {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -27,7 +27,7 @@ pub(crate) fn linux_stat_identity(stat: &LinuxStat) -> io::Result<String> {
 }
 
 #[cfg(target_os = "macos")]
-pub(crate) fn start_identity(pid: i32) -> io::Result<String> {
+pub fn start_identity(pid: i32) -> io::Result<String> {
     let info = read_macos_info(pid)?;
     Ok(macos_info_identity(&info))
 }
@@ -72,7 +72,7 @@ pub(crate) fn read_macos_info(pid: i32) -> io::Result<libc::proc_bsdinfo> {
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-pub(crate) fn start_identity(_pid: i32) -> io::Result<String> {
+pub fn start_identity(_pid: i32) -> io::Result<String> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
         "process start identity is not implemented for this platform",

@@ -54,6 +54,7 @@ impl Stack {
             caddy_dir: caddy.caddy_dir.clone(),
             config_path: Some(config_path.clone()),
             environment: BTreeMap::new(),
+            non_unicode_environment: None,
             output,
             debug_caddy: false,
             shutdown_grace_period: Some(Duration::from_secs(2)),

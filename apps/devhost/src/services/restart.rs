@@ -6,10 +6,8 @@ use std::{
     os::unix::{
         ffi::OsStrExt,
         fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt},
-        process::CommandExt,
     },
     path::{Path, PathBuf},
-    process::{Command, Stdio},
     thread,
     time::{Duration, Instant},
 };
@@ -30,7 +28,6 @@ use crate::{
 
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
 const STOP_TIMEOUT: Duration = Duration::from_secs(15);
-const REGISTRATION_TIMEOUT: Duration = Duration::from_secs(30);
 
 struct RestartLock(File);
 
@@ -43,10 +40,8 @@ impl Drop for RestartLock {
 
 struct StackLaunch {
     stack: LiveStack,
-    args: Vec<OsString>,
-    directory: PathBuf,
-    environment: Vec<(OsString, OsString)>,
-    log: File,
+    spec: StoredLaunchSpec,
+    record_log: bool,
     log_path: PathBuf,
 }
 
@@ -59,7 +54,7 @@ enum RestartAction {
 enum DaemonRestartAction {
     Replace {
         stack: LiveStack,
-        spec: StoredLaunchSpec,
+        spec: Box<StoredLaunchSpec>,
         record_log: bool,
         log_path: PathBuf,
         daemon_exe_identity: String,
@@ -127,15 +122,13 @@ pub fn restart_stacks(
     let mut daemon_actions = Vec::new();
     let mut daemon_specs_cache: BTreeMap<String, daemon::client::ExportedDaemonSpecs> =
         BTreeMap::new();
+    let current_exe_id = daemon::exe_identity(&executable);
+    let caller_manifest = std::env::var_os("DEVHOST_MANIFEST_PATH")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
 
     for stack in stacks {
         if !stack.daemon_socket.is_empty() {
-            if let Err(error) = check_not_ancestor(stack.pid) {
-                return Err(format!(
-                    "capture {} (PID {}); no stacks were stopped: {error}",
-                    stack.name, stack.pid
-                ));
-            }
             if !daemon_specs_cache.contains_key(&stack.daemon_socket) {
                 let exported = daemon::client::export_specs(Path::new(&stack.daemon_socket))
                     .map_err(|error| {
@@ -149,6 +142,18 @@ pub fn restart_stacks(
             let daemon_info = daemon_specs_cache
                 .get(&stack.daemon_socket)
                 .expect("cached daemon specs");
+            let binary_changed =
+                !daemon_info.exe_identity.is_empty() && daemon_info.exe_identity != current_exe_id;
+            let daemon_will_exit =
+                manifest.is_none() || (binary_changed && daemon_info.stacks.len() == 1);
+            if let Err(error) =
+                check_daemon_restart_ancestor(&stack, daemon_will_exit, caller_manifest.as_deref())
+            {
+                return Err(format!(
+                    "capture {} (PID {}); no stacks were stopped: {error}",
+                    stack.name, stack.pid
+                ));
+            }
             let Some(exported) = daemon_info
                 .stacks
                 .iter()
@@ -219,7 +224,7 @@ pub fn restart_stacks(
             let record_log = !exported.spec.log_path.is_empty();
             daemon_actions.push(DaemonRestartAction::Replace {
                 stack,
-                spec,
+                spec: Box::new(spec),
                 record_log,
                 log_path,
                 daemon_exe_identity: daemon_info.exe_identity.clone(),
@@ -242,8 +247,17 @@ pub fn restart_stacks(
             legacy_launches.push(RestartAction::Preserve(stack, error));
             continue;
         }
+        let (spec, record_log) =
+            legacy_launch_to_spec(&stack, &args, &cwd, &environment, output.mode()).map_err(
+                |error| {
+                    format!(
+                        "capture {} (PID {}); no stacks were stopped: {error}",
+                        stack.name, stack.pid
+                    )
+                },
+            )?;
         let log_path = directory.path().join(format!("{}.log", stack.pid));
-        let log = OpenOptions::new()
+        OpenOptions::new()
             .create_new(true)
             .write(true)
             .mode(0o600)
@@ -251,10 +265,8 @@ pub fn restart_stacks(
             .map_err(|error| format!("create restart log: {error}"))?;
         legacy_launches.push(RestartAction::Replace(StackLaunch {
             stack,
-            args,
-            directory: cwd,
-            environment,
-            log,
+            spec,
+            record_log,
             log_path,
         }));
     }
@@ -262,7 +274,6 @@ pub fn restart_stacks(
     // Runtime logs remain available to the replacement and for failure diagnosis.
     let _retained_logs = directory.keep();
     let mut errors = Vec::new();
-    let current_exe_id = daemon::exe_identity(&executable);
 
     if manifest.is_some() {
         for action in daemon_actions {
@@ -304,7 +315,7 @@ pub fn restart_stacks(
                         daemon::client::start_replaced_in_daemon(
                             state_dir,
                             &executable,
-                            spec,
+                            *spec,
                             &log_path,
                             record_log,
                             output.mode(),
@@ -390,7 +401,7 @@ pub fn restart_stacks(
                     entry.daemon_pid = stack.pid;
                     entry.replace_list.push(PendingReplace {
                         stack,
-                        spec,
+                        spec: *spec,
                         record_log,
                         log_path,
                     });
@@ -541,7 +552,7 @@ pub fn restart_stacks(
                 ),
             )
             .map_err(|error| error.to_string())?;
-        if let Err(error) = replace_stack(&launch, &caddy_dir, &executable, output) {
+        if let Err(error) = replace_stack(&launch, state_dir, &caddy_dir, &executable, output) {
             errors.push(format!(
                 "restart {} (PID {}), log {}: {error}",
                 launch.stack.name,
@@ -558,42 +569,203 @@ pub fn restart_stacks(
 }
 
 #[cfg(target_os = "linux")]
-fn check_not_ancestor(target_pid: i32) -> Result<(), String> {
+fn is_ancestor_pid(target_pid: i32) -> Result<bool, String> {
     let mut ancestor = std::process::id() as i32;
     while ancestor > 1 {
         if ancestor == target_pid {
-            return Err(
-                "cannot restart an ancestor of this command; run it from a separate terminal"
-                    .to_owned(),
-            );
+            return Ok(true);
         }
         ancestor = crate::procid::read_linux_stat(ancestor)
             .map_err(|error| error.to_string())?
             .parent_pid;
     }
-    Ok(())
+    Ok(false)
 }
 
 #[cfg(target_os = "macos")]
-fn check_not_ancestor(target_pid: i32) -> Result<(), String> {
+fn is_ancestor_pid(target_pid: i32) -> Result<bool, String> {
     let mut ancestor = std::process::id() as i32;
     while ancestor > 1 {
         if ancestor == target_pid {
-            return Err(
-                "cannot restart an ancestor of this command; run it from a separate terminal"
-                    .to_owned(),
-            );
+            return Ok(true);
         }
         ancestor = crate::procid::read_macos_info(ancestor)
             .map_err(|error| error.to_string())?
             .pbi_ppid as i32;
     }
-    Ok(())
+    Ok(false)
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn check_not_ancestor(_target_pid: i32) -> Result<(), String> {
+fn is_ancestor_pid(_target_pid: i32) -> Result<bool, String> {
+    Ok(false)
+}
+
+fn check_daemon_restart_ancestor(
+    stack: &LiveStack,
+    daemon_will_exit: bool,
+    caller_manifest: Option<&Path>,
+) -> Result<(), String> {
+    if !is_ancestor_pid(stack.pid)? {
+        return Ok(());
+    }
+    if daemon_will_exit {
+        return Err(
+            "cannot restart an ancestor of this command; run it from a separate terminal"
+                .to_owned(),
+        );
+    }
+    if !stack.manifest_path.is_empty()
+        && let Some(caller_path) = caller_manifest
+        && manifest_identity(caller_path) == manifest_identity(Path::new(&stack.manifest_path))
+    {
+        return Err(
+            "cannot restart an ancestor of this command; run it from a separate terminal"
+                .to_owned(),
+        );
+    }
     Ok(())
+}
+
+fn legacy_launch_to_spec(
+    stack: &LiveStack,
+    args: &[OsString],
+    directory: &Path,
+    environment: &[(OsString, OsString)],
+    mode: cli_command_kit::Mode,
+) -> Result<(StoredLaunchSpec, bool), String> {
+    let record_log = environment
+        .iter()
+        .any(|(key, _)| key == DETACHED_LOG_ENV || key == STACK_LOG_ENV);
+    let (unicode_env, non_unicode_env) = crate::environment::split_os_environment(environment);
+    let kind = match args.first().and_then(|arg| arg.to_str()) {
+        Some("start") => {
+            let parsed = crate::cli::start_command(false)
+                .try_get_matches_from(args)
+                .map_err(|error| error.to_string())?;
+            let raw_manifest = parsed
+                .get_one::<PathBuf>("manifest")
+                .cloned()
+                .or_else(|| {
+                    unicode_env
+                        .get("DEVHOST_MANIFEST")
+                        .filter(|v| !v.is_empty())
+                        .map(PathBuf::from)
+                })
+                .or_else(|| {
+                    (!stack.manifest_path.is_empty()).then(|| PathBuf::from(&stack.manifest_path))
+                });
+            let manifest_path = match raw_manifest {
+                Some(path) if path.is_absolute() => crate::paths::clean(&path),
+                Some(path) => crate::paths::clean(&directory.join(path)),
+                None => crate::manifest::read_manifest_env(directory, None, Some(&unicode_env))
+                    .map(|m| m.manifest_path)
+                    .map_err(|error| error.message)?,
+            };
+            let requested = parsed
+                .get_many::<String>("service")
+                .map(|vals| vals.cloned().collect())
+                .unwrap_or_default();
+            let raw_idle = parsed
+                .get_one::<String>("idle-timeout")
+                .filter(|s| !s.is_empty())
+                .cloned()
+                .or_else(|| {
+                    unicode_env
+                        .get("DEVHOST_IDLE_TIMEOUT")
+                        .filter(|s| !s.is_empty())
+                        .cloned()
+                });
+            let idle_timeout_ms = match raw_idle.as_deref() {
+                Some(raw) => Some(
+                    crate::manifest::parse_idle_duration(raw)
+                        .map_err(|error| format!("invalid idle-timeout {raw:?}: {error}"))?
+                        .as_millis() as u64,
+                ),
+                None => None,
+            };
+            LaunchKind::Manifest {
+                manifest_path,
+                requested,
+                debug_caddy: parsed.get_flag("debug"),
+                local: !stack.remote,
+                remote: stack.remote,
+                idle_timeout_ms,
+            }
+        }
+        Some("serve") => {
+            let parsed = crate::cli::serve_command()
+                .try_get_matches_from(args)
+                .map_err(|error| error.to_string())?;
+            let mut command: Vec<String> = parsed
+                .get_many::<String>("command")
+                .into_iter()
+                .flatten()
+                .cloned()
+                .collect();
+            if !command.is_empty() && command != [String::new()] {
+                let direct = args.iter().any(|arg| arg == "--");
+                if !direct {
+                    if command.len() != 1 || command[0].trim().is_empty() {
+                        return Err(
+                            "pass one quoted command, or use -- before command arguments"
+                                .to_owned(),
+                        );
+                    }
+                    command = vec!["/bin/sh".to_owned(), "-c".to_owned(), command.remove(0)];
+                }
+                let timeout = parsed
+                    .get_one::<String>("startup-timeout")
+                    .and_then(|raw| crate::manifest::parse_idle_duration(raw).ok())
+                    .filter(|timeout| !timeout.is_zero())
+                    .unwrap_or(Duration::from_secs(30));
+                let session_name = parsed
+                    .get_one::<String>("session-id")
+                    .filter(|s| !s.is_empty())
+                    .cloned()
+                    .unwrap_or_else(|| stack.name.clone());
+                LaunchKind::ServeCommand {
+                    command,
+                    session_name,
+                    startup_timeout_ms: timeout.as_millis() as u64,
+                }
+            } else {
+                let domain = parsed
+                    .get_one::<String>("domain")
+                    .cloned()
+                    .ok_or_else(|| "legacy serve process missing --domain".to_owned())?;
+                let port = parsed.get_one::<i32>("port").map(|p| *p as u16);
+                let serve_dir = parsed
+                    .get_one::<PathBuf>("dir")
+                    .map(|path| {
+                        if path.is_absolute() {
+                            crate::paths::clean(path)
+                        } else {
+                            crate::paths::clean(&directory.join(path))
+                        }
+                    })
+                    .unwrap_or_else(|| crate::paths::clean(directory));
+                LaunchKind::Serve {
+                    directory: serve_dir,
+                    domain,
+                    port,
+                }
+            }
+        }
+        _ => return Err("expected a devhost start or serve process".to_owned()),
+    };
+    Ok((
+        StoredLaunchSpec {
+            kind,
+            cwd: directory.to_path_buf(),
+            environment: unicode_env,
+            non_unicode_environment: non_unicode_env,
+            mode: mode.into(),
+            detached: false,
+            log_path: String::new(),
+        },
+        record_log,
+    ))
 }
 
 type CapturedLaunch = (Vec<OsString>, PathBuf, Vec<(OsString, OsString)>);
@@ -814,37 +986,28 @@ fn preserve_launch_mode(args: &[OsString], remote: bool) -> Vec<OsString> {
     args
 }
 
-fn replace_launch_log(
-    environment: &[(OsString, OsString)],
-    log: &Path,
-) -> Vec<(OsString, OsString)> {
-    let mut recorded = false;
-    let mut environment: Vec<_> = environment
-        .iter()
-        .filter(|(key, _)| {
-            if key == DETACHED_LOG_ENV || key == STACK_LOG_ENV {
-                recorded = true;
-                false
-            } else {
-                true
-            }
-        })
-        .cloned()
-        .collect();
-    if recorded {
-        environment.push((STACK_LOG_ENV.into(), log.as_os_str().to_owned()));
-    }
-    environment
-}
-
 fn replace_stack(
     launch: &StackLaunch,
+    state_dir: &Path,
     caddy_dir: &Path,
     executable: &Path,
     output: &ServiceOutput,
 ) -> Result<(), String> {
     stop_stack(&launch.stack, caddy_dir)?;
-    start_replacement(launch, caddy_dir, executable, output)
+    let (_, new_pid, new_name) = daemon::client::start_replaced_in_daemon(
+        state_dir,
+        executable,
+        launch.spec.clone(),
+        &launch.log_path,
+        launch.record_log,
+        output.mode(),
+    )?;
+    output
+        .log_stdout_checked(
+            "devhost",
+            &format!("Restarted {new_name} (PID {new_pid}); services may still be starting."),
+        )
+        .map_err(|error| error.to_string())
 }
 
 fn stop_stack(stack: &LiveStack, caddy_dir: &Path) -> Result<(), String> {
@@ -861,70 +1024,16 @@ fn stop_stack(stack: &LiveStack, caddy_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn start_replacement(
-    launch: &StackLaunch,
-    caddy_dir: &Path,
-    executable: &Path,
-    output: &ServiceOutput,
-) -> Result<(), String> {
-    let mut command = Command::new(executable);
-    command
-        .args(&launch.args)
-        .current_dir(&launch.directory)
-        .env_clear()
-        .envs(replace_launch_log(&launch.environment, &launch.log_path))
-        .stdin(Stdio::null())
-        .stdout(launch.log.try_clone().map_err(|error| error.to_string())?)
-        .stderr(launch.log.try_clone().map_err(|error| error.to_string())?);
-    // SAFETY: setsid is async-signal-safe and the closure touches no shared data.
-    unsafe {
-        command.pre_exec(|| {
-            if libc::setsid() < 0 {
-                Err(std::io::Error::last_os_error())
-            } else {
-                Ok(())
-            }
-        });
-    }
-    let mut child = command
-        .spawn()
-        .map_err(|error| format!("start replacement: {error}"))?;
-    let pid = child.id() as i32;
-    let deadline = Instant::now() + REGISTRATION_TIMEOUT;
-    loop {
-        for stack in read_live_stacks(caddy_dir)? {
-            if stack.pid == pid && stack.control_port > 0 {
-                return output
-                    .log_stdout_checked(
-                        "devhost",
-                        &format!(
-                            "Restarted {} (PID {}); services may still be starting.",
-                            stack.name, stack.pid
-                        ),
-                    )
-                    .map_err(|error| error.to_string());
-            }
-        }
-        if let Some(status) = child.try_wait().map_err(|error| error.to_string())? {
-            return Err(format!(
-                "replacement exited before its control server registered: {status}"
-            ));
-        }
-        if Instant::now() >= deadline {
-            return Err(format!(
-                "replacement PID {pid} has not registered after 30s; it remains running, inspect its log"
-            ));
-        }
-        thread::sleep(POLL_INTERVAL);
-    }
-}
-
 #[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
 mod tests {
     use super::*;
     use cli_command_kit::Mode;
     use serde_json::json;
-    use std::{io, process::Child};
+    use std::{
+        io,
+        os::unix::process::CommandExt,
+        process::{Child, Command, Stdio},
+    };
 
     #[test]
     fn restart_preflight_uses_serve_arguments_and_opens_only_file_roots() {
@@ -1070,17 +1179,80 @@ mod tests {
         let value = OsString::from_vec(vec![b'a', 0xff, b'=', b'\n']);
         let env = vec![
             ("TOKEN".into(), value.clone()),
+            ("GOOD".into(), "ok".into()),
             (DETACHED_LOG_ENV.into(), "old".into()),
             (STACK_LOG_ENV.into(), "old2".into()),
         ];
+        let mut live = stack(123);
+        live.remote = true;
+        let (spec, record_log) = legacy_launch_to_spec(
+            &live,
+            &[
+                "start".into(),
+                "--manifest".into(),
+                "devhost.toml".into(),
+                "--debug".into(),
+                "--idle-timeout".into(),
+                "30s".into(),
+                "web".into(),
+            ],
+            Path::new("/example"),
+            &env,
+            Mode::Agent,
+        )
+        .unwrap();
+        assert!(record_log);
+        assert_eq!(spec.environment.get("GOOD").map(String::as_str), Some("ok"));
+        assert!(!spec.environment.contains_key(DETACHED_LOG_ENV));
         assert_eq!(
-            replace_launch_log(&env, Path::new("new log")),
-            vec![
-                ("TOKEN".into(), value),
-                (STACK_LOG_ENV.into(), "new log".into())
-            ]
+            spec.non_unicode_environment,
+            vec![(b"TOKEN".to_vec(), vec![b'a', 0xff, b'=', b'\n'])]
         );
-        assert!(replace_launch_log(&[], Path::new("new")).is_empty());
+        assert!(matches!(
+            spec.kind,
+            LaunchKind::Manifest {
+                debug_caddy: true,
+                remote: true,
+                local: false,
+                idle_timeout_ms: Some(30_000),
+                ..
+            }
+        ));
+        let (serve_spec, serve_rec) = legacy_launch_to_spec(
+            &stack(123),
+            &[
+                "serve".into(),
+                "--dir".into(),
+                "pub".into(),
+                "-d".into(),
+                "a.localhost".into(),
+            ],
+            Path::new("/example"),
+            &[],
+            Mode::Human,
+        )
+        .unwrap();
+        assert!(!serve_rec);
+        assert!(matches!(
+            serve_spec.kind,
+            LaunchKind::Serve { port: None, .. }
+        ));
+        let (cmd_spec, _) = legacy_launch_to_spec(
+            &stack(123),
+            &[
+                "serve".into(),
+                "--session-id".into(),
+                "app-1234".into(),
+                "--".into(),
+                "echo".into(),
+                "hi".into(),
+            ],
+            Path::new("/example"),
+            &[],
+            Mode::Human,
+        )
+        .unwrap();
+        assert!(matches!(cmd_spec.kind, LaunchKind::ServeCommand { .. }));
         #[cfg(target_os = "linux")]
         assert_eq!(
             nul_entries(b"one\0\0three\0").collect::<Vec<_>>(),
@@ -1088,6 +1260,28 @@ mod tests {
         );
         #[cfg(target_os = "linux")]
         assert_eq!(nul_entries(b"").count(), 0);
+    }
+
+    #[test]
+    fn daemon_ancestor_check_allows_sibling_in_place_restart_but_blocks_drain_and_self() {
+        let mut target = stack(std::process::id() as i32);
+        target.manifest_path = "/proj/b/devhost.toml".to_owned();
+        // Draining the daemon from inside its tree is refused.
+        assert!(
+            check_daemon_restart_ancestor(&target, true, Some(Path::new("/proj/a/devhost.toml")))
+                .unwrap_err()
+                .contains("cannot restart an ancestor")
+        );
+        // In-place restart of own stack from inside its own service is refused.
+        assert!(
+            check_daemon_restart_ancestor(&target, false, Some(Path::new("/proj/b/devhost.toml")))
+                .unwrap_err()
+                .contains("cannot restart an ancestor")
+        );
+        // In-place restart of a sibling stack inside the same daemon is allowed.
+        check_daemon_restart_ancestor(&target, false, Some(Path::new("/proj/a/devhost.toml")))
+            .unwrap();
+        check_daemon_restart_ancestor(&target, false, None).unwrap();
     }
 
     #[test]
@@ -1234,16 +1428,35 @@ mod tests {
         let stack = stack(child.0.id() as i32);
         let launch = StackLaunch {
             stack,
-            args: vec![],
-            directory: fixture.path().to_owned(),
-            environment: vec![],
+            spec: StoredLaunchSpec {
+                kind: LaunchKind::Manifest {
+                    manifest_path: fixture.path().join("devhost.toml"),
+                    requested: Vec::new(),
+                    debug_caddy: false,
+                    local: true,
+                    remote: false,
+                    idle_timeout_ms: None,
+                },
+                cwd: fixture.path().to_owned(),
+                environment: BTreeMap::new(),
+                non_unicode_environment: Vec::new(),
+                mode: Mode::Agent.into(),
+                detached: false,
+                log_path: String::new(),
+            },
+            record_log: false,
             log_path: fixture.path().join("log"),
-            log: File::create(fixture.path().join("log")).unwrap(),
         };
         assert!(
-            replace_stack(&launch, fixture.path(), Path::new("/missing"), &output())
-                .unwrap_err()
-                .contains("registration changed")
+            replace_stack(
+                &launch,
+                fixture.path(),
+                fixture.path(),
+                Path::new("/missing"),
+                &output(),
+            )
+            .unwrap_err()
+            .contains("registration changed")
         );
         for field in ["manifest", "inputs", "timestamp", "identity"] {
             let mut changed = launch.stack.clone();
@@ -1258,9 +1471,15 @@ mod tests {
             }
             record(fixture.path(), &changed);
             assert!(
-                replace_stack(&launch, fixture.path(), Path::new("/missing"), &output())
-                    .unwrap_err()
-                    .contains("registration changed"),
+                replace_stack(
+                    &launch,
+                    fixture.path(),
+                    fixture.path(),
+                    Path::new("/missing"),
+                    &output(),
+                )
+                .unwrap_err()
+                .contains("registration changed"),
                 "accepted a changed {field}"
             );
             assert!(launch.stack.is_alive());
@@ -1283,9 +1502,15 @@ mod tests {
         assert!(launch.stack.is_alive());
         record(fixture.path(), &launch.stack);
         assert!(
-            replace_stack(&launch, fixture.path(), Path::new("/missing"), &output())
-                .unwrap_err()
-                .contains("start replacement")
+            replace_stack(
+                &launch,
+                fixture.path(),
+                fixture.path(),
+                Path::new("/missing"),
+                &output(),
+            )
+            .unwrap_err()
+            .contains("could not be launched")
         );
         assert!(!launch.stack.is_alive());
     }

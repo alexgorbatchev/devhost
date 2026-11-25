@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
-    io::{self, BufReader, Write},
+    io::{self, Write},
     os::unix::{
         fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt},
         net::{UnixListener, UnixStream},
@@ -21,16 +21,17 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use cli_command_kit::Mode;
 
 use super::{
-    DaemonRecord, PROTOCOL_VERSION, acquire_daemon_lock, daemon_socket_path, ensure_state_dir,
-    exe_identity, remove_daemon_record_if_pid, write_daemon_record,
+    DaemonRecord, PROTOCOL_VERSION, acquire_daemon_lock, daemon_socket_path,
+    ensure_private_socket_dir, ensure_state_dir, exe_identity, execution_context_fingerprint,
+    remove_daemon_record_if_pid, verify_peer_uid, write_daemon_record,
 };
 use crate::{
     Failure, caddy,
     cliout::ServiceOutput,
     config,
     daemon::protocol::{
-        ExportedStack, FailureWire, LaunchKind, OutputStream, OverlapWire, Request, ServerEvent,
-        StoredLaunchSpec, read_frame, write_frame,
+        ExportedStack, FailureWire, FrameReader, LaunchKind, OutputStream, OverlapWire, Request,
+        ServerEvent, StoredLaunchSpec, write_frame,
     },
     manifest, paths, procid,
     services::{
@@ -161,6 +162,7 @@ struct DaemonState {
     version: String,
     exe_path: String,
     exe_identity: String,
+    context_fingerprint: String,
     started_at: Instant,
     shutting_down: AtomicBool,
     active_connections: AtomicUsize,
@@ -168,6 +170,24 @@ struct DaemonState {
 }
 
 impl DaemonState {
+    fn join_retired_stacks(&self) {
+        let finished: Vec<JoinHandle<()>> = {
+            let mut inner = self.inner.lock().expect("daemon inner lock");
+            let mut ready = Vec::new();
+            let mut i = 0;
+            while i < inner.retired_handles.len() {
+                if inner.retired_handles[i].is_finished() {
+                    ready.push(inner.retired_handles.swap_remove(i));
+                } else {
+                    i += 1;
+                }
+            }
+            ready
+        };
+        for handle in finished {
+            let _ = handle.join();
+        }
+    }
     fn try_begin_shutdown_if_idle(&self, expected_connections: usize, force_idle: bool) -> bool {
         if self.shutting_down.load(Ordering::SeqCst) {
             return true;
@@ -237,6 +257,15 @@ impl DaemonState {
             remove_daemon_record_if_pid(&self.state_dir, self.pid);
         }
         let _ = fs::remove_file(&self.socket_path);
+        if let Some(parent) = self.socket_path.parent()
+            && parent != self.state_dir
+            && parent
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("dh-"))
+        {
+            let _ = fs::remove_dir(parent);
+        }
     }
 }
 
@@ -308,6 +337,12 @@ impl OutputSink {
 }
 
 pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
+    // Set an explicit umask so the daemon never inherits a restrictive or permissive
+    // umask from whichever client launched it first; socket and state dirs enforce 0700/0600.
+    // SAFETY: umask takes a scalar mode_t and is called before spawning worker threads.
+    unsafe {
+        libc::umask(0o022);
+    }
     let state_dir = paths::clean(state_dir);
     ensure_state_dir(&state_dir)?;
     #[cfg(target_os = "linux")]
@@ -322,6 +357,7 @@ pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
 
     let pid = std::process::id() as i32;
     let socket_path = daemon_socket_path(&state_dir, pid);
+    ensure_private_socket_dir(&socket_path)?;
     let _ = fs::remove_file(&socket_path);
     let listener = UnixListener::bind(&socket_path)
         .map_err(|error| format!("bind daemon socket {}: {error}", socket_path.display()))?;
@@ -333,6 +369,7 @@ pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
     let current_exe = std::env::current_exe().unwrap_or_default();
     let exe_path = current_exe.to_string_lossy().into_owned();
     let current_exe_identity = exe_identity(&current_exe);
+    let context_fingerprint = execution_context_fingerprint();
     let record = DaemonRecord {
         protocol_version: PROTOCOL_VERSION,
         pid,
@@ -341,6 +378,7 @@ pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
         version: version.to_owned(),
         exe_path: exe_path.clone(),
         exe_identity: current_exe_identity.clone(),
+        context_fingerprint: context_fingerprint.clone(),
     };
     write_daemon_record(&state_dir, &record)?;
 
@@ -352,6 +390,7 @@ pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
         version: version.to_owned(),
         exe_path,
         exe_identity: current_exe_identity,
+        context_fingerprint,
         started_at: Instant::now(),
         shutting_down: AtomicBool::new(false),
         active_connections: AtomicUsize::new(0),
@@ -389,7 +428,15 @@ pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
 
     loop {
         containment::reap_orphaned_descendants();
-        conn_threads.retain(|handle| !handle.is_finished());
+        let mut idx = 0;
+        while idx < conn_threads.len() {
+            if conn_threads[idx].is_finished() {
+                let _ = conn_threads.swap_remove(idx).join();
+            } else {
+                idx += 1;
+            }
+        }
+        state.join_retired_stacks();
 
         let sig = DAEMON_SIGNAL.swap(0, Ordering::SeqCst);
         if sig != 0 {
@@ -408,6 +455,9 @@ pub fn run_daemon(state_dir: &Path, version: &str) -> Result<(), String> {
 
         match listener.accept() {
             Ok((stream, _)) => {
+                if verify_peer_uid(&stream).is_err() {
+                    continue;
+                }
                 let _ = stream.set_nonblocking(false);
                 state.active_connections.fetch_add(1, Ordering::SeqCst);
                 let conn_state = state.clone();
@@ -447,8 +497,8 @@ fn handle_connection(state: Arc<DaemonState>, mut stream: UnixStream) {
     let Ok(read_clone) = stream.try_clone() else {
         return;
     };
-    let mut reader = BufReader::new(read_clone);
-    let request: Request = match read_frame(&mut reader) {
+    let mut reader = FrameReader::new(read_clone);
+    let request: Request = match reader.read_frame() {
         Ok(Some(req)) => req,
         Ok(None) | Err(_) => return,
     };
@@ -464,6 +514,7 @@ fn handle_connection(state: Arc<DaemonState>, mut stream: UnixStream) {
                     version: state.version.clone(),
                     exe_path: state.exe_path.clone(),
                     exe_identity: state.exe_identity.clone(),
+                    context_fingerprint: state.context_fingerprint.clone(),
                     draining,
                 },
             );
@@ -671,7 +722,7 @@ fn handle_drain(
 fn handle_start(
     state: &Arc<DaemonState>,
     stream: &mut UnixStream,
-    mut reader: BufReader<UnixStream>,
+    mut reader: FrameReader<UnixStream>,
     spec: StoredLaunchSpec,
     wait_for_ready: bool,
     attach_output: bool,
@@ -761,7 +812,7 @@ fn handle_start(
                 if watcher_done.load(Ordering::Relaxed) || watcher_stack.outcome().is_some() {
                     break;
                 }
-                match read_frame::<_, Request>(&mut reader) {
+                match reader.read_frame::<Request>() {
                     Ok(Some(Request::CancelStack { signal, .. })) => {
                         watcher_stack.request_stop(signal);
                     }
@@ -902,7 +953,7 @@ fn handle_start(
                 return;
             }
 
-            match read_frame::<_, Request>(&mut reader) {
+            match reader.read_frame::<Request>() {
                 Ok(Some(Request::CancelStack { signal, .. })) => {
                     hosted.request_stop(signal);
                 }
@@ -1231,11 +1282,12 @@ fn spawn_hosted_stack(
 fn run_hosted_stack(
     state: &Arc<DaemonState>,
     hosted: &Arc<HostedStack>,
-    spec: StoredLaunchSpec,
+    mut spec: StoredLaunchSpec,
     sink: OutputSink,
     launch: LaunchMetadata,
     ready_notify: Option<Sender<Vec<String>>>,
 ) -> StackOutcome {
+    crate::environment::strip_internal_vars(&mut spec.environment);
     let mode: Mode = spec.mode.into();
     let daemon_socket = state.socket_path.to_string_lossy().into_owned();
     let log_file_for_errors = match &sink {
@@ -1330,6 +1382,7 @@ fn run_hosted_stack(
                     caddy_dir: state.caddy_dir.clone(),
                     config_path: Some(config_path),
                     environment: spec.environment,
+                    non_unicode_environment: Some(spec.non_unicode_environment),
                     output,
                     debug_caddy,
                     shutdown_grace_period: None,
@@ -1371,6 +1424,7 @@ fn run_hosted_stack(
                     caddy_dir: state.caddy_dir.clone(),
                     config_path,
                     environment: spec.environment,
+                    non_unicode_environment: Some(spec.non_unicode_environment),
                     output,
                     debug_caddy: false,
                     shutdown_grace_period: None,
@@ -1425,6 +1479,7 @@ fn run_hosted_stack(
                     caddy_dir: state.caddy_dir.clone(),
                     config_path: Some(config_path),
                     environment: spec.environment,
+                    non_unicode_environment: Some(spec.non_unicode_environment),
                     output,
                     debug_caddy: false,
                     shutdown_grace_period: None,

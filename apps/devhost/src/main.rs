@@ -284,39 +284,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
 }
 
 fn start_command() -> Command {
-    Command::new("start")
-        .args_override_self(true)
-        .about("Start the services in devhost.toml")
-        .arg(manifest_arg())
-        .arg(
-            boolean_arg("debug")
-                .short('d')
-                .help("Show Caddy's output while the stack runs."),
-        )
-        .arg(boolean_arg("detach").help("Run in the background; wait until the stack is ready."))
-        .arg(
-            boolean_arg("local")
-                .short('l')
-                .help("Use local routing even when a remote relay is configured."),
-        )
-        .arg(
-            boolean_arg("remote")
-                .short('r')
-                .help("Require the configured remote preview relay."),
-        )
-        .arg(
-            nonempty_env(Arg::new("idle-timeout"), "DEVHOST_IDLE_TIMEOUT")
-                .long("idle-timeout")
-                .short('i')
-                .allow_hyphen_values(true)
-                .value_name("duration")
-                .help("Stop the stack after this long without traffic, e.g. 30s or 1m."),
-        )
-        .arg(
-            Arg::new("service")
-                .num_args(0..)
-                .help("Services or groups; omit to start every service."),
-        )
+    devhost::cli::start_command(true)
 }
 
 fn stop_command() -> Command {
@@ -338,20 +306,7 @@ fn stop_command() -> Command {
 }
 
 fn manifest_arg() -> Arg {
-    nonempty_env(Arg::new("manifest"), "DEVHOST_MANIFEST")
-        .long("manifest")
-        .short('m')
-        .value_name("path")
-        .value_parser(value_parser!(PathBuf))
-        .help("Path to the devhost.toml file to use")
-}
-
-fn nonempty_env(arg: Arg, name: &'static str) -> Arg {
-    if env::var_os(name).is_some_and(|value| !value.is_empty()) {
-        arg.env(name)
-    } else {
-        arg
-    }
+    devhost::cli::manifest_arg(true)
 }
 
 fn validate_manifest_flag(path: Option<&Path>) -> Result<(), Failure> {
@@ -478,6 +433,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
     };
     let mut environment: BTreeMap<String, String> = devhost::environment::unicode();
     let launch = take_launch_metadata(&mut environment);
+    devhost::environment::strip_internal_vars(&mut environment);
     // SAFETY: run_start runs on the main thread before spawning worker threads.
     unsafe {
         env::remove_var(DETACHED_LOG_ENV);
@@ -495,6 +451,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         },
         cwd: cwd.clone(),
         environment: environment.clone(),
+        non_unicode_environment: devhost::environment::non_unicode(),
         mode: mode.into(),
         detached: args.get_flag("detach"),
         log_path: launch.log_path.clone(),
@@ -508,6 +465,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
                 spec,
                 state_dir,
                 output,
+                executable: None,
                 startup_timeout: None,
                 cleanup_timeout: None,
                 target_os: None,

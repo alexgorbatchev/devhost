@@ -26,14 +26,20 @@ use devhost::{
     },
     cliout::ServiceOutput,
     config::CaddySettings,
+    daemon::{
+        DaemonRecord, PROTOCOL_VERSION,
+        client::{DetachedDaemonStartOptions, run_detached},
+        protocol::{FrameReader, LaunchKind, Request, ServerEvent, StoredLaunchSpec, write_frame},
+        write_daemon_record,
+    },
     manifest,
     paths::manifest_identity,
     services::{
         detach::{
-            DETACHED_LOG_ENV, DetachedStartOptions, STACK_LOG_ENV, check_detach_platform,
-            detached_cleanup_timeout, detached_failure_path, detached_startup_timeout,
-            format_go_duration, read_detached_failure, record_detached_failure,
-            remove_detached_failure, start_detached_stack, take_launch_metadata,
+            DETACHED_LOG_ENV, STACK_LOG_ENV, check_detach_platform, detached_cleanup_timeout,
+            detached_failure_path, detached_startup_timeout, format_go_duration,
+            read_detached_failure, record_detached_failure, remove_detached_failure,
+            take_launch_metadata,
         },
         health::probe_service_health,
         resolve::{
@@ -289,12 +295,26 @@ timeout = 2000
     fs::create_dir_all(&bad_state).unwrap();
     fs::write(bad_state.join("logs"), "not a dir").unwrap();
     let (_, _, out) = test_output(Mode::Human);
-    let setup_err = start_detached_stack(DetachedStartOptions {
-        manifest: resolved,
-        arguments: vec![],
-        directory: proj,
-        state_dir: bad_state,
+    let make_spec = |manifest: &ResolvedManifest, dir: &Path| StoredLaunchSpec {
+        kind: LaunchKind::Manifest {
+            manifest_path: manifest.manifest_path.clone(),
+            requested: Vec::new(),
+            debug_caddy: false,
+            local: true,
+            remote: false,
+            idle_timeout_ms: None,
+        },
+        cwd: dir.to_path_buf(),
         environment: BTreeMap::new(),
+        non_unicode_environment: Vec::new(),
+        mode: Mode::Human.into(),
+        detached: true,
+        log_path: String::new(),
+    };
+    let setup_err = run_detached(DetachedDaemonStartOptions {
+        spec: make_spec(&resolved, &proj),
+        manifest: resolved,
+        state_dir: bad_state,
         output: out,
         executable: None,
         startup_timeout: None,
@@ -338,12 +358,25 @@ fn detach_state_faults_preserve_logs_and_prevent_launch() {
     let failure = detached_failure_path(&log);
     let run = |executable: &str| {
         let (_, _, output) = test_output(Mode::Human);
-        start_detached_stack(DetachedStartOptions {
+        run_detached(DetachedDaemonStartOptions {
+            spec: StoredLaunchSpec {
+                kind: LaunchKind::Manifest {
+                    manifest_path: resolved.manifest_path.clone(),
+                    requested: Vec::new(),
+                    debug_caddy: false,
+                    local: true,
+                    remote: false,
+                    idle_timeout_ms: None,
+                },
+                cwd: project.clone(),
+                environment: BTreeMap::new(),
+                non_unicode_environment: Vec::new(),
+                mode: Mode::Human.into(),
+                detached: true,
+                log_path: String::new(),
+            },
             manifest: resolved.clone(),
-            arguments: Vec::new(),
-            directory: project.clone(),
             state_dir: state.clone(),
-            environment: BTreeMap::new(),
             output,
             executable: Some(PathBuf::from(executable)),
             startup_timeout: Some(Duration::from_millis(200)),
@@ -782,13 +815,27 @@ interval = 50
         0
     );
 
-    let (_, _, lock_out) = test_output(Mode::Agent);
-    let lock_err = start_detached_stack(DetachedStartOptions {
-        manifest: resolved.clone(),
-        arguments: vec![],
-        directory: project.clone(),
-        state_dir: state_dir.clone(),
+    let make_spec = |mode: Mode| StoredLaunchSpec {
+        kind: LaunchKind::Manifest {
+            manifest_path: resolved.manifest_path.clone(),
+            requested: Vec::new(),
+            debug_caddy: false,
+            local: true,
+            remote: false,
+            idle_timeout_ms: None,
+        },
+        cwd: project.clone(),
         environment: BTreeMap::new(),
+        non_unicode_environment: Vec::new(),
+        mode: mode.into(),
+        detached: true,
+        log_path: String::new(),
+    };
+    let (_, _, lock_out) = test_output(Mode::Agent);
+    let lock_err = run_detached(DetachedDaemonStartOptions {
+        manifest: resolved.clone(),
+        spec: make_spec(Mode::Agent),
+        state_dir: state_dir.clone(),
         output: lock_out,
         executable: Some(PathBuf::from("true")),
         startup_timeout: Some(Duration::from_millis(180)),
@@ -808,12 +855,10 @@ interval = 50
 
     let pre_sig = Arc::new(AtomicI32::new(libc::SIGINT));
     let (_, _, sig_lock_out) = test_output(Mode::Agent);
-    let sig_lock_err = start_detached_stack(DetachedStartOptions {
+    let sig_lock_err = run_detached(DetachedDaemonStartOptions {
         manifest: resolved.clone(),
-        arguments: vec![],
-        directory: project.clone(),
+        spec: make_spec(Mode::Agent),
         state_dir: state_dir.clone(),
-        environment: BTreeMap::new(),
         output: sig_lock_out,
         executable: Some(PathBuf::from("true")),
         startup_timeout: Some(Duration::from_secs(2)),
@@ -833,18 +878,71 @@ interval = 50
     drop(lock_holder);
 
     // 3. Supervisor exits before readiness without writing a failure record.
-    let exit_script = project.join("exit7.sh");
-    fs::write(&exit_script, "#!/bin/sh\nexit 7\n").unwrap();
-    fs::set_permissions(&exit_script, fs::Permissions::from_mode(0o755)).unwrap();
+    let mock_pid = std::process::id() as i32;
+    let mock_sock = state_dir.join("mock-exit7.sock");
+    let listener = std::os::unix::net::UnixListener::bind(&mock_sock).unwrap();
+    write_daemon_record(
+        &state_dir,
+        &DaemonRecord {
+            protocol_version: PROTOCOL_VERSION,
+            pid: mock_pid,
+            start_identity: String::new(),
+            socket_path: mock_sock.to_string_lossy().into_owned(),
+            version: "test".to_owned(),
+            exe_path: String::new(),
+            exe_identity: String::new(),
+            context_fingerprint: String::new(),
+        },
+    )
+    .unwrap();
+    let exit_server = thread::spawn(move || {
+        // Hello
+        let (mut s, _) = listener.accept().unwrap();
+        let mut r = FrameReader::new(s.try_clone().unwrap());
+        let _: Option<Request> = r.read_frame().unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Hello {
+                protocol_version: PROTOCOL_VERSION,
+                pid: mock_pid,
+                version: "test".to_owned(),
+                exe_path: String::new(),
+                exe_identity: String::new(),
+                context_fingerprint: String::new(),
+                draining: false,
+            },
+        )
+        .unwrap();
+        // Start -> Started, Finished(exit_code: 7)
+        let (mut s, _) = listener.accept().unwrap();
+        let mut r = FrameReader::new(s.try_clone().unwrap());
+        let _: Option<Request> = r.read_frame().unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Started {
+                stack_id: "stk-exit7".to_owned(),
+                pid: mock_pid,
+            },
+        )
+        .unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Finished {
+                exit_code: 7,
+                failure: None,
+                overlap: None,
+                daemon_exiting: false,
+            },
+        )
+        .unwrap();
+    });
     let (_, _, exit_out) = test_output(Mode::Agent);
-    let exit_err = start_detached_stack(DetachedStartOptions {
+    let exit_err = run_detached(DetachedDaemonStartOptions {
         manifest: resolved.clone(),
-        arguments: vec![],
-        directory: project.clone(),
+        spec: make_spec(Mode::Agent),
         state_dir: state_dir.clone(),
-        environment: BTreeMap::new(),
         output: exit_out,
-        executable: Some(exit_script),
+        executable: None,
         startup_timeout: Some(Duration::from_secs(2)),
         cleanup_timeout: Some(Duration::from_millis(500)),
         target_os: Some("linux".to_owned()),
@@ -852,6 +950,8 @@ interval = 50
         install_signal_handlers: false,
     })
     .unwrap_err();
+    exit_server.join().unwrap();
+    let _ = fs::remove_file(&mock_sock);
     assert!(
         exit_err
             .message
@@ -861,24 +961,67 @@ interval = 50
     );
 
     // 4. Signal before ready + second signal interrupting slow supervisor cleanup -> still stopping.
-    let pid_file = project.join("hang.pid");
-    let hang_script = project.join("hang.sh");
-    fs::write(
-        &hang_script,
-        format!(
-            "#!/bin/sh\ntrap '' TERM\necho $$ > {}\nwhile true; do sleep 1; done\n",
-            pid_file.display()
-        ),
+    let hang_sock = state_dir.join("mock-hang.sock");
+    let hang_listener = std::os::unix::net::UnixListener::bind(&hang_sock).unwrap();
+    write_daemon_record(
+        &state_dir,
+        &DaemonRecord {
+            protocol_version: PROTOCOL_VERSION,
+            pid: mock_pid,
+            start_identity: String::new(),
+            socket_path: hang_sock.to_string_lossy().into_owned(),
+            version: "test".to_owned(),
+            exe_path: String::new(),
+            exe_identity: String::new(),
+            context_fingerprint: String::new(),
+        },
     )
     .unwrap();
-    fs::set_permissions(&hang_script, fs::Permissions::from_mode(0o755)).unwrap();
+    let started_flag = Arc::new(AtomicBool::new(false));
+    let started_set = started_flag.clone();
+    let release_hang = Arc::new(AtomicBool::new(false));
+    let release_watch = release_hang.clone();
+    let hang_server = thread::spawn(move || {
+        let (mut s, _) = hang_listener.accept().unwrap();
+        let mut r = FrameReader::new(s.try_clone().unwrap());
+        let _: Option<Request> = r.read_frame().unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Hello {
+                protocol_version: PROTOCOL_VERSION,
+                pid: mock_pid,
+                version: "test".to_owned(),
+                exe_path: String::new(),
+                exe_identity: String::new(),
+                context_fingerprint: String::new(),
+                draining: false,
+            },
+        )
+        .unwrap();
+        let (mut s, _) = hang_listener.accept().unwrap();
+        let mut r = FrameReader::new(s.try_clone().unwrap());
+        let _: Option<Request> = r.read_frame().unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Started {
+                stack_id: "stk-hang".to_owned(),
+                pid: mock_pid,
+            },
+        )
+        .unwrap();
+        started_set.store(true, Ordering::SeqCst);
+        let _ = s.set_read_timeout(Some(Duration::from_millis(50)));
+        while !release_watch.load(Ordering::SeqCst) {
+            thread::sleep(Duration::from_millis(10));
+        }
+        let _ = s;
+    });
 
     let sig_ctrl = Arc::new(AtomicI32::new(0));
     let sig_sender = sig_ctrl.clone();
-    let pid_watch = pid_file.clone();
     let helper = thread::spawn(move || {
         let start = Instant::now();
-        while !pid_watch.exists() && start.elapsed() < Duration::from_secs(3) {
+        while !started_flag.load(Ordering::SeqCst) && start.elapsed() < Duration::from_secs(3) {
             thread::sleep(Duration::from_millis(10));
         }
         sig_sender.store(libc::SIGINT, Ordering::SeqCst);
@@ -887,14 +1030,12 @@ interval = 50
     });
 
     let (_, hang_stderr, hang_out) = test_output(Mode::Human);
-    let hang_err = start_detached_stack(DetachedStartOptions {
+    let hang_err = run_detached(DetachedDaemonStartOptions {
         manifest: resolved.clone(),
-        arguments: vec![],
-        directory: project.clone(),
+        spec: make_spec(Mode::Human),
         state_dir: state_dir.clone(),
-        environment: BTreeMap::new(),
         output: hang_out,
-        executable: Some(hang_script),
+        executable: None,
         startup_timeout: Some(Duration::from_secs(3)),
         cleanup_timeout: Some(Duration::from_secs(3)),
         target_os: Some("linux".to_owned()),
@@ -903,17 +1044,11 @@ interval = 50
     })
     .unwrap_err();
     helper.join().unwrap();
+    release_hang.store(true, Ordering::SeqCst);
+    hang_server.join().unwrap();
+    let _ = fs::remove_file(&hang_sock);
+    let _ = fs::remove_file(state_dir.join("daemon.json"));
     assert!(hang_stderr.text().contains("Startup log tail:"));
-    if let Ok(pid_txt) = fs::read_to_string(&pid_file)
-        && let Ok(pid) = pid_txt.trim().parse::<i32>()
-    {
-        // SAFETY: reap mock hung process group created by this test.
-        unsafe { libc::kill(-pid, libc::SIGKILL) };
-        let deadline = Instant::now() + Duration::from_secs(2);
-        while unsafe { libc::kill(pid, 0) } == 0 && Instant::now() < deadline {
-            thread::sleep(Duration::from_millis(20));
-        }
-    }
     assert!(
         hang_err.message.contains("is still stopping"),
         "{}",
@@ -945,12 +1080,10 @@ interval = 50
     .unwrap();
     devhost::caddy::stacks::set_stack_ready(&caddy.caddy_dir, Vec::new()).unwrap();
     let (_, _, rem_out) = test_output(Mode::Agent);
-    let rem_err = start_detached_stack(DetachedStartOptions {
+    let rem_err = run_detached(DetachedDaemonStartOptions {
+        spec: make_spec(Mode::Agent),
         manifest: resolved,
-        arguments: vec![],
-        directory: project,
         state_dir,
-        environment: BTreeMap::new(),
         output: rem_out,
         executable: None,
         startup_timeout: Some(Duration::from_secs(2)),
@@ -1152,10 +1285,6 @@ fn detach_await_earlier_unsettled_start() {
     let log_path = state_dir.join("logs").join(format!("{stem}.log"));
     let lock_path = state_dir.join("logs").join(format!("{stem}.lock"));
 
-    let exit_script = project.join("exit7.sh");
-    fs::write(&exit_script, "#!/bin/sh\nexit 7\n").unwrap();
-    fs::set_permissions(&exit_script, fs::Permissions::from_mode(0o755)).unwrap();
-
     let wait_lock_held = |lock_path: &Path| {
         let deadline = Instant::now() + Duration::from_secs(3);
         while Instant::now() < deadline {
@@ -1168,7 +1297,24 @@ fn detach_await_earlier_unsettled_start() {
             }
             thread::sleep(Duration::from_millis(10));
         }
-        panic!("start_detached_stack did not acquire lock in time");
+        panic!("run_detached did not acquire lock in time");
+    };
+
+    let make_spec = |manifest: &ResolvedManifest, dir: &Path| StoredLaunchSpec {
+        kind: LaunchKind::Manifest {
+            manifest_path: manifest.manifest_path.clone(),
+            requested: Vec::new(),
+            debug_caddy: false,
+            local: true,
+            remote: false,
+            idle_timeout_ms: None,
+        },
+        cwd: dir.to_path_buf(),
+        environment: BTreeMap::new(),
+        non_unicode_environment: Vec::new(),
+        mode: Mode::Agent.into(),
+        detached: true,
+        log_path: String::new(),
     };
 
     // Case A: earlier unready stack becomes ready -> returns Ok with Already running.
@@ -1187,21 +1333,19 @@ fn detach_await_earlier_unsettled_start() {
     )
     .unwrap();
     let (stdout_a, _, out_a) = test_output(Mode::Agent);
-    let opts_a = DetachedStartOptions {
+    let opts_a = DetachedDaemonStartOptions {
+        spec: make_spec(&resolved, &project),
         manifest: resolved.clone(),
-        arguments: vec![],
-        directory: project.clone(),
         state_dir: state_dir.clone(),
-        environment: BTreeMap::new(),
         output: out_a,
-        executable: Some(exit_script.clone()),
+        executable: None,
         startup_timeout: Some(Duration::from_secs(5)),
         cleanup_timeout: Some(Duration::from_millis(500)),
         target_os: Some("linux".to_owned()),
         external_signal: None,
         install_signal_handlers: false,
     };
-    let handle_a = thread::spawn(move || start_detached_stack(opts_a));
+    let handle_a = thread::spawn(move || run_detached(opts_a));
     wait_lock_held(&lock_path);
     set_stack_ready(&caddy_dir, Vec::new()).unwrap();
     handle_a.join().unwrap().unwrap();
@@ -1212,7 +1356,64 @@ fn detach_await_earlier_unsettled_start() {
     );
     drop(_guard_a);
 
-    // Case B: earlier unready stack unregisters -> waiter launches its own supervisor.
+    // Case B: earlier unready stack unregisters -> waiter launches its own stack via daemon.
+    let mock_pid = std::process::id() as i32;
+    let mock_sock = state_dir.join("mock-unsettled.sock");
+    let listener = std::os::unix::net::UnixListener::bind(&mock_sock).unwrap();
+    write_daemon_record(
+        &state_dir,
+        &DaemonRecord {
+            protocol_version: PROTOCOL_VERSION,
+            pid: mock_pid,
+            start_identity: String::new(),
+            socket_path: mock_sock.to_string_lossy().into_owned(),
+            version: "test".to_owned(),
+            exe_path: String::new(),
+            exe_identity: String::new(),
+            context_fingerprint: String::new(),
+        },
+    )
+    .unwrap();
+    let mock_server = thread::spawn(move || {
+        let (mut s, _) = listener.accept().unwrap();
+        let mut r = FrameReader::new(s.try_clone().unwrap());
+        let _: Option<Request> = r.read_frame().unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Hello {
+                protocol_version: PROTOCOL_VERSION,
+                pid: mock_pid,
+                version: "test".to_owned(),
+                exe_path: String::new(),
+                exe_identity: String::new(),
+                context_fingerprint: String::new(),
+                draining: false,
+            },
+        )
+        .unwrap();
+        let (mut s, _) = listener.accept().unwrap();
+        let mut r = FrameReader::new(s.try_clone().unwrap());
+        let _: Option<Request> = r.read_frame().unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Started {
+                stack_id: "stk-unsettled".to_owned(),
+                pid: mock_pid,
+            },
+        )
+        .unwrap();
+        write_frame(
+            &mut s,
+            &ServerEvent::Finished {
+                exit_code: 7,
+                failure: None,
+                overlap: None,
+                daemon_exiting: false,
+            },
+        )
+        .unwrap();
+    });
+
     let _guard_b = UnregisterGuard(&caddy_dir);
     register_stack(
         &caddy_dir,
@@ -1228,24 +1429,24 @@ fn detach_await_earlier_unsettled_start() {
     )
     .unwrap();
     let (_, _, out_b) = test_output(Mode::Agent);
-    let opts_b = DetachedStartOptions {
+    let opts_b = DetachedDaemonStartOptions {
+        spec: make_spec(&resolved, &project),
         manifest: resolved,
-        arguments: vec![],
-        directory: project,
-        state_dir,
-        environment: BTreeMap::new(),
+        state_dir: state_dir.clone(),
         output: out_b,
-        executable: Some(exit_script),
+        executable: None,
         startup_timeout: Some(Duration::from_secs(5)),
         cleanup_timeout: Some(Duration::from_millis(500)),
         target_os: Some("linux".to_owned()),
         external_signal: None,
         install_signal_handlers: false,
     };
-    let handle_b = thread::spawn(move || start_detached_stack(opts_b));
+    let handle_b = thread::spawn(move || run_detached(opts_b));
     wait_lock_held(&lock_path);
     unregister_stack(&caddy_dir).unwrap();
     let err_b = handle_b.join().unwrap().unwrap_err();
+    mock_server.join().unwrap();
+    let _ = fs::remove_file(&mock_sock);
     assert!(
         err_b
             .message

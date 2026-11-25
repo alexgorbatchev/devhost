@@ -134,7 +134,7 @@ mod tests {
                 }
                 cancel.store(true, Ordering::Release);
             });
-            let result = run_service_command(&manifest, service, &["sh".into(), "-c".into(), "trap 'printf term > terminated; exit 0' TERM; printf ready > ready; while :; do sleep .1; done".into()], "daemon start", &BTreeMap::new(), &output, CommandOptions { cancel: Some(&cancel), keep_output: None });
+            let result = run_service_command(&manifest, service, &["sh".into(), "-c".into(), "trap 'printf term > terminated; exit 0' TERM; printf ready > ready; while :; do sleep .1; done".into()], "daemon start", &BTreeMap::new(), &[], &output, CommandOptions { cancel: Some(&cancel), keep_output: None });
             assert_eq!(result.unwrap_err(), "canceled");
         });
         assert!(started.elapsed() < Duration::from_secs(2));
@@ -162,7 +162,7 @@ mod tests {
         }));
         let owner = DaemonOutput::default();
         let started = Instant::now();
-        run_service_command(&manifest, service, &["sh".into(), "-c".into(), "printf '%s' $$ > group; (sleep .1; printf 'heartbeat\\n'; exec sleep 30) & printf '%s' $! > daemon".into()], "daemon start", &BTreeMap::new(), &output, CommandOptions { cancel: None, keep_output: Some(&owner) }).unwrap();
+        run_service_command(&manifest, service, &["sh".into(), "-c".into(), "printf '%s' $$ > group; (sleep .1; printf 'heartbeat\\n'; exec sleep 30) & printf '%s' $! > daemon".into()], "daemon start", &BTreeMap::new(), &[], &output, CommandOptions { cancel: None, keep_output: Some(&owner) }).unwrap();
         struct Group(i32, i32);
         impl Drop for Group {
             fn drop(&mut self) {

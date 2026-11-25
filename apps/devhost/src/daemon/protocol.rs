@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    io::{self, BufRead, Write},
+    io::{self, BufRead, BufReader, Read, Write},
     path::PathBuf,
 };
 
@@ -75,6 +75,8 @@ pub struct StoredLaunchSpec {
     pub kind: LaunchKind,
     pub cwd: PathBuf,
     pub environment: BTreeMap<String, String>,
+    #[serde(default)]
+    pub non_unicode_environment: Vec<(Vec<u8>, Vec<u8>)>,
     pub mode: OutputMode,
     pub detached: bool,
     #[serde(default)]
@@ -198,6 +200,8 @@ pub enum ServerEvent {
         version: String,
         exe_path: String,
         exe_identity: String,
+        #[serde(default)]
+        context_fingerprint: String,
         draining: bool,
     },
     Started {
@@ -260,51 +264,74 @@ pub fn write_frame<W: Write, T: Serialize>(writer: &mut W, value: &T) -> io::Res
     writer.flush()
 }
 
-pub fn read_frame<R: BufRead, T: DeserializeOwned>(reader: &mut R) -> io::Result<Option<T>> {
-    let mut line = Vec::new();
-    let mut total = 0usize;
-    loop {
-        let buf = match reader.fill_buf() {
-            Ok(buf) => buf,
-            Err(error) if error.kind() == io::ErrorKind::Interrupted && !line.is_empty() => {
-                continue;
-            }
-            Err(error) => return Err(error),
-        };
-        if buf.is_empty() {
-            if line.is_empty() {
-                return Ok(None);
-            }
-            break;
+/// Stateful newline-delimited JSON reader that retains partial frames across
+/// `WouldBlock`, `TimedOut`, and `Interrupted` errors.
+pub struct FrameReader<R: Read> {
+    reader: BufReader<R>,
+    buf: Vec<u8>,
+}
+
+impl<R: Read> FrameReader<R> {
+    pub fn new(inner: R) -> Self {
+        Self {
+            reader: BufReader::new(inner),
+            buf: Vec::new(),
         }
-        if let Some(pos) = buf.iter().position(|&b| b == b'\n') {
-            total += pos;
-            if total > MAX_FRAME_BYTES {
+    }
+
+    pub fn get_ref(&self) -> &R {
+        self.reader.get_ref()
+    }
+
+    pub fn read_frame<T: DeserializeOwned>(&mut self) -> io::Result<Option<T>> {
+        loop {
+            let chunk = match self.reader.fill_buf() {
+                Ok(buf) => buf,
+                Err(error)
+                    if error.kind() == io::ErrorKind::Interrupted && !self.buf.is_empty() =>
+                {
+                    continue;
+                }
+                Err(error) => return Err(error),
+            };
+            if chunk.is_empty() {
+                if self.buf.is_empty() {
+                    return Ok(None);
+                }
+                break;
+            }
+            if let Some(pos) = chunk.iter().position(|&b| b == b'\n') {
+                if self.buf.len() + pos > MAX_FRAME_BYTES {
+                    self.buf.clear();
+                    self.reader.consume(pos + 1);
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "daemon RPC frame exceeded maximum size",
+                    ));
+                }
+                self.buf.extend_from_slice(&chunk[..pos]);
+                self.reader.consume(pos + 1);
+                break;
+            }
+            let len = chunk.len();
+            if self.buf.len() + len > MAX_FRAME_BYTES {
+                self.buf.clear();
+                self.reader.consume(len);
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "daemon RPC frame exceeded maximum size",
                 ));
             }
-            line.extend_from_slice(&buf[..pos]);
-            reader.consume(pos + 1);
-            break;
+            self.buf.extend_from_slice(chunk);
+            self.reader.consume(len);
         }
-        total += buf.len();
-        if total > MAX_FRAME_BYTES {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "daemon RPC frame exceeded maximum size",
-            ));
+        let line = std::mem::take(&mut self.buf);
+        if line.is_empty() {
+            return Ok(None);
         }
-        line.extend_from_slice(buf);
-        let len = buf.len();
-        reader.consume(len);
+        let parsed = serde_json::from_slice(&line).map_err(io::Error::other)?;
+        Ok(Some(parsed))
     }
-    if line.is_empty() {
-        return Ok(None);
-    }
-    let parsed = serde_json::from_slice(&line).map_err(io::Error::other)?;
-    Ok(Some(parsed))
 }
 
 #[cfg(test)]
@@ -315,10 +342,67 @@ mod tests {
     fn frames_round_trip_and_handle_eof() {
         let mut wire = Vec::new();
         write_frame(&mut wire, &Request::Hello).unwrap();
-        let req: Option<Request> = read_frame(&mut wire.as_slice()).unwrap();
+        let mut reader = FrameReader::new(wire.as_slice());
+        let req: Option<Request> = reader.read_frame().unwrap();
         assert!(matches!(req, Some(Request::Hello)));
+        assert!(reader.read_frame::<Request>().unwrap().is_none());
+    }
 
-        let eof: Option<Request> = read_frame(&mut &b""[..]).unwrap();
-        assert!(eof.is_none());
+    #[test]
+    fn frame_reader_preserves_large_partial_frame_across_timeouts() {
+        struct ChunkedReader {
+            data: Vec<u8>,
+            pos: usize,
+            step: usize,
+        }
+        impl Read for ChunkedReader {
+            fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
+                self.step += 1;
+                if self.step % 3 == 2 {
+                    return Err(io::Error::new(io::ErrorKind::WouldBlock, "paused"));
+                }
+                if self.step.is_multiple_of(5) {
+                    return Err(io::Error::new(io::ErrorKind::Interrupted, "signal"));
+                }
+                if self.pos >= self.data.len() {
+                    return Ok(0);
+                }
+                let take = (self.data.len() - self.pos).min(out.len()).min(1024);
+                out[..take].copy_from_slice(&self.data[self.pos..self.pos + take]);
+                self.pos += take;
+                Ok(take)
+            }
+        }
+
+        let payload = "x".repeat(20_000);
+        let mut wire = Vec::new();
+        write_frame(
+            &mut wire,
+            &ServerEvent::Output {
+                stream: OutputStream::Stdout,
+                data: payload.clone(),
+            },
+        )
+        .unwrap();
+
+        let mut reader = FrameReader::new(ChunkedReader {
+            data: wire,
+            pos: 0,
+            step: 0,
+        });
+        loop {
+            match reader.read_frame::<ServerEvent>() {
+                Ok(Some(ServerEvent::Output { data, .. })) => {
+                    assert_eq!(data, payload);
+                    break;
+                }
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                    ) => {}
+                other => panic!("unexpected frame result: {other:?}"),
+            }
+        }
     }
 }

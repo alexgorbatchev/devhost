@@ -51,7 +51,7 @@ On start, devhost:
 
 The shared Caddy must already be running; see [Prepare Caddy](../managed-caddy/#prepare-caddy).
 
-All stacks and standalone `devhost serve` sessions in the same state directory run inside a single on-demand devhost supervisor process. It starts automatically on the first `devhost start` or `devhost serve` and exits automatically once the last stack stops. A foreground command stays attached to stream its own stack's logs and stops only that stack on **Ctrl-C**, `SIGTERM`, or terminal disconnect.
+All stacks and standalone `devhost serve` sessions in the same state directory run inside a single on-demand devhost supervisor process. It starts automatically on the first `devhost start` or `devhost serve` and exits automatically once the last stack stops. A foreground command stays attached to stream its own stack's logs and stops only that stack on **Ctrl-C**, `SIGTERM`, or terminal disconnect. The supervisor verifies peer user credentials and execution context (namespaces and seccomp state on Linux), refusing to share one daemon across different sandbox boundaries; set `DEVHOST_STATE_DIR` to give a sandboxed environment its own state directory.
 
 During foreground startup, or after a detached stack is ready, a service that exits or fails its health check does not stop the stack. Its hostname shows the error and recent logs with a **Restart** button; see [Restarts and recovery](../../stacks/recovery/).
 

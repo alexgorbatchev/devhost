@@ -63,7 +63,7 @@ An `already running` error means another live stack already uses your root manif
 
 ## Zombie cleanup messages
 
-`Stopping zombie PID ...` followed by `Stopped zombie PID ...` means devhost found a process from an earlier run of the same manifest, one that crashed or was killed, still holding a hostname or port, and stopped it. This is on by default (`killZombies = true`).
+`Stopping zombie PID ...` / `Stopped zombie PID ...` (or `Stopping zombie stack ...` / `Stopped zombie stack ...` when the leftover stack ran inside the shared supervisor) means devhost found a leftover run of the same manifest still holding a hostname or port, and stopped it. This is on by default (`killZombies = true`).
 
 - devhost tries each leftover process once per startup or reload, and prints the pair once even when that process held several hostnames and ports.
 - If the process cannot be killed, or has not exited after five seconds, devhost reports an error and leaves that hostname or port unclaimed.

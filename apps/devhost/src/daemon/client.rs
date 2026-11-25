@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::{self, DirBuilder, OpenOptions},
-    io::{self, BufReader, Write},
+    io::{self, Write},
     os::unix::{
         fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt},
         net::UnixStream,
@@ -23,14 +23,14 @@ use sha2::{Digest, Sha256};
 
 use super::{
     PROTOCOL_VERSION, acquire_daemon_lock, daemon_log_path, daemon_socket_path, ensure_state_dir,
-    exe_identity, read_live_daemon, remove_daemon_record_if_pid,
+    exe_identity, execution_context_fingerprint, read_live_daemon, remove_daemon_record_if_pid,
 };
 use crate::{
     Failure,
     caddy::stacks::{LiveStack, ManifestOverlapError},
     cliout::{self, ServiceOutput},
     daemon::protocol::{
-        ExportedStack, OutputStream, Request, ServerEvent, StoredLaunchSpec, read_frame,
+        ExportedStack, FrameReader, OutputStream, Request, ServerEvent, StoredLaunchSpec,
         write_frame,
     },
     procid,
@@ -140,6 +140,7 @@ pub fn ensure_daemon(
         },
     };
     let current_exe_id = exe_identity(&exe_path);
+    let current_context = execution_context_fingerprint();
 
     if let Some(record) = read_live_daemon(state_dir) {
         let sock = PathBuf::from(&record.socket_path);
@@ -149,6 +150,7 @@ pub fn ensure_daemon(
                 pid,
                 version,
                 exe_identity: daemon_exe_id,
+                context_fingerprint,
             }) => {
                 if protocol_version != PROTOCOL_VERSION {
                     return Err(Failure {
@@ -158,6 +160,21 @@ pub fn ensure_daemon(
                         summary: None,
                         hint: Some(
                             "Run \"devhost restart-all\" to switch to the current devhost binary."
+                                .to_owned(),
+                        ),
+                    });
+                }
+                if !context_fingerprint.is_empty() && context_fingerprint != current_context {
+                    return Err(Failure {
+                        message: format!(
+                            "running devhost daemon (PID {pid}) runs in a different execution context (sandbox or namespace mismatch)"
+                        ),
+                        summary: Some(
+                            "cannot share the running devhost daemon across different sandbox or namespace contexts"
+                                .to_owned(),
+                        ),
+                        hint: Some(
+                            "Set DEVHOST_STATE_DIR to a separate state directory for sandboxed sessions."
                                 .to_owned(),
                         ),
                     });
@@ -200,6 +217,7 @@ enum HelloReply {
         pid: i32,
         version: String,
         exe_identity: String,
+        context_fingerprint: String,
     },
     Draining,
 }
@@ -209,13 +227,14 @@ fn send_hello(socket_path: &Path) -> io::Result<HelloReply> {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(3)));
     write_frame(&mut stream, &Request::Hello)?;
-    let mut reader = BufReader::new(stream);
-    match read_frame::<_, ServerEvent>(&mut reader)? {
+    let mut reader = FrameReader::new(stream);
+    match reader.read_frame::<ServerEvent>()? {
         Some(ServerEvent::Hello {
             protocol_version,
             pid,
             version,
             exe_identity,
+            context_fingerprint,
             draining,
             ..
         }) => {
@@ -227,6 +246,7 @@ fn send_hello(socket_path: &Path) -> io::Result<HelloReply> {
                     pid,
                     version,
                     exe_identity,
+                    context_fingerprint,
                 })
             }
         }
@@ -238,6 +258,15 @@ fn send_hello(socket_path: &Path) -> io::Result<HelloReply> {
 }
 
 fn spawn_daemon(state_dir: &Path, executable: &Path) -> Result<DaemonEndpoint, Failure> {
+    let absolute_state_dir = if state_dir.is_absolute() {
+        crate::paths::clean(state_dir)
+    } else {
+        match env::current_dir() {
+            Ok(cwd) => crate::paths::clean(&cwd.join(state_dir)),
+            Err(_) => crate::paths::clean(state_dir),
+        }
+    };
+    let state_dir = absolute_state_dir.as_path();
     let log_path = daemon_log_path(state_dir);
     let log_file = match OpenOptions::new()
         .create(true)
@@ -268,6 +297,10 @@ fn spawn_daemon(state_dir: &Path, executable: &Path) -> Result<DaemonEndpoint, F
         .arg("_daemon")
         .arg("--state-dir")
         .arg(state_dir)
+        .current_dir("/")
+        .env_remove(crate::services::containment::SERVICE_CONTAINMENT_TOKEN_ENV)
+        .env_remove(crate::services::detach::DETACHED_LOG_ENV)
+        .env_remove(crate::services::detach::STACK_LOG_ENV)
         .stdin(Stdio::null())
         .stdout(Stdio::from(log_file))
         .stderr(Stdio::from(stderr_log));
@@ -374,7 +407,7 @@ pub fn run_foreground(
         };
         let mut writer = write_clone;
         let _ = stream.set_read_timeout(Some(Duration::from_millis(50)));
-        let mut reader = BufReader::new(stream);
+        let mut reader = FrameReader::new(stream);
         let mut stack_id = String::new();
         let mut cancel_sent = false;
 
@@ -396,7 +429,7 @@ pub fn run_foreground(
                 }
             }
 
-            match read_frame::<_, ServerEvent>(&mut reader) {
+            match reader.read_frame::<ServerEvent>() {
                 Ok(Some(ServerEvent::Started { stack_id: id, .. })) => {
                     stack_id = id;
                     let sig = FOREGROUND_SIGNAL.swap(0, Ordering::SeqCst);
@@ -493,6 +526,7 @@ pub struct DetachedDaemonStartOptions {
     pub spec: StoredLaunchSpec,
     pub state_dir: PathBuf,
     pub output: ServiceOutput,
+    pub executable: Option<PathBuf>,
     pub startup_timeout: Option<Duration>,
     pub cleanup_timeout: Option<Duration>,
     pub target_os: Option<String>,
@@ -647,7 +681,12 @@ pub fn run_detached(options: DetachedDaemonStartOptions) -> Result<(), Failure> 
     let mut attempt = 0u8;
     let (endpoint, mut reader, mut writer, stack_id) = loop {
         attempt += 1;
-        let endpoint = match ensure_daemon(&options.state_dir, None, Some(&options.output), mode) {
+        let endpoint = match ensure_daemon(
+            &options.state_dir,
+            options.executable.as_deref(),
+            Some(&options.output),
+            mode,
+        ) {
             Ok(ep) => ep,
             Err(err) => return Err(detached_failure(err, &log_path_str, "")),
         };
@@ -690,7 +729,7 @@ pub fn run_detached(options: DetachedDaemonStartOptions) -> Result<(), Failure> 
             }
         };
         let _ = stream.set_read_timeout(Some(DETACHED_POLL_INTERVAL));
-        let mut reader = BufReader::new(stream);
+        let mut reader = FrameReader::new(stream);
         match read_started(&mut reader, deadline, &signal_src) {
             Ok(StartAck::Started(stack_id)) => break (endpoint, reader, writer, stack_id),
             Ok(StartAck::Draining) if attempt < 2 => continue,
@@ -765,7 +804,7 @@ enum StartAck {
 }
 
 fn read_started(
-    reader: &mut BufReader<UnixStream>,
+    reader: &mut FrameReader<UnixStream>,
     deadline: Instant,
     signals: &SignalSource<'_>,
 ) -> Result<StartAck, Failure> {
@@ -782,7 +821,7 @@ fn read_started(
                 .to_owned()
                 .into());
         }
-        match read_frame::<_, ServerEvent>(reader) {
+        match reader.read_frame::<ServerEvent>() {
             Ok(Some(ServerEvent::Started { stack_id, .. })) => {
                 return Ok(StartAck::Started(stack_id));
             }
@@ -821,7 +860,7 @@ struct DetachedReadyWait<'a> {
 }
 
 fn wait_detached_ready(
-    reader: &mut BufReader<UnixStream>,
+    reader: &mut FrameReader<UnixStream>,
     wait: &DetachedReadyWait<'_>,
     signals: &SignalSource<'_>,
 ) -> Result<LiveStack, (Failure, bool, bool)> {
@@ -865,7 +904,7 @@ fn wait_detached_ready(
             ));
         }
 
-        match read_frame::<_, ServerEvent>(reader) {
+        match reader.read_frame::<ServerEvent>() {
             Ok(Some(ServerEvent::Ready {
                 pid,
                 name,
@@ -967,7 +1006,7 @@ fn finish_daemon_detached_failure(
     mut err_failure: Failure,
     was_not_ready: bool,
     already_finished: bool,
-    reader: &mut BufReader<UnixStream>,
+    reader: &mut FrameReader<UnixStream>,
     writer: &mut UnixStream,
     ctx: &DetachedFailureContext<'_>,
     signals: &SignalSource<'_>,
@@ -1002,7 +1041,7 @@ fn finish_daemon_detached_failure(
             if signals.take().is_some() || Instant::now() >= deadline {
                 break;
             }
-            match read_frame::<_, ServerEvent>(reader) {
+            match reader.read_frame::<ServerEvent>() {
                 Ok(Some(ServerEvent::Finished { .. })) | Ok(None) => {
                     stopped = true;
                     break;
@@ -1052,8 +1091,8 @@ fn send_rpc_on_stream(
     if let Err(error) = write_frame(&mut stream, request) {
         return Err(format!("send {action} request to daemon: {error}"));
     }
-    let mut reader = BufReader::new(stream);
-    match read_frame::<_, ServerEvent>(&mut reader) {
+    let mut reader = FrameReader::new(stream);
+    match reader.read_frame::<ServerEvent>() {
         Ok(Some(event)) => Ok(event),
         Ok(None) => Err(format!("devhost daemon closed connection during {action}")),
         Err(error) => Err(format!("read {action} response from daemon: {error}")),
@@ -1269,8 +1308,8 @@ mod tests {
         let listener = UnixListener::bind(sock).unwrap();
         thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let mut reader = BufReader::new(stream.try_clone().unwrap());
-            let _req: Option<Request> = read_frame(&mut reader).unwrap();
+            let mut reader = FrameReader::new(stream.try_clone().unwrap());
+            let _req: Option<Request> = reader.read_frame().unwrap();
             write_frame(&mut stream, &reply).unwrap();
         })
     }
@@ -1362,6 +1401,7 @@ mod tests {
                 version: "0.0.1".to_owned(),
                 exe_path: "/bin/false".to_owned(),
                 exe_identity: "x".to_owned(),
+                context_fingerprint: String::new(),
             },
         )
         .unwrap();
@@ -1373,6 +1413,7 @@ mod tests {
                 version: "0.0.1".to_owned(),
                 exe_path: "/bin/false".to_owned(),
                 exe_identity: "x".to_owned(),
+                context_fingerprint: String::new(),
                 draining: true,
             },
         );
@@ -1384,6 +1425,47 @@ mod tests {
         );
         h.join().unwrap();
         assert!(res.is_err());
+
+        // Execution-context mismatch refuses to share the running daemon.
+        let ctx_state = dir.path().join("ctx-mismatch");
+        fs::create_dir_all(&ctx_state).unwrap();
+        let ctx_sock = ctx_state.join("c.sock");
+        write_daemon_record(
+            &ctx_state,
+            &DaemonRecord {
+                protocol_version: PROTOCOL_VERSION,
+                pid,
+                start_identity: String::new(),
+                socket_path: ctx_sock.to_string_lossy().into_owned(),
+                version: "0.0.1".to_owned(),
+                exe_path: "/bin/false".to_owned(),
+                exe_identity: "x".to_owned(),
+                context_fingerprint: "different-sandbox-context".to_owned(),
+            },
+        )
+        .unwrap();
+        let h = mock_single_reply(
+            &ctx_sock,
+            ServerEvent::Hello {
+                protocol_version: PROTOCOL_VERSION,
+                pid,
+                version: "0.0.1".to_owned(),
+                exe_path: "/bin/false".to_owned(),
+                exe_identity: "x".to_owned(),
+                context_fingerprint: "different-sandbox-context".to_owned(),
+                draining: false,
+            },
+        );
+        let ctx_err = ensure_daemon(&ctx_state, None, None, Mode::Agent).unwrap_err();
+        h.join().unwrap();
+        assert!(ctx_err.message.contains("different execution context"));
+        assert!(
+            ctx_err
+                .hint
+                .as_deref()
+                .unwrap()
+                .contains("DEVHOST_STATE_DIR")
+        );
 
         // Nonexistent daemon binary reports launch failure cleanly.
         let bad_exe = ensure_daemon(
@@ -1424,6 +1506,7 @@ mod tests {
                 version: "test".to_owned(),
                 exe_path: String::new(),
                 exe_identity: String::new(),
+                context_fingerprint: String::new(),
             },
         )
         .unwrap();
@@ -1436,6 +1519,7 @@ mod tests {
             },
             cwd: dir.path().to_path_buf(),
             environment: Default::default(),
+            non_unicode_environment: Vec::new(),
             mode: Mode::Agent.into(),
             detached: false,
             log_path: String::new(),
@@ -1446,8 +1530,8 @@ mod tests {
         let server = thread::spawn(move || {
             // Connection 1: Hello
             let (mut s, _) = listener.accept().unwrap();
-            let mut r = BufReader::new(s.try_clone().unwrap());
-            let _: Option<Request> = read_frame(&mut r).unwrap();
+            let mut r = FrameReader::new(s.try_clone().unwrap());
+            let _: Option<Request> = r.read_frame().unwrap();
             write_frame(
                 &mut s,
                 &ServerEvent::Hello {
@@ -1456,14 +1540,15 @@ mod tests {
                     version: "test".to_owned(),
                     exe_path: String::new(),
                     exe_identity: String::new(),
+                    context_fingerprint: String::new(),
                     draining: false,
                 },
             )
             .unwrap();
             // Connection 2: Start -> Started, Output, Finished(Overlap)
             let (mut s, _) = listener.accept().unwrap();
-            let mut r = BufReader::new(s.try_clone().unwrap());
-            let _: Option<Request> = read_frame(&mut r).unwrap();
+            let mut r = FrameReader::new(s.try_clone().unwrap());
+            let _: Option<Request> = r.read_frame().unwrap();
             write_frame(
                 &mut s,
                 &ServerEvent::Started {
@@ -1497,8 +1582,8 @@ mod tests {
             .unwrap();
             // Connection 3: Hello for Failure test
             let (mut s, _) = listener.accept().unwrap();
-            let mut r = BufReader::new(s.try_clone().unwrap());
-            let _: Option<Request> = read_frame(&mut r).unwrap();
+            let mut r = FrameReader::new(s.try_clone().unwrap());
+            let _: Option<Request> = r.read_frame().unwrap();
             write_frame(
                 &mut s,
                 &ServerEvent::Hello {
@@ -1507,14 +1592,15 @@ mod tests {
                     version: "test".to_owned(),
                     exe_path: String::new(),
                     exe_identity: String::new(),
+                    context_fingerprint: String::new(),
                     draining: false,
                 },
             )
             .unwrap();
             // Connection 4: Start -> Finished(Failure)
             let (mut s, _) = listener.accept().unwrap();
-            let mut r = BufReader::new(s.try_clone().unwrap());
-            let _: Option<Request> = read_frame(&mut r).unwrap();
+            let mut r = FrameReader::new(s.try_clone().unwrap());
+            let _: Option<Request> = r.read_frame().unwrap();
             write_frame(
                 &mut s,
                 &ServerEvent::Finished {
@@ -1531,8 +1617,8 @@ mod tests {
             .unwrap();
             // Connection 5: Hello for Error test
             let (mut s, _) = listener.accept().unwrap();
-            let mut r = BufReader::new(s.try_clone().unwrap());
-            let _: Option<Request> = read_frame(&mut r).unwrap();
+            let mut r = FrameReader::new(s.try_clone().unwrap());
+            let _: Option<Request> = r.read_frame().unwrap();
             write_frame(
                 &mut s,
                 &ServerEvent::Hello {
@@ -1541,14 +1627,15 @@ mod tests {
                     version: "test".to_owned(),
                     exe_path: String::new(),
                     exe_identity: String::new(),
+                    context_fingerprint: String::new(),
                     draining: false,
                 },
             )
             .unwrap();
             // Connection 6: Start -> Error
             let (mut s, _) = listener.accept().unwrap();
-            let mut r = BufReader::new(s.try_clone().unwrap());
-            let _: Option<Request> = read_frame(&mut r).unwrap();
+            let mut r = FrameReader::new(s.try_clone().unwrap());
+            let _: Option<Request> = r.read_frame().unwrap();
             write_frame(
                 &mut s,
                 &ServerEvent::Error {
@@ -1596,6 +1683,7 @@ mod tests {
             spec: make_spec(),
             state_dir: dir.path().to_path_buf(),
             output: out.clone(),
+            executable: None,
             startup_timeout: Some(Duration::from_secs(1)),
             cleanup_timeout: Some(Duration::from_millis(200)),
             target_os: Some("windows".to_owned()),
@@ -1614,6 +1702,7 @@ mod tests {
             spec: make_spec(),
             state_dir: blocked_state,
             output: out,
+            executable: None,
             startup_timeout: Some(Duration::from_secs(1)),
             cleanup_timeout: Some(Duration::from_millis(200)),
             target_os: Some("linux".to_owned()),

@@ -67,7 +67,8 @@ pub(super) fn run(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<d
             port,
         },
         cwd,
-        environment: devhost::environment::unicode(),
+        environment: devhost::environment::sanitized_unicode(),
+        non_unicode_environment: devhost::environment::non_unicode(),
         mode: mode.into(),
         detached: false,
         log_path: String::new(),
@@ -121,6 +122,7 @@ fn run_command(
     let state_dir = machine::state_directory()?;
     let mut environment = devhost::environment::unicode();
     let launch = take_launch_metadata(&mut environment);
+    devhost::environment::strip_internal_vars(&mut environment);
     // SAFETY: command startup runs on the main thread before worker creation.
     unsafe {
         env::remove_var(DETACHED_LOG_ENV);
@@ -143,6 +145,7 @@ fn run_command(
         },
         cwd,
         environment,
+        non_unicode_environment: devhost::environment::non_unicode(),
         mode: mode.into(),
         detached: args.get_flag("detach"),
         log_path: launch.log_path,
@@ -155,6 +158,7 @@ fn run_command(
             spec,
             state_dir,
             output,
+            executable: None,
             startup_timeout: None,
             cleanup_timeout: None,
             target_os: None,

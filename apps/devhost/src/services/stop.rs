@@ -145,6 +145,76 @@ pub fn stop_stack(
             }
             continue;
         }
+        let daemon_socket = caddy_dir
+            .parent()
+            .and_then(|state_dir| daemon::is_live_daemon_pid(state_dir, owner.pid))
+            .map(|record| record.socket_path)
+            .or_else(|| {
+                live_stacks
+                    .iter()
+                    .find(|stack| stack.pid == owner.pid && !stack.daemon_socket.is_empty())
+                    .map(|stack| stack.daemon_socket.clone())
+            });
+        if let Some(socket_path) = daemon_socket {
+            let mut active_ids = std::collections::BTreeSet::new();
+            let mut stopped_any = false;
+            if let Ok(exported) = daemon::client::export_specs(Path::new(&socket_path)) {
+                for entry in &exported.stacks {
+                    active_ids.insert(entry.stack_id.clone());
+                }
+                for entry in exported.stacks {
+                    if !entry.manifest_path.is_empty()
+                        && manifest_identity(Path::new(&entry.manifest_path)) == target_id
+                    {
+                        ctx(
+                            daemon::client::stop_live_stack(
+                                Path::new(&socket_path),
+                                &entry.stack_id,
+                                owner.pid,
+                                libc::SIGTERM,
+                                grace,
+                            ),
+                            &format!("stop stack {} (PID {})", entry.name, owner.pid),
+                        )?;
+                        active_ids.remove(&entry.stack_id);
+                        stopped_any = true;
+                    }
+                }
+            }
+            let mut caddy_out = output.caddy_stderr_writer();
+            let cleaned = ctx(
+                crate::caddy::routes::release_orphaned_owner_records(
+                    caddy_dir,
+                    owner.pid,
+                    &owner.manifest_path,
+                    &active_ids,
+                    output.mode(),
+                    &mut caddy_out,
+                ),
+                &format!(
+                    "release orphaned claims/routes for PID {} ({})",
+                    owner.pid, owner.manifest_path
+                ),
+            )?;
+            if stopped_any || cleaned > 0 {
+                output.log_stdout(
+                    "devhost",
+                    &format!(
+                        "Cleaned up orphaned records for {} under shared supervisor PID {}.",
+                        owner.manifest_path, owner.pid
+                    ),
+                );
+            } else {
+                output.log_stdout(
+                    "devhost",
+                    &format!(
+                        "No active stack for {} in shared supervisor PID {}; leaving supervisor running.",
+                        owner.manifest_path, owner.pid
+                    ),
+                );
+            }
+            continue;
+        }
         ctx(
             stop_process(owner.pid, grace, output),
             &format!("stop process {}", owner.pid),
