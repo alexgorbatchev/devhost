@@ -20,7 +20,7 @@ name = "devhost"
 path = "src/main.rs"
 
 [dependencies]
-agent-watcher = { git = "https://github.com/alexgorbatchev/agent-watcher-rust.git", rev = "f5cf3667bb55cc2bb2b01d4079b92511b9f28005" }
+agent-watcher = { git = "https://github.com/alexgorbatchev/agent-watcher.git", rev = "fd796ca17e5bdb70d9749347b39d2bd2eadec57e" }
 async-tungstenite = { version = "0.34.1", features = ["tokio-rustls-native-certs"] }
 axum = { version = "0.8", features = ["ws"] }
 base64 = "0.22"

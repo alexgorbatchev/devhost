@@ -149,9 +149,10 @@ fn lists_only_checkout_agents_without_native_identifiers_and_caches_partial_fail
     assert!(!fixture.root.path().join("cursors.json").exists());
     let failed = Fixture::new(true);
     let (_, body, _) = failed.request("GET", "/__devhost__/agents?chatTarget=project", &[]);
+    let failure: Value = serde_json::from_str(&body).unwrap();
     assert_eq!(
-        serde_json::from_str::<Value>(&body).unwrap()["agents"],
-        json!([])
+        failure,
+        json!({"agents": [], "error": "Some agents could not be listed."})
     );
 }
 

@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use agent_watcher::{Config, Session, Snapshotter, scanner::SessionState};
+use agent_watcher::{Config, Harness, SessionSnapshot, Snapshotter, scanner::SessionState};
 use axum::{
     body::Body,
     extract::State,
@@ -29,13 +29,21 @@ pub(crate) struct Agents {
 
 struct Cached {
     scanned: Instant,
-    sessions: Vec<Session>,
+    sessions: Vec<SessionSnapshot>,
     failed: bool,
 }
 
 impl Default for Agents {
     fn default() -> Self {
-        Self::new(Config::default())
+        Self::new(Config {
+            harnesses: vec![
+                Harness::ClaudeCode,
+                Harness::Pi,
+                Harness::Codex,
+                Harness::Opencode,
+            ],
+            ..Config::default()
+        })
     }
 }
 
@@ -51,7 +59,7 @@ impl Agents {
         }
     }
 
-    async fn read(&self) -> (Vec<Session>, bool) {
+    async fn read(&self) -> (Vec<SessionSnapshot>, bool) {
         let mut cache = self.cache.lock().await;
         if let Some(previous) = cache.as_ref()
             && previous.scanned.elapsed() < Duration::from_secs(5)
@@ -71,7 +79,9 @@ impl Agents {
             }
         };
         let (sessions, failed) = match result {
-            Ok(Ok(snapshot)) => (snapshot.sessions, !snapshot.errors.is_empty()),
+            Ok(snapshot) if !cancel.is_cancelled() => {
+                (snapshot.sessions, !snapshot.errors.is_empty())
+            }
             _ => (Vec::new(), true),
         };
         *cache = Some(Cached {
@@ -118,7 +128,11 @@ pub(super) fn checkout_subdirectory(cwd: &Path, root: &Path) -> Option<PathBuf> 
     })
 }
 
-fn in_checkout(sessions: Vec<Session>, root: &Path, owned: &BTreeSet<String>) -> Vec<RunningAgent> {
+fn in_checkout(
+    sessions: Vec<SessionSnapshot>,
+    root: &Path,
+    owned: &BTreeSet<String>,
+) -> Vec<RunningAgent> {
     let mut agents: Vec<_> = sessions
         .into_iter()
         .filter(|session| !session.subagent)
@@ -189,8 +203,8 @@ mod tests {
 
     #[test]
     fn agents_are_ranked_by_attention_then_recency_and_key_without_children() {
-        let session = |pid, state, last_activity| Session {
-            harness: agent_watcher::Harness::ClaudeCode,
+        let session = |pid, state, last_activity| SessionSnapshot {
+            harness: Harness::ClaudeCode,
             harness_version: String::new(),
             session_id: format!("private-{pid}"),
             pid,
