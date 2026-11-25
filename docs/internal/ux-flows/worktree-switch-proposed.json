@@ -2,14 +2,14 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "Switch the stack to another checkout: proposed",
+    "title": "Switch the stack to another worktree: proposed",
     "locale": "en",
     "output": "docs/internal/ux-flows/worktree-switch-proposed.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -86,15 +86,15 @@
       "col": 0,
       "type": "external",
       "label": "Toolbar: Worktrees",
-      "sublabel": "names main · arrow stop",
+      "sublabel": "main ~/acme · arrow stop",
       "tag": "worktree-switch-10",
-      "explanation": "The bar's Worktrees trigger names the branch the stack runs, 'main' (or 'Detached' with a 7-character commit ID), and its accessible name says the same, 'Worktrees: main' (SEL-4, WORD-1); a blocked repository or an unavailable selected checkout adds the state as a shape and a word, 'fix-nav · deleted', and the collapsed badge carries it with its one-line notice (ACT-13, SURF-8, ACT-7). The trigger is one arrow stop: Alt+Ctrl+B, ArrowRight, Enter (KEY-3, KEY-4). The panel is an anchored popover fitted to every acceptance viewport, clear of the notice stack and above docked chat (SURF-2, SURF-1, SURF-9, SURF-10). Focus starts in Find checkout at its top; Tab moves to the highlighted row's remedies in the details line, then the footer; Tab past the last control, Escape or a click outside close it with focus on the trigger, or on the page element that had it when the pointer opened it (KEY-5, KEY-6, KEY-7, KEY-8, KEY-10). The hint line reads '↑↓ Move · Enter Pick · Esc Close' from the bindings' one definition (KEY-13, BAR-4). Resolves worktree-switch-10.",
+      "explanation": "The bar's Worktrees trigger shows the selected worktree's SEL-4 label ('main ~/acme' or 'Detached c521449 ~/acme/.worktrees/bisect', shortening the path on narrow widths) with accessible name 'Worktrees: main ~/acme' (SEL-4, WORD-1, WORD-11); a deleted running worktree adds the state as shape and word, '∅ fix-nav · deleted', and the collapsed badge reads '∅ dh · fix-nav deleted ▴' with its one-line notice (ACT-13, SURF-8, ACT-7). The trigger is one arrow stop: Alt+Ctrl+B, ArrowRight, Enter (KEY-3, KEY-4). The panel is an anchored popover clear of the notice stack and right-edge minimap, above docked chat, with >=3:1 button borders and fitted to every acceptance viewport (SURF-1, SURF-2, SURF-9, SURF-10). Focus starts in Find worktree at top; Tab moves to details-line remedies, then footer; Tab past last, Escape or outside click close it with focus returned (KEY-5, KEY-6, KEY-7, KEY-8, KEY-10). Hint line: '↑↓ Move · Enter Pick · Esc Close' (KEY-13, BAR-4). Resolves worktree-switch-10.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreeStatusPanel.tsx",
           "line": 24,
           "end_line": 56,
-          "label": "Replaces: accessible name without the branch"
+          "label": "Replaces: trigger label without SEL-4 path"
         },
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
@@ -113,7 +113,7 @@
       "label": "Status pages, crash view",
       "sublabel": "same list, toolbar off",
       "tag": "worktree-switch-03",
-      "explanation": "Startup, recovery and app error pages render the shared checkout list, its details line, the reach line, Switch and Restart Stack, Return to Configured Checkout and Refresh Worktrees, even with the toolbar off, replacing today's native select with full paths, 40-character commit IDs and errors inside options (SURF-14, SEL-4, MENU-1). One component ships in both style entries, so every surface shows the same rows, words and accessible names. The crash view shows the same list when its cause is a deleted or blocked checkout, and a switch started there reports its progress and failure in the view (SURF-3). On an app's own 404 or 5xx, startup-and-recovery's notice holds the list collapsed under 'Is this route in another checkout?' (SURF-16, O5; error-pages-04 is startup-and-recovery's, related). A switch from any of them takes the same two steps, and its outcome shows on the page that loads next (FB-2). Resolves worktree-switch-03.",
+      "explanation": "Startup, recovery and app error pages render the shared worktree list, its details line, the reach line, Switch and Restart Stack, Return to Configured Worktree and Refresh Worktrees, even with the toolbar off, replacing today's native select with full paths, 40-character commit IDs and errors inside options (SURF-14, SEL-4, MENU-1, WORD-11). One component ships in both style entries, so every surface shows identical rows, words and accessible names. The crash view shows the same list when its cause is a deleted or blocked worktree, and a switch started there reports its progress and failure in the view (SURF-3). On an app's own 404 or 5xx, startup-and-recovery's notice holds the list collapsed under 'Is this route in another worktree?' (SURF-16, O5; error-pages-04 is startup-and-recovery's, related). A switch from any of them takes the same two steps, and its outcome shows on the page that loads next (FB-2). Resolves worktree-switch-03.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/RecoveryRepository.tsx",
@@ -135,22 +135,28 @@
       "lane": "backend",
       "col": 0,
       "type": "backend",
-      "label": "Read checkouts",
-      "sublabel": "stops nothing · read 14:02",
-      "tag": "worktree-switch-14",
-      "explanation": "Opening Worktrees, a status page's first check, Refresh Worktrees and Check Again read the list again as today (GET /__devhost__/worktrees: git worktree list, each checkout's manifest and service folders), and that read stops nothing (HOLD-4, Backend 2). The running checkout is judged only by its folder, Git's registration and its repository: a manifest edit hot reload rejected keeps it running, marked 'edit not applied', never unavailable (HOLD-6). A deleted or unregistered running checkout publishes its repository as blocked with one sentence and starts none of its services until the person chooses; processes still running keep running. Each entry carries its state, branch, head, configured, selected, running, notApplied and a structured reason, and the answer its readAt, shown as 'Read 14:02' and updated in place while the panel is open (Backend 3, ACT-12). The read's side effect is gone for every client; who may reach the route stays the product owner's call, with Backend 11's local-client rule as the recommended default ([discuss]). Resolves worktree-switch-14 and the read's part of network-exposure-03.",
+      "label": "Read worktrees",
+      "sublabel": "stops nothing · O36 auth",
+      "tag": "network-exposure-03",
+      "explanation": "Opening Worktrees, a status page's first check, Refresh Worktrees and Check Again read GET /__devhost__/worktrees (git worktree list, each worktree's manifest and service folders) and stop nothing (HOLD-4, O43, Backend 3). Rust main already leaves rejected running manifests to hot reload (worktree-switch-14 fixed at worktrees.rs:360-370), publishing 'edit not applied' (HOLD-6); Runtime::refresh_worktrees drops stop_group for deleted running worktrees too (O43). Each entry carries state, branch, head, configured, selected, running, notApplied and a structured reason, plus readAt ('Read 14:02', ACT-12, Backend 4). Both entry points (/__devhost__/worktrees and X-Devhost-Recovery: worktrees with Host check) enforce O36/O37 remote auth: this machine and passkey/paired remote browsers work alike; unauthenticated remote browsers get 403 'Sign in with passkey or pair this browser to use devhost here' with no paths, PIDs or owner IDs (HOLD-7, HOLD-8, Backend 12). Resolves network-exposure-03.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/worktree_refresh.go",
-          "line": 29,
-          "end_line": 46,
-          "label": "Replaces: refresh that stops the repository"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 489,
+          "end_line": 536,
+          "label": "Replaces: refresh_worktrees stop on deletion"
         },
         {
-          "path": "apps/devhost/internal/services/worktrees.go",
-          "line": 207,
-          "end_line": 250,
-          "label": "Reuses: git worktree list, each checkout read"
+          "path": "apps/devhost/src/services/worktrees.rs",
+          "line": 353,
+          "end_line": 412,
+          "label": "Reuses: Group::refresh and belongs() check"
+        },
+        {
+          "path": "apps/devhost/src/devtools/server.rs",
+          "line": 374,
+          "end_line": 470,
+          "label": "Replaces: unauthenticated worktree routes"
         }
       ]
     },
@@ -159,10 +165,10 @@
       "lane": "ask",
       "col": 1,
       "type": "frontend",
-      "label": "Find and pick a checkout",
+      "label": "Find and pick a worktree",
       "sublabel": "branch · commit · badges",
       "tag": "worktree-switch-01",
-      "explanation": "The shared checkout list, one component this flow ships with the one checkout-label builder (SURF-14, SEL-4): a combobox whose find field and list share one shadow tree; ArrowUp and ArrowDown move the highlight, Enter picks it and never switches, and rows hold no controls (KEY-10, REV-2, KEY-9). Main comes first, then worktrees by branch; a row reads 'fix-nav · 08c92af · ~/acme/.worktrees/fix-nav' with its badges as a shape and a word: running, configured, unavailable, in use, blocked, deleted, edit not applied (ACT-13, WORD-6), added to services-panel's shared state-words module. Find matches branch and path fuzzily, highlighted, and every checkout's HEAD by exact prefix, so '08c92a' finds fix-nav; no match reads 'No checkout has HEAD at 08c92aff' or 'No checkout matches \"fixx\"' with Clear Filter (SEL-10, STATE-2). The highlight starts on the selected checkout, and a deleted one is never preselected (SEL-4). Stack directory cards take the same label (stack-directory-03 is stack-directory's, related). Resolves worktree-switch-01.",
+      "explanation": "The shared worktree list, one component this flow ships with the one worktree-label builder (SURF-14, SEL-4, WORD-11): a combobox whose find field (Find worktree) and list share one shadow tree; ArrowUp and ArrowDown move the highlight, Enter picks it and never switches, and rows hold no controls (KEY-10, REV-2, KEY-9). Main worktree comes first, then linked worktrees by branch; a row reads 'fix-nav · 08c92af · ~/acme/.worktrees/fix-nav' with badges as shape and word: running, configured, unavailable, in use, blocked, deleted, edit not applied (ACT-13, WORD-6), in services-panel's shared state-words module. Find matches branch and path fuzzily, highlighted, and every worktree's HEAD by exact prefix, so '08c92a' finds fix-nav; no match reads 'No worktree has HEAD at 08c92aff' or 'No worktree matches \"fixx\"' with Clear Filter (SEL-10, STATE-2). The highlight starts on the selected worktree, and a deleted one is never preselected (SEL-4). Stack directory cards take the same label (stack-directory-03, related). Resolves worktree-switch-01.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
@@ -184,45 +190,21 @@
       "col": 1,
       "type": "frontend",
       "label": "Details line below list",
-      "sublabel": "reason · Open in Editor",
+      "sublabel": "reason · Edit or Copy",
       "tag": "worktree-switch-02",
-      "explanation": "Below the list, outside it, a details line is headed by the highlighted row's label and reason and holds that row's remedies as the Tab stops after the find field, updated as the highlight moves; it never covers another row's badges (KEY-10, MENU-4). A manifest that fails reads one structured line, the path written once: 'devhost.toml does not parse · line 13, services.api.port: strings cannot contain newlines', with Open in Editor at that line in that checkout, Copy Error with the original text, and Check Again, because devhost does not watch checkouts it does not run (MENU-4, FAIL-2, WORD-7, HOLD-1); validation issues list one per line. A worktree whose folder is gone reads 'deleted · ~/acme/.worktrees/old is gone; Git still lists it' with git worktree prune to copy, never a Git exit status: devhost runs only read-only Git commands (WORD-7, SURF-15). Open in Editor is WORD-2's label where MENU-4 says Open, a recorded conflict. Resolves worktree-switch-02.",
+      "explanation": "Below the list, outside it, a details line is headed by the highlighted row's label and reason and holds that row's remedies as Tab stops after Find worktree, updated as the highlight moves; it never covers another row's badges (KEY-10, MENU-4). A manifest that fails reads one structured line, the path written once: 'devhost.toml does not parse · line 13, services.api.port: strings cannot contain newlines'. When the config editor is on, it offers Edit at that line in the Configuration window; when off (the default), it shows devhost.toml:13 with Copy instead (editor support removed completely under O51; no Open or Open in Editor). Both forms include Copy Error with the original text and Check Again, because devhost does not watch non-running worktrees; validation issues list one per line (MENU-4, FAIL-2, WORD-7, HOLD-1, O51). A deleted worktree reads 'deleted · ~/acme/.worktrees/old is gone; Git still lists it' with git worktree prune to copy, never a raw Git exit status (WORD-7, SURF-15). Resolves worktree-switch-02.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
           "line": 141,
           "end_line": 150,
-          "label": "Replaces: badge popover with the raw reason"
+          "label": "Replaces: badge popover with raw reason"
         },
         {
-          "path": "apps/devhost/internal/services/worktree_config.go",
-          "line": 19,
-          "end_line": 22,
-          "label": "Replaces: parse error wrapped with the path"
-        }
-      ]
-    },
-    {
-      "id": "blocked",
-      "lane": "recovery",
-      "col": 0,
-      "type": "security",
-      "label": "External service blocks",
-      "sublabel": "rows readable · remedy",
-      "tag": "manifest-hot-reload-2-03",
-      "explanation": "An external service (managed = false) whose folder lies in the repository keeps blocking its switch, as O7 recommends: the panel's status line reads, once, 'The external service preview blocks switching acme; to switch, run preview from a stack whose devhost.toml lives outside this repository.', every checkout row stays listed and readable, each disabled with that sentence as its reason, Switch and Restart Stack is unavailable with it as its accessible description, and the details line offers Open in Editor at [services.preview] in devhost.toml (SEL-5, HOLD-4, HOLD-1, MENU-4). Recovery pages show the same. The block clears when hot reload accepts a manifest without it; the reload's own line about the block is manifest-hot-reload's. Resolves the picker's slice of manifest-hot-reload-2-03.",
-      "sources": [
-        {
-          "path": "apps/devhost/internal/services/worktrees.go",
-          "line": 104,
-          "end_line": 112,
-          "label": "Reuses: one external member blocks the group"
-        },
-        {
-          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
-          "line": 108,
-          "end_line": 110,
-          "label": "Replaces: alert that names no way out"
+          "path": "apps/devhost/src/services/worktrees.rs",
+          "line": 293,
+          "end_line": 325,
+          "label": "Replaces: raw path-wrapped parse error"
         }
       ]
     },
@@ -232,20 +214,21 @@
       "col": 2,
       "type": "frontend",
       "label": "Switch and Restart Stack",
-      "sublabel": "reach line: all 6 services",
-      "explanation": "The footer's Switch and Restart Stack, the same label on every surface with no count (WORD-2, WORD-3, BAR-2), carries its reach line: 'Restarts all 6 services of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav (repository acme) with new automatic ports · took 14 s last time', the six services in its tooltip and accessible description (SEL-5, SEL-1, REV-2). In a run started with names it says what stays off ('worker, admin and mail stay not started', SEL-7); with chat off, that agents were not checked (STATE-2). Picking is the first step and this press the second; it runs on one press when no other work is at stake (REV-1, REV-2). It is unavailable, focusable, with its reason in the status line and as its accessible description, while main is picked ('Pick a checkout other than main, which runs now'), while another operation runs ('Restart Stack is running · 3 of 6 started', HOLD-3, CC-37), while the status stream is lost (HOLD-2) and while the repository is blocked (MENU-3, HOLD-1). Resolves the reach of worktree-switch-03 and the visible selection of worktree-switch-11.",
+      "sublabel": "reach · external untouched",
+      "tag": "manifest-hot-reload-2-03",
+      "explanation": "The footer's Switch and Restart Stack (WORD-2, WORD-3, BAR-2) carries its reach line: 'Restarts all 6 services of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav (repository acme) with new automatic ports · took 14 s last time', listing the six managed services in its tooltip and accessible description (SEL-5, SEL-1, REV-2, WORD-11). External services (managed = false) never block switching and trigger no warning (O7): removing blocked_reason at worktrees.rs:137-141 lets managed services restart from the target worktree while external services stay untouched and marked external in Services. In a named run it states what stays off (SEL-7); with chat off or incomplete scan it notes which agents were not checked (STATE-2). Picking is step 1 and pressing is step 2; it runs on one press when no other work is at stake (REV-1, REV-2). Unavailable with visible reason when running worktree picked, another operation runs (HOLD-3), disconnected (HOLD-2), unauthenticated remotely (HOLD-7, O36/O37), or deleted worktree blocked (HOLD-4). Resolves manifest-hot-reload-2-03.",
       "sources": [
         {
-          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
-          "line": 204,
-          "end_line": 231,
-          "label": "Replaces: Switch, Retry and Return buttons"
+          "path": "apps/devhost/src/services/worktrees.rs",
+          "line": 137,
+          "end_line": 141,
+          "label": "Replaces: external-service blocked_reason (O7)"
         },
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
-          "line": 53,
-          "end_line": 60,
-          "label": "Replaces: enabled checks with no reason shown"
+          "line": 204,
+          "end_line": 233,
+          "label": "Replaces: Switch, Retry and Return buttons"
         }
       ],
       "yOffset": 0
@@ -258,7 +241,7 @@
       "label": "Other work asks first",
       "sublabel": "in place · Answer First",
       "tag": "chat-checkout-switch-02",
-      "explanation": "Before it runs, the control names each item of other work the switch moves the page away from: chat conversations of this checkout that work or wait, by agent, title and edit mode in the owner's words ('Claude Code · Fix the nav · This checkout (live) · waiting for you'), terminal agents the running agents list sees, unsaved Configuration window drafts, a held reload and page context (SEL-5, WORD-10, O1). While any exists, the press expands in place into one question, a group labelled 'Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main?' and described by its items and the six services (REV-3, REV-4). Its first choice takes the pressed button's place with focus and Enter: Answer First while an agent waits, else Review Drafts, else Cancel (a recorded reading of REV-3); Switch Anyway sits beside it. Escape or a click on no control cancels with focus back on Switch and Restart Stack; Tab past the last control or a click outside closes the panel and the question (KEY-7, KEY-8). The waiting request stays answerable from every page of the stack (REV-9, CC-38). Resolves chat-checkout-switch-02.",
+      "explanation": "Before it runs, the control names each item of other work the switch moves the page away from: chat conversations of this worktree that work or wait, by agent, title and mode ('Claude Code · Fix the nav · This worktree (live) · waiting for you', O1, WORD-11), terminal agents from running-agents, unsaved Configuration window drafts, held reloads with count ('Hold Reloads: 2 held reloads on this page are discarded by the switch'), and page context including any active tab share ('Page context: 2 marks · a mark whose element is gone after the reload is listed as lost; the tab share ends') (SEL-5, WORD-10). While any exists, the press expands in place into one question labelled 'Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main?' and described by its items and the six services (REV-3, REV-4). First choice in the button's place with focus and Enter: Answer First while an agent waits, else Review Drafts, else Cancel; Switch Anyway beside it. Escape or blank click cancels back to Switch and Restart Stack (KEY-7, KEY-8). Waiting requests stay answerable everywhere (REV-9, CC-38). Resolves chat-checkout-switch-02.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
@@ -277,7 +260,7 @@
       "label": "In use: Stop Stack asks",
       "sublabel": "one Open Stack · question",
       "tag": "worktree-switch-07",
-      "explanation": "Highlighting an in use row fills the details line, the in-use popover anchored below the list (SURF-2, KEY-10; a recorded reading): 'In use by Acme Shop (hotfix) · hotfix ~/acme/.worktrees/hotfix · started 14:02 from a terminal · PID 95004', the stack named with its checkout because two stacks share the name (WORD-1, SEL-4). It offers one Open Stack, which opens that stack's primary page in the same tab, the other routes under '4 more routes: api, admin, docs, mail' (SURF-10, SURF-15); the command devhost stop to run in ~/acme/.worktrees/hotfix, to copy (MENU-6, SEL-6); and Stop Stack, which asks every time, in place: 'Stop Acme Shop (hotfix) in ~/acme/.worktrees/hotfix? Its 6 services stop: web, api, docs, worker, admin and mail.', adding \"Claude Code's turn in hotfix ends\" when its agents work or wait (REV-1, REV-3, REV-4, CC-17). Cancel takes the pressed button's place with focus and Enter, Stop Acme Shop (hotfix) confirms, and Escape cancels with focus back on Stop Stack. Recovery pages' owner card renders the same (SURF-14). Resolves worktree-switch-07.",
+      "explanation": "Highlighting an in use row fills the details line anchored below the list (SURF-2, KEY-10): 'In use by Acme Shop (hotfix) · hotfix ~/acme/.worktrees/hotfix · started 14:02 from a terminal · PID 95004', naming the stack with its worktree because two stacks share the name (WORD-1, SEL-4, WORD-11). It offers one Open Stack opening that stack's primary page in the same tab, the other routes under '4 more routes: api, admin, docs, mail' (SURF-10, SURF-15); the command devhost stop to run in ~/acme/.worktrees/hotfix, to copy (MENU-6, SEL-6); and Stop Stack, which asks every time, in place: 'Stop Acme Shop (hotfix) in ~/acme/.worktrees/hotfix? Its 6 services stop: web, api, docs, worker, admin and mail.', adding \"Claude Code's turn in hotfix ends\" when its agents work or wait (REV-1, REV-3, REV-4, CC-17). Cancel takes the pressed button's place with focus and Enter, Stop Acme Shop (hotfix) confirms, and Escape cancels with focus back on Stop Stack. Recovery pages' owner card renders the same (SURF-14). Resolves worktree-switch-07.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
@@ -299,16 +282,22 @@
       "lane": "backend",
       "col": 2,
       "type": "backend",
-      "label": "Shared stop routine",
-      "sublabel": "O30 allowance · survivors",
+      "label": "Unified parallel stop",
+      "sublabel": "O30 30s timeout · survivors",
       "tag": "worktree-switch-13",
-      "explanation": "Once confirmed, the confirm button stays as the busy control with focus: 'Stopping Acme Shop (hotfix) · 3 of 6 stopped · 12 s' (KEY-11, ACT-3). devhost re-checks the other stack's identity before every signal, as today, records why beside its stack record before it signals it, and stops it through the one stop routine devhost stop uses, which stack-run-stop builds: it waits as long as O30 allows, a minute plus 20 s per service, and never kills a supervisor while it still stops services (REV-11, ACT-10, ACT-11, Backend 8). The outcome replaces the question and takes focus, 'Stopped Acme Shop (hotfix) · hotfix is free · 19 s', and the freed row becomes pickable without reopening the panel (FB-2, FB-3). A survivor is named, 'Acme Shop (hotfix) did not stop: worker still runs · PID 95120 · port 4310', and the row stays in use (FAIL-1). The stopped stack's terminal prints 'Stopped from Acme Shop (main ~/acme) at 14:05 · its Worktrees panel' (ACT-10, FAIL-5). Resolves worktree-switch-13 and the attribution of worktree-switch-07.",
+      "explanation": "Once confirmed, the confirm button stays as the busy control with focus: 'Stopping Acme Shop (hotfix) · 3 of 6 stopped · 12 s' (KEY-11, ACT-3). devhost re-checks the other stack's verified identity before every signal (ACT-14), records why beside its stack record before signalling, and stops it through the unified O30 parallel stop routine devhost stop uses (foreground and daemon stops concurrently from t = 0 inside the configurable 30 s default stopTimeout, 5s..10m, widening to max(stopTimeout, max_daemon_override + 10s) for O41 overrides > 20 s), never sending SIGKILL to a live supervisor while it still stops services (replacing the 10 s SHUTDOWN_GRACE_PERIOD kill at runtime.rs:450-468; REV-11, ACT-10, ACT-11, O30, CC-35, Backend 9). Outcome takes focus: 'Stopped Acme Shop (hotfix) · hotfix is free · 19 s', freeing the row in place (FB-2, FB-3). Survivors are named ('worker still runs · PID 95120 · port 4310'), keeping the row in use (FAIL-1). The stopped stack prints 'Stopped from Acme Shop (main ~/acme) at 14:05 · its Worktrees panel'. Resolves worktree-switch-13.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/worktree_ownership.go",
-          "line": 70,
-          "end_line": 101,
-          "label": "Replaces: SIGTERM, then SIGKILL after 15 s"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 437,
+          "end_line": 475,
+          "label": "Replaces: 10 s SHUTDOWN_GRACE_PERIOD SIGKILL"
+        },
+        {
+          "path": "apps/devhost/src/services/worktrees.rs",
+          "line": 259,
+          "end_line": 282,
+          "label": "Reuses: verified occupant identity lookup"
         }
       ]
     },
@@ -318,27 +307,27 @@
       "col": 3,
       "type": "backend",
       "label": "Check, then switch",
-      "sublabel": "202 record · names kept",
+      "sublabel": "202 record · missingNames",
       "tag": "worktree-switch-11",
-      "explanation": "POST /__devhost__/worktrees takes an operationId, which the page keeps in sessionStorage first, and answers 202 Accepted with the switch's record before it runs; a repeated ID returns the record and switches nothing again (ACT-1, REV-12, CC-37). The services runtime runs every check before it stops anything: the target registered and available, its manifest and includes loading, its service folders present, its hostnames and fixed ports free with any holder named; a failed check stops nothing and names it, and a target changed since the read answers 409 with the current state (REV-11, REV-13, FAIL-2). It then stops every managed service, starts the run's selected services in the target, as the docs promise, and moves routes and hot reload (SEL-5, Backend 1); a selected name the target does not define is named, never a failure. Another operation answers 409 naming it (HOLD-3), and each switch records its origin (Backend 10). Every stop goes through the process tracker whose stopgap ships first (process-containment-01, related). Resolves worktree-switch-11 and worktree-switch-12, whose restoring start keeps the names too.",
+      "explanation": "POST /__devhost__/worktrees takes an operationId (stored in sessionStorage first) and answers 202 Accepted with the switch record; a repeated ID returns that record without re-running (ACT-1, REV-12, CC-37, Backend 5). Before stopping anything, the runtime checks target registration, manifest/includes, selected managed service folders, and hostnames/fixed ports with any holder named; failures stop nothing, stale targets answer 409 with current state (REV-11, REV-13, FAIL-2). It writes a pending-switch record beside active.json without overwriting active.json until success (Backend 14), stops every managed service via verified containment (process-containment-01 fixed on Rust main in containment.rs), leaves external services untouched with no warning (O7), starts the run's selected services in the target (filtering out names absent from the target as missingNames instead of failing validate_requested_services at runtime.rs:747; Backend 1), and moves routes and hot reload. Another running operation answers 409 naming it (HOLD-3). Resolves worktree-switch-11 and worktree-switch-12.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 375,
-          "end_line": 398,
-          "label": "Reuses: validate the target, then switch"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 538,
+          "end_line": 586,
+          "label": "Replaces: active.json write before apply"
         },
         {
-          "path": "apps/devhost/internal/services/reload.go",
-          "line": 225,
-          "end_line": 252,
-          "label": "Reuses: start, routes, watch the target"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 717,
+          "end_line": 788,
+          "label": "Replaces: strict validate_requested_services"
         },
         {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 398,
-          "end_line": 398,
-          "label": "Replaces: switch change without requested names"
+          "path": "apps/devhost/src/services/worktrees.rs",
+          "line": 185,
+          "end_line": 209,
+          "label": "Replaces: prepare and select before apply"
         }
       ]
     },
@@ -350,7 +339,7 @@
       "label": "Progress in the panel",
       "sublabel": "3 of 6 stopped · 5 s",
       "tag": "worktree-switch-09",
-      "explanation": "The confirm control stays where it was as the busy control and keeps focus, aria-busy and aria-disabled, never disabled: 'Switching to fix-nav · 3 of 6 stopped · 5 s', then 'Switching to fix-nav · 2 of 6 started · 9 s' (KEY-11, FB-9, WORD-4). Above it the panel lists the steps, updated at least once a second: 'Checked fix-nav', 'Stopping 6 services · 3 of 6 stopped', 'Starting in fix-nav · web · health check 2 s of 30 s', 'Moving routes and hot reload to fix-nav' (FB-1, STATE-1, ACT-4); services the switch stops are steps, never exits (FAIL-5). The trigger reads 'main · switching to fix-nav' and main's row keeps running until fix-nav's services run; the Services panel's rows read 'switching to fix-nav ~/acme/.worktrees/fix-nav', then starting, never failed (ACT-3, ACT-4); changed marks clear against the new launch (ACT-8). The status stream stays open, so no lost-connection state appears (ACT-5, HOLD-2). Closed, the panel's progress becomes the activity line 'Switch to fix-nav · 2 of 6 started · 9 s' (FB-1, FB-8). Restart, Start and Alt+Ctrl+R say 'Switch to fix-nav is running · 2 of 6 started' (HOLD-3, SEL-2, MENU-3). Resolves worktree-switch-09.",
+      "explanation": "The confirm control stays where it was as the busy control and keeps focus, aria-busy and aria-disabled, never disabled: 'Switching to fix-nav · 3 of 6 stopped · 5 s', then 'Switching to fix-nav · 2 of 6 started · 9 s' (KEY-11, FB-9, WORD-4). Above it the panel lists the steps, updated at least once a second: 'Checked fix-nav', 'Stopping 6 services · 3 of 6 stopped', 'Starting in fix-nav · web · health check 2 s of 30 s', 'Moving routes and hot reload to fix-nav' (FB-1, STATE-1, ACT-4); services the switch stops are steps, never exits (FAIL-5). The trigger reads 'main · switching to fix-nav' and main's row keeps running until fix-nav's services run; the Services panel's rows read 'switching to fix-nav ~/acme/.worktrees/fix-nav', then starting, never failed, while external rows stay untouched (ACT-3, ACT-4, O7); changed marks clear against the new launch (ACT-8). The status stream stays open, so no lost-connection state appears (ACT-5, HOLD-2). Closed, progress becomes 'Switch to fix-nav · 2 of 6 started · 9 s' in the notice stack (FB-1, FB-8). Restart, Start and Alt+Ctrl+R say 'Switch to fix-nav is running · 2 of 6 started' (HOLD-3, SEL-2, MENU-3). Resolves worktree-switch-09.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
@@ -373,13 +362,13 @@
       "type": "frontend",
       "label": "Switched to fix-nav",
       "sublabel": "6 of 6 running · way back",
-      "explanation": "The switch succeeds only once every target service passed its health check, with no leftover answering in its place, and routes and hot reload follow the target (FB-5, ACT-11); only then does devhost save fix-nav as the selection and the page reload at the same URL (worktree-switch-15). The reloaded page finds the outcome by the operationId it stored and shows it once, its sentence focused and announced once: 'Switched acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav: restarted 6 services · 6 of 6 running · 14 s' (FB-2, FB-3, KEY-6, FB-9, WORD-4). It names what the switch left behind, 'Left in main: Claude Code · Fix the nav · This checkout (live) · waiting for you', linking its decision card, and lost marks of page context (FB-4, UNDO-2). A switch restarts processes and cannot be taken back, so there is no Undo: this outcome holds UNDO-5's way back, 'main ~/acme' opening Worktrees with main highlighted; UNDO-1's rollback is the next step's. It closes 4 s after pointer and focus leave and stays in the log (FB-6, FB-7, O14). Chat keeps its agent, model and mode (SEL-11, CC-9; chat-checkout-switch-01 and chat-checkout-switch-03 are agent-chat's, related).",
+      "explanation": "The switch succeeds only once every target managed service passed its health check, with no leftover answering in its place, and routes and hot reload follow the target (FB-5, ACT-11); only then does devhost save fix-nav in active.json, clear the pending record and reload the page at the same URL (worktree-switch-15). The reloaded page finds the outcome by its stored operationId and shows it once, focused and announced once: 'Switched acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav: restarted 6 services · 6 of 6 running · 14 s' (FB-2, FB-3, KEY-6, FB-9, WORD-4, WORD-11). It names left-behind work ('Left in main: Claude Code · Fix the nav · This worktree (live) · waiting for you', linking its card; '2 held reloads discarded'; lost marks; FB-4, UNDO-2, O1). There is no Undo: 'main ~/acme' opens Worktrees with main highlighted as UNDO-5's way back; UNDO-1's rollback is the next step's. Closes after O14 reading time (7.8 s for 21 words) once pointer/focus leave while visible, pausing on unfocused arrival via document.hasFocus() (O53), and stays in the log (FB-6, FB-7). Chat keeps settings per stack (SEL-11, CC-9).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
           "line": 102,
           "end_line": 110,
-          "label": "Replaces: reload as soon as the POST succeeds"
+          "label": "Replaces: reload as soon as POST succeeds"
         }
       ]
     },
@@ -389,20 +378,20 @@
       "col": 5,
       "type": "frontend",
       "label": "Terminal: two lines",
-      "sublabel": "both checkouts by label",
+      "sublabel": "both worktrees by label",
       "tag": "worktree-switch-04",
-      "explanation": "The stack's terminal prints one line when the switch starts and one outcome line, both checkouts named by label: 'Switching acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav · restarting 6 services', then 'Switched acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav: restarted 6 services · 6 of 6 running · 14 s', and no 'exited … waiting for a restart' line for any service the switch stopped (FB-10, FAIL-5, WORD-4, SEL-4, Backend 7). Agent output (AGENT=1) carries the same facts with absolute paths and a failure on one devhost: ERR: line (FB-11, WORD-9). A start that restores a saved linked worktree names it in its ready line: 'Ready in 4.2 s: https://shop.localhost/ · acme runs fix-nav ~/acme/.worktrees/fix-nav, saved for this stack (configured: main ~/acme)' (FB-10; worktree-switch-12). A switch has no terminal command of its own, a proposed MENU-6 exception; Stop Stack's counterpart is devhost stop in that checkout's folder (SEL-6). Resolves worktree-switch-04's switch slice; its inventory reprints are stack-run-stop's (stack-scale-07, related).",
+      "explanation": "The stack's terminal prints one line when the switch starts and one outcome line, both worktrees named by SEL-4 label: 'Switching acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav · restarting 6 services', then 'Switched acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav: restarted 6 services · 6 of 6 running · 14 s', and no 'exited … waiting for a restart' line for any service the switch stopped (FB-10, FAIL-5, WORD-4, SEL-4, WORD-11, Backend 8). Agent output (AGENT=1) carries the same facts with absolute paths and a failure on one devhost: ERR: line (FB-11, WORD-9), and devhost stack info (short alias devhost status, O62) reports the last switch. A start restoring a linked worktree names it in its ready line: 'Ready in 4.2 s: https://shop.acme.test/ · acme runs fix-nav ~/acme/.worktrees/fix-nav, saved for this stack (configured: main ~/acme)' (FB-10, worktree-switch-12). No CLI switch command (MENU-6 note); Stop Stack's counterpart is devhost stop in that worktree's folder (SEL-6). Resolves worktree-switch-04's switch slice.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 390,
-          "end_line": 396,
-          "label": "Replaces: checkouts named by folder"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 551,
+          "end_line": 566,
+          "label": "Replaces: worktrees named by folder basename"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 633,
-          "end_line": 634,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 85,
+          "end_line": 95,
           "label": "Replaces: exit line for the switch's own stops"
         }
       ]
@@ -414,22 +403,28 @@
       "type": "security",
       "label": "Returned to main",
       "sublabel": "cause · Retry Switch",
-      "explanation": "When a target service cannot start, devhost stops the target's services and starts the previous checkout's again, service by service, with its routes and hot reload; the saved selection never left main (Backend 13). While it restores, the busy control and the touched rows read 'Returning to main ~/acme' (UNDO-1, ACT-3, Backend 5). The panel stays open, the page does not reload, and the rollback's outcome takes focus: 'Switch to fix-nav failed: web exited with code 1 before its health check. Returned to main ~/acme: 6 of 6 running · 21 s', with web's exit time, last output lines and what devhost ran (FAIL-1, FAIL-2, FAIL-3, FB-2). It leads with MENU-5's action for the cause, the needs-setup command (O32), else Retry Switch, one press naming its target (REV-1, REV-2). A service that cannot come back stays failed while the rest run: 'Returned to main ~/acme: 5 of 6 running · api still fails'; the failure stays until dismissed (FB-6). When devhost is killed mid-switch, the next devhost start completes this rollback: it runs main, the saved selection, and says once 'Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish' (FB-10, FB-11). Resolves worktree-switch-15.",
+      "tag": "worktree-switch-15",
+      "explanation": "When a target service cannot start, devhost stops the target's services and starts the previous worktree's again, service by service, with its routes and hot reload; active.json never left main and the pending-switch record is removed (Backend 14). While restoring, the busy control and touched rows read 'Returning to main ~/acme' (UNDO-1, ACT-3, Backend 6). The panel stays open, the page does not reload, and the rollback outcome takes focus: 'Switch to fix-nav failed: web exited with code 1 before its health check. Returned to main ~/acme: 6 of 6 running · 21 s', with exit time, last lines and what ran (FAIL-1, FAIL-2, FAIL-3, FB-2). It leads with MENU-5's cause action (O32 setup command, else Retry Switch on one press naming its target; REV-1, REV-2). A service that cannot come back stays failed while the rest run: 'Returned to main ~/acme: 5 of 6 running · api still fails'; the failure stays until dismissed (FB-6). If devhost is SIGKILLed mid-switch, the next devhost start completes rollback: it runs main (active.json) and prints once 'Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish' (FB-10, FB-11). Resolves worktree-switch-15.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/reload.go",
-          "line": 214,
-          "end_line": 224,
-          "label": "Reuses: rollback starts the previous services"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 871,
+          "end_line": 900,
+          "label": "Replaces: group-wide stop on failed restore"
         },
         {
-          "path": "apps/devhost/internal/services/reload.go",
-          "line": 330,
-          "end_line": 350,
-          "label": "Replaces: failed restore stops the repository"
+          "path": "apps/devhost/src/services/worktrees/selection.rs",
+          "line": 17,
+          "end_line": 63,
+          "label": "Reuses: atomic selection storage"
+        },
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 463,
+          "end_line": 505,
+          "label": "Reuses: startup worktree build and restore"
         }
-      ],
-      "tag": "worktree-switch-15"
+      ]
     },
     {
       "id": "setup",
@@ -439,7 +434,7 @@
       "label": "Needs setup: bun install",
       "sublabel": "from web's last lines",
       "tag": "worktree-switch-06",
-      "explanation": "A fresh worktree without node_modules never ends in a plain success (FB-5, O32). When web exits during the switch, the rollback's outcome leads with 'web in fix-nav could not resolve \"react\"; run bun install in ~/acme/.worktrees/fix-nav', the command to copy, then Retry Switch. When web's health check passes but the reloaded page is answered with 500, the outcome reads 'Switched acme to fix-nav ~/acme/.worktrees/fix-nav: 6 of 6 running · web answered 500 for this page', the app's answer shows with startup-and-recovery's notice (SURF-16), and that notice leads with MENU-5's needs-setup action, the command, then Restart (FAIL-3). devhost runs nothing new on a switch: it reads the failing service's last lines with per-runtime missing-dependency matchers and takes the command from the lockfile it finds (bun.lock: bun install), a contract the backend owners must settle (Backend 9, [discuss]). Resolves worktree-switch-06."
+      "explanation": "A fresh worktree without node_modules runs no automatic setup (O32) and never ends in a plain success (FB-5). When web exits during the switch, the rollback outcome leads with 'web in fix-nav could not resolve \"react\"; run bun install in ~/acme/.worktrees/fix-nav', the command to copy, then Retry Switch. When web's health check passes but the reloaded page is answered with 500, the outcome reads 'Switched acme to fix-nav ~/acme/.worktrees/fix-nav: 6 of 6 running · web answered 500 for this page', the app's answer shows with startup-and-recovery's notice (SURF-16), and that notice leads with MENU-5's needs-setup action, the install command to copy, then Restart (FAIL-3). devhost reads the failing service's last output lines with per-runtime missing-dependency matchers (Bun, Node, Python, Ruby) and derives the install command from the lockfile found in that worktree (bun.lock: bun install; Backend 10, O32). Resolves worktree-switch-06."
     },
     {
       "id": "deleted",
@@ -449,7 +444,7 @@
       "label": "Deleted: Return first",
       "sublabel": "blocked, nothing stopped",
       "tag": "worktree-switch-05",
-      "explanation": "When the next read finds the running checkout's folder gone or unregistered, devhost stops nothing: it publishes acme as blocked with one sentence, 'The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it', processes still running keep running until the person's recovery, and devhost starts none of its services meanwhile (HOLD-4, ACT-2). That sentence shows once in the status line and is the accessible description of every control it blocks: each Restart of acme's services, and Switch and Restart Stack while nothing is picked (HOLD-1, MENU-3). The toolbar and every recovery page lead with Return to Configured Checkout, then the list, where fix-nav stays disabled as deleted and is never preselected, and Check Again, which clears the block when the folder is back, restarting nothing (MENU-5, SEL-4). Return to Configured Checkout asks every time, in place: 'Return acme to main ~/acme and restart all 6 services with new automatic ports? Took 14 s last time.', Cancel focused (REV-1, REV-2, REV-4), then runs and reports like a switch. The deleted manifest's rejection notice is manifest-hot-reload's (worktree-switch-08, related). Resolves worktree-switch-05.",
+      "explanation": "When the next read finds the running worktree's folder gone or unregistered, devhost stops nothing (O43, HOLD-4): it publishes acme as blocked with one sentence, 'The worktree ~/acme/.worktrees/fix-nav was deleted; its services still run from it', processes still running keep running until the person's recovery, and devhost starts none of its services meanwhile (ACT-2, WORD-11). That sentence shows once in the status line and is the accessible description of every control it blocks: each Restart of acme's services, and Switch and Restart Stack while nothing is picked (HOLD-1, MENU-3). The toolbar and every recovery page lead with Return to Configured Worktree, then the shared list where fix-nav stays disabled as deleted and is never preselected, and Check Again, which clears the block when the folder is back without restarting anything (MENU-5, SEL-4). Return to Configured Worktree asks every time, in place: 'Return acme to main ~/acme and restart all 6 services with new automatic ports? Took 14 s last time.', Cancel focused (REV-1, REV-2, REV-4), then runs and reports like a switch. Resolves worktree-switch-05.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx",
@@ -458,10 +453,10 @@
           "label": "Replaces: Restart <service> as the lead action"
         },
         {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 180,
-          "end_line": 190,
-          "label": "Replaces: Restart retrying a deleted checkout"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 315,
+          "end_line": 331,
+          "label": "Replaces: Restart retrying a deleted worktree"
         }
       ]
     }
@@ -579,15 +574,6 @@
       "role": "error"
     },
     {
-      "id": "read-blocked",
-      "from": "read",
-      "to": "blocked",
-      "label": "external service",
-      "role": "error",
-      "fromSide": "bottom",
-      "toSide": "top"
-    },
-    {
       "id": "read-deleted",
       "from": "read",
       "to": "deleted",
@@ -609,11 +595,11 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: the read that stops services (HOLD-4's blocked state replaces it, and a rejected edit no longer makes the running checkout unavailable); Stop Stack's 15 s SIGKILL of another stack's supervisor (O30's shared stop routine replaces it); the switch's empty service selection; the status pages' native select with full paths, 40-character commit IDs and errors inside options; the raw error chain popover; one Open stack per route; the generic 'Switching and restarting stack…' line; the toolbar label that names the target before it runs; 'exited … waiting for a restart' for services the switch stops; Restart <service> as a deleted checkout's lead action and its preselected deleted checkout; target=\"_blank\" on Open Stack; the save of the target as the selection before any service stops (a pending-switch record, then a save once the switch succeeds)",
-        "Merged: the toolbar picker and the status pages' select become one shared checkout list with one label builder (SURF-14, SEL-4); the in-use popover and each badge's reason popover become the list's one details line (KEY-10, SURF-2); Switch worktree and Switch and restart stack become Switch and Restart Stack (WORD-2)",
-        "New: the reach line; the in-place question for other work with Answer First, Review Drafts or Cancel and Switch Anyway; step-by-step progress in the panel and as an activity line; the outcome on the reloaded page with what the switch left behind and the link back; Retry Switch; the deleted state led by Return to Configured Checkout, with Check Again, on every surface; edit not applied on the running row; structured reasons with Open in Editor and Copy Error; commit-prefix find with its own empty state; the read time; the in-use details with the owner's checkout, start time and origin; Stop Stack's question, progress, survivors and attribution; the restored checkout named at start; the unfinished switch named once at the next start; the switch's operation record (ACT-1)",
-        "Changed: a switch, and a start that restores a linked worktree, keep the run's selection (SEL-5); reading the list stops nothing (HOLD-4, a contract change still to quote); Stop Stack and Return to Configured Checkout ask first, in place (REV-1, CC-17); a switch asks only for other work (REV-3); Find checkout matches every commit by prefix (SEL-4); focus starts in the find field at the top, Enter picks without switching and Tab moves through the details line (KEY-10); Open Stack opens in the same tab (SURF-15); a failed restore no longer stops the repository as one unit (UNDO-1); a failed switch keeps its outcome in the panel (FB-2); the terminal names checkouts by branch and path and prints one outcome line (FB-10, CC-22); a start after a switch devhost never finished runs the checkout the stack ran before and says so (UNDO-1, FB-10)",
-        "Kept: no silent fallback to another checkout, other repositories running (owner rule; HOLD-4); the target validated before anything stops, now with hostnames and fixed ports probed (REV-11); a failed start rolls back to the previous checkout with its routes and hot reload, its saved selection never changed (UNDO-1); one switch at a time, now named and refused with 409 (HOLD-3); the selection saved per root manifest, now once a switch succeeds, and restored on start; graceful stops cancel a switch with the previous checkout saved; Stop Stack's identity re-check before every signal (REV-11, ACT-11); status pages offering the switch and Refresh Worktrees with the toolbar off (CC-31); the trigger's branch and attention state (ACT-13); opening the panel reads the list, and deleting an unused worktree restarts nothing; Switch unavailable while loading, busy or blocked, now with its reason (MENU-3, HOLD-1); a switch outlives a closed tab (ACT-1); read-only Git, git worktree prune offered, never run; external services neither stopped nor started; editor links and tool launches follow the selected checkout; conversations bound to their checkout, now listed on every page (SEL-5, CC-38); every selected managed service restarts with the target manifest's settings; Return to Configured Checkout as the way back; services a restore cannot bring back keep their recovery pages"
+        "Removed: external-service worktree-switch blocking and switch warnings (O7, worktrees.rs:137-141); the read that stops services for a deleted worktree (O43/HOLD-4, while rejected running manifests are already fixed on Rust main); Stop Stack's 10 s supervisor SIGKILL (O30 parallel stop replaces it); failing switches on target manifests missing a selected name; the status pages' native select, raw error chains, one Open Stack per route, Open in Editor (O51), 'checkout' as a noun (WORD-11); Restart as deleted-worktree lead and preselected deleted worktree; target=\"_blank\" on Open Stack; saving active.json before services stop",
+        "Merged: the toolbar picker and status pages' select become one shared worktree list with one label builder (SURF-14, SEL-4, WORD-11); the in-use popover and badge popovers become one details line (KEY-10, SURF-2); Switch worktree and Switch and restart stack become Switch and Restart Stack (WORD-2)",
+        "New: the reach line; in-place question for other work with Answer First, Review Drafts or Cancel and Switch Anyway (with held-reload count and tab share); step-by-step progress in panel and activity line; reloaded-page outcome with left-behind work, O14/O53 timing and way back; Retry Switch; deleted state led by Return to Configured Worktree and Check Again; edit not applied on running row; structured reasons with Edit (or Copy when editor off) and Copy Error; commit-prefix find; read time; in-use details; Stop Stack question, progress, survivors and attribution; restored worktree at start; unfinished switch report; O36/O37 remote auth gating; switch operation record (ACT-1)",
+        "Changed: external services stay untouched across switches with no block or warning (O7); switches keep the run's selection and report missingNames (SEL-5); reading the list stops nothing even for deleted worktrees (HOLD-4, O43); Stop Stack and Return to Configured Worktree ask in place (REV-1, CC-17); Stop Stack uses O30 parallel shutdown with configurable 30 s default stopTimeout (5s..10m, CC-35); trigger shows SEL-4 worktree label; Find worktree at top matches commit prefix; Open Stack opens same tab; per-service rollback; terminal names both worktrees by label; unfinished switch restores prior worktree at next start (UNDO-1, FB-10)",
+        "Kept: no silent fallback to another worktree, other repositories running (owner rule; HOLD-4, O43); target validated before anything stops, with hostnames and fixed ports probed (REV-11); failed start rolls back to previous worktree with saved selection unchanged (UNDO-1); one switch at a time, named and refused with 409 (HOLD-3); selection saved per root manifest on success and restored on start; graceful stops cancel with prior worktree saved; Stop Stack verifies owner identity before every signal (ACT-14); status pages offer switch and Refresh Worktrees with toolbar off (CC-31); read-only Git with git worktree prune to copy; external services untouched; conversations bound to worktree and answerable everywhere (SEL-5, CC-38)"
       ]
     },
     {
@@ -621,12 +607,12 @@
       "title": "Tickets this journey resolves",
       "items": [
         "Open, find and pick: worktree-switch-10, worktree-switch-01, worktree-switch-03",
-        "Reasons and blocks: worktree-switch-02, manifest-hot-reload-2-03 (the picker's slice; the reload's line: manifest-hot-reload)",
-        "A read that stops nothing: worktree-switch-14 (P1), network-exposure-03 (the read's side effect and the origin record; who may reach the routes is the product owner's call, Backend 11's recommended default)",
+        "Reasons and external services: worktree-switch-02, manifest-hot-reload-2-03 (slice: reversed by O7, removing external-service switch blocking and warnings; reload slice: manifest-hot-reload)",
+        "Remote auth and non-destructive reads: network-exposure-03 (O36/O37 shared-domain passkey or devhost pair on both entry points, 403 unauthenticated, plus non-destructive reads and origin record)",
         "Switch, question and progress: chat-checkout-switch-02, worktree-switch-11, worktree-switch-12, worktree-switch-09",
-        "Outcome, terminal and recovery: worktree-switch-06, worktree-switch-04 (switch lines; the rest: stack-run-stop), worktree-switch-05 (P1), worktree-switch-15 (an unfinished switch named at the next start)",
-        "In use and Stop Stack: worktree-switch-07, worktree-switch-13",
-        "Related, not covered: process-containment-01 (P0, resolved by its own stopgap; stack-run-stop owns the rest)",
+        "Outcome, terminal and recovery: worktree-switch-06, worktree-switch-04 (switch lines; rest: stack-run-stop), worktree-switch-05 (P1), worktree-switch-15 (unfinished switch named at next start)",
+        "In use and Stop Stack: worktree-switch-07, worktree-switch-13 (O30 unified parallel shutdown)",
+        "Related, not covered (fixed on Rust main): process-containment-01 (P0, fixed in containment.rs; stack-run-stop owns O30 parallel shutdown); worktree-switch-14 (P1, fixed in worktrees.rs:360-370 and runtime.rs:489-536; O43/HOLD-4 coverage kept)",
         "Related, not covered: chat-checkout-switch-01 and chat-checkout-switch-03 (agent-chat); error-pages-04 (startup-and-recovery); stack-directory-03 (stack-directory); stack-scale-07 (stack-run-stop); worktree-switch-08 (manifest-hot-reload)"
       ]
     },
@@ -634,43 +620,34 @@
       "dot": "violet",
       "title": "Backend work",
       "items": [
-        "Keep the run's selection: the switch's configurationChange, its preparation and restore pass the requested names; the checkout manifest helper takes them as a required argument; missingNames in the record",
-        "A read stops nothing: the running checkout judged by its folder; a deleted or unregistered one publishes blocked with blockedKind and its sentence; a rejected edit publishes notApplied (HOLD-4)",
-        "Structured checkout entries: state, branch, head and shortHead, configured, selected, running, notApplied, a structured reason, the in-use owner's label, startedAt and how it started; readAt",
-        "The switch's operation record: operationId, 202 Accepted, kind switch or return, from and to, origin, each service's step, missingNames, leftBehind, outcome; 409 naming another operation or with the current state, 422; streamed at least once a second (CC-37)",
-        "Per-service rollback with its own outcome, publishing restoring (UNDO-1)",
-        "The status stream stays open through a switch; success is published only after every health check passes, then the page reloads (CC-26's stream rule)",
-        "Terminal lines: one start and one outcome line with both labels in both outputs; devhost's own stops print no exit line; a restored checkout named in the ready line (CC-22, CC-24)",
-        "Stop Stack through stack-run-stop's shared stop routine with O30's allowance, never SIGKILLing a live supervisor; progress as stop-other; survivors as {service, pid, port}; the reason written before the first signal (CC-17, CC-35)",
-        "[discuss]: needs setup from the failing service's last lines, with per-runtime matchers and the lockfile's command (O32); the backend owners define and calibrate them",
-        "The origin of each switch, return and stop recorded per ACT-1 and printed on the acting stack's terminal line",
-        "[discuss]: who may switch, stop or read checkouts from the network: the local-client rule, 403 'Checkouts can be switched only from this machine.', as the recommended default until the product owner decides it with network-exposure-01",
-        "Check Again is the existing checkout-list read; no new route",
-        "Save the selection once the switch succeeds: a pending-switch record before anything stops, active.json written on success; a start that finds an unfinished switch runs the saved selection, names it once in both outputs and publishes its record"
+        "Keep selection and report missingNames: scope prepare/directories to requested names; replace strict validate_requested_services failure at runtime.rs:747 with missingNames filtering (Backend 1)",
+        "Remove external-service switch blocking (O7): delete blocked_reason assignment for !service.managed at worktrees.rs:137-141 so external services never block switching or warn (Backend 2)",
+        "Read stops nothing (O43): keep worktrees.rs:360-370 belongs check for rejected manifests (edit not applied) and drop stop_group for deleted running worktrees in runtime.rs:489-536, publishing blocked state (Backend 3, 13)",
+        "Structured worktree entries: state, branch, head/shortHead, configured, selected, running, notApplied, structured reason, in-use owner label/startedAt/mode, readAt (Backend 4)",
+        "Switch operation record: operationId, 202 Accepted, kind switch/return, from/to, origin, per-service steps, missingNames, leftBehind, outcome; 409/422 JSON errors; >=1/s stream with open status stream (Backend 5, 7; CC-37)",
+        "Per-service rollback in runtime.rs:871-900 without group-wide stop_group on failed restore; terminal start/outcome lines with SEL-4 labels and suppressed switch-stop exit lines in cliout.rs and runtime.rs:85-95 (Backend 6, 8)",
+        "Stop Stack through O30 unified parallel stop routine (30 s default stopTimeout, 5s..10m, O41 widening, never SIGKILLing live supervisor; stop-other progress, survivors, attribution); O32 per-runtime missing-dependency matchers (Backend 9, 10)",
+        "Record origins (ACT-1); O36/O37 shared-domain passkey and devhost pair auth on both entry points (403 unauthenticated, Host rule on recovery); pending-switch record beside active.json saved only on success (Backend 11, 12, 14)"
       ]
     },
     {
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-17: Stop Stack asks first, naming that stack and its services, then stops it",
-        "CC-31: startup and recovery pages offer Switch and Restart Stack and Refresh Worktrees",
-        "CC-24: services devhost stops for a switch are reported as part of it, never as exits",
-        "CC-22, with stack-run-stop: the switch's start and outcome lines and the restored checkout in the ready line",
-        "CC-37: the worktrees POST takes an operationId and answers 202 Accepted with its record; 409 and 422 with one JSON error body",
-        "CC-9 and CC-38, built by agent-chat: chat settings per stack, never per checkout; conversations of every checkout listed and answerable",
-        "CC-32: Checkout and Worktree added to CONTEXT.md",
-        "CC-4, built by startup-and-recovery: the app's own 404 or 5xx, with this list collapsed under its notice",
-        "CC-35, built by stack-run-stop: the stop routine Stop Stack calls waits up to a minute plus 20 s per service",
-        "[discuss]: stacks/worktrees.md and apps/devhost/AGENTS.md on a deleted running checkout, which keeps running until the person's recovery (HOLD-4 has no CC-n yet); further stacks/worktrees.md labels under CC-31 and CC-35; the control API's security model once the product owner settles the network rule; apps/devhost/AGENTS.md's selection persisted before restarting and a stacks/worktrees.md sentence on a switch that never finished (no CC-n yet; FB-10's reading)"
+        "CC-17 & CC-35: Stop Stack asks first naming stack and services, then runs O30 unified parallel shutdown with configurable 30 s default stopTimeout (5s..10m) and names survivors",
+        "CC-31 & WORD-11: stacks/worktrees.md replaces 'checkout' with 'worktree' throughout, updates Switch and Restart Stack, Refresh Worktrees, Find worktree, in-use details, terminal lines, and removes editor source links (O51)",
+        "O7 & O43 & worktree-switch-15: stacks/worktrees.md and apps/devhost/AGENTS.md state that external services stay untouched and never block switches (O7), reading the list stops nothing while deleted running worktrees stay blocked until recovery (O43), and active.json saves only once a switch succeeds with unfinished switches named on next start",
+        "CC-24 & CC-22: services stopped for a switch never print as exits; terminal prints start and outcome lines naming both worktrees and names restored linked worktrees at start; devhost stack info / devhost status (O62) reports last operation",
+        "CC-37 & O36/O37: worktrees POST takes operationId and answers 202 Accepted with record (409/422 JSON errors); control-api.md Security model documents O36/O37 passkey/pair auth and 403 refusal on both worktree entry points",
+        "CC-32: CONTEXT.md adds unified Worktree term (main and linked working copies alike); CC-9 & CC-38 (agent-chat): chat settings per stack, conversations listed and answerable across worktrees; CC-4 (startup-and-recovery): app 404/5xx notice holds shared worktree list"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
-        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Drawn from the frozen pre-Rust current diagram and the reconciled written proposal; sources cite verified Rust and UI code a step reuses or replaces at 190a8bb5, and steps with no code yet have none"
       ]
     }
   ]
