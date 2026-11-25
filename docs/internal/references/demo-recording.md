@@ -1,6 +1,6 @@
 ---
 created_on: 2026-10-06 14:15
-last_modified: 2026-11-24 12:08
+last_modified: 2026-11-25 13:37
 status: current
 ---
 
@@ -151,7 +151,7 @@ When a change adds or alters a user-visible feature, update its row in the same 
 | Restart snapshots report starting through shutdown and replacement health; the health stream retains its restarting flag until readiness succeeds                                           | `reference/control-api.md`, "Private stack inspection"                                                                                     | **No demo**                                      |
 | Single-column compact React/shadcn stack directory with aligned service/status/URL columns, expandable TOML, filtering, and exited-owner exclusion                                          | `guides/stack-lifecycle.md`, "Running stacks in the browser"; `guides/managed-caddy.md`, "Hostnames and DNS"                               | **No demo**                                      |
 | Customize the shared running-stack directory hostname and opt in to remote read access                                                                                                      | `guides/shared-managed-caddy-settings.md`, "Choose the stack directory hostname"                                                           | **No demo**                                      |
-| Project stack restart and global binary replacement. `restart-all` stops instances with a removed working directory and retains file sessions with an unavailable served directory.         | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"                                                                             | **No demo**                                      |
+| Project stack restart and global binary replacement. `restart` stops instances with a removed working directory and retains file sessions with an unavailable served directory.             | `guides/stack-lifecycle.md`, "Restart after upgrading devhost"                                                                             | **No demo**                                      |
 | Serve files or a port without a manifest; confined file browser, index/README fallback, breadcrumbs, Markdown first paint and list markers, and preview gallery                             | `start/serve.md`, `development/page-previews.md`                                                                                           | **No demo**                                      |
 | Launch a command with inferred session hostnames, discovered HTTP ports (uses system lsof on macOS), detached startup, session inspection and stop                                          | `start/serve.md`, "Launch a command"                                                                                                       | **No demo**                                      |
 | Native manifest `serve` services with automatic or fixed ports, immediate fixed-port reuse after HTTP shutdown and the stack service lifecycle                                              | `start/serve.md`, "Serve a folder in a stack"                                                                                              | **No demo**                                      |

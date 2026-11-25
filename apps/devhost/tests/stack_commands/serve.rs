@@ -242,7 +242,7 @@ fn global_restart_preserves_command_session_identity() {
     let output = runtime
         .command()
         .current_dir(runtime.root.path())
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     assert!(output.status.success(), "{:?}", output);

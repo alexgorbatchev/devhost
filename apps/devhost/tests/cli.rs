@@ -57,6 +57,8 @@ fn skill_instructions_match_the_published_skill_in_either_mode() {
 fn help_entry_points_obey_mode_and_terminal_width() {
     let human = stdout(invoke(&["--help"], "0", "100"));
     assert!(!human.contains(ALERT));
+    assert!(human.contains("├─ restart "));
+    assert!(!human.contains("restart-all"));
     assert!(human.contains("╰─ skill"));
     assert_eq!(stdout(invoke(&[], "0", "100")), human);
     assert_eq!(stdout(invoke(&["-h"], "0", "100")), human);
@@ -145,6 +147,14 @@ fn completion_scripts_register_all_shells_without_private_commands() {
             !script.contains("_remote-worker"),
             "{shell}: private worker leaked"
         );
+        assert!(
+            !script.contains("_daemon"),
+            "{shell}: private daemon leaked"
+        );
+        assert!(
+            !script.contains("restart-all"),
+            "{shell}: retired restart-all command leaked"
+        );
         let no_descriptions = stdout(invoke(
             &["completion", shell, "--no-descriptions"],
             "1",
@@ -175,9 +185,10 @@ fn completion_installation_help_covers_all_shells() {
     }
 }
 
-fn invalid_invocations() -> [Vec<&'static str>; 10] {
+fn invalid_invocations() -> [Vec<&'static str>; 11] {
     [
         vec!["bun"],
+        vec!["restart-all"],
         vec!["caddy", "restart"],
         vec!["start", "--bogus"],
         vec!["stop", "--manifest"],

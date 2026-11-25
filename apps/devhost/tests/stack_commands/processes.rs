@@ -170,7 +170,7 @@ fn stale_process_identities_never_authorize_stop_or_restart_signals() {
         vec!["stack", "list"],
         vec!["stack", "find", "stale-owner"],
         vec!["stop"],
-        vec!["restart-all"],
+        vec!["restart"],
     ] {
         let output = run(root, root, "1", &args);
         assert!(output.status.success(), "{args:?}: {output:?}");

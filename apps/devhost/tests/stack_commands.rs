@@ -593,7 +593,7 @@ fn global_restart_works_outside_a_project_and_preserves_serve_sessions() {
     let caddy = runtime.state().join("caddy");
     let before = read_live_stacks(&caddy).unwrap();
     assert_eq!(before.len(), 3);
-    let args = ["restart-all"];
+    let args = ["restart"];
     let output = runtime
         .command()
         .current_dir(runtime.root.path())
@@ -676,7 +676,7 @@ fn global_restart_preserves_an_unavailable_file_root_and_replaces_healthy_sessio
     let output = runtime
         .command()
         .current_dir(runtime.root.path())
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     assert!(!output.status.success(), "{output:?}");
@@ -740,7 +740,7 @@ fn global_restart_capture_failure_preserves_every_live_owner_and_removes_partial
     let output = runtime
         .command()
         .current_dir(runtime.root.path())
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     assert!(!output.status.success(), "{output:?}");
@@ -800,7 +800,7 @@ fn global_restart_retires_deleted_launch_directories_and_restarts_healthy_stacks
     let output = runtime
         .command()
         .current_dir(runtime.root.path())
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");

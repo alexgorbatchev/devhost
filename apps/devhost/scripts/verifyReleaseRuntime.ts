@@ -110,7 +110,7 @@ export async function verifyRustReleaseRuntime(binaryPath: string): Promise<stri
     const before = await cli(["stack", "list", "--sessions"]);
     sessionName = before.split("\t")[1]?.trim();
     if (!sessionName) throw new Error(`Candidate did not register its file session: ${before}`);
-    await cli(["restart-all"]);
+    await cli(["restart"]);
     if ((await cli(["stack", "list", "--sessions"])) === before)
       throw new Error("Candidate restart did not replace the session process.");
     if (!(await https("/")).includes("rust-archive-https-probe"))

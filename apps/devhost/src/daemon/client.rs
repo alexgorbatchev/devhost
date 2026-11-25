@@ -159,7 +159,7 @@ pub fn ensure_daemon(
                         ),
                         summary: None,
                         hint: Some(
-                            "Run \"devhost restart-all\" to switch to the current devhost binary."
+                            "Run \"devhost restart\" to switch to the current devhost binary."
                                 .to_owned(),
                         ),
                     });
@@ -188,7 +188,7 @@ pub fn ensure_daemon(
                         &cliout::warning(
                             mode,
                             &format!(
-                                "running devhost daemon (PID {pid}) uses a different executable; run \"devhost restart-all\" to switch to this binary"
+                                "running devhost daemon (PID {pid}) uses a different executable; run \"devhost restart\" to switch to this binary"
                             ),
                         ),
                     );

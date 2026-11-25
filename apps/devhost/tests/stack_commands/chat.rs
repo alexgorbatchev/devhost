@@ -286,7 +286,7 @@ fn native_chat_supervisor_replacement_drops_live_replay_and_preserves_panel() {
         .runtime
         .command()
         .current_dir(&fixture.project)
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");

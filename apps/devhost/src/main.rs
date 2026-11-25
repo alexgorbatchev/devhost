@@ -83,8 +83,8 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
             .subcommand(stack_command())
             .subcommand(completion::command())
             .subcommand(
-                Command::new("restart-all")
-                    .about("Restart every running stack with the current executable")
+                Command::new("restart")
+                    .about("Restart every running stack and serve session")
                     .long_about("Restart every registered stack and serve session with the current executable.\nInstances whose launch directory was removed are stopped. A file serve session\nwhose served directory cannot be opened is left running and reported as a failure.\nOther instances are restarted."),
             ),
         mode,
@@ -182,7 +182,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                         }
                     }
                 },
-                Some(("restart-all", _)) => {
+                Some(("restart", _)) => {
                     drop(stdout);
                     let state = match machine::state_directory() {
                         Ok(state) => state,
@@ -544,7 +544,7 @@ fn run_stop(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Err
 
 fn stack_command() -> Command {
     Command::new("stack")
-        .about("Inspect the stacks running on this machine")
+        .about("Inspect and restart running stacks on this machine")
         .subcommand(Command::new("info").args_override_self(true).about("Inspect a project's stack or a named serve session").arg(manifest_arg()).arg(Arg::new("session").long("session").short('s').help("Inspect the named manifest-free serve session.")))
         .subcommand(Command::new("list")
             .about("Print the PID and manifest of running stacks")

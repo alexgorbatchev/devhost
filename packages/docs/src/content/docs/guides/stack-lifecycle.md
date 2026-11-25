@@ -250,12 +250,12 @@ This stops every stack whose root manifest is in the current Git repository, inc
 After installing a new devhost executable, replace the shared supervisor and every stack it hosts:
 
 ```bash
-devhost restart-all
+devhost restart
 ```
 
-Run this from any directory. It drains the previous supervisor and relaunches every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables) inside a single new supervisor process running the current executable. `restart-all` stops instances whose launch working directory was removed. If a file serve session's working directory still exists but its served directory cannot be opened, the command reports the path and leaves that session running in the draining supervisor while restarting the other instances in the new supervisor.
+Run this from any directory. It drains the previous supervisor and relaunches every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables) inside a single new supervisor process running the current executable. `restart` stops instances whose launch working directory was removed. If a file serve session's working directory still exists but its served directory cannot be opened, the command reports the path and leaves that session running in the draining supervisor while restarting the other instances in the new supervisor.
 
-To restart a single project without disturbing sibling stacks, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`. If other stacks share the supervisor, `devhost stack restart` restarts only the selected stack in place (and warns if the supervisor runs an older binary, pointing to `devhost restart-all`); if it is the only stack and the binary changed, it replaces the supervisor too.
+To restart a single project without disturbing sibling stacks, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`. If other stacks share the supervisor, `devhost stack restart` restarts only the selected stack in place (and warns if the supervisor runs an older binary, pointing to `devhost restart`); if it is the only stack and the binary changed, it replaces the supervisor too.
 
 Both commands capture the launch configuration, working directory, and environment for every replacement before stopping any stack. An unexpected capture error aborts the command before shutdown. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
 

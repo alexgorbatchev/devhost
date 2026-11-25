@@ -329,7 +329,7 @@ pub fn restart_stacks(
                         &cliout::warning(
                             output.mode(),
                             &format!(
-                                "shared daemon PID {} hosts other stacks; run \"devhost restart-all\" to switch it to the new binary",
+                                "shared daemon PID {} hosts other stacks; run \"devhost restart\" to switch it to the new binary",
                                 stack.pid
                             ),
                         ),

@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-24 19:55
+last_modified: 2026-11-25 13:37
 status: current
 ---
 
@@ -77,7 +77,7 @@ Build `darwin-arm64` on a native macOS host with Xcode command-line tools; Linux
 
 Output is a new directory under `apps/devhost/dist/rust-candidates/`, or the new directory passed with `--output`. An existing output directory is rejected. A failed build publishes no partial directory. Each archive contains `devhost-v<version>-<platform>/devhost`, `README.md`, `LICENSE`, and `THIRD_PARTY_LICENSES.txt` for Cargo-reported compiled packages, including Git, vendored, and build-time dependencies. Missing license texts fail packaging. Narrowly pinned license overrides are documented in `apps/devhost/licenses/README.md`.
 
-`SHA256SUMS` covers all requested archives. `provenance.json` records the Git revision, source-file digest and dirty state, toolchain, binary/archive hashes, actual executable format and dependency requirements, and matching-host acceptance results. Extraction checks compare executable bytes, permissions, and layout. On a matching native host the extracted binary must report the metadata version, display help, load a manifest, serve HTTPS and embedded browser assets with an isolated fixture CA, replace its session through `restart-all`, and stop cleanly without changing system trust.
+`SHA256SUMS` covers all requested archives. `provenance.json` records the Git revision, source-file digest and dirty state, toolchain, binary/archive hashes, actual executable format and dependency requirements, and matching-host acceptance results. Extraction checks compare executable bytes, permissions, and layout. On a matching native host the extracted binary must report the metadata version, display help, load a manifest, serve HTTPS and embedded browser assets with an isolated fixture CA, replace its session through `restart`, and stop cleanly without changing system trust.
 
 Dispatch the `CI` workflow with `candidates=true` to build and verify all five unpublished archives on hosted Linux x64, Linux ARM64, and macOS ARM64.
 
@@ -124,7 +124,7 @@ Replace `0.0.22` with the released version:
 
 1. Confirm all five `.tar.gz` archives (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) and `SHA256SUMS` exist.
 2. Download the host archive and `SHA256SUMS`, verify with `sha256sum -c --ignore-missing SHA256SUMS` on Linux (or `shasum -a 256 --check --ignore-missing SHA256SUMS` on macOS), and confirm the archive contains `devhost`, `README.md`, `LICENSE`, and `THIRD_PARTY_LICENSES.txt`.
-3. Run the extracted executable in an isolated `DEVHOST_CONFIG_DIR` and `DEVHOST_STATE_DIR` (ephemeral Caddy ports) to verify `--version`, `--help`, `caddy start`, `start --detach`, HTTPS routing and `/__devhost__/config.json` + `/__devhost__/inject.js`, `restart-all`, `stop`, and `caddy stop`.
+3. Run the extracted executable in an isolated `DEVHOST_CONFIG_DIR` and `DEVHOST_STATE_DIR` (ephemeral Caddy ports) to verify `--version`, `--help`, `caddy start`, `start --detach`, HTTPS routing and `/__devhost__/config.json` + `/__devhost__/inject.js`, `restart`, `stop`, and `caddy stop`.
 4. Confirm GitHub Pages serves the released version's documentation.
 
 The repository also has a release named `Demo media` on the tag `media`. It holds the documentation site's guide videos, is not a devhost version, and is never the latest release; leave it out of version checks. `docs/internal/references/demo-recording.md` describes it.

@@ -546,7 +546,7 @@ fn ensure_daemon_rejects_incompatible_protocol_and_warns_on_binary_mismatch() {
     let pid = std::process::id() as i32;
     let start_id = String::new();
 
-    // Case 1: Incompatible protocol version fails with restart-all hint.
+    // Case 1: Incompatible protocol version fails with restart hint.
     let listener = UnixListener::bind(&sock_path).unwrap();
     write_daemon_record(
         dir.path(),
@@ -590,7 +590,7 @@ fn ensure_daemon_rejects_incompatible_protocol_and_warns_on_binary_mismatch() {
     assert!(
         err.hint
             .as_deref()
-            .is_some_and(|h| h.contains("devhost restart-all")),
+            .is_some_and(|h| h.contains("devhost restart")),
         "{err:?}"
     );
 
@@ -643,7 +643,7 @@ fn ensure_daemon_rejects_incompatible_protocol_and_warns_on_binary_mismatch() {
     assert_eq!(endpoint.pid, pid);
     let stderr = String::from_utf8_lossy(&err_buf.0.lock().unwrap()).into_owned();
     assert!(
-        stderr.contains("different executable") && stderr.contains("devhost restart-all"),
+        stderr.contains("different executable") && stderr.contains("devhost restart"),
         "{stderr}"
     );
 }
@@ -696,12 +696,12 @@ fn daemon_handles_unknown_rpc_targets_retires_removed_cwd_and_shuts_down_on_sigt
     .unwrap_err();
     assert!(restart_err.contains("no longer running"), "{restart_err}");
 
-    // Remove proj_vanish working directory -> restart-all retires vanish-stack and replaces keep-stack in a new daemon.
+    // Remove proj_vanish working directory -> restart retires vanish-stack and replaces keep-stack in a new daemon.
     fs::remove_dir_all(&proj_vanish).unwrap();
     let restart_out = env
         .command()
         .current_dir(&env.root_path)
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     assert!(restart_out.status.success(), "{restart_out:?}");
@@ -735,7 +735,7 @@ fn daemon_handles_unknown_rpc_targets_retires_removed_cwd_and_shuts_down_on_sigt
 }
 
 #[test]
-fn restart_all_upgrades_legacy_per_stack_process_into_shared_daemon() {
+fn restart_upgrades_legacy_per_stack_process_into_shared_daemon() {
     let env = IsolatedEnv::start();
     let proj = env.create_http_project("legacy-upgrade", "legacy-up", "CUSTOM_TAG");
     let manifest_path = proj.join("devhost.toml");
@@ -794,19 +794,19 @@ fn restart_all_upgrades_legacy_per_stack_process_into_shared_daemon() {
     )
     .unwrap();
 
-    // Run `devhost restart-all`: must stop legacy_pid and start the stack inside the shared daemon.
+    // Run `devhost restart`: must stop legacy_pid and start the stack inside the shared daemon.
     let waiter =
         thread::spawn(move || wait_child_with_timeout(&mut legacy_child, Duration::from_secs(10)));
     let restart_out = env
         .command()
         .current_dir(&env.root_path)
-        .arg("restart-all")
+        .arg("restart")
         .output()
         .unwrap();
     let legacy_status = waiter.join().unwrap();
     assert!(
         restart_out.status.success(),
-        "restart-all failed on legacy stack: stdout={} stderr={}",
+        "restart failed on legacy stack: stdout={} stderr={}",
         String::from_utf8_lossy(&restart_out.stdout),
         String::from_utf8_lossy(&restart_out.stderr)
     );

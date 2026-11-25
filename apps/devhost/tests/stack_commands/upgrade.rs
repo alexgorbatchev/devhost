@@ -52,10 +52,7 @@ fn partial_upgrade_retains_healthy_stack_and_recovers_through_go() {
     let ca = fs::read(caddy.join("storage/pki/authorities/local/root.key")).unwrap();
     let broken = runtime.root.path().join("partial-go/devhost.toml");
     fs::write(&broken, "invalid=[").unwrap();
-    let output = command(&runtime, &rust)
-        .arg("restart-all")
-        .output()
-        .unwrap();
+    let output = command(&runtime, &rust).arg("restart").output().unwrap();
     assert_eq!(output.status.code(), Some(1), "{output:?}");
     wait_ready(&runtime, "partial-rust");
     let live = read_live_stacks(&caddy).unwrap();
@@ -332,10 +329,10 @@ fn mixed_go_rust_restart_and_go_rollback_preserve_private_state() {
     .into();
     let unrelated = sleeper();
     mixed_runtime_guards(&runtime, &go, &rust, &unrelated);
-    for executable in [&rust, &go] {
+    for (executable, restart_command) in [(&rust, "restart"), (&go, "restart-all")] {
         let before = read_live_stacks(&caddy).unwrap();
         assert_eq!(before.len(), 2);
-        success(command(&runtime, executable).arg("restart-all"));
+        success(command(&runtime, executable).arg(restart_command));
         for (name, project, linked, repository, panel) in &projects {
             let origin = wait_ready(&runtime, name);
             wait_until(|| content(&runtime, name).as_deref() == Some(&format!("{name} feature")));
