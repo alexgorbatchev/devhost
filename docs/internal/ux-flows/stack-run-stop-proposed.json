@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -88,24 +88,24 @@
       "label": "devhost start [names]",
       "sublabel": "or init, help, skill",
       "tag": "stack-run-stop-12",
-      "explanation": "People and agents type devhost start [names] in a project folder; devhost finds the root manifest upward, or takes --manifest, as today (MAN-01). The first line names the stack, its checkout and its size: 'Starting Acme Shop from main ~/acme · 6 services' (SEL-4, FB-10). Against a running stack, names it left out start into it as the Services panel's Start does, with what they depend on: 'Started admin in Acme Shop · https://admin.shop.localhost/ · 1.2 s'; when all already run: 'Already running in Acme Shop: web, api' with their URLs only; during a stack-wide operation it refuses naming it and exits 1 (SEL-7, O6, CC-7, HOLD-3). With no manifest: 'No devhost.toml in ~/newapp or any folder above it', then devhost init on its own line and the Quickstart's URL; the Quickstart in devhost --help starts with the manifest, and devhost skill prints the guidance embedded in this binary, offline, naming devhost status, service, logs and reload (STATE-2, SURF-15, MENU-6, CC-11, CC-23; devhost init and the embedded skill are pending decisions, Backend 16). Resolves stack-run-stop-12 and stack-run-stop-01 (a start for a left-out service said only Already running).",
+      "explanation": "devhost start [names] finds the root manifest upward up to the first .git folder (or --manifest, MAN-01). The first line names the stack, its worktree label and size: 'Starting Acme Shop from main ~/acme · 6 services' (SEL-4, FB-10, WORD-11). Against a running stack, left-out names start into it with their dependencies: 'Started admin in Acme Shop · https://admin.shop.localhost/ · 1.2 s'; when all already run it prints only those URLs; during a stack-wide operation it refuses naming it and exits 1 (SEL-7, O6, CC-7, HOLD-3). With no manifest, the error names the .git repository-root search boundary (stack-run-stop-17), prints devhost init (O52: writes a starter devhost.toml from package.json, Cargo.toml, go.mod or Procfile, refusing overwrite) and the Quickstart URL. devhost --help starts with devhost init, and devhost skill prints offline embedded guidance naming devhost stack info / status, service, logs, reload, upgrade, restart-all and stack restart (O18, O52, O62). Resolves stack-run-stop-12, stack-run-stop-17 and stack-run-stop-01.",
       "sources": [
         {
-          "path": "apps/devhost/internal/manifest/resolve.go",
-          "line": 15,
-          "end_line": 33,
-          "label": "Reuses: manifest search upward to the root"
+          "path": "apps/devhost/src/manifest.rs",
+          "line": 60,
+          "end_line": 93,
+          "label": "Updates: upward search stopping at .git"
         },
         {
-          "path": "apps/devhost/internal/cli/help.go",
-          "line": 19,
-          "end_line": 35,
-          "label": "Replaces: skill command that prints no skill"
+          "path": "apps/devhost/src/main.rs",
+          "line": 59,
+          "end_line": 90,
+          "label": "Replaces: skill source and subcommand help"
         },
         {
-          "path": "apps/devhost/internal/services/detach.go",
-          "line": 121,
-          "end_line": 125,
+          "path": "apps/devhost/src/services/detach.rs",
+          "line": 397,
+          "end_line": 415,
           "label": "Replaces: Already running, names not compared"
         }
       ],
@@ -119,24 +119,18 @@
       "label": "Detached status line",
       "sublabel": "names the stack in 1 s",
       "tag": "stack-run-stop-04",
-      "explanation": "devhost start --detach names the stack within a second, 'Starting Acme Shop in the background from main ~/acme · 6 services', then keeps one status line updated on a terminal, 'Starting Acme Shop · 3 of 6 running · waiting for api · health check 2 s of 30 s · 7 s', or prints one line per change when output is not a terminal (FB-10, STATE-1, ACT-4). It ends with the same labelled URLs and ready line, 'Log: devhost logs' and, with an idle timeout, 'Stops after 30 min without requests (idleTimeout)' (ACT-10). Ctrl-C while it waits cancels: 'Cancelled the start of Acme Shop: stopped web and api, which had started', with no error tag (FAIL-5, KEY-14); a failure before readiness still stops what it started, as the owner intends, naming its cause once with its evidence (FAIL-1, FAIL-3). devhost logs [-f] [service…] reads the one log every stack writes per manifest, foreground included, whose name a replacement keeps: a header per run, timed lines, one format, failures marked ERR: as warnings are WARN: (FB-7, FB-11, CC-21, CC-23). Resolves stack-run-stop-04, stack-run-stop-05 and the log slice of agent-cli-journey-05.",
+      "explanation": "devhost start --detach names the stack within a second, 'Starting Acme Shop in the background from main ~/acme · 6 services', then keeps one status line updated on a terminal, 'Starting Acme Shop · 3 of 6 running · waiting for api · health check 2 s of 30 s · 7 s', or prints one line per change when piped (FB-10, STATE-1, ACT-4, WORD-11). It ends with labelled local and preview URLs (marking offline remote previews on repeat starts, relay-previews-05), the ready line, 'All stacks on devbox: …' (O61), 'Log: devhost logs' and any idle timeout note (ACT-10). Ctrl-C cancels cleanly without an error tag (FAIL-5, KEY-14); failure before readiness stops started services via O30's unified parallel routine and names the cause once (FAIL-1, FAIL-3). devhost logs [-f] [service…] reads one per-manifest log kept across replacements, written by foreground and detached stacks alike with run headers, timestamps and ERR:/WARN: tags (FB-7, CC-21, CC-23). Resolves stack-run-stop-04, stack-run-stop-05 and agent-cli-journey-05's log slice.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/detach.go",
-          "line": 143,
-          "end_line": 158,
-          "label": "Replaces: blank wait, output only to the log"
-        },
-        {
-          "path": "apps/devhost/internal/services/detach.go",
-          "line": 398,
-          "end_line": 417,
+          "path": "apps/devhost/src/services/detach.rs",
+          "line": 755,
+          "end_line": 778,
           "label": "Replaces: Started line with unlabeled URLs"
         },
         {
-          "path": "apps/devhost/internal/services/restart.go",
-          "line": 92,
-          "end_line": 116,
+          "path": "apps/devhost/src/services/restart.rs",
+          "line": 102,
+          "end_line": 140,
           "label": "Replaces: a new log folder per replacement"
         }
       ],
@@ -150,24 +144,18 @@
       "label": "Ready line and URLs",
       "sublabel": "Ready in 4.2 s · 6 of 6",
       "tag": "stack-run-stop-03",
-      "explanation": "Each service's URL prints, labelled, as soon as its route is published ('api    https://shop.localhost/api/'), the primary service's first; then one ready line, 'Ready in 4.2 s: https://shop.localhost/ · 6 of 6 running', 'All stacks on this machine: https://devhost.localhost/' and, in a foreground terminal, 'Ctrl-C stops Acme Shop' (FB-10, WORD-4, SURF-15, KEY-14, CC-22). Ready is certified: it prints only once every started service passed its health check, with no leftover answering in its place (FB-5, ACT-11). A failed service is never offered as working: 'Ready in 4.6 s: https://shop.localhost/ · 5 of 6 running · api exited with code 1 at 14:01', then devhost service restart api on its own line (FAIL-1, MENU-6). Left-out services are counted, '4 of 6 running · 2 not started: admin, mail', a long list collapses to '34 services not started · devhost status', and the URL list never prints again after later actions (WORD-5, ACT-6). No URL, path or command breaks across lines, and URLs are OSC 8 links (WORD-8). Resolves stack-run-stop-03 with journey-crash-to-fix-05, stack-run-stop-10, and the start's slices of stack-directory-06 and proxy-settings-04.",
+      "explanation": "Each service's URL prints labelled as soon as its route answers, primary first; with [remote] configured, local hostnames stay active alongside public preview hostnames, both labelled (local and preview), missing DNS flagged, offline relay keeping local URLs running, and --local publishing nothing to the relay (relay-previews-02). One certified ready line prints once every started service passes health checks (or O28's 1 s process window) with no leftover answering: 'Ready in 4.2 s: https://shop.localhost/ · 6 of 6 running', then 'All stacks on devbox: https://devhost.localhost/' (O61), the active proxy listener line (O39), and 'Ctrl-C stops Acme Shop' (FB-5, FB-10, SURF-15, CC-22). A failed service leaves the rest running and prints devhost service restart api on its own line (FAIL-1, MENU-6). Left-out services are counted, long lists collapse, and tokens never wrap mid-URL with OSC 8 links (WORD-5, WORD-8). Resolves stack-run-stop-03 with journey-crash-to-fix-05, stack-run-stop-10, relay-previews-02, and start slices of stack-directory-06 and proxy-settings-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 544,
-          "end_line": 545,
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 948,
+          "end_line": 963,
           "label": "Replaces: URL list only after the slowest"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 719,
-          "end_line": 734,
-          "label": "Reuses: one line per URL, primary marked"
-        },
-        {
-          "path": "apps/devhost/internal/cliout/service_output.go",
-          "line": 104,
-          "end_line": 129,
+          "path": "apps/devhost/src/cliout.rs",
+          "line": 22,
+          "end_line": 125,
           "label": "Replaces: hard wrap inside URLs and paths"
         }
       ],
@@ -181,13 +169,19 @@
       "label": "devhost service restart",
       "sublabel": "one service, or queued",
       "tag": "agent-cli-journey-03",
-      "explanation": "devhost service start|stop|restart <service|group>… reach the running stack through its control server's recorded loopback port, as the toolbar does: each sends an operationId, waits for health checks with a progress line and prints one outcome per target, 'Restarted api · 2.6 s', 'Started admin and mail (admin depends on mail) · 3.1 s', 'Stopped worker · it reads not started, stopped by you'; a lost response is read from the operation record, never resent (SEL-7, MENU-1, MENU-6, REV-12, ACT-1, CC-11, CC-37). Another service's restart queues, 'worker queued behind Restart api'; during a stack-wide operation it refuses, 'Not restarted: Restart Stack is running · 3 of 6 started. Run it again when Restart Stack ends', exit 1 (HOLD-3, HOLD-1, CC-8). An external service: 'search runs outside devhost; devhost checks it but cannot restart it' (MENU-3, ACT-9). devhost service restart --all is Restart Stack's command: its statement first, no question, a per-service rollback on failure (a proposed REV-2 exception; UNDO-1). devhost reload [--dry-run] applies or checks the manifest on disk (FB-11, REV-10). Resolves agent-cli-journey-03; agent-cli-journey-02 is manifest-hot-reload's (related).",
+      "explanation": "devhost service start|stop|restart <service|group>… reach the running stack through its loopback control port, as the toolbar does: each sends an operationId, waits for health checks with a progress line and prints one outcome per target, 'Restarted api · 2.6 s', 'Started admin and mail (admin depends on mail) · 3.1 s', 'Stopped worker · it reads not started, stopped by you'; a lost response is read back from the operation record, never resent (SEL-7, MENU-1, MENU-6, REV-12, ACT-1, CC-11, CC-37). Another service's restart queues, 'worker queued behind Restart api'; during a stack-wide operation it refuses naming that operation and its progress, exit 1 (HOLD-3, HOLD-1, CC-8). An external service refuses: 'search runs outside devhost; devhost checks it but cannot restart it' (MENU-3, ACT-9). Targets are services or groups only (CC-11); in-process Restart Stack lives in the toolbar/recovery pages, while stack restart, restart-all and upgrade replace supervisors (O18). devhost reload [--dry-run] [--stdin] applies or checks the manifest (CC-23). Resolves agent-cli-journey-03.",
       "sources": [
         {
-          "path": "apps/devhost/internal/cli/parse.go",
-          "line": 335,
-          "end_line": 362,
-          "label": "Replaces: service command that only lists"
+          "path": "apps/devhost/src/main.rs",
+          "line": 74,
+          "end_line": 88,
+          "label": "Extends: service subcommands on control routes"
+        },
+        {
+          "path": "apps/devhost/src/cli.rs",
+          "line": 1,
+          "end_line": 35,
+          "label": "Reuses: shared CLI flag builders"
         }
       ],
       "yOffset": -60
@@ -197,22 +191,28 @@
       "lane": "review",
       "col": 2,
       "type": "frontend",
-      "label": "devhost status",
+      "label": "stack info / status",
       "sublabel": "states; exits 0 or 3",
       "tag": "agent-cli-journey-01",
-      "explanation": "From any terminal or agent, devhost status [--json] [--wait] reads the published state and operation record every surface reads, never its own guess (FB-11, ACT-1, ACT-2, CC-23): 'Acme Shop · main ~/acme · PID 84244 · detached · failed · 4 of 6 running · 1 exited · 1 not started · as of 14:02:31' (ACT-6, ACT-12), then one line per service: state word, cause, since when, next command, 'api  exited with code 1 at 14:01 · devhost service restart api', an external service's check and time, a rejected file's line not applied, a blocked repository once (WORD-6, ACT-9, HOLD-6, HOLD-4), the last operation, 'Log: devhost logs' and the stack directory's URL. It exits 0 when every started service runs, 3 naming each that does not, 1 for its own failure; --json uses not-started and not-reachable (WORD-9). An unanswering control server reads 'its state is unknown, last seen 14:02', exit 1 (STATE-3, STATE-4). stack find resolves folders, . included, as devhost stop does; stack list on a terminal names each stack with its checkout and summary; piped, it keeps <PID><TAB><manifest path> (SEL-6, SEL-4, CC-34). Resolves agent-cli-journey-01, stack-run-stop-08 and stack-directory-06's list slice.",
+      "explanation": "O62 extends shipped devhost stack info (GET /__devhost__/stack-info) and adds devhost status as its short alias sharing one code path and output contract (FB-11, ACT-1, ACT-2, CC-23): prints stack, worktree label, PID, mode, state, summary and snapshot time, per-service state/cause/since/URL/changed files/next command, manifest-reload rejection state, blocked repository sentence, remote preview offline status (relay-previews-05), last operation, 'Log: devhost logs' and 'All stacks on devbox: …' (O61). Exits 0 when every started service runs, 3 naming each that does not, 1 on command failure; --json uses hyphenated state IDs and ISO times; --wait waits on a running operation. An unanswering control server prints last known state marked 'last seen' and exits 1 (STATE-4). stack find resolves folders as devhost stop does (CC-34); interactive stack list, stack find and stack info / status guide users to active serve sessions with --sessions / --session (serve-command-04), while piped/AGENT=1 stack list keeps <PID><TAB><manifest path>. Resolves agent-cli-journey-01, stack-run-stop-08, serve-command-04 and stack-directory-06's list slice.",
       "sources": [
         {
-          "path": "apps/devhost/internal/app/run.go",
-          "line": 280,
-          "end_line": 292,
-          "label": "Replaces: stack list of PID and path only"
+          "path": "apps/devhost/src/services/stack_info.rs",
+          "line": 26,
+          "end_line": 170,
+          "label": "Extends: stack info (--json, --wait, exit 3)"
         },
         {
-          "path": "apps/devhost/internal/caddy/stack_find.go",
-          "line": 29,
-          "end_line": 37,
-          "label": "Replaces: substring match for a folder"
+          "path": "apps/devhost/src/caddy/stacks.rs",
+          "line": 353,
+          "end_line": 420,
+          "label": "Replaces: folder match and empty-manifest skip"
+        },
+        {
+          "path": "apps/devhost/src/services/serve_sessions.rs",
+          "line": 12,
+          "end_line": 46,
+          "label": "Reuses: active serve session discovery"
         }
       ]
     },
@@ -224,25 +224,19 @@
       "label": "Multi-stack set first",
       "sublabel": "asks only if a turn ends",
       "tag": "stack-run-stop-07",
-      "explanation": "devhost stop --worktrees and devhost stack replace --all print their set before acting: each stack's name, checkout label, PID, foreground or detached, and the conversations it would close, 'Acme Shop  fix-nav ~/acme/.worktrees/fix-nav  PID 85102 · foreground · Claude Code working: \"Fix the nav\"' (SEL-6, SEL-4, FB-4). Only when the set would end an agent's turn that works or waits do they ask, on a terminal with CI unset: 'Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N]', where anything but y or yes stops nothing (REV-7, REV-4, O33). Without a terminal, or under AGENT=1, they refuse on one devhost: ERR: line telling the agent to ask the person, and exit 1 (REV-8, WORD-9). --yes acts without the question, and the documented upgrade step passes it; --dry-run prints the set and exits 0 (CC-12). --all lists serve sessions, which keep running (O31, CC-36). The set comes from the repository's worktree list, so a stack whose folder is gone is still classified, never by running Git in it, and another repository's stacks are never touched (REV-11, FAIL-2). Resolves stack-run-stop-07, stack-run-stop-16 and the conversations of chat-conversations-03.",
+      "explanation": "devhost stop --worktrees, devhost restart-all and devhost upgrade print their set before acting: each stack's name, worktree label, PID, foreground or detached, and the conversations it would close, 'Acme Shop  fix-nav ~/acme/.worktrees/fix-nav  PID 85102 · foreground · Claude Code working: \"Fix the nav\"' (SEL-6, SEL-4, FB-4, O18, WORD-11). Only when the set would end an agent's turn that works or waits do they ask, on a terminal with CI unset: 'Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N]', where anything but y or yes stops nothing (REV-7, REV-4, O33). Without a terminal, or under AGENT=1, they refuse on one devhost: ERR: line telling the agent to ask the person, and exit 1 (REV-8, WORD-9). --yes acts without the question, and post-upgrade scripts pass it; --dry-run prints the set and exits 0 (CC-12). restart-all and upgrade list serve sessions, which keep running (O31, CC-36). Worktree classification uses git worktree list --porcelain so a deleted worktree is classified without running Git in it, and other repositories are untouched (REV-11). Resolves stack-run-stop-07, stack-run-stop-16 and chat-conversations-03's slice.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stop.go",
-          "line": 48,
-          "end_line": 83,
-          "label": "Replaces: --worktrees loop with no set first"
+          "path": "apps/devhost/src/services/stop.rs",
+          "line": 64,
+          "end_line": 160,
+          "label": "Replaces: --worktrees loop and folder Git call"
         },
         {
-          "path": "apps/devhost/internal/services/stop_worktrees.go",
-          "line": 29,
-          "end_line": 44,
-          "label": "Replaces: Git run in each stack's folder"
-        },
-        {
-          "path": "apps/devhost/internal/services/restart.go",
-          "line": 62,
-          "end_line": 89,
-          "label": "Replaces: --all with no preview"
+          "path": "apps/devhost/src/services/restart.rs",
+          "line": 56,
+          "end_line": 120,
+          "label": "Replaces: restart-all with no set preview"
         }
       ]
     },
@@ -254,25 +248,25 @@
       "label": "Check, launch, certify",
       "sublabel": "before any service runs",
       "tag": "journey-new-project-01",
-      "explanation": "Before any service runs, devhost checks everything it can: the manifest and its includes against the schema, every service's cwd before the checkout lookup, the requested names, every hostname and fixed-port claim, and leftovers of an earlier, killed run of the same manifest (REV-11, ACT-11); any problem stops the start with nothing started. A manifest that starts but routes nothing the way it reads prints a warning with its location and keeps starting, 'devhost.toml:9:8  services.api.path  \"/api\" matches only the exact path /api; write \"/api/*\" to route everything under it', as does a path without host, which routes nothing; the ready line counts the warning and devhost status lists it (FAIL-2, MENU-4; the matching rule itself is a pending product decision, Backend 15). Services then launch in dependency order; a slow health check's waiting line keeps what the probe last saw, 'Waiting for api · GET /healthz returned 404 Not Found · 12 s of 30 s', and its failure says how to fix it (STATE-1, ACT-4, FAIL-3). Resolves journey-new-project-01 and journey-new-project-03; the 503 that scripts polling a starting service get is startup-and-recovery's (agent-cli-journey-04, related).",
+      "explanation": "Before any service runs, devhost checks the manifest and includes against the schema, every service's cwd before worktree lookup, requested names, every hostname (including reserved hostnames) and fixed-port claim, and leftovers of an earlier killed run (REV-11, ACT-11); any problem stops the start with nothing started. Under O44, route path values use prefix matching (path = '/api' routes /api and everything below it, keeping longest-prefix order and '/api/*' compatibility); path without host ('routes nothing without host') and watch on an external service (ACT-8) warn with file, line, column and key while starting, counted on the ready line and listed in stack info / status. When [remote] is configured, relay connection runs in parallel with service startup and fails fast in under 5 s on non-retryable auth, fingerprint or reverse-port refusals naming connector.log (relay-previews-04). Slow health checks print what the probe last saw and failures explain what to change (STATE-1, ACT-4, FAIL-3). Resolves journey-new-project-01, journey-new-project-03 and relay-previews-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/app/run.go",
-          "line": 112,
-          "end_line": 157,
-          "label": "Reuses: read, validate, check names first"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 439,
+          "end_line": 445,
+          "label": "Replaces: exact path match with O44 prefix"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 357,
-          "end_line": 391,
-          "label": "Reuses: fixed port and hostname claims"
+          "path": "apps/devhost/src/services/health.rs",
+          "line": 68,
+          "end_line": 115,
+          "label": "Replaces: HTTP probe kept only as pass or fail"
         },
         {
-          "path": "apps/devhost/internal/services/health.go",
-          "line": 182,
-          "end_line": 200,
-          "label": "Replaces: HTTP probe kept as pass or fail"
+          "path": "apps/devhost/src/remote/lease.rs",
+          "line": 234,
+          "end_line": 260,
+          "label": "Replaces: 45 s silent wait on bad relay auth"
         }
       ]
     },
@@ -281,28 +275,28 @@
       "lane": "backend",
       "col": 3,
       "type": "backend",
-      "label": "One stop routine",
-      "sublabel": "waits, forces, certifies",
+      "label": "Parallel stop",
+      "sublabel": "FG + daemon from t = 0",
       "tag": "interrupted-operations-03",
-      "explanation": "devhost stop, Ctrl-C, stack replace, stop --worktrees and the Worktrees panel's Stop Stack share one routine (worktree-switch's conflict c5). It records why beside the stack's record before it signals, 'stopped from a terminal', so terminals, pages and hostnames can say so (ACT-10, HOLD-2). Services get SIGTERM in reverse dependency order and are waited for together, 10 s each, while one line names those still stopping: 'Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s · Ctrl-C forces them now' (FB-10, ACT-3, KEY-14). The caller waits up to O30's allowance, a minute plus 20 s per service, never killing the stack's devhost process while it still stops services; Ctrl-C while it waits, a second Ctrl-C in the stack's own terminal or a second devhost stop forces the rest within a second, signalling only verified process trees, and still releases routes, port claims and the record; a forced service reads 'Force-stopped worker after 10 s: it ignored SIGTERM' (ACT-11, FAIL-5, CC-35, CC-22). Resolves interrupted-operations-03; builds on the stopgaps of interrupted-operations-01 and process-containment-01 and on the stack-scale-01 patch (related).",
+      "explanation": "One unified routine serves devhost stop, stop --worktrees, stop --session, stack restart, restart-all, upgrade, start --detach cleanup, Worktrees Stop Stack and serve sessions (O30, O41, CC-35). It records the stop reason before signalling (ACT-10, HOLD-2), takes one shared process snapshot at t = 0 (containment.rs), sends a single termination signal per managed foreground service (interrupted-operations-06), and runs foreground stops (10 s shared grace + verified SIGKILL + 5 s check + shared 2 s 100 ms port scan = 15 s bound) and daemon status→stop chains (O41 20 s shared per-daemon deadline, whole-group SIGKILL on timeout = 20.12 s bound) in parallel from t = 0: 25.64 s combined worst case fits inside O30's 30 s default stopTimeout (configurable 5s..10m via --timeout > DEVHOST_STOP_TIMEOUT > devhost.toml > config.toml > 30s; widens to max(stopTimeout, max_daemon_override + 10s) when a daemon overrides > 20 s unless CLI --timeout caps). Never SIGKILLs a stopping supervisor; second Ctrl-C or second devhost stop forces remaining trees and groups (KEY-14). Resolves interrupted-operations-03 and interrupted-operations-06.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 1227,
-          "end_line": 1272,
-          "label": "Replaces: waits one at a time, 10 s each"
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 1489,
+          "end_line": 1622,
+          "label": "Replaces: sequential FG and daemon stops"
         },
         {
-          "path": "apps/devhost/internal/services/stop.go",
-          "line": 88,
-          "end_line": 135,
-          "label": "Replaces: 15 s, then SIGKILL of the supervisor"
+          "path": "apps/devhost/src/services/stop.rs",
+          "line": 260,
+          "end_line": 301,
+          "label": "Replaces: 15 s grace then supervisor SIGKILL"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 216,
-          "end_line": 232,
-          "label": "Replaces: a second Ctrl-C ignored"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 96,
+          "end_line": 108,
+          "label": "Replaces: duplicate SIGTERM on shutdown"
         }
       ]
     },
@@ -311,22 +305,22 @@
       "lane": "backend",
       "col": 4,
       "type": "backend",
-      "label": "Replace devhost process",
+      "label": "Upgrade or restart",
       "sublabel": "PID 84244 → 85502",
       "tag": "stack-run-stop-13",
-      "explanation": "devhost stack replace, with stack restart as its alias, says replace in its help and output (O18, WORD-2, CC-31). Immediately before each signal it checks the stack's PID, start identity and root manifest, not its registration time, so a stack saved or hot reloaded meanwhile is still replaced, and one that stopped reads 'Acme Shop had already stopped; not replaced', never a failure (REV-13, FAIL-5). It waits for the old process's shutdown with the stop routine, up to O30's allowance, then starts the replacement from this executable with the same flags, checkouts and the services running at that moment, those started later included (SEL-7, CC-35), appending to the same log: 'Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0.13'. A replaced foreground stack prints 'Replaced by devhost stack replace from another terminal at 14:02 · new PID 85502', then devhost logs -f and devhost stop on their own lines, and exits 0, never 143 (FAIL-5, CC-24); open pages reconnect to it and say so once (ACT-10). Resolves stack-run-stop-13, stack-run-stop-02 and stack-run-stop-15.",
+      "explanation": "Under O18, built-in devhost upgrade downloads the latest GitHub Release (skipping media), verifies SHA256SUMS, swaps a user-writable binary (clearly reporting read-only paths, externally managed installs or protected 999.0.0-dev builds without modifying them) and replaces running manifest stacks; shipped devhost restart-all and project-scoped devhost stack restart stay on one verb for dotfiles, package managers and local rebuilds while clearly stating in help and output that they replace the running devhost supervisor process (CC-31, CC-36). Before each signal, identity checks PID, start identity and root manifest (not registration time), so hot-reloaded stacks replace cleanly and already-stopped stacks read 'not replaced' without failing (REV-13, FAIL-5). Waits via the unified parallel stop routine up to O30's stopTimeout, relaunches with the current running service selection, appends to the same log, leaves serve sessions running (O31), and tells replaced foreground stacks which command replaced them so they print logs/stop commands and exit 0 (CC-24). Resolves stack-run-stop-13, stack-run-stop-02 and stack-run-stop-15.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/restart.go",
-          "line": 190,
-          "end_line": 235,
-          "label": "Replaces: fixed 15 s wait, then relaunch"
+          "path": "apps/devhost/src/main.rs",
+          "line": 759,
+          "end_line": 795,
+          "label": "Extends: stack restart, restart-all, upgrade"
         },
         {
-          "path": "apps/devhost/internal/caddy/stack_occupant.go",
-          "line": 75,
-          "end_line": 85,
-          "label": "Replaces: registration time as identity"
+          "path": "apps/devhost/src/services/restart.rs",
+          "line": 439,
+          "end_line": 519,
+          "label": "Replaces: 15 s wait and per-restart log dirs"
         }
       ]
     },
@@ -338,19 +332,19 @@
       "label": "One line per operation",
       "sublabel": "own stops are steps",
       "tag": "stack-scale-07",
-      "explanation": "Every operation on the running stack, from any origin, prints one outcome line in its terminal and log, never the URL list again: 'Started admin · https://admin.shop.localhost/ · 1.2 s · from the toolbar' (FB-3, FB-7, FB-10, CC-22). Services devhost stops for an operation (Restart Stack, a switch, a hot reload, a shutdown) are its steps, never exits awaiting a restart, and a switch names both checkouts by label (FAIL-5, ACT-3, SEL-4). A service that exits names the command: 'api exited with code 1 at 14:01', then devhost service restart api (MENU-6, MENU-5). An exit from outside names its signal and sender: 'worker was terminated by SIGTERM (143) at 21:53:34, not sent by devhost' (FAIL-3, WORD-8, CC-24). A daemon that stops on its own prints one line, and one when it recovers; 'Acme Shop lost its proxy at 14:10 (devhost caddy stop); its services keep running', and one when its routes answer again (ACT-10); a devhost config file save prints its outcome and the stack directory's URL when it moves (SURF-15). Resolves the terminal slices of stack-scale-07, worktree-switch-04, interrupted-operations-04, manifest-hot-reload-2-02, notices-and-feedback-04 and proxy-settings-04.",
+      "explanation": "Every operation on the running stack, from any origin, prints one outcome line in its terminal and log, never the URL list again: 'Started admin · https://admin.shop.localhost/ · 1.2 s · from a page on shop.localhost' (FB-3, FB-7, FB-10, WORD-4, CC-22). Services devhost stops for an operation (Restart Stack, switch, hot reload, shutdown) are steps, never exits awaiting restart, and a switch names both worktrees by label (FAIL-5, ACT-3, SEL-4, WORD-11). An exit prints 'api exited with code 1 at 14:01' then devhost service restart api (MENU-6); an external signal names signal, status, time and sender (CC-24). A daemon stopping or recovering prints one line each. Proxy loss distinguishes devhost caddy stop from unexpected Caddy exit, plus recovery (ACT-10). Relay disconnects or dead connectors report within 15 s, relaunch dead connectors within 15 s, mark remote URLs offline across CLI queries, and log recovery duration (relay-previews-05). Config saves print 'All stacks on devbox: …' when the directory moves (O61). Resolves stack-scale-07, worktree-switch-04, interrupted-operations-04, manifest-hot-reload-2-02, notices-and-feedback-04, proxy-settings-04 and relay-previews-05.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 633,
-          "end_line": 634,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 85,
+          "end_line": 95,
           "label": "Replaces: every exit waits for a restart"
         },
         {
-          "path": "apps/devhost/internal/services/shutdown_progress.go",
-          "line": 23,
-          "end_line": 35,
-          "label": "Reuses: per-service stop lines"
+          "path": "apps/devhost/src/remote/worker.rs",
+          "line": 1,
+          "end_line": 80,
+          "label": "Extends: relay drop detection and auto-relaunch"
         }
       ]
     },
@@ -362,19 +356,19 @@
       "label": "Stopped Acme Shop",
       "sublabel": "6.1 s · start command",
       "tag": "chat-conversations-03",
-      "explanation": "The stop first names its target, never PIDs alone: 'Stopping Acme Shop (main ~/acme, PID 84244) · 6 services · closes 1 conversation: \"Fix the nav\" (Claude Code, working)'; it acts on the one stack it resolved and never asks (SEL-6, FB-4, REV-7). Success is certified only once no process, route or port claim of the stack remains: 'Stopped Acme Shop · 6 services · 6.1 s · closed \"Fix the nav\" (Claude Code, was working)' (FB-5, ACT-11, WORD-4). Processes cannot be un-stopped, so there is no Undo: the outcome names the way back, 'Start it again in ~/acme with:' and devhost start on its own line (UNDO-5); the closed conversation stays listed and resumes after the next start, from agent-chat's record (UNDO-4, O23). The stack's own terminal ends with 'Acme Shop stopped at 14:10: devhost stop from another terminal', and an open page's lost-connection notice reads 'Acme Shop stopped. Start it with devhost start in ~/acme' (ACT-10, HOLD-2). With nothing running it says 'Acme Shop is not running' (STATE-2); progress and outcome go to the streams reference/output.md names (WORD-9). Resolves chat-conversations-03's slice and stack-run-stop-06.",
+      "explanation": "The stop first names its target, never PIDs alone: 'Stopping Acme Shop (main ~/acme, PID 84244) · 6 services · closes 1 conversation: \"Fix the nav\" (Claude Code, working)'; it acts on the one stack it resolved and never asks (SEL-6, FB-4, REV-7, WORD-11). Success is certified only once no process, route or port claim of the stack remains: 'Stopped Acme Shop · 6 services · 6.1 s · closed \"Fix the nav\" (Claude Code, was working)' (FB-5, ACT-11, WORD-4). Processes cannot be un-stopped, so there is no Undo: the outcome names the way back, 'Start it again in ~/acme with:' and devhost start on its own line (UNDO-5); closed conversations stay listed and resume after the next start (UNDO-4, O23). The stack's terminal ends with its reason line, and an open page's lost-connection notice reads 'Acme Shop stopped. Start it with devhost start in ~/acme' (ACT-10, HOLD-2). With no manifest stack running and serve sessions active, devhost stop names them with devhost stop --session <name> instead of failing silently (serve-command-04, STATE-2). Resolves chat-conversations-03's slice, stack-run-stop-06 and serve-command-04's stop slice.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stop.go",
-          "line": 48,
-          "end_line": 83,
+          "path": "apps/devhost/src/services/stop.rs",
+          "line": 64,
+          "end_line": 113,
           "label": "Replaces: process(es) and PID lines"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 316,
-          "end_line": 320,
-          "label": "Replaces: Stack stopped. with no reason"
+          "path": "apps/devhost/src/main.rs",
+          "line": 554,
+          "end_line": 605,
+          "label": "Extends: serve session hint on no-manifest stop"
         }
       ]
     },
@@ -384,21 +378,21 @@
       "col": 5,
       "type": "frontend",
       "label": "Stopped-stack page",
-      "sublabel": "reason, time, command",
+      "sublabel": "24 h HTTPS · command",
       "tag": "stack-run-stop-11",
-      "explanation": "However a stack ends (devhost stop, Ctrl-C, the idle timeout, a replacement, killed, every service exited), its terminal and log print one line with the reason and time: 'Acme Shop stopped at 02:14 after 30 min without requests (idleTimeout)' (ACT-10, CC-27). For O15's time, 24 hours or until another stack claims the hostname or the shared Caddy stops, each of its hostnames answers a full status page instead of the generic 404: the heading 'Acme Shop stopped', that sentence, 'Start it again in ~/acme with' and devhost start with Copy, and All Stacks on This Machine, which lists it as recently stopped (STATE-2, STATE-3, UNDO-5, O15). It uses the shared status-page components and words, works without the toolbar, starts nothing and never opens a browser (SURF-14, WORD-6, O10). It fits 1600x1000, 1280x800 and 900x900 in both themes and 1280x800 at 200% zoom, and reflows at 320 px (SURF-9); Tab reaches Copy, then the link, and Copy keeps focus while the page's polite region says 'Copied devhost start' once (KEY-11, FB-9). It is the one browser surface this flow adds, in place of today's generic 404. Resolves stack-run-stop-11.",
+      "explanation": "However a stack ends (devhost stop, Ctrl-C, idle timeout, stack restart / restart-all / upgrade, killed, every service exited), its terminal and log print one line with the reason and time: 'Acme Shop stopped at 02:14 after 30 min without requests (idleTimeout)' (ACT-10, CC-27). Under O15 and O63, strict configured-hosts-only TLS stays in place for arbitrary unknown HTTPS hostnames (zero on-demand certs), while each stopped stack keeps its configured Caddy routes and HTTPS certs active for 24 hours (or until another stack claims the hostname or Caddy stops) so revisiting https://shop.localhost/ renders this full page over HTTPS: 'Acme Shop stopped', that sentence, 'Start it again in ~/acme with', devhost start with Copy, and All Stacks on devbox (O61; directory lists stopped stacks whose run lasted >= 1 min). Uses shared status-page components without the toolbar, starts nothing (O10), fits all acceptance viewports and 320 px reflow (SURF-9, O8), Tab reaches Copy then All Stacks on devbox, and Copy keeps focus announcing 'Copied devhost start' once (KEY-11, FB-9). Resolves stack-run-stop-11.",
       "sources": [
         {
-          "path": "apps/devhost/internal/statuspage/not_found.go",
-          "line": 10,
-          "end_line": 17,
-          "label": "Replaces: generic 404 naming no stack"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 539,
+          "end_line": 552,
+          "label": "Keeps: strict TLS; adds 24 h stopped routes"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 644,
-          "end_line": 651,
-          "label": "Reuses: idle timeout shutdown"
+          "path": "apps/devhost/src/statuspage.rs",
+          "line": 136,
+          "end_line": 161,
+          "label": "Replaces: generic 404 naming no stack"
         }
       ]
     },
@@ -410,24 +404,24 @@
       "label": "Start refused in place",
       "sublabel": "file, line, key, fix",
       "tag": "stack-run-stop-09",
-      "explanation": "Every problem prints at once, grouped by file relative to the root manifest, as file:line:column, key and message with the offending line and a close key: 'admin/devhost.toml:3:1  services.admin.hostname  unknown setting; did you mean host?', then 'Nothing started. Fix the manifest and run devhost start again' (FAIL-2, MENU-4, WORD-7, WORD-8). A hostname or port clash names every clash with the owning stack, its checkout and the command that stops it; an unknown name separates services from groups and suggests the closest. A missing cwd reads 'devhost.toml:12:7  services.api.cwd  folder api does not exist in ~/newapp', never a Git error (REV-11). Under AGENT=1 every problem joins one 'devhost: ERR:' line (FB-11, WORD-9). The person fixes the file and runs devhost start again; nothing was stopped or started, so nothing needs restoring. Resolves stack-run-stop-09 with its duplicate manifest-hot-reload-03 (the start's slice; reload rejections stay manifest-hot-reload's), journey-new-project-04 and the ERR: slice of agent-cli-journey-05.",
+      "explanation": "Every manifest problem prints at once, grouped by file relative to the root manifest, as file:line:column, key and message with the offending line and close key: 'admin/devhost.toml:3:1  services.admin.hostname  unknown setting; did you mean host?', then 'Nothing started. Fix the manifest and run devhost start again' (FAIL-2, MENU-4, WORD-7, WORD-8). Hostname (including reserved hostnames) or port clashes name the owning stack, its worktree and stop command; unknown names separate services from groups with closest match. A missing cwd prints 'devhost.toml:12:7  services.api.cwd  folder api does not exist in ~/newapp', never a Git error (REV-11). Missing manifest errors name the .git search boundary and devhost init (stack-run-stop-17, O52). Non-retryable relay auth, fingerprint or reverse-port refusals fail fast in under 5 s naming cause and connector.log (relay-previews-04). Under AGENT=1 every problem joins one 'devhost: ERR:' line (FB-11, WORD-9). Resolves stack-run-stop-09 with manifest-hot-reload-03, journey-new-project-04, stack-run-stop-17, relay-previews-04 and agent-cli-journey-05's ERR: slice.",
       "sources": [
         {
-          "path": "apps/devhost/internal/manifest/errors.go",
-          "line": 38,
-          "end_line": 46,
-          "label": "Replaces: schema errors with no file or line"
+          "path": "apps/devhost/src/manifest/diagnostics.rs",
+          "line": 1,
+          "end_line": 73,
+          "label": "Extends: structured file:line manifest errors"
         },
         {
-          "path": "apps/devhost/internal/services/worktrees.go",
-          "line": 67,
-          "end_line": 72,
-          "label": "Replaces: Git discovery before the cwd check"
+          "path": "apps/devhost/src/manifest/validation.rs",
+          "line": 608,
+          "end_line": 635,
+          "label": "Extends: cwd check before worktree lookup"
         },
         {
-          "path": "apps/devhost/internal/cliout/cliout.go",
-          "line": 41,
-          "end_line": 48,
+          "path": "apps/devhost/src/cliout.rs",
+          "line": 234,
+          "end_line": 263,
           "label": "Replaces: ERR: on the first line only"
         }
       ]
@@ -440,19 +434,25 @@
       "label": "Leftovers named, stopped",
       "sublabel": "start refuses on them",
       "tag": "interrupted-operations-02",
-      "explanation": "When a stack's devhost process died first (kill -9, a closed terminal, a crash), its record keeps each service's process group, start identity, ports and hostnames, and the next command that reads it finds what still runs (ACT-11). devhost status and stack list say 'Acme Shop is not running, but 2 services of its killed run still do: api (PID 8812, port 22310), worker (PID 8820)'. devhost start refuses before launching a service whose port or hostname a leftover holds: 'api's port 22310 is held by a leftover of Acme Shop's killed run: bun run src/server.ts (PID 8812, started 13:02)', then devhost stop on its own line, so a leftover is never reported ready (REV-11, FAIL-3). devhost stop there signals only processes whose start identity matches the record: 'Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s' (FB-5). Resolves interrupted-operations-02; the identity it checks is the process-containment-01 stopgap's, and the interrupted-operations-01 stopgap keeps devhost stop from leaving leftovers (both related).",
+      "explanation": "When a stack's devhost process died first (kill -9, closed terminal, crash), its record keeps each service's process group, cross-platform start identity (already shipped on Rust main in containment.rs, ACT-14, retiring process-containment-01 and process-containment-02), ports and hostnames, and the next command finds what still runs (ACT-11). devhost stack info / status and stack list say 'Acme Shop is not running, but 2 services of its killed run still do: api (PID 8812, port 4000), worker (PID 8820)'. devhost start refuses before launching a service whose port or hostname a leftover holds: 'api's port 4000 is held by a leftover of Acme Shop's killed run: bun run src/server.ts (PID 8812, started 13:02)', then devhost stop on its own line, so a leftover is never reported ready (REV-11, FAIL-3). devhost stop signals only processes whose start identity matches the record: 'Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s' (FB-5). Resolves interrupted-operations-02; builds on containment.rs and the interrupted-operations-01 stopgap (related).",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 327,
-          "end_line": 345,
-          "label": "Replaces: dead stack's records dropped silently"
+          "path": "apps/devhost/src/services/containment.rs",
+          "line": 216,
+          "end_line": 315,
+          "label": "Reuses: verified PID/start-time containment"
         },
         {
-          "path": "apps/devhost/internal/services/health.go",
-          "line": 171,
-          "end_line": 180,
-          "label": "Replaces: TCP check passes on any listener"
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 454,
+          "end_line": 460,
+          "label": "Replaces: stale stack records dropped silently"
+        },
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 561,
+          "end_line": 563,
+          "label": "Replaces: stale route/port claims dropped"
         }
       ]
     },
@@ -464,19 +464,19 @@
       "label": "Each stack's own result",
       "sublabel": "survivors named · exit 1",
       "tag": "stack-run-stop-14",
-      "explanation": "A stop that cannot certify its end names each survivor with its service, PID and port, 'Acme Shop is not fully stopped: worker (PID 8820, port 22314) still runs', and exits 1 (FAIL-1, ACT-11). A multi-stack command attempts every member and ends with one line per stack, 'Stopped Acme Shop (main ~/acme) · 4.1 s', 'Acme Shop (Detached 3f9c2a1 ~/review/acme) was not stopped: its devhost process (PID 85390) belongs to another user', and exits 1 naming each stack that still runs; one failure never ends the run (FAIL-1, SEL-4). A replacement whose shutdown outlasts the allowance is not left down without a word: 'Acme Shop was not replaced: worker (PID 8820) is still stopping after 3 min; nothing was started', then the command that starts it again, and exit 1 (FAIL-2, UNDO-5). The person runs the printed command; a second devhost stop forces what still stops (KEY-14). Resolves stack-run-stop-14 and the outcome half of stack-run-stop-13.",
+      "explanation": "A stop that cannot certify its end within O30's stopTimeout (30 s default, configurable 5s..10m, widening for daemon overrides > 20 s) names each survivor with its service, PID and port, 'Acme Shop is not fully stopped: worker (PID 8820, port 4300) still runs', and exits 1 (FAIL-1, ACT-11). A multi-stack command attempts every member and ends with one line per stack, 'Stopped Acme Shop (main ~/acme) · 4.1 s', 'Acme Shop (Detached 3f9c2a1 ~/review/acme) was not stopped: its devhost process (PID 85390) belongs to another user', and exits 1 naming each stack that still runs; one failure never ends the run (FAIL-1, SEL-4, WORD-11). A replacement whose shutdown outlasts stopTimeout is not left down without a word: 'Acme Shop was not replaced: worker (PID 8820) is still stopping after 30 s; nothing was started', then the command that starts it again, and exit 1 (FAIL-2, UNDO-5). A second devhost stop forces remaining service trees and daemon groups (KEY-14). Resolves stack-run-stop-14 and the outcome half of stack-run-stop-13.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stop.go",
-          "line": 80,
-          "end_line": 82,
+          "path": "apps/devhost/src/services/stop.rs",
+          "line": 100,
+          "end_line": 112,
           "label": "Replaces: --worktrees ends at its first failure"
         },
         {
-          "path": "apps/devhost/internal/services/stop.go",
-          "line": 116,
-          "end_line": 130,
-          "label": "Replaces: SIGKILL that orphans the services"
+          "path": "apps/devhost/src/services/restart.rs",
+          "line": 449,
+          "end_line": 461,
+          "label": "Replaces: 15 s timeout leaving stack stopped"
         }
       ]
     }
@@ -525,7 +525,7 @@
       "id": "ready-status",
       "from": "ready",
       "to": "status",
-      "label": "devhost status",
+      "label": "stack info",
       "role": "main"
     },
     {
@@ -561,7 +561,7 @@
       "id": "status-stopRoutine",
       "from": "status",
       "to": "stopRoutine",
-      "label": "stop · 6 services",
+      "label": "parallel stop",
       "role": "main",
       "variant": "emphasis"
     },
@@ -608,79 +608,74 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: devhost stop's 'process(es)', 'Sending SIGTERM' and 'stopped cleanly' lines; its SIGKILL of the stack's devhost process after 15 s, which orphaned services while reporting success (the interrupted-operations-01 stopgap ships the never-kill part first); stack restart's fixed 15 s; a new restart-<random>/<PID>.log folder per replacement; 'devhost is waiting for a restart'; the generic 404 for a stack that just stopped; '[ERROR] received SIGINT' for a cancelled detached start; 'stack ownership changed; refresh worktrees' in a terminal; stop --worktrees ending at its first failure or on a missing folder; hard wrapping inside URLs, paths and commands; the URL list reprinted after every toolbar action",
-        "Merged: devhost stop, stack replace, stop --worktrees and the Worktrees panel's Stop Stack in one stop routine with one allowance, one progress line and one certified outcome; stack list and stack find on devhost stop's resolver",
-        "New: devhost status [--json] [--wait], devhost logs [-f] [--path], devhost reload [--dry-run] [--stdin], devhost service start|stop|restart and service restart --all; --dry-run and --yes on the multi-stack commands, with their question when a turn would end; the ready line, labelled URLs and the stack directory's URL; status lines for detached starts and stops; the stopped-stack record, page and end line; leftover detection; the probe's last status in health waits; devhost init and the embedded devhost skill (pending decisions); devhost stack replace with restart as its alias (O18)",
-        "Changed: start <names> starts left-out services into a running stack (O6, CC-7); stack find treats folders as folders (CC-34); a stop waits for the stack's own shutdown and certifies its end (CC-35); a replaced foreground stack exits 0 and says who replaced it (CC-24); --all leaves serve sessions running (O31, CC-36); a replacement keeps the services running at that moment (SEL-7); a foreground stack writes the per-manifest log (CC-21); agent output keeps the whole error on one ERR: line (CC-23, CC-30); the tests asserting today's lines change: services/stop_test.go, app/detach_test.go, services/detach_test.go, services/stack_test.go, app/run_test.go",
-        "Kept: the manifest found from any folder up to the repository root, and any path to it; validation and claims before any service runs, with nothing started on a refusal; a detached start waits for readiness, reuses a running stack, serializes concurrent starts and, on a failure before readiness, prints the log tail and stops what it started; the waiting line of a slow health check; a failed service leaves the rest running; every stop releases hostnames, ports and routes before it unregisters the stack; replace stops nothing when the executable is unavailable or the stack is its own ancestor, and re-checks identity before each signal; stop with nothing running says so; signals only to verified processes; the shared Caddy keeps running; --worktrees never touches another repository; two output contracts; devhost never opens a browser; idle shutdown as configured"
+        "Removed: devhost stop's 'process(es)', 'Sending SIGTERM' and 'stopped cleanly' lines; its SIGKILL of the supervisor after 15 s; duplicate shutdown signals (interrupted-operations-06); stack restart's fixed 15 s; restart-<random>/<PID>.log folders; 'devhost is waiting for a restart'; generic 404 or TLS error for a stack stopped within 24 h (O15, O63); [remote] removing local hostnames and 45 s silent wait on bad relay credentials; '[ERROR] received SIGINT' for cancelled detached starts; 'stack ownership changed; refresh worktrees'; stop --worktrees ending at its first failure or on a missing folder; mid-token wrapping; reprinted URL lists",
+        "Merged: devhost stop, stop --worktrees, stop --session, stack restart, restart-all, upgrade, start --detach cleanup, Worktrees Stop Stack and serve sessions share one parallel stop routine, stopTimeout precedence, progress line and certified outcome (O30, O41); devhost stack info and short alias devhost status share one code path (O62); stack list, stack find and devhost stop share one resolver (SEL-6)",
+        "New: devhost upgrade (O18), devhost status alias for extended devhost stack info [--json] [--wait] (O62), devhost logs [-f] [--path], devhost reload [--dry-run] [--stdin], devhost service start|stop|restart <service|group>… (CC-11), devhost init (O52), offline embedded devhost skill; --timeout, --dry-run, --yes and turn-ending question (O30, O33); stopTimeout and machineName in config.toml (O30, O61); ready line, additive local + preview URLs, 'All stacks on devbox: …', proxy line; active serve-session guidance (serve-command-04); 24 h stopped-stack HTTPS route, page and end line (O63); leftover detection; fail-fast and reconnect relay reporting; probe's last status",
+        "Changed: path uses O44 prefix routing; start <names> starts left-out services into a running stack (O6, CC-7); no-manifest errors name the .git boundary (stack-run-stop-17); stack find treats folders as folders (CC-34); stop runs FG + daemon in parallel from t = 0 with one signal inside 30 s default stopTimeout (O30, CC-35); shipped restart-all and stack restart clearly state supervisor replacement (O18, CC-31); replaced foreground stacks exit 0 (CC-24); restart-all / upgrade leave serve sessions running (O31, CC-36); replacement keeps running services (SEL-7); foreground stacks write the per-manifest log (CC-21); Rust lifecycle tests update to match",
+        "Kept: manifest discovery upward to .git; validation and claims before any service runs; detached start readiness wait, reuse, lock and cleanup on failure; slow health-check waiting line; failed service leaves rest running; stop releases hostnames/ports/routes and signals only containment.rs-verified processes (ACT-14); shared Caddy keeps running with configured-hosts-only TLS for arbitrary unknown HTTPS hostnames (O63); --worktrees stays within one repo; two output contracts; devhost never opens a browser; idle shutdown as configured"
       ]
     },
     {
       "dot": "rose",
       "title": "Tickets this journey resolves",
       "items": [
-        "Start and its ready line: stack-run-stop-12, stack-run-stop-01, stack-run-stop-03 with journey-crash-to-fix-05, stack-run-stop-04, stack-run-stop-05, stack-run-stop-10, stack-directory-06, proxy-settings-04",
-        "Checks and refusals: journey-new-project-01 (P1), journey-new-project-03, journey-new-project-04, stack-run-stop-09 with manifest-hot-reload-03, agent-cli-journey-05",
-        "Status, find and service commands: agent-cli-journey-01 (P1), stack-run-stop-08, agent-cli-journey-03",
+        "Start, readiness and remote previews: stack-run-stop-12, stack-run-stop-17, stack-run-stop-01, stack-run-stop-03 with journey-crash-to-fix-05, stack-run-stop-04, stack-run-stop-05, stack-run-stop-10, stack-directory-06, proxy-settings-04, relay-previews-02 (P1), relay-previews-04, relay-previews-05",
+        "Checks, prefix routing and refusals: journey-new-project-01 (P1), journey-new-project-03, journey-new-project-04, stack-run-stop-09 with manifest-hot-reload-03, agent-cli-journey-05",
+        "Status, find, serve-session hints and service commands: agent-cli-journey-01 (P1), serve-command-04 (P1), stack-run-stop-08, agent-cli-journey-03",
         "Leftovers of a killed run: interrupted-operations-02 (P1)",
-        "Stops and multi-stack sets: interrupted-operations-03, stack-run-stop-06, chat-conversations-03, stack-run-stop-07, stack-run-stop-14, stack-run-stop-16",
-        "Replacement: stack-run-stop-13, stack-run-stop-02, stack-run-stop-15",
+        "Parallel stop, single signal and multi-stack sets: interrupted-operations-03, interrupted-operations-06, stack-run-stop-06, chat-conversations-03, stack-run-stop-07, stack-run-stop-14, stack-run-stop-16",
+        "Upgrade and replacement: stack-run-stop-13, stack-run-stop-02, stack-run-stop-15",
         "The running stack and its end: stack-scale-07, worktree-switch-04, interrupted-operations-04, manifest-hot-reload-2-02, notices-and-feedback-04, stack-run-stop-11",
-        "Slices here, the rest elsewhere: chat-conversations-03 (agent-chat); interrupted-operations-04 (services-panel); manifest-hot-reload-2-02 (startup-and-recovery); notices-and-feedback-04 (first-run-setup); proxy-settings-04 (proxy-settings, manifest-hot-reload); stack-directory-06 (stack-directory); stack-run-stop-09 (manifest-hot-reload); worktree-switch-04 (worktree-switch)",
-        "Related, not covered: process-containment-01 (P0) and interrupted-operations-01 (P1), resolved by their own stopgaps, which ship first; stack-scale-01 (P1) and process-containment-02, their own patches",
-        "Related, not covered: agent-cli-journey-02 and journey-crash-to-fix-06 (manifest-hot-reload); agent-cli-journey-04 and journey-crash-to-fix-04 (startup-and-recovery); agent-cli-journey-06 (agent-chat); proxy-settings-05 (proxy-settings)"
+        "Slices here, the rest elsewhere: chat-conversations-03 (agent-chat); interrupted-operations-04 (services-panel); manifest-hot-reload-2-02 (startup-and-recovery); notices-and-feedback-04 (first-run-setup); proxy-settings-04 (proxy-settings, manifest-hot-reload); serve-command-04 (serve-folder); stack-directory-06 (stack-directory); stack-run-stop-09 (manifest-hot-reload); worktree-switch-04 (worktree-switch)",
+        "Retired on Rust main (190a8bb5): process-containment-01 (P0) and process-containment-02 (P2) fixed in containment.rs and procid.rs (ACT-14 regression guard kept)",
+        "Related, not covered: serve-command-01 (P0, serve-folder); interrupted-operations-01 (P1 stopgap); stack-scale-01 (P1 patch); agent-cli-journey-02 and journey-crash-to-fix-06 (manifest-hot-reload); agent-cli-journey-04 and journey-crash-to-fix-04 (startup-and-recovery); agent-cli-journey-06 (agent-chat); proxy-settings-05 (proxy-settings)"
       ]
     },
     {
       "dot": "violet",
       "title": "Backend work",
       "items": [
-        "One stop routine: the reason recorded first, concurrent waits, O30's allowance, a second signal or stop forcing only verified trees, a certified end or each survivor named (CC-35, CC-22)",
-        "The stopped-stack record per manifest and the reason sent before the stream closes; the unmatched-hostname page and stacks.html re-rendered with stop times (CC-27)",
-        "Leftover detection from each service's process group, start identity, ports and hostnames; start refuses while one holds a port or hostname",
-        "Multi-stack sets printed first with conversations and turns, --dry-run, the question or refusal, --yes; every member attempted; worktree-list classification (CC-12)",
-        "Replacement: identity from PID, start identity and root manifest; the stop routine's wait; the current service selection; the same log; the foreground handoff (CC-24, CC-31, CC-36)",
-        "One log per manifest for every stack: run headers, timestamps, one format, ERR: markers; devhost logs (CC-21, CC-23)",
-        "devhost status from services-panel's published state and operation record, exiting 0, 3 or 1 (CC-23)",
-        "devhost service start|stop|restart on services-panel's routes with an operationId; start <names> into a running stack (CC-11, CC-37, CC-7)",
-        "[discuss]: devhost service restart --all, Restart Stack's command, needs --all in CC-11 or a recorded MENU-6 exception",
+        "Unified parallel stop routine (O30, O41, interrupted-operations-06): reason recorded first, single snapshot and single SIGTERM at t = 0, parallel 15 s FG + 20 s daemon stops, 30 s default configurable stopTimeout (5s..10m) with daemon-override widening, second signal forces verified trees/groups, survivors named (CC-35, CC-22, CC-39)",
+        "Stop reason, stopped-stack record and 24 h active HTTPS routes in caddy/files.rs keeping configured-hosts-only TLS for arbitrary unknown HTTPS hostnames (O15, O63, CC-27)",
+        "Leftover detection building on containment.rs cross-platform start identity (ACT-14); start refuses on port/host holder; stop signals verified leftovers",
+        "Multi-stack sets printed first with conversations and turns, --dry-run, question or refusal, --yes; every member attempted; git worktree list classification (CC-12)",
+        "Built-in devhost upgrade (GitHub Release excluding media, SHA256SUMS, writable/managed guard, swap + replace) and identity-checked replacement on restart-all / stack restart with current selection, same log, serve-session preservation and exit-0 foreground handoff (O18, O31, CC-24, CC-31, CC-36)",
+        "One log per manifest for foreground and detached stacks with run headers, timestamps and ERR:/WARN:; devhost logs (CC-21, CC-23)",
+        "Extended devhost stack info (GET /__devhost__/stack-info) + devhost status short alias with rejection state, changed markers, remote preview status, --json, --wait and exit 3 (O62, CC-23)",
+        "devhost service start|stop|restart <service|group>… with operationId; start <names> into running stack (CC-11, CC-37, CC-7)",
+        "Active serve-session discovery in run_stop, interactive stack list, stack find and stack info / status via serve_sessions.rs (serve-command-04)",
         "devhost reload [--dry-run] [--stdin] on manifest-hot-reload's reload plan (CC-23)",
-        "Terminal lines from facts: one Go words module in cliout for both outputs; no broken tokens; OSC 8 links (CC-22, CC-30)",
-        "Structured manifest errors (file, line, column, key, offending line, close key); cwd checked before the checkout lookup",
-        "The probe's last HTTP status or connection error, kept and printed",
-        "Exit records with signal, status, time and sender; daemon and proxy lines (CC-24)",
-        "[discuss]: route warnings for a path without /* or without host and for watch on an external service",
-        "[discuss]: devhost init and the embedded devhost skill",
-        "The stack directory's URL on start, stack list, status and a devhost config file save that moves it"
+        "Terminal lines from facts via one Rust words module in cliout.rs: OSC 8 links, no mid-token wrap, single ERR: line, worktree vocabulary (CC-22, CC-30)",
+        "Structured manifest errors (file:line:column, close key), cwd check before worktree lookup, and .git boundary reporting (stack-run-stop-17); probe last HTTP/connection result",
+        "Exit, daemon and proxy lines (distinguishing devhost caddy stop vs unexpected Caddy exit); O44 prefix routing + warnings; O52 devhost init and offline embedded skill; additive, fail-fast and auto-relaunching remote previews (relay-previews-02/-04/-05); O61 machineName in config.toml"
       ]
     },
     {
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-35: devhost stop waits for the stack's own shutdown, up to a minute plus 20 s per service, never kills its supervisor mid-stop and names survivors; Ctrl-C or a second stop forces the rest",
-        "CC-12: stop --worktrees and stack replace --all print their set, ask only when a turn would end, refuse elsewhere unless --yes, and take --dry-run",
-        "CC-31 (this flow's part, with O18): stack restart is documented as devhost stack replace and says replace; serve sessions keep running",
-        "CC-36: --all replaces every manifest stack, foreground ones included; serve sessions are listed and keep running",
-        "CC-24: a replaced foreground stack prints the new PID and log and exits 0",
+        "CC-35: parallel FG + daemon shutdown from t = 0 within 30 s default stopTimeout (5s..10m, precedence --timeout > DEVHOST_STOP_TIMEOUT > devhost.toml > config.toml > 30s; widens for daemon override > 20 s unless CLI --timeout caps), unified across all callers, never killing stopping supervisor, forcing on second Ctrl-C or second stop",
+        "CC-12: stop --worktrees, restart-all and upgrade print their set, ask only when a turn would end, refuse elsewhere unless --yes, and take --dry-run",
+        "CC-31 (with O18, WORD-11): adds devhost upgrade, keeps shipped devhost restart-all and devhost stack restart stating clearly that they replace the supervisor process, and moves working-copy docs to worktree",
+        "CC-36: restart-all and upgrade replace every manifest stack (foreground included) and list serve sessions while leaving them running",
+        "CC-24: a foreground stack replaced by stack restart, restart-all or upgrade prints the new PID and log and exits 0; exit lines name signal, time and sender",
         "CC-21: every stack writes its per-manifest log, foreground included",
-        "CC-22: shutdown lines name slow and force-stopped services; the ready line; one outcome line per operation; URLs printed once",
-        "CC-23: devhost status, reload and logs; exit code 3; one ERR: line holding every issue",
-        "CC-11: devhost service start|stop|restart; [discuss]: --all for Restart Stack",
-        "CC-7, the terminal half: the selection changes while the stack runs",
+        "CC-22: shutdown lines name slow and force-stopped services; ready line; one outcome line per operation; URLs printed once",
+        "CC-23 (with O62): extended devhost stack info + devhost status alias (exit 3), devhost reload and devhost logs; one ERR: line holding every issue",
+        "CC-11: devhost service start|stop|restart <service|group>… (services or groups only)",
+        "CC-7 (terminal half): selection changes while the stack runs via devhost service start/stop or devhost start <names>",
         "CC-34: stack find resolves folders as devhost stop does",
-        "CC-30: the two outputs report the same facts in their own layouts",
-        "CC-27: a recently stopped stack's hostnames and the stack directory name it",
-        "CC-32: the glossary's new terms, landed with this flow's terminal words",
-        "[discuss]: CC-35 gains the Worktrees panel's Stop Stack; the replacement's selection sentence, the route warnings, devhost init, the embedded skill and stack list's human view have no CC-n yet"
+        "CC-30: the two outputs report the same facts in their own layouts using worktree vocabulary",
+        "CC-27 (with O15, O63): configured-hosts-only TLS stays for arbitrary unknown HTTPS hostnames while recently stopped stacks keep active 24 h HTTPS routes to the stopped-stack page and directory lists runs >= 1 min",
+        "CC-32 and CC-39: glossary terms (serve session, worktree, configuration, reloads, conversation, agent) and config.toml machineName (O61) + default stopTimeout (O30); docs updated for O44 prefix routing, O52 devhost init, stack-run-stop-17 .git boundary, serve-command-04 hints, and relay-previews-02/-04/-05"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
-        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Drawn from the current diagram and the written proposal; sources cite only verified Rust code under apps/devhost/src/ at that revision"
       ]
     }
   ]
