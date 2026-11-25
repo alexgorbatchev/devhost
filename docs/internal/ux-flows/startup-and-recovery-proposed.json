@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -91,18 +91,18 @@
       "type": "external",
       "label": "Open a service URL",
       "sublabel": "a page load in a tab",
-      "explanation": "The person opens a hostname, alias or path route in a tab; devhost never opens one. Caddy sends page loads to the service's document injection server, which answers from the published service state (ACT-2, CC-25): while the service is not running, one devhost status page per state, led by MENU-5's action for its cause; while the app answers, the app's own response, its 404 and 5xx documents included (SURF-16, O5, CC-4). Every status page's heading names the service and its state before any status code, 'api could not start', with 'HTTP 503 while the service starts' as a secondary detail; a line counts the stack, 'Acme Shop · 5 of 6 running · 1 starting', and names the checkout (FB-9, WORD-6, ACT-6, SEL-4); the document title starts with the heading's words (O16). States use services-panel's shared state indicator, shape and word, in forced colors too (ACT-13). Pages work without the toolbar and, without JavaScript, still show the state, the cause, the details and the logs; they use the document's standard keys (KEY-1) and reflow at 320 CSS pixels (SURF-9, O8).",
+      "explanation": "The person opens a hostname, alias or path route in a tab; devhost never opens one. Caddy sends page loads to the service's document injection server, which answers from the published service state (ACT-2, CC-25): while the service is not running, one devhost status page per state, led by MENU-5's action for its cause; while the app answers, the app's own response, its 404 and 5xx documents included (SURF-16, O5, CC-4). Every status page's heading names the service and its state before any status code, 'api could not start', with 'HTTP 503 while the service starts' as a secondary detail; a line counts the stack, 'Acme Shop · 5 of 6 running · 1 starting', and names the worktree (FB-9, WORD-6, ACT-6, SEL-4); the document title starts with the heading's words (O16). States use services-panel's shared state indicator, shape and word, in forced colors too (ACT-13). Pages work without the toolbar and, without JavaScript, still show the state, the cause, the details and the logs; they use the document's standard keys (KEY-1) and reflow at 320 CSS pixels (SURF-9, O8).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/routes.go",
-          "line": 640,
-          "end_line": 657,
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 772,
+          "end_line": 787,
           "label": "Reuses: host route: recovery, page loads, app"
         },
         {
-          "path": "apps/devhost/internal/caddy/proxy_origin.go",
-          "line": 42,
-          "end_line": 54,
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 798,
+          "end_line": 809,
           "label": "Reuses: page loads matched by Sec-Fetch-Dest"
         }
       ]
@@ -115,12 +115,12 @@
       "label": "api is starting",
       "sublabel": "waiting 4 s of 60 s",
       "tag": "startup-recovery-02",
-      "explanation": "The starting page reads 'api is starting' and, under it, the health check it waits on with its elapsed time and its limit, 'HTTP health check on http://127.0.0.1:55891/ · 4 s of 60 s', updated at least once a second, or the dependency it waits for (ACT-4, STATE-1, WORD-6). One line says what started this attempt and when, 'Restart from the Services panel at 14:05:10' (ACT-1, FAIL-3). The log shows only this attempt's lines, opened at the end; earlier attempts sit collapsed, 'Previous run, ended 14:01:58 with code 0', each attempt behind a divider naming its time and what started it; an attempt with no output reads 'No output from api since it started at 14:02:11' (SURF-13, STATE-2). A restart reads restarting, never failed or down (ACT-3). Restart api stays in place, unavailable, its reason the running operation and its progress, 'Restart api is running · health check 4 s of 60 s' (HOLD-3, HOLD-1, MENU-3). Once the service is ready, and only then, the page requests its URL once and reloads the tab; a leftover of a killed run is never reported ready (FB-5, ACT-11). Resolves startup-recovery-02 (the previous run's output, no health-check progress).",
+      "explanation": "The starting page reads 'api is starting' and, under it, the health check it waits on with its elapsed time and its limit, 'HTTP health check on http://127.0.0.1:4001/ · 4 s of 60 s', updated at least once a second, or the dependency it waits for (ACT-4, STATE-1, WORD-6). One line says what started this attempt and when, 'Restart from the Services panel at 14:05:10' (ACT-1, FAIL-3). The log shows only this attempt's lines, opened at the end; earlier attempts sit collapsed, 'Previous run, ended 14:01:58 with code 0', each attempt behind a divider naming its time and what started it; an attempt with no output reads 'No output from api since it started at 14:02:11' (SURF-13, STATE-2). A restart reads restarting, never failed or down (ACT-3). Restart api stays in place, unavailable, its reason the running operation and its progress, 'Restart api is running · health check 4 s of 60 s' (HOLD-3, HOLD-1, MENU-3). Once the service is ready, and only then, the page requests its URL once and reloads the tab; a leftover of a killed run is never reported ready (FB-5, ACT-11). Resolves startup-recovery-02 (the previous run's output, no health-check progress).",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/service_recovery.go",
-          "line": 48,
-          "end_line": 51,
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 268,
+          "end_line": 271,
           "label": "Replaces: Starting <service> with no progress"
         },
         {
@@ -154,9 +154,9 @@
           "label": "Replaces: crash view drawn over status pages"
         },
         {
-          "path": "apps/devhost/internal/services/service_recovery.go",
-          "line": 52,
-          "end_line": 57,
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 272,
+          "end_line": 279,
           "label": "Reuses: could not start and exited states"
         }
       ]
@@ -199,7 +199,7 @@
       "label": "Edit opens line 14",
       "sublabel": "Configuration window",
       "tag": "journey-crash-to-fix-04",
-      "explanation": "Edit, on the recovery page and in the crash view alike, opens the Configuration window at the service's definition, 'devhost.toml line 14, services.api.command', marked, with this failure's evidence in its banner (the exit, the cause sentence and the frozen last lines, with Show All Output) and Save's reach beside Save (MENU-4, SURF-4, REV-10); from the crash view it first minimizes the view (SURF-3). With the config editor off, or on a status page without the toolbar, Edit gives way to the file and line, 'devhost.toml line 14', with Copy, and Open in Editor where the toolbar's editor integration is available (MENU-3). A save that fixes the definition applies through hot reload, which restarts api; the recovery page then reads restarting and reloads into the app once api is ready. The window and its save are config-editor's (journey-crash-to-fix-02, related). Chat that cannot take a message and saves taken only from this machine block nothing in this flow; on another machine's page, Save says 'Saving works only from this machine' (HOLD-5, HOLD-7). Resolves journey-crash-to-fix-04 (no command, folder or manifest line behind an error) and the manifest half of journey-crash-to-fix-01."
+      "explanation": "Edit, on the recovery page and in the crash view alike, opens the Configuration window at the service's definition, 'devhost.toml line 14, services.api.command', marked, with this failure's evidence in its banner (the exit, the cause sentence and the frozen last lines, with Show All Output) and Save's reach beside Save (MENU-4, SURF-4, REV-10); from the crash view it first minimizes the view (SURF-3). With the config editor off, or on a status page without the toolbar, Edit gives way to the file and line, 'devhost.toml line 14', with Copy; devhost opens no editor, so there is no Open in Editor (MENU-3, SURF-15, O51). A save that fixes the definition applies through hot reload, which restarts api; the recovery page then reads restarting and reloads into the app once api is ready. The window and its save are config-editor's (journey-crash-to-fix-02, related). This machine and an authenticated remote browser, passkey or paired, open and save alike (O36, O54). Resolves journey-crash-to-fix-04 (no command, folder or manifest line behind an error) and the manifest half of journey-crash-to-fix-01."
     },
     {
       "id": "appError",
@@ -209,25 +209,25 @@
       "label": "The app's own error",
       "sublabel": "notice · Retry",
       "tag": "error-pages-03",
-      "explanation": "When the app answers a page load with a 404 or a 5xx, the tab shows the app's own document with the toolbar injected: a framework's build error keeps its overlay with the file, line and code frame, and an API's 404 keeps its body (SURF-16, O5, CC-4). A notice names who answered, the request and the status, 'web answered 500 for GET / · main ~/acme', with Retry, a secondary Restart web, a link to the service's root and 'Reloads when web restarts or a watched file changes' (MENU-5, SURF-15, WORD-4); with worktrees on, 'Is this route in another checkout?' holds the checkout list collapsed (SEL-4). An empty or non-HTML answer gets a devhost document showing the status and body verbatim under the same notice, an empty 5xx with the newest error lines (FAIL-3). devhost's file server keeps its own 404 inside the file browser. A page load the app drops gets a 502 in words, 'web closed the connection without sending this page' and 'web is running and passes its health check', Go's error behind Copy Error (FAIL-2, WORD-7). Resolves error-pages-03 (the overlay hidden, Restart first), error-pages-04 (an app's 404 blamed on the checkout), serve-folder-06 and error-pages-07.",
+      "explanation": "When the app answers a page load with a 404 or a 5xx, the tab shows the app's own document with the toolbar injected: a framework's build error keeps its overlay with the file, line and code frame, and an API's 404 keeps its body (SURF-16, O5, CC-4). A notice names who answered, the request and the status, 'web answered 500 for GET / · main ~/acme', with Retry, a secondary Restart web, a link to the service's root and 'Reloads when web restarts or a watched file changes' (MENU-5, SURF-15, WORD-4); with worktrees on, 'Is this route in another worktree?' holds the worktree list collapsed (SEL-4). An empty or non-HTML answer gets a devhost document showing the status and body verbatim under the same notice, an empty 5xx with the newest error lines (FAIL-3). devhost's file server keeps its own 404 inside the file browser. A page load the app drops gets a 502 in words, 'web closed the connection without sending this page' and 'web is running and passes its health check', the client's raw error behind Copy Error (FAIL-2, WORD-7). Resolves error-pages-03 (the overlay hidden, Restart first), error-pages-04 (an app's 404 blamed on the worktree), serve-folder-06 and error-pages-07.",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/document_injection.go",
-          "line": 62,
-          "end_line": 76,
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 316,
+          "end_line": 342,
           "label": "Replaces: any 404 or 5xx page load replaced"
         },
         {
-          "path": "apps/devhost/internal/devtools/document_injection.go",
-          "line": 153,
-          "end_line": 164,
-          "label": "Replaces: checkout wording, restart advice"
+          "path": "apps/devhost/src/devtools/recovery.rs",
+          "line": 17,
+          "end_line": 34,
+          "label": "Replaces: worktree wording, restart advice"
         },
         {
-          "path": "apps/devhost/internal/devtools/document_injection.go",
-          "line": 105,
-          "end_line": 111,
-          "label": "Replaces: raw Go proxy error as a 502"
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 399,
+          "end_line": 428,
+          "label": "Replaces: raw client error as a 502"
         }
       ]
     },
@@ -248,9 +248,9 @@
           "label": "Replaces: status, then probe, every 1000 ms"
         },
         {
-          "path": "apps/devhost/internal/devtools/document_injection.go",
-          "line": 77,
-          "end_line": 86,
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 344,
+          "end_line": 350,
           "label": "Replaces: probe passes on a non-error answer"
         }
       ]
@@ -263,18 +263,18 @@
       "label": "Answer by state",
       "sublabel": "503 for API calls",
       "tag": "agent-cli-journey-04",
-      "explanation": "The document injection answers from the published service state, which status pages read live from the stack's health stream instead of polling every second (ACT-2, ACT-12, CC-25); without the stream a page backs off to checks at 1, 2, 5 and 10 s, then every 30 s, says when it last checked and checks nothing while hidden (STATE-4). A page load gets the page for its service's state, and a running app's answers pass through (SURF-16, CC-4). A request that is not a page load (an API call, a fetch, curl) gets the app's own response while the app answers; while the service is not running, Caddy hands it to devhost, which answers 503 with Retry-After and a short body naming the service and its phase, never an empty 502: as JSON under Accept: application/json, {\"service\":\"api\",\"stack\":\"Acme Shop\",\"phase\":\"starting\",\"retryAfter\":1}, otherwise one line, 'devhost: api is starting in Acme Shop; retry in 1 s' (FB-11). During the first seconds of devhost start, an API call to a hostname with no routes yet gets a body under 2 KB, never the 750 KB route-not-found page ([discuss], with stack-directory). Resolves agent-cli-journey-04.",
+      "explanation": "The document injection answers from the published service state, which status pages read live from the stack's health stream instead of polling every second (ACT-2, ACT-12, CC-25); without the stream a page backs off to checks at 1, 2, 5 and 10 s, then every 30 s, says when it last checked and checks nothing while hidden (STATE-4). A page load gets the page for its service's state, and a running app's answers pass through (SURF-16, CC-4). A request that is not a page load (an API call, a fetch, curl) gets the app's own response while the app answers; while the service is not running, Caddy hands it to devhost, which answers 503 with Retry-After and a short body naming the service and its phase, never an empty 502: as JSON under Accept: application/json, {\"service\":\"api\",\"stack\":\"Acme Shop\",\"phase\":\"starting\",\"retryAfter\":1}, otherwise one line, 'devhost: api is starting in Acme Shop; retry in 1 s' (FB-11). On plain HTTP, an API call to a hostname with no route yet gets a body under 2 KB from stack-directory's route-not-found site, never its 750 KB page; over HTTPS an unconfigured hostname gets no certificate (O63). Resolves agent-cli-journey-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/document_injection.go",
-          "line": 127,
-          "end_line": 140,
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 136,
+          "end_line": 158,
           "label": "Reuses: status page while not running"
         },
         {
-          "path": "apps/devhost/internal/services/service_recovery.go",
-          "line": 44,
-          "end_line": 62,
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 226,
+          "end_line": 291,
           "label": "Replaces: recovery state built per request"
         }
       ]
@@ -290,9 +290,9 @@
       "explanation": "The control server keeps each service's output per service, never evicted by other services (for example its last 200 lines plus the complete output of its latest failed attempt, capped per service), marks each attempt's start with its time and its origin from the operation record, and says when older lines were dropped; services-panel's exit record carries the code or signal, the time, the sender and the last lines frozen at the exit (CC-24, CC-25). After api crashes and worker prints 10,000 lines, the recovery page and the crash view still show api's last failed attempt; when older lines are no longer kept, the log says so and names devhost logs api, stack-run-stop's command (SURF-13, STATE-4). The log client appends every line of a burst in order instead of replacing the pending list, so the line that explains an exit is never dropped from an open crash view or the minimap. Resolves startup-recovery-03 (a noisy service evicts a crashed service's lines from the shared 512-line log), with its duplicates services-panel-01 and stack-scale-02 (burst lines dropped).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/server.go",
-          "line": 475,
-          "end_line": 499,
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 384,
+          "end_line": 399,
           "label": "Replaces: one 512-entry buffer for the stack"
         },
         {
@@ -302,9 +302,9 @@
           "label": "Replaces: a burst line replaces the pending list"
         },
         {
-          "path": "apps/devhost/internal/devtools/server.go",
-          "line": 463,
-          "end_line": 473,
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 238,
+          "end_line": 243,
           "label": "Reuses: a page reads its service's lines"
         }
       ]
@@ -316,18 +316,18 @@
       "type": "backend",
       "label": "Restart one service",
       "sublabel": "202; ends healthy",
-      "explanation": "Restart api runs on one press, because restarting one named service is not disruptive (REV-1); it is services-panel's restart, whose terminal command is devhost service restart api (MENU-1, MENU-6, CC-11). POST /__devhost__/restart-service takes an operationId and answers 202 Accepted with the operation record before anything runs; the page stores the ID in sessionStorage (ACT-1, CC-37). The pressed button keeps focus, aria-busy and aria-disabled, never disabled, reading 'Restarting api…' (KEY-11), while the page shows queued, stopping, starting and 'health check 2 s of 30 s' in place at least once a second (FB-1, ACT-3), and the log starts the new attempt with its divider. It succeeds only once api passes its health check, or, with a process health check or none, still runs after O28's time (FB-5). A lost response is read from the record by its ID and never posted again; a press based on state the server no longer holds is refused with the current state (REV-12, REV-13). Behind another per-service operation it queues, 'queued behind Restart mail' with Cancel Restart; while a stack-wide operation runs it is unavailable with that operation as its reason (HOLD-3, SEL-7).",
+      "explanation": "Restart api runs on one press, because restarting one named service is not disruptive (REV-1); it is services-panel's restart, whose terminal command is devhost service restart api (MENU-1, MENU-6, CC-11). POST /__devhost__/restart-service takes an operationId and answers 202 Accepted with the operation record before anything runs; the page stores the ID in sessionStorage (ACT-1, CC-37). The pressed button keeps focus, aria-busy and aria-disabled, never disabled, reading 'Restarting api…' (KEY-11), while the page shows queued, stopping, starting and 'health check 2 s of 60 s' in place at least once a second (FB-1, ACT-3), and the log starts the new attempt with its divider. It succeeds only once api passes its health check, or, with a process health check or none, still runs after O28's time (FB-5). A lost response is read from the record by its ID and never posted again; a press based on state the server no longer holds is refused with the current state (REV-12, REV-13). Behind another per-service operation it queues, 'queued behind Restart mail' with Cancel Restart; while a stack-wide operation runs it is unavailable with that operation as its reason (HOLD-3, SEL-7).",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 153,
-          "end_line": 216,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 297,
+          "end_line": 345,
           "label": "Reuses: stop, then start the same service"
         },
         {
-          "path": "apps/devhost/internal/devtools/recovery_page.go",
-          "line": 92,
-          "end_line": 106,
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 160,
+          "end_line": 244,
           "label": "Replaces: page POST, error text as a 503"
         }
       ]
@@ -339,18 +339,18 @@
       "type": "backend",
       "label": "Restart Stack",
       "sublabel": "one press, all 6",
-      "explanation": "Restart Stack, in the crash view and on recovery pages, keeps its operation's name and, as the remedy on offer where the page's service is already down, runs on one press with its reach in a line beside it, 'Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time', the 6 names in its tooltip and accessible description (REV-1, REV-2, BAR-2, SEL-1, CC-17). While a manifest edit is rejected the line adds 'uses the accepted manifest; devhost.toml line 12 is not applied' (HOLD-6); while another operation runs it is unavailable with that operation and its progress, and the route answers 409 naming it (HOLD-3, CC-37). POST /__devhost__/restart-stack takes an operationId; the busy button keeps focus, 'Restarting Stack · 2 of 6 started', and the view lists each service's step (FB-1, KEY-11). Every page's status stream and chat sessions stay connected (HOLD-2). It has no terminal counterpart yet: devhost stack restart replaces the devhost process (O18), so this flow shares services-panel's proposed MENU-6 exception. Healthy services keep running when one fails through the error-pages-01 stopgap, which ships first (related, with journey-crash-to-fix-07).",
+      "explanation": "Restart Stack, in the crash view and on recovery pages, keeps its operation's name and, as the remedy on offer where the page's service is already down, runs on one press with its reach in a line beside it, 'Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time', the 6 names in its tooltip and accessible description (REV-1, REV-2, BAR-2, SEL-1, CC-17). While a manifest edit is rejected the line adds 'uses the accepted manifest; devhost.toml line 12 is not applied' (HOLD-6); while another operation runs it is unavailable and the route answers 409 naming it (HOLD-3, CC-37). POST /__devhost__/restart-stack takes an operationId; the busy button keeps focus, 'Restarting Stack · 2 of 6 started' (FB-1, KEY-11). No command restarts services inside the running stack (devhost stack restart, restart-all and upgrade replace the supervisor, O18), so this flow proposes a MENU-6 exception, as services-panel does. Healthy services keep running when one fails through the error-pages-01 stopgap, which ships first (related, with journey-crash-to-fix-07).",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/reload.go",
-          "line": 72,
-          "end_line": 83,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 373,
+          "end_line": 392,
           "label": "Reuses: Restart Stack on the accepted manifest"
         },
         {
-          "path": "apps/devhost/internal/services/reload.go",
-          "line": 330,
-          "end_line": 350,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 871,
+          "end_line": 899,
           "label": "Replaces: failed restore that blocks all"
         }
       ]
@@ -387,7 +387,7 @@
       "label": "A page per cause",
       "sublabel": "each led by its fix",
       "tag": "manifest-hot-reload-2-04",
-      "explanation": "Each published state gets its own page, led by MENU-5's action for its cause (ACT-2). An external service (managed = false), or a devhost serve --port session with nothing listening: 'search is not reachable', what devhost routes and how it checks, its last result and time, that devhost checks external services but cannot restart them, and Check Again, with no Restart and no logs (ACT-9, MENU-3; manifest-hot-reload-2-04, serve-folder-01). A daemon that stopped on its own: its status command runs once, 'mail is not running · its status command reports no process', its log labelled 'Output of mail's start and stop commands', with Restart mail (manifest-hot-reload-2-02). Blocked by a deleted checkout: 'api is blocked' with one reason sentence, Return to Configured Checkout asking in place, the checkout list and Check Again; the first read stops nothing (HOLD-4, HOLD-1, REV-4; worktree-switch-05, related). Needs setup: 'Run bun install in ~/acme/.worktrees/fix-nav, then restart web' (O32). Not started: Start admin, 'also starts worker' (O10, SEL-7). A stopped stack and a lost connection are states with one reason, never failures (ACT-10, HOLD-2, ACT-5).",
+      "explanation": "Each published state gets its own page, led by MENU-5's action (ACT-2). External, or a serve --port session with nothing listening: 'search is not reachable', what devhost routes and checks, its last result, Check Again, no Restart or logs, and no worktree-switch warning (ACT-9, O7; manifest-hot-reload-2-04, serve-folder-01). A daemon that stopped: its status command runs once, 'mail is not running', with Restart mail (manifest-hot-reload-2-02). A deleted worktree: 'api is blocked', Return to Configured Worktree asking in place; the read stops nothing (HOLD-4, O43). Needs setup: the command to run, then Restart (O32). Not started: Start admin (O10). No route: stack-directory's page on plain HTTP, no certificate for unknown HTTPS hostnames, the stopped-stack page for 24 h (O15, O63). A relay preview visitor gets these pages from the connector, never bare text (relay-previews-06). A browser not signed in or paired sees each action unavailable with one reason (HOLD-7, O36, O37).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx",
@@ -396,9 +396,9 @@
           "label": "Replaces: Restart button always drawn"
         },
         {
-          "path": "apps/devhost/internal/services/service_recovery.go",
-          "line": 58,
-          "end_line": 61,
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 280,
+          "end_line": 289,
           "label": "Replaces: health check only, managed wording"
         }
       ]
@@ -420,16 +420,16 @@
           "label": "Replaces: alert while the status line updates"
         },
         {
-          "path": "apps/devhost/internal/services/retry.go",
-          "line": 25,
-          "end_line": 27,
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 1765,
+          "end_line": 1773,
           "label": "Reuses: automatic port points to Restart Stack"
         },
         {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 205,
-          "end_line": 209,
-          "label": "Reuses: start failure logged and returned"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 335,
+          "end_line": 342,
+          "label": "Reuses: start failure returned to the caller"
         }
       ]
     },
@@ -441,13 +441,13 @@
       "label": "Restart Stack: 5 of 6",
       "sublabel": "stays in the view",
       "tag": "error-pages-02",
-      "explanation": "With api exiting with code 1 before its health check during a Restart Stack from the crash view, on a stack of 6, the view stays open and the outcome replaces the progress in it, never closing without a word: 'Restart Stack: 5 of 6 running · api exited with code 1 before its health check', with api's lead actions beside it (FAIL-1, FB-2, SURF-3, MENU-5). The per-service rollback restores what ran before and says so, 'Restoring the services as they ran before Restart Stack', then 'Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails'; the 5 healthy services keep running (UNDO-1, REV-11). Focus moves to the outcome's sentence, never an action (FB-9, KEY-11). The failure stays in the view, and in the crash notice while minimized, until the person dismisses it or the same operation succeeds; a status message, a reconnect or a reload never removes it (FB-6, ACT-1). The view keeps services whose checkout carries an operation's error, and the failure is the operation's outcome, never a checkout block, so the Worktrees trigger reports no attention. Resolves error-pages-02; the outage itself is error-pages-01's, fixed first by its stopgap (related).",
+      "explanation": "With api exiting with code 1 before its health check during a Restart Stack from the crash view, on a stack of 6, the view stays open and the outcome replaces the progress in it, never closing without a word: 'Restart Stack: 5 of 6 running · api exited with code 1 before its health check', with api's lead actions beside it (FAIL-1, FB-2, SURF-3, MENU-5). The per-service rollback restores what ran before and says so, 'Restoring the services as they ran before Restart Stack', then 'Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails'; the 5 healthy services keep running (UNDO-1, REV-11). Focus moves to the outcome's sentence, never an action (FB-9, KEY-11). The failure stays in the view, and in the crash notice while minimized, until the person dismisses it or the same operation succeeds; a status message, a reconnect or a reload never removes it (FB-6, ACT-1). The view keeps services whose worktree carries an operation's error, and the failure is the operation's outcome, never a worktree block, so the Worktrees trigger reports no attention. Resolves error-pages-02; the outage itself is error-pages-01's, fixed first by its stopgap (related).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
           "line": 181,
           "end_line": 193,
-          "label": "Replaces: view drops failed checkouts' services"
+          "label": "Replaces: view drops failed worktrees' services"
         },
         {
           "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
@@ -456,10 +456,10 @@
           "label": "Replaces: error kept in the view's own button"
         },
         {
-          "path": "apps/devhost/internal/services/reload.go",
-          "line": 366,
-          "end_line": 377,
-          "label": "Replaces: failure stored as a checkout block"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 893,
+          "end_line": 898,
+          "label": "Replaces: failed restore blocks its services"
         }
       ]
     }
@@ -583,11 +583,11 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: the crash view drawn over devhost's own failure page; its cancelled Escape and a rerun as its only way out; the replacement of the app's own 404 and 5xx documents, devhost's file server's included; re-requesting a broken URL every second; the stack-wide 512-entry log as a failed service's only lines; earlier runs' output shown as the current attempt's; '503' read before the heading; a failure announced twice; the disabled, unfocused busy button; a failed Restart Stack closing the view without a word; the managed wording and empty log on an external service's page; Go's raw proxy error; Caddy's empty 502 for API calls",
+        "Removed: the crash view drawn over devhost's own failure page; its cancelled Escape and a rerun as its only way out; the replacement of the app's own 404 and 5xx documents, devhost's file server's included; re-requesting a broken URL every second; the stack-wide 512-entry log as a failed service's only lines; earlier runs' output shown as the current attempt's; '503' read before the heading; a failure announced twice; the disabled, unfocused busy button; a failed Restart Stack closing the view without a word; the managed wording and empty log on an external service's page; the proxy client's raw error; Caddy's empty 502 for API calls; the relay connector's bare text answers",
         "Merged: the status pages and the crash view become one shared recovery view, shipped in both style entries (SURF-14); the recovery status the pages read and the toolbar's health stream become one published service state (CC-25)",
-        "New: health-check progress and what started the attempt; per-attempt logs; per-service output frozen at the exit; what devhost ran; the exit's signal, time and sender; Edit with its file-and-line fallback; Minimize, the crash notice and Expand; a repeated failure counted in one report with Edit leading; Restart Stack's reach line and its outcome kept in the view; an external service's page with Check Again; a not-started page with Start (O10); a daemon's status verdict; the app's own error with devhost's notice and Retry; reloads by sign; the short 503 for scripts",
+        "New: health-check progress and what started the attempt; per-attempt logs; per-service output frozen at the exit; what devhost ran; the exit's signal, time and sender; Edit with its file-and-line fallback; Minimize, the crash notice and Expand; a repeated failure counted in one report with Edit leading; Restart Stack's reach line and its outcome kept in the view; an external service's page with Check Again; a not-started page with Start (O10); a daemon's status verdict; the app's own error with devhost's notice and Retry; reloads by sign; the short 503 for scripts; the signed-out remote state with one reason (HOLD-7); devhost's pages for relay preview visitors",
         "Changed: an app's own 404 or 5xx shows with devhost's notice (O5, CC-4); Escape minimizes the crash view, whose focus starts on its heading (CC-2); a busy restart keeps focus with aria-disabled; pages reload by sign and back off; an external service's page has no Restart; the lost connection reads 'Lost connection to devhost; retrying'; the terminal's crash line names devhost service restart (CC-11); requests that are not page loads get 503 with Retry-After",
-        "Kept: a failed service leaves the rest running and its hostname shows what went wrong; status pages work without the toolbar and without JavaScript; the tab reloads itself at the same URL, and devhost never opens a browser; Restart <service> keeps its automatic port, succeeds only when healthy and can be retried; a restart is unavailable while it runs and while the stack starts; the response keeps its status code and is never cached; API calls and assets get the app's own response while it answers; only the page's service and its dependencies open the crash view; the view stays through failed attempts and leaves after recovery; deliberate stops never open it; an automatic port another program took points to Restart Stack; Restart Stack keeps fixed ports, checkouts, external services, pages and chat, and rolls back; external services show status only; a blocked checkout never falls back silently; a detached start that stops before readiness; the checkout list on status pages"
+        "Kept: a failed service leaves the rest running and its hostname shows what went wrong; status pages work without the toolbar and without JavaScript; the tab reloads itself at the same URL, and devhost never opens a browser; Restart <service> keeps its automatic port, succeeds only when healthy and can be retried; a restart is unavailable while it runs and while the stack starts; the response keeps its status code and is never cached; API calls and assets get the app's own response while it answers; only the page's service and its dependencies open the crash view; the view stays through failed attempts and leaves after recovery; deliberate stops never open it; an automatic port another program took points to Restart Stack; Restart Stack keeps fixed ports, worktrees, external services, pages and chat, and rolls back; external services show status only; a blocked worktree never falls back silently; a detached start that stops before readiness; the worktree list on status pages; this machine keeps every action; unknown HTTPS hostnames still get no certificate (O63)"
       ]
     },
     {
@@ -599,8 +599,8 @@
         "Crash view and its closing: journey-crash-to-fix-01, keyboard-and-screen-reader-01 (slice; the rest: services-panel)",
         "Restart Stack's outcome in the view: error-pages-02 (P1)",
         "The app's own answers: error-pages-03 (P1), error-pages-04, error-pages-05, serve-folder-06 (slice; the rest: serve-folder), error-pages-07 (P3)",
-        "Scripts and other causes: agent-cli-journey-04; manifest-hot-reload-2-04 (slice; the rest: serve-folder) with its duplicate serve-folder-01; manifest-hot-reload-2-02 (slice; the rest: stack-run-stop)",
-        "Related, not covered: error-pages-01 with journey-crash-to-fix-07 (P0, resolved by its stopgap, which ships first); interrupted-operations-02 and journey-new-project-01 (stack-run-stop); worktree-switch-05 (worktree-switch); manifest-hot-reload-05 with error-pages-06, and journey-crash-to-fix-06 (manifest-hot-reload); journey-crash-to-fix-02 (config-editor)"
+        "Scripts and other causes: agent-cli-journey-04; manifest-hot-reload-2-04 (slice; the rest: serve-folder) with its duplicate serve-folder-01; manifest-hot-reload-2-02 (slice; the rest: stack-run-stop); relay-previews-06",
+        "Related, not covered: serve-command-01 (P0, serve-folder); error-pages-01 with journey-crash-to-fix-07 (P0, resolved by its stopgap, which ships first); interrupted-operations-02 and journey-new-project-01 (stack-run-stop); worktree-switch-05 (worktree-switch); manifest-hot-reload-05 with error-pages-06, and journey-crash-to-fix-06 (manifest-hot-reload); journey-crash-to-fix-02 (config-editor)"
       ]
     },
     {
@@ -608,15 +608,17 @@
       "title": "Backend work",
       "items": [
         "Stop replacing the app's 404 and 5xx answers: inject the toolbar, say who answered, wrap an empty or non-HTML answer, leave devhost's file server alone, remove the 1 s probe (CC-4)",
-        "Proxy errors in words: a refused, closed or reset connection and a body cut off, with Go's error behind Copy Error",
-        "A short 503 with Retry-After for requests that are not page loads, through each host route's error handling (CC-4); [discuss]: a body under 2 KB before a stack's routes exist, with stack-directory",
+        "Proxy errors in words: a refused, closed or reset connection and a body cut off, with the client's error behind Copy Error",
+        "A short 503 with Retry-After for requests that are not page loads, through each host route's error handling (CC-4); [discuss]: on plain HTTP, a body under 2 KB from stack-directory's route-not-found site",
         "Status pages read the health stream and reload by sign, backing off without it (CC-25)",
         "Per-service output and attempts, never evicted by other services, and services-panel's exit record (CC-24, CC-25)",
         "What devhost ran and the health check's progress in the published state, with one structured error for Edit (CC-25)",
         "A daemon's status command run once when its health check starts failing; lifecycle.log optional later",
-        "States of their own: not started with Start (recommended, O10), external with Check Again ([discuss]: its route in CC-37), blocked (CC-25)",
-        "The crash view keeps an operation's failure, published as the operation's outcome, never a checkout block (CC-37)",
-        "Recommended: the terminal's crash line names devhost service restart (CC-11)"
+        "States of their own: not started with Start (recommended, O10), external with services-panel's Check Again route ([discuss]: not in CC-37 yet), blocked (CC-25)",
+        "The crash view keeps an operation's failure, published as the operation's outcome, never a worktree block (CC-37)",
+        "Recommended: the terminal's crash line names devhost service restart (CC-11)",
+        "The recovery entry point applies O36's client check: 403 with one sentence for a browser not signed in or paired (O37)",
+        "The relay connector answers with devhost's pages and stays registered for O15's window (relay-previews-06)"
       ]
     },
     {
@@ -630,15 +632,16 @@
         "CC-24: an exit names its signal, its time and its sender; devhost's own stops are steps of their operation",
         "CC-25: the health stream publishes each service's state with its cause, and every operation's progress and outcome",
         "CC-31: status pages offer Switch and Restart Stack and Refresh Worktrees",
-        "CC-37: operationId and 202 Accepted for restarts, 409 naming the running operation; the Check Again route is [discuss]",
-        "[discuss]: stacks/recovery.md's starting, daemon, crash view and reload sentences need a CC-n beside CC-2 and CC-4; O5's answer decides the reload sentence"
+        "CC-27: configured-hosts-only TLS, stopped stacks' HTTPS routes kept 24 h, close names on plain HTTP (O63)",
+        "CC-37: operationId and 202 Accepted for restarts, 409 naming the running operation; [discuss]: the check-service route is not listed yet",
+        "[discuss]: stacks/recovery.md's starting, daemon, crash view and reload sentences follow SURF-3, SURF-16 and O5 but have no CC-n in revision 6; the reference adds them beside CC-2 and CC-4"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }
