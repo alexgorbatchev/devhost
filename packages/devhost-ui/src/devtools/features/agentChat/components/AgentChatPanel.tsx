@@ -76,6 +76,8 @@ export function AgentChatPanel({
   const sessionStatusText = chat.session
     ? `${chat.session.harness} · ${chat.session.status}${chat.isConnected ? "" : " · reconnecting"}`
     : null;
+  // The header badge shows working and idle; only states it cannot express stay visible in the title.
+  const isSessionStatusVisible = chat.session?.status === "error" || !chat.isConnected;
   const headerBadge = isBusy ? (
     <Icon glyph={LoaderCircleIcon} isSpinning />
   ) : activeHarness === "claude-code" ? (
@@ -134,7 +136,14 @@ export function AgentChatPanel({
           <span className="inline-flex size-control-sm shrink-0 items-center justify-center">{headerBadge}</span>
         )}
         <h2 className="min-w-0 flex-1 truncate font-semibold" title={sessionStatusText ?? "Agent Chat"}>
-          {sessionStatusText ? <span role="status">{sessionStatusText}</span> : "Agent Chat"}
+          {chat.session && sessionStatusText ? (
+            <span role="status">
+              <span aria-hidden="true">{isSessionStatusVisible ? sessionStatusText : chat.session.harness}</span>
+              <span className="sr-only">{sessionStatusText}</span>
+            </span>
+          ) : (
+            "Agent Chat"
+          )}
         </h2>
         {headerControls}
         <ChatSettings chat={chat} isBusy={isBusy} />

@@ -868,10 +868,13 @@ export const HeaderShowsHarnessLogoSpinnerAndCompactState: Story = {
     const header = panel.querySelector("header");
     expect(header).not.toBeNull();
     expect(panel.querySelector("footer")).toBeNull();
-    // Idle Codex session renders the OpenAI logo in the header move button and status in the heading.
+    // Idle Codex session renders the OpenAI logo in the header move button. The heading shows only the
+    // harness; the status is announced to assistive technology but takes no visible space.
     const moveHandle = within(header!).getByRole("button", { name: "Move Chat Panel" });
     expect(within(moveHandle).getByTestId("OpenAILogo")).toBeVisible();
     expect(within(header!).getByRole("status")).toHaveTextContent("codex · idle");
+    expect(within(header!).getByText("codex")).toBeVisible();
+    expect(within(header!).getByText("codex · idle").getBoundingClientRect().width).toBeLessThanOrEqual(1);
     // Compact Chat button stays visually neutral when expanded (no aria-expanded gray background).
     const compactButton = within(header!).getByRole("button", { name: "Compact Chat" });
     expect(compactButton).not.toHaveAttribute("aria-expanded");
@@ -881,6 +884,16 @@ export const HeaderShowsHarnessLogoSpinnerAndCompactState: Story = {
     await within(header!).findByText("codex · running");
     expect(within(moveHandle).queryByTestId("OpenAILogo")).toBeNull();
     expect(within(moveHandle).getByTestId("Icon").getAnimations()).toHaveLength(1);
+    // An error has no badge of its own, so the heading shows it.
+    deliverChatStatus("error");
+    await waitFor(() =>
+      expect(
+        within(header!)
+          .getAllByText("codex · error")
+          .some((element) => element.getBoundingClientRect().width > 1),
+      ).toBe(true),
+    );
+    expect(within(header!).getByRole("status")).toHaveTextContent("codex · error");
     deliverChatStatus("idle");
     await within(header!).findByText("codex · idle");
     expect(within(moveHandle).getByTestId("OpenAILogo")).toBeVisible();
