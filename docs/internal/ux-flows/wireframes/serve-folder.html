@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serve a folder or a running port · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* devhost's file browser, drawn inside this page's mockups: the heading path and the pressed view button */
+.mock .hp{font-weight:700;font-size:14px}
+.mock .btn.prs{background:var(--accbg);border-color:var(--acc)}
+.mock .t td.num{text-align:right}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../serve-folder-current.html">Today's flow diagram</a><a href="../serve-folder-proposed.html">Proposed flow diagram</a><a href="../proposals/serve-folder.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>Serve a folder or a running port</h1>
+<p><b>TLDR:</b> The terminal says what a serve session serves, where Caddy listens, whether chat is on, when it is ready and how to stop it, and a <code>--port</code> session waits for its server instead of claiming it is ready; the folder's page shows the folder itself, folders first in natural order with sizes, dates, a filter and its README below; a mistyped name stays in the file browser; and chat stays off unless <code>--chat</code> names the folder an agent may edit.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="start">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>human output at 120 columns; each start continues with its ready line (step 2)</span></div>
+<pre class="term">$ devhost serve --dir docs --domain notes.acme.test
+devhost | Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat off <span class="n">1</span><span class="n">2</span>
+
+$ devhost serve --port 3000 --domain app.acme.test
+devhost | Routing to 127.0.0.1:3000 · Caddy listens on all interfaces, port 443 · chat off <span class="n">3</span>
+
+$ devhost serve --dir docs --domain notes.acme.test --chat docs
+devhost | Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat on: agents edit ~/acme/docs <span class="n">4</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>Caddy was not running: the session starts it and runs the trust step</span></div>
+<pre class="term">$ devhost serve --dir docs --domain notes.acme.test
+devhost | Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat off
+devhost | Trusting devhost's local certificate authority adds Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost to the system trust store and asks for your password. <span class="n">5</span>
+caddy   | Password:
+devhost | Trusted Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost · valid until 2036-09-25
+devhost | SHA-256 17:35:2E:25:00:A4:82:A9:…:06:B5:35:D5
+devhost | Remove it later with:
+devhost | devhost caddy untrust</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a taken hostname, held by a serve session, then by a stack: exit 1</span></div>
+<pre class="term">$ devhost serve --dir docs --domain notes.acme.test
+devhost | notes.acme.test is already used by the serve session for ~/acme/docs (PID 49514, started 15:50) <span class="n">6</span>
+devhost | Stop it with Ctrl-C in its terminal, or run:
+devhost | kill 49514
+devhost | Or choose another --domain.
+
+$ devhost serve --dir site --domain shop.acme.test
+devhost | shop.acme.test is already used by Acme Shop (main ~/acme · ~/acme/devhost.toml, PID 50112) <span class="n">7</span>
+devhost | devhost stop --manifest ~/acme/devhost.toml</pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference leaves <code>serve-folder-04</code> to the product owner and has no decision for a serve session's chat default; "chat off unless <code>--chat</code> names a folder" is this proposal's recommendation, <b>[discuss]</b> with agent-chat (Backend 5). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>1. Start a serve session</h2>
+<p><code>devhost serve</code> still gives a folder or a server already listening on a port an HTTPS hostname with no manifest: <code>--domain</code> stays required and bare, <code>--dir</code> stays relative to the current folder, the session reads no <code>devhost.toml</code> and writes nothing in the folder, and it starts the shared Caddy when Caddy is not running, as today. What changes is what the terminal says: what is served, where Caddy listens, whether chat is on, and, for a taken hostname, who holds it. Keys: <kbd>Ctrl-C</kbd> at any point of the start cancels it, removes what it claimed and says so as a cancellation, not an error (<code>KEY-14</code>, <code>FAIL-5</code>). Agent output (<code>AGENT=1</code>) carries the same facts as <code>devhost: </code> lines with absolute paths and PIDs, and the refusal as one <code>devhost: ERR:</code> line holding the holder's kind, folder or port, PID, start time and next steps (<code>WORD-9</code>, <code>FB-11</code>, <code>CC-30</code>).</p>
+<ol><li><span class="n">1</span> Every line devhost writes carries the short label <code>devhost</code>, as the output reference already gives lines written before a manifest is read, never an invented stack name such as <code>serve-notes.acme.test</code> or <code>serve (primary)</code>, so at 120 columns no line wraps because of its label; today a 37-column invented prefix splits the certificate warning mid-word. No line, page, card or help text calls a serve session a stack or a project (<code>WORD-1</code>, <code>WORD-3</code>, <code>WORD-9</code>).</li>
+<li><span class="n">2</span> The first line names what is served, the listener and chat. The listener is what the shared Caddy settings resolve to, so a person serving notes reads that other machines can reach them; with <code>bindHost = "127.0.0.1"</code> where it applies it reads "Caddy listens on 127.0.0.1, port 443", and proxy-settings owns that resolution (<code>FB-10</code>, <code>WORD-8</code>).</li>
+<li><span class="n">3</span> A <code>--port</code> session names the server it routes to, which devhost never starts, restarts or stops (owner rule; <code>ACT-9</code>). Without <code>--chat</code> its chat is off: it never gives an agent the shell's current folder (<code>serve-folder-04</code>).</li>
+<li><span class="n">4</span> <code>--chat &lt;folder&gt;</code>, relative to the current folder like <code>--dir</code>, turns chat on and names the folder an agent may edit; the header line then says so. Without it chat is off. Who can reach chat from the network stays <code>network-exposure-01</code>'s, decided outside this redesign (<code>SEL-11</code>).</li>
+<li><span class="n">5</span> Before the trust step's password prompt, one line says what the step does and that it asks for the password, in first-run-setup's words; the prompt runs only when a person at a terminal can answer it, as today, and never under <code>AGENT=1</code>, where one warning tells the agent to have the person run <code>devhost caddy trust</code> in a terminal. An install prints the root's name, its SHA-256 fingerprint and the command that removes it (<code>REV-8</code>, <code>WORD-9</code>, <code>UNDO-5</code>, <code>CC-13</code>).</li>
+<li><span class="n">6</span> A taken hostname is refused before anything is routed, with exit status 1 and nothing left running, as today; the refusal now names the holder in the person's terms, its folder or port, PID and start time, and how to stop it, and never prints "from ." or an empty path (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
+<li><span class="n">7</span> A stack holder is named by its name, its checkout label and its root manifest, with <code>devhost stop --manifest</code> as the command, in stack-run-stop's words for a stack (<code>SEL-4</code>, <code>FAIL-2</code>).</li></ol>
+<p class="fixes">Fixes serve-folder-02, serve-folder-03, serve-folder-04 · Backend: the session named by its folder or target in its record (Backend 1); a claim refusal that names its holder (Backend 2); chat off unless <code>--chat</code>, <b>[discuss]</b> (Backend 5); the session's lines in both outputs (Backend 6; <code>CC-22</code>, <code>CC-30</code>, <code>CC-13</code>)</p></div>
+</section>
+
+<section class="step" id="ready">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a folder session</span></div>
+<pre class="term">$ devhost serve --dir docs --domain notes.acme.test
+devhost | Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat off
+devhost | Ready in 0.3 s: https://notes.acme.test/ · Ctrl-C stops this session <span class="n">1</span>
+<span class="muted">… later, devhost caddy stop in another terminal</span>
+devhost | Caddy stopped at 14:10; https://notes.acme.test/ does not answer until Caddy starts again <span class="n">6</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~</b><span>a --port session started before its server</span></div>
+<div class="work small">
+<div class="vlab">12 s in: one status line, updated every second</div>
+<pre class="term">$ devhost serve --port 3000 --domain app.acme.test
+devhost | Routing to 127.0.0.1:3000 · Caddy listens on all interfaces, port 443 · chat off
+devhost | Waiting for 127.0.0.1:3000 to accept connections · 12 s · start your server, or check the port number <span class="n">2</span></pre>
+<div class="vlab">The server answers at 14.1 s; the ready line replaces the status line. Later the server stops once and starts again</div>
+<pre class="term">devhost | Ready in 14.1 s: https://app.acme.test/ · Ctrl-C stops this session <span class="n">3</span>
+devhost | 127.0.0.1:3000 stopped accepting connections at 14:05; its page shows it as not reachable until it answers <span class="n">4</span>
+devhost | 127.0.0.1:3000 accepts connections again · 14:06</pre>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://app.acme.test/</b><span>opened while the session waits: startup-and-recovery's not-reachable page</span></div>
+<div class="work">
+<div class="row"><b>◇ 127.0.0.1:3000 is not reachable</b><span class="n">5</span></div>
+<div class="row" style="margin:6px 0"><span class="btn pri">Check Again</span><span class="muted">This page reloads into the app once 127.0.0.1:3000 answers</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/</b><span>the toolbar on a page the folder session serves</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">docs · the folder's page (step 3) …</div>
+<div class="corner">
+<div class="row" style="justify-content:flex-end;align-items:flex-start;flex-wrap:nowrap"><span class="muted small" style="min-width:0">Chat is off in this serve session. Start the session with <span style="white-space:nowrap">--chat &lt;folder&gt;</span> to let an agent edit that folder.</span><span class="n">8</span><span class="tbar oneline"><span class="seg"><b>~/acme/docs</b></span><span class="seg">● ▾</span><span class="seg muted">Chat</span></span><span class="n">7</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › stack directory</b><span>both sessions above; stack-directory draws the page</span></div>
+<div class="work small">
+<div class="row"><b>2 stacks · 2 serve sessions</b><span class="n">9</span><span class="sp"></span><span class="in"><span class="muted">Filter</span></span><span class="n">13</span></div>
+<div class="muted" style="margin-top:4px">Acme Shop and Acme Platform, as stack-directory draws them …</div>
+<div class="box">
+<div class="row"><b>~/acme/docs</b><span class="chip">Serve session · folder</span><span class="n">10</span></div>
+<div><a>https://notes.acme.test/</a></div>
+<div>● running</div>
+<div class="fld"><span>Configuration</span><span>None: the serve session for ~/acme/docs reads no devhost.toml</span></div>
+<div class="row muted">Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50<span class="n">12</span></div>
+</div>
+<div class="box">
+<div class="row"><b>127.0.0.1:3000</b><span class="chip">Serve session · port</span></div>
+<div class="row"><a>https://app.acme.test/</a><span class="n">11</span></div>
+<div>◇ not reachable · TCP port 3000 · checked 14:05 · runs outside devhost · start your server on 127.0.0.1:3000</div>
+<div class="fld"><span>Configuration</span><span>None: the serve session for 127.0.0.1:3000 reads no devhost.toml</span></div>
+<div class="muted">Stop it with Ctrl-C in its terminal · PID 48812 · started 15:51</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <code>ACT-4</code> makes a <code>--port</code> session starting until its port answers, and <code>ACT-9</code> gives a server devhost does not run reachability only; this page follows the proposal's reading: waiting in the terminal, reachable or not reachable on every browser surface. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="banner">Open conflict: this proposal titles a serve session's card by its folder or port with the kind label "Serve session · folder" and keeps the Configuration line "None: the serve session for ~/acme/docs reads no devhost.toml"; stack-directory's proposal reads "Serve session · ~/acme/docs" and leaves Configuration out. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="banner">Open conflict: this proposal keeps the toolbar's <b>Chat</b> on the bar, unavailable with its reason, while a serve session's chat is off; agent-chat keeps <b>Chat</b> on the bar only while a conversation runs, and today's toolbar hides it whenever chat is off. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>2. Read that it is ready</h2>
+<p>The hostname is still routed from the start, a <code>--port</code> page still reloads into the app once the port answers, and the stack directory still lists serve sessions beside manifest stacks, read-only with links, as today. What changes is that the session says when it is ready, a <code>--port</code> session waits for its server instead of printing its URL as if it answered, and every surface names the session by its folder or its port.</p>
+<ol><li><span class="n">1</span> A folder session prints its ready line once its route answers: the elapsed time, the URL and how to stop it (<code>FB-5</code>, <code>FB-10</code>, <code>KEY-14</code>, <code>WORD-4</code>, <code>CC-22</code>).</li>
+<li><span class="n">2</span> A <code>--port</code> session is starting until its port first accepts a connection: on a terminal it keeps one status line updated at least once a second, and without a terminal it prints that line once. It waits as long as the person lets it, with no timeout, because starting the server after the route is the ordinary order of work (<code>FB-5</code>, <code>ACT-4</code>, <code>STATE-1</code>).</li>
+<li><span class="n">3</span> The ready line follows only once the port answers, never before; today the URL prints at once, while nothing listens (<code>FB-5</code>).</li>
+<li><span class="n">4</span> After the ready line, a target that stops answering prints one line, and one when it answers again, never one line per check (<code>ACT-9</code>, <code>FAIL-4</code>, <code>FB-10</code>).</li>
+<li><span class="n">5</span> A page opened while the session waits shows startup-and-recovery's not-reachable page with <b>Check Again</b>, never a disabled <b>Restart</b> or an empty log, and reloads into the app once the port answers. In the browser the target reads reachable or not reachable, never starting, failed or exited (<code>ACT-9</code>, <code>MENU-5</code>, <code>MENU-3</code>).</li>
+<li><span class="n">6</span> While the shared Caddy is stopped, the session prints one line, and one when its route answers again, as <code>ACT-10</code> gives a stack. A rejected change to the devhost config file leaves the session on the running shared Caddy settings and prints nothing of its own (<code>ACT-10</code>, <code>FB-10</code>, <code>HOLD-6</code>).</li>
+<li><span class="n">7</span> The toolbar names the session by its folder or port, shortened in the middle when long with the full label in its tooltip and accessible name, and its one service by the same label: a folder session's file server reads running, and a <code>--port</code> target reachable or not reachable with its check and time, from services-panel's shared state indicator. toolbar-shell draws the name and keeps the toolbar's placement per served folder (<code>WORD-1</code>, <code>WORD-8</code>, <code>ACT-2</code>, <code>ACT-9</code>, <code>SURF-14</code>, <code>SURF-7</code>, <code>CC-5</code>).</li>
+<li><span class="n">8</span> With chat off, the toolbar's chat entry points are unavailable with one reason, its way out included, which agent-chat draws; with <code>--chat ~/acme/docs</code>, chat behaves as in a stack, its agent editing that folder (<code>HOLD-5</code>, <code>MENU-3</code>).</li>
+<li><span class="n">9</span> The directory's counts name serve sessions apart from stacks, so no count calls a serve session a stack (<code>WORD-1</code>, <code>WORD-5</code>).</li>
+<li><span class="n">10</span> A serve session's card is titled by its folder, or its target for a <code>--port</code> session, shortened in the middle when long, with the absolute folder or the address in its tooltip and accessible name, and never <code>serve-notes.acme.test</code>; a kind label beside it says "Serve session · folder" or "· port". The hostname URL stays the card's main link. There is no Directory line, so a <code>--port</code> card never shows the folder its command ran in. Two sessions of one folder on two hostnames are two cards told apart by their links (<code>WORD-1</code>, <code>WORD-8</code>).</li>
+<li><span class="n">11</span> The card's one row comes from the shared state indicator: running for a folder session's file server, which devhost runs; reachable or not reachable with its check, its time and "runs outside devhost" for a <code>--port</code> target, whose hostname link opens the not-reachable page with <b>Check Again</b>. Neither reads External (<code>ACT-2</code>, <code>ACT-9</code>, <code>ACT-13</code>, <code>MENU-5</code>, <code>SURF-14</code>).</li>
+<li><span class="n">12</span> Configuration's root manifest line says the session reads no <code>devhost.toml</code>, never "Manifest-free file or port session"; the details line says how to stop it, in the refusal's words (<code>MENU-6</code>, <code>SEL-6</code>, <code>WORD-8</code>).</li>
+<li><span class="n">13</span> The filter finds a session by its name, so "3000" or "acme/docs" keeps its card, and by its hostname (<code>SEL-10</code>).</li></ol>
+<p class="fixes">Fixes manifest-hot-reload-2-04, serve-folder-01, serve-folder-02, serve-folder-04, serve-folder-11 · Backend: a <code>--port</code> session waits for its port (Backend 3); the file server published as devhost's own service and a <code>--port</code> target as an external one (Backend 4; <code>CC-25</code>); the session's record and its stack directory card, its access log keyed by hostname (Backend 1, 11); the ready, waiting, reachability and Caddy lines (Backend 6; <code>CC-22</code>)</p></div>
+</section>
+
+<section class="step" id="folder">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/</b><span>tab title: docs/guides · devhost</span></div>
+<div class="work">
+<div class="hp"><a>docs</a> / guides <span class="n">1</span></div>
+<div class="muted small">3 folders · 12 files <span class="n">2</span></div>
+<div class="row" style="margin:6px 0"><span class="in" style="flex:1"><span class="muted">Filter guides</span></span><span class="n">3</span></div>
+<table class="t"><thead><tr><th>Name <span class="n">4</span></th><th style="width:16%;text-align:right">Size</th><th style="width:24%">Modified</th></tr></thead><tbody>
+<tr><td>📁 <a>checklists/</a></td><td class="num"></td><td>14:02</td></tr>
+<tr><td>📁 <a>notes:2026/</a> <span class="n">5</span></td><td class="num"></td><td>Nov 15 14:02</td></tr>
+<tr><td>📁 <a>onboarding/</a></td><td class="num"></td><td>Nov 15, 2025</td></tr>
+<tr><td>📄 <a>big.log</a></td><td class="num">1.9 MiB</td><td>09:41</td></tr>
+<tr><td>📝 <a>escalation.md</a></td><td class="num">3.2 KiB</td><td>Nov 12 08:30</td></tr>
+<tr><td>📄 <a>file2.txt</a></td><td class="num">512 B</td><td>Nov 3 10:15</td></tr>
+<tr><td>📄 <a>file10.txt</a></td><td class="num">1.2 KiB</td><td>Nov 3 10:16</td></tr>
+<tr><td>📝 <a>on-call.md</a></td><td class="num">4.1 KiB</td><td>14:02</td></tr>
+<tr><td>📝 <a>postmortem-template.md</a></td><td class="num">2.6 KiB</td><td>Oct 30 17:45</td></tr>
+<tr><td>📝 <a>Re: meeting.md</a></td><td class="num">2.0 KiB</td><td>Nov 15 14:02</td></tr>
+<tr><td>📝 <a>README.md</a></td><td class="num">1.8 KiB</td><td>Nov 12 08:31</td></tr>
+<tr class="dim"><td colspan="3">… 4 more files: release-checklist.md, runbook.md, TODO:list.md, UPPER.TXT</td></tr>
+</tbody></table>
+<div class="box">
+<div class="row"><b><a>README.md</a></b><span class="n">6</span><span class="sp"></span><span class="btn prs">Rendered</span><span class="btn">Source</span></div>
+<div style="margin-top:4px"><b>Guides</b></div>
+<div>Runbooks and checklists for the platform team. Start with <a>on-call.md</a>.</div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/</b><span>"on" typed in the filter, then "xyz"</span></div>
+<div class="work small">
+<div class="row"><span class="in focusring" style="flex:1">on</span></div>
+<div class="muted" style="margin:4px 0">3 of 15 entries match "on" <span class="n">7</span></div>
+<table class="t"><tbody>
+<tr><td>📁 <a><b>on</b>boarding/</a></td><td class="num" style="width:16%"></td><td style="width:24%">Nov 15, 2025</td></tr>
+<tr><td>📝 <a>escalati<b>on</b>.md</a></td><td class="num">3.2 KiB</td><td>Nov 12 08:30</td></tr>
+<tr><td>📝 <a><b>on</b>-call.md</a></td><td class="num">4.1 KiB</td><td>14:02</td></tr>
+</tbody></table>
+<div class="vlab">"xyz" typed instead</div>
+<div class="row">No entry in docs/guides matches "xyz" <span class="btn">Clear Filter</span><span class="n">8</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/drafts/</b><span>an empty folder</span></div>
+<div class="work small">
+<div class="hp"><a>docs</a> / drafts</div>
+<div class="box">docs/drafts is empty. Files added here appear when you reload the page. <span class="n">9</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>3. Open the folder</h2>
+<p>Files are still read on every request, so a reload shows edits and new files; reads stay confined to the served folder, with hidden files and <code>../</code> escapes answering 404; and a folder holding <code>index.html</code> still serves it unchanged, as a site, as today. What changes is that the page shows the folder itself, named, ordered and described, with its README below the listing instead of in its place. Keys: the page keeps the document's standard keys and adds no shortcuts (<code>KEY-1</code>); Tab moves through the heading path's links, the filter, then each row's link in order; Escape in the filter clears it, as the browser does.</p>
+<ol><li><span class="n">1</span> The page's one heading is the path: the served folder's name, then each folder down to the one shown, each ancestor a same-tab link and the shown folder plain text with <code>aria-current="page"</code>. The served folder's absolute path never appears, and the tab title starts with the same path. Today every listing is headed "Directory listing" under a breadcrumb rooted at devhost (<code>WORD-1</code>).</li>
+<li><span class="n">2</span> One line counts what the folder holds (<code>WORD-5</code>).</li>
+<li><span class="n">3</span> A filter labelled with the folder's name sits above every non-empty listing (<code>SEL-10</code>).</li>
+<li><span class="n">4</span> Name, Size and Modified columns: folders first, then files, each group in natural, case-insensitive order (file2 before file10, alpha before UPPER.TXT); a folder's name ends in "/" beside a folder icon and a file's sits beside an icon of its kind, so neither is told by the icon alone. Sizes use binary units with one decimal under 10, folders show none, and times are local and 24-hour: today "14:02", this year "Nov 15 14:02", older "Nov 15, 2025". Rows are compact, at least 24 CSS pixels tall (<code>ACT-13</code>, <code>WORD-8</code>, <code>SURF-9</code>).</li>
+<li><span class="n">5</span> Every name is a same-tab link built as a path relative to the folder with <code>./</code> in front, so "Re: meeting.md", "TODO:list.md" and "notes:2026/" open like any other name; today a name that starts with a word and a colon reads as a URL scheme and goes nowhere. Rows carry no external-link arrow, because nothing on these pages opens a new tab (<code>SURF-15</code>).</li>
+<li><span class="n">6</span> A folder holding <code>index.md</code>, <code>README.md</code> or <code>readme.md</code>, in that order, shows its listing first and that file rendered below it, under a heading that names the file and links to its own page, with step 4's view control. Every entry of the folder, the files the README never links to included, is one click from the folder's URL.</li>
+<li><span class="n">7</span> The filter narrows the rows as the person types, by name, highlights the matched text (drawn in bold here), keeps folders before files, and says the count, announced politely (<code>SEL-10</code>, <code>WORD-5</code>).</li>
+<li><span class="n">8</span> With no match it names the folder and the query, with <b>Clear Filter</b>, which restores every row (<code>SEL-10</code>, <code>STATE-2</code>, <code>WORD-2</code>).</li>
+<li><span class="n">9</span> An empty folder says so in the shared empty-state block, with no filter (<code>STATE-2</code>, <code>SURF-14</code>).</li></ol>
+<p class="fixes">Fixes serve-folder-05, serve-folder-07, serve-folder-10 · Backend: each entry's kind, size and modified time, natural order, <code>./</code> hrefs and the folder's path from the served root (Backend 7); the Markdown index below the listing (Backend 8); the heading path rooted at the served folder's name (Backend 10)</p></div>
+</section>
+
+<section class="step" id="markdown">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/release-checklist.md</b><span>tab title: release-checklist.md · docs/guides · devhost</span></div>
+<div class="work">
+<div class="row"><span class="hp"><a>docs</a> / <a>guides</a> / release-checklist.md</span><span class="n">1</span><span class="sp"></span><span class="btn prs">Rendered</span><span class="btn">Source</span><span class="n">2</span></div>
+<div class="box">
+<div class="fld"><span>title</span><span>Release checklist</span></div>
+<div class="fld"><span>owner</span><span>Platform team</span></div>
+<div class="fld"><span>updated</span><span>2026-11-15 <span class="n">3</span></span></div>
+</div>
+<div><b>Release checklist</b></div>
+<div>1. Freeze main · 2. Tag the release · 3. Watch the dashboards for 30 min</div>
+<div class="banner">⚠ <b>Warning</b> · Never deploy on Fridays after 15:00. <span class="n">4</span></div>
+<div class="banner info">ⓘ <b>Note</b> · The on-call engineer approves every rollback.</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/release-checklist.md?view=source</b><span>Source pressed; a reload or a shared link keeps it</span></div>
+<div class="work small">
+<div class="row"><span class="hp"><a>docs</a> / <a>guides</a> / release-checklist.md</span><span class="sp"></span><span class="btn">Rendered</span><span class="btn prs">Source</span></div>
+<pre class="term">---
+title: Release checklist
+owner: Platform team
+---
+# Release checklist
+Page the on-call engineer first: [on-call rota](<a>./on-call.md</a>) <span class="n">5</span>
+Dashboards: <a>https://dashboards.acme.test/release</a>
+Old shortcut: [deploy](javascript:deploy())</pre>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/rota.md</b><span>front matter that does not parse</span></div>
+<div class="work small">
+<div class="banner bad" style="margin-top:0">Front matter is not valid YAML: line 1, column 8: flow sequence in block collection must be sufficiently indented and end with a ] <span class="n">6</span></div>
+<pre class="term">title: [unclosed
+owner: Platform team</pre>
+<div class="vlab">Valid YAML that is a list, not a mapping</div>
+<div class="banner bad" style="margin:0">Front matter is a list, not a mapping of keys and values</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>4. Read a Markdown file</h2>
+<p>A <code>.md</code> file still renders as GitHub Flavored Markdown without raw HTML or unsafe links, with its YAML front matter as a table above it, other files are still served as they are, with <code>GET</code>, <code>HEAD</code> and byte ranges, and without JavaScript the links and the escaped source still work, as today. What changes is that the view control shows which view is on and applies to this file only, the source view keeps working links, and broken front matter and GitHub's alerts read as what they are. Keys: Tab reaches <b>Rendered</b> and <b>Source</b>, and Enter or Space presses one; the page adds no shortcuts (<code>KEY-1</code>).</p>
+<ol><li><span class="n">1</span> The heading path ends with the file's name, and the tab title starts with it (<code>WORD-1</code>).</li>
+<li><span class="n">2</span> Two buttons, <b>Rendered</b> and <b>Source</b>, the active one pressed (<code>aria-pressed="true"</code>, drawn selected here), so the control shows the view and its labels are not actions. It applies to this file only: <b>Source</b> adds <code>?view=source</code> to this page's URL with <code>history.replaceState</code>, so a reload, the back button and a shared link keep it, and every other file opens rendered. Nothing is kept in browser storage; today one press switches every Markdown page of the hostname, in later sessions too (<code>SEL-11</code>, <code>WORD-3</code>).</li>
+<li><span class="n">3</span> Front matter shows as a table above the text, as today.</li>
+<li><span class="n">4</span> GitHub's five alerts, <code>[!NOTE]</code>, <code>[!TIP]</code>, <code>[!IMPORTANT]</code>, <code>[!WARNING]</code> and <code>[!CAUTION]</code>, render as callouts titled Note, Tip, Important, Warning and Caution with an icon each, in the design system's state colors at 4.5:1 text contrast in both themes and distinct in forced colors; the bracketed marker never shows (<code>ACT-13</code>).</li>
+<li><span class="n">5</span> In the source view, each link target of the raw text, <code>[text](target)</code>, <code>&lt;https://…&gt;</code> or a bare URL, is a link with the rendered view's sanitizing: a relative link opens its file and a <code>javascript:</code> target stays text.</li>
+<li><span class="n">6</span> Front matter that does not parse shows an error above its raw block, in the shared cannot-load style and never as an ordinary code sample, with the parser's line, column and message; valid YAML that is not a mapping says that instead (<code>FAIL-2</code>, <code>WORD-7</code>, <code>STATE-4</code>).</li></ol>
+<p class="fixes">Fixes serve-folder-08, serve-folder-09 · Backend: none; the view control, the source view's links, the front matter error and the alerts live in the status pages' Markdown view and ship in the first slice, which needs no backend change or product decision</p></div>
+</section>
+
+<section class="step" id="missing-file">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/on-cal.md</b><span>status 404 · tab title: Not found: on-cal.md · docs/guides · devhost</span></div>
+<div class="work">
+<div class="hp"><a>docs</a> / <a>guides</a> <span class="n">1</span></div>
+<div class="row" style="margin-top:4px"><b>No file named on-cal.md in docs/guides</b><span class="n">2</span></div>
+<div class="row"><span>Did you mean <a>on-call.md</a>?</span><span class="n">3</span></div>
+<div class="muted small" style="margin-top:6px">3 folders · 12 files</div>
+<table class="t"><thead><tr><th>Name <span class="n">4</span></th><th style="width:16%;text-align:right">Size</th><th style="width:24%">Modified</th></tr></thead><tbody>
+<tr><td>📁 <a>checklists/</a></td><td class="num"></td><td>14:02</td></tr>
+<tr><td>📁 <a>notes:2026/</a></td><td class="num"></td><td>Nov 15 14:02</td></tr>
+<tr><td>📁 <a>onboarding/</a></td><td class="num"></td><td>Nov 15, 2025</td></tr>
+<tr><td>📄 <a>big.log</a></td><td class="num">1.9 MiB</td><td>09:41</td></tr>
+<tr class="dim"><td colspan="3">… 11 more files, the same listing as step 3, and nothing after it <span class="n">5</span></td></tr>
+</tbody></table>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/…</b><span>the same page for other missing names, and the one-line answer</span></div>
+<div class="work small">
+<div class="vlab">/guides/old/x.md: a folder on the way does not exist</div>
+<div class="row"><b>No folder named old in docs/guides</b><span class="muted">… then the listing of docs/guides</span><span class="n">6</span></div>
+<div class="vlab">/guides/.env: a hidden name, or a link that leaves the served folder</div>
+<div class="row"><b>No file named .env in docs/guides</b><span class="muted">… no close names, then the listing, which shows no hidden names</span><span class="n">7</span></div>
+<div class="vlab">A request that is not a page load</div>
+<pre class="term">$ curl https://notes.acme.test/guides/on-cal.md
+Not found: no file named on-cal.md in docs/guides <span class="n">8</span></pre>
+<div class="vlab">Acme Shop's design service, a manifest serve service, declared with a mistyped folder</div>
+<pre class="term">devhost.toml line 14, column 9, services.design.serve: the folder packages/desing does not exist. Did you mean packages/design? <span class="n">9</span></pre>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/on-call.md</b><span>status 500: a file that exists but cannot be read</span></div>
+<div class="work small">
+<div class="hp"><a>docs</a> / <a>guides</a></div>
+<div class="row" style="margin-top:4px"><b>Could not read docs/guides/on-call.md: permission denied</b><span class="btn">Retry</span><span class="n">10</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>5. Recover from a missing file</h2>
+<p>A name that does not exist under the served folder still answers status 404, and hidden files, <code>../</code> escapes and symbolic links that leave the folder still answer as missing names and reveal nothing, as today. What changes is who answers the page: devhost's file server keeps the person in the file browser, where today a mistyped name shows a service recovery page with a disabled <b>Restart serve</b>, empty logs, the file server's internal address and, in a manifest <code>serve</code> service, a worktree picker. Keys: the page keeps the document's standard keys (<code>KEY-1</code>).</p>
+<ol><li><span class="n">1</span> devhost's file server answers the page load with status 404 and a page inside the file browser, headed by the path down to the nearest folder that exists. The same page answers for a CLI serve session and a manifest <code>serve</code> service, and startup-and-recovery's document injection never replaces it (<code>SURF-16</code>, <code>CC-4</code>, <code>O5</code>).</li>
+<li><span class="n">2</span> The failure in words, naming the missing name and the folder searched (<code>FAIL-2</code>, <code>WORD-7</code>).</li>
+<li><span class="n">3</span> Up to three names of that folder closest to the missing one, ignoring case and at most two edits away, as same-tab links (<code>MENU-5</code>).</li>
+<li><span class="n">4</span> Then that folder's listing, as step 3 draws it: the nearest listing leads, because it is what can fix a typo (<code>MENU-5</code>).</li>
+<li><span class="n">5</span> The page offers no <b>Restart</b>, no checkout list, no internal address and no logs, because a typo is no service's failure. Its tab title starts with the failure (<code>MENU-3</code>, <code>MENU-5</code>, <code>O16</code>).</li>
+<li><span class="n">6</span> A missing folder on the way names that folder and lists the deepest folder that exists.</li>
+<li><span class="n">7</span> A hidden name, or a link that leaves the served folder, gets the same page as any missing name and is never offered as a close name, as today.</li>
+<li><span class="n">8</span> A request that is not a page load gets one line of text with status 404.</li>
+<li><span class="n">9</span> A manifest <code>serve</code> service shows these same pages with its stack's toolbar. A <code>serve</code> folder the manifest declares wrongly is rejected with the file, line, column and key, in manifest-hot-reload's and stack-run-stop's structured error, and so is each key <code>serve</code> rejects (<code>cwd</code>, <code>env</code>, <code>injectPort</code>, <code>lifecycle</code>, <code>proxyLocalOrigin</code>, <code>watch</code>, <code>managed = false</code>, a process-only health check) (<code>MENU-4</code>, <code>FAIL-2</code>).</li>
+<li><span class="n">10</span> A file or folder that exists but cannot be read answers status 500 inside the file browser with one sentence, <b>Retry</b>, which reloads the page, and the heading path to its folder; never "Could not read document" as plain text and never a recovery page (<code>STATE-4</code>, <code>FAIL-2</code>).</li></ol>
+<p class="fixes">Fixes serve-folder-06 · Backend: the file browser's 404 and cannot-read pages, with close names from the nearest folder's visible entries (Backend 9; <code>CC-4</code>), shipped in the same release as startup-and-recovery's rule that leaves the file server's answers alone</p></div>
+</section>
+
+<section class="step" id="stop">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>Ctrl-C in a folder session · exit status 130</span></div>
+<pre class="term">devhost | Ready in 0.3 s: https://notes.acme.test/ · Ctrl-C stops this session
+^C
+devhost | Stopped the serve session for ~/acme/docs · removed https://notes.acme.test/ · Caddy keeps running · 0.2&nbsp;s <span class="n">1</span>
+devhost | Start it again with:
+devhost | devhost serve --dir ~/acme/docs --domain notes.acme.test <span class="n">2</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~</b><span>Ctrl-C in a --port session (130), then SIGTERM to a folder session (143)</span></div>
+<pre class="term">^C
+devhost | Stopped the serve session for 127.0.0.1:3000 · removed https://app.acme.test/ · your server on 127.0.0.1:3000 and Caddy keep running · 0.2&nbsp;s <span class="n">3</span>
+devhost | Start it again with:
+devhost | devhost serve --port 3000 --domain app.acme.test
+
+devhost | Stopped by SIGTERM (143) at 15:52:10 · removed https://notes.acme.test/ · Caddy keeps running <span class="n">4</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>https://notes.acme.test/guides/</b><span>the page left open after Ctrl-C</span></div>
+<div class="pg" style="min-height:110px">
+<div class="apptxt">docs / guides · the listing as it was loaded …</div>
+<div class="corner">
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="banner" style="margin:0;min-width:0">The serve session for ~/acme/docs stopped at 14:05. Start it again with devhost serve in ~/acme</span><span class="n">5</span></div>
+<div class="tbar"><span class="seg"><b>~/acme/docs</b></span><span class="seg">? lost connection ▾</span><span class="seg muted">Chat</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>6. Stop the session</h2>
+<p><kbd>Ctrl-C</kbd> still ends the session: it removes the route and the hostname claim and stops the file server, Caddy keeps running, a <code>--port</code> server keeps running, and the exit status stays 130 after <kbd>Ctrl-C</kbd> and 143 after <code>SIGTERM</code>, as today. What changes is that the terminal says what it removed and what keeps running and prints the command that starts the session again, where today it prints "shutting down the stack" and "Stack stopped." for something no stack command lists. There is no Undo: the session wrote nothing in the folder, and the printed command is its way back (<code>UNDO-5</code>). Keys: a second <kbd>Ctrl-C</kbd> while it stops forces the rest within a second, as for a foreground stack (<code>KEY-14</code>).</p>
+<ol><li><span class="n">1</span> One outcome line names what the stop removed and what keeps running, with the time it took (<code>KEY-14</code>, <code>FB-10</code>, <code>WORD-4</code>).</li>
+<li><span class="n">2</span> Then the command that starts the same session again, on its own line, with the folder spelled out so it works from any folder (<code>UNDO-5</code>).</li>
+<li><span class="n">3</span> A <code>--port</code> session's outcome says that the person's server keeps running, because devhost never starts, restarts or stops it (owner rule; <code>ACT-9</code>).</li>
+<li><span class="n">4</span> <code>SIGTERM</code> reads as a stop with its signal and status, never as a failure (<code>FAIL-5</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
+<li><span class="n">5</span> A page left open shows the lost connection with the reason the session sent before its stream closed, and every write on the page is unavailable for that reason; notices-and-feedback words the notice (<code>HOLD-2</code>, <code>ACT-5</code>).</li></ol>
+<p class="fixes">Fixes serve-folder-02 · Backend: the stop outcome lines in both outputs (Backend 6; <code>CC-22</code>, <code>CC-30</code>); the stream's stop reason, which notices-and-feedback provides</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>The invented name <code>serve-&lt;domain&gt;</code> as every line's label and the session's name on every surface, with <code>serve (primary)</code>, "shutting down the stack" and "Stack stopped."</li>
+<li>A <code>--port</code> URL printed as ready while nothing answers</li>
+<li>A README or <code>index.md</code> in place of the folder's listing; "Directory listing" and devhost as the breadcrumb's root; byte order; the external-link arrow</li>
+<li>The hostname-wide <b>Show source</b> preference in browser storage</li>
+<li>The recovery page, with <b>Restart serve</b>, empty logs and a worktree picker, as the answer to a missing file; the refusal's "from ."</li>
+<li>The <code>serve-&lt;domain&gt;</code> card title, External on a folder session's row and "Manifest-free file or port session"; chat on with no way off (<b>[discuss]</b>)</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li>A folder's listing and its Markdown index become one page, the listing first</li>
+<li>The breadcrumb and the page's heading become one heading path</li>
+<li>A missing file in a CLI serve session and in a manifest <code>serve</code> service, today two different recovery pages, gets one page: the file browser's 404</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li>The header, ready, waiting, reachability and stop lines, with the command that starts the session again</li>
+<li>A refusal that names the holder and how to stop it</li>
+<li>Sizes, modified times, kind icons, counts, a filter and <code>./</code> links in listings</li>
+<li>The per-file view in the URL, links in the source view, the front matter error and GitHub's alerts</li>
+<li>The file browser's 404 with close names, and the cannot-read state</li>
+<li>A serve session's stack directory card titled by its folder or port; <code>--chat &lt;folder&gt;</code></li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li>A folder with a Markdown index shows its listing first, the index below it</li>
+<li><b>Show source</b> applies to one file, kept in the URL</li>
+<li>A <code>--port</code> session reports ready only once its port answers, as its docs already say</li>
+<li>The stack directory names a serve session by its folder or port, and its access log is keyed by hostname</li>
+<li><code>devhost stack replace --all</code> lists serve sessions and leaves them running (<code>O31</code>, <code>CC-36</code>)</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>One command gives a folder or a running port an HTTPS hostname with no manifest; Caddy starts on demand and keeps running after <kbd>Ctrl-C</kbd></li>
+<li>No <code>devhost.toml</code> is read and nothing is written in the folder; <code>--domain</code> stays required and bare; a <code>--port</code> server is never started, restarted or stopped</li>
+<li>Reads stay confined to the served folder and happen on every request; <code>GET</code>, <code>HEAD</code> and byte ranges; <code>index.html</code> served unchanged; links and escaped source work without JavaScript</li>
+<li>Markdown as GitHub Flavored Markdown without raw HTML or unsafe links, with its front matter table</li>
+<li>A taken hostname refused before anything is routed, exit 1; exit 130 after <kbd>Ctrl-C</kbd> and 143 after <code>SIGTERM</code>; the trust prompt only for a person at a terminal</li>
+<li>A manifest <code>serve</code> service runs the same pages under its stack; the stack directory lists serve sessions, read-only with links</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>The session's name, kind, folder or target, hostname, PID and start time in its record; its access log keyed by hostname (Backend 1)</li>
+<li>A structured claim refusal; a <code>--port</code> session that waits for its port (Backend 2, 3)</li>
+<li>The file server published as devhost's own service, a <code>--port</code> target as an external one (Backend 4; <code>CC-25</code>); chat off unless <code>--chat</code>, <b>[discuss]</b> (Backend 5)</li>
+<li>The session's lines in both outputs (Backend 6; <code>CC-22</code>, <code>CC-30</code>)</li>
+<li>Listing data, the Markdown index below the listing, the 404 and cannot-read pages, the heading path's root (Backend 7 to 10; <code>CC-4</code>)</li>
+<li>The stack directory's snapshot and card for a serve session (Backend 11)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

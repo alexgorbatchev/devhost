@@ -1,0 +1,660 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "The toolbar itself: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/toolbar-shell-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Toolbar: ask"
+    },
+    {
+      "id": "review",
+      "label": "Toolbar: review"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "open",
+    "dock",
+    "menu",
+    "layout",
+    "placed"
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Open a routed page",
+      "sublabel": "any page of the stack",
+      "explanation": "devhost injects the toolbar into every HTML page of the stack whenever any devtools feature is on, the CPU, RAM and Disk readouts included (SEL-11). The page runs /__devhost__/keys.js first in <head>, then the toolbar's module script before </body>, which fetches /__devhost__/config.json with no-store, as today; it now carries this person's layout record and the resolved key bindings, so the dock, the bar and its notice stack, mounts at its saved placement and collapsed state on every hostname of the stack and is never drawn first somewhere else (SURF-7, CC-5). Other entries: Alt+Ctrl+B and the other chords (KEY-2, KEY-3), and a save that changes devtools settings, which open pages apply in place without a reload. Defaults: bottom right and expanded unless the manifest or the person's layout record says otherwise; Hold Reloads on, as today.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/routes.go",
+          "line": 81,
+          "end_line": 95,
+          "label": "Reuses: per-document check of running config"
+        }
+      ],
+      "yOffset": 0
+    },
+    {
+      "id": "chord",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Alt+Ctrl+B, chords",
+      "sublabel": "AltGr text never fires",
+      "tag": "keyboard-and-screen-reader-05",
+      "explanation": "Alt+Ctrl+B (focusToolbar, configurable) moves focus from anywhere on the page to the bar item focused last, else the stack name; pressed again, to the open pinned log panel, then docked chat's composer, then back to the element that had focus (KEY-3). Collapsed, it focuses the badge; under the page's modal dialog, the moved notice stack's first action. The page-wide chords are one Alt+Ctrl family in one binding registry: Alt+Ctrl+R Restart Changed (services-panel's), Alt+Ctrl+O the log panel, Alt+Ctrl+C chat; each action is also a control, and each hint, ⌃⌥B on macOS and Ctrl+Alt+B elsewhere, comes from the definition its handler and the docs' Keyboard section read (KEY-2, KEY-13, BAR-4, CC-29). A chord event whose key is a printable character other than the bound key's own is typed text: on Windows, AltGr+R typing ® reaches its target untouched. Text entry also covers roles textbox, searchbox, combobox and spinbutton, a proposed KEY-1 exception. Resolves keyboard-and-screen-reader-05, with the bar's pattern, and toolbar-shell-12.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 209,
+          "end_line": 235,
+          "label": "Reuses: chord handler that skips text fields"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 426,
+          "end_line": 456,
+          "label": "Replaces: matcher that never checks AltGraph"
+        }
+      ],
+      "yOffset": -80
+    },
+    {
+      "id": "dock",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Dock mounts in place",
+      "sublabel": "clicks reach the page",
+      "tag": "page-context-03",
+      "explanation": "The dock, the bar and its notice stack, is one landmark (complementary) named devhost in the page's top layer, inside the Shadow DOM, in one of five placements: top left, top right, bottom left, bottom center or bottom right, the manifest's [devtools.status].position until the person picks another (KEY-3, SURF-7). Only what devhost draws takes pointer input: the visible bar, each notice card, open panels and docked surfaces; the dock's own box takes none, so the empty space beside a notice, between the bar and the stack and around a short bar passes clicks and Select Elements' picks to the page (SURF-11, SEL-9). The bar renders whenever a segment has something to show, and a segment with nothing to show keeps its place: Running agents reads 'No agents in this checkout' (STATE-2, CC-33). Each item names its scope: Services, Worktrees and Config 'the whole stack'; Running agents and Chat 'this checkout'; the readouts 'this machine'; Hold Reloads and the launchers 'this page' (SEL-3). Resolves page-context-03.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 44,
+          "end_line": 57,
+          "label": "Replaces: click box fixed to a right corner"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 95,
+          "end_line": 102,
+          "label": "Replaces: notice column in the bar's click box"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/renderDevtools.ts",
+          "line": 23,
+          "end_line": 36,
+          "label": "Reuses: Shadow DOM host in the page"
+        }
+      ],
+      "yOffset": 0
+    },
+    {
+      "id": "bar",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Bar: one Tab stop",
+      "sublabel": "arrows, one row",
+      "tag": "keyboard-and-screen-reader-04",
+      "explanation": "The bar follows the toolbar pattern on @base-ui/react's Toolbar: one Tab stop; ArrowLeft and ArrowRight move between items, Home and End jump, Tab leaves; every item is an arrow stop, each readout included, and Enter, Space or the arrow toward its panel opens it with focus inside (KEY-4, KEY-6). DOM and Tab order follow the drawn order: with the dock at the bottom, the notices' actions, then the bar, the log panel and docked chat; at the top, the bar first (a recorded KEY-3 conflict). An unavailable item stays in place, aria-disabled with its reason shown once in the notice stack, through Button's new unavailable state, which keeps focus (MENU-3, HOLD-1, KEY-11). The bar keeps one row at every acceptance viewport by a fit test: services-panel's summary, launchers folded into Devtools, readouts into Host, names shortened in the middle, then More (SURF-9, SURF-10; More is a recorded conflict). In forced colors every state keeps a shape and a word (ACT-13). Resolves keyboard-and-screen-reader-04; the summary is services-panel's (stack-scale-04, related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 58,
+          "end_line": 63,
+          "label": "Replaces: role=toolbar without arrow keys"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 313,
+          "end_line": 362,
+          "label": "Reuses: bar segments in display order"
+        }
+      ],
+      "yOffset": -80
+    },
+    {
+      "id": "panels",
+      "lane": "ask",
+      "col": 2,
+      "type": "frontend",
+      "label": "Open a panel or chat",
+      "sublabel": "beyond the notices",
+      "tag": "chat-compose-04",
+      "explanation": "The notice stack sits beside the bar, between it and every other devhost surface, in every placement (SURF-1). The dock publishes one inset, from its viewport edge to the notice stack's far edge, and every surface reads it: a toolbar panel opens beyond the stack on its trigger's side; docked chat docks beyond it and never covers the bar's row; the Configuration window's height is capped by it, so every notice stays readable beside the window (SURF-4). An open toolbar panel, the Running agents list included, paints above docked chat (CC-1). Panels stay anchored ToolbarPopovers, one open at a time, closed by Escape, a click outside or Tab past the last control, focus returning to the trigger, or to the page element that had it when opened with the pointer (SURF-2, KEY-6, KEY-7, KEY-8). Along the right edge: the minimap strip, the log panel, then the dock and chat (SURF-5); when room runs out, the stack folds into 'N more' (FB-8). Resolves chat-compose-04 with config-editor-11, and this flow's slices of notices-and-feedback-03 and reload-and-agents-05.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/ToolbarPopover.tsx",
+          "line": 62,
+          "end_line": 99,
+          "label": "Reuses: auto popover anchored to its trigger"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/AgentChatPanel.tsx",
+          "line": 81,
+          "end_line": 95,
+          "label": "Replaces: chat docked over the notice column"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/devtools.css",
+          "line": 150,
+          "end_line": 163,
+          "label": "Replaces: layers that put chat over notices"
+        }
+      ],
+      "yOffset": 0
+    },
+    {
+      "id": "readout",
+      "lane": "ask",
+      "col": 2,
+      "type": "frontend",
+      "label": "Readout details",
+      "sublabel": "levels, stack's share",
+      "tag": "toolbar-shell-04",
+      "explanation": "Each readout is a bar button labelled by its figure: 'CPU 42%', 'RAM 71% high', 'Disk 27 GiB free'. Its level comes from a steadied reading: CPU averages the last 10 s, and a level rises only while the reading stays past its threshold and falls only below a lower one. Recommended defaults, a recorded conflict awaiting a product decision: high at 70% (back below 65%), very high at 90% held 10 s (back below 85%), Disk low below 10% free, very low below 5% or 10 GiB. A level shows its word and its own mark, never a service state's glyph or the failed look (ACT-13). Enter, Space or a click opens its details: 'RAM: 41.5 of 48 GiB used', this stack's share with its top three services, other programs, the last 60 s with low, high and average as text, and one verdict, 'Busy because of other programs: this stack uses 12% of CPU' (SURF-2, KEY-4, KEY-12). Binary units for RAM and Disk (WORD-8; Disk's unit is a recorded conflict with the toolbar-shell-05 patch, related). They hide while the stream is down (CC-26). Resolves toolbar-shell-04.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/resourceUsage/components/ResourceUsagePanel.tsx",
+          "line": 28,
+          "end_line": 56,
+          "label": "Replaces: meters with figures only in a title"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/resourceUsage/createResourceReadouts.ts",
+          "line": 46,
+          "end_line": 64,
+          "label": "Replaces: fixed 70/90 cuts on one sample"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/resourceUsage/hooks/useResourceUsage.ts",
+          "line": 13,
+          "end_line": 42,
+          "label": "Reuses: stream readings, hidden while down"
+        }
+      ],
+      "yOffset": -80
+    },
+    {
+      "id": "type",
+      "lane": "ask",
+      "col": 3,
+      "type": "frontend",
+      "label": "Type into devhost",
+      "sublabel": "page never sees keys",
+      "tag": "toolbar-shell-06",
+      "explanation": "keys.js, first in <head>, registers window capture listeners for keydown, keypress, keyup and beforeinput before any page script. For an event whose composedPath()[0] is a devhost text field (Find worktree, the chat composer, the configuration text, filters, the Disable Reloads request, the Deny note, the crop fields) it stops the original with stopImmediatePropagation, dispatches at the field a clone that never leaves the shadow root, so devhost's own handlers run, and copies the clone's preventDefault() onto the original (KEY-5, CC-28). On a page whose '/' shortcut listens in the capture phase, typing feature/login into Find worktree keeps all 13 characters. A focused bar item or notice action keeps only Enter, Space, the arrows, Home, End and Escape, so a click on Hold Reloads leaves the page's shortcuts working; a panel or menu opened with the pointer returns focus to the page element that had it, which replaces 'Click the page to give it the keyboard back' (KEY-5, KEY-6, CC-28). Text entry stays in the Shadow DOM. Resolves toolbar-shell-06.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsTopLayer.tsx",
+          "line": 63,
+          "end_line": 77,
+          "label": "Replaces: keys stopped at the shadow root only"
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "lane": "review",
+      "col": 2,
+      "type": "frontend",
+      "label": "Stack name menu",
+      "sublabel": "Move to · Collapse · Reset",
+      "tag": "toolbar-shell-02",
+      "explanation": "The stack name button shows the dh mark and 'Acme Shop'; its accessible name begins with that name, 'Acme Shop, devhost menu', and it opens the stack name menu instead of collapsing (KEY-4, MENU-1). The menu: Move to, listing Top Left, Top Right, Bottom Left, Bottom Center and Bottom Right with the current one checked; Collapse; Reset to Manifest Default; then, after a separator, All Stacks on This Machine, the stack directory in the same tab (MENU-2, SURF-15, WORD-2, WORD-3). When nothing differs, Reset is unavailable with 'Already where devhost.toml puts it: bottom right, expanded' under it (MENU-3). Dragging the stack name or the badge 8 px or more shows the five drop targets; Escape during the drag puts it back and saves nothing (SURF-7, KEY-12). Keys: Enter, Space or the arrow toward the menu opens it on Move to; arrows, Home, End and type-ahead move; ArrowRight opens Move to; Escape closes the innermost menu, focus back on its trigger (KEY-8, KEY-10). Resolves toolbar-shell-02 and toolbar-shell-09; the editor's per-person home is component-source's (source-and-minimap-03, related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 64,
+          "end_line": 83,
+          "label": "Replaces: button named Collapse devhost toolbar"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 21,
+          "end_line": 23,
+          "label": "Replaces: collapse kept in component state"
+        }
+      ]
+    },
+    {
+      "id": "resolve",
+      "lane": "backend",
+      "col": 0,
+      "type": "backend",
+      "label": "Resolve settings",
+      "sublabel": "any feature injects",
+      "tag": "toolbar-shell-03",
+      "explanation": "On every accepted save and for every document, the services runtime resolves the devtools settings of the running manifest. Any feature injects the toolbar, [devtools.resources] included; one master switch, [devtools].enabled = false, turns every feature off and injects nothing. Open pages apply a change in place: turning a segment off removes only that segment, never Hold Reloads, which runs whenever the script is injected and the person has it on (SEL-11). The reload's outcome line names each toolbar change: 'Applied devhost.toml: turned off service status and third-party launchers · nothing restarted' (REV-10, FB-3, CC-22). [devtools.shortcuts] takes one grammar on both sides, modifiers plus one letter, digit or named key from one list, in any case: validation accepts exactly what the page matches and normalizes it, and the control server sends each binding as a key code and modifiers with its source, so every accepted value fires (KEY-2, CC-29). [devtools.status].position accepts the five placements. Resolves toolbar-shell-03 and, with its warning, toolbar-shell-08.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1452,
+          "end_line": 1470,
+          "label": "Replaces: inject gate that leaves out readouts"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 153,
+          "end_line": 154,
+          "label": "Replaces: bar rendered for four features only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 179,
+          "end_line": 180,
+          "label": "Replaces: reload hold runs only with the bar"
+        }
+      ]
+    },
+    {
+      "id": "inject",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Inject keys.js first",
+      "sublabel": "config.json has layout",
+      "tag": "toolbar-shell-06",
+      "explanation": "The document injection puts a small classic script, /__devhost__/keys.js, served by the control server like the toolbar's own script, first in <head> before any page script, beside today's module script before </body> (KEY-5, CC-28). /__devhost__/config.json stays no-store and now carries this person's layout record, for the manifest or for the served folder in a serve session, with each resolved binding, so the dock mounts at its saved placement and collapsed state (SURF-7, CC-5). The health stream keeps sending every settings change and now each layout change, so open pages follow without a reload. Resolves the backend half of toolbar-shell-06 and carries the record toolbar-shell-02 needs.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 188,
+          "end_line": 198,
+          "label": "Reuses: module script before </body>"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/startDevtools.ts",
+          "line": 6,
+          "end_line": 22,
+          "label": "Reuses: fetch config.json no-store, then mount"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 43,
+          "end_line": 53,
+          "label": "Reuses: open pages take new config from health"
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Save layout record",
+      "sublabel": "PUT /__devhost__/layout",
+      "tag": "toolbar-shell-02",
+      "explanation": "The one write, not disruptive: PUT /__devhost__/layout, with an Origin as today's panel route requires, saves the dock's placement, its collapsed state and chat's dragged position per manifest, or per served folder in a serve session, in devhost's state directory, never in the manifest or browser storage, so the layout is the same on every hostname of the stack and a teammate still gets the manifest's placement (SURF-7, CC-5). It replaces /__devhost__/chat/panel and never depends on chat being on; an unknown placement answers 422 with {error}. The health stream sends each change, so every open tab of the stack follows within a second; with two tabs, the last saved layout wins. devhost's own temporary moves, above a docked library panel or aside from a focused page element, are never saved. Resolves the saved placement and collapse of toolbar-shell-02.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/chat_panel.go",
+          "line": 86,
+          "end_line": 122,
+          "label": "Replaces: chat-only route, 404 without a file"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/chat_panel.go",
+          "line": 58,
+          "end_line": 84,
+          "label": "Reuses: per-manifest file, replaced whole"
+        }
+      ]
+    },
+    {
+      "id": "placed",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Dock where you put it",
+      "sublabel": "way back: Move to, Reset",
+      "tag": "toolbar-shell-02",
+      "explanation": "The move is its own outcome: the dock is where the person put it, with no notice, and it stays there through every reload, the dev server's included, on every hostname of the stack (SURF-7). Outcome + undo holds that layout, kept through every reload, and its way back where it was made: Move to the previous placement, the badge to expand again, or Reset to Manifest Default, which returns placement and collapse to devhost.toml's; there is no Undo control. Today this took 5 steps and changed it for the whole team: open the shared devhost.toml, pick the other right-hand corner, save, check the page, collapse again after every reload. Proposed: 2 steps, once, for this person only: open the stack name menu and choose Move to › Bottom Left or Collapse. Resolves the rest of toolbar-shell-02."
+    },
+    {
+      "id": "badge",
+      "lane": "outcome",
+      "col": 5,
+      "type": "frontend",
+      "label": "Collapsed badge",
+      "sublabel": "1 failed · 1 changed",
+      "tag": "toolbar-shell-01",
+      "explanation": "Collapsed, the bar is one badge with the dh mark and the stack's attention state in ACT-7's order: lost connection or proxy offline; a failed, exited or blocked service; a change not applied; an agent waiting; a held or blocked reload; changed; else healthy (SURF-8, ACT-7). Its text lists up to three, '1 failed · 1 changed', then '+N', and none when healthy (WORD-5, WORD-6); its name, '1 failed: api · 1 changed: web, Acme Shop, expand devhost toolbar' (ACT-2, ACT-13). It reads services-panel's published state through the shared state indicator and words, so a routine restart keeps its look, its activity line beside it, never 'stack down' (ACT-3, FB-1, SURF-14). Each actionable notice keeps a one-line form beside it with its lead action: 'api exited with code 1 · Restart', 'Reload blocked · Reload · ✕', the hot reload line with Disable Reloads, 'Claude Code is waiting for you · Answer' (MENU-5, FB-8, O2, REV-9); a stopped stack shows its end first (ACT-10). Resolves toolbar-shell-01 and toolbar-shell-10; waiting is agent-chat's (chat-approvals-03) and the held marker reload-control's (reload-and-agents-04), related.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 84,
+          "end_line": 102,
+          "label": "Replaces: collapsed dot, notices only expanded"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 405,
+          "end_line": 424,
+          "label": "Replaces: dot read from health and error only"
+        }
+      ]
+    },
+    {
+      "id": "warned",
+      "lane": "recovery",
+      "col": 0,
+      "type": "security",
+      "label": "Unusable key warned",
+      "sublabel": "names file and line",
+      "tag": "toolbar-shell-08",
+      "explanation": "A [devtools.shortcuts] value devhost cannot use is a warning, never a rejection and never a silent fallback: one line on start and on each hot reload that keeps it, in human output, agent output and the stack's log, naming the key, the file and line, the value and the binding in effect: 'devtools.shortcuts.restartServices \"ctrl+enterr\" in devhost.toml line 31 is not a usable shortcut: unknown key enterr; using Alt+Ctrl+R' (KEY-2, CC-29). As a warning it never holds a reload back, so the rest of the save applies (HOLD-6). The person fixes the line and saves, and open pages take the new binding in place. Resolves toolbar-shell-08, with the grammar that makes every accepted value fire.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 197,
+          "end_line": 202,
+          "label": "Replaces: unusable value silently alt+ctrl+r"
+        }
+      ]
+    },
+    {
+      "id": "libdock",
+      "lane": "recovery",
+      "col": 1,
+      "type": "external",
+      "label": "Library panel docks",
+      "sublabel": "or a field takes focus",
+      "explanation": "Two changes the page makes that the dock answers by itself, in place: a third-party devtools panel docking at the page's bottom edge, and focus moving to a page element the dock or docked chat would cover (SURF-1, SURF-9)."
+    },
+    {
+      "id": "aside",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Dock steps aside",
+      "sublabel": "never saved",
+      "tag": "third-party-devtools-01",
+      "explanation": "While a library's devtools panel is docked at the page's bottom edge, the dock moves onto that panel's top edge, or to the top of the window when the panel is taller than half of it, and follows the panel's own resize handle, so no devhost element covers the panel; the person's placement returns when the panel closes (SURF-1). While a page element under the dock or docked chat has focus, both step aside to the other end of their edge so the element is never entirely hidden, and come back when focus leaves (SURF-9). Neither move is ever saved (SURF-7). Resolves this flow's slice of third-party-devtools-01, the toolbar never covering a docked panel; the rest is third-party-devtools'."
+    },
+    {
+      "id": "lost",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Layout kept here",
+      "sublabel": "re-read, never resent",
+      "explanation": "A PUT whose response is lost is never resent: the page reads the record again and shows the layout it holds (REV-12, REV-13). While the connection is lost, Move to, Collapse and dragging still move this page's dock, and the menu says 'Not saved: devhost is not reachable from this page'; the first change after the stream returns saves (HOLD-2). Meanwhile the badge leads with 'Lost connection, last seen 16:24' and draws no service as down, the readouts hide, and the bar's writes, such as the changed badge's restart icon, are unavailable with the one reason notices-and-feedback words in its condition notice, 'Lost connection to devhost; retrying', with Retry Now; reads stay open (ACT-5, MENU-3)."
+    },
+    {
+      "id": "pagedlg",
+      "lane": "recovery",
+      "col": 4,
+      "type": "external",
+      "label": "Page opens a dialog",
+      "sublabel": "native or scripted",
+      "explanation": "The page's modal dialog: a native modal (:modal), a visible element with role dialog or alertdialog and aria-modal=\"true\", such as a Radix (shadcn/ui) or Base UI Dialog, or any change by the page that makes the devtools host inert or aria-hidden; devhost treats the three alike (SURF-11)."
+    },
+    {
+      "id": "paused",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Paused under dialog",
+      "sublabel": "notices move into it",
+      "tag": "toolbar-shell-07",
+      "explanation": "While the page's modal dialog is open, the notice stack and the announcer's host move into it, as chat's mount already does for a native dialog, so they sit inside its focus scope and outside the library's aria-hidden: notice buttons work, reports are heard and docked chat keeps working, scripted dialogs included (SURF-11, FB-9, CC-3). The rest of the bar shows its paused state, inert in the disabled look with no hover, and its reason is one line at the top of the moved stack: 'Paused while this page's dialog is open'. Alt+Ctrl+B focuses the moved stack, and Alt+Ctrl+R still restarts the changed set, its outcome in the moved stack (KEY-1, KEY-3). A page popover or toast opened over an open panel no longer covers it: the root and the panel re-enter the top layer in the same task (SURF-11, REV-4). devhost never removes the page's aria-hidden, inert or focus trap; the crash view takes the stack and chat the same way (SURF-3). When the dialog closes, the stack returns beside the bar. Resolves toolbar-shell-07 and toolbar-shell-11.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/constants.ts",
+          "line": 14,
+          "end_line": 15,
+          "label": "Replaces: page dialogs: native :modal only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/promoteDevtoolsTopLayer.ts",
+          "line": 19,
+          "end_line": 54,
+          "label": "Replaces: promotion waits while a panel is open"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsTopLayer.tsx",
+          "line": 33,
+          "end_line": 45,
+          "label": "Reuses: re-entry after each host toggle"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "open-dock",
+      "from": "open",
+      "to": "dock",
+      "label": "mount",
+      "role": "main"
+    },
+    {
+      "id": "dock-menu",
+      "from": "dock",
+      "to": "menu",
+      "label": "stack name",
+      "role": "main"
+    },
+    {
+      "id": "menu-layout",
+      "from": "menu",
+      "to": "layout",
+      "label": "Move to Bottom Left",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "layout-placed",
+      "from": "layout",
+      "to": "placed",
+      "label": "saved",
+      "role": "main"
+    },
+    {
+      "id": "chord-bar",
+      "from": "chord",
+      "to": "bar",
+      "label": "focus",
+      "role": "branch"
+    },
+    {
+      "id": "bar-readout",
+      "from": "bar",
+      "to": "readout",
+      "label": "Enter",
+      "role": "branch"
+    },
+    {
+      "id": "dock-panels",
+      "from": "dock",
+      "to": "panels",
+      "label": "open",
+      "role": "branch"
+    },
+    {
+      "id": "panels-type",
+      "from": "panels",
+      "to": "type",
+      "label": "type",
+      "role": "branch"
+    },
+    {
+      "id": "resolve-inject",
+      "from": "resolve",
+      "to": "inject",
+      "label": "per page",
+      "role": "branch"
+    },
+    {
+      "id": "inject-dock",
+      "from": "inject",
+      "to": "dock",
+      "label": "config.json",
+      "role": "branch"
+    },
+    {
+      "id": "resolve-warned",
+      "from": "resolve",
+      "to": "warned",
+      "label": "unusable value",
+      "role": "error"
+    },
+    {
+      "id": "layout-badge",
+      "from": "layout",
+      "to": "badge",
+      "label": "Collapse",
+      "role": "branch"
+    },
+    {
+      "id": "layout-lost",
+      "from": "layout",
+      "to": "lost",
+      "label": "response lost",
+      "role": "error",
+      "variant": "dashed"
+    },
+    {
+      "id": "libdock-aside",
+      "from": "libdock",
+      "to": "aside",
+      "label": "moves",
+      "role": "branch"
+    },
+    {
+      "id": "pagedlg-paused",
+      "from": "pagedlg",
+      "to": "paused",
+      "label": "move in",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: collapsing on a click of the stack name (Collapse moves into the stack name menu; the badge expands); the collapsed dot that reads service health only and turns red for every restart; notices hidden while collapsed; the dock's empty box taking the page's clicks; the four-feature render gate that also stopped the reload hold; Go's inject gate that leaves out the readouts; the readouts' native title as their only detail, and their alarms from single 2 s samples in the failed service's red; the silent fallback for an unusable shortcut; promotion waiting while a devtools panel is open; 'Click the page to give it the keyboard back'",
+        "Merged: the notice stack and the bar become one landmark, devhost, in drawn order; placement, collapsed state and chat's dragged position become one layout record, which replaces /__devhost__/chat/panel; every binding's handler, hint, aria-keyshortcuts and docs line come from one registry",
+        "New: the stack name menu with Move to, Collapse, Reset to Manifest Default and All Stacks on This Machine; dragging the dock; five placements; the layout route; Alt+Ctrl+B and its focus cycle; /__devhost__/keys.js; the binding registry and the docs' Keyboard section; warnings for unusable chord values; the paused state and scripted-dialog detection; the dock's published inset; the bar's fit sequence with Host, Devtools and More; readout details with this stack's share and a verdict; steadied readout levels with their own marks; one-line notices beside the badge; forced-colors rules; [devtools].enabled; Button's unavailable state",
+        "Changed: a click on the stack name opens its menu, and its accessible name begins with the stack name; collapse is saved; panels and docked chat open beyond the notice stack, and an open panel paints above docked chat (CC-1); the bar is one Tab stop, the notices before it with the dock at the bottom; keys after a click on the toolbar reach the page, and keys typed into devhost stop at the window (CC-28); an AltGr character is text; five placements; the readouts alone inject the toolbar; Disk reads free space, sizes in binary units (WORD-8); a readout's level follows a steadied reading; a page popover no longer covers an open panel; under the page's modal the bar shows its paused state (CC-3)",
+        "Kept: Shadow DOM isolation, the host taking no pointer events and each surface opting back in; the top-layer root re-entering after each host toggle, now with an open panel; every devtools setting reaching open pages through the health stream, injection decided per document; panels as native popovers anchored to their trigger, one at a time, closed by Escape or a click outside; keys typed into devtools never reaching the page's bubbling listeners; readouts hidden while their stream is down and measuring the whole machine (CC-26); the restart chord suspended in the page's fields, one selector for Restart Changed, its icon and its chord; chat's mount moving into the page's native modal, with no host methods patched; [devtools.status].position as the team default and config.json no-store; the config editor's modal window keeping drafts; Hold Reloads on by default; devhost never removing a page dialog's aria-hidden, inert or focus trap, and never opening a browser"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Dock and pointer: page-context-03 (P1)",
+        "Panels, chat and the notice stack: chat-compose-04 with config-editor-11; this flow's slices of notices-and-feedback-03 (the rest: notices-and-feedback), reload-and-agents-05 (the rest: running-agents) and third-party-devtools-01 (the rest: third-party-devtools)",
+        "Keyboard and keys: keyboard-and-screen-reader-05, toolbar-shell-06, toolbar-shell-12",
+        "Bar and readouts: keyboard-and-screen-reader-04, toolbar-shell-04",
+        "Configuration and injection: toolbar-shell-03, toolbar-shell-08",
+        "Move and collapse: toolbar-shell-02, toolbar-shell-09, toolbar-shell-01, toolbar-shell-10",
+        "Page dialogs: toolbar-shell-07, toolbar-shell-11",
+        "Related, not covered: chat-approvals-03 (agent-chat); reload-and-agents-04 (reload-control); source-and-minimap-03 (component-source); stack-scale-04 (services-panel); toolbar-shell-05 (its own patch, no redesign)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Layout record and route: GET and PUT /__devhost__/layout per manifest, or per served folder, in the state directory, independent of chat, replacing /__devhost__/chat/panel; config.json carries it and the health stream sends each change; 422 for an unknown placement (CC-5)",
+        "Injection follows every feature, the readouts included, with one master switch, [devtools].enabled (default true)",
+        "The reload's outcome record and its terminal and log line name each toolbar change (CC-22, whose reload line manifest-hot-reload builds)",
+        "The early key script /__devhost__/keys.js, served by the control server and injected first in <head> (CC-28)",
+        "One shortcut grammar for restartServices, focusToolbar, logs, chat and stopTurn, normalized and resolved on the server; an unusable value is a warning with its file, line, value and the binding in effect; one table of cases drives the Go and the UI tests (CC-29)",
+        "Recommended: five placements in devtoolsStatusPositions, which validation and the config editor's completion read",
+        "[discuss]: this stack's share of CPU and memory per managed service in the resources stream, reusing the process-table patch and the process identity of the process-containment-01 stopgap; the reference needs a rule and a CC-n beside CC-26"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-1: an open toolbar panel paints above docked chat; no devhost surface covers the notice stack",
+        "CC-3: under the page's modal dialog, chat and the notices keep working inside it and the rest of the toolbar shows that it is paused",
+        "CC-5: placement and collapse are the person's, kept for the stack on every hostname, with Move to and Reset to Manifest Default; /__devhost__/layout replaces /__devhost__/chat/panel",
+        "CC-28: keys typed into devhost never reach the page; after a click on the toolbar the page's keys keep working; /__devhost__/keys.js",
+        "CC-29: the docs' Keyboard section, Alt+Ctrl+B, Alt+Ctrl+O and Alt+Ctrl+C, and an unusable value reported with its default instead of a silent fallback",
+        "CC-22, with manifest-hot-reload: the reload's line names each toolbar change",
+        "[discuss]: CC-n for the master switch, the collapse sentence and the five placements beside CC-5, and for the readout levels and the stack's share beside CC-26"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,346 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Switch the stack to another checkout today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/worktree-switch-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "popover", "label": "Badge popover" },
+    { "id": "picker", "label": "Worktrees picker" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "terminal", "label": "Stack terminal" },
+    { "id": "page", "label": "Page after the switch" },
+    { "id": "status", "label": "Recovery page" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "start", "label": "Open + pick", "fromCol": 0, "toCol": 1 },
+    { "id": "write", "label": "Switch + restart", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "outcome", "label": "Result + recovery", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["open", "pick", "press", "stopall", "startall", "result"],
+  "nodes": [
+    {
+      "id": "open",
+      "lane": "entry",
+      "col": 0,
+      "type": "security",
+      "label": "Toolbar: Worktrees",
+      "sublabel": "opening can stop services",
+      "tag": "worktree-switch-14",
+      "explanation": "The toolbar's Worktrees button shows the current branch (or Detached plus a short ID) and turns its fork icon red when a repository needs attention. Opening it refreshes the list: devhost runs git worktree list, loads each checkout's manifest from disk, the running one included, and checks its service directories. After a manifest edit that hot reload rejected while every service kept running, that read marks the running checkout unavailable and the refresh stops and blocks every service of its repository: hostnames answer 502, the picker says 'Selected checkout … is unavailable' with Retry disabled, and undoing the edit brings nothing back (worktree-switch-14). For keyboard and screen-reader users the button's accessible name is just 'Worktrees', without the branch it shows, and opening it puts focus in Find worktree at the bottom of the picker. Tab then leaves the open picker for Router and Query; the list is reachable only by Shift+Tab past Cancel and every unavailable badge; ArrowDown and Enter do nothing in the search field; and from a selected row Tab lands on the next row's unavailable badge before Switch and restart stack (worktree-switch-10).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreeStatusPanel.tsx", "line": 24, "end_line": 56, "label": "Name 'Worktrees'; the label shows the branch" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 62, "end_line": 78, "label": "Refresh on open, then focus Find worktree" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 235, "end_line": 261, "label": "Find and Refresh render below the list" }
+      ]
+    },
+    {
+      "id": "pick",
+      "lane": "picker",
+      "col": 1,
+      "type": "security",
+      "label": "Pick a checkout",
+      "sublabel": "rows, badges, Find worktree",
+      "tag": "worktree-switch-01",
+      "explanation": "Each row shows the branch (Detached plus a 7-character ID for a detached HEAD), the path shortened with ~ and truncated from the left, and running, configured, unavailable or in use badges. Find worktree filters fuzzily by the row label and the path only, so a branch checkout can never be found by its commit ID, although the docs say Find worktree filters by commit ID; a commit shared by main and a detached checkout lists only the detached one, and the empty state 'No matching worktrees.' suggests the checkout is not registered (worktree-switch-01). When the repository has an external service, the whole list is disabled instead (Switching blocked).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 43, "end_line": 51, "label": "Fuzzy search on row label and path only" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 266, "end_line": 268, "label": "Short commit ID only on detached rows" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 207, "end_line": 250, "label": "git worktree list; check each checkout" }
+      ]
+    },
+    {
+      "id": "reason",
+      "lane": "popover",
+      "col": 1,
+      "type": "security",
+      "label": "Why it is unavailable",
+      "sublabel": "raw error, path twice",
+      "tag": "worktree-switch-02",
+      "explanation": "Clicking an unavailable badge opens a small popover titled '<label> · Unavailable' that prints the stored reason verbatim. For a manifest that does not parse, that is the whole error chain: 'load checkout configuration <absolute path>: Failed to parse <the same absolute path>: toml: line 13 …', about 13 wrapped lines with the useful part last, no Open in editor and no Copy. A worktree whose folder was deleted stays listed with 'git in <path>: exit status 128: fatal: cannot change to …', and nothing offers to prune it. The popover also covers the badges of the row above (worktree-switch-02).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 141, "end_line": 150, "label": "Badge popover prints the raw reason" },
+        { "path": "apps/devhost/internal/services/worktree_config.go", "line": 19, "end_line": 22, "label": "Wraps the parse error with the path again" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 222, "end_line": 229, "label": "Stores the error text as the reason" }
+      ]
+    },
+    {
+      "id": "stopother",
+      "lane": "popover",
+      "col": 2,
+      "type": "security",
+      "label": "Stop the other stack",
+      "sublabel": "in use; no confirmation",
+      "tag": "worktree-switch-07",
+      "explanation": "An in use badge (another running stack uses that checkout's manifest) opens the same popover titled '· Unavailable'. It names the owner only as '<stack name> · PID <n>', often the same name as this stack, then its manifest path and one 'Open stack · <url>' link per routed URL, sorted by URL. Stop stack posts at once, with no confirmation and no count of its services: devhost re-checks the owner's identity and sends SIGTERM to that stack's devhost process; the stopped stack's terminal says only 'Received SIGTERM (signal 15); shutting down the stack.' The picker then refreshes so the freed checkout can be picked (worktree-switch-07). After 15 seconds devhost SIGKILLs that one process, so a stack that needs longer to stop (services that drain on SIGTERM, each waited on up to 10 seconds in turn) dies mid-shutdown: its remaining services keep running unseen, the badge disappears, the checkout reads as free and the request reports success (worktree-switch-13). Recovery pages show the same owner as a card with the same Stop stack button.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 151, "end_line": 182, "label": "Owner, Open stack per URL, Stop stack" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 89, "end_line": 101, "label": "Stop stack posts at once, then refreshes" },
+        { "path": "apps/devhost/internal/services/worktree_ownership.go", "line": 70, "end_line": 101, "label": "SIGTERM, then SIGKILL after the grace" }
+      ]
+    },
+    {
+      "id": "press",
+      "lane": "picker",
+      "col": 2,
+      "type": "security",
+      "label": "Switch and restart stack",
+      "sublabel": "one click; no warning",
+      "tag": "chat-checkout-switch-02",
+      "explanation": "Switch and restart stack is enabled once the list has loaded, nothing else is switching or restarting, and an available checkout other than the running one is picked (or the running one while the repository has an error, when the button reads Retry). One click posts the switch: no confirmation, no count of the services it stops, and no look at chat. A chat agent in this checkout that is working or waiting for an approval gets no warning, although devhost does ask before starting a conversation beside a working agent (chat-checkout-switch-02). While a repository is in recovery the picker also offers Return to configured checkout.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 53, "end_line": 60, "label": "Enabled checks: nothing about chat" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 80, "end_line": 87, "label": "apply() posts the switch at once" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 204, "end_line": 231, "label": "Switch, Retry and Return buttons" }
+      ]
+    },
+    {
+      "id": "progress",
+      "lane": "picker",
+      "col": 3,
+      "type": "security",
+      "label": "Wait on one spinner",
+      "sublabel": "label already names target",
+      "tag": "worktree-switch-09",
+      "explanation": "While the request runs, the picker footer shows one fixed line, 'Switching and restarting stack…', with a spinner for the whole stop and start (14 to 27 seconds in the review). devhost marks the target as selected before anything stops, so the toolbar's branch label already names the target while the page still shows the old app, and the old row keeps its running badge until the switch ends. The toolbar's service dots do show 0/6 and six starting rings, but the picker names no step or service and shows no elapsed time (worktree-switch-09). A second switch, restart or refresh waits for the lifecycle lock.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 193, "end_line": 203, "label": "One fixed 'Switching and restarting' line" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreeStatusPanel.tsx", "line": 31, "end_line": 35, "label": "Branch label follows the selected path" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 360, "end_line": 364, "label": "Target marked selected before stopping" }
+      ]
+    },
+    {
+      "id": "stopall",
+      "lane": "backend",
+      "col": 2,
+      "type": "security",
+      "label": "Validate, stop services",
+      "sublabel": "selection saved first",
+      "tag": "process-containment-01",
+      "explanation": "The control server validates the target (registered, available, not blocked, a manifest that loads, service directories that exist); otherwise the request fails and the stack keeps running. It never checks the client: anyone reaching the stack's hostnames without browser headers, another machine included, can post this switch or a Stop stack, and a GET returns checkout paths, branches and other stacks' PIDs, while config saves and the stack directory answer this machine only (network-exposure-03). devhost then saves the target as the selection, logs 'Switching worktree: <old folder> -> <new folder>. Restarting stack.' and stops every managed service in turn, SIGTERM then, after the grace period, SIGKILL to its tracked process tree. The tracker signals every PID it ever saw under a service that is alive at stop time, so a stop after a long run can kill unrelated processes that reused those PIDs (process-containment-01, a stopgap owned by stack-run-stop). Only an error puts the old selection back, so a kill before the switch ends (the 15 s SIGKILL of devhost stop or Stop stack, a crash) leaves the target saved, and the next devhost start runs it without a word (worktree-switch-15).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 375, "end_line": 398, "label": "Validate, log, restart the whole stack" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 144, "end_line": 151, "label": "Every managed service is affected" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 1209, "end_line": 1225, "label": "Stop: SIGTERM, then SIGKILL the tree" }
+      ]
+    },
+    {
+      "id": "startall",
+      "lane": "backend",
+      "col": 3,
+      "type": "security",
+      "label": "Start in the target",
+      "sublabel": "starts services left off",
+      "tag": "worktree-switch-11",
+      "explanation": "devhost loads the target checkout's manifest and includes (its name and services can differ from the checkout it left), starts every service there with fresh automatic ports, replaces the routes, points hot reload at the target's manifest and updates the page settings. Only then does it accept the configuration, print 'worktree switched: <old folder> -> <new folder>' with the service URLs, and answer the request. If any service fails to start, devhost rolls back to the previous checkout. The switch passes no service selection, so in a run started with names (devhost start web api) it starts every service of the target, waits on their health checks and drops the 'not started' line and Stopped services; switching back, hot reloads and Restart Stack then keep starting all of them for the rest of the run, although the docs say the names last the whole run (worktree-switch-11). The target is saved as the selection, and while it is a linked worktree every later devhost start web api, foreground or detached, restores it without the names and starts all of its services again, so stopping and starting, the docs' remedy, never brings the selection back (worktree-switch-12).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/reload.go", "line": 225, "end_line": 252, "label": "Start, routes, watch the target manifest" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 286, "end_line": 305, "label": "Start each service in the target" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 266, "end_line": 268, "label": "Log 'worktree switched' and the URLs" }
+      ]
+    },
+    {
+      "id": "log",
+      "lane": "terminal",
+      "col": 2,
+      "type": "security",
+      "label": "Read the stack terminal",
+      "sublabel": "folder names; false exits",
+      "tag": "worktree-switch-04",
+      "explanation": "The stack's terminal, often read by a coding agent, names both checkouts by folder: the main checkout's folder 'project' where the toolbar and the docs say main. It reports each serve service the switch itself stopped as '<service> exited with code 0; devhost is waiting for a restart.', the message for a crash, and it ends with a differently cased 'worktree switched: a -> b' that states no duration or service count (worktree-switch-04).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 390, "end_line": 396, "label": "Checkouts named by folder" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 633, "end_line": 634, "label": "Exit line: 'waiting for a restart'" },
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 398, "end_line": 398, "label": "Finish line text" }
+      ]
+    },
+    {
+      "id": "result",
+      "lane": "page",
+      "col": 4,
+      "type": "security",
+      "label": "Page reloads, same URL",
+      "sublabel": "success even when broken",
+      "tag": "worktree-switch-06",
+      "explanation": "On success the picker reloads the page at the same URL; if that path has no route, the Caddy 404 lists the routes that do. A checkout counts as available when its manifest loads and its service directories exist, so a fresh worktree without installed dependencies switches 'successfully': six green dots, 'worktree switched', then '500 web could not load' with the cause ('Could not resolve: react … bun install?') only in the log. The page offers Restart web, which cannot install anything; recovering means opening a terminal in the new checkout (worktree-switch-06). When the target app answers 404 for the path, devhost's 'Page not found' blames the checkout: 'Choose another worktree below' (error-pages-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 102, "end_line": 110, "label": "Reload the page when the POST succeeds" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 222, "end_line": 242, "label": "Available: manifest and directories only" },
+        { "path": "apps/devhost/internal/devtools/document_injection.go", "line": 153, "end_line": 163, "label": "500 and 404 pages, checkout wording" }
+      ]
+    },
+    {
+      "id": "chat",
+      "lane": "page",
+      "col": 5,
+      "type": "security",
+      "label": "Chat starts over",
+      "sublabel": "waiting agent hidden",
+      "tag": "chat-checkout-switch-01",
+      "explanation": "Chat follows the selected checkout: it lists, attaches to, answers, stops or closes only conversations started in that checkout, and the running agents list keeps only agents inside it. A conversation waiting for an approval or still working in the old checkout therefore vanishes from chat, the conversation list and the running agents count while its agent keeps running there, and it reappears only after switching back. No notice says so (chat-checkout-switch-01). The page also keeps its chat settings per checkout, so a checkout seen for the first time starts from the defaults, Codex with its configured model, and the next message goes to an agent nobody chose (chat-checkout-switch-03).",
+      "sources": [
+        { "path": "apps/devhost/internal/devtools/chat_project.go", "line": 12, "end_line": 19, "label": "Chat root follows the selected checkout" },
+        { "path": "apps/devhost/internal/devtools/chat_server.go", "line": 96, "end_line": 111, "label": "Lists only this checkout's sessions" },
+        { "path": "packages/devhost-ui/src/devtools/shared/createDevtoolsSettingsStore.ts", "line": 13, "end_line": 23, "label": "New checkout: Codex, default model" }
+      ]
+    },
+    {
+      "id": "unavail",
+      "lane": "status",
+      "col": 4,
+      "type": "security",
+      "label": "Recovery page: Restart",
+      "sublabel": "deleted one preselected",
+      "tag": "worktree-switch-05",
+      "explanation": "One page serves every stopped state. After the running checkout is deleted, every page shows '<service> is unavailable' and 'Selected checkout <absolute path> is unavailable; choose a checkout to recover repository <folder>.' twice; it never says the folder was deleted. Restart <service> is the only primary action, the deleted checkout stays preselected so Switch worktree pressed before choosing another sends nothing and shows nothing, Recent logs shows stale output, and a 'Manifest change not applied' notice names the deleted manifest. Restart retries the deleted checkout and fails with advice to check services.api.cwd, which replaces the guidance (worktree-switch-05). That notice survives later successful switches (worktree-switch-08). A failed restore ends in the same stopped state.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx", "line": 29, "end_line": 49, "label": "Restart <service> is the primary action" },
+        { "path": "apps/devhost/internal/services/worktree_refresh.go", "line": 29, "end_line": 46, "label": "'Selected checkout … is unavailable'" },
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 180, "end_line": 190, "label": "Restart retries the selected checkout" }
+      ]
+    },
+    {
+      "id": "statuspick",
+      "lane": "status",
+      "col": 5,
+      "type": "security",
+      "label": "Switch worktree on page",
+      "sublabel": "full paths in a select",
+      "tag": "worktree-switch-03",
+      "explanation": "Startup, recovery and app error pages carry a Worktrees section, even with the toolbar off: a native select of '<branch> · <absolute path>' options with the full 40-character SHA for a detached checkout and each unavailable reason appended inside its option, no running or configured marks, and the folder name as its legend. The outline Switch worktree button never says that the whole stack restarts and stays enabled for the running checkout. It posts the same switch request as the toolbar and reloads the page; Refresh worktrees re-reads the list (worktree-switch-03).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/statusPages/components/RecoveryRepository.tsx", "line": 34, "end_line": 56, "label": "Select: full paths, reasons inline" },
+        { "path": "packages/devhost-ui/src/statusPages/hooks/useRecovery.ts", "line": 101, "end_line": 105, "label": "Posts the same switch, then reloads" },
+        { "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx", "line": 50, "end_line": 73, "label": "Worktrees section, Refresh worktrees" }
+      ]
+    },
+    {
+      "id": "blocked",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Switching blocked",
+      "sublabel": "one external service",
+      "tag": "manifest-hot-reload-2-03",
+      "explanation": "Every service whose cwd lies inside the repository joins its switch group, and one external service (managed = false) blocks the whole group: the Worktrees button turns red ('attention required'), the picker shows 'Service <name> is external; devhost cannot switch every service in this repository.' with Switch and restart stack disabled, and recovery pages disable their checkout select under the same sentence. The hot reload that added the service printed nothing about it, and the alert names the cause but no way out; the block is documented only as a bullet under 'Checkouts you cannot pick' (manifest-hot-reload-2-03).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 104, "end_line": 112, "label": "One external member blocks the group" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 342, "end_line": 344, "label": "The switch refuses a blocked repository" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 108, "end_line": 110, "label": "Alert with the blocked reason" }
+      ]
+    },
+    {
+      "id": "restore",
+      "lane": "recovery",
+      "col": 3,
+      "type": "backend",
+      "label": "Old checkout restored",
+      "sublabel": "error stays in the picker",
+      "explanation": "If any service fails to start, devhost stops the new services, starts the previous checkout's services and routes again, restores the saved selection and logs 'Worktree switch failed: <old> -> <new>: <error>'. The request fails, so the picker stays open with the error and the page does not reload. If the restore fails too, the repository's services stay stopped, each recovery page shows the error, and restarting any of them retries the whole repository.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/reload.go", "line": 214, "end_line": 224, "label": "Rollback starts the previous services" },
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 399, "end_line": 408, "label": "Restore the selection; log the failure" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 330, "end_line": 350, "label": "Restore fails: repository stays stopped" }
+      ]
+    },
+    {
+      "id": "deleted",
+      "lane": "recovery",
+      "col": 4,
+      "type": "external",
+      "label": "Running checkout deleted",
+      "sublabel": "in a shell, after a merge",
+      "explanation": "Removing the checkout the stack runs (git worktree remove, a cleanup script, or an agent finishing its task) is routine after a merge. devhost notices only at the next refresh (opening the picker, loading a recovery page or pressing Refresh), then stops just that repository's services and marks them blocked. By design it never falls back to another checkout by itself; other repositories keep running.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/worktree_refresh.go", "line": 8, "end_line": 50, "label": "Refresh stops only that repository" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 244, "end_line": 246, "label": "A vanished selection stays listed" },
+        { "path": "packages/docs/src/content/docs/stacks/worktrees.md", "line": 43, "end_line": 47, "label": "Docs: stop that repo, never fall back" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "open-pick", "from": "open", "to": "pick", "label": "open", "role": "main", "fromSide": "bottom", "toSide": "left" },
+    { "id": "pick-press", "from": "pick", "to": "press", "label": "pick a row", "role": "main" },
+    { "id": "press-stopall", "from": "press", "to": "stopall", "label": "POST /worktrees", "role": "main" },
+    { "id": "stopall-startall", "from": "stopall", "to": "startall", "label": "target manifest", "role": "main" },
+    { "id": "startall-result", "from": "startall", "to": "result", "label": "page reloads", "role": "main", "fromSide": "right", "toSide": "top" },
+    { "id": "pick-reason", "from": "pick", "to": "reason", "label": "click a badge", "role": "branch" },
+    { "id": "reason-stopother", "from": "reason", "to": "stopother", "label": "in use", "role": "branch" },
+    { "id": "press-progress", "from": "press", "to": "progress", "label": "while it runs", "role": "branch", "variant": "dashed" },
+    { "id": "stopall-log", "from": "stopall", "to": "log", "label": "logs", "role": "branch", "variant": "dashed" },
+    { "id": "startall-restore", "from": "startall", "to": "restore", "label": "a service fails", "role": "error" },
+    { "id": "result-chat", "from": "result", "to": "chat", "label": "chat reloads", "role": "branch" },
+    { "id": "result-unavail", "from": "result", "to": "unavail", "label": "app fails", "role": "error" },
+    { "id": "deleted-unavail", "from": "deleted", "to": "unavail", "label": "next refresh", "role": "error" },
+    { "id": "unavail-statuspick", "from": "unavail", "to": "statuspick", "label": "choose another", "role": "branch" },
+    { "id": "pick-blocked", "from": "pick", "to": "blocked", "label": "external service", "role": "error" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "The target is validated before anything stops: an invalid manifest, a missing directory or an unregistered checkout fails the request and the stack keeps running",
+        "A failed start rolls back to the previous checkout: its services, routes and saved selection",
+        "One switch at a time: the lifecycle lock holds refreshes, restarts and a second switch until it ends",
+        "The selection is saved per root manifest and restored on the next devhost start",
+        "A deleted running checkout stops only its repository; devhost never falls back to another checkout silently",
+        "Stop stack re-checks the other stack's identity before SIGTERM and again before SIGKILL",
+        "Startup and recovery pages offer Switch worktree and Refresh worktrees even with the toolbar off"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "process-containment-01 Every stop, a switch's included, can kill unrelated processes that reused a service's old child PIDs (stopgap; owned by stack-run-stop)",
+        "worktree-switch-05 A deleted running checkout lands on a page whose primary Restart retries it and fails",
+      "worktree-switch-14 Opening Worktrees after a rejected manifest edit stops every service hot reload kept running; undoing the edit brings none back",
+        "chat-checkout-switch-01 A waiting or working chat conversation vanishes after a switch while its agent keeps running (owned by agent-chat)",
+        "worktree-switch-01 Find worktree cannot find a branch checkout by its commit ID, though the docs say it can",
+        "worktree-switch-02 The unavailable reason is a raw error chain, the path twice, with no way to open the file",
+        "worktree-switch-03 The recovery page's select differs from the toolbar: full paths, a 40-character SHA, errors inside options",
+        "worktree-switch-04 The terminal names checkouts by folder and reports the switch's own stops as crashes",
+        "worktree-switch-06 A fresh worktree switches 'successfully' into a broken app; nothing prepares it",
+        "worktree-switch-07 Stop stack ends another stack with no confirmation or attribution; Open stack repeats per URL",
+        "worktree-switch-10 Focus starts at the bottom, Tab leaves the picker, badges sit between a row and Switch",
+        "worktree-switch-11 A switch throws away the run's service selection: every service starts, even after switching back",
+      "worktree-switch-12 After a switch to a linked worktree, every later devhost start web api starts all of its services; stopping and starting never restores the names",
+      "worktree-switch-13 Stop stack force-kills the other stack's devhost after 15 seconds, leaving services running unseen while the checkout reads as free",
+      "network-exposure-03 Anyone who can reach the stack can switch its checkout, stop another stack and read checkout paths and PIDs: the worktree routes never check the client",
+        "chat-checkout-switch-02 Switch and restart stack gives no warning when a chat agent is working or waiting",
+        "chat-checkout-switch-03 After a switch, chat falls back to Codex and its default model without a word (owned by agent-chat)",
+        "manifest-hot-reload-2-03 One external service quietly disables switching for its whole repository",
+        "worktree-switch-08 A 'Manifest change not applied' notice about a deleted checkout survives later switches (owned by manifest-hot-reload)",
+        "error-pages-04 An app 404 after a switch is blamed on the checkout: 'Choose another worktree below' (owned by startup-and-recovery)",
+        "worktree-switch-09 One generic spinner while the toolbar already names the target and the old row reads running",
+        "worktree-switch-15 If devhost is killed during a switch, the next devhost start runs the unfinished target checkout instead of the one the stack ran, with no word that the switch never finished"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: six switches between main and ui-polish, a fresh worktree, a broken manifest, an in use checkout stopped from the picker, a deleted running checkout and its recovery page, a switch from a recovery page, the keyboard path, and a switch while a chat agent waited for approval. Later verifiers reproduced worktree-switch-11 and worktree-switch-14 live and confirmed worktree-switch-12, worktree-switch-13, worktree-switch-15 and network-exposure-03 from code. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

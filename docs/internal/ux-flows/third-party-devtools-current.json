@@ -1,0 +1,257 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Use your framework's devtools from the toolbar today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/third-party-devtools-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "toolbar", "label": "devhost toolbar" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "panel", "label": "Docked library panel" },
+    { "id": "monitor", "label": "Redux monitor window" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "find", "label": "Find a launcher", "fromCol": 0, "toCol": 2 },
+    { "id": "inspect", "label": "Open + inspect", "fromCol": 3, "toCol": 4 },
+    { "id": "after", "label": "Switch, close, opt out", "fromCol": 5, "toCol": 5 }
+  ],
+  "mainPath": ["mount", "detect", "segment", "proxy", "panel"],
+  "nodes": [
+    {
+      "id": "mount",
+      "lane": "entry",
+      "col": 0,
+      "type": "external",
+      "label": "App mounts devtools",
+      "sublabel": "TanStack, RHF, Jotai, Vue",
+      "explanation": "The journey starts on any app page devhost serves with its toolbar injected and [devtools.externalToolbars].enabled = true, the default. The app mounts its own devtools: TanStack Router, Query or the unified TanStack shell (Form, Table and Pacer plugins), React Hook Form DevTool, Jotai DevTools, or Vue DevTools in a Vite DevTools dock. Redux Toolkit and Zustand stores are registered through /__devhost__/redux.js instead, because the Redux inspector is devhost's own and has no native launcher. One combined detector reads every integration's adapters.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createExternalDevtoolsDetector.ts", "line": 8, "end_line": 20, "label": "One detector combines every integration" },
+        { "path": "packages/docs/src/content/docs/integrations/redux.md", "line": 18, "end_line": 22, "label": "Redux: register stores through redux.js" }
+      ]
+    },
+    {
+      "id": "detect",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Detect + hide launchers",
+      "sublabel": "in the page, once per frame",
+      "explanation": "A MutationObserver on the page body, plus the Vue and Redux subscriptions, schedules one resync per animation frame. Every installed adapter becomes a toolbar entry with its label, hover title and open state, and one stylesheet hides the native launchers with display: none !important. Vue's dock launcher is hidden with a stylesheet adopted inside the dock's shadow root, and only while the dock is trusted, visible and has one Vue entry. Entries appear and disappear as libraries mount and unmount, with no page reload.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 39, "end_line": 78, "label": "Observe the page; rebuild entries per frame" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsState.ts", "line": 16, "end_line": 22, "label": "Hide native launchers with display: none" }
+      ]
+    },
+    {
+      "id": "segment",
+      "lane": "toolbar",
+      "col": 2,
+      "type": "security",
+      "label": "Find the launcher",
+      "sublabel": "Form 1 is React Hook Form",
+      "tag": "third-party-devtools-06",
+      "explanation": "The toolbar gains one unlabeled segment of identical monospace text buttons between the resource readouts and Hold Reloads, for example Router, Query, TanStack, Form 1, Jotai 1 and Redux, with no icons or grouping. Form 1 is React Hook Form's inspector, while the page's TanStack Form instance sits under TanStack, so Form names neither library; the library appears only in hover text ('Toggle React Hook Form inspector 1'). Jotai 1 is numbered although the page has one Jotai panel, because the detector always appends its discovery number; numbers follow discovery order and restart on reload, as documented (third-party-devtools-06).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel.tsx", "line": 24, "end_line": 37, "label": "Text buttons; library named only in title" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createReactHookFormDevtoolsDetector.ts", "line": 74, "end_line": 77, "label": "React Hook Form entry labelled Form N" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createJotaiDevtoolsDetector.ts", "line": 37, "end_line": 40, "label": "Jotai N even with one store" }
+      ]
+    },
+    {
+      "id": "proxy",
+      "lane": "backend",
+      "col": 3,
+      "type": "security",
+      "label": "Click the native control",
+      "sublabel": "no control: says nothing",
+      "tag": "third-party-devtools-07",
+      "explanation": "Choosing an entry runs toggleLauncher: it asks that entry's adapter whether its panel is open, clicks the library's own close control when it is and its open control otherwise, then re-reads every entry each frame for up to 60 frames until the pressed state matches. Nothing devhost draws opens: the library's own panel does, or for Redux devhost's monitor popup. The toggle never considers other open panels or a monitor window hidden behind the app. A press can also change nothing and say nothing: open() and close() return nothing, each adapter that clicks the page's markup does nothing when its selector misses, and a watch whose state never changed ends on the same exit as success, with no notice, no new tooltip and no console line. Detection is looser than the actions (Router and Query count as installed from their panel alone), so a library release that moves a control leaves a dead entry; a moved React Hook Form launcher even makes a closed inspector read pressed while devhost keeps hiding that launcher (third-party-devtools-07).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 100, "end_line": 116, "label": "Toggle: close when open, else open" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 118, "end_line": 139, "label": "Watch 60 frames; no change ends silently" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 59, "end_line": 65, "label": "Router clicks only a control it finds" }
+      ]
+    },
+    {
+      "id": "panel",
+      "lane": "panel",
+      "col": 4,
+      "type": "security",
+      "label": "Panel docks at bottom",
+      "sublabel": "toolbar hides its last row",
+      "tag": "third-party-devtools-01",
+      "explanation": "Router, Query, the unified TanStack shell and Jotai dock to the bottom edge at fixed heights (Router and Query 500 px, TanStack 400 px, Jotai 372 px); React Hook Form opens a full-height right column. The entry reads pressed, and choosing it again closes the panel. devhost's toolbar stays fixed in the bottom-right corner above every docked panel: at 1280x800 it covers x 213-1260 of the panel's bottom 30 px, so a list's last row stays hidden even when scrolled to the end, and at 900 px the wrapped toolbar covers more. That slice of third-party-devtools-01 belongs to the toolbar-shell redesign; devhost never moves library panels by design.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 44, "end_line": 53, "label": "Toolbar fixed bottom-right in the dock layer" },
+        { "path": "docs/internal/references/external-devtools-internals.md", "line": 80, "end_line": 80, "label": "Launchers only; panels are never reparented" }
+      ]
+    },
+    {
+      "id": "second",
+      "lane": "panel",
+      "col": 5,
+      "type": "security",
+      "label": "Open a second panel",
+      "sublabel": "lands on top; both pressed",
+      "tag": "third-party-devtools-01",
+      "explanation": "A second panel that docks to the same edge lands exactly on top of the first: at 1280x800 Router and then Query both sit at 0,299 1280x501 with Query painted over Router, and both entries read pressed while only Query is visible. While Query is open, Router cannot be reached: choosing Router closes it underneath Query, choosing it again reopens it underneath, and neither click changes anything on screen except Router's own button. The docs accept the overlap ('close one from the toolbar to reach another', integrations/jotai.md), but the pressed state cannot say which panel is visible (third-party-devtools-01).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 49, "end_line": 57, "label": "Router reads open while covered" },
+        { "path": "packages/docs/src/content/docs/integrations/jotai.md", "line": 65, "end_line": 65, "label": "Docs: open panels can overlap" }
+      ]
+    },
+    {
+      "id": "closeTop",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Close the top panel",
+      "sublabel": "Query, shell: close hidden",
+      "tag": "third-party-devtools-02",
+      "explanation": "To reach the panel underneath, people close the top one. Router keeps its close chevron, React Hook Form its X and Jotai its minimize button, but devhost's hide stylesheet also removes TanStack Query's minimize button and the TanStack shell's 'Close TanStack Devtools' button. Query still closes from its 'TANSTACK React Query v5' logo, a button that looks like a logo; the shell closes with Escape, which does nothing for Query. With the toolbar collapsed to its dot, an open Query panel closes only through that logo. integrations/tanstack.md says devhost hides 'their floating launcher buttons' and that 'its own close buttons keep the toolbar's pressed state in step' (third-party-devtools-02).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 22, "end_line": 28, "label": "Query: minimize button hidden too" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/tanStackDevtoolsAdapter.ts", "line": 3, "end_line": 12, "label": "Shell: its close button hidden" },
+        { "path": "packages/docs/src/content/docs/integrations/tanstack.md", "line": 46, "end_line": 46, "label": "Docs: own close buttons stay in step" }
+      ]
+    },
+    {
+      "id": "monitor",
+      "lane": "monitor",
+      "col": 3,
+      "type": "security",
+      "label": "Redux monitor opens",
+      "sublabel": "picker reads Select...",
+      "tag": "third-party-devtools-04",
+      "explanation": "Choosing Redux opens devhost's own monitor as a separate 1000x760 popup window under a new session ID; the popup connects back over a MessageChannel and starts every registered store. The store picker opens on the placeholder 'Select...' although stores are registered, and with nothing chosen the action list follows whichever store changed last: after Redux count and then Zustand count only zustand/setState shows, while the picker still reads 'Select...'. Every monitor window is titled 'Redux DevTools', a constant in the page devhost serves, so two projects' monitors cannot be told apart in the window switcher (third-party-devtools-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 150, "end_line": 171, "label": "New session; 1000x760 popup" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsMonitorStore.ts", "line": 50, "end_line": 54, "label": "Monitor store starts with no store chosen" },
+        { "path": "apps/devhost/internal/devtools/redux_assets.go", "line": 12, "end_line": 12, "label": "Every monitor titled Redux DevTools" }
+      ]
+    },
+    {
+      "id": "behind",
+      "lane": "monitor",
+      "col": 4,
+      "type": "security",
+      "label": "Monitor behind the app",
+      "sublabel": "pressed Redux closes it",
+      "tag": "third-party-devtools-03",
+      "explanation": "Clicking back into the app puts the popup behind the app window. The Redux entry still reads pressed, titled 'Close Redux DevTools: connected to 2 registered host stores', and clicking it, the obvious way to get the window back, closes the monitor: the toggle calls close() whenever the window is open, so the session's focus() branch is never reached and nothing in devhost shows a hidden monitor. Choosing Redux again opens a new window with the picker back on 'Select...'; Redux Toolkit history survives in the app's store, but Zustand history restarts at a new @@INIT. Reloading the app page also closes the monitor; both restarts are documented limitations (third-party-devtools-03).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 107, "end_line": 113, "label": "Pressed entry always calls close()" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 150, "end_line": 155, "label": "focus() only reached through open()" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 173, "end_line": 180, "label": "Page reload (pagehide) closes the monitor" }
+      ]
+    },
+    {
+      "id": "setupError",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "A store cannot connect",
+      "sublabel": "reason only in hover text",
+      "tag": "third-party-devtools-04",
+      "explanation": "A store devhost cannot inspect, such as a Redux store registered without instrument(), leaves the Redux entry looking exactly like a working one, with the same classes and colors. The only sign is its hover text, 'Redux DevTools unavailable: Cart store: Redux DevTools requires the public instrument EnhancedStore.liftedStore capability...', which says unavailable even while the other stores connect; after opening, the monitor repeats that sentence as a banner with no link to the setup steps. A popup the browser blocks is just as silent: nothing opens, the entry stays unpressed, and its only message, the hover text 'Allow popups for this project and try again.', is masked by any store's setup error. integrations/redux.md describes exactly this tooltip, so the design, not the docs, is the problem (third-party-devtools-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 62, "end_line": 75, "label": "Registration errors kept per store" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 142, "end_line": 149, "label": "First error becomes the hover title" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel.tsx", "line": 27, "end_line": 31, "label": "Entry shows only title and pressed state" }
+      ]
+    },
+    {
+      "id": "toml",
+      "lane": "entry",
+      "col": 5,
+      "type": "external",
+      "label": "Set enabled = false",
+      "sublabel": "the only opt-out",
+      "explanation": "The only opt-out is one manifest key, [devtools.externalToolbars].enabled; the manifest accepts no other key in that table. The example manifest describes false as 'leave third-party launcher buttons untouched', guides/devtools.md as 'leave their launchers alone', and each integration page presents it as that integration's own opt-out. The edit applies by hot reload: devhost sends the new configuration on the health stream and the page swaps it in without a reload.",
+      "sources": [
+        { "path": "apps/devhost/internal/manifest/table_keys.go", "line": 19, "end_line": 19, "label": "One key for every integration" },
+        { "path": "apps/devhost/devhost.example.toml", "line": 162, "end_line": 170, "label": "Example: false leaves launchers untouched" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/updateInjectedConfig.ts", "line": 1, "end_line": 15, "label": "Health stream swaps the config live" }
+      ]
+    },
+    {
+      "id": "optedOut",
+      "lane": "toolbar",
+      "col": 5,
+      "type": "security",
+      "label": "Every entry disappears",
+      "sublabel": "Redux inspector gone too",
+      "tag": "third-party-devtools-05",
+      "explanation": "With enabled = false the toolbar clears every entry and removes the hide stylesheet: native launchers come back and open panels stay as they are, as documented. Redux goes too, and the Redux inspector has no native launcher, so registered Redux and Zustand stores can no longer be inspected at all and an open monitor closes. A team that prefers one library's own launcher must give up every integration (third-party-devtools-05). The restored TanStack launchers then sit half under devhost's toolbar in the bottom-right corner, which toolbar-shell-02 covers.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 32, "end_line": 37, "label": "Off: clear every entry, drop the style" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createExternalDevtoolsDetector.ts", "line": 12, "end_line": 20, "label": "Redux is one adapter of the same switch" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "mount-detect", "from": "mount", "to": "detect", "label": "page loads", "role": "main" },
+    { "id": "detect-segment", "from": "detect", "to": "segment", "label": "entries appear", "role": "main" },
+    { "id": "segment-proxy", "from": "segment", "to": "proxy", "label": "choose one", "role": "main" },
+    { "id": "proxy-panel", "from": "proxy", "to": "panel", "label": "native open", "role": "main" },
+    { "id": "panel-second", "from": "panel", "to": "second", "label": "choose another", "role": "branch" },
+    { "id": "second-close", "from": "second", "to": "closeTop", "label": "close the top one", "role": "branch" },
+    { "id": "proxy-monitor", "from": "proxy", "to": "monitor", "label": "Redux: popup", "role": "branch" },
+    { "id": "monitor-behind", "from": "monitor", "to": "behind", "label": "click the app", "role": "branch" },
+    { "id": "monitor-error", "from": "monitor", "to": "setupError", "label": "a store fails", "role": "error" },
+    { "id": "toml-optout", "from": "toml", "to": "optedOut", "label": "save: hot reload", "role": "branch", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "Native launchers stop covering the page: one toolbar segment proxies open and close through each library's own controls, and the panels stay the libraries' own",
+        "Pressed state follows the panels: a DOM observer keeps entries in step when a panel closes from its own control, Escape or a hotkey",
+        "Entries appear and vanish as libraries mount and unmount, with no page reload; Vue is offered only from a trusted dock with one Vue entry",
+        "The Redux monitor needs no browser extension; closing its window unpresses the entry within 100 ms, and Redux Toolkit history survives a reopen",
+        "The opt-out applies by hot reload without a page reload and leaves open panels as they are"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "third-party-devtools-01 A second panel docked to the same edge buries the first while both entries read pressed (the toolbar covering every docked panel's last row is the toolbar-shell slice)",
+        "third-party-devtools-03 Clicking the pressed Redux entry to find the monitor closes it; reopening or reloading restarts Zustand history",
+        "third-party-devtools-04 The Redux monitor never names the store shown or the project, and a store that cannot connect shows only in hover text",
+        "third-party-devtools-05 Opting out is all or nothing and also removes the Redux inspector, which has no native launcher",
+        "third-party-devtools-02 devhost hides the Query and TanStack panels' own close buttons, unlike the other three panels, while the docs say it hides only launchers",
+        "third-party-devtools-06 Launchers are look-alike text buttons: Form 1 is React Hook Form, and the library is named only in hover text",
+        "third-party-devtools-07 A launcher whose library control devhost cannot find, as after a devtools update, does nothing and says nothing",
+        "toolbar-shell-02 Owned by toolbar-shell: native launchers restored by the opt-out sit half under devhost's toolbar"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live on a page mounting TanStack Router, Query and the unified shell, React Hook Form, Jotai, Redux Toolkit and Zustand: opening, stacking and closing panels, the Redux popup (a tab in headless Chrome), a store without instrument(), and the opt-out by hot reload. Vue DevTools and TanStack Detach were not exercised (no Vue app; no picture-in-picture in headless Chrome). This diagram was traced from source only; third-party-devtools-07 was verified from code only, since the review ran only tested library versions."
+      ]
+    }
+  ]
+}

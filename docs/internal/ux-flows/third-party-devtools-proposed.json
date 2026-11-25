@@ -1,0 +1,297 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Use your framework's devtools from the toolbar: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/third-party-devtools-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step where the work started" },
+        "backend": { "label": "Backend operation" },
+        "security": { "label": "Recovery step, handled in place" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "ask", "label": "Toolbar: ask" },
+    { "id": "review", "label": "Toolbar: review" },
+    { "id": "backend", "label": "Backend operation" },
+    { "id": "outcome", "label": "Outcome in place" },
+    { "id": "window", "label": "Redux DevTools window" },
+    { "id": "recovery", "label": "Recovery in place", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "ask_phase", "label": "Ask", "fromCol": 0, "toCol": 1 },
+    { "id": "write_phase", "label": "Review + write", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "outcome_phase", "label": "Outcome + undo", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["entry", "launchers", "reach", "turn", "panel", "close"],
+  "nodes": [
+    {
+      "id": "entry",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Page mounts devtools",
+      "sublabel": "libraries, Redux stores",
+      "explanation": "The journey starts on any app page devhost serves with its toolbar, while [devtools.externalToolbars] enabled and the integration's own key are true, the defaults. The page mounts its libraries' devtools (TanStack Router, Query or the unified shell, React Hook Form's DevTool, Jotai DevTools, Vue DevTools in a Vite DevTools dock) or registers Redux Toolkit and Zustand stores through /__devhost__/redux.js, as today. One detector reads every integration's adapters on each page change, at most once per frame, so launchers appear and leave as libraries mount and unmount, without a page reload; a library that unmounts has no launcher, because there is nothing to open (MENU-3). Detection now also checks the control each launcher's next press needs, and says why a launcher cannot act now instead of removing it or leaving it live (step 7, third-party-devtools-07). The panels stay the libraries' own: devhost proxies launchers only and never reparents, moves, resizes or restyles a panel (product rule).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createExternalDevtoolsDetector.ts", "line": 8, "end_line": 20, "label": "Reuses: one detector for every integration" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 39, "end_line": 78, "label": "Reuses: observe the page, resync per frame" }
+      ]
+    },
+    {
+      "id": "launchers",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Launchers name libraries",
+      "sublabel": "or fold into Devtools",
+      "tag": "third-party-devtools-06",
+      "explanation": "One toggle per library panel the page mounts keeps its place in the bar's order, named by its library: 'TanStack Router', 'TanStack Query', 'TanStack Devtools', 'React Hook Form', 'Jotai', 'Vue' and 'Redux DevTools' (WORD-3). An instance name appears only with two or more panels of one library ('React Hook Form · contact', else 'React Hook Form 2'), and no label reads 'Form' (Backend 4, discuss). Each tooltip and accessible description says what it opens on this page, 'Open the TanStack Query devtools of this page' (SEL-3); pressed reads by shape as well as color (ACT-13). Alt+Ctrl+B focuses the bar, each launcher is an arrow stop, Enter or Space toggles it, and devhost binds none of the libraries' keys (KEY-2, KEY-3, KEY-4, KEY-5). When they would wrap the bar's one row, by toolbar-shell's fit test, they fold into one Devtools control, 'Devtools · 1 open', whose anchored panel lists each launcher with its state in words and gains a filter when its rows overflow (SURF-10, SEL-10, SURF-2, KEY-6, KEY-7). At every acceptance viewport the bar keeps one row and each target is at least 24 by 24 CSS pixels (SURF-9). Resolves third-party-devtools-06.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/components/ExternalDevtoolsPanel.tsx", "line": 24, "end_line": 37, "label": "Replaces: text buttons, library only in title" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createReactHookFormDevtoolsDetector.ts", "line": 74, "end_line": 77, "label": "Replaces: React Hook Form labelled Form N" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createJotaiDevtoolsDetector.ts", "line": 37, "end_line": 40, "label": "Replaces: Jotai N even with one store" }
+      ]
+    },
+    {
+      "id": "reach",
+      "lane": "review",
+      "col": 2,
+      "type": "frontend",
+      "label": "Reach named before press",
+      "sublabel": "closes TanStack Router",
+      "tag": "third-party-devtools-01",
+      "explanation": "Before the press, the launcher says what it will do: while Router is open on the bottom edge, TanStack Query's tooltip and accessible description read 'Open the TanStack Query devtools of this page · closes TanStack Router, open on the same edge' (SEL-1). A panel's edge is read from its own rectangle while it is open: it docks to an edge when it touches that edge and spans more than half of it, so Router, Query, the unified shell and Jotai dock to the bottom by default and React Hook Form opens a full-height column on the right; panels on different edges stay open together. The unpressed Redux DevTools launcher names the stores it will show, 'Open Redux DevTools for this page's 2 stores: Redux Toolkit counter, Zustand counter' (SEL-1). Nothing asks: opening a panel is a read, so the press acts at once, and devhost moves no focus into a library's panel (KEY-6). Resolves the hidden reach of third-party-devtools-01, where both launchers read pressed while one panel hid the other.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 29, "end_line": 35, "label": "Replaces: 'Toggle TanStack Query devtools'" }
+      ]
+    },
+    {
+      "id": "turn",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Close Router, open Query",
+      "sublabel": "own controls · read only",
+      "tag": "third-party-devtools-01",
+      "explanation": "Pressing TanStack Query runs toggleLauncher in the page: while another integrated panel is open on the edge Query docks to, devhost first closes it through its own close control, then clicks Query's own open control, so at most one launcher per edge reads pressed and it is the panel on screen; the launcher whose panel closed unpresses in the same frame as the chosen one presses (SEL-11, SEL-1). Open and close now report what they did, pressed or no control, and the 60-frame watch (about a second) that waits for the panel's state stays (Backend 2). The press is a read, so it gets no notice, no log line and no announcement; the pressed states are the result. After a pointer press the page's keys keep working, the libraries' hotkeys included (KEY-5, CC-28). devhost never moves, resizes or restyles a panel to make room (product rule). Resolves this redesign's slice of third-party-devtools-01: panels docked to one edge are exclusive.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 100, "end_line": 116, "label": "Replaces: toggle that ignores open panels" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 118, "end_line": 139, "label": "Reuses: watch up to 60 frames for the state" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 59, "end_line": 65, "label": "Reuses: each library's own open and close" }
+      ]
+    },
+    {
+      "id": "panel",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "TanStack Query open",
+      "sublabel": "dock on its top edge",
+      "tag": "third-party-devtools-01",
+      "explanation": "The outcome is the panel itself, where the library docks it, and the pressed launcher: only TanStack Query reads pressed on the bottom edge, Router's panel is closed, and Query's tooltip turns to 'Close the TanStack Query devtools of this page' (SEL-11). Every adapter reports its open panel's element and edge (Backend 3), and toolbar-shell moves the dock onto the panel's top edge, or to the top of the window when the panel is taller than half of it, follows the panel's own resize handle and returns the dock to the person's placement when the panel closes, never saving the move, so the last row of the panel's list stays visible (SURF-1, SURF-5, SURF-7; toolbar-shell's slice of third-party-devtools-01). A React Hook Form column on the right stays open beside it. Picks reach the panel: Select Elements and Alt + right-click resolve its elements like any page element (SEL-9, SURF-11). Nothing here writes, so there is no Undo: a panel opened by mistake closes from the same launcher.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 44, "end_line": 53, "label": "Replaces: dock fixed over docked panels" },
+        { "path": "docs/internal/references/external-devtools-internals.md", "line": 80, "end_line": 80, "label": "Reuses: launchers only; panels stay theirs" }
+      ]
+    },
+    {
+      "id": "close",
+      "lane": "outcome",
+      "col": 5,
+      "type": "frontend",
+      "label": "Close it from the panel",
+      "sublabel": "own close buttons back",
+      "tag": "third-party-devtools-02",
+      "explanation": "Every panel closes from its own close or minimize control, its pressed launcher, Escape or a library hotkey, each the library's own; devhost adds no Escape to a library's panel (KEY-1, KEY-8). devhost's stylesheet now hides only floating launchers, so TanStack Query's minimize button ('Close tanstack query devtools') and the unified shell's 'Close TanStack Devtools' button stay visible, as Router's chevron, React Hook Form's close button and Jotai's minimize button already do. The page observer unpresses the launcher within one frame and the dock returns to the person's placement. With the toolbar collapsed an open panel still closes from its own control, and an open panel is not a condition, so the collapsed badge does not show it (SURF-8). Resolves third-party-devtools-02, where Query's and the shell's close buttons were hidden while the docs said only launchers were.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 22, "end_line": 28, "label": "Replaces: Query's minimize button hidden" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/tanStackDevtoolsAdapter.ts", "line": 3, "end_line": 12, "label": "Replaces: the shell's close button hidden" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 69, "end_line": 78, "label": "Reuses: observer keeps pressed state in step" }
+      ]
+    },
+    {
+      "id": "reduxOpen",
+      "lane": "window",
+      "col": 1,
+      "type": "frontend",
+      "label": "Window on a named store",
+      "sublabel": "title names store, stack",
+      "tag": "third-party-devtools-04",
+      "explanation": "Pressing Redux DevTools opens devhost's own inspector in its popup window, a surface that exists today and stays outside the page. It opens on the first registered store, chosen in its picker, never 'Select...', and keeps the person's choice while the window lives (STATE-2, Backend 7). Its title names store, stack and host, 'Redux DevTools · Zustand counter · Acme Shop (shop.localhost)', so two stacks' windows differ in the window switcher (WORD-3, Backend 5). While Autoselect instances is chosen, a line devhost draws above the inspector reads 'Following the latest change: Zustand counter'; while it connects, 'Connecting to shop.localhost…' (STATE-1). Zustand history starts when a store registers and keeps its latest 50 changes (Backend 6, discuss), so changes made before the window opened follow @@INIT. The window still accepts a connection only from its opener, at the same origin, with the matching session ID. Resolves the naming half of third-party-devtools-04 and the Zustand history loss of third-party-devtools-03.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 150, "end_line": 171, "label": "Reuses: popup under a new session ID" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsMonitorStore.ts", "line": 50, "end_line": 54, "label": "Replaces: monitor starts with no store chosen" },
+        { "path": "apps/devhost/internal/devtools/redux_assets.go", "line": 12, "end_line": 12, "label": "Replaces: every window titled Redux DevTools" }
+      ]
+    },
+    {
+      "id": "reduxShow",
+      "lane": "window",
+      "col": 2,
+      "type": "frontend",
+      "label": "Press shows the window",
+      "sublabel": "✕ closes · reload keeps",
+      "tag": "third-party-devtools-03",
+      "explanation": "While the window is open, Redux DevTools reads pressed, and pressing it brings the window to the front through focus() and never closes it; its tooltip reads 'Show the Redux DevTools window · 2 stores connected' (SEL-11). Closing is a control of its own: Close Redux DevTools, a ✕ of at least 24 by 24 CSS pixels beside the pressed launcher and its own arrow stop (SURF-9, KEY-4, WORD-2); it and the window's own close unpress the launcher within 100 ms, as today. Reloading the page, devhost's own reloads included, keeps the window: on pagehide the page says it is leaving, the window reads 'Waiting for shop.localhost to load again · 3 s', and the next page reattaches through the session it keeps in the tab's sessionStorage, with the chosen store kept (STATE-1, Backend 5). A page that registers no store leaves 'This page registers no stores; this window connects when one registers' (STATE-2); a closed tab leaves 'The page that opened this window is gone' with Close Window. Turning redux off still closes the window and leaves the stores untouched. Resolves third-party-devtools-03.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 107, "end_line": 113, "label": "Replaces: the pressed entry always closes" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 150, "end_line": 155, "label": "Reuses: focus() of an open window" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 173, "end_line": 180, "label": "Replaces: pagehide closes the window" }
+      ]
+    },
+    {
+      "id": "saveKeys",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "Save jotai = false",
+      "sublabel": "one key · hot reload",
+      "tag": "third-party-devtools-05",
+      "explanation": "[devtools.externalToolbars] keeps enabled as the master switch and gains one key per integration, tanstack, redux, vue, reactHookForm and jotai, each true by default; an integration runs only while both enabled and its own key are true (SEL-11, Backend 1). Saving jotai = false in devhost.toml is this journey's one write: the manifest accepts the key, the injected configuration and the health stream carry externalToolbars as six booleans in place of externalToolbarsEnabled, and open pages apply it through hot reload, without a page reload, asking nothing (REV-1, REV-10). A wrong value such as vue = \"no\" is reported with its file, line and key, as today, and changes nothing. redux = false, like enabled = false, removes Redux DevTools, which has no native launcher, and the description of each key in the example manifest, guides/devtools.md and each integration page says so. Resolves third-party-devtools-05, the all-or-nothing opt-out that also removed the Redux inspector.",
+      "sources": [
+        { "path": "apps/devhost/internal/manifest/table_keys.go", "line": 19, "end_line": 19, "label": "Replaces: one enabled key for every integration" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/updateInjectedConfig.ts", "line": 4, "end_line": 15, "label": "Reuses: the health stream swaps the config" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 32, "end_line": 37, "label": "Replaces: off clears every entry and style" }
+      ]
+    },
+    {
+      "id": "offDone",
+      "lane": "outcome",
+      "col": 2,
+      "type": "frontend",
+      "label": "Jotai launcher off",
+      "sublabel": "its own launcher back",
+      "explanation": "The save removes only the Jotai launcher and stops hiding Jotai's own launcher, which comes back where Jotai puts it; an open Jotai panel stays open, and every other launcher, Redux DevTools included, stays. The stack's terminal and log print the reload's one outcome line, 'Applied devhost.toml: turned off the Jotai launchers · nothing restarted', the line toolbar-shell words for every toolbar change, never only 'configuration reloaded' (FB-3, FB-10, FB-7). The save is the person's own edit, so there is no Undo: the integration comes back by saving jotai = true again, which hot reload applies the same way. Restored native launchers sit where their libraries put them; keeping devhost's dock off them is toolbar-shell's per-person placement, Move to and dragging the stack name (toolbar-shell-02, related, owned by toolbar-shell).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsState.ts", "line": 16, "end_line": 22, "label": "Reuses: hide rules from installed adapters" }
+      ]
+    },
+    {
+      "id": "unavailable",
+      "lane": "recovery",
+      "col": 0,
+      "type": "security",
+      "label": "Launcher says why",
+      "sublabel": "not recognized, detached",
+      "tag": "third-party-devtools-07",
+      "explanation": "An installed library whose panel the toolbar cannot open or close now keeps its launcher in place, aria-disabled, with a short state after its name and one reason sentence as its tooltip, accessible description and Devtools row, never removed and never live-looking (MENU-3, HOLD-1, selection-11). Detection requires the control the next press needs, so a version whose controls devhost cannot find reads 'TanStack Router · not recognized', with 'devhost does not recognize this TanStack Router devtools version; use the library's own button, which devhost now shows.', and devhost stops hiding that library's own launchers until it recognizes the controls (MENU-5). React Hook Form reads open from its panel's visibility, never its launcher's absence. The shell detached reads 'TanStack Devtools · detached'; Vue's dock hidden, not authorized or ambiguous reads 'Vue · dock hidden' and the like, each with its way out. On the bar the short state is the visible reason, a proposed HOLD-1 exception for bar items. Each clears by itself without a reload, and a focused launcher keeps focus (KEY-11). Resolves the dead launcher of third-party-devtools-07.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/externalDevtoolsDetectors.ts", "line": 43, "end_line": 47, "label": "Replaces: Router installed from its panel alone" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createReactHookFormDevtoolsDetector.ts", "line": 48, "end_line": 51, "label": "Replaces: open read from a missing launcher" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createVueDevtoolsDetector.ts", "line": 192, "end_line": 197, "label": "Replaces: Vue entry gone while dock hidden" }
+      ]
+    },
+    {
+      "id": "setup",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Store or popup fails",
+      "sublabel": "said in words, in place",
+      "tag": "third-party-devtools-04",
+      "explanation": "A store that cannot connect is a state: Redux DevTools keeps working for the other stores and reads 'Redux DevTools · 1 needs setup' by shape and text, with 'Redux DevTools: 2 stores connected; Cart store needs setup' as its tooltip and accessible description, never 'unavailable' (ACT-13, WORD-7). The window shows above the inspector 'Cart store cannot connect: it has no Redux DevTools instrumentation. Add instrument() to it once, or register a store already set up for the Redux DevTools extension.' with Copy Error holding the original message, and opens on that line when every store fails (FAIL-2). A popup the browser blocks is a failure notice in the notice stack, announced once in the assertive region: 'Redux DevTools could not open: the browser blocked its window. Allow popups for shop.localhost, then choose Redux DevTools again.' The launcher stays unpressed, a setup problem never masks it, and it stays until dismissed or the next press opens the window (FAIL-2, FB-6, FB-9), with no log line (FB-7). Resolves the failure half of third-party-devtools-04.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 62, "end_line": 75, "label": "Reuses: registration errors kept per store" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 142, "end_line": 149, "label": "Replaces: first error as the hover title" },
+        { "path": "packages/devhost-ui/src/devtools/features/reduxDevtools/createReduxDevtoolsSession.ts", "line": 161, "end_line": 165, "label": "Replaces: blocked popup only in hover text" }
+      ]
+    },
+    {
+      "id": "failed",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Press failed, in words",
+      "sublabel": "own launcher shown",
+      "tag": "third-party-devtools-07",
+      "explanation": "A press that changes nothing says so where it started, as a failure notice in the notice stack, announced once in the assertive region (FAIL-2, FB-9, WORD-7). A press that finds no control, gone since detection, knows at once: 'TanStack Router did not open: devhost found no open control for it in this devtools version. Use the library's own button, which devhost now shows.' A press the library ignores, the state unchanged after 60 frames: 'TanStack Router did not open: its open control did not respond. Use the library's own button, which devhost now shows.' A close reads 'did not close' and ends 'Close it from the panel itself.' A Vite DevTools dock that refuses the switch reads 'Vue did not open: the Vite DevTools dock refused to switch to it.', its message behind Copy Error. Each links its integration page. Until a press succeeds, devhost stops hiding that library's own launchers (MENU-5); focus stays on the launcher (KEY-11); a repeat updates the count (FAIL-4); the notice stays until dismissed or the next press succeeds (FB-6), with no log line. Resolves third-party-devtools-07.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/hooks/useExternalDevtoolsLaunchers.ts", "line": 129, "end_line": 131, "label": "Replaces: unchanged state exits as success" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/types.ts", "line": 8, "end_line": 17, "label": "Replaces: open and close return nothing" },
+        { "path": "packages/devhost-ui/src/devtools/features/externalDevtoolsPanel/createVueDevtoolsDetector.ts", "line": 199, "end_line": 209, "label": "Replaces: a refused dock switch only re-reads" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "entry-launchers", "from": "entry", "to": "launchers", "label": "launchers appear", "role": "main" },
+    { "id": "launchers-reach", "from": "launchers", "to": "reach", "label": "hover or focus", "role": "main" },
+    { "id": "reach-turn", "from": "reach", "to": "turn", "label": "press", "role": "main" },
+    { "id": "turn-panel", "from": "turn", "to": "panel", "label": "Query on screen", "role": "main" },
+    { "id": "panel-close", "from": "panel", "to": "close", "label": "own close control", "role": "main" },
+    { "id": "launchers-reduxOpen", "from": "launchers", "to": "reduxOpen", "label": "Redux DevTools", "role": "branch" },
+    { "id": "reduxOpen-reduxShow", "from": "reduxOpen", "to": "reduxShow", "label": "falls behind", "role": "branch" },
+    { "id": "reduxOpen-setup", "from": "reduxOpen", "to": "setup", "label": "store or popup fails", "role": "error" },
+    { "id": "turn-failed", "from": "turn", "to": "failed", "label": "nothing changed", "role": "error" },
+    { "id": "entry-unavailable", "from": "entry", "to": "unavailable", "label": "cannot act now", "role": "error" },
+    { "id": "saveKeys-offDone", "from": "saveKeys", "to": "offDone", "label": "turn off Jotai", "role": "branch", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: hiding TanStack Query's minimize and the shell's close buttons; the pressed Redux entry closing its window; the window closing on every reload; a number on a lone panel and the 'Form' label; two launchers on one edge reading pressed while one panel hides the other; entries that vanish while the shell is detached or Vue's dock is hidden; setup errors and blocked popups only in hover text; presses that end in silence, and devhost hiding the own launcher of a library it cannot drive; the all-or-nothing opt-out",
+        "Merged: the launcher segment and its overflow, one launcher model in two forms, inline and the Devtools panel",
+        "New: library names; turn-taking per edge with its reach named; the open panel reported to toolbar-shell's dock; Close Redux DevTools; the Redux window's store line, title, waiting and gone states and reattachment; Zustand history from registration; the Devtools control and panel; unavailable launchers with reasons, 'not recognized' included; failure notices for a blocked popup and for a press that finds no control or is ignored; one key per integration",
+        "Changed: pressing the pressed Redux DevTools shows the window (SEL-11); the window survives reloads; Zustand history starts at registration; opening a panel on an occupied edge closes the other; labels become library names; detection requires the control a press needs; React Hook Form reads open from its panel",
+        "Kept: panels stay the libraries' own (product rule), and devhost hides only launchers it can drive; the pressed state follows the panels; launchers follow mounts without a reload; Vue only from a trusted dock with one Vue entry; the inspector needs no extension, accepts only its opener's session and unpresses within 100 ms; popup blockers, Content Security Policy and opener policy untouched; the opt-out applies by hot reload and opens or closes no panel; stores never changed; libraries keep their keys and Escape"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Launchers and their names: third-party-devtools-06",
+        "Turn-taking per edge and the dock seam: third-party-devtools-01 (slice: panels docked to one edge are exclusive; the rest: toolbar-shell)",
+        "Closing a panel: third-party-devtools-02",
+        "Redux window: third-party-devtools-03, third-party-devtools-04",
+        "Unavailable launchers and failed presses: third-party-devtools-07, third-party-devtools-04",
+        "One key per integration: third-party-devtools-05",
+        "Related, not covered: toolbar-shell-02 (toolbar-shell, whose per-person placement moves the dock off restored native launchers)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "One key per integration: tanstack, redux, vue, reactHookForm and jotai beside enabled; externalToolbars as six booleans in the injected configuration and the health stream; the reload's outcome line names what a save turned off",
+        "Launcher model: library, instance name, reason, edge, what a press closes and a problem count; open and close return pressed or no control; turn-taking and the 60-frame failure in toggleLauncher; hide selectors keep only floating launchers",
+        "The dock seam: open panels with their elements and edges, published to toolbar-shell's dock placement",
+        "[discuss]: React Hook Form instance names from the DevTool's id, if its panel exposes it",
+        "The Redux window's session across reloads: a leaving message on pagehide, reattachment through sessionStorage, waiting, no-stores and gone states, a title from stack, host and store",
+        "[discuss]: Zustand history from registration, at most 50 changes until Phase 7 settles the bound",
+        "Monitor preselection of the first registered store, kept across reconnects",
+        "Unavailable states from the adapters: detached, dock hidden, not authorized, ambiguous and not recognized; React Hook Form's open state from its panel"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-28, landed by toolbar-shell: after a toolbar click the page's keys keep working, so library hotkeys work after a launcher press",
+        "CC-29, landed by toolbar-shell: the Keyboard section lists the keys devhost leaves to the libraries",
+        "CC-3, landed by toolbar-shell: under the page's modal dialog the launchers pause with the bar",
+        "No CC-n yet, for the reference's author: the opt-out text of the example manifest, guides/devtools.md and each integration page; turn-taking per edge in jotai.md and tanstack.md; library names and numbering; TanStack Detach and the kept close button; Vue's unavailable entry; redux.md's show, close, reload and Zustand history text; each integration page's word on versions devhost cannot drive"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start, find, stop and restart stacks from the terminal · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* A label between transcripts inside one terminal window; scoped to this page's mockups */
+.mock .lab{color:var(--mute);font-size:11px;padding:6px 10px 0;border-top:1px solid var(--rule)}
+.mock .lab:first-child{border-top:0}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../stack-run-stop-current.html">Today's flow diagram</a><a href="../stack-run-stop-proposed.html">Proposed flow diagram</a><a href="../proposals/stack-run-stop.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>Start, find, stop and restart stacks from the terminal</h1>
+<p><b>TLDR:</b> The terminal says when a stack is ready, what runs and why a stack ended, a stop reports success only once nothing of the stack remains, and every command that reaches several stacks prints its set first and asks only when an agent's turn would end.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="start">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>human output, then agent output</span></div>
+<pre class="term">$ devhost start
+Starting Acme Shop from main ~/acme · 6 services <span class="n">1</span>
+web     https://shop.acme.test/ <span class="n">2</span>
+docs    https://docs.acme.test/
+api     https://shop.acme.test/api/
+admin   https://admin.acme.test/
+mail    https://mail.acme.test/
+Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running <span class="n">3</span>
+All stacks on this machine: https://devhost.acme.test/
+Ctrl-C stops Acme Shop <span class="n">4</span>
+
+$ AGENT=1 devhost start
+Acme Shop: Starting Acme Shop from main /work/acme · 6 services
+Acme Shop: web https://shop.acme.test/
+<span class="muted">…</span>
+Acme Shop: Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running <span class="n">5</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the same start when api exits with code 1</span></div>
+<pre class="term">Ready in 4.6 s: https://shop.acme.test/ · 5 of 6 running · api exited with code 1 at 14:01
+devhost service restart api <span class="n">6</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a manifest with two problems, in both outputs</span></div>
+<pre class="term">$ devhost start
+admin/devhost.toml:3:1  services.admin.hostname  unknown setting; did you mean host?
+   3 │ hostname = "admin"
+devhost.toml:14:8  services.api.port  expected a number
+  14 │ port = "80a"
+Nothing started. Fix the manifest and run devhost start again <span class="n">7</span>
+
+$ AGENT=1 devhost start
+devhost: ERR: devhost.toml was not accepted: /work/acme/admin/devhost.toml:3:1 services.admin.hostname: unknown setting, did you mean host?; /work/acme/devhost.toml:14:8 services.api.port: expected a number</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/newapp</b><span>four more starts that explain themselves</span></div>
+<div class="lab">A health path that answers 404</div>
+<pre class="term">Waiting for api · GET /healthz returned 404 Not Found · 12 s of 30 s
+api answers on :22250, but GET /healthz returned 404 Not Found · 6 tries · 30 s of 30 s. Set services.api.health.http to a path that answers 2xx, or remove it to use a TCP check <span class="n">8</span></pre>
+<div class="lab">A route that routes nothing the way it reads</div>
+<pre class="term">devhost.toml:9:8  services.api.path  "/api" matches only the exact path /api; write "/api/*" to route everything under it
+Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running · 1 warning: devhost.toml:9 <span class="n">9</span></pre>
+<div class="lab">A missing service folder, and no manifest at all</div>
+<pre class="term">devhost.toml:12:7  services.api.cwd  folder api does not exist in ~/newapp <span class="n">10</span>
+
+No devhost.toml in ~/newapp or any folder above it
+devhost init
+Quickstart: https://docs.devhost.example/quickstart/ <span class="n">11</span></pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the route warnings, <code>devhost init</code> and the embedded <code>devhost skill</code> have no contract change in the reference yet, and whether <code>path = "/api"</code> should match everything under it is a product decision, with the warning as the recommended default. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>1. Start a stack, or learn exactly why it cannot start</h2>
+<p><code>devhost start</code> still finds the root manifest from the current folder upward (or <code>--manifest</code>, <code>DEVHOST_MANIFEST</code>), starts the manifest's selection, and checks the manifest, its includes, every hostname and fixed-port claim and every service's <code>cwd</code> before any service runs; a refused start still starts nothing (<code>REV-11</code>). What changes is that the terminal says what it is doing and when the stack is ready, and every problem names its file, line and next step. Keys: Ctrl-C stops the stack gracefully, a second Ctrl-C forces it (step 5, <code>KEY-14</code>).</p>
+<ol><li><span class="n">1</span> The first line names the stack, its checkout by the shared label (branch, or "Detached" with its commit ID, then the path shortened with <code>~</code>) and its size; after an interrupted switch it names the checkout a repository runs from when it is not the configured one (<code>SEL-4</code>, <code>FB-10</code>, <code>WORD-1</code>).</li>
+<li><span class="n">2</span> Each URL prints, labelled by its service, as soon as its route is published, the primary service's first among those published together; no URL prints before its route answers (<code>FB-10</code>, <code>SURF-15</code>).</li>
+<li><span class="n">3</span> One ready line, certified: it prints only once every started service passed its health check, or for a <code>process</code> check or none still runs after <code>O28</code>'s time, with no leftover of a killed run answering in its place. It gives the elapsed time and the primary URL first, then the count; services the run left out are counted ("4 of 6 running · 2 not started: admin, mail"), and a long list collapses to "34 services not started · devhost status" (<code>FB-5</code>, <code>WORD-4</code>, <code>WORD-5</code>, <code>ACT-11</code>).</li>
+<li><span class="n">4</span> The stack directory's URL follows, with its port when it is not 443, and a foreground terminal names its key. The full URL list prints at the first start and on request (<code>devhost status</code>), never again after a later action (<code>SURF-15</code>, <code>KEY-14</code>, <code>FB-10</code>).</li>
+<li><span class="n">5</span> Agent output (<code>AGENT=1</code>) carries the same facts in its own layout: each line labelled <code>Acme Shop:</code>, absolute paths, no padding or wrapping (<code>WORD-9</code>, <code>FB-11</code>, <code>CC-30</code>).</li>
+<li><span class="n">6</span> A service that exits during the start leaves the other five running (the recovery contract); the ready line says so and the command that restarts it prints on its own line, without trailing punctuation (<code>FAIL-1</code>, <code>FAIL-3</code>, <code>MENU-6</code>, <code>WORD-8</code>).</li>
+<li><span class="n">7</span> Every problem of every file prints at once as <code>file:line:column  key  message</code>, with the offending line and a close key when one exists, files relative to the root manifest; under <code>AGENT=1</code> they join one <code>devhost: ERR:</code> line with absolute paths. Hostname and port clashes name the owning stack, its checkout and the command that stops it (<code>FAIL-2</code>, <code>MENU-4</code>, <code>WORD-7</code>, <code>FB-11</code>).</li>
+<li><span class="n">8</span> While it waits, a slow health check shows what the probe last saw; a failed one says what answered, what it got and what to change, never only that it timed out (<code>FAIL-3</code>, <code>STATE-1</code>, <code>ACT-4</code>).</li>
+<li><span class="n">9</span> A route that matches only an exact path, a <code>path</code> without <code>host</code> and <code>watch</code> on an external service each print a warning with file, line, column and key and keep starting; the ready line counts the warnings and <code>devhost status</code> lists them. Nothing is refused (<code>FAIL-2</code>, <code>MENU-4</code>, <code>ACT-8</code>).</li>
+<li><span class="n">10</span> A <code>cwd</code> that does not exist is checked before the checkout lookup, so it reads as the manifest problem it is, never as a Git error (<code>FAIL-2</code>, <code>REV-11</code>).</li>
+<li><span class="n">11</span> With no manifest, the command that creates one prints on its own line, then the Quickstart's URL (a pending decision: <code>devhost init</code> writes a commented <code>devhost.toml</code> and refuses to overwrite one) (<code>STATE-2</code>, <code>SURF-15</code>).</li></ol>
+<p class="fixes">Fixes stack-run-stop-03, journey-crash-to-fix-05, stack-directory-06, stack-run-stop-09, manifest-hot-reload-03, agent-cli-journey-05, journey-new-project-01, journey-new-project-03, journey-new-project-04, stack-run-stop-12 · Backend: terminal lines built from facts through one Go words module, structured manifest errors with the <code>cwd</code> check, the probe's last result, route warnings and <code>devhost init</code> (both [discuss]), the stack directory's URL (Backend 11, 12, 13, 15, 16, 17; <code>CC-22</code>, <code>CC-30</code>)</p></div>
+</section>
+
+<section class="step" id="detach">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>on a terminal: one status line, rewritten in place</span></div>
+<pre class="term">$ devhost start --detach
+Starting Acme Shop in the background from main ~/acme · 6 services <span class="n">1</span>
+Starting Acme Shop · 3 of 6 running · waiting for api · health check 2 s of 30 s · 7 s <span class="n">2</span>
+web     https://shop.acme.test/
+api     https://shop.acme.test/api/
+<span class="muted">…</span>
+Ready in 8.4 s: https://shop.acme.test/ · 6 of 6 running
+All stacks on this machine: https://devhost.acme.test/
+Log: devhost logs <span class="n">3</span>
+Stops after 30 min without requests (idleTimeout) <span class="n">4</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>AGENT=1, output not a terminal: one line per change</span></div>
+<pre class="term">$ AGENT=1 devhost start --detach
+devhost: Starting Acme Shop in the background from main /work/acme · 6 services · PID 84244
+devhost: Starting Acme Shop · 2 of 6 running · waiting for api · health check 1 s of 30 s
+devhost: Starting Acme Shop · 5 of 6 running · waiting for worker · health check 3 s of 30 s
+devhost: Ready in 8.4 s: https://shop.acme.test/ · 6 of 6 running <span class="n">5</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>Ctrl-C while it waits</span></div>
+<pre class="term">Starting Acme Shop · 2 of 6 running · waiting for api · health check 4 s of 30 s · 6 s
+^C
+Cancelled the start of Acme Shop: stopped web and api, which had started <span class="n">6</span>
+$ echo $?
+130</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>Acme Shop already runs the storefront group (web, api, docs)</span></div>
+<pre class="term">$ devhost start --detach admin
+Started admin and mail in Acme Shop · https://admin.acme.test/ · 3.1 s <span class="n">7</span>
+$ devhost start --detach web
+Already running in Acme Shop: web · https://shop.acme.test/ <span class="n">8</span>
+$ devhost start --detach admin   <span class="muted"># during Restart Stack</span>
+Not started: Restart Stack is running · 3 of 6 started <span class="n">9</span>
+$ echo $?
+1</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › 80 columns</b><span>a URL longer than the line</span></div>
+<pre class="term" style="max-width:82ch">api
+https://acme-storefront-api-gateway.internal-preview.shop.acme.test/v2/ <span class="n">10</span>
+admin   https://admin.acme.test/</pre>
+</div>
+</div>
+<div class="cap"><h2>2. Start in the background, or add services to a running stack</h2>
+<p>A detached start still waits for readiness, reuses a stack that already runs, serializes concurrent starts of one manifest, and on a failure before readiness stops what it started and prints the log tail, now with the cause once, by service (owner rule; <code>FAIL-1</code>). What changes is that the terminal is never blank while it waits, and naming services of a running stack starts them instead of saying "Already running". Keys: Ctrl-C while it waits cancels the start (<code>KEY-14</code>).</p>
+<ol><li><span class="n">1</span> Within a second the terminal names the stack, its checkout and its size (<code>FB-10</code>, <code>SEL-4</code>).</li>
+<li><span class="n">2</span> On a terminal, one status line is rewritten at least once a second: the services running, the one it waits on, its health check and the elapsed time (<code>FB-10</code>, <code>STATE-1</code>, <code>ACT-4</code>, <code>WORD-4</code>).</li>
+<li><span class="n">3</span> It ends with the same labelled URLs and certified ready line as a foreground start, then where the stack's output goes: one log per manifest, read with <code>devhost logs</code> (step 4) (<code>FB-7</code>, <code>SURF-13</code>).</li>
+<li><span class="n">4</span> A stack with an idle timeout says when it will stop by itself, so an idle shutdown is expected rather than a mystery (<code>ACT-10</code>).</li>
+<li><span class="n">5</span> When output is not a terminal, as for an agent or a script, the status line becomes one line per change; agent output keeps the PID and absolute paths (<code>FB-10</code>, <code>WORD-9</code>).</li>
+<li><span class="n">6</span> Ctrl-C during the wait is a cancellation, never an error: it stops what had started, says so without an error tag and exits 130 (<code>FAIL-5</code>, <code>KEY-14</code>, <code>WORD-7</code>).</li>
+<li><span class="n">7</span> Naming services the running stack left out starts them into it, with what they depend on, exactly as the Services panel's <b>Start</b> does, without touching running services, and prints what it started (<code>SEL-7</code>, <code>O6</code>, <code>FB-3</code>, <code>CC-7</code>).</li>
+<li><span class="n">8</span> When everything named already runs, it says so and prints only those services' URLs (<code>FB-10</code>).</li>
+<li><span class="n">9</span> The start queues behind another service's start or restart, and is refused while the stack starts, stops or runs a stack-wide operation, naming that operation and its progress, with exit 1 (<code>HOLD-3</code>, <code>HOLD-1</code>, <code>CC-8</code>).</li>
+<li><span class="n">10</span> devhost never breaks a URL, path or command across lines: a token longer than the line moves to its own line whole, for the terminal to wrap, and URLs are links (OSC 8) where the terminal supports them (<code>WORD-8</code>).</li></ol>
+<p class="fixes">Fixes stack-run-stop-04, stack-run-stop-11, stack-run-stop-01, stack-run-stop-10 · Backend: progress lines rewritten on a terminal and one line per change otherwise; <code>devhost start &lt;names&gt;</code> uses services-panel's <code>start-service</code> (Backend 8, 11; <code>CC-7</code>, <code>CC-22</code>)</p></div>
+</section>
+
+<section class="step" id="status">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>api exited, admin left out, docs changed, search external</span></div>
+<pre class="term">$ devhost status
+Acme Shop · main ~/acme · PID 84244 · detached · failed · 4 of 6 running · 1 exited · 1 not started · as of 14:02:31 <span class="n">1</span>
+api     exited with code 1 at 14:01 · devhost service restart api <span class="n">2</span>
+admin   not started · left out of this run · devhost service start admin
+docs    running · changed: docs/astro.config.mjs · https://docs.acme.test/
+web     running since 13:58 · https://shop.acme.test/
+worker  running since 13:58
+mail    running since 13:58 · https://mail.acme.test/
+search  not reachable · GET search.acme.test/health · checked 14:02 · runs outside devhost <span class="n">3</span>
+Last operation: Restarted docs · 1.9 s · 14:00 · from the toolbar <span class="n">4</span>
+Log: devhost logs
+All stacks on this machine: https://devhost.acme.test/
+1 started service is not running: api <span class="n">5</span>
+$ echo $?
+3</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>the same facts for programs</span></div>
+<pre class="term">$ AGENT=1 devhost status --json
+{"stack": "Acme Shop", "state": "failed", "pid": 84244, "manifest": "/work/acme/devhost.toml",
+ "services": [{"name": "api", "state": "exited", "exitCode": 1, "since": "2026-11-17T14:01:12-08:00"},
+              {"name": "admin", "state": "not-started", "cause": "left out of this run"},
+              {"name": "search", "state": "not-reachable", "checked": "2026-11-17T14:02:03-08:00"}, <span class="muted">…</span>]} <span class="n">6</span>
+$ devhost status --wait   <span class="muted"># started during Restart Stack</span>
+Restart Stack · 4 of 6 started · 9 s
+Restart Stack: 6 of 6 running · new automatic ports for api and docs · 14 s</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>two other answers</span></div>
+<pre class="term">$ devhost status   <span class="muted"># the stack's devhost process does not answer</span>
+Acme Shop's devhost process (PID 84244) does not answer; its state is unknown, last seen 14:02 <span class="n">7</span>
+api     exited with code 1 at 14:01 · last seen 14:02
+<span class="muted">…</span>
+$ devhost status   <span class="muted"># the morning after an idle shutdown</span>
+Acme Shop is not running · stopped at 02:14 after 30 min without requests (idleTimeout)
+Start it again in ~/acme with:
+devhost start</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>finding stacks</span></div>
+<pre class="term">$ devhost stack find .
+Acme Shop  main ~/acme  PID 84244 · detached · 4 of 6 running <span class="n">8</span>
+$ devhost stack list
+Acme Shop  main ~/acme                         PID 84244 · detached · 4 of 6 running
+Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   PID 85102 · foreground · 6 of 6 running
+Blog       main ~/blog                         PID 86011 · detached · 2 of 2 running
+All stacks on this machine: https://devhost.acme.test/ <span class="n">9</span>
+$ devhost stack list | cat
+84244	/work/acme/devhost.toml
+85102	/work/acme/.worktrees/fix-nav/devhost.toml
+86011	/work/blog/devhost.toml <span class="n">10</span>
+$ devhost stack find shopp
+No stack matches "shopp" · devhost stack list lists them all</pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: this proposal reads <code>SURF-15</code> against <code>status-15</code> as a human view of <code>devhost stack list</code> on a terminal, while piped and agent output keep the documented picker format byte for byte; and no terminal command offers <code>MENU-5</code>'s lead action for an unreachable external service (check again) or a blocked repository (return to the configured checkout). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>3. Ask what runs, and find stacks</h2>
+<p>New: one command answers whether the stack's services are up, from the same published state and operation record every surface reads, never a guess of the CLI's own (<code>FB-11</code>, <code>ACT-1</code>, <code>ACT-2</code>, <code>CC-23</code>). <code>devhost stack list</code> and <code>devhost stack find</code> stay read only and keep their picker format for programs; <code>stack find</code> now resolves folders as <code>devhost stop</code> does.</p>
+<ol><li><span class="n">1</span> The header names the stack, its checkout, its PID, how it runs, its stack state and its summary, leading with what needs the person, and the time of the snapshot, because this answer does not update (<code>ACT-6</code>, <code>ACT-12</code>, <code>WORD-5</code>).</li>
+<li><span class="n">2</span> One line per service: its state word, cause and since when, its URL, and for a service that needs the person the command that is its lead action (<code>ACT-2</code>, <code>MENU-5</code>, <code>WORD-6</code>, <code>ACT-8</code>). A starting service shows its health check ("starting · health check 4 s of 60 s"), a restarting one its operation ("restarting · Restart Stack"), a rejected manifest file "devhost.toml line 12 is not applied: …" while the stack runs the accepted manifest, and a blocked repository its one sentence instead of its URLs (<code>ACT-4</code>, <code>ACT-3</code>, <code>HOLD-6</code>, <code>HOLD-4</code>).</li>
+<li><span class="n">3</span> An external service shows its reachability with its check and its time and says it runs outside devhost; it is never offered a restart (<code>ACT-9</code>, <code>MENU-3</code>).</li>
+<li><span class="n">4</span> The last operation's outcome with its origin, where the log is read, and the stack directory's URL (<code>FB-3</code>, <code>FB-7</code>, <code>SURF-15</code>).</li>
+<li><span class="n">5</span> Exit 0 when every started service runs, 3 naming each one that does not; 1 stays a failure of the command itself (<code>FB-11</code>).</li>
+<li><span class="n">6</span> <code>--json</code> prints the same facts with the state identifiers (<code>not-started</code>, <code>not-reachable</code>), absolute paths and ISO times; <code>--wait</code> first waits for a running operation to end, printing its progress line, then its outcome (<code>FB-11</code>, <code>WORD-6</code>, <code>WORD-8</code>, <code>FB-1</code>).</li>
+<li><span class="n">7</span> A stack whose devhost process runs but does not answer prints its last known state marked with its age and exits 1, never an empty list or "not running"; a stopped stack names when and why it stopped and the command that starts it, for <code>O15</code>'s 24 hours (<code>STATE-4</code>, <code>STATE-3</code>, <code>ACT-5</code>, <code>ACT-10</code>, <code>STATE-2</code>).</li>
+<li><span class="n">8</span> A query that names an existing folder, <code>.</code> and <code>..</code> included, finds the stack of the nearest <code>devhost.toml</code> from it upward, as <code>devhost stop</code> does; other words keep matching part of a hostname, name or manifest path (<code>SEL-6</code>, <code>CC-34</code>).</li>
+<li><span class="n">9</span> On a terminal each stack shows its name, checkout label, PID, how it runs and its summary, so two stacks named Acme Shop read apart, then the stack directory's URL; a stack with leftovers of a killed run is listed with them (step 7) (<code>SEL-4</code>, <code>WORD-1</code>, <code>SURF-15</code>).</li>
+<li><span class="n">10</span> Piped, or under <code>AGENT=1</code>, both commands print <code>&lt;PID&gt;&lt;TAB&gt;&lt;manifest path&gt;</code> byte for byte as today, because scripts and shell completion read it; a search with no match says what was searched (<code>WORD-9</code>, <code>SEL-10</code>, <code>STATE-2</code>).</li></ol>
+<p class="fixes">Fixes agent-cli-journey-01, stack-run-stop-08, stack-directory-06 · Backend: <code>devhost status</code> reading services-panel's published service state and operation record through the stack's control server; <code>stack find</code>'s folder rule (Backend 7, 17; <code>CC-23</code>, <code>CC-34</code>)</p></div>
+</section>
+
+<section class="step" id="service">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>Acme Shop runs detached; the same works for a foreground stack</span></div>
+<pre class="term">$ devhost service restart api
+Restart api · health check 1 s of 30 s · 1.4 s
+Restarted api · 2.6 s <span class="n">1</span>
+$ devhost service start admin
+Started admin and mail (admin depends on mail) · 3.1 s
+$ devhost service stop worker
+Stopped worker · it reads not started, stopped by you
+$ devhost service restart search
+search runs outside devhost; devhost checks it but cannot restart it <span class="n">2</span>
+$ devhost service restart worker   <span class="muted"># while api restarts</span>
+worker queued behind Restart api <span class="n">3</span>
+$ devhost service restart api   <span class="muted"># during Restart Stack</span>
+Not restarted: Restart Stack is running · 3 of 6 started. Run it again when Restart Stack ends
+$ echo $?
+1</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the foreground stack's own terminal when api crashes</span></div>
+<pre class="term">14:01:12 api exited with code 1 at 14:01
+devhost service restart api <span class="n">4</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>Restart Stack from the terminal</span></div>
+<pre class="term">$ devhost service restart --all
+Restarting all 6 services of Acme Shop with new automatic ports · took 14 s last time <span class="n">5</span>
+Restart Stack · 2 of 6 started · 5 s
+Restart Stack: 6 of 6 running · new automatic ports for api and docs · 14 s
+<span class="muted">when api fails to start:</span>
+Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the stack's one log, whatever started it</span></div>
+<pre class="term">$ devhost logs -f api
+Run: devhost start --detach · PID 84244 · main ~/acme · 13:58:02 <span class="n">6</span>
+14:01:10 api        Error: Cannot find module './db'
+14:01:12 Acme Shop  ERR: api exited with code 1 at 14:01
+14:02:40 Acme Shop  Restarted api · 2.6 s · from the toolbar
+Run: devhost stack replace · PID 85502 · main ~/acme · 14:20:11
+14:20:15 api        listening on :4000
+$ devhost logs --path
+~/.local/state/devhost/logs/stack-&lt;sha256&gt;.log <span class="n">7</span></pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <code>devhost service restart --all</code> is Restart Stack's terminal command; it prints <code>REV-2</code>'s statement and runs without a second step, a proposed exception to <code>REV-2</code>, and <code>CC-11</code> names services or groups only. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>4. Act on one service, and read the stack's log</h2>
+<p>New: the terminal becomes one of each service's entry points, beside its row in the Services panel, the crash view and the control API, and every stack writes one log that follows it through replacements (<code>MENU-1</code>, <code>MENU-6</code>, <code>FB-7</code>). Restarting one service keeps doing exactly what the toolbar's <b>Restart</b> does today. These commands reach the running stack through its control server on the loopback port the state directory records, so they run only on this machine (<code>HOLD-7</code>).</p>
+<ol><li><span class="n">1</span> Each command sends an <code>operationId</code>, waits for health checks with one progress line, then prints one outcome per target, as the toolbar's <b>Restart</b> would; a lost response is read back from the operation record and never sent again (<code>SEL-7</code>, <code>REV-12</code>, <code>ACT-1</code>, <code>FB-3</code>, <code>WORD-4</code>, <code>CC-11</code>, <code>CC-37</code>). A failure prints the target, the exit with its time, its last output lines and what devhost ran, and exits 1 (<code>FAIL-3</code>); with devhost.toml rejected, "Restarted api from the accepted manifest · devhost.toml line 12 is not applied · 2.6 s" (<code>HOLD-6</code>).</li>
+<li><span class="n">2</span> An external service is refused with why, exit 1 (<code>MENU-3</code>, <code>ACT-9</code>).</li>
+<li><span class="n">3</span> A restart of another service queues and runs after the current one; one clashing with a stack-wide operation is refused with one sentence naming it, its progress and the way out (<code>HOLD-3</code>, <code>HOLD-1</code>, <code>CC-8</code>).</li>
+<li><span class="n">4</span> The crash line a running stack prints names the command that restarts the service, never "devhost is waiting for a restart" (<code>MENU-6</code>, <code>MENU-5</code>, <code>FAIL-5</code>).</li>
+<li><span class="n">5</span> <code>devhost service restart --all</code> prints the statement Restart Stack shows in the Services panel before it stops anything, then runs, reports per-service progress and one outcome, and on a failure rolls back service by service, naming what it put back, with exit 1 (<code>REV-2</code>, <code>UNDO-1</code>, <code>FAIL-1</code>, <code>BAR-2</code>). <code>devhost reload [--dry-run] [--stdin &lt;file&gt;]</code> applies or checks the manifest on disk the same way and prints manifest-hot-reload's reload report (<code>FB-11</code>, <code>REV-10</code>, <code>CC-23</code>).</li>
+<li><span class="n">6</span> Foreground or detached, every stack appends to one log per manifest whose name no replacement changes; each run starts with a header naming the command, the PID, the checkout and the time; lines carry their time and one format, failures marked <code>ERR:</code> as warnings are <code>WARN:</code>; <code>-f</code> follows across replacements and service names filter it. Every operation from any origin is one outcome line here, so an outcome the toolbar closed stays readable (<code>FB-7</code>, <code>FB-11</code>, <code>CC-21</code>, <code>CC-23</code>).</li>
+<li><span class="n">7</span> <code>--path</code> prints where the log lives, for tools (<code>FB-7</code>).</li></ol>
+<p class="fixes">Fixes agent-cli-journey-03, stack-run-stop-05, agent-cli-journey-05 · Backend: the <code>devhost service</code> commands on services-panel's routes with <code>operationId</code>; <code>service restart --all</code> ([discuss]); <code>devhost reload</code>; one log per manifest (Backend 6, 8, 9, 10; <code>CC-11</code>, <code>CC-21</code>, <code>CC-23</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="stop">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a second terminal; mail and worker ignore SIGTERM</span></div>
+<pre class="term">$ devhost stop
+Stopping Acme Shop (main ~/acme, PID 84244) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working) <span class="n">1</span>
+Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s · Ctrl-C forces them now <span class="n">2</span>
+Force-stopped mail and worker after 10 s: they ignored SIGTERM <span class="n">3</span>
+Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Claude Code, was working) <span class="n">4</span>
+Start it again in ~/acme with:
+devhost start
+<span class="muted">when worker survives the allowance:</span>
+Acme Shop is not fully stopped: worker (PID 8820, port 22314) still runs <span class="n">5</span>
+$ echo $?
+1</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the foreground stack's own terminal</span></div>
+<pre class="term">^C
+Stopping Acme Shop · 6 services
+api had already exited with code 1 at 14:01
+Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s · Ctrl-C again forces them
+^C
+Force-stopped mail and worker after 4 s <span class="n">6</span>
+Acme Shop stopped at 14:10: Ctrl-C in this terminal</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>AGENT=1: the same facts, one line per change</span></div>
+<pre class="term">$ AGENT=1 devhost stop
+devhost: Stopping Acme Shop (main /work/acme, PID 84244) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working)
+devhost: Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s
+devhost: Force-stopped mail and worker after 10 s: they ignored SIGTERM
+devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Claude Code, was working) <span class="n">7</span></pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: one stop routine with <code>O30</code>'s allowance serves <code>devhost stop</code>, <code>devhost stack replace</code>, <code>stop --worktrees</code> and the Worktrees panel's <b>Stop Stack</b>, while <code>CC-35</code> names only the two commands. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>5. Stop a stack and see it stopped</h2>
+<p><code>devhost stop</code> still finds the stack through any path to its manifest, acts on that one stack without asking, releases its hostnames, ports and routes before it unregisters it, signals only processes verified as the stack's own, and leaves the shared Caddy running (<code>REV-7</code>, <code>ACT-11</code>). What changes is that it names the stack instead of PIDs, waits for the stack's own shutdown instead of killing devhost after 15 s, and reports success only once nothing of the stack remains. Keys: Ctrl-C while <code>devhost stop</code> waits, or a second <code>devhost stop</code>, forces the services still stopping; in a foreground stack the first Ctrl-C stops gracefully and the second forces (<code>KEY-14</code>).</p>
+<ol><li><span class="n">1</span> The first line names the stack, its checkout, its PID as a detail, its size and the conversations the stop will close, with each one's state; before it signals, the stop records why beside the stack's record so the stack's terminal, its open pages and its hostnames can say so (step 7) (<code>SEL-6</code>, <code>SEL-4</code>, <code>FB-4</code>, <code>ACT-10</code>, <code>WORD-1</code>).</li>
+<li><span class="n">2</span> One status line, rewritten while it waits: services stopped of the total, the ones still stopping, the time before devhost forces them and the key that forces them now. It waits as long as the stack's own shutdown needs, up to <code>O30</code>'s allowance (a minute plus 20 s per service: 3 min for 6), and never kills the stack's devhost process while it still stops services (<code>FB-10</code>, <code>KEY-14</code>, <code>ACT-3</code>, <code>ACT-11</code>, <code>CC-35</code>).</li>
+<li><span class="n">3</span> A service devhost had to force reads force-stopped with why, never stopped or failed (<code>FAIL-5</code>, <code>WORD-7</code>).</li>
+<li><span class="n">4</span> Success is certified: it prints only once no process, route or port claim of the stack remains, names the conversations it closed, which stay listed and resumable after the next start, and prints the command that starts the stack again on its own line. There is no Undo: the start command is the way back (<code>FB-5</code>, <code>FB-4</code>, <code>UNDO-5</code>, <code>WORD-4</code>, <code>O23</code>).</li>
+<li><span class="n">5</span> Anything that survives the allowance is named with its service, PID and port, and the command exits 1 (<code>FAIL-1</code>, <code>ACT-11</code>). With nothing running it says "Acme Shop is not running", then names the repository's other stacks with the <code>--worktrees</code> command; during a start it cancels that start and says so in both terminals (<code>STATE-2</code>, <code>REV-12</code>).</li>
+<li><span class="n">6</span> In a foreground stack the first Ctrl-C prints the same status line with "Ctrl-C again forces them"; a service that had already exited is not signalled again; the second Ctrl-C forces the rest within a second, still releases the stack's routes, port claims and record, and ends with the stack's end line (<code>KEY-14</code>, <code>FAIL-5</code>, <code>ACT-10</code>).</li>
+<li><span class="n">7</span> Agent output gets the same facts with absolute paths, one line per change, on the stream <code>reference/output.md</code> names for progress and outcomes (<code>WORD-9</code>, <code>FB-11</code>).</li></ol>
+<p class="fixes">Fixes stack-run-stop-06, interrupted-operations-03, chat-conversations-03 · Backend: one stop routine with <code>O30</code>'s allowance, concurrent per-service waits, forcing on a second signal and survivors returned; the stop reason recorded before the signal; the conversations each stack would close, read from its control server (Backend 1, 2, 4; <code>CC-35</code>, <code>CC-22</code>)</p></div>
+</section>
+
+<section class="step" id="worktrees">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>3 stacks of the acme repository run; Blog runs from another repository</span></div>
+<pre class="term">$ devhost stop --worktrees
+3 stacks of the acme repository run: <span class="n">1</span>
+  Acme Shop  main ~/acme                         PID 84244 · detached
+  Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   PID 85102 · foreground · Claude Code working: "Fix the nav"
+  Acme Shop  Detached 3f9c2a1 ~/review/acme      PID 85390 · detached
+Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N] y <span class="n">2</span>
+Stopped Acme Shop (main ~/acme) · 4.1 s
+Stopped Acme Shop (fix-nav ~/acme/.worktrees/fix-nav) · 3.8 s
+Acme Shop (Detached 3f9c2a1 ~/review/acme) was not stopped: its devhost process (PID 85390) belongs to another user <span class="n">3</span>
+$ echo $?
+1</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>AGENT=1, or no terminal</span></div>
+<pre class="term">$ AGENT=1 devhost stop --worktrees
+devhost: ERR: stop --worktrees would end Claude Code's working turn in fix-nav (/work/acme/.worktrees/fix-nav); ask the person to run it in a terminal or to pass --yes <span class="n">4</span>
+$ echo $?
+1</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>see the set without acting</span></div>
+<pre class="term">$ devhost stop --worktrees --dry-run
+3 stacks of the acme repository run:
+  <span class="muted">… the same 3 lines, nothing stopped</span>
+$ echo $?
+0 <span class="n">5</span></pre>
+</div>
+</div>
+<div class="cap"><h2>6. Stop every stack of the repository</h2>
+<p><code>devhost stop --worktrees</code> still acts only on stacks whose root manifest is in the named manifest's repository, never on another repository's stacks, and each stack stops with step 5's routine and progress line. What changes is that it shows its set before it acts, asks only when that set would end an agent's turn, and attempts every stack instead of giving up at the first one it cannot stop. Keys: the question takes y or yes; Enter, any other answer or end of input is No (<code>REV-4</code>, <code>KEY-14</code>).</p>
+<ol><li><span class="n">1</span> The set prints first: every stack of the repository with its checkout label, PID, foreground or detached, and the conversation each would close with its state; a stack whose folder was deleted is classified from the repository's worktree list, never by running Git in the missing folder (<code>SEL-6</code>, <code>SEL-4</code>, <code>FB-4</code>, <code>FAIL-2</code>, <code>REV-11</code>).</li>
+<li><span class="n">2</span> Only when the set would end an agent's turn that works or waits, a turn in a stack whose chat was turned off included, does it ask, naming those turns, and only when standard input and output are both a terminal and <code>CI</code> is unset; with no turn at stake it prints the set and stops at once (<code>REV-7</code>, <code>REV-3</code>, <code>REV-4</code>, <code>HOLD-5</code>, <code>O33</code>).</li>
+<li><span class="n">3</span> A stack that cannot be stopped never ends the run: every stack is attempted, each ends with its own line, and the command exits 1 naming each stack that still runs (<code>FAIL-1</code>).</li>
+<li><span class="n">4</span> Without a terminal, or under <code>AGENT=1</code>, it refuses with one line telling the agent to ask the person, as the certificate trust commands do, and exits 1; <code>--yes</code> acts without the question and is the one flag that skips a devhost question; no command takes <code>--force</code> for it (<code>REV-7</code>, <code>REV-8</code>, <code>WORD-9</code>, <code>CC-12</code>).</li>
+<li><span class="n">5</span> <code>--dry-run</code> prints the set and exits 0 without acting (<code>SEL-6</code>, <code>CC-12</code>).</li></ol>
+<p class="fixes">Fixes stack-run-stop-07, stack-run-stop-14, stack-run-stop-16 · Backend: multi-stack sets built and printed first, the question, its refusal and <code>--yes</code>, every member attempted and reported, worktree classification from <code>git worktree list --porcelain</code> (Backend 4; <code>CC-12</code>)</p></div>
+</section>
+
+<section class="step" id="end">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the stack's terminal and log, on four occasions</span></div>
+<pre class="term">02:14:00 Acme Shop stopped at 02:14 after 30 min without requests (idleTimeout) <span class="n">1</span>
+14:10:04 Acme Shop stopped at 14:10: devhost stop from another terminal
+15:20:00 Acme Shop lost its proxy at 15:20 (devhost caddy stop); its services keep running <span class="n">2</span>
+15:22:00 Acme Shop's routes answer again at 15:22</pre>
+</div>
+<div class="win">
+<div class="bar"><b>https://shop.acme.test/</b><span>the morning after: devhost's stopped-stack page, no toolbar</span></div>
+<div class="work">
+<h3 style="margin:4px 0">Acme Shop stopped</h3>
+<p class="small" style="margin:4px 0">Stopped at 02:14 after 30 min without requests (idleTimeout)</p>
+<p class="small" style="margin:4px 0">Start it again in ~/acme with</p>
+<div class="row small"><code class="box" style="margin:0">devhost start</code><span class="btn focusring">Copy</span><span class="n">3</span></div>
+<p class="small" style="margin:8px 0 4px"><a>All Stacks on This Machine</a> <span class="n">4</span></p>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>after kill -9 of Acme Shop's devhost process</span></div>
+<pre class="term">$ devhost stack list
+Acme Shop is not running, but 2 services of its killed run still do: api (PID 8812, port 22310), worker (PID 8820) <span class="n">5</span>
+$ devhost start
+api's port 22310 is held by a leftover of Acme Shop's killed run: bun run src/server.ts (PID 8812, started 13:02)
+devhost stop <span class="n">6</span>
+$ devhost stop
+Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <span class="n">7</span></pre>
+</div>
+</div>
+<div class="cap"><h2>7. See why a stack ended, and clear what a killed run left</h2>
+<p>Idle shutdown stays as configured (<code>idleTimeout</code>, <code>--idle-timeout</code>, <code>DEVHOST_IDLE_TIMEOUT</code>), devhost never opens a browser, and only a terminal starts a stack. What changes is that every end says why, the stack's hostnames say so for a day instead of the generic 404, and the processes of a stack whose devhost process died are found and named instead of answering unseen. Open pages of the stack learn the reason before their status stream closes, so their lost-connection notice reads "Acme Shop stopped. Start it with devhost start in ~/acme"; notices-and-feedback draws that notice (<code>HOLD-2</code>, <code>ACT-5</code>).</p>
+<ol><li><span class="n">1</span> However a stack ends, its terminal and its log print one line naming the stack, the reason and the time: the idle timeout with its duration, <code>devhost stop</code> from another terminal, another stack's Worktrees panel, a replacement or every service exited (<code>ACT-10</code>, <code>CC-27</code>).</li>
+<li><span class="n">2</span> While the shared Caddy is stopped, every running stack prints one line that it lost its proxy and one when its routes answer again, never one per check (<code>ACT-10</code>).</li>
+<li><span class="n">3</span> For <code>O15</code>'s time, 24 hours or until another stack claims the hostname or the shared Caddy stops, each hostname of the stack answers this full page: the heading, when and why it stopped, and the command that starts it with <b>Copy</b>. It starts nothing. It is drawn with the shared status-page components in the status pages' stylesheet, carries no toolbar and no devhost key listener, fits every acceptance viewport in both themes, reflows at 320 CSS pixels, and tells its state by its heading and words, never by color alone (<code>ACT-10</code>, <code>STATE-2</code>, <code>STATE-3</code>, <code>UNDO-5</code>, <code>SURF-14</code>, <code>SURF-9</code>, <code>ACT-13</code>, <code>O15</code>, <code>CC-27</code>). Keys: the document's own; Tab reaches <b>Copy</b>, then <b>All Stacks on This Machine</b>, after the heading and the sentence; Enter or Space activates; Escape has nothing to close. <b>Copy</b> keeps focus after copying, and the page's one polite region says "Copied devhost start" once (<code>KEY-1</code>, <code>KEY-6</code>, <code>KEY-11</code>, <code>FB-9</code>).</li>
+<li><span class="n">4</span> <b>All Stacks on This Machine</b> opens the stack directory, which lists Acme Shop as recently stopped; stack-directory draws it (<code>SURF-15</code>, <code>CC-27</code>).</li>
+<li><span class="n">5</span> <code>devhost stack list</code> and <code>devhost status</code> name the services of a killed run that still run, from the PIDs, ports and hostnames its record kept (<code>ACT-11</code>).</li>
+<li><span class="n">6</span> Before launching a service, <code>devhost start</code> refuses while such a leftover holds its port or hostname, naming the leftover and, on its own line, the command that stops it, so a leftover answering a hostname is never reported ready (<code>ACT-11</code>, <code>REV-11</code>, <code>FAIL-3</code>).</li>
+<li><span class="n">7</span> <code>devhost stop</code> in that folder stops only processes whose start identity matches the record, and an unrelated process that later reuses one of their PIDs is never signalled (<code>ACT-11</code>, <code>FB-5</code>).</li></ol>
+<p class="fixes">Fixes stack-run-stop-11, notices-and-feedback-04, interrupted-operations-02 · Backend: the stop reason and the stopped-stack record rendered into the pages Caddy serves while no stack runs; leftover detection from the stack record and the start identity the <code>process-containment-01</code> stopgap records; proxy lines (Backend 2, 3, 14; <code>CC-27</code>)</p></div>
+</section>
+
+<section class="step" id="replace">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>after installing devhost 0.0.13; no agent turn would end</span></div>
+<pre class="term">$ devhost stack replace --all
+2 stacks and 1 serve session run in this state directory: <span class="n">1</span>
+  Acme Shop  main ~/acme   PID 84244 · detached
+  Blog       main ~/blog   PID 86011 · foreground
+  serve session for docs.acme.test   PID 86240 · keeps running
+Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0.13 <span class="n">2</span>
+Replaced Blog's devhost process: PID 86011 → 85530 · 4 s · devhost 0.0.13
+The serve session for docs.acme.test keeps running devhost 0.0.12; restart it in its terminal to use devhost 0.0.13 <span class="n">3</span>
+<span class="muted">when Acme Shop's shutdown outlasts the allowance:</span>
+Acme Shop was not replaced: worker (PID 8820) is still stopping after 3 min; nothing was started
+Start it again in ~/acme with:
+devhost start
+
+$ AGENT=1 devhost stack replace --all --yes
+devhost: Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0.13 · /work/acme/devhost.toml
+<span class="muted">…</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/blog</b><span>Blog's own foreground terminal</span></div>
+<pre class="term">Replaced by devhost stack replace from another terminal at 14:02 · new PID 85530 <span class="n">4</span>
+devhost logs -f
+devhost stop
+$ echo $?
+0</pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a foreground Acme Shop reports each change once</span></div>
+<pre class="term">14:05:12 Started admin · https://admin.acme.test/ · 1.2 s · from the toolbar <span class="n">5</span>
+14:06:40 Restart Stack: 6 of 6 running · new automatic ports for api and docs · 14 s · from the toolbar
+14:09:03 worker was terminated by SIGTERM (143) at 14:09:03, not sent by devhost <span class="n">6</span>
+14:11:20 mail stopped responding at 14:11: GET :22181 refused the connection; its status command reports it is not running <span class="n">7</span>
+14:13:05 mail is running again at 14:13
+14:15:02 Applied config.toml: <span class="muted">…</span> · All stacks on this machine: https://devhost.acme.test:8443/ <span class="n">8</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>offline, from this binary</span></div>
+<pre class="term">$ devhost skill | head -4
+# devhost 0.0.13 · agent guidance embedded in this binary
+- Are the services up? devhost status (exit 3 names what is not running)
+- Restart one service: devhost service restart &lt;service&gt;
+- Follow output: devhost logs -f · apply a manifest edit: devhost reload <span class="n">9</span></pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: a replacement keeps the services the stack runs at that moment, which changes a sentence of the docs that no contract change in the reference quotes yet. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>8. Replace stacks after an upgrade, and follow what a running stack reports</h2>
+<p>A replacement still stops nothing when the executable is unavailable or a stack is the command's own ancestor, re-checks each stack's identity just before its signal, keeps each stack's flags and checkouts, and leaves the shared Caddy running (<code>REV-11</code>, <code>REV-13</code>). What changes is that it is named replace, with <code>devhost stack restart</code> kept as its alias (<code>O18</code>, <code>WORD-2</code>, <code>CC-31</code>), it waits for each stack's own shutdown instead of giving up at 15 s, and a running stack's terminal reports each change once instead of reprinting the stack. A single stack's replacement, <code>devhost stack replace</code> in its folder, never asks (<code>REV-7</code>).</p>
+<ol><li><span class="n">1</span> The set prints first, as in step 6, with each stack's checkout, PID and how it runs; <code>--all</code> lists the serve sessions of the state directory, which keep running. It asks or refuses only when the set would end an agent's turn, with <code>--yes</code> and <code>--dry-run</code> as in step 6, and the documented post-upgrade step passes <code>--yes</code> (<code>SEL-6</code>, <code>REV-7</code>, <code>O31</code>, <code>O33</code>, <code>CC-12</code>, <code>CC-36</code>).</li>
+<li><span class="n">2</span> Each stack waits for its old devhost process's own shutdown up to <code>O30</code>'s allowance with step 5's progress line, then starts from this executable with the services it runs at that moment, those started later included, and reports one line. A stack that stopped after the command captured it reads "Acme Shop had already stopped; not replaced", never a failure; one whose manifest was saved meanwhile is still replaced, because the check compares its PID, start identity and root manifest; one whose shutdown outlasts the allowance is named with what still stops and the command that starts it, and the command exits 1 (<code>O30</code>, <code>ACT-11</code>, <code>SEL-7</code>, <code>REV-13</code>, <code>FAIL-1</code>, <code>FAIL-5</code>, <code>UNDO-5</code>, <code>CC-35</code>).</li>
+<li><span class="n">3</span> A serve session left running says which devhost it still runs and how to move it to the new one (<code>O31</code>, <code>CC-36</code>).</li>
+<li><span class="n">4</span> A replaced foreground stack prints who replaced it, when, the new PID and the commands that follow and stop the replacement, and exits 0, never 143; open pages reconnect to the replacement and say so once (<code>FAIL-5</code>, <code>ACT-10</code>, <code>CC-24</code>).</li>
+<li><span class="n">5</span> Every operation on a running stack, from any origin, prints one outcome line with its time and origin in the stack's terminal and log, never the whole URL list again, and services devhost stops for an operation (Restart Stack, a switch, a hot reload, a shutdown, a failed health check) never print as exits waiting for a restart; a switch's line, in worktree-switch's words, names both checkouts by label (<code>FB-3</code>, <code>FB-10</code>, <code>FAIL-5</code>, <code>ACT-3</code>, <code>WORD-5</code>, <code>CC-22</code>).</li>
+<li><span class="n">6</span> An exit from outside names the signal, its status, the time and whether devhost sent it (<code>FAIL-3</code>, <code>FAIL-5</code>, <code>WORD-8</code>).</li>
+<li><span class="n">7</span> A daemon that stops on its own prints one line naming its check and what its status command reported, and one line when it recovers, never one per poll (<code>FAIL-3</code>).</li>
+<li><span class="n">8</span> A devhost config file save prints its outcome, whose change summary proxy-settings words, and the stack directory's URL when it moves; a rejected manifest edit prints manifest-hot-reload's "not applied" line with its file and line, and a blocked repository is named once with its sentence (<code>FB-3</code>, <code>SURF-15</code>, <code>MENU-4</code>, <code>HOLD-4</code>).</li>
+<li><span class="n">9</span> <code>devhost skill</code> prints the agent guidance embedded in this binary, for this version and offline, naming <code>devhost status</code>, <code>devhost service</code>, <code>devhost logs</code> and <code>devhost reload</code>; <code>devhost skill --install</code> keeps today's install text, and the Quickstart in <code>devhost --help</code> starts with creating the manifest (a pending decision) (<code>MENU-6</code>, <code>SURF-15</code>, <code>CC-11</code>, <code>CC-23</code>).</li></ol>
+<p class="fixes">Fixes stack-run-stop-13, stack-run-stop-15, stack-run-stop-02, stack-scale-07, worktree-switch-04, interrupted-operations-04, manifest-hot-reload-2-02, proxy-settings-04, stack-run-stop-12 · Backend: replacement by identity with the stop routine's wait and the current selection, the foreground handoff; exit, daemon and proxy lines; one outcome line per operation from any origin; the embedded skill ([discuss]) (Backend 5, 11, 14, 16; <code>CC-24</code>, <code>CC-31</code>, <code>CC-35</code>, <code>CC-36</code>)</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>"Stopping 1 active stack process(es)…", "Sending SIGTERM to process n…" and PIDs as the stop's subject</li>
+<li><code>devhost stop</code>'s SIGKILL of devhost after 15 s, and <code>stack restart</code>'s fixed 15 s</li>
+<li>"devhost is waiting for a restart" and "<span style="font-variant-ligatures:none">[ERROR]</span> received SIGINT" for a cancelled detached start</li>
+<li>The generic 404 for a stack that just stopped</li>
+<li>"stack ownership changed; refresh worktrees", and <code>stop --worktrees</code> ending at its first failure</li>
+<li>Per-replacement log folders, URL lists reprinted after every action, and line breaks inside URLs, paths and commands</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li><code>devhost stop</code>, <code>stack replace</code>, <code>stop --worktrees</code> and <b>Stop Stack</b> share one stop routine, one allowance, one progress line and one certified outcome</li>
+<li><code>stack list</code>, <code>stack find</code> and <code>devhost stop</code> share one resolver (<code>SEL-6</code>)</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li><code>devhost status</code>, <code>devhost logs</code>, <code>devhost reload</code>, <code>devhost service start|stop|restart</code> and <code>service restart --all</code></li>
+<li><code>--dry-run</code> and <code>--yes</code> on multi-stack commands, and their question when an agent's turn would end</li>
+<li>The ready line, labelled URLs as routes publish and the stack directory's URL; status lines for detached starts and stops</li>
+<li>The stopped-stack record, page and end line; leftover detection; the probe's last status in health waits</li>
+<li><code>devhost init</code> and the embedded <code>devhost skill</code> (pending decisions); <code>devhost stack replace</code>, with <code>restart</code> as its alias (<code>O18</code>)</li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li><code>devhost start &lt;names&gt;</code> starts what the running stack left out (<code>O6</code>, <code>CC-7</code>); <code>stack find</code> treats folders as folders (<code>CC-34</code>)</li>
+<li>A stop waits for the stack's own shutdown and never reports success while anything of it remains (<code>CC-35</code>)</li>
+<li>A replaced foreground stack exits 0 and says who replaced it (<code>CC-24</code>); <code>--all</code> leaves serve sessions running (<code>O31</code>, <code>CC-36</code>)</li>
+<li>A replacement keeps the services that run now; a foreground stack writes the per-manifest log (<code>CC-21</code>)</li>
+<li>Agent output keeps a whole error on one <code>ERR:</code> line (<code>CC-23</code>, <code>CC-30</code>), and the tests that assert today's words change with them</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>Manifest discovery from any folder; every start validated, with its hostname and port claims, before a service runs; a refused start starts nothing</li>
+<li>A detached start waits for readiness, serializes starts of one manifest and stops what it started on a failure before readiness; a failed service leaves the rest running</li>
+<li>Every stop releases hostnames, ports and routes, signals only verified processes and leaves the shared Caddy running</li>
+<li><code>stop --worktrees</code> touches only the named repository's stacks; a replacement stops nothing without its executable and re-checks identity before each signal</li>
+<li>Two output contracts with the same facts and exit codes; devhost never opens a browser; idle shutdown as configured</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>One stop routine with <code>O30</code>'s allowance; the stop reason and stopped-stack record (Backend 1, 2; <code>CC-35</code>, <code>CC-27</code>)</li>
+<li>Leftover detection; multi-stack sets with the question, <code>--yes</code> and <code>--dry-run</code> (Backend 3, 4; <code>CC-12</code>)</li>
+<li>Replacement by identity; one log per manifest (Backend 5, 6; <code>CC-24</code>, <code>CC-21</code>, <code>CC-36</code>)</li>
+<li><code>devhost status</code>, <code>devhost service</code> and <code>devhost reload</code> on services-panel's state and operation record (Backend 7 to 10; <code>CC-23</code>, <code>CC-11</code>, <code>CC-37</code>)</li>
+<li>Terminal lines from one Go words module; structured manifest errors; the probe's last result (Backend 11 to 13; <code>CC-22</code>, <code>CC-30</code>)</li>
+<li>Exit, daemon and proxy lines; route warnings and <code>devhost init</code> (both [discuss]); the stack directory's URL (Backend 14 to 17)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

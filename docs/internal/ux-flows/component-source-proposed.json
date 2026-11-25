@@ -1,0 +1,549 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Jump between the page and the source: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/component-source-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "App page: ask"
+    },
+    {
+      "id": "review",
+      "label": "Source menu: review"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "point",
+    "lookup",
+    "menu",
+    "handoff",
+    "opened"
+  ],
+  "nodes": [
+    {
+      "id": "point",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Alt + right-click",
+      "sublabel": "or Shift+F10 in Select Elements",
+      "explanation": "Holding Alt (Option on macOS) and right-clicking an element of the app page, outside devhost's own surfaces, opens its source menu; with Select Elements latched on, the arrow keys walk the highlight and Shift+F10 or the context-menu key opens the menu for the highlighted element (KEY-12, MENU-1). Both resolve the element with the one resolver Select Elements and holding Alt use, page-context's, which outlines it with its role and name before the click (SEL-9). devhost takes the browser's menu only for Alt + right-click and always answers it, also when there is no source (MENU-3, KEY-2); Alt pressed in a chord or to type a character never starts selection. A right-click without Alt stays the page's and closes an open menu; inside devhost's own surfaces Alt + right-click stays the browser's. With [devtools.editor].enabled = false, this and highlight from the editor are both off and the docs' settings row says so (SEL-11). The gesture also works while the page's repository switches or is blocked, where today the listener is switched off without a word.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 65,
+          "end_line": 106,
+          "label": "Reuses: the Alt + contextmenu listener"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 200,
+          "end_line": 205,
+          "label": "Replaces: off while the checkout switches"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/resolveAnnotationTarget.ts",
+          "line": 15,
+          "end_line": 24,
+          "label": "Reuses: the element under the pointer"
+        }
+      ]
+    },
+    {
+      "id": "editorSet",
+      "lane": "ask",
+      "col": 2,
+      "type": "external",
+      "label": "Choose your editor",
+      "sublabel": "env, config file, manifest",
+      "tag": "source-and-minimap-03",
+      "explanation": "devhost takes the editor from DEVHOST_EDITOR, else [devtools.editor].ide in the devhost config file, else the manifest's, which stays the team's default, else VS Code; the control server sends the merged value and its source with every health message, and the menu's title names both (SEL-11, CC-39, Backend 1; source-and-minimap-03). A change in the devhost config file or the manifest applies through hot reload and reaches open pages with the next health message, as an ide change does today; DEVHOST_EDITOR is read when the stack starts. A value devhost cannot use is reported where it was set: the files reject it on save with the accepted values while the stack keeps running what it accepted, and an unusable DEVHOST_EDITOR prints one line at start naming it and the editor used instead (FAIL-2, HOLD-6). Beyond the four built-in editors: a URL template, and with devhost's editor launch a command template in the devhost config file (Backends 2 and 3, [discuss]).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 155,
+          "end_line": 170,
+          "label": "Reuses: ide checked on save"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/schema.go",
+          "line": 8,
+          "end_line": 8,
+          "label": "Reuses: the four built-in editors"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 787,
+          "end_line": 792,
+          "label": "Reuses: config rides every health message"
+        }
+      ]
+    },
+    {
+      "id": "lookup",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Shared source lookup",
+      "sublabel": "in the page, read only",
+      "tag": "page-context-06",
+      "explanation": "Finds the element's source in the page's checkout, in the page, read only, with no control route. It reads React 18's _debugSource and __source first; on React 19 the fiber's _debugStack, whose first frame outside React is the JSX call site; the React DevTools extension's renderer interface last (page-context-06, with its duplicate source-and-minimap-01). Each bundle position maps back through the page's source maps, read from script elements, modules loaded through import, later chunks, a SourceMap header or the last sourceMappingURL comment (source-and-minimap-10). The owner chain is walked the same way, without duplicates. Paths resolve in the selected checkout of the page's repository (SEL-3). The same shared module gives page context's marks their file, so a mark reaches the agent with PlaygroundLayout.tsx:15 or 'no source found' (SEL-9). While a source map loads for the first time, the open menu shows 'Finding the source of <h1>…' (STATE-1).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/reactSourceInspection.ts",
+          "line": 136,
+          "end_line": 159,
+          "label": "Replaces: reading only _debugSource fields"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/reactSourceInspection.ts",
+          "line": 237,
+          "end_line": 285,
+          "label": "Reuses: the React DevTools renderer interface"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/inspectComponentElement.ts",
+          "line": 25,
+          "end_line": 86,
+          "label": "Reuses: owners, source maps, de-duplication"
+        }
+      ]
+    },
+    {
+      "id": "noSource",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "No source for <h1>",
+      "sublabel": "cause · Copy Element Path",
+      "tag": "source-and-minimap-01",
+      "explanation": "When the page records no source for the element, the menu opens all the same, titled 'No source for <h1>', with one sentence naming the cause and Copy Element Path, which copies 'main > section.hero > h1' and reports 'Copied element path · main > section.hero > h1' (MENU-3, FAIL-2, STATE-4). The causes: 'No React component renders this element.'; 'This page's React build records no source locations: React 18 needs the JSX development transform, and React 19 a development build.'; 'Found <h1> in index.js line 5294, but its source map could not be read (404).' The browser's own menu is never taken without this answer, so the gesture never ends in a dead click (KEY-2; source-and-minimap-01, the verifier duplicate of page-context-06).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 80,
+          "end_line": 81,
+          "label": "Replaces: menu blocked before the lookup"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 154,
+          "end_line": 158,
+          "label": "Replaces: no source clears the menu"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/components/ComponentSourceMenu.tsx",
+          "line": 79,
+          "end_line": 79,
+          "label": "Reuses: the menu's error slot"
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "lane": "review",
+      "col": 2,
+      "type": "frontend",
+      "label": "Source menu",
+      "sublabel": "editor · checkout · entries",
+      "explanation": "Opens at the pointer, or at the highlighted element after Shift+F10, inside the viewport on the side away from the dock, never covering the notice stack or docked chat's controls; an open toolbar panel closes (SURF-9, SURF-1, SURF-6, SURF-2). Title 'Open in Cursor · from your devhost config file' (SEL-11, CC-39; source-and-minimap-03); 'Files in fix-nav ~/acme/.worktrees/fix-nav' (SEL-4); one entry per source, '<h1>' at 'frontend/src/components/PlaygroundLayout.tsx:15:7', shortened in the middle (WORD-8); one 'Copy Path · <h1>' per entry (WORD-3); foot '↑↓ Move · Enter Open · Esc Close' (KEY-13). Focus starts on the first item; arrows, Home, End and type-ahead move; Escape, Tab or Shift+Tab close it and return focus (KEY-6, KEY-10, KEY-8). Open never copies (source-and-minimap-02). During a switch the checkout line names it (HOLD-3); with the checkout deleted, the connection lost, another machine or a file outside the checkouts, Open is unavailable with its reason in the status line (HOLD-1, HOLD-4, HOLD-2, HOLD-7) and Copy Path works; a deleted checkout offers Return to Configured Checkout and Check Again (MENU-5).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 161,
+          "end_line": 174,
+          "label": "Reuses: title from the editor, item per source"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/components/ComponentSourceMenu.tsx",
+          "line": 81,
+          "end_line": 108,
+          "label": "Replaces: each entry a single button"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 108,
+          "end_line": 136,
+          "label": "Replaces: Escape or a click outside only"
+        }
+      ]
+    },
+    {
+      "id": "handoff",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Hand off to the editor",
+      "sublabel": "launch [discuss] or URL",
+      "explanation": "Enter or a click on an entry closes the menu and hands the file, line and column in the page's checkout to the person's editor (SURF-15). It never asks (REV-1), stays available while another operation runs (HOLD-3) and no longer copies anything; it is one shared function that every Open in Editor across devhost calls (MENU-4). Through devhost's editor launch (Backend 2, [discuss]), POST /__devhost__/editor/open {file, line, column}, answered only for a browser on this machine (HOLD-7) and only for a file inside the stack's checkouts, runs the editor's command without a shell and answers at once: 200, 422, 403 or 404; it never retries (REV-12). Until the product owner approves it, Open navigates to the editor's URL handler, as today. Either way this is a hand-off, not a devhost write: no operation record and no log line, so this phase holds no write.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 41,
+          "end_line": 63,
+          "label": "Replaces: copy, then open the editor URL"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/componentSourceUtils.ts",
+          "line": 12,
+          "end_line": 36,
+          "label": "Reuses: the editor URL per ide"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/resolveWorktreeSourcePath.ts",
+          "line": 4,
+          "end_line": 16,
+          "label": "Reuses: rewrite to the selected checkout"
+        }
+      ]
+    },
+    {
+      "id": "copied",
+      "lane": "outcome",
+      "col": 2,
+      "type": "frontend",
+      "label": "Copied path",
+      "sublabel": "…/PlaygroundLayout.tsx:15:7",
+      "tag": "source-and-minimap-02",
+      "explanation": "Copy Path puts the entry's path, relative to the checkout with its line and column, on the clipboard, closes the menu and shows 'Copied path · frontend/src/components/PlaygroundLayout.tsx:15:7', which closes 4 s after the pointer and focus leave it (FB-2, FB-3, FB-6, WORD-4, O14; source-and-minimap-02). When the browser refuses the clipboard, a failure notice reads 'Could not copy the path: the browser did not allow clipboard access' with the path as selectable text, and stays until dismissed (FAIL-2, FB-6). Copying is an action of this page, not an operation of the stack: no log line and no operation record (FB-7, ACT-1). There is no Undo: the clipboard is the person's. Today the copy happens silently inside every Open and its errors are swallowed.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 51,
+          "end_line": 60,
+          "label": "Replaces: clipboard errors swallowed"
+        }
+      ]
+    },
+    {
+      "id": "opened",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Opened in Cursor",
+      "sublabel": "URL handler: Sent",
+      "tag": "source-and-minimap-02",
+      "explanation": "The notice stack reports the outcome once: 'Opening PlaygroundLayout.tsx:15:7 in Cursor…' until devhost answers (FB-1), then 'Opened PlaygroundLayout.tsx:15:7 in Cursor', announced once and closing 4 s after the pointer and focus leave it (FB-2, FB-3, FB-6, FB-9, O14, WORD-4). Through the URL handler it reads 'Sent PlaygroundLayout.tsx:15:7 to Cursor · devhost cannot tell whether Cursor opened', never 'Opened', because a page cannot see whether a URL handler ran (FB-5; source-and-minimap-02). There is no Undo: opening a file changes nothing devhost could take back, so this outcome holds no rollback (UNDO-1) and nothing to restore; the notice says what happened."
+    },
+    {
+      "id": "failed",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Cursor did not open",
+      "sublabel": "Copy Path · Copy Error",
+      "tag": "source-and-minimap-02",
+      "explanation": "With devhost's editor launch, an editor that cannot start is a failure notice in words, announced once in the assertive region and kept until dismissed: 'Cursor did not open PlaygroundLayout.tsx:15:7: its command, cursor, was not found. Install Cursor's shell command, or choose another editor in your devhost config file.' with Copy Path and Copy Error, which copies the original error (FAIL-2, WORD-7, FB-6, FB-9; source-and-minimap-02). A lost answer reads 'devhost did not answer; Cursor may have opened PlaygroundLayout.tsx:15:7' with Copy Path; the page never sends the request again, because a second launch can open a second window (REV-12). In the collapsed toolbar a failure stays in its one-line form beside the badge (SURF-8, FB-8)."
+    },
+    {
+      "id": "cursor",
+      "lane": "ask",
+      "col": 4,
+      "type": "external",
+      "label": "Editor cursor moves",
+      "sublabel": "plugin posts file:line:col",
+      "explanation": "An editor plugin or script publishes the cursor as file:line:column with a POST to /__devhost__/react-highlight/cursor on the page's own hostname, as today; devhost ships no editor plugin. A relative locator is relative to the checkout the page runs, also after a switch (SEL-3, SEL-4); an absolute path or a file:// URL inside the stack's checkouts matches the same element, and a relative path that names no file there is tried against each service's folder and used when exactly one file matches (source-and-minimap-08, Backend 5). The route still answers success once it received a well-formed update and 400 for a malformed one, as documented; {\"locator\": null} clears the outlines.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 729,
+          "end_line": 766,
+          "label": "Reuses: cursor POST, success once received"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/react-highlight.md",
+          "line": 21,
+          "end_line": 33,
+          "label": "Replaces: docs: relative to the project"
+        }
+      ]
+    },
+    {
+      "id": "broadcast",
+      "lane": "backend",
+      "col": 4,
+      "type": "backend",
+      "label": "Broadcast to pages",
+      "sublabel": "no stack-wide root",
+      "tag": "source-and-minimap-09",
+      "explanation": "The control server sends each cursor update to every open page of the stack, never another stack's, over /__devhost__/ws/react-highlight, and stops putting the checkout the stack started from into it as the root (Backend 4). Each page compares the locator with its own checkout, which it already follows through a switch, so after Switch and Restart Stack the same locator outlines the same heading and the event names the new checkout (SEL-3, SEL-4; source-and-minimap-09). The health message also carries each service's folder relative to its checkout for the service-folder fallback (Backend 5; source-and-minimap-08). Read only for the stack.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 745,
+          "end_line": 751,
+          "label": "Replaces: the start-time root in each update"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/hooks/useReactHighlightOverlay.ts",
+          "line": 63,
+          "end_line": 63,
+          "label": "Replaces: the update's root wins"
+        }
+      ]
+    },
+    {
+      "id": "match",
+      "lane": "backend",
+      "col": 5,
+      "type": "backend",
+      "label": "Match containing JSX",
+      "sublabel": "module maps · reasons",
+      "tag": "source-and-minimap-08",
+      "explanation": "Each page compares the locator with React's source metadata first, then with the source maps the lookup reads: script elements, modules loaded through import, chunks loaded later and SourceMap headers (source-and-minimap-10). The match is the innermost JSX element that contains the cursor, whose opening tag starts at or before it and whose closing tag ends after it, so a cursor anywhere in '<h1>Devtools playground</h1>' finds the heading; earlier occurrences of the tag count only before that element's own '<' (source-and-minimap-08). The devhost:react-highlight event and the console warning carry the root compared with and, when nothing matched, one reason: no-source-file, component-tag, no-dom-match or outside-checkouts (source-and-minimap-08, source-and-minimap-09, source-and-minimap-10). A cursor on <PlaygroundLayout /> outlines what the component renders when React's metadata is there, and says component-tag otherwise.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 139,
+          "end_line": 161,
+          "label": "Reuses: metadata first, then source maps"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 317,
+          "end_line": 376,
+          "label": "Replaces: the first tag at the column"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 378,
+          "end_line": 405,
+          "label": "Replaces: maps from script tags only"
+        }
+      ]
+    },
+    {
+      "id": "outline",
+      "lane": "outcome",
+      "col": 5,
+      "type": "frontend",
+      "label": "Outline stays on <h1>",
+      "sublabel": "scroll, resize, hot update",
+      "tag": "source-and-minimap-08",
+      "explanation": "Every match is outlined above page content and below devhost's toolbar, never blocking clicks. The outline is anchored to its element: re-measured on scroll, resize, layout change and DOM mutation, and after a hot update re-renders the JSX, the page matches the same locator again and moves the outline to the new element (SURF-12; source-and-minimap-08). It clears on {\"locator\": null}, on the next update and when the stream drops, as today. There is no Undo: highlighting writes nothing, and the next cursor update replaces it.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 163,
+          "end_line": 185,
+          "label": "Replaces: measured once into a fixed box"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/hooks/useReactHighlightOverlay.ts",
+          "line": 36,
+          "end_line": 81,
+          "label": "Reuses: replaced on update, cleared on drop"
+        }
+      ]
+    },
+    {
+      "id": "gone",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "<h1> left the page",
+      "sublabel": "until the next update",
+      "explanation": "When nothing matches any more, for example after the edit removed the heading, the outline gives way to '<h1> left the page' at its last place until the next cursor update, instead of staying where the element was, over other content (SURF-12; source-and-minimap-08)."
+    }
+  ],
+  "edges": [
+    {
+      "id": "point-lookup",
+      "from": "point",
+      "to": "lookup",
+      "label": "look up <h1>",
+      "role": "main"
+    },
+    {
+      "id": "lookup-menu",
+      "from": "lookup",
+      "to": "menu",
+      "label": "sources found",
+      "role": "main"
+    },
+    {
+      "id": "menu-handoff",
+      "from": "menu",
+      "to": "handoff",
+      "label": "Enter · Open <h1>",
+      "role": "main"
+    },
+    {
+      "id": "handoff-opened",
+      "from": "handoff",
+      "to": "opened",
+      "label": "editor took it",
+      "role": "main"
+    },
+    {
+      "id": "lookup-noSource",
+      "from": "lookup",
+      "to": "noSource",
+      "label": "no source",
+      "role": "error"
+    },
+    {
+      "id": "editorSet-menu",
+      "from": "editorSet",
+      "to": "menu",
+      "label": "next health message",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "menu-copied",
+      "from": "menu",
+      "to": "copied",
+      "label": "c · Copy Path",
+      "role": "branch"
+    },
+    {
+      "id": "handoff-failed",
+      "from": "handoff",
+      "to": "failed",
+      "label": "command missing",
+      "role": "error"
+    },
+    {
+      "id": "cursor-broadcast",
+      "from": "cursor",
+      "to": "broadcast",
+      "label": "POST file:line:col",
+      "role": "branch"
+    },
+    {
+      "id": "broadcast-match",
+      "from": "broadcast",
+      "to": "match",
+      "label": "each open page",
+      "role": "branch"
+    },
+    {
+      "id": "match-outline",
+      "from": "match",
+      "to": "outline",
+      "label": "<h1> matched",
+      "role": "branch"
+    },
+    {
+      "id": "outline-gone",
+      "from": "outline",
+      "to": "gone",
+      "label": "element removed",
+      "role": "error",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: the dead click on React 19 that took the browser's menu and showed nothing; the one entry button that copied and opened without a word; swallowed clipboard errors; the start-time checkout as every cursor update's root; the outline measured once into a fixed box; paths cut from the left; the menu switched off without a word while the repository switches or is blocked",
+        "Merged: Select Elements, holding Alt and Alt + right-click on one resolver (page-context's); marks and the menu on one source lookup, React 19 included; every Open in Editor on one editor hand-off with one set of notices",
+        "New: React 19 source from _debugStack without an extension; source maps of modules, later chunks and SourceMap headers; the No source menu with Copy Element Path; Copy Path items; outcome and failure notices; the checkout line; the editor's source in the title; menu keys with type-ahead and a hint line; Shift+F10 in Select Elements; DEVHOST_EDITOR and the devhost config file; URL and command templates and devhost's editor launch ([discuss]); highlight of the containing element, absolute, file:// and service-folder locators, anchored outlines, '<h1> left the page', root and reason in the event; the menu inside the page's modal dialog",
+        "Changed: the editor from DEVHOST_EDITOR, then the devhost config file, then the manifest (CC-39); during a switch or on a blocked checkout the gesture opens the menu with its reason; Open no longer copies and Copy Path no longer opens; the menu takes focus and returns it (KEY-6); a relative locator compares with the page's own checkout; long paths shortened in the middle; with Backend 2, devhost starts the editor's command",
+        "Kept: the component chain with props and mapped paths, without duplicates; the element Select Elements would pick (SEL-9); paths rewritten to the selected checkout; the menu inside the window, closing on Escape, a click outside or a switch; the browser's menu inside devhost and for a right-click without Alt; enabled = false turning both features off; the React DevTools fallback; the built-in URL handlers; an unknown ide rejected on save while the accepted manifest runs, and changes reaching pages without a reload; highlight on the stack's own pages only; the cursor route's success and 400 answers; metadata before source maps; outlines below the toolbar that never block clicks and clear on null, the next update or a dropped stream"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Lookup, menu and marks: page-context-06 (P1) with its duplicate source-and-minimap-01",
+        "Open, Copy Path and their outcomes: source-and-minimap-02",
+        "Your editor: source-and-minimap-03",
+        "Highlight from the editor: source-and-minimap-08, source-and-minimap-09, source-and-minimap-10",
+        "Related, not covered: none"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "The person's editor: [devtools.editor].ide in the devhost config file and DEVHOST_EDITOR; the page gets componentEditor with componentEditorSource (env, devhost-config, manifest or default) with every health message (CC-39)",
+        "[discuss]: devhost opens the editor: POST /__devhost__/editor/open {file, line, column}, this machine only, files inside the stack's checkouts, no shell, 200, 422, 403 or 404, never retried; the product owner approves devhost starting the editor's command, and the reference's author adds the route beside CC-37",
+        "[discuss]: any editor: [devtools.editor].url in the manifest and the devhost config file, [devtools.editor].command in the devhost config file only, each validated with its file, line and key; the reference's author adds them beside CC-39",
+        "Cursor updates stop carrying the checkout the stack started from as their root",
+        "The health message carries each service's folder relative to its checkout, for relative locators"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-39: the editor comes from DEVHOST_EDITOR, then the devhost config file, then the manifest; CONTEXT.md's devhost config file entry and reference/cli.md gain the editor and DEVHOST_EDITOR",
+        "CC-29, landed by page-context: in Select Elements, Shift+F10 opens the highlighted element's source",
+        "[discuss]: guides/devtools.md's Open component source text, its URL-handler sentence and enabled row; guides/react-highlight.md's locator, source-map and debugging texts and 'does not launch editors'; the React-version sentences of guides/annotations.md and reference/selection-plugins.md; devhost.example.toml; reference/control-api.md for the editor launch; none has a CC-n yet"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none",
+        "Nothing here writes to the stack: opening is a hand-off and copying a page action, so the Review + write phase holds no write and there is no Undo"
+      ]
+    }
+  ]
+}

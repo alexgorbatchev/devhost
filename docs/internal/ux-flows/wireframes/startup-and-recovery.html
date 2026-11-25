@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Startup pages, crash recovery and app error pages · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* The shared recovery view, drawn the same on a status page and in the crash view */
+.mock .rv{display:grid;gap:4px;font-size:12px;min-width:0}
+.mock .rvh{font-weight:700;font-size:14px;color:var(--ink)}
+.mock .act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mock .rv .pin{border-left:3px solid var(--bad);padding-left:6px}
+.mock .rv .logl{color:var(--mute);font-size:11px;margin-top:2px}
+.mock .rv pre.term{background:var(--panel);max-height:9.5em;overflow:hidden}
+.mock .rv .dv{color:var(--mute)}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../startup-and-recovery-current.html">Today's flow diagram</a><a href="../startup-and-recovery-proposed.html">Proposed flow diagram</a><a href="../proposals/startup-and-recovery.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>Startup pages, crash recovery and app error pages</h1>
+<p><b>TLDR:</b> Every state of a service gets one devhost page, or the crash view over the app, led by the action that can fix its cause and showing the evidence that explains it; an app's own 404 or 5xx passes through with a devhost notice instead of being replaced; and every restart shows its progress and its outcome where it started, never closing without a word.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="open-url">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>tab title: api could not start · devhost</span></div>
+<div class="work">
+<div class="rv">
+<div class="rvh">✕ api could not start <span class="n">1</span></div>
+<div class="muted">HTTP 503 while the service is not running</div>
+<div>Acme Shop · 5 of 6 running · 1 failed · main ~/acme <span class="n">2</span></div>
+</div>
+<div class="vlab">The same page for each other state, each led by the action for its cause <span class="n">3</span></div>
+<div class="rv">
+<div class="row"><b>◐ api is starting</b><span class="muted">HTTP health check on :55891/ · 4 s of 60 s · no action until ready (step 2)</span></div>
+<div class="row"><b>○ admin is not started</b><span class="muted">left out of this run</span><span class="btn pri">Start admin</span><span class="muted">also starts worker</span></div>
+<div class="row"><b>✕ web exited</b><b>Run bun install in ~/acme/.worktrees/fix-nav, then restart web</b><span class="btn">Restart web</span><span class="n">4</span></div>
+<div class="box" style="margin:2px 0"><b>⊘ api is blocked</b> <span class="n">5</span>
+<div>The checkout ~/acme/.worktrees/fix-nav was deleted; return to the configured checkout or choose another.</div>
+<div class="act"><span class="btn pri">Return to Configured Checkout</span><span class="btn">Check Again</span><span class="btn off">Restart api</span><span class="muted">unavailable for the reason above</span></div>
+<div class="muted" style="margin-top:4px">After Return to Configured Checkout is pressed, in its place:</div>
+<div>Switch Acme Shop's acme repository back to main ~/acme and restart all 6 services? Took 14 s last time.</div>
+<div class="act"><span class="btn focusring">Cancel</span><span class="btn">Return to Configured Checkout</span><span class="muted">… then the shared checkout list, collapsed</span></div></div>
+<div class="box" style="margin:2px 0"><b>◇ search is not reachable</b> <span class="n">6</span>
+<div>devhost does not run search (managed = false). It routes https://search.acme.test/ to port 22182 and checks it with a TCP connection: refused at 14:02:10.</div>
+<div>devhost checks external services but cannot restart them.</div>
+<div class="act"><span class="btn pri">Check Again</span><span class="muted">This page reloads when search answers</span></div></div>
+<div class="box" style="margin:2px 0"><b>✕ mail is not running</b> · its status command reports no process <span class="n">7</span>
+<div class="muted">health check :22181/ refused the connection at 14:02:10 · log: Output of mail's start and stop commands</div>
+<div class="act"><span class="btn pri">Restart mail</span></div></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a script polls api while it starts</span></div>
+<pre class="term">$ curl -s -H 'Accept: application/json' https://shop.acme.test/api/v1/products
+{"service":"api","stack":"Acme Shop","phase":"starting","retryAfter":1}
+$ curl -s https://shop.acme.test/api/v1/products
+devhost: api is starting in Acme Shop; retry in 1 s
+$ curl -sI https://shop.acme.test/api/v1/products | head -2
+HTTP/2 503
+retry-after: 1 <span class="n">8</span></pre>
+</div>
+</div>
+<div class="cap"><h2>1. Open a service URL</h2>
+<p>The person still opens the hostname themselves, devhost never opens a browser, and the app's own response still passes through whenever the app answers. Status pages still work without the toolbar and, for the state, the cause, the service's details and its logs, without JavaScript. What changes is that devhost answers each published state with its own page, led by the action that can fix it, and that scripts get a short status instead of an empty <code>502</code>. A missing file in a served folder keeps devhost's file server's own 404 inside the file browser, which serve-folder draws (<code>SURF-16</code>). Keys: a status page is a full page with the document's standard keys and no shortcuts of its own; every action is a button or a link in reading order (<code>KEY-1</code>).</p>
+<ol><li><span class="n">1</span> The heading names the service and its state, "api could not start", and comes first in reading order; the HTTP status is a secondary detail under it, never read before it. The document title starts with the heading's words, so a background tab says what failed (<code>FB-9</code>, <code>WORD-6</code>, <code>WORD-3</code>, <code>O16</code>).</li>
+<li><span class="n">2</span> One line counts the whole stack, failures first, and names the checkout the service runs from with its shared label; the words are the glossary's (stack, service, checkout, status page), never "project" or "down" (<code>ACT-6</code>, <code>WORD-5</code>, <code>SEL-4</code>, <code>WORD-1</code>).</li>
+<li><span class="n">3</span> One page per published state, each drawn with the shared state indicator (shape and word, never color alone) and led by its cause's action: starting shows progress until ready; exited leads with <b>Restart api</b> (step 3); a service the run left out leads with <b>Start admin</b>, the Services panel's own Start, naming what else it starts (<code>MENU-5</code>, <code>ACT-2</code>, <code>ACT-13</code>, <code>O10</code>, <code>SEL-7</code>).</li>
+<li><span class="n">4</span> A fresh checkout that lacks its setup leads with the command named from the failing service's output, to run in that checkout, then <b>Restart web</b>; devhost runs nothing new itself. Recognising the missing setup is worktree-switch's backend matcher (<code>MENU-5</code>, <code>O32</code>).</li>
+<li><span class="n">5</span> A service blocked by its checkout says so in one sentence, used as the status line and as the accessible description of the unavailable <b>Restart api</b>. <b>Return to Configured Checkout</b> leads and asks in place every time, with <b>Cancel</b> taking the pressed button's place, focused and taking Enter; Escape or a click elsewhere on the page cancels and returns focus to the button. <b>Check Again</b> reads the checkout list again; the page's first read stops nothing. worktree-switch owns the switch, its question and its outcome (<code>HOLD-4</code>, <code>HOLD-1</code>, <code>MENU-3</code>, <code>REV-1</code>, <code>REV-2</code>, <code>REV-4</code>, <code>KEY-8</code>, <code>SEL-4</code>).</li>
+<li><span class="n">6</span> An external service, or a <code>devhost serve --port</code> session with nothing listening, gets its own page: what devhost routes and how it checks, the last result and its time, once that devhost cannot restart it, and <b>Check Again</b>, which runs the check now. It has no <b>Restart</b> and no log, which devhost cannot have (<code>ACT-9</code>, <code>MENU-5</code>, <code>MENU-3</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">7</span> A daemon that stopped on its own: devhost runs its <code>status</code> command once when its health check starts failing, so the page says whether it still runs ("its status command reports PID 72459" when it runs but fails its check), with the check's last result, a log labelled for what it holds, and <b>Restart mail</b> (<code>ACT-2</code>, <code>FAIL-3</code>, <code>SURF-13</code>).</li>
+<li><span class="n">8</span> A request that is not a page load gets the app's own response while the app answers; while the service is not running, devhost answers <code>503</code> with <code>Retry-After</code> and a body under 2 KB naming the service, the stack and the phase, JSON under <code>Accept: application/json</code>, one text line otherwise, never Caddy's empty <code>502</code>. A page load still gets the status page (<code>SURF-16</code>, <code>FB-11</code>, <code>CC-4</code>).</li></ol>
+<p class="fixes">Fixes agent-cli-journey-04, keyboard-and-screen-reader-03, manifest-hot-reload-2-04, serve-folder-01, manifest-hot-reload-2-02 · Backend: a <code>handle_errors</code> route that hands requests the app cannot answer to devhost's short <code>503</code>; states of their own for every cause; a daemon's status verdict; the Check Again route, still to be named, <b>[discuss]</b> (Backend 3, 7, 8; <code>CC-4</code>, <code>CC-25</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="starting">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>4 s into a restart started from the Services panel</span></div>
+<div class="work">
+<div class="rv">
+<div class="rvh">◐ api is starting</div>
+<div class="muted">HTTP 503 while the service starts</div>
+<div>Acme Shop · 5 of 6 running · 1 starting · main ~/acme</div>
+<div>HTTP health check on :55891/ · 4 s of 60 s <span class="n">1</span></div>
+<div>Restart from the Services panel at 14:05:10 <span class="n">2</span></div>
+<div class="act"><span class="btn off">Restart api</span><span class="muted">Restart api is running · health check 4 s of 60 s</span><span class="n">3</span></div>
+<div class="logl">api output <span class="n">4</span></div>
+<pre class="term"><span class="dv">▸ Previous run, ended 14:05:09 with code 0</span>
+<span class="dv">── 14:05:10 · Restart from the Services panel ──</span>
+$ bun run src/server.ts
+Connecting to db …</pre>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › api's starting page in two other moments</b></div>
+<div class="work small">
+<div class="vlab">During devhost start, waiting for a dependency, before any output</div>
+<div class="rv">
+<div><b>◐ api is starting</b> · waiting for db to pass its health check</div>
+<div>Started by devhost start at 14:02:11</div>
+<div class="act"><span class="btn off">Restart api</span><span class="muted">Starting Acme Shop · 2 of 6 started</span></div>
+<div class="muted">No output from api since it started at 14:02:11</div>
+</div>
+<div class="vlab">A restart while api stops, then the tab once api is ready</div>
+<div class="rv">
+<div><b>◐ api is restarting</b> · stopping <span class="n">5</span></div>
+<div class="muted">… then "starting" with its health check line, then the tab reloads into the app at the same URL <span class="n">6</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>2. Wait while the service starts</h2>
+<p>The starting page still answers while the service is not ready and still reloads the tab into the app by itself once it is, at the same URL. What changes is that it says what it waits for and how long, shows only this attempt, and reads the stack's live state instead of probing the URL every second. Keys: Tab reaches the attempt line, the log, which is one focusable scrolling element, and <b>Jump to Latest</b>, which carries the count of new lines once the reader scrolls up (<code>SURF-13</code>, <code>WORD-2</code>).</p>
+<ol><li><span class="n">1</span> The health check it waits on, with the elapsed time and its limit, updated at least once a second; or the dependency it waits for, "waiting for db to pass its health check" (<code>ACT-4</code>, <code>STATE-1</code>, <code>WORD-6</code>, <code>WORD-8</code>).</li>
+<li><span class="n">2</span> What started this attempt and when: "Started by devhost start at 14:02:11", "Restart from the Services panel at 14:05:10" or "after devhost.toml changed on disk at 14:06:02" (<code>ACT-1</code>, <code>FAIL-3</code>).</li>
+<li><span class="n">3</span> <b>Restart api</b> stays in its place, unavailable, with the running operation and its progress as its visible reason, which is also its accessible description; while the stack starts the reason reads "Starting Acme Shop · 2 of 6 started" (<code>HOLD-3</code>, <code>HOLD-1</code>, <code>MENU-3</code>).</li>
+<li><span class="n">4</span> The log, labelled "api output", shows only this attempt's lines, opened at the end and following new lines while the reader is at the bottom. Earlier attempts sit in a collapsed group saying how each ended, and every attempt starts with a divider naming its time and what started it, as the terminal separates them; an attempt with no output says so with its start time (<code>ACT-4</code>, <code>SURF-13</code>, <code>STATE-2</code>, <code>STATE-3</code>).</li>
+<li><span class="n">5</span> A restart reads restarting, then starting, never failed, exited or down; a first start and a restart share one look (<code>ACT-3</code>, <code>WORD-6</code>).</li>
+<li><span class="n">6</span> Once the service is ready, and only then, the page requests its URL once and reloads into the app; a leftover of a killed run answering on the port is never reported ready. Without the live stream the page backs off to checks at 1, 2, 5 and 10 s, then every 30 s, says when it last checked, and checks nothing while the tab is hidden (<code>FB-5</code>, <code>ACT-11</code>, <code>ACT-12</code>, <code>STATE-4</code>).</li></ol>
+<p class="fixes">Fixes startup-recovery-02 · Backend: each attempt marked with its time and origin, the health check's target, elapsed time and timeout in the published state, and status pages reading the health stream (Backend 4, 5, 6; <code>CC-25</code>)</p></div>
+</section>
+
+<section class="step" id="recovery">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>the start failed; the same tab changed in place</span></div>
+<div class="work">
+<div class="rv">
+<div class="rvh">✕ api could not start</div>
+<div class="muted">HTTP 503 while the service is not running</div>
+<div>Acme Shop · 5 of 6 running · 1 failed · main ~/acme</div>
+<div>api exited with code 1 at 14:02:31 before its health check. <span class="n">1</span></div>
+<div>Ran bun run src/server.ts in backend/ · devhost.toml line 14 <span class="n">2</span></div>
+<div class="act"><span class="btn pri">Restart api</span><span class="btn">Edit</span><span class="n">3</span></div>
+<div class="act"><span class="btn">Restart Stack</span><span class="muted">Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time</span></div>
+<div class="pin">api exited with code 1 at 14:02:31 · error: Module not found "src/server.ts" <span class="n">4</span></div>
+<div class="logl">api output · frozen at its exit</div>
+<pre class="term"><span class="dv">── 14:02:30 · Started by devhost start ──</span>
+$ bun run src/server.ts
+error: Module not found "src/server.ts"
+<span class="dv">[a 50,138-character line, folded]</span> <span class="btn">Show All 50,138 Characters</span> <span class="btn">Copy</span>
+warn: retrying db connection ×16</pre>
+<div class="muted">▸ The shared checkout list, collapsed, with Switch and Restart Stack (worktrees on)</div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>api exits while the app page is open</span></div>
+<div class="scrim" style="min-height:0">
+<div class="dlg"><div class="hd"><h3 class="focusring" style="display:inline-block">api exited</h3> <span class="n">5</span></div>
+<div class="body"><div class="rv">
+<div>api exited with code 1 at 14:02:31 before its health check.</div>
+<div class="muted">Ran bun run src/server.ts in backend/ · devhost.toml line 14</div>
+<div class="act"><span class="btn pri">Restart api</span><span class="btn">Edit</span></div>
+<div class="act"><span class="btn">Restart Stack</span><span class="muted">Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time</span></div>
+<div class="pin">api exited with code 1 at 14:02:31 · error: Module not found "src/server.ts"</div>
+<div class="muted">… the same log, evidence and checkout list as the status page</div>
+</div></div>
+<div class="ft"><span class="btn">Minimize <kbd>Esc</kbd></span><span class="n">6</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>minimized, or opened while the person types in the page</span></div>
+<div class="pg" style="min-height:100px">
+<div class="apptxt">Acme Shop · Search products <span class="in focusring">running sho</span></div>
+<div class="corner">
+<div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Expand</span><span class="n">7</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference names no label for reopening the minimized crash view from its notice; this proposal uses <b>Expand</b>, paired with <b>Minimize</b> (<code>WORD-2</code>, <code>SURF-3</code>), with notices-and-feedback, which draws the notice. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>3. Read the failure on the recovery page</h2>
+<p>A failed service still leaves the rest of the stack running, and its hostname, every alias and path route, still shows what went wrong with its logs and a restart, as the recovery contract says. What changes is that the status page and the toolbar's crash view are one shared recovery view, rendered in both stylesheets with the same words, actions and log, and shown once: on devhost's own page the crash view never opens over it for the same failure (<code>SURF-14</code>, <code>SURF-3</code>, <code>CC-2</code>). Keys: Tab order is the cause, the lead action, the other actions, the log, then the checkout list's disclosure; every action is a button (<code>KEY-10</code>).</p>
+<ol><li><span class="n">1</span> One cause sentence in plain words follows the heading. A failed health check of a running process reads failed, an ended process exited; no page shows markup, a raw Go error chain or Go's proxy error (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>, <code>ACT-2</code>).</li>
+<li><span class="n">2</span> The evidence devhost observed, each piece once: the exit code, or the signal by name with its status, time and sender ("terminated by SIGTERM (143) at 21:53:34, not sent by devhost"); the probe it failed; a fixed port another program holds, with that program; and what devhost ran, the command, its folder when it differs from the stack's, and the manifest file and line (<code>FAIL-3</code>, <code>WORD-8</code>, <code>FAIL-5</code>).</li>
+<li><span class="n">3</span> Actions in the order of the cause's fix: <b>Restart api</b> leads with the primary style, then <b>Edit</b>, then <b>Restart Stack</b>, secondary, on its own line with its reach. A fixed port another program holds makes <b>Edit</b> lead, because Restart Stack cannot free it; an automatic port another program took makes <b>Restart Stack</b> lead, because it assigns a new one. With worktrees on, the shared checkout list sits collapsed below, with worktree-switch's switch control, its two steps and its question; Enter in its find field never switches (<code>MENU-5</code>, <code>MENU-4</code>, <code>SEL-4</code>, <code>SEL-5</code>, <code>REV-2</code>, <code>KEY-9</code>).</li>
+<li><span class="n">4</span> The service's own last lines, kept per service and frozen at its exit, so another service's output never pushes them out and a burst of lines arrives complete and in order; the log opens at the end with the exit summary pinned above it. It is one focusable scrolling element named "api output", one element per line, terminal colors as styles, never a live region; a line over 2,000 characters folds with <b>Show All 50,138 Characters</b> and <b>Copy</b>; an identical repeated block shows once with its count; when older lines are no longer kept it says so and names <code>devhost logs api</code> (<code>SURF-13</code>, <code>FAIL-3</code>, <code>FAIL-4</code>, <code>SURF-9</code>, <code>STATE-4</code>).</li>
+<li><span class="n">5</span> When the page's service, or a service it depends on, exits while the app is open, the same view opens over the app as the crash view, a modal dialog; any other exit stays in the Services panel, and devhost's own stops never open it. Focus goes to its heading, never a button, with the cause sentence as the dialog's description and <b>Restart api</b> as the next Tab stop; Tab cycles inside it, docked chat and the notice stack included and operable, while the page and the bar are inert; Alt+Ctrl+R does nothing while it is open. Two exits read "api and worker exited", more a count, each with its own cause, evidence and <b>Restart</b>. A Restart of the page's own service that fails in the Services panel opens the view over the panel as that restart's outcome, with no second notice (<code>SURF-3</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-1</code>, <code>SEL-3</code>, <code>FAIL-5</code>, <code>FB-2</code>).</li>
+<li><span class="n">6</span> Escape or <b>Minimize</b> folds the view into its crash notice; Escape never dismisses the failure. <b>Minimize</b> shows its key cap outside its accessible name, with <code>aria-keyshortcuts="Escape"</code>, from the binding's one definition, in the platform's notation (<code>KEY-8</code>, <code>KEY-13</code>, <code>BAR-4</code>, <code>WORD-2</code>).</li>
+<li><span class="n">7</span> The crash notice names the service and the exit; <b>Expand</b> (named "Expand api's failure") reopens the view with focus on its heading. While it is minimized the page, Config, Services and Chat respond. While focus is in a text field, chat holds a draft or a decision card, or an agent of this checkout works or waits, the view opens minimized like this, announced once as a failure, and focus stays where it was; the next exit opens it again by the same test (<code>SURF-3</code>, <code>FB-9</code>, <code>CC-2</code>).</li></ol>
+<p class="fixes">Fixes startup-recovery-01, startup-recovery-03, services-panel-01, stack-scale-02, stack-scale-03, journey-crash-to-fix-04, keyboard-and-screen-reader-01 · Backend: each service's output kept per service and frozen at its exit, the exit record with its sender, and what devhost ran in the published state (Backend 5, 6; <code>CC-2</code>, <code>CC-24</code>, <code>CC-25</code>)</p></div>
+</section>
+
+<section class="step" id="restart-in-place">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>Restart api pressed with Enter, 3 s in</span></div>
+<div class="work">
+<div class="rv">
+<div class="rvh">◐ api is restarting</div>
+<div class="act"><span class="btn focusring">Restarting api…</span><span class="n">1</span><span class="btn">Edit</span></div>
+<div>stopped · starting · health check 2 s of 30 s <span class="n">2</span></div>
+<pre class="term"><span class="dv">── 14:05:10 · Restart from this page ──</span>
+$ bun run src/server.ts</pre>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>the restart failed the same way as the first attempt</span></div>
+<div class="work">
+<div class="rv">
+<div class="rvh">✕ api could not start</div>
+<div>api exited with code 1 · 2 times, last at 14:05:12 <span class="n">3</span></div>
+<div>Restart ran the same command and failed the same way; it comes from devhost.toml line 14</div>
+<div class="act"><span class="btn pri">Edit</span><span class="btn focusring">Restart api</span><span class="n">4</span></div>
+<div class="act"><span class="btn">Restart Stack</span><span class="muted">Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>after a successful restart: the tab reloaded into the app</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">Acme Shop API explorer …</div>
+<div class="corner">
+<div class="banner ok focusring" style="margin:0">Restarted api · 2.6 s <span class="n">5</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>4. Restart the service in place</h2>
+<p><b>Restart api</b> still restarts one service on one press, keeping its automatic port, and still succeeds only once the new process is healthy, as today. What changes is that the page shows the restart's steps and its outcome where it was pressed, keeps focus there, and never sends the same restart twice: the route answers <code>202 Accepted</code> with the operation's record, the page keeps the operation's ID for this tab, a lost response is read back from the record, and a press after api already recovered is refused with "api is already running" and the page redraws (<code>ACT-1</code>, <code>CC-37</code>, <code>REV-12</code>, <code>REV-13</code>). Keys: Enter or Space on the focused button; focus never falls to the page body (<code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> The pressed button keeps focus, busy and unavailable to a second press (<code>aria-busy</code>, <code>aria-disabled</code>, never <code>disabled</code>) and reads "Restarting api…". It hands off to services-panel's restart, the same operation as <code>devhost service restart api</code> (<code>REV-1</code>, <code>KEY-11</code>, <code>FB-9</code>, <code>MENU-1</code>, <code>MENU-6</code>, <code>CC-11</code>).</li>
+<li><span class="n">2</span> The restart's steps show in place, updated at least once a second: queued behind another service's restart, stopping, starting, the health check with its time; the log starts the new attempt with its divider (<code>FB-1</code>, <code>ACT-3</code>, <code>SEL-7</code>).</li>
+<li><span class="n">3</span> A retry that fails updates the one report in place with its count and time instead of adding a second report; when it failed exactly as before, one line says so and names where the command comes from (<code>FAIL-4</code>, <code>MENU-4</code>).</li>
+<li><span class="n">4</span> <b>Edit</b> then leads with the primary style, because rerunning the same command cannot help. The failure is announced once, in the assertive region; focus stays on <b>Restart api</b>, whose accessible description becomes the cause sentence (<code>MENU-5</code>, <code>FB-9</code>, <code>KEY-11</code>).</li>
+<li><span class="n">5</span> Success reloads the tab into the app, where the outcome shows once, read from the operation's record, with focus on its sentence, never at the top of the document; it closes by itself after <code>O14</code>'s time, and no page greets its load with an older success (<code>FB-2</code>, <code>FB-3</code>, <code>FB-6</code>, <code>WORD-4</code>, <code>KEY-6</code>).</li></ol>
+<p class="fixes">Fixes keyboard-and-screen-reader-03 · Backend: services-panel's restart route with an <code>operationId</code>, answering <code>202 Accepted</code> with the operation's record (<code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="edit">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>Edit pressed in the crash view, the config editor on</span></div>
+<div class="scrim" style="min-height:0">
+<div class="dlg"><div class="hd"><h3>Configuration</h3><span class="muted small">devhost.toml · main ~/acme</span></div>
+<div class="body">
+<div class="banner bad" style="margin-top:0">api exited with code 1 at 14:02:31 before its health check <span class="n">1</span>
+<pre class="term" style="padding:2px 0;background:transparent">error: Module not found "src/server.ts"</pre>
+<div class="row"><span class="muted">Ran bun run src/server.ts in backend/ · devhost.toml line 14</span><span class="sp"></span><span class="btn">Show All Output</span></div></div>
+<pre class="term focusring">13   [services.api]
+14 ✕ command = ["bun", "run", "src/server.ts"]
+15   cwd = "backend"</pre>
+<div class="row"><span class="muted">Restarts api (changed)</span><span class="sp"></span><span class="btn pri">Save</span><span class="n">2</span></div>
+</div>
+</div>
+<div class="corner"><div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Expand</span></div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api</b><span>the config editor off; without the toolbar, Open in Editor is absent</span></div>
+<div class="work">
+<div class="rv">
+<div class="act"><span class="btn pri">Restart api</span><span>devhost.toml line 14</span><span class="btn">Copy</span><span class="btn">Open in Editor</span><span class="n">3</span></div>
+<div class="muted">After a save that fixes the command: "api is restarting", then the tab reloads into the app <span class="n">4</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>5. Edit the service's definition</h2>
+<p>The Configuration window is still config-editor's, and a save still applies through hot reload without a question. What is new is that the recovery page and the crash view point at the definition that failed: <b>Edit</b> sits beside <b>Restart</b> on both, so a failure is no longer a dead end that only reruns the same command (<code>MENU-4</code>, <code>MENU-5</code>). Keys: <b>Edit</b> is a button in the recovery view's Tab order; closing the window returns focus to the crash notice (<code>KEY-6</code>).</p>
+<ol><li><span class="n">1</span> <b>Edit</b> opens the Configuration window at the service's definition, "devhost.toml line 14, services.api.command", marked, with this failure's evidence in the window's banner: the exit with its time, the cause sentence and the frozen last lines, with <b>Show All Output</b>. From the crash view it first minimizes the view to its crash notice (<code>MENU-4</code>, <code>SURF-4</code>, <code>SURF-3</code>).</li>
+<li><span class="n">2</span> Save's reach is stated beside <b>Save</b>, which stays available, never a question (<code>REV-10</code>).</li>
+<li><span class="n">3</span> With the config editor off, or on a status page without the toolbar, <b>Edit</b> gives way to the file and line with <b>Copy</b>, and <b>Open in Editor</b> only where the toolbar's editor integration is available (<code>MENU-3</code>, <code>MENU-4</code>).</li>
+<li><span class="n">4</span> A save that fixes the definition applies through hot reload, which restarts api; manifest-hot-reload reports the reload. The recovery page reads restarting and, once api is ready, reloads into the app (step 2) (owner rule; <code>ACT-3</code>).</li></ol>
+<p class="fixes">Fixes journey-crash-to-fix-01 · Backend: each service's defining file and line and one structured error (file, line, column, key, message) in the published state (Backend 6; <code>CC-25</code>)</p></div>
+</section>
+
+<section class="step" id="restart-stack">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test › crash view</b><span>before the press</span></div>
+<div class="work small"><div class="rv">
+<div class="act"><span class="btn pri">Restart api</span><span class="btn">Edit</span></div>
+<div class="act"><span class="btn focusring">Restart Stack</span><span>Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time <span class="n">1</span></span></div>
+</div></div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test › crash view</b><span>Restart Stack pressed, 6 s in</span></div>
+<div class="work small"><div class="rv">
+<div class="act"><span class="btn off">Restart api</span><span class="muted">Restart Stack is running · 2 of 6 started</span></div>
+<div class="act"><span class="btn focusring">Restarting Stack · 2 of 6 started</span><span class="n">2</span></div>
+<div>● worker running · ● docs running · ◐ api starting · health check 3 s of 30 s</div>
+<div class="muted">web, admin and mail · stopped for Restart Stack, starting next</div>
+</div></div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test › crash view</b><span>api exited before its health check</span></div>
+<div class="work small"><div class="rv">
+<div class="banner bad focusring" style="margin:0">Restart Stack: 5 of 6 running · api exited with code 1 before its health check <span class="n">3</span>
+<div class="act" style="margin-top:4px"><span class="btn">Restart api</span><span class="btn">Edit</span></div></div>
+<div class="muted">Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails <span class="n">4</span></div>
+<div class="muted">Minimized, the view leaves this outcome in its crash notice until it is dismissed or Restart Stack succeeds <span class="n">5</span></div>
+</div></div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Restart Stack in three other situations</b></div>
+<div class="work small">
+<div class="vlab">devhost.toml line 12 was not applied</div>
+<div class="act"><span class="btn">Restart Stack</span><span class="muted">Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time · uses the accepted manifest; devhost.toml line 12 is not applied <span class="n">6</span></span></div>
+<div class="vlab">Another operation runs on the stack</div>
+<div class="act"><span class="btn off">Restart Stack</span><span class="muted">Restart mail is running · health check 4 s of 60 s</span></div>
+<div class="vlab">Every service runs again: the crash view closed by itself</div>
+<div class="corner" style="margin-top:0"><div class="banner ok" style="margin:0">Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s <span class="n">7</span></div></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <b>Restart Stack</b> has no terminal command, so this proposal shares services-panel's proposed exception to <code>MENU-6</code> until the reference names one; <code>devhost stack restart</code> replaces the devhost process, a different operation (<code>O18</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>6. Restart the whole stack from the crash view</h2>
+<p><b>Restart Stack</b> still stops every managed service and starts them again with new automatic ports, keeping fixed ports, the selected checkouts, external services, every page's status stream and chat sessions, and still uses the accepted manifest, as today; it is the same control on a recovery page. What changes is that its reach is named beside it, its progress and its outcome stay in the view, and a failure is never silent. Healthy services keep running when one fails: the <code>error-pages-01</code> stopgap ships first, and the rollback builds on it (<code>UNDO-1</code>, <code>REV-11</code>). Keys: Enter or Space presses it once; there is no question here (<code>REV-1</code>).</p>
+<ol><li><span class="n">1</span> Where the page's service is already down and Restart Stack is the remedy on offer, it runs on one press. Its label keeps the operation's name, and the line beside it states the reach: the count, that automatic ports change, the checkout and how long it took last time; its tooltip and accessible description list the 6 services by name (<code>REV-2</code>, <code>BAR-2</code>, <code>SEL-1</code>, <code>CC-17</code>).</li>
+<li><span class="n">2</span> Pressed, it stays in place as the busy control and keeps focus, and the view lists each service with its step; the other actions wait with that operation and its progress as their reason (<code>FB-1</code>, <code>REV-4</code>, <code>KEY-11</code>, <code>HOLD-3</code>).</li>
+<li><span class="n">3</span> When one service cannot start, the view stays open and the outcome replaces the progress in it, counting what runs and naming the failure with its lead actions; focus moves to the outcome's sentence, never to an action (<code>FAIL-1</code>, <code>FB-2</code>, <code>FB-9</code>, <code>SURF-3</code>).</li>
+<li><span class="n">4</span> The rollback restores what ran before, service by service with their previous automatic ports, and says so in its own words; while it restores, the view reads "Restoring the services as they ran before Restart Stack". The Worktrees trigger reports no attention for it (<code>UNDO-1</code>).</li>
+<li><span class="n">5</span> The failure stays in the view, and in the crash notice while the view is minimized, until the person dismisses it or the same operation succeeds; a status message, a reconnect or a page reload never removes it (<code>FB-6</code>, <code>ACT-1</code>).</li>
+<li><span class="n">6</span> While a manifest edit is rejected, Restart Stack still runs, from the accepted manifest, and its reach line names the change it leaves out. While another operation runs it is unavailable with that operation and its progress as its reason, and the control API answers <code>409</code> naming that operation (<code>HOLD-6</code>, <code>HOLD-3</code>, <code>CC-37</code>).</li>
+<li><span class="n">7</span> On success the services run again, so the crash view closes by itself and the outcome shows as a notice in its place; from a recovery page, the page reloads into the app and the outcome shows there, read from the operation's record (<code>FB-2</code>, <code>FB-3</code>, <code>WORD-4</code>).</li></ol>
+<p class="fixes">Fixes error-pages-02 · Backend: a stack-wide operation's failure published as its outcome in the operation record, never as a checkout block, and the crash view keeping a service whose operation failed (Backend 9; <code>CC-17</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="app-error">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/</b><span>web answered a page load with 500 and Bun's build error</span></div>
+<div class="pg">
+<div class="apptxt"><b>Build Failed</b> · frontend/src/APITester.tsx:12:7 · Unexpected token<br>11 │ return (<br>12 │ &lt;div className="tester" {<br>&nbsp;&nbsp; │ ^ <span class="n">1</span></div>
+<div class="corner">
+<div class="banner" style="margin:0;max-width:34rem">web answered 500 for GET / · main ~/acme <span class="n">2</span>
+<div class="act" style="margin-top:4px"><span class="btn pri">Retry</span><span class="btn">Restart web</span><a>shop.acme.test/</a></div>
+<div class="muted">Reloads when web restarts or a watched file changes <span class="n">3</span></div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/api/v1/products</b><span>api answered its own text/plain 404</span></div>
+<div class="pg" style="min-height:120px">
+<div class="row" style="align-items:flex-start"><pre class="term" style="flex:1">HTTP 404 · text/plain
+Not Found</pre><span class="n">4</span></div>
+<div class="corner">
+<div class="banner" style="margin:0;max-width:34rem">api answered 404 for GET /api/v1/products · main ~/acme
+<div class="act" style="margin-top:4px"><span class="btn pri">Retry</span><span class="btn">Restart api</span><a>shop.acme.test/api/</a></div>
+<div class="muted">▸ Is this route in another checkout? <span class="n">5</span></div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test/</b><span>web dropped the connection while its health check passes</span></div>
+<div class="work"><div class="rv">
+<div class="rvh">web closed the connection without sending this page</div>
+<div>web is running and passes its health check. This page tries again in 5 s. <span class="n">6</span></div>
+<div class="act"><span class="btn">Copy Error</span><span class="btn">Restart web</span></div>
+</div></div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference does not say what shows when the app answers a page load with an empty or non-HTML body, which the toolbar cannot be injected into; this proposal wraps it in a devhost document showing the status and the body verbatim (<code>SURF-16</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>7. See the app's own error with devhost's notice</h2>
+<p>A request the app answers still gets the app's own response, and the toolbar is still injected into its pages. What changes is that devhost stops replacing the app's own 404 and 5xx documents with "Page not found" and "<i>service</i> could not load", so a framework's own error overlay shows with its file, line and code frame, and devhost stops requesting the broken URL every second. devhost's file server keeps its own 404 inside the file browser, untouched by this rule (<code>SURF-16</code>, <code>O5</code>, <code>CC-4</code>). Keys: the notice's <b>Retry</b>, <b>Restart web</b> and link are Tab stops in the notice stack (<code>KEY-4</code>).</p>
+<ol><li><span class="n">1</span> The app's own document, here Bun's "Build Failed" overlay with the file, line and code frame, with the toolbar injected; the framework's overlay keeps its own reload when the fix is saved, as it does without devhost (<code>SURF-16</code>, <code>O5</code>).</li>
+<li><span class="n">2</span> A notice names who answered, the request and the status, and the checkout that answered, with <b>Retry</b> first, which requests the page once, <b>Restart web</b> secondary, and a link to the service's root that opens in the same tab (<code>MENU-5</code>, <code>WORD-4</code>, <code>SEL-4</code>, <code>SURF-15</code>).</li>
+<li><span class="n">3</span> devhost never re-requests that URL on a timer: it reloads the page once per sign that the answer may have changed (web restarted or became healthy, or a watched file of it changed), and that reload is held like any other while <b>Hold Reloads</b> is on (<code>SURF-16</code>, <code>ACT-12</code>, <code>ACT-8</code>, <code>UNDO-2</code>).</li>
+<li><span class="n">4</span> An answer that is empty or not HTML, such as an API's text/plain 404, gets a devhost document that shows the app's status and body verbatim as text under the same notice; for an empty 5xx the service's newest error lines come first. No text blames the checkout (<code>SURF-16</code>, <code>FAIL-3</code>).</li>
+<li><span class="n">5</span> With worktrees on, "Is this route in another checkout?" holds the shared checkout list collapsed; switching from it takes worktree-switch's two steps (<code>SEL-4</code>, <code>SEL-5</code>, <code>REV-2</code>).</li>
+<li><span class="n">6</span> A page load the app accepts and drops while its health check passes gets devhost's own page in words: "web closed the connection without sending this page", "web is not accepting connections on port 4100" or "devhost could not get this page from web", then that web runs and when the page tries again. Go's error, the method, the path and the time are only behind <b>Copy Error</b>, and <b>Restart web</b> is never the primary action (<code>FAIL-2</code>, <code>WORD-7</code>, <code>ACT-12</code>).</li></ol>
+<p class="fixes">Fixes error-pages-03, error-pages-04, error-pages-05, serve-folder-06, error-pages-07 · Backend: the document injection keeps the app's body and status and names who answered; proxy errors classified into sentences; reload signs from the control server; the one-second probe removed (Backend 1, 2, 4; <code>CC-4</code>)</p></div>
+</section>
+
+<section class="step" id="back-in-app">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>api runs again: the crash view closed by itself</span></div>
+<div class="pg" style="min-height:110px">
+<div class="apptxt">Acme Shop · Search products <span class="in focusring">running sho</span> <span class="n">2</span></div>
+<div class="corner">
+<div class="muted small">Announced once, politely: "api is running again" <span class="n">1</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>a status page reloaded into the app with chat docked</span></div>
+<div class="pg" style="min-height:110px">
+<div class="apptxt">Acme Shop · Products …</div>
+<div class="corner">
+<div class="box" style="margin:0;max-width:30rem">Chat · your unsent text, the pasted image and page context came back after the reload; a mark whose element is gone is named in the outcome <span class="n">3</span></div>
+<div class="banner ok" style="margin:0">Restarted api · 2.6 s</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>8. Back in the app</h2>
+<p>The tab still ends in the app at the same URL, in the same tab: a status page reloads itself once the service is ready and its URL answers, and the crash view leaves after a healthy recovery, as today. Restarts cannot be taken back, so there is no Undo: the outcome's undo is devhost's own rollback, which restores what ran before a failed Restart Stack (step 6, <code>UNDO-1</code>), and the work kept through every reload this flow causes (<code>UNDO-2</code>). Keys: none of its own; focus is put back where the person was (<code>KEY-6</code>).</p>
+<ol><li><span class="n">1</span> The crash view closes by itself once every exited service it shows runs again or leaves the run, and the announcer says so once, politely; nothing else is announced and no notice is raised for it (<code>SURF-3</code>, <code>FB-5</code>, <code>FB-9</code>).</li>
+<li><span class="n">2</span> Focus returns to the element that had it before the view opened, here the page's search field, else the Services trigger, never the page body (<code>KEY-6</code>).</li>
+<li><span class="n">3</span> chat's unsent text, pasted images and page context come back after a status page reloads into the app, and the outcome names any mark it could not restore. A status page holds no app state, so its own reload is never held; on an app page this flow starts no reload by itself, and the reloads it signals are held while <b>Hold Reloads</b> is on (<code>UNDO-2</code>, <code>FB-4</code>, <code>REV-3</code>, <code>SURF-16</code>).</li></ol>
+<p class="fixes">Fixes keyboard-and-screen-reader-01 · Backend: the reload sign and the operation's record, read by the ID the page stored before it reloaded (Backend 4; <code>CC-25</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>The crash view drawn over devhost's own failure page for the same failure</li>
+<li>Replacing the app's own 404 and 5xx documents, a file server's 404 included, and requesting the broken URL every second</li>
+<li>One stack-wide log as the source of a failed service's lines, and earlier runs shown as the current attempt</li>
+<li>A failed Restart Stack closing the crash view without a word</li>
+<li>Go's raw proxy error on the 502 page, and Caddy's empty 502 for scripts</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li>Status pages and the crash view into one shared recovery view in both stylesheets, with one cause sentence, evidence list, action order and log (<code>SURF-14</code>)</li>
+<li>The pages' recovery status and the toolbar's health stream into one published state (<code>CC-25</code>)</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li>Health-check progress, what started the attempt, and per-attempt logs</li>
+<li>Output frozen per service at its exit, and what devhost ran</li>
+<li><b>Edit</b> with its file-and-line fallback; <b>Minimize</b>, the crash notice and <b>Expand</b></li>
+<li>Pages of their own for external, not-started, blocked and daemon services, each led by its cause's action</li>
+<li>The app's own error with devhost's notice, and the short 503 for scripts</li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li>Escape minimizes the crash view, whose focus starts on its heading (<code>CC-2</code>)</li>
+<li>The app's own 404 or 5xx passes through (<code>O5</code>, <code>CC-4</code>)</li>
+<li>Busy buttons keep focus with <code>aria-disabled</code>; a failure is announced once</li>
+<li>Status pages reload by sign and back off instead of probing every second</li>
+<li>The terminal's crash line names <code>devhost service restart api</code> (<code>CC-11</code>)</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>A failed service leaves the rest running, and its hostname says what went wrong</li>
+<li>Status pages work without the toolbar and, for state, cause and logs, without JavaScript; the tab reloads itself, and devhost never opens a browser</li>
+<li><b>Restart api</b> keeps its automatic port and succeeds only when healthy; Restart Stack keeps fixed ports, checkouts, external services, pages and chat, and rolls back</li>
+<li>Only the page's service and its dependencies open the crash view; deliberate stops never do</li>
+<li>External services show status only; a blocked repository never falls back to another checkout</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>Stop replacing the app's answers; proxy errors in words (Backend 1, 2; <code>CC-4</code>)</li>
+<li>A short 503 for requests that are not page loads (Backend 3; <code>CC-4</code>)</li>
+<li>Status pages on the health stream, with reload signs (Backend 4; <code>CC-25</code>)</li>
+<li>Per-service output, attempts, the exit record, what devhost ran and the health check's progress (Backend 5, 6; <code>CC-24</code>, <code>CC-25</code>)</li>
+<li>A daemon's status verdict and states of their own for every cause (Backend 7, 8)</li>
+<li>The crash view keeps an operation's failure; the crash line names the command (Backend 9, 10; <code>CC-11</code>, <code>CC-37</code>)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

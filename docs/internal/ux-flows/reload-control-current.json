@@ -1,0 +1,238 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Keep agent edits from reloading the page today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/reload-control-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "toolbar", "label": "Toolbar and its notices" },
+    { "id": "chat", "label": "Chat panel" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "notice", "label": "Notice + choice", "fromCol": 0, "toCol": 1 },
+    { "id": "edit", "label": "Send + edit config", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "result", "label": "Held reload + result", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["load", "notice", "send", "agent", "blocked", "back"],
+  "nodes": [
+    {
+      "id": "load",
+      "lane": "entry",
+      "col": 0,
+      "type": "external",
+      "label": "Page with hot reload client",
+      "sublabel": "chat on; client detected",
+      "explanation": "With chat on, the toolbar looks for a dev server's hot reload client in the page: Bun's development script, Next.js's nextjs-portal element, a loaded /@vite/client, or a webpackHotUpdate global, reading again as resources and elements arrive. It shows the hot reload notice on every page load until the notice is dismissed or while a Disable Reloads request is being handled. With chat off there is no notice, only Hold Reloads. The notice means the client loaded, not that it is connected.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/hotReloadNotice/readHotReloadClient.ts", "line": 7, "end_line": 16, "label": "Detects Bun, Next.js, Vite, webpack clients" },
+        { "path": "packages/devhost-ui/src/devtools/features/hotReloadNotice/hooks/useHotReloadClient.ts", "line": 6, "end_line": 20, "label": "Reads again as resources and nodes arrive" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 175, "end_line": 178, "label": "Notice only with chat on and not dismissed" }
+      ]
+    },
+    {
+      "id": "notice",
+      "lane": "toolbar",
+      "col": 1,
+      "type": "security",
+      "label": "Bun hot reloading is on",
+      "sublabel": "Disable Reloads · Dismiss",
+      "tag": "reload-and-agents-01",
+      "explanation": "The notice reads 'Bun hot reloading is on / Agent edits can refresh this page while you use it.' with Disable Reloads and an X. Disable Reloads looks like a local switch: nothing on it, not even a title, says it sends a request to a coding agent, while Hold Reloads, a local toggle with almost the same name, sits on the toolbar (reload-and-agents-01). It is a standing notice on every load, not news about an edit, yet like every notice it is role=alert, so a screen reader hears it assertively each time (keyboard-and-screen-reader-02). Docked chat covers it (chat-compose-04), and a collapsed toolbar hides it (toolbar-shell-01).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/hotReloadNotice/components/HotReloadNotice.tsx", "line": 14, "end_line": 25, "label": "Notice copy, Disable Reloads and Dismiss" },
+        { "path": "packages/devhost-ui/src/components/ui/Alert.tsx", "line": 22, "end_line": 32, "label": "Every notice renders as role=alert" },
+        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 95, "end_line": 102, "label": "Notices render only while expanded" }
+      ]
+    },
+    {
+      "id": "send",
+      "lane": "chat",
+      "col": 2,
+      "type": "security",
+      "label": "Request sent on one click",
+      "sublabel": "as your message; no preview",
+      "tag": "reload-and-agents-01",
+      "explanation": "One click opens chat, switches it to the Project directory and sends a fixed three-paragraph request as the person's own message, with no preview, no edit and no Cancel. It joins the one running conversation in the checkout (asking only when several run) or starts a new one with the selected harness, Codex by default, and sends no page context. Compact chat shows only 'Working…', not the request. The agent's own approval settings are the only brake: with a permissive harness one click can edit shared configuration (reload-and-agents-01). Opening docked chat also covers the toolbar notices, including the Reload blocked its edits will raise (chat-compose-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 294, "end_line": 299, "label": "Disable Reloads opens chat with the request" },
+        { "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx", "line": 185, "end_line": 188, "label": "Sends it as soon as chat is ready" },
+        { "path": "packages/devhost-ui/src/devtools/features/agentChat/hooks/useAgentChat.ts", "line": 142, "end_line": 160, "label": "Joins a running session or starts one" }
+      ]
+    },
+    {
+      "id": "agent",
+      "lane": "backend",
+      "col": 3,
+      "type": "security",
+      "label": "Agent edits project config",
+      "sublabel": "vague ask + worktree prompt",
+      "tag": "reload-and-agents-01",
+      "explanation": "The request never names the setting devhost detected (for Bun, development.hmr in Bun.serve()); it asks to 'Disable hot module replacement, automatic page reloads, and server restarts on file changes in the development configuration'. devhost appends its workflow instructions to every message: work in a new Git worktree, commit and merge into local main. In the review the agent first researched devhost's own watch behavior, then started a git worktree add, and, told to edit in place, removed watch from devhost.toml (which only marks services changed) before setting hmr: false. The manifest save restarted the stack's services and raised Reload blocked, the very reload the person asked to stop (reload-and-agents-01).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/hotReloadNotice/createDisableHotReloadMessage.ts", "line": 4, "end_line": 10, "label": "Generic request that names no setting" },
+        { "path": "apps/devhost/internal/devtools/chat_server.go", "line": 252, "end_line": 258, "label": "Appends the workflow instructions" },
+        { "path": "apps/devhost/internal/manifest/chat.go", "line": 3, "end_line": 5, "label": "Default prompt: worktree, commit, merge" }
+      ]
+    },
+    {
+      "id": "hold",
+      "lane": "entry",
+      "col": 4,
+      "type": "security",
+      "label": "Hold Reloads, on by default",
+      "sublabel": "can stop while shown on",
+      "tag": "toolbar-shell-03",
+      "explanation": "Hold Reloads is a toolbar toggle, on by default and saved per project and page origin; browsers without the Navigation API have no toggle. Its label and tooltip ('Stops scripts, such as a dev server, from reloading this page') are the same on and off; only the fill and aria-pressed change, and in forced colors on looks like off (keyboard-and-screen-reader-04). The hold runs only while the toolbar renders: with chat off, turning off service status and external toolbars removes the toolbar, and the hold stops without a word while the setting still reads on (toolbar-shell-03). When devhost's own reload is cancelled, for example Reload on Reload blocked answered Stay at the page's Leave site? prompt, the hold lets every later script reload through for the page's life while the toggle still shows on (reload-and-agents-07). It also holds the application's own location.reload(), a documented limitation.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reloadHold/components/ReloadHoldToggle.tsx", "line": 10, "end_line": 22, "label": "One label; aria-pressed carries the state" },
+        { "path": "packages/devhost-ui/src/devtools/shared/createDevtoolsSettingsStore.ts", "line": 22, "end_line": 22, "label": "Hold Reloads on by default" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 179, "end_line": 180, "label": "Holds only while the toolbar renders" }
+      ]
+    },
+    {
+      "id": "blocked",
+      "lane": "toolbar",
+      "col": 4,
+      "type": "security",
+      "label": "Reload blocked",
+      "sublabel": "no time; is page current?",
+      "tag": "journey-agent-fix-03",
+      "explanation": "Hold Reloads cancels any script's location.reload() through the Navigation API and records one flag. The notice says only 'Reload blocked / Something tried to reload this page.' with Reload and an X: no time, no cause, and no hint whether the page is out of date. After an agent's fix arrives in place through hot reload, it still asks for a reload the page does not need (journey-agent-fix-03). It sits under docked chat (chat-compose-04), is hidden while the toolbar is collapsed and the dot stays green (toolbar-shell-01), and over a page's modal dialog its Reload does nothing (toolbar-shell-07). Hot module replacement is never held: components still update in place.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reloadHold/hooks/useReloadHold.ts", "line": 24, "end_line": 30, "label": "Cancels script reloads; keeps one flag" },
+        { "path": "packages/devhost-ui/src/devtools/features/reloadHold/components/ReloadBlockedNotice.tsx", "line": 10, "end_line": 21, "label": "Fixed copy: no time, no cause" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 284, "end_line": 290, "label": "Shown in the toolbar readout slot" }
+      ]
+    },
+    {
+      "id": "back",
+      "lane": "toolbar",
+      "col": 5,
+      "type": "security",
+      "label": "Reload: notice is back",
+      "sublabel": "same words; restart unsaid",
+      "tag": "reload-and-agents-02",
+      "explanation": "Reload is devhost's own reload, which the hold lets through; on the plain hold path it brings the page current. During a Disable Reloads request the notice stays hidden across loads until its delivery completes, is cancelled or fails. After New Conversation or a switch to another conversation it never settles, even with its agent idle: the notice stays hidden on every load until that conversation is closed or reopened or the stack restarts (reload-and-agents-08). In a development build, setting Chat Directory to devhost stops the check: the notice stays hidden on every load, restarts included, until it is set back to Project (reload-and-agents-11). Afterwards the dev server serves its client until it restarts, so the next load shows the notice word for word with Disable Reloads, naming neither the request nor the restart it needs; the only restart cue, the Services changed mark, needs a watch on the edited file, and the agent had removed watch (reload-and-agents-02). On Vite pages it never goes: Vite loads /@vite/client even with server.hmr: false, so after a correct change and a restart each load still says Vite hot reloading is on, with Disable Reloads (reload-and-agents-12).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/reloadPage.ts", "line": 4, "end_line": 7, "label": "Reload passes through the hold" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 170, "end_line": 178, "label": "Hidden until the request settles" },
+        { "path": "packages/devhost-ui/src/devtools/features/agentChat/isChatRequestSettled.ts", "line": 9, "end_line": 20, "label": "Settled once its delivery ends" }
+      ]
+    },
+    {
+      "id": "gone",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Notice dismissed for good",
+      "sublabel": "no undo, no way back",
+      "tag": "reload-and-agents-01",
+      "explanation": "The X sets a flag saved for this project and page origin in this browser: the notice never shows again there, whether or not hot reloading is still on. Nothing in the toolbar or chat brings it back or undoes a misclick; only clearing the site's storage does (reload-and-agents-01).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 300, "end_line": 302, "label": "Dismiss sets a saved flag" },
+        { "path": "packages/devhost-ui/src/devtools/shared/createDevtoolsSettingsStore.ts", "line": 21, "end_line": 21, "label": "Dismissed flag in the settings store" },
+        { "path": "packages/devhost-ui/src/devtools/shared/createDevtoolsSettingsStore.ts", "line": 46, "end_line": 46, "label": "Saved per project root and page origin" }
+      ]
+    },
+    {
+      "id": "dropped",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Hold off: reload dropped",
+      "sublabel": "notice gone; page stale",
+      "tag": "reload-and-agents-03",
+      "explanation": "Turning Hold Reloads off while a reload is held clears the held flag at once and never replays the reload it cancelled: the Reload blocked notice disappears, the page stays on the old document, and nothing says so. Releasing the hold is exactly when the person wants the held change, and the docs tell people to 'Use Reload on the notice, or turn the hold off' (reload-and-agents-03).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reloadHold/hooks/useReloadHold.ts", "line": 19, "end_line": 23, "label": "Hold off clears the flag; no replay" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 343, "end_line": 350, "label": "Toggle flips the saved setting" }
+      ]
+    },
+    {
+      "id": "stale",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Dismissed: page stale",
+      "sublabel": "toolbar shows nothing held",
+      "tag": "reload-and-agents-04",
+      "explanation": "Dismissing Reload blocked clears the only held flag. The page keeps running the old document while the toolbar looks exactly as it did before anything was held: no count, no time, no marker on Hold Reloads. Several held reloads collapse into that one flag, so an hour later a person cannot tell whether the page they test is current. The docs make dismissing a deliberate 'keep working on the current page'; what is missing is any later sign that the page no longer matches the source (reload-and-agents-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/reloadHold/hooks/useReloadHold.ts", "line": 34, "end_line": 35, "label": "Dismiss clears the only held flag" },
+        { "path": "packages/devhost-ui/src/devtools/features/reloadHold/components/ReloadHoldToggle.tsx", "line": 13, "end_line": 19, "label": "Toggle shows nothing held" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "load-notice", "from": "load", "to": "notice", "label": "client found", "role": "main" },
+    { "id": "notice-send", "from": "notice", "to": "send", "label": "Disable Reloads", "role": "main" },
+    { "id": "send-agent", "from": "send", "to": "agent", "label": "turn runs", "role": "main" },
+    { "id": "agent-blocked", "from": "agent", "to": "blocked", "label": "dev server reloads", "role": "main", "variant": "dashed", "fromSide": "top", "toSide": "left" },
+    { "id": "blocked-back", "from": "blocked", "to": "back", "label": "Reload", "role": "main" },
+    { "id": "notice-gone", "from": "notice", "to": "gone", "label": "Dismiss", "role": "branch" },
+    { "id": "hold-blocked", "from": "hold", "to": "blocked", "label": "a script reloads", "role": "branch", "variant": "dashed" },
+    { "id": "blocked-dropped", "from": "blocked", "to": "dropped", "label": "hold turned off", "role": "branch", "fromSide": "bottom", "toSide": "right" },
+    { "id": "blocked-stale", "from": "blocked", "to": "stale", "label": "Dismiss", "role": "branch", "fromSide": "bottom", "toSide": "left" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "Hold Reloads is on by default, needs no agent or project change, and holds any dev server's location.reload(), server restarts included, without patching the host page",
+        "The browser's own refresh and devhost's own reloads (worktree switch, recovery) are never held; Reload on the notice applies the held reload in one click",
+        "The notice recognizes Bun, Vite, Next.js and webpack from what each client leaves in the page, and appears only with chat on",
+        "Disable Reloads sends no page context, joins the one running conversation (asking when several run), and brings the notice back when the send fails",
+        "The notice stays hidden while the agent still has the request, across the reloads its own edits cause"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "reload-and-agents-01 Disable Reloads looks like a local switch but sends a vague request to an agent at once, with no preview; Dismiss is permanent",
+        "journey-agent-fix-03 Reload blocked gives no time or cause and never says whether the page is already current",
+        "reload-and-agents-03 Turning Hold Reloads off while a reload is held drops that reload and leaves the page stale",
+        "reload-and-agents-02 After the turn the notice comes back word for word, with no word of the request or the restart it still needs",
+        "reload-and-agents-04 After Reload blocked is dismissed, nothing on the toolbar shows the page is out of date",
+        "reload-and-agents-07 After Reload meets a Leave site? prompt answered Stay, Hold Reloads stops holding for the page's life while it still shows on",
+        "reload-and-agents-08 After Disable Reloads, a new or switched conversation keeps the hot reload notice hidden on every load, long after the request finished",
+        "reload-and-agents-11 In a development build, setting Chat Directory to devhost after Disable Reloads keeps the notice hidden on every load until it is set back",
+        "reload-and-agents-12 On a Vite page the notice keeps saying hot reloading is on after server.hmr: false turned it off, offering Disable Reloads on every load",
+        "stack-scale-08 No step here: a reverted edit keeps web marked changed until a restart; that mark is the services-panel slice of journey-agent-fix-03, which it duplicates",
+        "chat-compose-04 (related) Docked chat covers the toolbar notices, including the Reload blocked raised by the edits Disable Reloads asked for",
+        "keyboard-and-screen-reader-02 (related) Every notice is an assertive alert, so the standing hot reload notice interrupts a screen reader on each load",
+        "toolbar-shell-01 (related) Collapsed, the toolbar hides a held reload and its notices while the dot stays green",
+        "toolbar-shell-07 (related) Over a page's modal dialog the toolbar looks usable, but Reload on Reload blocked does nothing",
+        "toolbar-shell-03 (related) With chat off, turning off status and external toolbars removes the toolbar and silently ends the hold",
+        "keyboard-and-screen-reader-04 (related) In forced colors Hold Reloads on looks the same as off"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: the Bun notice, Disable Reloads with Claude Code (Haiku), its approvals and the notice returning after Reload, and Hold Reloads with Reload blocked, Reload, Dismiss and releasing a held reload; dismissing the hot reload notice was read in code. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

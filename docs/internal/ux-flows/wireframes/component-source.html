@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jump between the page and the source · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* Page-specific rules, scoped to this page's mockups: page elements devhost outlines, the source menu's
+   parts, and the page area beside docked chat. */
+.mock .cs-el{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;color:var(--ink);font-weight:700}
+.mock .cs-hl{outline:2px dashed var(--acc);outline-offset:2px}
+.mock .cs-tag{margin-left:8px;border:1px solid var(--line);border-radius:4px;padding:0 4px;background:var(--card);font-size:11px;font-weight:400}
+.mock .cs-gone{display:inline-block;border:1px dashed var(--warn);border-radius:4px;padding:2px 8px;color:var(--warn)}
+.mock .cs-menu{width:min(100%,36rem);align-self:flex-start}
+.mock .cs-menu.cs-narrow{width:min(100%,15rem)}
+.mock .cs-co{padding:0 4px 3px;font-size:11px}
+.mock .cs-path{color:var(--mute);min-width:0;overflow-wrap:anywhere}
+.mock .cs-own{flex-basis:100%}
+.mock .cs-foot{border-top:1px solid var(--rule);margin-top:4px;padding:3px 4px 0;font-size:11px;color:var(--mute)}
+.mock .cs-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,15rem);gap:10px;align-items:start}
+.mock .cs-split > .pg{min-height:0;padding:0}
+.mock .cs-t td{white-space:normal}
+/* An unavailable menu entry: dimmed like .btn.off, its reason in the menu's status line */
+.mock .cs-off{opacity:.45}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../component-source-current.html">Today's flow diagram</a><a href="../component-source-proposed.html">Proposed flow diagram</a><a href="../proposals/component-source.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>Jump between the page and the source</h1>
+<p><b>TLDR:</b> Alt + right-click always answers, on React 18 and React 19 alike, with a keyboard-reachable source menu that names your editor and the checkout and says what Open and Copy Path did, while highlight from the editor outlines the element the cursor sits in and keeps the outline on it.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="point">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>Alt held, the pointer over the heading</span></div>
+<div class="pg" style="min-height:150px">
+<div class="apptxt">Acme Shop · playground · Home · Docs · Settings</div>
+<div class="row"><span class="cs-el cs-hl">Devtools playground<span class="cs-tag">heading Devtools playground</span></span><span class="n">1</span></div>
+<div class="row"><span class="muted small">Right-click with Alt still held: the source menu opens at once, step 3</span><span class="n">2</span></div>
+<div class="corner">
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>Select Elements latched with Enter on its toggle; no pointer</span></div>
+<div class="work small">
+<div class="row"><span class="cs-el cs-hl">Devtools playground<span class="cs-tag">heading Devtools playground</span></span></div>
+<div class="row" style="margin-top:8px"><span class="btn focusring">Select Elements</span><span class="muted">pressed, in docked chat's page-context tools · tooltip and <code>aria-keyshortcuts</code>: ⇧F10</span><span class="n">3</span></div>
+<div class="row" style="margin-top:4px"><kbd>⇧F10</kbd><span class="muted">or the context-menu key: the source menu opens at the highlighted heading, step 3</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>what stays the page's or the browser's</span></div>
+<div class="work small">
+<div class="vlab">Right-click without Alt</div>
+<div>The page's own menu, as today; an open source menu closes</div>
+<div class="vlab">Alt + right-click on devhost's bar, a notice or docked chat</div>
+<div>The browser's own menu, as today</div>
+<div class="vlab">Alt+Ctrl+R pressed, or Option+L typed, with the pointer over the page</div>
+<div class="row"><span>No outline and no menu</span><span class="n">4</span></div>
+<div class="vlab"><code>[devtools.editor].enabled = false</code></div>
+<div class="row"><span>Alt + right-click opens the browser's own menu, and a cursor update from the editor draws nothing</span><span class="n">5</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>1. Point at an element</h2>
+<p>Alt + right-click still opens the source of the element under the pointer, and Select Elements and holding Alt still pick elements as page-context specifies. What changes is that the element is outlined with its role and name before the click, the gesture always answers, and the keyboard reaches the same menu. Keys: Alt + right-click (Option on macOS); with Select Elements latched on, the arrow keys walk the highlight and Shift+F10 or the context-menu key opens the source menu (<code>KEY-12</code>, <code>MENU-1</code>).</p>
+<ol><li><span class="n">1</span> Holding Alt outlines the element under the pointer with its role and name before the click, drawn dashed here, by the one resolver that Select Elements, holding Alt and Alt + right-click share, which page-context owns: the element shown is the element looked up (<code>SEL-9</code>).</li>
+<li><span class="n">2</span> Alt + right-click on the app page, outside devhost's own surfaces, opens the source menu at once, also when there is no source to show (step 3): devhost takes the browser's context menu only for this gesture and always answers it (<code>MENU-3</code>, <code>KEY-2</code>).</li>
+<li><span class="n">3</span> With Select Elements latched on, Shift+F10 or the context-menu key opens the source menu for the highlighted element. The toggle lists Shift+F10 in its tooltip and in <code>aria-keyshortcuts</code>, both drawn from the binding definition its handler reads (<code>KEY-12</code>, <code>KEY-13</code>, <code>BAR-4</code>).</li>
+<li><span class="n">4</span> Alt pressed as part of a chord, or to type a character, never starts selection (<code>KEY-2</code>).</li>
+<li><span class="n">5</span> <code>[devtools.editor].enabled</code> stays on by default; set to false, it turns off both Alt + right-click and highlight from the editor, and the docs' settings row names both (<code>SEL-11</code>).</li></ol>
+<p class="fixes">Fixes page-context-06, source-and-minimap-01 · Backend: none; the element resolver is page-context's and the binding definitions are toolbar-shell's (<code>SEL-9</code>, <code>KEY-13</code>)</p></div>
+</section>
+
+<section class="step" id="lookup">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>React 19: the first Alt + right-click reads the source map</span></div>
+<div class="pg" style="min-height:140px">
+<div class="row"><span class="cs-el open">Devtools playground</span></div>
+<div class="popover menu cs-menu" style="margin-top:6px"><i class="caret-up" style="left:82.8px"></i>
+<div class="from">Opened by Alt + right-click on the heading</div>
+<div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+<div class="sep"></div>
+<div class="row">Finding the source of &lt;h1&gt;…<span class="n">1</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › where the lookup finds a source, in order</b><span>in the page, for the menu and for page context</span></div>
+<div class="work small">
+<table class="t cs-t"><thead><tr><th style="width:27%">The page's React</th><th>What the lookup reads</th><th style="width:28%">Result</th></tr></thead><tbody>
+<tr><td>React 18 development build</td><td><code>_debugSource</code> and <code>__source</code>, as today</td><td>PlaygroundLayout.tsx:15:7</td></tr>
+<tr><td>React 19 development build</td><td>the fiber's <code>_debugStack</code>: its first frame outside React, mapped through the source map <span class="n">2</span></td><td>PlaygroundLayout.tsx:15:7</td></tr>
+<tr><td>no source on the fiber</td><td>the React DevTools extension's renderer interface, when installed</td><td>its answer, else the "No source" menu, step 3</td></tr>
+</tbody></table>
+<div style="margin-top:6px">Source maps from script elements · modules loaded through <code>import</code> · chunks loaded later · a <code>SourceMap</code> response header · the last <code>sourceMappingURL</code> comment <span class="n">3</span></div>
+<div style="margin-top:4px">Paths resolved in the page's checkout, fix-nav ~/acme/.worktrees/fix-nav; a path from another checkout of acme is rewritten to it <span class="n">4</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docked chat</b><span>page context on React 19, without browser extensions</span></div>
+<div class="work small">
+<div class="box"><div class="row"><b>Page context</b></div>
+<div class="row"><span>#1 h1 Devtools playground · PlaygroundLayout.tsx:15</span><span class="n">5</span></div>
+<div>#2 div Promo banner · no source found</div></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>2. Find the element's source in the page's checkout</h2>
+<p>The lookup still runs in the page, still reads React's source metadata and the page's source maps, and still resolves paths in the selected checkout, as today. What changes is that React 19 development builds work without a browser extension, modules loaded through <code>import</code> are searched, and page context's marks use the same lookup. It stays one shared module under <code>packages/devhost-ui/src/devtools/shared/</code>, which the source menu and page context's marks both call, and adds no control route.</p>
+<ol><li><span class="n">1</span> While a source map is read for the first time, the open menu shows "Finding the source of &lt;h1&gt;…" where its entries go, never an empty menu, with focus on the menu itself; when the entries arrive, they fill in place and focus moves to the first of them (<code>STATE-1</code>, <code>KEY-6</code>).</li>
+<li><span class="n">2</span> On React 19, the page reads the fiber's <code>_debugStack</code>, the stack React records where the JSX was created, whose first frame outside React is the JSX call site; React 18's <code>_debugSource</code> and <code>__source</code> come first, as today, and the React DevTools extension's renderer interface stays the last fallback. The owner chain is walked the same way, each owner's <code>_debugStack</code> included, and duplicates are dropped, so the menu lists the element and the components that render it.</li>
+<li><span class="n">3</span> Each bundle position maps back through the page's source maps, read from script elements, from modules loaded through <code>import</code> and chunks loaded later, from a <code>SourceMap</code> response header, or from the last <code>sourceMappingURL</code> comment whatever follows it.</li>
+<li><span class="n">4</span> Paths resolve in the page's checkout: the selected checkout of the repository the page's service runs from, with a path from another checkout of that repository rewritten to it, as today (<code>SEL-3</code>).</li>
+<li><span class="n">5</span> The same lookup gives page context's marks their source file, so on React 19 a mark reaches the agent with its file, and page-context's row shows it, "#1 h1 Devtools playground · PlaygroundLayout.tsx:15", or "no source found" (<code>SEL-9</code>).</li></ol>
+<p class="fixes">Fixes page-context-06, source-and-minimap-01, source-and-minimap-10 · Backend: none; the lookup runs in the page with no route of its own</p></div>
+</section>
+
+<section class="step" id="menu">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>1600×1000: the menu after Alt + right-click on the heading</span></div>
+<div class="pg">
+<div class="apptxt">Acme Shop · playground · Home · Docs · Settings</div>
+<div class="row"><span class="cs-el open">Devtools playground</span></div>
+<div class="popover menu cs-menu" role="menu" style="margin-top:6px"><i class="caret-up" style="left:82.8px"></i>
+<div class="from">Opened by Alt + right-click on the heading</div>
+<div class="row"><b>Open in Cursor · from your devhost config file</b><span class="n">1</span></div>
+<div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav<span class="n">2</span></div>
+<div class="lbl">Element and components</div>
+<div class="row focusring" role="menuitem"><b>&lt;h1&gt;</b><span class="sp"></span><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span><span class="n">3</span></div>
+<div class="row" role="menuitem"><b>&lt;PlaygroundLayout&gt;</b><span class="chip">title</span><span class="sp"></span><span class="cs-path">frontend/src/App.tsx:22:5</span></div>
+<div class="lbl">Copy</div>
+<div class="row" role="menuitem">Copy Path · &lt;h1&gt;<span class="n">4</span></div>
+<div class="row" role="menuitem">Copy Path · &lt;PlaygroundLayout&gt;</div>
+<div class="cs-foot"><kbd>↑↓</kbd> Move · <kbd>Enter</kbd> Open · <kbd>Esc</kbd> Close<span class="n">5</span></div>
+</div>
+<div class="corner">
+<div class="toastrow"><div class="toast">✓ Restarted api · 2.6 s</div><span class="n">6</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › settings page</b><span>1280×800 with chat docked: the menu narrows to the page area</span></div>
+<div class="pg" style="min-height:0">
+<div class="cs-split">
+<div class="pg">
+<div class="row"><span class="cs-el open">Save Profile</span></div>
+<div class="popover menu cs-menu cs-narrow" role="menu" style="margin-top:6px"><i class="caret-up" style="left:53.4px"></i>
+<div class="from">Opened by Alt + right-click on Save Profile</div>
+<div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+<div class="sep"></div>
+<div class="row focusring" role="menuitem"><b>&lt;button&gt;</b><span class="n">7</span><span class="cs-path cs-own" title="frontend/src/components/settings/ProfileForm.tsx:41:9">fr…/ProfileForm.tsx:41:9</span></div>
+<div class="sep"></div>
+<div class="row" role="menuitem">Copy Path · &lt;button&gt;</div>
+<div class="cs-foot"><kbd>↑↓</kbd> Move · <kbd>Enter</kbd> Open · <kbd>Esc</kbd> Close</div>
+</div>
+</div>
+<div class="dock"><h3>Fix the profile form</h3>
+<div class="box">Claude Code asks: Edit ProfileForm.tsx?
+<div class="row" style="margin-top:4px"><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span></div></div>
+<div class="row"><span class="in" style="flex:1;min-width:0">Message</span><span class="btn pri">Send</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › the source menu in other states</b><span>its rows; it opens at the element as above</span></div>
+<div class="work small">
+<div class="vlab">An element no React component renders</div>
+<div class="box"><div class="row"><b>No source for &lt;div&gt;</b><span class="n">8</span></div>
+<div>No React component renders this element.</div>
+<div class="row focusring" role="menuitem">Copy Element Path</div></div>
+<div class="muted">Other causes: "This page's React build records no source locations: React 18 needs the JSX development transform, and React 19 a development build." · "Found &lt;h1&gt; in index.js line 5294, but its source map could not be read (404)."</div>
+<div class="vlab">While Switch and Restart Stack runs from main to fix-nav</div>
+<div class="box"><div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="row"><span>Files in main ~/acme · Switch and Restart Stack is running · 2 of 6 started</span><span class="n">9</span></div>
+<div class="row" role="menuitem"><b>&lt;h1&gt;</b><span class="sp"></span><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span></div>
+<div class="row" role="menuitem">Copy Path · &lt;h1&gt;</div></div>
+<div class="vlab">The page's selected checkout was deleted</div>
+<div class="box"><div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="banner">The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it <a>Return to Configured Checkout</a> <span class="btn">Check Again</span> <span class="n">10</span></div>
+<div class="row muted cs-off" role="menuitem" aria-disabled="true"><b>&lt;h1&gt;</b><span class="sp"></span>frontend/src/components/PlaygroundLayout.tsx:15:7</div>
+<div class="row" role="menuitem">Copy Path · &lt;h1&gt;</div></div>
+<div class="vlab">After the status stream closed, with devhost's editor launch</div>
+<div class="box"><div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="banner">Lost connection to devhost; retrying <span class="n">11</span></div>
+<div class="row muted cs-off" role="menuitem" aria-disabled="true"><b>&lt;h1&gt;</b><span class="sp"></span>frontend/src/components/PlaygroundLayout.tsx:15:7</div>
+<div class="row" role="menuitem">Copy Path · &lt;h1&gt;</div></div>
+<div class="row" style="justify-content:flex-end"><span class="muted">in the notice stack, notices-and-feedback's:</span><span class="banner" style="margin:0">? Lost connection to devhost; retrying <span class="btn">Retry Now</span></span></div>
+<div class="vlab">On a page opened from another machine</div>
+<div class="box"><div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="banner">Opening in an editor works only on the machine that runs this stack <span class="n">12</span></div>
+<div class="row muted cs-off" role="menuitem" aria-disabled="true"><b>&lt;h1&gt;</b><span class="sp"></span>frontend/src/components/PlaygroundLayout.tsx:15:7</div>
+<div class="row" role="menuitem">Copy Path · &lt;h1&gt;</div></div>
+<div class="vlab">A source outside the stack's checkouts, with devhost's editor launch</div>
+<div class="box"><div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="banner">This file is outside this stack's checkouts <span class="n">13</span></div>
+<div class="row muted cs-off" role="menuitem" aria-disabled="true"><b>&lt;Button&gt;</b><span class="sp"></span>~/src/ui-kit/src/Button.tsx:12:3</div>
+<div class="row" role="menuitem">Copy Path · &lt;Button&gt;</div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › settings page</b><span>the page's own modal dialog is open</span></div>
+<div class="scrim" style="min-height:0">
+<div class="dlg"><div class="hd"><h3>Edit profile</h3></div>
+<div class="body">
+<div class="row"><span class="cs-el open">Display name</span><span class="in">Ada</span></div>
+<div class="popover menu cs-menu" role="menu" style="margin-top:9px"><i class="caret-up" style="left:46.2px"></i>
+<div class="from">Opened by Alt + right-click on Display name, inside the dialog's top layer</div>
+<div class="row"><b>Open in Cursor · from your devhost config file</b><span class="n">14</span></div>
+<div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+<div class="sep"></div>
+<div class="row focusring" role="menuitem"><b>&lt;label&gt;</b><span class="sp"></span><span class="cs-path">frontend/src/components/settings/ProfileForm.tsx:18:7</span></div>
+<div class="sep"></div>
+<div class="row" role="menuitem">Copy Path · &lt;label&gt;</div>
+</div>
+<div class="corner" style="margin-top:10px"><div class="muted">Paused while this page's dialog is open</div></div>
+</div>
+<div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Profile</span></div></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference returns the menu's focus "to the element it opened on" (<code>KEY-10</code>) and also to the element that had focus before a pointer opening (<code>KEY-5</code>, <code>KEY-6</code>); this proposal follows the second, because the element under an Alt + right-click is often not focusable and devhost never adds a <code>tabindex</code> to the page. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="banner">Open conflict: <code>KEY-10</code> and this flow's section 4 lines write the item "Copy path"; this proposal follows <code>WORD-3</code>'s title-style menu items, "Copy Path". <a href="index.html#conflicts">See conflicts</a></div>
+<div class="banner">Open conflict: <code>SURF-11</code> moves only the notice stack and the announcer into the page's modal dialog; this proposal adds the source menu, whose layering toolbar-shell owns. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>3. Read the source menu</h2>
+<p>The menu still lists the element and the components that render it, each with its non-default props as badges and its path, and still stays inside the window and closes with Escape, a click outside or a worktree switch, as today. What changes is that it names the editor, its source and the checkout, offers <b>Copy Path</b> apart from opening, answers when it has no source, takes the keyboard, and keeps clear of devhost's other surfaces. It is a transient layer above the page, at the pointer, or at the highlighted element after Shift+F10. Keys: focus starts on the first item; ArrowUp and ArrowDown move, Home and End jump, a letter jumps to the next item that starts with it, so c reaches <b>Copy Path</b>, and Enter or Space activates; Escape, Tab or Shift+Tab closes it and returns focus to the page element that had focus before the right-click, the element itself when the click focused it, or, opened with Shift+F10, to the Select Elements toggle with the highlight kept; a click outside closes it and leaves focus where that click put it; devhost never adds a <code>tabindex</code> to a page element. Inside the open menu devhost keeps every key; once it closes, the page's keys work without a click (<code>KEY-10</code>, <code>KEY-6</code>, <code>KEY-5</code>, <code>KEY-8</code>, <code>KEY-12</code>).</p>
+<ol><li><span class="n">1</span> The title names the editor and where that choice comes from, here the person's devhost config file; step 6 shows the four forms (<code>SEL-11</code>, <code>CC-39</code>).</li>
+<li><span class="n">2</span> The line under the title names the checkout the files are in by its checkout label (<code>SEL-4</code>).</li>
+<li><span class="n">3</span> One entry per source: the element or component name, a badge per non-default prop, as today, and the path relative to that checkout with line and column. Focus moves into the menu on open, on its first item; Enter or a click opens it, step 4 (<code>KEY-6</code>, <code>WORD-8</code>).</li>
+<li><span class="n">4</span> After the entries, one <b>Copy Path</b> item per entry, "Copy Path · &lt;h1&gt;", step 5. With two or more sources, "Element and components" and "Copy" head the two groups; a menu of one source has no heading (<code>MENU-2</code>, <code>WORD-3</code>).</li>
+<li><span class="n">5</span> The foot shows the menu's keys from the binding definitions: "↑↓ Move · Enter Open · Esc Close" (<code>KEY-13</code>).</li>
+<li><span class="n">6</span> The menu opens inside the viewport, never clipped, in the page area on the side of the pointer away from the dock, so it covers neither the notice stack nor docked chat's header, composer or decision card. It takes pointer input only where it draws, and the outline of the element it opened on stays anchored to that element while it is open. Alt + right-click lands outside an open toolbar panel, which closes as any click away closes it (<code>SURF-1</code>, <code>SURF-2</code>, <code>SURF-9</code>, <code>SURF-11</code>, <code>SURF-12</code>).</li>
+<li><span class="n">7</span> Where the page area beside docked chat is narrower than the menu, the menu narrows to it, down to 240 CSS pixels, and wraps each path onto its own line; a path longer than the menu is shortened in the middle, keeping the file name and line, with the full path in its tooltip and accessible name. Chat's composer, Send and the pending decision card stay clear (<code>SURF-6</code>, <code>WORD-8</code>).</li>
+<li><span class="n">8</span> When the page records no source for the element, the same menu opens, titled "No source for &lt;div&gt;", with one sentence naming the cause and <b>Copy Element Path</b>, step 5. The causes: no React component renders the element; the page's React build records no source locations; or the source map could not be read. The browser's menu is never taken without this answer (<code>MENU-3</code>, <code>FAIL-2</code>, <code>STATE-4</code>).</li>
+<li><span class="n">9</span> While the page's repository switches, the menu opens and works, and its checkout line names the checkout the page still shows with the operation in progress, because reads and hand-offs stay available during service operations; today the gesture silently falls through to the browser's menu. The page reloads into the new checkout when the switch ends, which closes the menu (<code>HOLD-3</code>, <code>SEL-4</code>).</li>
+<li><span class="n">10</span> With the page's selected checkout deleted, the menu lists the sources with their paths and <b>Copy Path</b>, and each entry's Open is unavailable, drawn dimmed, focusable with <code>aria-disabled</code>, with the one reason sentence in the menu's status line and as each entry's accessible description. The menu offers the lead action, <b>Return to Configured Checkout</b>, a link that opens the Worktrees panel with that action focused, where it asks in place as worktree-switch specifies, and <b>Check Again</b>, which reads the checkout list once and stops nothing (<code>HOLD-4</code>, <code>HOLD-1</code>, <code>MENU-3</code>, <code>MENU-5</code>, <code>REV-2</code>, <code>REV-4</code>).</li>
+<li><span class="n">11</span> After the status stream closes, the lookup, <b>Copy Path</b> and Open through a URL handler keep working, because they run in the page; an editor that devhost launches is unavailable with "Lost connection to devhost; retrying" in the status line and as each entry's accessible description until the stream returns. The lost-connection notice's <b>Retry Now</b>, notices-and-feedback's, is the way forward (<code>HOLD-2</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">12</span> A file opens on the machine that runs the stack, so on a page opened from another machine Open is unavailable with that reason, <b>Copy Path</b> works, and devhost's editor launch answers <code>403</code> (<code>HOLD-7</code>, <code>MENU-3</code>).</li>
+<li><span class="n">13</span> A source outside the stack's checkouts, such as a linked package elsewhere on disk, shows its absolute path shortened with <code>~</code>; <b>Copy Path</b> works, and Open works through the URL handler; through devhost's editor launch it is unavailable with that reason in the status line and as its accessible description, because the launch opens only files inside the checkouts (<code>MENU-3</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">14</span> Alt + right-click on an element inside the page's own modal dialog opens the menu inside the dialog's top layer, where the notice stack and the announcer already move, so its items take the keyboard and the pointer and its notices are heard; the paused bar is unchanged (<code>SURF-11</code>, <code>FB-9</code>). A rejected configuration or chat that cannot take a message blocks nothing here (<code>HOLD-6</code>, <code>HOLD-5</code>).</li></ol>
+<p class="fixes">Fixes page-context-06, source-and-minimap-01 · Backend: the merged editor and its source sent to the page (Backend 1; <code>CC-39</code>); devhost's editor launch, under discussion, for the unavailable states (Backend 2)</p></div>
+</section>
+
+<section class="step" id="open">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>Enter on &lt;h1&gt;, with devhost's editor launch</span></div>
+<div class="pg" style="min-height:130px">
+<div class="apptxt">Acme Shop · playground · Home · Docs · Settings</div>
+<div class="row"><span class="cs-el">Devtools playground</span></div>
+<div class="corner">
+<div class="toastrow"><div class="toast">✓ Opened PlaygroundLayout.tsx:15:7 in Cursor</div><span class="n">2</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>Cursor's shell command is not installed</span></div>
+<div class="pg" style="min-height:120px">
+<div class="corner">
+<div class="banner bad" style="max-width:36rem;margin:0">✕ Cursor did not open PlaygroundLayout.tsx:15:7: its command, cursor, was not found. Install Cursor's shell command, or choose another editor in your devhost config file. <span class="n">3</span>
+<div class="row" style="margin-top:4px"><span class="btn">Copy Path</span><span class="btn">Copy Error</span><span class="sp"></span><span class="btn">Dismiss</span></div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › other reports of Open, in the notice stack</b></div>
+<div class="work small">
+<div class="vlab">Until devhost answers, with its editor launch</div>
+<div class="row"><span class="banner info" style="margin:0">◐ Opening PlaygroundLayout.tsx:15:7 in Cursor…</span><span class="n">1</span></div>
+<div class="vlab">Through Cursor's URL handler, today's way and the way while devhost's editor launch is undecided</div>
+<div class="toastrow" style="justify-content:flex-start;padding:0"><div class="toast">Sent PlaygroundLayout.tsx:15:7 to Cursor · devhost cannot tell whether Cursor opened</div><span class="n">4</span></div>
+<div class="vlab">devhost's answer to the launch was lost</div>
+<div class="row"><span class="banner" style="margin:0">? devhost did not answer; Cursor may have opened PlaygroundLayout.tsx:15:7 <span class="btn">Copy Path</span> <span class="btn">Dismiss</span></span><span class="n">5</span></div>
+<div class="vlab">The toolbar collapsed</div>
+<div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="banner bad" style="margin:0">✕ Cursor did not open PlaygroundLayout.tsx:15:7 <span class="btn">Copy Path</span></span><span class="tbar oneline"><span class="seg"><b>dh</b></span></span></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: a page cannot see whether an editor's URL handler ran, so reporting "Opened" or a failure in words needs devhost to start the editor's command, which the docs say it never does and for which the reference names no contract change; this proposal draws devhost's editor launch as under discussion, for the product owner. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>4. Open the file in the editor</h2>
+<p>Choosing an entry still hands its file, line and column in the checkout the page runs to the person's editor. What changes is that the notice stack says what happened, opening no longer copies anything by itself, and a failure says why in words. Opening reads a file and starts no service, so it never asks and stays available while another operation runs (<code>REV-1</code>, <code>HOLD-3</code>). Nothing here writes to the stack, so there is no Undo: opening a file changes nothing devhost could take back, it writes no line in the stack's log and no operation record, and its notice says what it did. Every <b>Open in Editor</b> that config-editor, manifest-hot-reload, proxy-settings, worktree-switch and startup-and-recovery offer with the config editor off calls the same editor hand-off, one function under <code>packages/devhost-ui/src/devtools/shared/</code> (<code>MENU-4</code>). Keys: Enter on an entry opens it; Tab reaches a failure notice's buttons in order.</p>
+<ol><li><span class="n">1</span> Enter or a click on an entry closes the menu and hands the file to the editor; through devhost's editor launch, the notice stack shows "Opening PlaygroundLayout.tsx:15:7 in Cursor…" until devhost answers (<code>SURF-15</code>, <code>FB-1</code>).</li>
+<li><span class="n">2</span> Once the editor's command took the file, a success notice reads "Opened PlaygroundLayout.tsx:15:7 in Cursor", announced once, and closes 4 s after the pointer and focus leave it (<code>FB-2</code>, <code>FB-3</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-4</code>, <code>O14</code>).</li>
+<li><span class="n">3</span> When the editor cannot start, a failure notice says so in words, is announced once in the assertive region and stays until dismissed, with <b>Copy Path</b> and <b>Copy Error</b>, which copies the original error (<code>FAIL-2</code>, <code>WORD-7</code>, <code>FB-6</code>).</li>
+<li><span class="n">4</span> Through the editor's URL handler, the notice reads "Sent … to Cursor · devhost cannot tell whether Cursor opened", never "Opened", because a page cannot see whether a URL handler ran; it reports no failure, so it closes as a success notice does (<code>FB-5</code>, <code>FB-6</code>, <code>O14</code>).</li>
+<li><span class="n">5</span> When devhost's answer to the launch is lost, the notice says Cursor may have opened the file, offers <b>Copy Path</b> and stays until dismissed; the page never sends the request again by itself, because a second launch can open a second window (<code>REV-12</code>, <code>FB-6</code>).</li>
+<li><span class="n">6</span> With the toolbar collapsed, a failure notice from opening or copying stays visible in the collapsed toolbar's one-line form beside the badge until dismissed, and successes close by themselves (<code>SURF-8</code>, <code>FB-8</code>).</li></ol>
+<p class="fixes">Fixes source-and-minimap-02 · Backend: devhost's editor launch, <code>POST /__devhost__/editor/open</code>, answered only for a browser on this machine and for files inside the stack's checkouts, under discussion (Backend 2)</p></div>
+</section>
+
+<section class="step" id="copy">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>c typed in the menu</span></div>
+<div class="pg">
+<div class="row"><span class="cs-el open">Devtools playground</span></div>
+<div class="popover menu cs-menu" role="menu" style="margin-top:6px"><i class="caret-up" style="left:82.8px"></i>
+<div class="from">Opened by Alt + right-click on the heading</div>
+<div class="row"><b>Open in Cursor · from your devhost config file</b></div>
+<div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+<div class="lbl">Element and components</div>
+<div class="row" role="menuitem"><b>&lt;h1&gt;</b><span class="sp"></span><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span></div>
+<div class="row" role="menuitem"><b>&lt;PlaygroundLayout&gt;</b><span class="chip">title</span><span class="sp"></span><span class="cs-path">frontend/src/App.tsx:22:5</span></div>
+<div class="lbl">Copy</div>
+<div class="row focusring" role="menuitem">Copy Path · &lt;h1&gt;<span class="n">1</span></div>
+<div class="row" role="menuitem">Copy Path · &lt;PlaygroundLayout&gt;</div>
+<div class="cs-foot"><kbd>↑↓</kbd> Move · <kbd>Enter</kbd> Open · <kbd>Esc</kbd> Close</div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>then Enter: the menu closed</span></div>
+<div class="pg" style="min-height:120px">
+<div class="row"><span class="cs-el">Devtools playground</span></div>
+<div class="corner">
+<div class="toastrow"><div class="toast">✓ Copied path · frontend/src/components/PlaygroundLayout.tsx:15:7</div><span class="n">2</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › other reports of copying, in the notice stack</b></div>
+<div class="work small">
+<div class="vlab">The browser refused the clipboard</div>
+<div class="row"><span class="n">3</span><span class="banner bad" style="margin:0;flex:1;min-width:0">✕ Could not copy the path: the browser did not allow clipboard access <code>frontend/src/components/PlaygroundLayout.tsx:15:7</code> <span class="btn">Dismiss</span></span></div>
+<div class="vlab">Copy Element Path, from the "No source" menu</div>
+<div class="toastrow" style="justify-content:flex-start;padding:0"><div class="toast">✓ Copied element path · main &gt; section.hero &gt; h1</div><span class="n">4</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>5. Copy a path</h2>
+<p><b>Copy Path</b> is new as its own item: today the one entry button copies and opens at once and says nothing. Each now does one thing and says so. Copying is an action of this page, not an operation of the stack: it writes no line in the stack's log and no operation record, which <code>FB-7</code> and <code>ACT-1</code> keep for operations, and its notices and the announcer are notices-and-feedback's. A copy changes nothing devhost could take back, so there is no Undo. Keys: typing c moves to the first <b>Copy Path</b> item and c again to the next one; Enter or Space copies (<code>KEY-10</code>).</p>
+<ol><li><span class="n">1</span> "Copy Path · &lt;h1&gt;" copies that entry's path; the item is reached with the arrows or by typing c (<code>KEY-10</code>, <code>WORD-3</code>).</li>
+<li><span class="n">2</span> The path, relative to the checkout with its line and column, goes to the clipboard, the menu closes, and "Copied path · frontend/src/components/PlaygroundLayout.tsx:15:7" shows, closing 4 s after the pointer and focus leave it (<code>FB-2</code>, <code>FB-3</code>, <code>FB-6</code>, <code>WORD-4</code>, <code>O14</code>).</li>
+<li><span class="n">3</span> When the browser refuses the clipboard, a failure notice says so, with the path as selectable text in it, and stays until dismissed (<code>FAIL-2</code>, <code>FB-6</code>).</li>
+<li><span class="n">4</span> <b>Copy Element Path</b> in the "No source" menu copies the element path page context sends and reports it the same way (<code>MENU-3</code>, <code>FB-2</code>).</li></ol>
+<p class="fixes">Fixes source-and-minimap-02 · Backend: none; the clipboard write runs in the page</p></div>
+</section>
+
+<section class="step" id="editor">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › the source menu's title, by where the editor is set</b><span>first match wins</span></div>
+<div class="work small">
+<div class="vlab">1. <code>DEVHOST_EDITOR=webstorm</code> when the stack started</div>
+<div class="row"><b>Open in WebStorm · from DEVHOST_EDITOR</b><span class="n">1</span></div>
+<div class="vlab">2. <code>[devtools.editor].ide = "cursor"</code> in your devhost config file</div>
+<div><b>Open in Cursor · from your devhost config file</b></div>
+<div class="vlab">3. Only <code>ide = "vscode"</code> in devhost.toml, the team's default</div>
+<div><b>Open in VS Code · from devhost.toml</b></div>
+<div class="vlab">4. No editor set anywhere</div>
+<div><b>Open in VS Code · devhost's default</b></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Editor › config.toml</b><span>your devhost config file, saved while the stack runs</span></div>
+<pre class="term">[devtools.editor]
+ide = "cursor"          <span class="n">2</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>a value devhost cannot use</span></div>
+<pre class="term">devhost.toml line 31, column 7, devtools.editor.ide: must be one of cursor, vscode, vscode-insiders, or webstorm. The stack still runs the accepted manifest.
+DEVHOST_EDITOR=zed is not an editor devhost knows; using Cursor from your devhost config file   <span class="n">3</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Editor › config.toml</b><span>any editor, under discussion</span></div>
+<pre class="term">[devtools.editor]
+url = "myeditor://open?file={file}&amp;line={line}&amp;column={column}"
+command = ["subl", "{file}:{line}:{column}"]   <span class="n">4</span></pre>
+<div class="work small"><b>Open in myeditor · from your devhost config file</b></div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference keeps the editor to four built-in values (<code>CC-39</code>) and names no contract change for an editor's URL template or command; this proposal adds both, under discussion, for the reference's author and the product owner. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>6. Choose your editor</h2>
+<p>The four built-in editors keep their URL handlers, and a saved editor setting still reaches open pages with the next health message, through hot reload, without a reload or a restart, as a manifest <code>ide</code> change does today. What changes is whose choice it is: the person's, with the team's manifest as the default, and the menu's title says which one it used. Setting the editor is a setting the person saves, never an action in the menu.</p>
+<ol><li><span class="n">1</span> devhost takes the editor from <code>DEVHOST_EDITOR</code>, else <code>[devtools.editor].ide</code> in the devhost config file, else <code>[devtools.editor].ide</code> in the manifest, which stays the team's default, else VS Code; the control server sends the page the merged value with its source, which the title names (<code>SEL-11</code>, <code>CC-39</code>).</li>
+<li><span class="n">2</span> A change in the devhost config file or the manifest applies through hot reload and reaches open pages with the next health message, and leaves devhost.toml untouched; <code>DEVHOST_EDITOR</code> is read when the stack starts, like every environment variable of the devhost process (<code>SEL-11</code>).</li>
+<li><span class="n">3</span> A value devhost cannot use is reported where it was set: the manifest and the devhost config file reject it on save with the accepted values while the stack keeps running what it accepted, as today, and an unusable <code>DEVHOST_EDITOR</code> prints one line at start naming it and the editor used instead (<code>FAIL-2</code>, <code>HOLD-6</code>).</li>
+<li><span class="n">4</span> Beyond the four built-in editors, any editor with a URL handler works through a <code>url</code> template, in the manifest or the devhost config file, and any editor with a command through <code>command</code>, in the devhost config file only, because it runs a command on the person's machine and needs devhost's editor launch; a <code>command</code> in a manifest is rejected on save with its file and line (<code>SEL-11</code>).</li></ol>
+<p class="fixes">Fixes source-and-minimap-03 · Backend: <code>[devtools.editor].ide</code> in the devhost config file, <code>DEVHOST_EDITOR</code>, and the merged editor with its source sent to the page (Backend 1; <code>CC-39</code>); URL and command templates, under discussion (Backend 3)</p></div>
+</section>
+
+<section class="step" id="highlight">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Editor › frontend/src/components/PlaygroundLayout.tsx</b><span>the cursor inside the heading, line 15, column 20</span></div>
+<pre class="term">14      &lt;main&gt;
+15        &lt;h1&gt;Devtools play▏ground&lt;/h1&gt;
+16        &lt;Counter /&gt;</pre>
+<div class="work small">The editor's plugin posts <code>frontend/src/components/PlaygroundLayout.tsx:15:20</code> to <code>/__devhost__/react-highlight/cursor</code> <span class="n">1</span></div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>every open page of the stack outlines it</span></div>
+<div class="pg" style="min-height:120px">
+<div class="apptxt">Acme Shop · playground · Home · Docs · Settings</div>
+<div class="row"><span class="cs-el cs-hl">Devtools playground</span><span class="n">2</span></div>
+<div class="apptxt">Count: 3 · Increment</div>
+<div class="corner">
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › playground page</b><span>as the page changes</span></div>
+<div class="work small">
+<div class="vlab">Resized from 1600×1000 to 1100×800, scrolled, or re-rendered by the edit's hot update</div>
+<div class="row"><span class="apptxt">Acme Shop · playground</span></div>
+<div class="row" style="padding-left:2rem"><span class="cs-el cs-hl">Devtools playground</span><span class="n">3</span></div>
+<div class="vlab">The edit removed the heading</div>
+<div class="row"><span class="cs-gone">&lt;h1&gt; left the page</span><span class="n">4</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Browser console › playground page</b><span>the <code>devhost:react-highlight</code> event</span></div>
+<pre class="term">{locator: "frontend/src/components/PlaygroundLayout.tsx:15:20", matchedCount: 1, root: "~/acme/.worktrees/fix-nav"}
+after Switch and Restart Stack to ui-polish, the same locator:
+{locator: "frontend/src/components/PlaygroundLayout.tsx:15:20", matchedCount: 1, root: "~/acme/.worktrees/ui-polish"}   <span class="n">5</span>
+{locator: "frontend/src/Missing.tsx:3:1", matchedCount: 0, root: "~/acme/.worktrees/ui-polish", reason: "no-source-file"}   <span class="n">6</span></pre>
+</div>
+</div>
+<div class="cap"><h2>7. Highlight the element under the editor's cursor</h2>
+<p>Highlight from the editor still reaches every open page of the stack and never another stack's, still compares with React's source metadata before the source maps, still answers success once it received a well-formed update and <code>400</code> for a malformed one, and outlines still sit below the toolbar, never block clicks and clear on <code>{"locator": null}</code>, on the next update and when the stream drops, as documented. What changes is that it finds the element the cursor sits in, compares with the checkout the page runs, also after a switch, and keeps the outline on its element. Nothing here writes to the stack, so there is no Undo. A cursor on a component tag, <code>&lt;PlaygroundLayout /&gt;</code>, renders no element of its own: without React's source metadata the event says <code>component-tag</code> and nothing is outlined; with it, every element the component renders is outlined, as today.</p>
+<ol><li><span class="n">1</span> An editor plugin or script publishes the cursor as <code>file:line:column</code>, as today. A relative locator is relative to the checkout the page runs, which the page already follows through a switch, never the checkout the stack started from; an absolute path or a <code>file://</code> URL inside the stack's checkouts matches the same element, and a relative path that names no file there is tried against each service's folder and used when exactly one file matches (<code>SEL-3</code>, <code>SEL-4</code>).</li>
+<li><span class="n">2</span> The match is the innermost JSX element that contains the cursor, whose opening tag starts at or before it and whose closing tag ends after it, so a cursor anywhere in <code>&lt;h1&gt;Devtools playground&lt;/h1&gt;</code> outlines the heading, drawn dashed here; earlier occurrences of the tag count only before that element's own <code>&lt;</code>. Every open page of the stack matches the same locator against its own checkout, and the source maps searched are step 2's (<code>SEL-3</code>).</li>
+<li><span class="n">3</span> The outline stays on its element: it is re-measured on scroll, resize, layout change and DOM mutation, and after a hot update re-renders the JSX, the page matches the same locator again and moves the outline to the new element (<code>SURF-12</code>).</li>
+<li><span class="n">4</span> When nothing matches any more, the outline gives way to "&lt;h1&gt; left the page" at its last place until the next cursor update (<code>SURF-12</code>).</li>
+<li><span class="n">5</span> The event and the console warning carry the root the locator was compared with, the page's own checkout, which wins over any root a cursor update carries (<code>SEL-3</code>, <code>SEL-4</code>).</li>
+<li><span class="n">6</span> When nothing matched, they carry one reason: <code>no-source-file</code> (no loaded source map holds the file), <code>component-tag</code>, <code>no-dom-match</code> or <code>outside-checkouts</code>. The cursor route still answers success once it received the update, as documented.</li></ol>
+<p class="fixes">Fixes source-and-minimap-08, source-and-minimap-09, source-and-minimap-10 · Backend: the cursor update stops carrying the checkout the stack started from; the health message carries each service's folder (Backend 4, 5)</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>The dead click on React 19, where devhost took the browser's menu and showed nothing</li>
+<li>The single entry button that copied and opened without a word, and swallowed clipboard errors</li>
+<li>The start-time checkout sent as the root of every cursor update</li>
+<li>The outline measured once into a fixed box, and paths cut from the left</li>
+<li>The source menu switched off without a word while the page's repository switches or is blocked</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li>Select Elements, holding Alt and Alt + right-click resolve elements with one resolver, page-context's</li>
+<li>Marks and the source menu read one source lookup, now including React 19</li>
+<li>Every <b>Open in Editor</b> across devhost calls one editor hand-off with one set of notices</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li>React 19 source from <code>_debugStack</code> without a browser extension; source maps of modules, later chunks and <code>SourceMap</code> headers</li>
+<li>The "No source" menu with its cause and <b>Copy Element Path</b>; <b>Copy Path</b> items; outcome and failure notices for opening and copying</li>
+<li>The checkout line, the editor's source in the title, type-ahead, the hint line, and Shift+F10 in Select Elements</li>
+<li><code>DEVHOST_EDITOR</code> and the devhost config file; URL and command templates and devhost's editor launch, under discussion</li>
+<li>The containing-element match, absolute and <code>file://</code> locators, anchored outlines that follow hot updates, "&lt;h1&gt; left the page", and the root and reason in the event</li>
+<li>The menu inside the page's own modal dialog</li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li>The editor comes from <code>DEVHOST_EDITOR</code>, then the devhost config file, then the manifest (<code>CC-39</code>)</li>
+<li>During a switch or on a blocked checkout, Alt + right-click opens the menu with its reason instead of the browser's menu</li>
+<li>Open no longer copies and <b>Copy Path</b> no longer opens; the menu takes focus and returns it (<code>KEY-6</code>)</li>
+<li>A relative locator compares with the page's own checkout; a long path is shortened in the middle</li>
+<li>With devhost's editor launch approved, devhost starts the editor's command, which the docs say it never does today</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>The element and its component chain, with non-default props and mapped paths, without duplicates; the React DevTools renderer interface as the last fallback</li>
+<li>A path from another checkout rewritten to the selected checkout; the menu inside the window, closing with Escape, a click outside or a switch</li>
+<li>Alt + right-click in devhost's surfaces stays the browser's and a right-click without Alt the page's; <code>[devtools.editor].enabled = false</code> turns off both features</li>
+<li>The built-in editors' URL handlers; an unknown manifest <code>ide</code> rejected on save while the accepted manifest runs; a saved change reaching open pages without a reload</li>
+<li>Highlight reaches every page of the stack and never another stack's; the cursor route answers success once received and <code>400</code> when malformed</li>
+<li>Outlines above page content and below the toolbar, never blocking clicks, clearing on a null locator, the next update or a dropped stream</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>The person's editor: <code>ide</code> in the devhost config file, <code>DEVHOST_EDITOR</code>, the merged editor and its source sent to the page (Backend 1; <code>CC-39</code>)</li>
+<li>Under discussion: devhost's editor launch, <code>POST /__devhost__/editor/open</code> (Backend 2)</li>
+<li>Under discussion: <code>url</code> and <code>command</code> editor templates (Backend 3)</li>
+<li>The cursor update without the start-time root (Backend 4)</li>
+<li>Each service's folder in the health message (Backend 5)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

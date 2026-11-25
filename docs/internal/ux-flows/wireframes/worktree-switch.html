@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switch the stack to another checkout · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* The Worktrees panel's parts, scoped to this page's mockups: the header row, the details line under the list,
+   the footer with the reach line, a variant's label and the switch's step list */
+.mock .ckhd{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}
+.mock .ckdet{border:1px solid var(--line);border-radius:5px;padding:5px 7px;margin:4px 0;background:var(--card)}
+.mock .ckdet .row{margin-top:4px;flex-wrap:wrap}
+.mock .ckft{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.mock .reach{color:var(--mute);font-size:11px;flex:1 1 16rem;min-width:0}
+.mock .vlab{color:var(--mute);font-size:11px;margin:10px 0 3px}
+.mock .vlab:first-child{margin-top:0}
+.mock .stp{font-size:12px;margin:1px 0}
+.mock .hit{color:var(--acc);font-weight:600}
+.mock table.t td:first-child{width:58%}
+.mock table.t td + td{white-space:normal;text-align:right}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../worktree-switch-current.html">Today's flow diagram</a><a href="../worktree-switch-proposed.html">Proposed flow diagram</a><a href="../proposals/worktree-switch.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>Switch the stack to another checkout</h1>
+<p><b>TLDR:</b> Worktrees becomes one shared checkout list, found by branch, path or commit, whose Switch and Restart Stack names everything it restarts and leaves behind, asks only when other work is at stake, shows its steps in place and its outcome on the reloaded page, rolls back service by service, and turns a deleted checkout into an explicit choice instead of a restart that cannot work.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="open-worktrees">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>Worktrees opened with Enter</span></div>
+<div class="pg">
+<div class="apptxt">Acme Shop · Checkout …</div>
+<div class="corner">
+<div class="popover" style="width:min(100%,42rem)"><i class="caret-dn" style="right:49.8px"></i>
+<div class="from">Opened from main ▾ on the bar with Enter <span class="n">1</span></div>
+<div class="ckhd"><b>Worktrees · acme</b><span class="n">2</span><span class="sp"></span><span class="muted">Read 14:02</span><span class="btn">Refresh Worktrees</span><span class="n">3</span></div>
+<div class="row"><span class="in focusring" style="flex:1"><span class="muted">Find checkout</span></span><span class="n">4</span></div>
+<div class="muted small"><kbd>↑↓</kbd> Move · <kbd>Enter</kbd> Pick · <kbd>Esc</kbd> Close</div>
+<table class="t"><thead><tr><th>Checkout</th><th style="width:34%">Badges</th></tr></thead><tbody>
+<tr class="sel focus"><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span></td></tr>
+<tr><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td></td></tr>
+<tr><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td><span class="chip warn">◆ in use</span></td></tr>
+<tr><td>Detached · c521449 · ~/acme/.worktrees/bisect</td><td></td></tr>
+</tbody></table>
+<div class="ckft"><span class="reach">Pick a checkout other than main, which runs now</span><span class="n">5</span><span class="btn pri off">Switch and Restart Stack</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg open">main ▾</span><span class="n">6</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › the Worktrees trigger and panel in other situations</b></div>
+<div class="work small">
+<div class="vlab">fix-nav, which the stack runs, was deleted</div>
+<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">∅ fix-nav · deleted ▾</span></span><span class="n">7</span></div>
+<div class="vlab">the same, with the toolbar collapsed</div>
+<div class="row"><span class="banner bad" style="margin:0">The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it</span><span class="tbar"><span class="seg">∅ Acme Shop · fix-nav deleted</span></span></div>
+<div class="vlab">Acme Platform runs services from two repositories; the list is loading</div>
+<div class="ckhd"><b>Worktrees</b><span class="chip acc">Repository: acme-web ▾</span><span class="n">8</span><span class="sp"></span><span class="btn">Refresh Worktrees</span></div>
+<div class="box" style="margin:0">Loading checkouts of acme-web… <span class="n">9</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: this proposal's trigger shows the branch alone ("main", named "Worktrees: main"), while <code>SEL-4</code> gives every checkout one label, branch then path, "in the toolbar", and the pattern page and three other flow pages draw the trigger as "main ~/acme ▾". <a href="index.html#conflicts">See conflicts</a></div>
+<h2>1. Open Worktrees</h2>
+<p>The Worktrees panel still opens from the bar, still reads the checkout list again when it opens, as today (<code>git worktree list</code>, each checkout's manifest and service folders), and still lists the main checkout and every worktree. What changes: that read stops nothing (<code>HOLD-4</code>), the panel names the repository and when it read the list, and focus starts in a find field at the top instead of at the bottom. Keys: Alt+Ctrl+B focuses the bar; ArrowLeft and ArrowRight reach the trigger; Enter, Space or the arrow toward the panel opens it (<code>KEY-3</code>, <code>KEY-4</code>).</p>
+<ol><li><span class="n">1</span> An anchored popover (<code>SURF-2</code>), placed and sized so it never overlaps the notice stack in either corner placement, painted above docked chat, and fitted to every acceptance viewport with its find field, details line, reach line and footer outside the scrolling list (<code>SURF-1</code>, <code>SURF-9</code>, <code>SURF-10</code>). Escape or a click outside closes it, focus returning to the trigger, or to the page element that had focus when it was opened with the pointer (<code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-8</code>).</li>
+<li><span class="n">2</span> The header names the repository whose checkouts it lists, "acme" (<code>SEL-4</code>).</li>
+<li><span class="n">3</span> "Read 14:02" says when the list was read, beside <b>Refresh Worktrees</b>, which reads it again; while the panel is open the list updates in place from the published state (<code>ACT-12</code>). Opening the panel, <b>Refresh Worktrees</b> and a status page's first check only publish what the read found and stop no service, whatever they find (<code>HOLD-4</code>).</li>
+<li><span class="n">4</span> Focus starts in <b>Find checkout</b> at the top of the panel; Tab moves to the highlighted row's remedies in the details line, then the footer; Shift+Tab from the find field reaches <b>Refresh Worktrees</b> and the Repository choice; Tab past the last control or Shift+Tab before the first closes the panel and returns focus to the trigger (<code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-10</code>). Keys typed into the find field never reach the page (<code>KEY-5</code>). The hint line under it reads "↑↓ Move · Enter Pick · Esc Close", drawn from the same key definitions as its handlers, in the platform's notation (<code>KEY-13</code>, <code>BAR-4</code>).</li>
+<li><span class="n">5</span> The pick starts on the selected checkout, so <b>Switch and Restart Stack</b> is unavailable until another one is picked, its reason as visible text in the panel's status line and as its accessible description (<code>SEL-4</code>, <code>MENU-3</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">6</span> The trigger shows the selected checkout's branch, or "Detached" with its 7-character commit ID, and its accessible name says the same, "Worktrees: main" (<code>SEL-4</code>, <code>WORD-1</code>). It is one arrow stop on the bar (<code>KEY-4</code>).</li>
+<li><span class="n">7</span> When a repository of the stack is blocked or its selected checkout is unavailable, the trigger adds the state as a shape and a word, never by color alone, and the collapsed badge carries the same condition with its one-line notice beside it (<code>ACT-13</code>, <code>SURF-8</code>, <code>ACT-7</code>).</li>
+<li><span class="n">8</span> When the stack runs services from several repositories, the header offers a <b>Repository</b> choice (<code>SEL-4</code>).</li>
+<li><span class="n">9</span> While the list loads, its place reads "Loading checkouts of acme…", here for acme-web (<code>STATE-1</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-10, worktree-switch-14 · Backend: a read of the list stops nothing; each checkout entry carries its state and reason (Backend 2, 3)</p></div>
+</section>
+
+<section class="step" id="find-and-pick">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>every checkout of acme; broken highlighted</span></div>
+<div class="work small">
+<div class="row"><span class="in" style="flex:1"><span class="muted">Find checkout</span></span></div>
+<table class="t"><thead><tr><th>Checkout <span class="n">1</span></th><th style="width:40%">Badges</th></tr></thead><tbody>
+<tr class="sel"><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span></td></tr>
+<tr class="focus"><td>broken · 77d1e0a · ~/acme/.worktrees/broken</td><td><span class="chip bad">△ unavailable</span> <span class="n">3</span></td></tr>
+<tr><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td></td></tr>
+<tr><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td><span class="chip warn">◆ in use</span></td></tr>
+<tr><td>old · 9a7b6c5 · ~/acme/.worktrees/old</td><td><span class="chip bad">∅ deleted</span></td></tr>
+<tr><td>Detached · c521449 · ~/acme/.worktrees/bisect</td><td></td></tr>
+</tbody></table>
+<div class="ckdet"><b>broken ~/acme/.worktrees/broken</b> · unavailable: devhost.toml does not parse · line 13, services.api.port: strings cannot contain newlines <span class="n">4</span>
+<div class="row"><span class="btn">Open in Editor</span><span class="btn">Copy Error</span><span class="btn">Check Again</span></div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>found by the start of a commit ID, then picked with Enter</span></div>
+<div class="work small">
+<div class="row"><span class="in focusring" style="flex:1">08c92a</span><span class="n">2</span></div>
+<table class="t"><tbody>
+<tr class="sel focus"><td>fix-nav · <span class="hit">08c92a</span>f · ~/acme/.worktrees/fix-nav</td></tr>
+</tbody></table>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>a deleted checkout and empty results</span></div>
+<div class="work small">
+<div class="vlab">old highlighted: a deleted checkout the stack does not run</div>
+<div class="ckdet"><b>old ~/acme/.worktrees/old</b> · deleted · ~/acme/.worktrees/old is gone; Git still lists it <span class="n">5</span>
+<div class="row"><code>git worktree prune</code><span class="btn">Copy</span></div></div>
+<div class="vlab">a commit ID no checkout has, and a word nothing matches</div>
+<div class="row">No checkout has HEAD at 08c92aff <span class="btn">Clear Filter</span><span class="n">6</span></div>
+<div class="row" style="margin-top:4px">No checkout matches "fixx" <span class="btn">Clear Filter</span></div>
+<div class="vlab">a repository with only its main checkout</div>
+<div>acme has no other checkouts. Add one with git worktree add <span class="n">7</span></div>
+<div><code>git worktree add</code></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference's state words (<code>WORD-6</code>) have no word yet for in use, deleted or edit not applied, which this proposal adds to services-panel's shared words module; and <code>MENU-4</code> and <code>KEY-10</code> call a checkout's remedy <b>Open</b>, where this page follows <code>WORD-2</code>'s <b>Open in Editor</b>. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>2. Find and pick a checkout</h2>
+<p>The list still shows the main checkout and every worktree with its badges, and picking still happens in the list. What changes: rows read the same everywhere, find matches commits too, Enter picks without switching, and every reason is text with its way forward in one details line under the list.</p>
+<ol><li><span class="n">1</span> One shared checkout list, shipped in the devtools stylesheet and the status pages' stylesheet, so the toolbar, recovery pages, the crash view and the collapsed list on an app's own 404 render the same rows (<code>SURF-14</code>). The main checkout comes first, then worktrees by branch; each row reads its label from one checkout-label builder, "fix-nav · 08c92af · ~/acme/.worktrees/fix-nav", a long path shortened in the middle with the full path in its tooltip and accessible name (<code>SEL-4</code>, <code>WORD-8</code>). It is a combobox: ArrowUp and ArrowDown move the highlight (<code>aria-activedescendant</code>), Enter picks the highlighted row and never starts a switch, and rows are never Tab stops and hold no controls (<code>KEY-10</code>, <code>REV-2</code>, <code>KEY-9</code>).</li>
+<li><span class="n">2</span> Branch and path match fuzzily with the matched text highlighted, and every checkout's HEAD commit matches by exact prefix: "08c92a" finds fix-nav, and "c521449" would list both main and the detached checkout, which share that commit (<code>SEL-4</code>, <code>SEL-10</code>).</li>
+<li><span class="n">3</span> Each badge is a shape and a word: running, configured, unavailable, in use, blocked, deleted and edit not applied, from services-panel's shared state indicator and words module; each reason is text in the row's accessible description, never only on hover (<code>ACT-13</code>, <code>WORD-6</code>, <code>KEY-10</code>). The highlight and the pick start on the selected checkout when it is available (<code>SEL-4</code>).</li>
+<li><span class="n">4</span> The details line sits below the list, outside it, headed by the highlighted row's label and its reason, never covering another row's badges; its remedies are the Tab stops after the find field and follow the highlight. For a checkout whose manifest fails, the reason is one structured line with the file relative to that checkout, its line and key, the path written once; <b>Open in Editor</b> opens that line in that checkout, <b>Copy Error</b> copies the original text, and <b>Check Again</b> reads the list again once the file is fixed, because devhost does not watch the manifests of checkouts it does not run. Validation issues list one per line (<code>MENU-4</code>, <code>FAIL-2</code>, <code>WORD-7</code>, <code>HOLD-1</code>, <code>KEY-10</code>).</li>
+<li><span class="n">5</span> A deleted worktree reads as deleted, never as a raw Git exit status, with <code>git worktree prune</code> to copy: devhost runs only read-only Git commands. A deleted checkout the stack does not run restarts nothing and blocks nothing (<code>WORD-7</code>, <code>SURF-15</code>).</li>
+<li><span class="n">6</span> A hexadecimal query that matches nothing says that no checkout has HEAD at it, any other query names what was searched, each with <b>Clear Filter</b> (<code>SEL-10</code>, <code>STATE-2</code>).</li>
+<li><span class="n">7</span> A repository with only its main checkout says so and gives the command that adds a worktree on its own line (<code>STATE-2</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-01, worktree-switch-02, worktree-switch-10 · Backend: structured checkout entries with state, reason, file, line, column and key (Backend 3)</p></div>
+</section>
+
+<section class="step" id="reach-and-press">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>fix-nav picked; nothing else at stake</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,42rem)"><i class="caret-dn" style="right:23.8px"></i>
+<div class="from">Opened from main ▾ on the bar</div>
+<div class="ckhd"><b>Worktrees · acme</b><span class="sp"></span><span class="muted">Read 14:02</span><span class="btn">Refresh Worktrees</span></div>
+<div class="row"><span class="in" style="flex:1">fix</span></div>
+<table class="t"><tbody>
+<tr class="sel focus"><td><span class="hit">fix</span>-nav · 08c92af · ~/acme/.worktrees/fix-nav</td></tr>
+</tbody></table>
+<div class="ckft"><span class="reach">Restarts all 6 services of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav (repository acme) with new automatic ports · took 14 s last time</span><span class="n">1</span><span class="btn pri focusring">Switch and Restart Stack</span><span class="n">2</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg open">main ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel footer</b><span>work is at stake in main: the press expands in place</span></div>
+<div class="work small">
+<div class="box" style="margin:0">Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main? <span class="n">3</span>
+<ul style="margin:4px 0;padding-left:18px">
+<li>Claude Code · Fix the nav · This checkout (live) · waiting for you: it keeps waiting in main, and its request stays answerable from every page of Acme Shop</li>
+<li>devhost.toml: an unsaved draft for main, which the Configuration window opens again after you return to main</li>
+<li>Hold Reloads is keeping this page as it is; the switch reloads it</li>
+<li>Page context: 2 marks; a mark whose element is gone after the reload is listed as lost</li>
+</ul>
+<div class="row"><span class="sp"></span><span class="btn">Switch Anyway</span><span class="btn focusring">Answer First</span><span class="n">4</span></div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel footer in other situations</b></div>
+<div class="work small">
+<div class="vlab">a run started with devhost start web api</div>
+<div class="ckft" style="border:0;margin:0;padding:0"><span class="reach">Restarts web, api and docs of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav with new automatic ports; worker, admin and mail stay not started</span><span class="n">5</span><span class="btn pri">Switch and Restart Stack</span></div>
+<div class="vlab">Restart Stack runs</div>
+<div class="ckft" style="border:0;margin:0;padding:0"><span class="reach">Restart Stack is running · 3 of 6 started</span><span class="n">6</span><span class="btn pri off">Switch and Restart Stack</span></div>
+<div class="vlab">chat is off</div>
+<div class="ckft" style="border:0;margin:0;padding:0"><span class="reach">Restarts all 6 services of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav (repository acme) with new automatic ports · took 14 s last time · agents were not checked while chat is off</span><span class="n">7</span><span class="btn pri">Switch and Restart Stack</span></div>
+<div class="vlab">a check fails, or the list was stale, before anything stops</div>
+<div class="banner bad" style="margin:0">fix-nav's devhost.toml line 13 does not parse; nothing was stopped <span class="n">8</span></div>
+<div class="banner bad" style="margin:4px 0 0">fix-nav was deleted after the list was read at 14:02; nothing was stopped</div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <code>REV-3</code> names the question's first choice only for an agent waiting and for drafts; for a working agent, a terminal agent, a held reload or page context this proposal reads it as <b>Cancel</b>. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>3. Read the reach and press Switch and Restart Stack</h2>
+<p>A switch still changes one repository's checkout and restarts every managed service of the stack, and the press is still the one write. What changes: the button says what it reaches before it runs, the switch keeps the run's service selection, and it asks first only when other work would be left behind. Keys: Tab from the find field reaches the details line's remedies, then <b>Switch and Restart Stack</b>; Enter switches, or opens the question with its first choice focused (<code>KEY-9</code>, <code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> The reach line names the stack, the repository and the target checkout and what the press does; the button's tooltip and accessible description list the six, "web, api, docs, worker, admin and mail" (<code>SEL-5</code>, <code>SEL-1</code>, <code>BAR-2</code>, <code>REV-2</code>).</li>
+<li><span class="n">2</span> <b>Switch and Restart Stack</b> reads the same on every surface, title-style and without a count (<code>WORD-2</code>, <code>WORD-3</code>, <code>MENU-6</code>). Picking is the first step and the press the second; with nothing else at stake it runs on one press (<code>REV-1</code>, <code>REV-2</code>).</li>
+<li><span class="n">3</span> Before it runs, the control names each item of other work the switch moves the page away from: every conversation of this checkout that works or waits, by agent, title and edit mode, every agent the running agents list sees working here ("Codex in a terminal · working"), unsaved Configuration window drafts, a held reload and page context. While any exists, the press expands in place into one question, a group labelled by its sentence and described by its items and the six services (<code>REV-3</code>, <code>REV-4</code>, <code>SEL-5</code>, <code>WORD-10</code>, <code>O1</code>, <code>UNDO-2</code>, <code>SEL-9</code>, <code>REV-9</code>).</li>
+<li><span class="n">4</span> The first choice takes the pressed button's place with focus and Enter: <b>Answer First</b> while an agent waits for the person, which closes the panel and opens docked chat on that conversation's decision card; else <b>Review Drafts</b> while drafts are named, which opens the Configuration window on the first one; else <b>Cancel</b>. <b>Switch Anyway</b> sits beside it; a double press lands on the first choice. Escape, or a click in the panel on no control, cancels the question and returns focus to <b>Switch and Restart Stack</b> with the panel open; a click on another control cancels it and that control acts; Tab past the panel's last control, Shift+Tab before its first and a click outside close the panel and cancel the question (<code>REV-3</code>, <code>REV-4</code>, <code>KEY-7</code>, <code>KEY-8</code>).</li>
+<li><span class="n">5</span> In a run started with names, the switch keeps that selection and the line says what stays off (<code>SEL-5</code>, <code>SEL-7</code>).</li>
+<li><span class="n">6</span> The button is unavailable, focusable, with its reason in the panel's status line and as its accessible description: while nothing other than the running checkout is picked, while another operation runs, here Restart Stack with its progress, while the page has lost its stack's status stream, and while the repository is blocked (step 7) (<code>MENU-3</code>, <code>HOLD-1</code>, <code>HOLD-2</code>, <code>HOLD-3</code>).</li>
+<li><span class="n">7</span> With chat off, the reach line says that agents were not checked (<code>STATE-2</code>).</li>
+<li><span class="n">8</span> The services runtime runs every check before it stops anything: the target is registered and available, its manifest and includes load, its service folders exist, and its hostnames and fixed ports are free, probed with the holder named. A failed check refuses the switch with nothing stopped and names the check; a target that changed since the list was read is refused with the current state, the list redraws and the pick is kept when it still exists (<code>REV-11</code>, <code>REV-13</code>, <code>FAIL-2</code>). The switch then writes a pending-switch record and leaves the stack's saved selection on main until it succeeds; a state directory that cannot be written refuses it the same way.</li></ol>
+<p class="fixes">Fixes chat-checkout-switch-02, worktree-switch-11 · Backend: the switch passes the run's selection; its operation record with an operationId, answered 202 Accepted; the pending-switch record (Backend 1, 4, 13); the question's items come from agent-chat, running-agents and config-editor</p></div>
+</section>
+
+<section class="step" id="watch-switch">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>the switch, 5 s in</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,42rem)"><i class="caret-dn" style="right:125.7px"></i>
+<div class="from">Opened from main ▾ on the bar</div>
+<div class="ckhd"><b>Worktrees · acme</b></div>
+<table class="t"><tbody>
+<tr><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span><span class="n">2</span></td></tr>
+<tr class="sel"><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td></td></tr>
+</tbody></table>
+<div class="stp">✓ Checked fix-nav <span class="n">1</span></div>
+<div class="stp">◐ Stopping 6 services · 3 of 6 stopped</div>
+<div class="stp muted">○ Starting in fix-nav</div>
+<div class="stp muted">○ Moving routes and hot reload to fix-nav</div>
+<div class="ckft"><span class="sp"></span><span class="btn pri focusring">Switching to fix-nav · 3 of 6 stopped · 5 s</span><span class="n">3</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">◐ ◐ ◐ ◐ ◐ ◐ ▾</span><span class="seg">Chat</span><span class="seg open">main · switching to fix-nav ▾</span><span class="n">4</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>the panel closed, 9 s in</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">Acme Shop · Checkout …</div>
+<div class="corner">
+<div class="banner info" style="margin:0">◐ Switch to fix-nav · 2 of 6 started · 9 s <span class="n">5</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ◐ ◐ ◐ ◐ ▾</span><span class="seg">Chat</span><span class="seg">main · switching to fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>9 s in</span></div>
+<div class="work small">
+<table class="t"><tbody>
+<tr><td>● web</td><td>running in fix-nav</td></tr>
+<tr><td>● api</td><td>running in fix-nav</td></tr>
+<tr><td>◐ docs</td><td>starting in fix-nav · health check 2 s of 30 s <span class="n">6</span></td></tr>
+<tr class="dim"><td colspan="2">worker, admin and mail · switching to fix-nav ~/acme/.worktrees/fix-nav</td></tr>
+</tbody></table>
+<div class="ckft"><span class="reach">Switch to fix-nav is running · 2 of 6 started</span><span class="btn off">Restart 2 Changed</span><span class="btn off">Restart Stack</span><span class="n">7</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>4. Watch the switch in place</h2>
+<p>The switch still runs on the server with the stack's lifecycle, so closing the tab never cancels it, and it still stops every managed service before starting them in the target. What changes: the pressed control and the panel say which step runs and which service it waits on, and every surface draws the switch as a switch, never as failures or a lost connection.</p>
+<ol><li><span class="n">1</span> The panel lists the steps, updated at least once a second: "Checked fix-nav", "Stopping 6 services · 3 of 6 stopped", "Starting in fix-nav · web · health check 2 s of 30 s", "Moving routes and hot reload to fix-nav" (<code>FB-1</code>, <code>STATE-1</code>, <code>ACT-4</code>). Services devhost stops for the switch are steps of it, never exits (<code>FAIL-5</code>).</li>
+<li><span class="n">2</span> The old row keeps <b>running</b> until the target's services run (<code>ACT-3</code>).</li>
+<li><span class="n">3</span> The confirm control stays where it was as the busy control and keeps focus, <code>aria-busy</code> and <code>aria-disabled</code>, never <code>disabled</code>, reading what runs: "Switching to fix-nav · 3 of 6 stopped · 5 s", then "Switching to fix-nav · 2 of 6 started · 9 s" (<code>KEY-11</code>, <code>FB-9</code>, <code>WORD-4</code>).</li>
+<li><span class="n">4</span> The trigger reads "main · switching to fix-nav", never claiming the target before it runs (<code>ACT-3</code>).</li>
+<li><span class="n">5</span> Closing the panel moves the progress to one activity line in the notice stack (<code>FB-1</code>, <code>FB-8</code>). The page's status stream stays open throughout, so no lost-connection state appears (<code>ACT-5</code>, <code>HOLD-2</code>).</li>
+<li><span class="n">6</span> Every surface draws the switching repository's services as "switching to fix-nav ~/acme/.worktrees/fix-nav" and the target's services as starting with their health check, never failed and never running from the old checkout; changed marks clear against the new launch (<code>ACT-3</code>, <code>ACT-4</code>, <code>ACT-8</code>).</li>
+<li><span class="n">7</span> While the switch runs, Restart Changed, its badge icon, every <b>Restart</b>, <b>Start</b> and <b>Restart Stack</b> are unavailable with "Switch to fix-nav is running · 2 of 6 started", and Alt+Ctrl+R shows that reason in a notice instead of doing nothing (<code>HOLD-3</code>, <code>SEL-2</code>, <code>MENU-3</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-09 · Backend: the switch's operation record publishes each step at least once a second; the status stream stays open through the switch (Backend 4, 6)</p></div>
+</section>
+
+<section class="step" id="outcome">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page, reloaded at the same URL</b><span>the switch succeeded</span></div>
+<div class="pg">
+<div class="apptxt">Acme Shop · Checkout …</div>
+<div class="corner">
+<div class="toastrow" style="padding:0"><div class="toast focusring">✓ Switched acme from <a style="margin-left:0">main ~/acme</a> to fix-nav ~/acme/.worktrees/fix-nav: restarted 6 services · 6 of 6 running · 14 s<br>Left in main: <a style="margin-left:0">Claude Code · Fix the nav</a> · This checkout (live) · waiting for you <span class="n">2</span></div><span class="n">1</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ▾</span><span class="n">3</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › the outcome in two other cases</b></div>
+<div class="work small">
+<div class="vlab">a run started with devhost start web api search, switched to fix-nav, which defines no search</div>
+<div class="toastrow" style="padding:0;justify-content:flex-start"><div class="toast">✓ Switched acme from <a style="margin-left:0">main ~/acme</a> to fix-nav ~/acme/.worktrees/fix-nav: restarted 3 services · 3 of 6 running · worker, admin and mail not started · not in fix-nav: search · 12 s</div><span class="n">4</span></div>
+<div class="vlab">web's health check passed, but the reloaded page was answered with a 500</div>
+<div class="banner" style="margin:0">Switched acme to fix-nav ~/acme/.worktrees/fix-nav: 6 of 6 running · web answered 500 for this page <span class="n">5</span></div>
+<div class="banner bad" style="margin:4px 0 0">web in fix-nav could not resolve "react" <code>bun install</code> <span class="btn">Copy</span> <span class="btn">Restart</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the stack's terminal, then two later starts</span></div>
+<pre class="term">Switching acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav · restarting 6 services
+Switched acme from main ~/acme to fix-nav ~/acme/.worktrees/fix-nav: restarted 6 services · 6 of 6 running · 14 s  <span class="n">6</span>
+
+$ devhost start web api
+Ready in 4.2 s: https://shop.acme.test/ · acme runs fix-nav ~/acme/.worktrees/fix-nav, saved for this stack (configured: main ~/acme)  <span class="n">7</span>
+
+$ devhost start
+Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devhost stopped before fix-nav's services ran. Starting main ~/acme, which Acme Shop ran before; switch again in Worktrees.  <span class="n">8</span></pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: a switch has no terminal command of its own, a proposed exception to <code>MENU-6</code> until the reference names one; and <code>FB-10</code>'s "as after an interrupted switch" assumes the target runs after an interruption, where this proposal runs the checkout the stack ran before, a rollback completed at the next start that the reference has no rule for yet (<code>UNDO-1</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>5. Read the outcome on the reloaded page</h2>
+<p>The page still reloads at the same URL after a switch, and the stack still restores its saved checkout at the next <code>devhost start</code>. What changes: the switch succeeds only once the target's services run, the reloaded page says what happened and what was left behind, focus starts on that sentence, and the terminal names checkouts by branch and path. A switch restarts processes and cannot be taken back, so there is no Undo: its rollback restores the previous checkout when the target fails (step 6), and its outcome links the previous checkout as the way back (<code>UNDO-1</code>, <code>UNDO-5</code>).</p>
+<ol><li><span class="n">1</span> The switch succeeds only once every target service passed its health check, with no leftover of a killed run answering in its place, and the routes and hot reload follow the target; only then does devhost save fix-nav as the stack's selection, remove the pending-switch record and reload the page (<code>FB-5</code>, <code>ACT-11</code>, <code>UNDO-1</code>). The page that loads finds the outcome by the <code>operationId</code> it stored and shows it once, as an outcome notice whose sentence takes focus, announced once in the polite region (<code>FB-2</code>, <code>FB-3</code>, <code>KEY-6</code>, <code>FB-9</code>, <code>WORD-4</code>, <code>WORD-5</code>). It closes 4 s after the pointer and focus leave it and stays readable in the stack's log, links included (<code>FB-6</code>, <code>FB-7</code>, <code>O14</code>).</li>
+<li><span class="n">2</span> The outcome names what the switch left behind: the conversation's title opens its decision card in docked chat in one activation, and marks of page context that did not survive the reload are named too (<code>FB-4</code>, <code>SEL-5</code>, <code>REV-9</code>, <code>UNDO-2</code>). The previous checkout, "main ~/acme", opens <b>Worktrees</b> with main highlighted, so the way back is one switch away (<code>UNDO-5</code>).</li>
+<li><span class="n">3</span> The trigger names fix-nav (<code>SURF-15</code>). Chat keeps its agent, model, edit mode, open state, side and draft, because they belong to the stack and page origin, not the checkout (<code>SEL-11</code>, <code>CC-9</code>).</li>
+<li><span class="n">4</span> The count is of the whole stack, the services the run left out included; a selected name the target's manifest does not define is named and never fails the switch (<code>ACT-6</code>, <code>SEL-5</code>).</li>
+<li><span class="n">5</span> When the reloaded page is answered with a 5xx by a target service whose health check passed, the outcome says so instead of a plain success, and the app's answer shows with startup-and-recovery's notice; when web's last output names a missing dependency, that notice leads with the needs-setup action: the command to run in fix-nav, to copy, then <b>Restart</b> (<code>SURF-16</code>, <code>FB-5</code>, <code>O32</code>, <code>FAIL-3</code>, <code>MENU-5</code>).</li>
+<li><span class="n">6</span> The terminal prints one line when the switch starts and one outcome line, naming both checkouts by label, and no "exited … waiting for a restart" line for any service the switch stopped (<code>FB-10</code>, <code>FAIL-5</code>, <code>WORD-4</code>, <code>SEL-4</code>). Agent output carries the same facts with absolute paths and a failure on one <code>devhost: ERR:</code> line, and <code>devhost status</code> reports the switch as the stack's last operation (<code>FB-11</code>, <code>WORD-9</code>, <code>ACT-1</code>). A switch has no terminal command of its own; another checkout runs from a terminal as its own stack, in its folder.</li>
+<li><span class="n">7</span> A start that restores a linked worktree keeps the names it was given and names the restored checkout in its ready line, in the foreground or with <code>--detach</code> (<code>SEL-5</code>, <code>FB-10</code>, <code>WORD-9</code>).</li>
+<li><span class="n">8</span> When devhost was killed before a switch ended, the next start runs the checkout the stack ran before, never a target no switch verified, and says so once, in human output, agent output and the stack's log; later starts say nothing about it. A page that started that switch and reconnects shows the same sentence as its failed outcome, with fix-nav linked to <b>Worktrees</b> with fix-nav picked (<code>UNDO-1</code>, <code>FB-10</code>, <code>FB-11</code>, <code>FB-7</code>, <code>ACT-10</code>, <code>FB-2</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-04, worktree-switch-06, worktree-switch-12, worktree-switch-15 · Backend: the selection is saved once the switch succeeds; the page reloads after the outcome; the switch's terminal lines; needs setup read from the failing service's output, still to settle (Backend 6, 7, 9, 13)</p></div>
+</section>
+
+<section class="step" id="failed-switch">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>web cannot start in fix-nav; the page does not reload</span></div>
+<div class="work small">
+<table class="t"><tbody>
+<tr><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span></td></tr>
+<tr class="sel"><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td></td></tr>
+</tbody></table>
+<div class="banner bad focusring" style="margin:6px 0 0">Switch to fix-nav failed: web exited with code 1 before its health check. Returned to main ~/acme: 6 of 6 running · 21 s <span class="n">1</span>
+<div class="muted">web exited with code 1 at 14:03 · health check GET / · nothing answered</div>
+<div class="muted">error: could not resolve "react"</div>
+<div class="muted">Ran bun run dev in web/ · fix-nav's devhost.toml line 9</div></div>
+<div class="ckdet">web in fix-nav could not resolve "react"; run bun install in ~/acme/.worktrees/fix-nav <span class="n">2</span>
+<div class="row"><code>bun install</code><span class="btn">Copy</span></div></div>
+<div class="ckft"><span class="reach">to fix-nav ~/acme/.worktrees/fix-nav</span><span class="btn pri">Retry Switch</span><span class="n">3</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>while it restores, and a restore that cannot bring api back</span></div>
+<div class="work small">
+<div class="ckft" style="border:0;margin:0;padding:0"><span class="sp"></span><span class="btn pri focusring">Returning to main ~/acme</span><span class="n">4</span></div>
+<div class="banner bad" style="margin:6px 0 0">Switch to fix-nav failed: web exited with code 1 before its health check. Returned to main ~/acme: 5 of 6 running · api still fails <span class="n">5</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b></div>
+<pre class="term">Switch to fix-nav ~/acme/.worktrees/fix-nav failed: web exited with code 1 before its health check. Returned to main ~/acme: 6 of 6 running · 21 s  <span class="n">6</span></pre>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <code>WORD-2</code> lists no label for a failed switch's retry, which this proposal names <b>Retry Switch</b>; and the reference gives no backend contract for recognising a missing dependency and the command that installs it (<code>O32</code>, <code>MENU-5</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>6. Recover from a failed switch, in place</h2>
+<p>A failed switch still returns to the checkout it left, never to a third one, with that checkout's routes and hot reload, and the stack's saved selection still names it. What changes: the return is service by service and reported as a return, the panel keeps the failure with its evidence and the way forward, and a retry is one press.</p>
+<ol><li><span class="n">1</span> The outcome replaces the progress in the open panel and takes focus on its sentence, with web's evidence from the attempt: its exit code with the time, its last output lines frozen at the exit, the probe it failed and what devhost ran (<code>FAIL-1</code>, <code>FAIL-2</code>, <code>FAIL-3</code>, <code>FB-2</code>, <code>FB-9</code>). It stays in the panel and as a notice until the person dismisses it or a later switch to that checkout succeeds; reconnects and page reloads never remove it (<code>FB-6</code>).</li>
+<li><span class="n">2</span> It leads with the action for its cause: for a fresh checkout whose service cannot find its dependencies, the command to run in that checkout, to copy (<code>O32</code>, <code>MENU-5</code>).</li>
+<li><span class="n">3</span> <b>Retry Switch</b> runs on one press; its accessible name and reach line name the target, "Retry Switch to fix-nav ~/acme/.worktrees/fix-nav" (<code>REV-1</code>, <code>REV-2</code>, <code>WORD-2</code>).</li>
+<li><span class="n">4</span> While it restores, the busy control and the touched rows read "Returning to main ~/acme". The saved selection never left main, because a switch saves its target only once it succeeds, and the pending-switch record is removed (<code>UNDO-1</code>, <code>ACT-3</code>).</li>
+<li><span class="n">5</span> A restore that cannot bring a service back leaves it failed with its own recovery page while the rest run; the set is never stopped as one unit because one member fails (<code>UNDO-1</code>, <code>FAIL-1</code>).</li>
+<li><span class="n">6</span> The terminal prints the same outcome in one line (<code>FB-10</code>, <code>FAIL-1</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-06 · Backend: per-service rollback with its own outcome; needs setup read from the failing service's output, still to settle (Backend 5, 9)</p></div>
+</section>
+
+<section class="step" id="deleted-or-blocked">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>fix-nav, which the stack runs, was deleted</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,42rem)"><i class="caret-dn" style="right:73.3px"></i>
+<div class="from">Opened from fix-nav · deleted on the bar</div>
+<div class="ckhd"><b>Worktrees · acme</b><span class="sp"></span><span class="muted">Read 14:20</span><span class="btn">Refresh Worktrees</span></div>
+<div class="banner bad" style="margin:0 0 4px">The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it <span class="n">1</span></div>
+<div class="row"><span class="btn pri">Return to Configured Checkout</span><span class="btn">Check Again</span><span class="n">2</span></div>
+<div class="row" style="margin-top:4px"><span class="in focusring" style="flex:1"><span class="muted">Find checkout</span></span></div>
+<table class="t"><tbody>
+<tr class="focus"><td>main · c521449 · ~/acme</td><td><span class="chip">⌂ configured</span></td></tr>
+<tr class="dim"><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td><span class="chip bad">∅ deleted</span><span class="n">3</span></td></tr>
+<tr><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td><span class="chip warn">◆ in use</span></td></tr>
+</tbody></table>
+<div class="ckft"><span class="sp"></span><span class="btn pri off">Switch and Restart Stack</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg open">∅ fix-nav · deleted ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>Return to Configured Checkout, first press</span></div>
+<div class="work small">
+<div class="box" style="margin:0">Return acme to main ~/acme and restart all 6 services with new automatic ports? Took 14 s last time. <span class="n">4</span>
+<div class="row" style="margin-top:4px"><span class="sp"></span><span class="btn">Return to Configured Checkout</span><span class="btn focusring">Cancel</span></div></div>
+<div class="vlab">once none of acme's services runs</div>
+<div class="banner bad" style="margin:0">The checkout ~/acme/.worktrees/fix-nav was deleted; acme's services are blocked until you choose a checkout <span class="n">5</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>hot reload rejected an edit of main's devhost.toml</span></div>
+<div class="work small">
+<table class="t"><tbody>
+<tr class="sel focus"><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span> <span class="chip warn">✎ edit not applied</span></td></tr>
+</tbody></table>
+<div class="ckdet"><b>main ~/acme</b> · edit not applied: devhost.toml line 12, column 3, services.worker: unrecognized key "dependOn" is not applied; the stack still runs the accepted manifest <span class="n">6</span>
+<div class="row"><span class="btn">Edit</span></div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>an external service in the repository blocks switching</span></div>
+<div class="work small">
+<div class="banner bad" style="margin:0">The external service preview blocks switching acme; to switch, run preview from a stack whose devhost.toml lives outside this repository. <span class="n">7</span></div>
+<table class="t"><tbody>
+<tr class="sel"><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span></td></tr>
+<tr class="dim focus"><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td><span class="chip bad">⊘ blocked</span></td></tr>
+<tr class="dim"><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td><span class="chip bad">⊘ blocked</span></td></tr>
+</tbody></table>
+<div class="ckdet"><b>fix-nav ~/acme/.worktrees/fix-nav</b> · blocked: the external service preview blocks switching acme
+<div class="row"><span class="btn">Open in Editor</span><span class="muted">[services.preview] in devhost.toml</span></div></div>
+<div class="ckft"><span class="sp"></span><span class="btn pri off">Switch and Restart Stack</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: a read that stops nothing (<code>HOLD-4</code>) lets a deleted checkout's processes run until the person chooses; that changes two project texts the reference quotes under no <code>CC-n</code>, and the owner rule that missing selections stay stopped for explicit recovery needs the product owner's confirmation. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>7. Recover a deleted or blocked checkout</h2>
+<p>A deleted or unregistered selected checkout still never falls back to another checkout by itself (owner rule), devhost still notices it when it next reads the list, and other repositories keep running. What changes: that read stops nothing, the deleted state reads as deleted, and the way out leads with returning to the configured checkout on every surface, never with a restart that cannot work.</p>
+<ol><li><span class="n">1</span> devhost publishes the repository as blocked with one sentence; processes that still run keep running from the deleted folder until the recovery the person chooses restarts the repository or they exit, and devhost starts none of its services until then. The sentence shows once in the panel's status line and is the accessible description of every control it blocks: each <b>Restart</b> of the repository's services, Restart Changed's members in it, and <b>Switch and Restart Stack</b> while nothing is picked (<code>HOLD-4</code>, <code>HOLD-1</code>, <code>MENU-3</code>, <code>ACT-2</code>).</li>
+<li><span class="n">2</span> The panel leads with <b>Return to Configured Checkout</b>, then the list to choose another checkout; <b>Check Again</b> reads the list again and clears the block when the folder is back, restarting nothing (<code>MENU-5</code>, <code>HOLD-1</code>, <code>HOLD-4</code>).</li>
+<li><span class="n">3</span> The deleted row stays listed, disabled with "deleted · ~/acme/.worktrees/fix-nav is gone", and is never preselected: the highlight starts on the configured checkout (<code>SEL-4</code>, <code>MENU-5</code>).</li>
+<li><span class="n">4</span> <b>Return to Configured Checkout</b> asks every time, in place: <b>Cancel</b> takes the pressed button's place, focused and taking Enter, with <b>Return to Configured Checkout</b> beside it; other work joins the question when it exists. Once confirmed it runs and reports like a switch (steps 4 to 6) (<code>REV-1</code>, <code>REV-2</code>, <code>REV-3</code>, <code>REV-4</code>).</li>
+<li><span class="n">5</span> Once none of its services runs, the sentence says the services are blocked, and each one reads "blocked" (<code>ACT-2</code>). A rejection notice that the deleted checkout's manifest caused clears when the stack accepts a configuration from another checkout; manifest-hot-reload owns that notice (<code>FAIL-4</code>).</li>
+<li><span class="n">6</span> A rejected manifest edit never makes its checkout unavailable: the read keeps the running checkout <b>running</b>, adds <b>edit not applied</b>, and the details line gives the rejection once with <b>Edit</b>, the Configuration window at that line, or with the config editor off <b>Open in Editor</b> and <b>Copy Error</b>; nothing is stopped, blocked or disabled, and switching away stays possible (<code>HOLD-6</code>, <code>HOLD-4</code>, <code>MENU-4</code>).</li>
+<li><span class="n">7</span> An external service whose folder lies in the repository blocks the repository's switch, as <code>O7</code> recommends: the status line says so once, every row stays listed and readable, each disabled with that sentence as its reason, <b>Switch and Restart Stack</b> is unavailable with it as its accessible description, and the details line opens <code>[services.preview]</code> in devhost.toml. The block clears when hot reload accepts a manifest without it; that reload's own line is manifest-hot-reload's (<code>SEL-5</code>, <code>HOLD-4</code>, <code>MENU-4</code>, <code>HOLD-1</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-05, worktree-switch-14, manifest-hot-reload-2-03, network-exposure-03 · Backend: a read stops nothing and publishes the repository as blocked; Check Again is the list's read, with no new route (Backend 2, 3, 12)</p></div>
+</section>
+
+<section class="step" id="in-use">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>hotfix highlighted: another stack runs it</span></div>
+<div class="work small">
+<table class="t"><tbody>
+<tr class="sel"><td>main · c521449 · ~/acme</td><td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span></td></tr>
+<tr><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td></td></tr>
+<tr class="focus"><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td><span class="chip warn">◆ in use</span></td></tr>
+</tbody></table>
+<div class="ckdet">In use by Acme Shop (hotfix) · hotfix ~/acme/.worktrees/hotfix · started 14:02 from a terminal · PID 95004 <span class="n">1</span>
+<div class="row"><span class="btn">Open Stack</span><span class="muted">▸ 4 more routes: api, admin, docs, mail</span><span class="n">2</span></div>
+<div class="row"><code>devhost stop</code><span class="muted">in ~/acme/.worktrees/hotfix</span><span class="btn">Copy</span><span class="n">3</span></div>
+<div class="row"><span class="btn">Stop Stack</span><span class="n">4</span></div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel, details line</b><span>Stop Stack: question, progress and outcomes</span></div>
+<div class="work small">
+<div class="box" style="margin:0">Stop Acme Shop (hotfix) in ~/acme/.worktrees/hotfix? Its 6 services stop: web, api, docs, worker, admin and mail. Claude Code's turn in hotfix ends. <span class="n">5</span>
+<div class="row" style="margin-top:4px"><span class="sp"></span><span class="btn">Stop Acme Shop (hotfix)</span><span class="btn focusring">Cancel</span></div></div>
+<div class="vlab">confirmed</div>
+<div class="row"><span class="btn focusring">Stopping Acme Shop (hotfix) · 3 of 6 stopped · 12 s</span><span class="n">6</span></div>
+<div class="vlab">stopped</div>
+<div class="banner ok focusring" style="margin:0">Stopped Acme Shop (hotfix) · hotfix is free · 19 s <span class="n">7</span></div>
+<table class="t"><tbody><tr class="flash"><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td></td></tr></tbody></table>
+<div class="vlab">a service survives</div>
+<div class="banner bad" style="margin:0">Acme Shop (hotfix) did not stop: worker still runs · PID 95120 · port 4310 <span class="n">8</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme/.worktrees/hotfix</b><span>the stack that was stopped</span></div>
+<pre class="term">Stopped from Acme Shop (main ~/acme) at 14:05 · its Worktrees panel  <span class="n">9</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Worktrees panel</b><span>a page opened from another machine</span></div>
+<div class="work small">
+<div class="ckft" style="border:0;margin:0;padding:0"><span class="reach">Checkouts can be switched only from this machine.</span><span class="n">10</span><span class="btn off">Refresh Worktrees</span><span class="btn off">Stop Stack</span><span class="btn pri off">Switch and Restart Stack</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference's in-use popover anchored to a row (<code>SURF-2</code>, <code>SURF-10</code>) is drawn as the list's details line, as <code>KEY-10</code> places a row's remedies; Stop Stack needs <code>devhost stop</code>'s stop routine and allowance, which <code>O30</code> and <code>CC-35</code> cover only for terminal commands; and who may reach these routes from another machine is the product owner's decision, shown here as the recommended default. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>8. Read an in-use checkout and stop its stack</h2>
+<p>A checkout another stack runs still shows as in use, and <b>Stop Stack</b> still stops that stack so its checkout can be picked, re-checking the other stack's identity before every signal, as today. What changes: the in-use details name whose stack it is and offer one <b>Open Stack</b>, and <b>Stop Stack</b> asks, waits for the stack to stop without killing its devhost, and leaves a record of who stopped it.</p>
+<ol><li><span class="n">1</span> Highlighting an <b>in use</b> row fills the details line, the in-use popover anchored below the list: the stack is named with its checkout because two stacks share the name, with its start time, origin and PID; its badge and its title use the same words (<code>SURF-2</code>, <code>KEY-10</code>, <code>WORD-1</code>, <code>SEL-4</code>).</li>
+<li><span class="n">2</span> One <b>Open Stack</b> opens that stack's primary page in the same tab, with the other routes under a disclosure that names each by service (<code>SURF-10</code>, <code>SURF-15</code>).</li>
+<li><span class="n">3</span> The terminal way to the same end: <code>devhost stop</code> to run in that checkout's folder, which resolves its stack, to copy (<code>MENU-6</code>, <code>SEL-6</code>).</li>
+<li><span class="n">4</span> <b>Stop Stack</b> asks every time, in place (<code>REV-1</code>, <code>REV-4</code>).</li>
+<li><span class="n">5</span> The question names the stack, its checkout and its services, and adds the agent turns it ends when they work or wait (<code>REV-3</code>). <b>Cancel</b> takes the pressed button's place with focus and Enter, and <b>Stop Acme Shop (hotfix)</b> confirms; Escape, or a click in the panel on no control, cancels it with focus back on <b>Stop Stack</b>, and closing the panel cancels it (<code>REV-4</code>, <code>KEY-8</code>, <code>WORD-2</code>).</li>
+<li><span class="n">6</span> Once confirmed, the confirm button stays as the busy control with focus (<code>KEY-11</code>, <code>ACT-3</code>). devhost re-checks the other stack's identity before every signal, records why beside its stack record before it signals it, and stops it through the one stop routine <code>devhost stop</code> uses, which waits as long as <code>O30</code> allows and never kills a supervisor while it still stops services (<code>REV-11</code>, <code>ACT-10</code>, <code>ACT-11</code>).</li>
+<li><span class="n">7</span> The outcome replaces the question and takes focus on its sentence; the panel stays open and the freed row becomes pickable without reopening it (<code>FB-2</code>, <code>FB-3</code>, <code>SURF-2</code>).</li>
+<li><span class="n">8</span> When a service of that stack survives, the outcome names each with its PID and port, and the row stays <b>in use</b> (<code>ACT-11</code>, <code>FAIL-1</code>).</li>
+<li><span class="n">9</span> The stopped stack's terminal prints who stopped it; every switch, return and stop records its origin (<code>ACT-10</code>, <code>FAIL-5</code>, <code>ACT-1</code>). Recovery pages' owner card renders the same details line, question, progress and outcome (<code>SURF-14</code>).</li>
+<li><span class="n">10</span> Recommended default until the product owner decides who may reach these routes: both entry points answer a client that is not on this machine <code>403</code> and run nothing, and a page opened from another machine shows <b>Switch and Restart Stack</b>, <b>Return to Configured Checkout</b>, <b>Stop Stack</b> and <b>Refresh Worktrees</b> unavailable with that sentence from the moment the panel opens (<code>HOLD-7</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-07, worktree-switch-13, network-exposure-03 · Backend: Stop Stack through the shared stop routine; the origin of switches and stops; who may switch, stop or read checkouts from the network, still to settle (Backend 8, 10, 11)</p></div>
+</section>
+
+<section class="step" id="status-pages">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › recovery page for web</b><span>its checkout was deleted; the toolbar is off</span></div>
+<div class="work">
+<div class="banner bad" style="margin:0 0 6px">The checkout ~/acme/.worktrees/fix-nav was deleted; acme's services are blocked until you choose a checkout <span class="n">1</span></div>
+<div class="row"><span class="btn pri">Return to Configured Checkout</span><span class="btn">Check Again</span><span class="btn off">Restart web</span><span class="n">2</span></div>
+<div class="ckhd" style="margin-top:8px"><b>Checkouts of acme</b><span class="sp"></span><span class="muted">Read 14:20</span><span class="btn">Refresh Worktrees</span></div>
+<div class="row"><span class="in focusring" style="flex:1"><span class="muted">Find checkout</span></span><span class="n">3</span></div>
+<table class="t"><tbody>
+<tr class="focus"><td>main · c521449 · ~/acme</td><td><span class="chip">⌂ configured</span></td></tr>
+<tr class="dim"><td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td><td><span class="chip bad">∅ deleted</span></td></tr>
+<tr><td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td><td><span class="chip warn">◆ in use</span></td></tr>
+</tbody></table>
+<div class="ckft"><span class="sp"></span><span class="btn pri off">Switch and Restart Stack</span><span class="n">4</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>the crash view: web's checkout is blocked</span></div>
+<div class="scrim"><div class="dlg">
+<div class="hd"><h3>web · blocked</h3></div>
+<div class="body small">The checkout ~/acme/.worktrees/fix-nav was deleted; acme's services are blocked until you choose a checkout <span class="n">5</span>
+<div class="row" style="margin-top:6px"><span class="btn pri">Return to Configured Checkout</span><span class="btn">Check Again</span></div>
+<div class="muted" style="margin-top:4px">… the shared checkout list, its details line and the reach line, as on the recovery page</div></div>
+<div class="ft"><span class="btn">Minimize</span></div>
+</div></div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › /orders/42</b><span>the app answered 404 itself</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">Acme Shop · 404 · This page could not be found</div>
+<div class="corner">
+<div class="banner" style="margin:0">web in main ~/acme answered 404 <span class="btn">Retry</span><br>▸ Is this route in another checkout? <span class="n">6</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>9. Switch from a status page or the crash view</h2>
+<p>Startup and recovery pages still offer switching and <b>Refresh Worktrees</b>, even with the toolbar off, as today. What changes: they render the same checkout list and the same operation as the toolbar instead of a native select, and a deleted checkout's recovery page leads with the way back, not with a restart.</p>
+<ol><li><span class="n">1</span> Startup, recovery and app error pages render the shared checkout list, its details line, the reach line, <b>Switch and Restart Stack</b>, <b>Return to Configured Checkout</b> and <b>Refresh Worktrees</b>, replacing today's native select with its full paths, 40-character commit IDs and errors inside options (<code>SURF-14</code>, <code>SEL-4</code>, <code>MENU-1</code>).</li>
+<li><span class="n">2</span> A deleted checkout's recovery page leads with <b>Return to Configured Checkout</b>, then the list; <b>Restart web</b> is unavailable with the cause above it as its reason until a checkout is chosen, and the deleted checkout is never preselected (<code>MENU-5</code>, <code>SEL-4</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">3</span> The list keeps the toolbar's keys and words: focus in the find field, arrows to move, Enter to pick without switching, the remedies after it (<code>KEY-10</code>, <code>WORD-1</code>, <code>WORD-2</code>).</li>
+<li><span class="n">4</span> The question, progress and outcome follow steps 3 to 8, and the page that loads after a switch shows its outcome (<code>FB-2</code>).</li>
+<li><span class="n">5</span> The crash view, when its cause is a deleted or blocked checkout, shows the same list inside its recovery view, and a switch started there reports its progress and failure in the view (<code>SURF-3</code>).</li>
+<li><span class="n">6</span> On an app's own 404 or 5xx, startup-and-recovery's notice holds the same list collapsed under "Is this route in another checkout?"; switching from it takes the same two steps (<code>SURF-16</code>, <code>O5</code>).</li></ol>
+<p class="fixes">Fixes worktree-switch-03, worktree-switch-05 · Backend: the shared checkout list in both style entries, from the structured checkout entries (Backend 3)</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>The read that stops services: opening Worktrees, a status page's first check and Refresh no longer stop a repository (<code>HOLD-4</code>)</li>
+<li>Stop Stack's 15 s kill of another stack's devhost</li>
+<li>The switch's empty service selection, and the target saved before any service stops</li>
+<li>The status pages' native select, raw error chains and one Open Stack link per route</li>
+<li>Restart as the lead of a deleted checkout's recovery page, and the deleted checkout preselected</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li>The toolbar picker and the status pages' select: one shared checkout list with one label builder (<code>SURF-14</code>, <code>SEL-4</code>)</li>
+<li>The in-use popover and each badge's reason popover: the list's one details line (<code>KEY-10</code>)</li>
+<li>Switch worktree and Switch and restart stack: <b>Switch and Restart Stack</b> (<code>WORD-2</code>)</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li>The reach line, and the in-place question for other work</li>
+<li>Steps in the panel and as an activity line; the outcome on the reloaded page with what was left behind and the link back</li>
+<li><b>Retry Switch</b>; the deleted state led by <b>Return to Configured Checkout</b>, with <b>Check Again</b></li>
+<li>Commit-prefix find, edit not applied, and structured reasons with <b>Open in Editor</b> and <b>Copy Error</b></li>
+<li>Stop Stack's question, progress, survivors and attribution; an unfinished switch named at the next start</li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li>A switch keeps the run's service selection, and so does a start that restores a linked worktree (<code>SEL-5</code>)</li>
+<li>Stop Stack and Return to Configured Checkout ask first, in place; a switch asks only for other work (<code>REV-1</code>, <code>REV-3</code>)</li>
+<li>Focus starts in the find field at the top; Enter picks without switching (<code>KEY-10</code>)</li>
+<li>Open Stack opens in the same tab; the terminal names checkouts by branch and path (<code>SURF-15</code>, <code>FB-10</code>)</li>
+<li>A start after an unfinished switch runs the checkout the stack ran before, and says so (<code>UNDO-1</code>)</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>No silent fallback to another checkout; other repositories keep running</li>
+<li>The target is checked before anything stops, and a failed start returns to the previous checkout</li>
+<li>One switch at a time; Ctrl-C or devhost stop during a switch cancels it with the previous checkout saved</li>
+<li>Stop Stack re-checks the other stack's identity before every signal</li>
+<li>Status pages offer the switch and Refresh Worktrees with the toolbar off; devhost runs only read-only Git commands</li>
+<li>Conversations stay bound to their checkout; a switch restarts every managed service the run selected</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>Keep the run's selection; save it once the switch succeeds, with a pending-switch record (Backend 1, 13)</li>
+<li>A read stops nothing; structured checkout entries (Backend 2, 3)</li>
+<li>The switch's operation record; the status stream stays open (Backend 4, 6; <code>CC-37</code>)</li>
+<li>Per-service rollback; one start and one outcome line in the terminal (Backend 5, 7; <code>CC-22</code>)</li>
+<li>Stop Stack through the shared stop routine; origins recorded (Backend 8, 10; <code>CC-17</code>, <code>CC-35</code>)</li>
+<li>Still to settle: needs-setup matching and who may reach the routes (Backend 9, 11)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,451 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Jump between the page and the source today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/component-source-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step"
+        },
+        "backend": {
+          "label": "Backend job"
+        },
+        "security": {
+          "label": "Step with an evidenced pain point"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "entry",
+      "label": "Entry points"
+    },
+    {
+      "id": "lookup",
+      "label": "Source lookup"
+    },
+    {
+      "id": "page",
+      "label": "App page"
+    },
+    {
+      "id": "menu",
+      "label": "Source menu"
+    },
+    {
+      "id": "editor",
+      "label": "Editor (IDE)"
+    },
+    {
+      "id": "recovery",
+      "label": "Failures and retry",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "point",
+      "label": "Point + look up",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "open",
+      "label": "Open the source",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "highlight",
+      "label": "Editor to page",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "alt",
+    "lookup",
+    "menu",
+    "open"
+  ],
+  "nodes": [
+    {
+      "id": "alt",
+      "lane": "entry",
+      "col": 0,
+      "type": "external",
+      "label": "Alt + right-click",
+      "sublabel": "any element on the page",
+      "explanation": "Holding Alt (Option on a Mac) while right-clicking an element of the app page starts the lookup. devhost takes the contextmenu event in the capture phase on the document and, for elements outside its own surfaces, blocks the browser's menu before it knows whether a source exists. The element is the one under the pointer that Select Elements would pick. The listener is off when [devtools.editor].enabled is false and while the page's checkout is switching or in error; then the browser's own menu opens and devhost says nothing.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 65,
+          "end_line": 106,
+          "label": "Capture-phase Alt + contextmenu listener"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 200,
+          "end_line": 205,
+          "label": "Off while the checkout switches or fails"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/resolveAnnotationTarget.ts",
+          "line": 15,
+          "end_line": 24,
+          "label": "Element under the pointer"
+        }
+      ]
+    },
+    {
+      "id": "lookup",
+      "lane": "lookup",
+      "col": 1,
+      "type": "security",
+      "label": "Read React source fields",
+      "sublabel": "React 19 builds: nothing",
+      "tag": "page-context-06",
+      "explanation": "devhost reads the element's React fiber for _debugSource, __source, _source, debugSource or props.__source, or asks the React DevTools extension's renderer interface, then walks owners and parents, maps bundle positions back through the page's source maps and drops duplicates. React 19 development builds never write _debugSource; they record _debugStack, whose first app frame points at the JSX, and devhost never reads it. So on the current React, the docs' own playground included, nothing is found unless the React DevTools extension is installed, which the docs never mention (page-context-06; its duplicate source-and-minimap-01 covers this surface). The same lookup gives chat markers their source location, so on React 19 they reach the agent without a file.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/reactSourceInspection.ts",
+          "line": 136,
+          "end_line": 159,
+          "label": "Reads only _debugSource-style fields"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/reactSourceInspection.ts",
+          "line": 237,
+          "end_line": 285,
+          "label": "React DevTools renderer interface"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/inspectComponentElement.ts",
+          "line": 25,
+          "end_line": 86,
+          "label": "Owners, source maps, de-duplication"
+        }
+      ]
+    },
+    {
+      "id": "nothing",
+      "lane": "recovery",
+      "col": 0,
+      "type": "security",
+      "label": "Nothing appears",
+      "sublabel": "browser menu blocked too",
+      "tag": "source-and-minimap-01",
+      "explanation": "When the lookup finds nothing, devhost clears the menu: no message, no copied path, no editor URL. It has already called preventDefault, so the browser's own context menu is gone too while Alt is held. The menu has an errorMessage slot that no production code ever sets, so 'this build exposes no source locations', 'wrong editor' and 'devtools not loaded' all look like a dead click (source-and-minimap-01, a duplicate of page-context-06).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 80,
+          "end_line": 81,
+          "label": "Browser menu blocked before the lookup"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 154,
+          "end_line": 158,
+          "label": "No source: the menu is cleared"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/components/ComponentSourceMenu.tsx",
+          "line": 79,
+          "end_line": 79,
+          "label": "errorMessage slot that no code sets"
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "lane": "menu",
+      "col": 2,
+      "type": "security",
+      "label": "Open in VS Code menu",
+      "sublabel": "one button: copy + open",
+      "tag": "source-and-minimap-02",
+      "explanation": "The menu opens at the pointer, titled 'Open in <editor>' after [devtools.editor].ide, and lists the element and each owner component with a source as <Name>, badges for its non-default props, and a project-relative path:line:column truncated from the left. Each entry is a single button that both copies the path and opens the editor: there is no copy-only choice, no other editor, and nothing says a path will be copied. The menu does not take focus and handles only Escape; a click outside or a worktree switch also closes it (source-and-minimap-02).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 161,
+          "end_line": 174,
+          "label": "Title from the editor; one item per source"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/components/ComponentSourceMenu.tsx",
+          "line": 81,
+          "end_line": 108,
+          "label": "Each entry is a single button"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 108,
+          "end_line": 136,
+          "label": "Escape or an outside click closes it"
+        }
+      ]
+    },
+    {
+      "id": "ide",
+      "lane": "editor",
+      "col": 2,
+      "type": "security",
+      "label": "Set ide in devhost.toml",
+      "sublabel": "4 editors; team-wide file",
+      "tag": "source-and-minimap-03",
+      "explanation": "The editor comes only from [devtools.editor].ide in the stack's manifest, which is normally committed with the project: cursor, vscode (the default), vscode-insiders or webstorm. Any other value is rejected on save ('devtools.editor.ide must be one of cursor, vscode, vscode-insiders, or webstorm.') and the accepted manifest keeps running. config.toml has no editor setting and no environment variable overrides it, so someone on another editor must change the team's shared file and keep that change out of every commit, and nothing shows the configured editor before the menu's title (source-and-minimap-03). An accepted save reaches open pages with the next health message, so the next menu shows the new title without a reload.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 155,
+          "end_line": 170,
+          "label": "ide must be one of four editors"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/schema.go",
+          "line": 8,
+          "end_line": 8,
+          "label": "The four accepted editors"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 787,
+          "end_line": 792,
+          "label": "Config rides every health message"
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "lane": "editor",
+      "col": 3,
+      "type": "frontend",
+      "label": "Editor opens via URL",
+      "sublabel": "vscode://file/…:line:col",
+      "explanation": "Clicking an entry writes the project-relative path:line:column to the clipboard, then points the page at the editor's URL handler: vscode://file/<absolute path>:line:column (vscode-insiders:// alike), cursor://open?url=file://… or webstorm://open?file=…&line=. Paths under another checkout of the repository are rewritten to the selected checkout first, so the editor opens the file the page actually runs. When the editor has registered its URL handler, the file opens at that line: the flow's end state.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 41,
+          "end_line": 63,
+          "label": "Copy the path, then open the editor URL"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/componentSourceUtils.ts",
+          "line": 12,
+          "end_line": 36,
+          "label": "Editor URL per ide"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/resolveWorktreeSourcePath.ts",
+          "line": 4,
+          "end_line": 16,
+          "label": "Rewrite to the selected checkout"
+        }
+      ]
+    },
+    {
+      "id": "silent",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Menu closes, no editor",
+      "sublabel": "no Copied, no error",
+      "tag": "source-and-minimap-02",
+      "explanation": "A page cannot tell whether a custom URL scheme launched anything. Without a handler for the editor's scheme (the editor is not installed, a new machine, a remote or container setup, a teammate on another editor), the menu fades and nothing else happens: no 'Copied', no 'Opening VS Code', no failure message, and clipboard failures are swallowed too. People conclude the feature is broken and never learn the path is already on their clipboard; with ide = \"webstorm\" the URL also drops the column (source-and-minimap-02).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
+          "line": 51,
+          "end_line": 60,
+          "label": "Clipboard errors swallowed; no feedback"
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "lane": "entry",
+      "col": 4,
+      "type": "external",
+      "label": "Editor cursor moves",
+      "sublabel": "plugin POSTs file:line:col",
+      "explanation": "devhost ships no editor plugin: a plugin or script publishes the cursor as a file:line:column relative to the project, or {\"locator\": null} to clear, with a POST to /__devhost__/react-highlight/cursor on the page's own hostname. The control server answers 200 {\"success\":true} for any well-formed locator, matched or not, and broadcasts it, with the stack name and the manifest directory it started with, to every open page of that stack over /__devhost__/ws/react-highlight; other stacks never see it.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 729,
+          "end_line": 766,
+          "label": "Cursor POST: broadcast, always success"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/react-highlight.md",
+          "line": 21,
+          "end_line": 33,
+          "label": "Docs: locator relative to the project"
+        }
+      ]
+    },
+    {
+      "id": "match",
+      "lane": "lookup",
+      "col": 4,
+      "type": "security",
+      "label": "Match the locator",
+      "sublabel": "misses a cursor inside",
+      "tag": "source-and-minimap-08",
+      "explanation": "Each page first compares the locator with the React source fields of every element; React 19 and Bun's development transform leave those empty, so it falls back to source maps: it finds the file among the maps of the page's <script src> files only, never those of modules loaded through import, as on a Vite dev server or in lazy chunks (source-and-minimap-10), reads the first JSX tag at or after the column and counts earlier tags of that name to pick the nth element. With the cursor inside an element, as at column 20 of '<h1>Devtools playground</h1>', no tag follows the column, so the matcher takes the <h1> earlier on the line, counts that same tag as an earlier one and looks for a second <h1>: nothing matches. Absolute paths and paths relative to a service folder match nothing either, and the docs never say which folder 'the project' is. After a worktree switch, each cursor message still names the checkout the stack started from as the root, so project-relative locators match nothing (source-and-minimap-09). A miss shows only as matchedCount 0 in the devhost:react-highlight event and a console warning without a reason (source-and-minimap-08).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 139,
+          "end_line": 161,
+          "label": "Fiber match, then source maps; event"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 317,
+          "end_line": 376,
+          "label": "Tag at the column; count earlier tags"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 378,
+          "end_line": 405,
+          "label": "Source maps read from script tags"
+        }
+      ]
+    },
+    {
+      "id": "outline",
+      "lane": "page",
+      "col": 5,
+      "type": "security",
+      "label": "Outline drawn once",
+      "sublabel": "stays put on resize",
+      "tag": "source-and-minimap-08",
+      "explanation": "Matches get a cyan outline in devhost's top layer, above the page and below the toolbar, that never blocks clicks. Each rectangle is measured once into a fixed-position box, and nothing re-measures on resize, scroll or the re-render a hot reload causes while the person edits that very JSX, so the outline stays where the element was, over other content (source-and-minimap-08). It clears when the editor sends the next locator or null, and when the stream drops.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/reactHighlightOverlay.ts",
+          "line": 163,
+          "end_line": 185,
+          "label": "Measured once into a fixed box"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/reactHighlight/hooks/useReactHighlightOverlay.ts",
+          "line": 36,
+          "end_line": 81,
+          "label": "Replaced on update; cleared on disconnect"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "alt-lookup",
+      "from": "alt",
+      "to": "lookup",
+      "label": "inspect element",
+      "role": "main"
+    },
+    {
+      "id": "lookup-menu",
+      "from": "lookup",
+      "to": "menu",
+      "label": "source found",
+      "role": "main"
+    },
+    {
+      "id": "menu-open",
+      "from": "menu",
+      "to": "open",
+      "label": "click: copy + open",
+      "role": "main"
+    },
+    {
+      "id": "lookup-nothing",
+      "from": "lookup",
+      "to": "nothing",
+      "label": "nothing found",
+      "role": "error"
+    },
+    {
+      "id": "open-silent",
+      "from": "open",
+      "to": "silent",
+      "label": "no URL handler",
+      "role": "error"
+    },
+    {
+      "id": "ide-menu",
+      "from": "ide",
+      "to": "menu",
+      "label": "save: hot reload",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "cursor-match",
+      "from": "cursor",
+      "to": "match",
+      "label": "broadcast to pages",
+      "role": "branch"
+    },
+    {
+      "id": "match-outline",
+      "from": "match",
+      "to": "outline",
+      "label": "matched",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "When the build exposes source fields, Alt + right-click lists the element's component chain with its props and project-relative paths, mapped back through the page's source maps",
+        "Paths from another checkout of the repository are rewritten to the selected one, so the editor opens the file the page runs",
+        "The menu stays inside the window, truncates long paths from the left, and closes with Escape, an outside click or a worktree switch",
+        "Highlight reaches every open page of the stack and never another stack's; outlines sit below the toolbar and never block clicks",
+        "Saving a new ide reaches open pages without a reload; an unknown editor is rejected with the accepted list"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "page-context-06 On React 19 development builds devhost finds no component source: Alt + right-click does nothing and markers reach the agent without a file",
+        "source-and-minimap-01 (duplicate of page-context-06) Alt + right-click blocks the browser's menu and shows no reason when no source is found",
+        "source-and-minimap-02 Choosing an entry copies the path and opens the editor without a word; an editor that is not installed fails silently",
+        "source-and-minimap-03 The editor choice lives in the team's shared devhost.toml, and only four editors exist",
+        "source-and-minimap-08 Highlight from the editor misses the element when the cursor sits inside it, and its outline stays behind when the layout moves",
+        "source-and-minimap-09 After a worktree switch, highlight from the editor still matches against the original checkout, so project-relative locators outline nothing",
+        "source-and-minimap-10 Highlight from the editor never searches modules loaded through import, so on React 19 with a native-ESM server such as Vite it matches only JSX in the entry script"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live on the React 19 + Bun playground: Alt + right-click with and without a stand-in React DevTools renderer interface, the menu's copy and open with no editor URL handler installed, ide = \"webstorm\" and a rejected ide = \"zed\", and highlight locators posted to /__devhost__/react-highlight/cursor followed by a window resize. No editor opened (none registered a URL handler on that machine); React 18 metadata matching was reviewed from code only. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

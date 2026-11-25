@@ -1,0 +1,658 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Edit configuration in the browser: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/config-editor-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Configuration window: ask"
+    },
+    {
+      "id": "review",
+      "label": "Configuration window: review"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "config",
+    "open",
+    "edit",
+    "write",
+    "reload",
+    "receipt"
+  ],
+  "nodes": [
+    {
+      "id": "config",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "yOffset": 0,
+      "label": "Config · 2 unsaved",
+      "sublabel": "this machine only",
+      "tag": "network-exposure-04",
+      "explanation": "The editor stays off by default (owner rule): [devtools.configEditor] enabled = true in a manifest, applied through hot reload, shows Config on every open page without a page reload; while it is off every config route answers 404, and every problem shows its file and line with Copy and Open in Editor instead of Edit (MENU-3, MENU-4, SURF-15). Config is a bar item and an arrow stop (KEY-3, KEY-4); it counts drafts, 'Config · 2 unsaved', and keeps the not-applied look, told by shape and the text 'not applied', in every tab until a reload of that source is accepted, also while the window is closed (ACT-7, SURF-8, ACT-13). Resolves network-exposure-04 as a proposed contract change the product owner decides (Backend 10, [discuss]): every config route, the draft routes included, answers only a browser on this machine, as saves do today, so on a page opened from another machine Config is unavailable with 'The configuration is available on this machine only' (MENU-3, HOLD-1), a proposed exception to HOLD-7; if the owner keeps remote reads, the window opens there with Save unavailable, 'Saving works only from this machine' (HOLD-7).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorButton.tsx",
+          "line": 16,
+          "end_line": 31,
+          "label": "Reuses: Config button, marked after a rejection"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 330,
+          "end_line": 338,
+          "label": "Reuses: Config shown only while enabled"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 99,
+          "end_line": 119,
+          "label": "Replaces: file contents read by any client"
+        }
+      ]
+    },
+    {
+      "id": "problem",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "yOffset": -80,
+      "label": "Edit at a problem",
+      "sublabel": "notice · crash view · row",
+      "tag": "config-editor-09",
+      "explanation": "Every surface that reports a manifest or devhost config file problem leads to the file and line that hold it, from one structured error: the file relative to the root manifest, line, column, key and message (MENU-4). Edit in the rejection notice, Edit in the crash view (which first minimizes itself to its notice, SURF-3), Edit on a failed Services row and Config while a service is exited all open the window on that file, scrolled to the line and marked, never on whichever file was open last. With the editor off, each shows the file and line with Copy and Open in Editor instead (MENU-3, SURF-15). With the toolbar collapsed, the badge takes the rejected-configuration look and keeps the notice's one-line form with its Edit (ACT-7, SURF-8). Resolves config-editor-09 with the banner of the next step. The crash view's own actions are startup-and-recovery's (journey-crash-to-fix-01, related), and the rejection's captured lines are manifest-hot-reload's (journey-crash-to-fix-03, related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 238,
+          "end_line": 241,
+          "label": "Replaces: Edit that only opens the window"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx",
+          "line": 18,
+          "end_line": 42,
+          "label": "Replaces: raw reason with Edit, per source"
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "yOffset": 0,
+      "label": "Window opens at once",
+      "sublabel": "modal · loading frame",
+      "tag": "config-editor-10",
+      "explanation": "The Configuration window is a modal dialog (aria-modal, showModal()): the page, the bar, the notice stack and docked chat are inert, Tab cycles inside it, and its height stops above the notice stack, whose text stays visible (SURF-4, SURF-1, KEY-7, SURF-9). Focus moves to the text (KEY-6); Escape in the text moves to the File list and elsewhere closes with every draft kept; Ctrl+M (⌥⇧M on macOS) switches Tab between indenting and moving focus, named in the hint line; on close, focus returns to the control that opened it, or after a pointer open to the element focused before (KEY-8, KEY-13, KEY-6, KEY-5). Resolves config-editor-10. The frame shows at once with 'Loading devhost.toml…', and the files route answers without waiting for a running reload, restart or switch, whose progress the header names, 'Apply devhost.toml is running · 3 of 6 started' (STATE-1, HOLD-3, Backend 8; config-editor-14). The header names the file's role, short path and checkout, 'Root manifest · devhost.toml · main ~/acme' (SEL-4). Drafts come back from the control server after a page reload: '2 files have unsaved changes: devhost.toml, admin/devhost.toml' (UNDO-2, CC-19; config-editor-08).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 118,
+          "end_line": 135,
+          "label": "Replaces: backdrop dialog without aria-modal"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 87,
+          "end_line": 115,
+          "label": "Replaces: files and schema load on every open"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorView.ts",
+          "line": 105,
+          "end_line": 118,
+          "label": "Reuses: keymap: Tab indents, Mod-s saves"
+        }
+      ]
+    },
+    {
+      "id": "banner",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "yOffset": -80,
+      "label": "Opens at the problem",
+      "sublabel": "exit, last lines, Restart",
+      "tag": "journey-crash-to-fix-02",
+      "explanation": "The window opens at the file and line, marked, with the context it was opened for in a banner at its top, so nothing the person needs stays behind it (SURF-4, MENU-4). For a rejection the banner shows until a reload of that source is accepted, also after the window closes and reopens: 'admin/devhost.toml line 4, services.admin.autostart: unknown key. The stack still runs the accepted manifest.' (FAIL-2, WORD-7, HOLD-6). For an exited service it shows its evidence, 'api exited with code 1 at 14:02 before its health check', its frozen last lines and what devhost ran, 'Ran bun run src/server.ts in backend/ · devhost.toml line 14' (FAIL-3), with Restart api, MENU-5's lead action, handed off to services-panel's restart, and Show All Output, which expands only that service's output in place; other output is read in the pinned log panel after the window closes (SURF-13, MENU-5, WORD-2). The [services.api] header is marked, and the File list names the file that defines api. Resolves journey-crash-to-fix-02 and the window half of config-editor-09; the banner's Restart and output are readings of SURF-4 recorded for the reference's author.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 365,
+          "end_line": 376,
+          "label": "Replaces: editor fed configuration, not health"
+        }
+      ]
+    },
+    {
+      "id": "file",
+      "lane": "review",
+      "col": 1,
+      "type": "frontend",
+      "label": "Pick a file by role",
+      "sublabel": "This stack · This machine",
+      "tag": "config-editor-01",
+      "explanation": "File is a combobox, its field and list in one shadow tree, with options grouped by role: 'This stack' (Root manifest · devhost.toml; Include · admin/devhost.toml) and 'This machine' (Devhost config file · ~/.config/devhost/config.toml, 'shared by every stack on this machine') (KEY-10, SEL-10, WORD-1). Each option's role, short path and state are text in its accessible description: unsaved, applying, applied, not applied, 'defines api, which exited'; a long path is shortened in the middle, with the full path in its tooltip and accessible name, and the trigger never grows past its slot, so Revert, Save and Close stay in the window (WORD-8, SURF-9). When the files outgrow the list it gains a find field that filters as the person types, 'No file matches \"zz\"' with Clear Filter (SEL-10, SURF-10, STATE-2). With the devhost config file selected, a line reads 'Changes here apply to every stack on this machine' (SEL-11). Switching files keeps each file's draft and its last save outcome (UNDO-2, UNDO-8). Keys: ArrowUp and ArrowDown move, Enter picks, Escape closes the list (KEY-10, KEY-8). Resolves config-editor-01.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/config_editor.go",
+          "line": 13,
+          "end_line": 39,
+          "label": "Reuses: root manifest, includes, config.toml"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 106,
+          "end_line": 109,
+          "label": "Replaces: labels by path; kind unused"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 144,
+          "end_line": 164,
+          "label": "Replaces: native select in the header"
+        }
+      ]
+    },
+    {
+      "id": "edit",
+      "lane": "review",
+      "col": 2,
+      "type": "frontend",
+      "label": "Edit, reach beside Save",
+      "sublabel": "every problem on its line",
+      "tag": "config-editor-03",
+      "explanation": "After each pause in typing, one check lists every problem a reload would find, ordered by line (Backend 4). Each is marked where the fix goes and worded key first, fix last, with the file relative to the root manifest, never an absolute path, a parser prefix or a Go error chain (FAIL-2, WORD-7, WORD-8): 'Line 21: the table header [services.web is not closed; add ]'; 'services.web.cwd (line 23): no folder frontend-missing in this checkout'; a problem in another file is listed with Open; one with no position has no marker, never line 1. Resolves config-editor-03. Completions and problem tooltips open inside the viewport, above the cursor when room below is short, never clipped (SURF-9; config-editor-04). Beside Save one line states what saving does, from the check's plan: 'Saving restarts api (changed) and worker (depends on api)', the page's own service first, starts, stops, moved URLs, a return to the configured checkout or the editor turning itself off; else 'Restarts nothing' (REV-10, SEL-11, SEL-1, O9). Never a question: Save stays available. Keys: Ctrl+Space (⌥I on macOS) lists completions, Enter breaks the line, Mod+S saves; keys typed here never reach the page (KEY-5, KEY-9).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorView.ts",
+          "line": 95,
+          "end_line": 104,
+          "label": "Reuses: completions and the delayed linter"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/readConfigDiagnostics.ts",
+          "line": 9,
+          "end_line": 27,
+          "label": "Replaces: no position: marked at line 1"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 129,
+          "end_line": 129,
+          "label": "Replaces: translated window that clips lists"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Check and plan the draft",
+      "sublabel": "read only · one pass",
+      "tag": "config-editor-02",
+      "explanation": "POST /__devhost__/config/validate, read only. The check collects the problems of every stage that does not depend on an earlier one (settings and values, dependency cycles over the declared dependsOn graph, ports, working directories) and returns them together; only a TOML syntax error stops the later stages, and the list says 'Fix the syntax error to check the rest of the file' (Backend 4). Each problem carries its file, line, column, keyPath, the offending line and a close key (Backend 5, MENU-4). It also returns the plan shown beside Save: each service the save would restart with its reason (changed, depends-on, same-repository), starts, stops, moved URLs, returnsToConfiguredCheckout and turnsEditorOff, from the reload's own selection, the plan devhost reload --dry-run prints (Backend 3, REV-10, CC-37, CC-23). While another operation runs, the check waits and the list reads 'Checking after Apply devhost.toml finishes…' instead of keeping old markers silently (HOLD-3, STATE-1). Nothing is written. Resolves config-editor-02.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/config_editor.go",
+          "line": 41,
+          "end_line": 76,
+          "label": "Replaces: staged checks; first failure returns"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 129,
+          "end_line": 142,
+          "label": "Reuses: validate route, nothing written"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 286,
+          "end_line": 309,
+          "label": "Replaces: positions for parse and schema only"
+        }
+      ]
+    },
+    {
+      "id": "offAsk",
+      "lane": "review",
+      "col": 3,
+      "type": "frontend",
+      "label": "Editor-off save asks",
+      "sublabel": "Review Drafts first",
+      "tag": "config-editor-08",
+      "explanation": "A save is reported, never reviewed (REV-1, REV-10), except for REV-3's other work: a save of [devtools.configEditor] enabled = false while admin/devhost.toml holds a draft expands Save in place, inside the window, into 'Saving turns the config editor off and closes this window. admin/devhost.toml has unsaved changes, kept until the editor is on again.' (REV-3, REV-4, SURF-2). Review Drafts takes Save's place, focused and taking Enter, and shows admin/devhost.toml; Save Anyway confirms (a reading of WORD-2 recorded for the reference's author). Escape, or a click that lands on no control, cancels and returns focus to Save; a click on another control cancels it, and that control acts; closing the window cancels it (KEY-8, KEY-6). Without other drafts the same save runs on one press. Drafts live on the control server per stack and file, with their version and a revision, so they survive this save, page reloads and closing the window, and return when the editor is on again (UNDO-2, CC-19, Backend 7); the outcome notice names them and the setting that brings them back (FB-4). Resolves config-editor-08.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 365,
+          "end_line": 376,
+          "label": "Replaces: window unmounts when turned off"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 57,
+          "end_line": 63,
+          "label": "Replaces: drafts held in React state only"
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Save: record, then write",
+      "sublabel": "202 · waits for a reload",
+      "tag": "config-editor-12",
+      "explanation": "POST /__devhost__/config/save with an operationId: one write, applied through hot reload. It answers 202 Accepted with the save's operation record before it writes (ACT-1, REV-12, CC-37, Backend 1) and keeps every guard: a browser on this machine only (HOLD-7), the version the draft was based on (409 with the file on disk), the reload's own checks (422 with the problems: 'Not saved: devhost.toml has 2 problems; they are listed below the text.'), an atomic write that keeps the file's mode and follows a symbolic link, and nothing written when any refuses. A save made while another reload runs waits and says so beside Save, 'Waits for Apply admin/devhost.toml · 3 of 6 started · this save applies next', and is reported with its own reload, never the running one (REV-12, HOLD-3). Save keeps focus, aria-busy, 'Saving devhost.toml…'; while that file's save is in progress its Save is unavailable with 'devhost.toml is being saved · 1 of 2 restarted' (KEY-11, MENU-3, HOLD-1). A lost response is read from the record by the ID kept in sessionStorage; a repeated ID writes nothing. Resolves config-editor-12.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 144,
+          "end_line": 185,
+          "label": "Reuses: local only; version, checks, write"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 240,
+          "end_line": 260,
+          "label": "Reuses: atomic write keeps mode, follows links"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 166,
+          "end_line": 198,
+          "label": "Replaces: save, then wait for any reload count"
+        }
+      ]
+    },
+    {
+      "id": "reload",
+      "lane": "backend",
+      "col": 4,
+      "type": "backend",
+      "label": "Hot reload reads it",
+      "sublabel": "follows links · 1 s grace",
+      "tag": "manifest-hot-reload-08",
+      "explanation": "The watcher applies the write like any other: a save starts no reload of its own, so every editor reaches the same hot reload (kept). It records each input by its path as given and its resolved path, watches both folders and matches an event for either, so a manifest, include or config.toml that is a symbolic link reloads on Linux too (Backend 11; resolves manifest-hot-reload-08). Every finished reload's record names the file versions it read, so a save resolves as applied or not applied by its own version, as replaced when a later version was read first, and the window learns of a change on disk without polling (Backend 2, REV-12). A changed service with a process health check counts as started only after it stayed up 1 s; an exit within it fails the reload with its exit code and last lines (O28, FB-5, Backend 9; config-editor-05). A failed reload rolls back service by service, 'Restoring the accepted manifest' (UNDO-1, manifest-hot-reload's): devhost's own undo. When no reload reads the written version within 5 s, the save reads 'devhost did not see this save; the stack still runs the accepted manifest. Apply it with devhost reload in ~/acme' (Backend 12, [discuss]).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/reload_disk.go",
+          "line": 24,
+          "end_line": 52,
+          "label": "Reuses: reload reads and validates the manifest"
+        },
+        {
+          "path": "apps/devhost/internal/services/manifest_watch.go",
+          "line": 151,
+          "end_line": 165,
+          "label": "Replaces: events matched by the unresolved path"
+        },
+        {
+          "path": "apps/devhost/internal/services/health.go",
+          "line": 63,
+          "end_line": 69,
+          "label": "Replaces: process health: one exit check"
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Applied devhost.toml",
+      "sublabel": "names each restart, why",
+      "tag": "config-editor-05",
+      "explanation": "The outcome replaces the progress beside Save ('Apply devhost.toml · 1 of 2 restarted · 4 s', one row per touched service, FB-1) and is certified only once the reload that read this version ended with its services in the states it reports (FB-2, FB-3, FB-5, O28): 'Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s', or 'Applied devhost.toml: nothing restarted · 0.4 s' (WORD-4). It is announced once and focus stays on Save (FB-9, KEY-11). Resolves config-editor-05's window slice; the reload's terminal line is manifest-hot-reload's. The outcome stays with its file: switching files, closing the window and a page reload never drop it, the File list shows it, and with the window closed the notice stack shows the activity line, then the outcome notice, a success closing 4 s after the pointer and focus leave it (UNDO-8, FB-6, FB-8, O14; config-editor-13). There is no Undo save, because a save starts processes that cannot be taken back: the editor's undo history survives a save, so undoing the text and saving again reports its own reload (UNDO-6).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 117,
+          "end_line": 131,
+          "label": "Replaces: outcome from the next reload count"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 250,
+          "end_line": 251,
+          "label": "Replaces: 'Saved and applied.'"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 247,
+          "end_line": 249,
+          "label": "Replaces: applying notice with no progress"
+        }
+      ]
+    },
+    {
+      "id": "cantLoad",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Cannot load: says why",
+      "sublabel": "Retry · Save in view",
+      "tag": "notices-and-feedback-01",
+      "explanation": "When the files cannot load, the body shows one sentence naming what failed and the next step, built from the cause the backend sent, never a response body: 'Acme Shop is not running, so its configuration cannot be loaded. Start it with devhost start in ~/acme', with Retry and Copy Error holding the original text; drafts and files the window already held stay, marked with their age (STATE-4, FAIL-2, HOLD-2, STATE-3). File, Revert, Save and Close keep their size and stay in view whatever the body holds; only the text and the problem list scroll (SURF-9). Focus is inside the window, so Escape closes it with drafts kept (KEY-8). The lost connection makes Save and Restore Running Version unavailable with one reason in the header line, 'Lost connection to devhost; retrying', with Retry Now beside it, because the window makes the notice stack inert; checks pause and drafts stay (HOLD-2, ACT-5, HOLD-1). Resolves the window's slice of notices-and-feedback-01; the rest is notices-and-feedback's and services-panel's.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorClient.ts",
+          "line": 130,
+          "end_line": 140,
+          "label": "Replaces: any non-2xx body as the message"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 231,
+          "end_line": 236,
+          "label": "Replaces: load error that pushes actions out"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 99,
+          "end_line": 102,
+          "label": "Replaces: load error kept, no retry"
+        }
+      ]
+    },
+    {
+      "id": "disk",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Changed on disk",
+      "sublabel": "Compare · Keep Mine",
+      "tag": "config-editor-07",
+      "explanation": "Every reload record names the file versions it read, so the window learns of a change on disk within a second, before Save (Backend 2). Without a draft it loads the new text in place and says so, 'Updated from disk at 14:05 · after devhost.toml changed on disk' (UNDO-3, WORD-4). With a draft it never replaces or drops it: 'devhost.toml changed on disk at 14:05 while you were editing', with Compare (the disk version beside the draft), Keep Mine and Use Disk Version (UNDO-3). Keep Mine asks in place, 'Overwrite the version on disk with yours? The disk version's changes to lines 3 and 7 are lost.', Cancel focused and taking Enter, then saves the draft through the same checks; Escape or a click that lands on no control cancels (REV-4, KEY-8). A save refused with 409 because the file changed meanwhile keeps the draft and shows the same choices (REV-13). A draft another tab changed shows 'Changed in another tab' with Compare, Keep Mine and Use Other Version (UNDO-2, CC-19). Load from disk, which discarded the draft, is removed (CC-20). Resolves config-editor-07.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 167,
+          "end_line": 175,
+          "label": "Reuses: 409 with the file on disk"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 200,
+          "end_line": 213,
+          "label": "Replaces: Load from disk drops the draft"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 258,
+          "end_line": 268,
+          "label": "Replaces: conflict notice with one action"
+        }
+      ]
+    },
+    {
+      "id": "notApplied",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Not applied: way back",
+      "sublabel": "Show Differences · Restore",
+      "tag": "config-editor-06",
+      "explanation": "A file whose last reload was not applied is a state of its own (UNDO-6). The outcome beside Save reads 'devhost.toml not applied: worker exited with code 127 at 14:02, 0.3 s after it started · Restored the accepted manifest: 6 of 6 running · 16 s', with worker's own last lines and what devhost ran, every touched service listed with its result (FAIL-1, FAIL-2, FAIL-3, UNDO-1); it stays until the file applies or the person dismisses it (FB-6). The banner says the file on disk differs from what the stack runs, the differing lines are marked, and the text never reads as saved and applied. Show Differences shows the running version beside the disk version, read only; Restore Running Version writes the text the stack runs back as an ordinary save and reports 'Restored the running version of devhost.toml · nothing restarted · 0.4 s', clearing the rejection everywhere (UNDO-6, FAIL-4, ACT-7, Backend 6). devhost never writes it back by itself. Revert shows the version on disk, read again (O29). A repeated rejection updates its report, '· 2 times, last at 14:05' (FAIL-4). It blocks nothing (HOLD-6). Resolves config-editor-06.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 192,
+          "end_line": 196,
+          "label": "Replaces: saved text shown as the file's"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx",
+          "line": 252,
+          "end_line": 257,
+          "label": "Replaces: rejection banner, raw message"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "config-open",
+      "from": "config",
+      "to": "open",
+      "label": "open",
+      "role": "main"
+    },
+    {
+      "id": "open-edit",
+      "from": "open",
+      "to": "edit",
+      "label": "type",
+      "role": "main"
+    },
+    {
+      "id": "edit-write",
+      "from": "edit",
+      "to": "write",
+      "label": "Save · restarts 2",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "write-reload",
+      "from": "write",
+      "to": "reload",
+      "label": "written",
+      "role": "main"
+    },
+    {
+      "id": "reload-receipt",
+      "from": "reload",
+      "to": "receipt",
+      "label": "applied",
+      "role": "main"
+    },
+    {
+      "id": "problem-banner",
+      "from": "problem",
+      "to": "banner",
+      "label": "at its line",
+      "role": "branch"
+    },
+    {
+      "id": "banner-edit",
+      "from": "banner",
+      "to": "edit",
+      "label": "fix it",
+      "role": "branch"
+    },
+    {
+      "id": "open-file",
+      "from": "open",
+      "to": "file",
+      "label": "File",
+      "role": "branch"
+    },
+    {
+      "id": "file-edit",
+      "from": "file",
+      "to": "edit",
+      "label": "pick",
+      "role": "branch"
+    },
+    {
+      "id": "config-cantLoad",
+      "from": "config",
+      "to": "cantLoad",
+      "label": "stack stopped",
+      "role": "error",
+      "fromSide": "left"
+    },
+    {
+      "id": "edit-check",
+      "from": "edit",
+      "to": "check",
+      "label": "after a pause",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "edit-offAsk",
+      "from": "edit",
+      "to": "offAsk",
+      "label": "turns editor off",
+      "role": "branch"
+    },
+    {
+      "id": "offAsk-write",
+      "from": "offAsk",
+      "to": "write",
+      "label": "Save Anyway",
+      "role": "branch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "write-disk",
+      "from": "write",
+      "to": "disk",
+      "label": "changed on disk",
+      "role": "error"
+    },
+    {
+      "id": "reload-notApplied",
+      "from": "reload",
+      "to": "notApplied",
+      "label": "a service fails",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: Load from disk as a conflict's only exit, which discarded the draft (UNDO-3 replaces it); Revert to the version the window opened (O29); Escape in the text closing the window; one outcome per window, cleared by a file switch, and outcomes counted from reloads (REV-12); 'Saved and applied.' and the other old sentences; response bodies shown as errors; drafts only in the page's memory; problems on line 1 and checks that stop at the first failing stage; listing under the operation lock; reads from other machines (proposed, Backend 10)",
+        "Merged: the window's outcome and the toolbar's notices read one operation record and one sentence builder (ACT-1, WORD-4); the rejection notice, the banner and the problem markers come from one structured error (MENU-4); rejected and differs-from-what-runs become one file state, not applied (UNDO-6)",
+        "New: the reach line beside Save (REV-10); progress and an outcome per save, certified by the reload that read its version (FB-1, FB-5, REV-12); per-file outcomes in the File list; the context banner with Restart api and Show All Output (SURF-4); Show Differences and Restore Running Version (UNDO-6); drafts on the control server (UNDO-2); Compare, Keep Mine and Use Disk Version before any save (UNDO-3); the editor-off question (REV-3); the File list's roles, groups, states and find field (SEL-10); the checkout in the header (SEL-4); Config's draft count (ACT-7); the loading frame and the running-operation line (STATE-1, HOLD-3); every check in one pass; the process health grace (O28); a watcher that follows links; the unseen-save safeguard",
+        "Changed: Revert shows the version on disk (O29); Escape in the text focuses the File list (KEY-8); the window is aria-modal with everything behind it inert (SURF-4, KEY-7); Edit opens the problem's file and line (MENU-4); the Save hint reads ⌘S on macOS (CC-29); a change on disk shows before Save (CC-20); drafts survive page reloads (CC-19); a file's Save is unavailable while its save is in progress (MENU-3); a process-health service that exits within 1 s fails the reload (O28); the outcome wording; config reads refused from other machines (proposed)",
+        "Kept: off by default, Config shown without a page reload, 404 while off; saves only from this machine (HOLD-7); the reload's checks before any write, 422 with the problems and the draft kept; 409 for an older version, the draft kept (REV-13); an atomic write that keeps the mode and follows links, config.toml created at 0600; the cross-origin, Host and JSON rules; a save starts no reload of its own; one reload and one save at a time, a save waiting for a reload; a rejected reload keeps the accepted manifest and rolls back (HOLD-6, UNDO-1); an unchanged configuration restarts nothing; Config marks a rejection and the notice keeps Edit; drafts per file across switches and Close; completions, Mod+S, Tab indents, Escape closes a list first"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Config and the window: network-exposure-04, config-editor-10, config-editor-14",
+        "Edit at a problem: config-editor-09, journey-crash-to-fix-02",
+        "File list: config-editor-01",
+        "Edit and check: config-editor-03, config-editor-04, config-editor-02",
+        "Save: config-editor-12, config-editor-08",
+        "Hot reload and outcome: manifest-hot-reload-08, config-editor-05, config-editor-13",
+        "Recovery in place: notices-and-feedback-01, config-editor-07, config-editor-06",
+        "Slices here, the rest elsewhere: config-editor-05 (manifest-hot-reload); notices-and-feedback-01 (notices-and-feedback, services-panel)",
+        "Related, not covered: chat-compose-04 (toolbar-shell); config-editor-11 (follows chat-compose-04, toolbar-shell); journey-crash-to-fix-01 (startup-and-recovery); journey-crash-to-fix-03 (manifest-hot-reload)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Save record: operationId, 202 Accepted before the write, steps and an outcome (applied, not-applied, replaced, unseen); a repeated ID writes nothing (CC-37)",
+        "Reload records name the file versions they read; a save resolves by its version, and a change on disk shows without polling",
+        "The check returns the plan: restarts with reasons, starts, stops, moved URLs, a checkout return, the editor turning off; built with manifest-hot-reload's dry run (CC-37, CC-23)",
+        "Every check in one pass; only a TOML syntax error stops the later stages",
+        "Structured problems and rejections: file, line, column, keyPath, message, offending line, close key; a crashed service's name, exit and last lines",
+        "The running version of every file the last accepted reload read, for Show Differences and Restore Running Version",
+        "Drafts on the control server per stack and file, with version and revision; a PUT from an older revision answers 409 (CC-19)",
+        "The files route answers from a snapshot, never under the operation lock",
+        "A process health check counts a service started after 1 s (O28)",
+        "[discuss]: every config route answers only this machine (403 otherwise) and the files route returns canSave; the product owner decides",
+        "The watcher follows symbolic links to the files a save changes, with a Linux CI test",
+        "[discuss]: a save no reload read within 5 s ends unseen; the threshold needs a product decision",
+        "Service context from services-panel's published state: each service's defining file and line, what devhost ran, its exit and frozen last lines"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-19: drafts survive page reloads; the draft routes and their Host rule in the control API",
+        "CC-20: a change on disk shows before Save, with Compare, Keep Mine and Use Disk Version",
+        "CC-29: the Save hint reads ⌘S on macOS and Ctrl+S elsewhere",
+        "CC-37: config/save takes an operationId and answers 202 Accepted; config/validate returns what saving does",
+        "CC-22, with manifest-hot-reload: the reload's line names each service it restarted and why",
+        "CC-23, with stack-run-stop and manifest-hot-reload: devhost reload and devhost reload --dry-run",
+        "[discuss]: no CC-n yet for the devtools guide's save and Edit sentences, the config/files row, and the local-only reads of Backend 10, which the product owner decides"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

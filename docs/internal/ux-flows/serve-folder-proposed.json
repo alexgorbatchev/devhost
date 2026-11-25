@@ -1,0 +1,289 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Serve a folder or a running port: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/serve-folder-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step where the work started" },
+        "backend": { "label": "Backend operation" },
+        "security": { "label": "Recovery step, handled in place" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "ask", "label": "Terminal: start" },
+    { "id": "backend", "label": "Backend operation" },
+    { "id": "outcome", "label": "Outcome in place" },
+    { "id": "pages", "label": "Served pages: read" },
+    { "id": "recovery", "label": "Recovery in place", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "ask_phase", "label": "Ask", "fromCol": 0, "toCol": 1 },
+    { "id": "write_phase", "label": "Review + write", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "outcome_phase", "label": "Outcome + undo", "fromCol": 3, "toCol": 5 }
+  ],
+  "mainPath": ["start", "header", "session", "ready", "listing", "file", "stop"],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "devhost serve --dir",
+      "sublabel": "or --port 3000; --chat",
+      "explanation": "devhost serve --domain notes.localhost serves the current folder, --dir another one relative to it, and --port 3000 a server already listening on 127.0.0.1:3000; --domain stays required and bare, and the command still reads no devhost.toml and writes nothing in the folder (Kept). New: --chat <folder> names the folder an agent may edit, relative to the current folder like --dir; without it chat is off (SEL-11; the default is [discuss], recommended off). Ctrl-C at any point of the start cancels it, removes what it claimed and says so as a cancellation, never an error (KEY-14, FAIL-5). A manifest serve service reaches the same pages from devhost start.",
+      "sources": [
+        { "path": "apps/devhost/internal/cli/serve.go", "line": 11, "end_line": 15, "label": "Reuses: --domain, --dir and --port flags" },
+        { "path": "apps/devhost/internal/app/run.go", "line": 31, "end_line": 36, "label": "Replaces: shell folder for a --port session" }
+      ]
+    },
+    {
+      "id": "header",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Serving ~/acme/docs",
+      "sublabel": "listener · chat off",
+      "tag": "serve-folder-02",
+      "explanation": "The first line names what is served, where Caddy listens and whether chat is on: 'Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat off', for a port 'Routing to 127.0.0.1:3000 · …', and with --chat 'chat on: agents edit ~/acme/docs' (FB-10, WORD-8). devhost's lines carry the label devhost, never serve-notes.localhost, so at 120 columns no line wraps because of its label; no line, page or help text calls the session a stack or a primary service (WORD-1, WORD-9). The listener is what the shared Caddy settings resolve to, which proxy-settings reports. When Caddy must start, a line first says it will ask for the password to trust devhost's local certificate authority; the prompt runs only for a person at a terminal, and under AGENT=1 one line asks the agent to have the person run devhost caddy trust (REV-8, CC-13). Agent output carries the same facts as devhost: lines with absolute paths (FB-11, CC-30). Resolves the start of serve-folder-02; its ready and stop lines are the next steps.",
+      "sources": [
+        { "path": "apps/devhost/internal/app/run.go", "line": 37, "end_line": 37, "label": "Replaces: every line labelled serve-<domain>" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 719, "end_line": 734, "label": "Replaces: one URL line marked '(primary)'" }
+      ]
+    },
+    {
+      "id": "session",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "Start the serve session",
+      "sublabel": "claim, route; chat off",
+      "tag": "serve-folder-04",
+      "explanation": "One write: it claims the hostname, routes it, starts devhost's file server for a folder and starts the shared Caddy when it is not running (Kept). The session is named by its folder or its target and records that name, its kind, hostname, PID and start time for the refusal, the stack directory and --all's set; the hostname stays its internal key, so two sessions of one folder keep separate access logs (WORD-1). Its devtools settings turn chat off unless --chat names a folder, and a --port session never gives an agent the shell's folder; with chat off the toolbar's chat entry points read 'Chat is off in this serve session. Start the session with --chat <folder> to let an agent edit that folder.' (SEL-11, HOLD-5, MENU-3). The default is [discuss], recommended off: the reference leaves serve-folder-04 to the product owner. Who can reach chat from the network is network-exposure-01's, whose stopgap covers serve sessions unchanged (related; spec agent-chat). Resolves serve-folder-04.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/serve.go", "line": 39, "end_line": 58, "label": "Replaces: serve-<domain> and default devtools" },
+        { "path": "apps/devhost/internal/services/shared_caddy.go", "line": 32, "end_line": 40, "label": "Reuses: Caddy started on demand" },
+        { "path": "apps/devhost/internal/manifest/validate.go", "line": 105, "end_line": 118, "label": "Replaces: default devtools turn chat on" }
+      ]
+    },
+    {
+      "id": "waiting",
+      "lane": "outcome",
+      "col": 2,
+      "type": "security",
+      "label": "Waiting for the port",
+      "sublabel": "12 s · start your server",
+      "tag": "manifest-hot-reload-2-04",
+      "explanation": "A --port session is starting until its port first accepts a connection (ACT-4, FB-5). On a terminal it keeps one status line updated at least once a second, 'Waiting for 127.0.0.1:3000 to accept connections · 12 s · start your server, or check the port number', printed once without a terminal, with no timeout, because starting the server after the route is the ordinary order of work (STATE-1). The hostname is routed from the start: a page opened meanwhile shows startup-and-recovery's '127.0.0.1:3000 is not reachable' page with Check Again, never a disabled Restart serve or an empty log, and reloads into the app once the port answers (ACT-9, MENU-3, MENU-5). The target, which devhost does not run, reads reachable or not reachable on every browser surface, never starting, failed or exited (ACT-9). After the ready line, a target that stops answering prints one line and one when it answers again, never one per check (FAIL-4, FB-10). Resolves the serve slice of manifest-hot-reload-2-04 with its verifier duplicate serve-folder-01.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 517, "end_line": 524, "label": "Replaces: only detached starts wait for a port" },
+        { "path": "apps/devhost/internal/devtools/document_injection.go", "line": 127, "end_line": 139, "label": "Replaces: 503 recovery page for the target" }
+      ]
+    },
+    {
+      "id": "taken",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Refusal names the holder",
+      "sublabel": "folder, PID, how to stop",
+      "tag": "serve-folder-03",
+      "explanation": "A hostname another session or stack holds is refused before anything is routed, with exit status 1 and nothing left running (Kept). The refusal names the holder in the person's terms and the next step: 'notes.localhost is already used by the serve session for ~/acme/docs (PID 49514, started 15:50)', then 'Stop it with Ctrl-C in its terminal, or run:', kill 49514 on its own line, and 'Or choose another --domain.' (FAIL-2, WORD-7, WORD-8). A stack holder is named by its name, its checkout label and its root manifest, with devhost stop --manifest <path> as the command, in stack-run-stop's words (SEL-4). It never prints 'from .' or an empty path. Under AGENT=1 it is one devhost: ERR: line holding the holder's kind, absolute folder, PID, start time and next steps (FB-11). The claim returns a structured error that each output words in its own layout. Resolves serve-folder-03.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 378, "end_line": 391, "label": "Reuses: each hostname claimed before routing" },
+        { "path": "apps/devhost/internal/caddy/routes.go", "line": 1182, "end_line": 1195, "label": "Replaces: refusal with a PID and a path" }
+      ]
+    },
+    {
+      "id": "ready",
+      "lane": "outcome",
+      "col": 3,
+      "type": "frontend",
+      "label": "Ready in 0.3 s",
+      "sublabel": "URL · Ctrl-C stops it",
+      "tag": "serve-folder-02",
+      "explanation": "A folder session prints its ready line once its route answers: 'Ready in 0.3 s: https://notes.localhost/ · Ctrl-C stops this session'; a --port session prints it only once its port answers: 'Ready in 14.1 s: https://app.localhost/ · Ctrl-C stops this session' (FB-5, FB-10, KEY-14, WORD-4, CC-22). Later lines report changes only: when the shared Caddy stops, 'Caddy stopped at 14:10; https://notes.localhost/ does not answer until Caddy starts again', and one line when the route answers again (ACT-10). A rejected change to the devhost config file leaves the session on its running settings, blocking nothing (HOLD-6). devhost stack replace --all from another terminal lists the session and leaves it running, printing nothing here (O31, CC-36). Resolves the ready line of serve-folder-02.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 544, "end_line": 545, "label": "Replaces: URLs printed once services start" }
+      ]
+    },
+    {
+      "id": "directory",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Listed as ~/acme/docs",
+      "sublabel": "directory card, toolbar",
+      "tag": "serve-folder-11",
+      "explanation": "Every other surface names the session the same way, from its record. The stack directory titles its card '~/acme/docs' or '127.0.0.1:3000', shortened in the middle with the full value in its tooltip and accessible name, beside 'Serve session · folder' or 'Serve session · port', and counts serve sessions apart from stacks (WORD-1, WORD-5, WORD-8). The hostname stays the main link; the card has no Directory line, so a --port card never shows its launch folder; its row reads running for a folder session's file server, or reachable or not reachable with its check and 'runs outside devhost' for a port, never External (ACT-2, ACT-9, SURF-14). Configuration reads 'None: the serve session for ~/acme/docs reads no devhost.toml', and details 'Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50' (MENU-6); the filter finds it by folder, port or hostname (SEL-10). The toolbar on a served page names it the same way and keeps its placement per served folder (SURF-7, CC-5). stack-directory draws the card. Resolves serve-folder-11.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx", "line": 37, "end_line": 50, "label": "Replaces: card titled by the stack name" },
+        { "path": "apps/devhost/internal/services/stack_directory.go", "line": 33, "end_line": 47, "label": "Replaces: a folder session's row reads External" },
+        { "path": "apps/devhost/internal/devtools/stack_directory.go", "line": 69, "end_line": 70, "label": "Replaces: snapshot name and launch folder" }
+      ]
+    },
+    {
+      "id": "manifestSvc",
+      "lane": "pages",
+      "col": 2,
+      "type": "external",
+      "label": "Manifest serve service",
+      "sublabel": "serve = \"docs\" in a stack",
+      "explanation": "A stack service with serve = \"<folder>\" runs the same file server under devhost start, so it shows the same listing, Markdown view and 404 page, with the stack's own toolbar, chat setting and worktrees (Kept); its missing-file page is the file browser's 404, never a recovery page with Restart or a checkout list (SURF-16). A serve service declared wrongly is rejected with file, line, column and key, in manifest-hot-reload's and stack-run-stop's structured error: 'devhost.toml line 14, column 9, services.design.serve: the folder packages/desing does not exist. Did you mean packages/design?' (MENU-4, FAIL-2).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 1129, "end_line": 1132, "label": "Reuses: a stack runs the same file server" }
+      ]
+    },
+    {
+      "id": "listing",
+      "lane": "pages",
+      "col": 3,
+      "type": "frontend",
+      "label": "Open the folder",
+      "sublabel": "listing, then README",
+      "tag": "serve-folder-05",
+      "explanation": "The page's one heading is the path, 'docs / guides', each ancestor a same-tab link, then '3 folders · 12 files'; the tab title reads 'docs/guides · devhost' (WORD-1, WORD-5). Name, Size and Modified columns list folders first, then files, each in natural, case-insensitive order, kind icons beside the names, binary sizes and local 24-hour times (ACT-13, WORD-8, serve-folder-07). Every name links as ./name, so 'Re: meeting.md' opens like any other, and rows carry no external-link arrow (SURF-15, serve-folder-10). 'Filter guides' narrows the rows as you type and says '3 of 15 entries match \"on\"', with Clear Filter when nothing matches (SEL-10, STATE-2). A folder's index.md, README.md or readme.md renders below the listing under its file name, so every entry is one click from the folder; index.html still serves alone (serve-folder-05, Kept). An empty folder says 'docs/drafts is empty. Files added here appear when you reload the page.' Keys: Tab through the path, the filter and the rows; no new shortcuts (KEY-1). Resolves serve-folder-05, serve-folder-07 and serve-folder-10.",
+      "sources": [
+        { "path": "apps/devhost/internal/files/handler.go", "line": 207, "end_line": 220, "label": "Replaces: an index file hides the listing" },
+        { "path": "apps/devhost/internal/files/handler.go", "line": 221, "end_line": 246, "label": "Replaces: names in byte order, no size or date" },
+        { "path": "packages/devhost-ui/src/statusPages/components/FilePage.tsx", "line": 61, "end_line": 84, "label": "Replaces: 'Directory listing' and row arrows" }
+      ]
+    },
+    {
+      "id": "file",
+      "lane": "pages",
+      "col": 4,
+      "type": "frontend",
+      "label": "Read a Markdown file",
+      "sublabel": "view kept in the URL",
+      "tag": "serve-folder-08",
+      "explanation": "A .md file renders as GitHub Flavored Markdown without raw HTML, its front matter as a table (Kept); its heading path ends with the file's name and its tab title reads 'release-checklist.md · docs/guides · devhost'. Rendered and Source are two pressed-state buttons for this file only: Source adds ?view=source with history.replaceState, so a reload, Back and a shared link keep it, other files open rendered, and nothing is kept in browser storage (SEL-11, WORD-3). The source view makes its link targets links, with the rendered view's sanitizing (serve-folder-08). Front matter that does not parse shows 'Front matter is not valid YAML: line 1, column 8: …' above its raw block, and a list 'Front matter is a list, not a mapping of keys and values' (FAIL-2, STATE-4); GitHub's five alerts render as titled callouts with icons, never the [!WARNING] marker, at 4.5:1 in both themes and distinct in forced colors (ACT-13, serve-folder-09). Keys: Tab reaches Rendered and Source; Enter or Space presses one (KEY-1). Resolves serve-folder-08 and serve-folder-09.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/statusPages/hooks/useMarkdownSource.ts", "line": 8, "end_line": 27, "label": "Replaces: one source preference per hostname" },
+        { "path": "packages/devhost-ui/src/statusPages/renderFrontMatter.ts", "line": 17, "end_line": 32, "label": "Replaces: a parse error shown as a code block" },
+        { "path": "apps/devhost/internal/files/handler.go", "line": 194, "end_line": 205, "label": "Reuses: Markdown rendered, other files raw" }
+      ]
+    },
+    {
+      "id": "notFound",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "404 in the file browser",
+      "sublabel": "Did you mean on-call.md?",
+      "tag": "serve-folder-06",
+      "explanation": "A page load of a name that does not exist, /guides/on-cal.md, answers 404 inside the file browser: the heading path to the nearest existing folder, 'No file named on-cal.md in docs/guides', up to three close names as same-tab links, 'Did you mean on-call.md?', then that folder's listing (SURF-16, MENU-5, FAIL-2, WORD-7). It offers no Restart, checkout list, internal address or logs, because a typo is no service's failure (MENU-3), and its tab title reads 'Not found: on-cal.md · docs/guides · devhost' (O16). The same page answers a CLI session and a manifest serve service, and startup-and-recovery's document injection leaves it untouched (O5, CC-4). A hidden name, or one outside the folder, gets the same page and is never suggested (Kept). A file that cannot be read answers 500 in place: 'Could not read docs/guides/on-call.md: permission denied' with Retry (STATE-4). Resolves the file-browser slice of serve-folder-06; the replacement rule is startup-and-recovery's.",
+      "sources": [
+        { "path": "apps/devhost/internal/devtools/document_injection.go", "line": 62, "end_line": 76, "label": "Replaces: every document 404 replaced" },
+        { "path": "apps/devhost/internal/files/handler.go", "line": 61, "end_line": 65, "label": "Replaces: a bare text 404" }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "outcome",
+      "col": 5,
+      "type": "frontend",
+      "label": "Stopped ~/acme/docs",
+      "sublabel": "what keeps running",
+      "tag": "serve-folder-02",
+      "explanation": "Ctrl-C is one write: it removes the route and the hostname claim, stops the file server and prints one outcome line, 'Stopped the serve session for ~/acme/docs · removed https://notes.localhost/ · Caddy keeps running · 0.2 s', for a port '… · your server on 127.0.0.1:3000 and Caddy keep running · 0.2 s', then 'Start it again with:' and devhost serve --dir ~/acme/docs --domain notes.localhost on its own line (KEY-14, FB-10, WORD-4, UNDO-5). A second Ctrl-C forces the rest within a second. The exit status stays 130, and 143 after SIGTERM, 'Stopped by SIGTERM (143) at 15:52:10 · …', a stop, never a failure (FAIL-5, WORD-8). An open page's toolbar shows the lost connection with 'The serve session for ~/acme/docs stopped at 14:05. Start it again with devhost serve in ~/acme', every write unavailable for that reason (HOLD-2, ACT-5). There is no Undo: the session wrote nothing in the folder, and the printed command is its way back. Resolves the stop line of serve-folder-02.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 220, "end_line": 226, "label": "Replaces: 'shutting down the stack'" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 286, "end_line": 320, "label": "Reuses: route and claim released" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "start-header", "from": "start", "to": "header", "label": "run", "role": "main" },
+    { "id": "header-session", "from": "header", "to": "session", "label": "route notes.localhost", "role": "main", "variant": "emphasis", "fromSide": "right", "toSide": "top" },
+    { "id": "session-ready", "from": "session", "to": "ready", "label": "route answers", "role": "main" },
+    { "id": "session-waiting", "from": "session", "to": "waiting", "label": "--port: no answer", "role": "branch" },
+    { "id": "waiting-ready", "from": "waiting", "to": "ready", "label": "port answers", "role": "branch", "variant": "dashed" },
+    { "id": "session-taken", "from": "session", "to": "taken", "label": "host taken", "role": "error", "fromSide": "left", "toSide": "top" },
+    { "id": "ready-listing", "from": "ready", "to": "listing", "label": "open the URL", "role": "main" },
+    { "id": "ready-directory", "from": "ready", "to": "directory", "label": "also listed", "role": "branch", "variant": "dashed" },
+    { "id": "manifest-listing", "from": "manifestSvc", "to": "listing", "label": "same pages", "role": "branch" },
+    { "id": "listing-file", "from": "listing", "to": "file", "label": "open a file", "role": "main" },
+    { "id": "file-notfound", "from": "file", "to": "notFound", "label": "mistyped name", "role": "error" },
+    { "id": "file-stop", "from": "file", "to": "stop", "label": "Ctrl-C: remove route", "role": "main", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: serve-<domain> as every line's label and the session's name on every surface; serve (primary) and 'shutting down the stack'; the URL printed as ready before a --port target answers; a README replacing the listing; 'Directory listing' and devhost as the breadcrumb root; byte-order sorting and row arrows; the hostname-wide Show source preference; the recovery page as the answer to a missing file; the refusal's 'from .'; the stack directory card's serve-<domain> title, External row and launch folder; chat on in every serve session (recommended, [discuss])",
+        "Merged: a folder's listing and its Markdown index on one page, the listing first; the breadcrumb and the heading as one heading path",
+        "New: the header line naming what is served, the listener and chat; the ready line with Ctrl-C; the --port waiting and reachability lines; the stop outcome with what keeps running and the start command; the holder named in a refusal; sizes, times, kind icons, counts and a filter in listings; the per-file view in the URL; links in source view; the front matter error and GitHub alerts; the file-browser 404 with close names; the cannot-read page; a serve session's directory card by folder or port; --chat <folder>",
+        "Changed: a Markdown index renders below the listing; Show source applies to one file; --port reports ready only once its port answers, as start/serve.md already promises; devhost stack replace --all leaves serve sessions running (O31, CC-36); the access log is keyed by the hostname",
+        "Kept: one command, no manifest, Caddy started on demand and kept after Ctrl-C; no devhost.toml read and nothing written in the folder; a --port server never started or stopped by devhost; files read on every request; reads confined to the folder; GFM with its front matter table; GET, HEAD, byte ranges and index.html as a site; a taken hostname refused before routing with exit 1; Ctrl-C releases route and claim, exit 130 or 143; the trust prompt only for a person at a terminal; a --port page reloads once the port answers; a manifest serve service on the same pages; serve sessions listed in the stack directory"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Start and chat: serve-folder-04 (P1; its default is [discuss])",
+        "Terminal lines: serve-folder-02",
+        "Waiting for a --port target: manifest-hot-reload-2-04 (serve slice) with its duplicate serve-folder-01",
+        "Refusal: serve-folder-03",
+        "Folder page: serve-folder-05, serve-folder-07, serve-folder-10",
+        "Markdown file: serve-folder-08, serve-folder-09",
+        "Missing file: serve-folder-06 (file-browser slice)",
+        "Stack directory card and toolbar name: serve-folder-11",
+        "Slices here, the rest elsewhere: manifest-hot-reload-2-04 and serve-folder-06 (startup-and-recovery)",
+        "Related, not covered: network-exposure-01 (P0, resolved by its stopgap, which ships first if the product owner answers a2; spec agent-chat)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Session identity: named by its folder or target, recorded with its kind, hostname, PID and start time; the hostname stays its internal key, the access log's included",
+        "Claim refusal as a structured error {host, holderKind, holderName, folder or manifestPath, checkout, pid, startedAt}, worded by each output",
+        "A --port session runs a detached start's wait for its port and prints the waiting, ready and reachability lines",
+        "The folder session's file server published as a running service devhost runs; a --port target as an external service with its check (CC-25)",
+        "[discuss]: --chat <folder>; chat off without it; a --port session never uses the shell's folder (recommended off; the product owner, with agent-chat)",
+        "Serve session lines in both outputs, labelled devhost, the listener read from the resolved shared Caddy settings (CC-22, CC-30)",
+        "Listing data: kind, size and modified time, folders first, natural order, ./ hrefs, the folder's path from the served root",
+        "The Markdown index below the listing; index.html still answers alone",
+        "The file-browser 404 and cannot-read pages, left alone by the document injection (CC-4)",
+        "The heading path starts with the served folder's name instead of devhost",
+        "The stack directory snapshot of a serve session: kind, folder or target and start time; no launch folder for a --port session"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-36, with CC-31's serve part (stack-run-stop builds them): devhost stack replace --all lists serve sessions and leaves them running",
+        "CC-30: both outputs report the same outcomes; human output names and shortens, agent output keeps absolute paths",
+        "CC-22: a ready line ends a start, and every operation prints one outcome line",
+        "CC-13, the serve part: the trust prompt only for a person at a terminal; a warning asks for devhost caddy trust in a terminal",
+        "CC-32: CONTEXT.md gains Serve session",
+        "CC-5, the serve part: the toolbar layout saved per served folder",
+        "CC-4: devhost's recovery page never replaces the file server's own 404",
+        "CC-25: the published service state",
+        "[discuss]: start/serve.md, reference/cli.md, devhost serve --help and guides/stack-lifecycle.md texts, and output.md rows for serve lines, need a CC-n"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watch and restart services from the toolbar · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* The Services panel: a row per service, group headers, the footer outside the scrolling rows */
+.svc{display:grid;grid-template-columns:6.4rem minmax(0,1fr) auto;gap:2px 8px;align-items:start;padding:3px 2px;border-bottom:1px solid var(--rule)}
+.svc>:last-child{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-items:center}
+.svc.dim>:not(:last-child){color:var(--mute)}
+.svc.flash{background:var(--chgbg)}
+.svc .rt{display:block;color:var(--mute);font-size:11px}
+.grp{padding:6px 2px 2px;font-weight:600;font-size:11px;border-bottom:1px solid var(--line)}
+.pft{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.vsep{align-self:stretch;border-left:1px solid var(--line);margin:0 4px}
+.lab{color:var(--mute);font-size:11px;margin:8px 0 3px}
+.lab:first-child{margin-top:0}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../services-panel-current.html">Today's flow diagram</a><a href="../services-panel-proposed.html">Proposed flow diagram</a><a href="../proposals/services-panel.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>Watch and restart services from the toolbar</h1>
+<p><b>TLDR:</b> Every service of the stack is counted and listed with its state, cause and route; each restart or start shows its steps and its outcome on the row that started it, with focus kept there; and Restart Stack sits apart from Restart Changed and asks first, in place.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="glance">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>1600 px wide: the dots fit on the bar's row</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">▲ ● ● ● ○ ○ ▾</span><span class="n">1</span><span class="seg">2 changed ↻</span><span class="n">2</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › the Services trigger in three other situations</b></div>
+<div class="work small">
+<div class="lab">Acme Platform, 40 services, at 1280×800: the dots would wrap the bar</div>
+<div class="row"><span class="tbar"><span class="seg"><b>Acme Platform</b></span><span class="seg">38/40 · 2 failed: flood, s27 ▾</span><span class="seg">Chat</span><span class="seg">main ~/platform ▾</span></span><span class="n">3</span></div>
+<div class="lab">Acme Shop with api and web, 4 s into devhost start</div>
+<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">◐ ◐ ▾</span><span class="seg">Chat</span></span><span class="muted">named "Services: 0 of 2 running, 2 starting"</span><span class="n">4</span></div>
+<div class="lab">Acme Shop with the toolbar collapsed</div>
+<div class="row"><span class="banner bad" style="margin:0">api failed its health check · 14:02</span><span class="tbar"><span class="seg">▲ Acme Shop · 1 failed · 2 changed</span></span><span class="n">5</span></div>
+<div class="lab">api's status page, which startup-and-recovery draws, with the same indicator</div>
+<div class="row"><span class="box" style="margin:0">▲ <b>api</b> · failed its health check at 14:02</span><span class="n">6</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>1. Read the stack at a glance</h2>
+<p>The Services trigger keeps its place on the bar and still opens the Services panel. What changes is what it counts and how it draws: it reads the published state of every service of the stack, never a guess of its own, and tells each state by shape and text (<code>ACT-2</code>, <code>ACT-13</code>). Condition notices, such as api's failure notice, belong to notices-and-feedback; this page draws them only beside the open panel in step 2 and in their one-line form beside the collapsed badge. Keys: Alt+Ctrl+B focuses the bar; the trigger is an arrow stop (ArrowLeft, ArrowRight, Home, End); Enter, Space or the arrow toward the panel opens it (<code>KEY-3</code>, <code>KEY-4</code>).</p>
+<ol><li><span class="n">1</span> One dot per service while the dots fit on the bar's row, decided by a fit test at every window width, never by a service count. Every service of the stack is counted, the 2 the run left out as hollow dots, and the states that need the person come first: ▲ failed, ● running, ○ not started, in forced colors too. The trigger's accessible name spells it out: "Services: 3 of 6 running, 1 failed: api, 2 not started, 2 changed" (<code>BAR-1</code>, <code>SURF-10</code>, <code>ACT-6</code>, <code>ACT-13</code>, <code>WORD-5</code>).</li>
+<li><span class="n">2</span> The changed badge and its restart icon stay beside the summary while a failure shows, because changed and failed are independent; today the badge disappears whenever any error shows (<code>SEL-2</code>, <code>ACT-8</code>).</li>
+<li><span class="n">3</span> When the dots would wrap the bar, a fixed-width summary takes their place, no wider with 40 services than with 8: counts by state, up to three services that need the person, then "+N". Its accessible name reads "Services: 38 of 40 running, 2 failed: flood, s27" (<code>SURF-10</code>, <code>ACT-13</code>, <code>WORD-5</code>).</li>
+<li><span class="n">4</span> A service that is starting counts as starting, with its own shape, and never takes the failed look while its health check runs (<code>ACT-4</code>, <code>STATE-1</code>).</li>
+<li><span class="n">5</span> Collapsed, the badge takes the look of the highest condition, here api's failure, and still names the changed services; the failure's notice stays beside it in one line. A routine restart, of one row or of the whole stack, never raises the badge (<code>ACT-7</code>, <code>SURF-8</code>).</li>
+<li><span class="n">6</span> Every dot, row and state word comes from one shared service state indicator (shape, word and accessible name) and one shared module of state words, shipped in the devtools stylesheet and in the status pages' stylesheet, so api's status page and the stack directory's cards draw "failed" with the same ▲ and the same words as the bar and the panel (<code>SURF-14</code>, <code>ACT-13</code>, <code>WORD-6</code>).</li></ol>
+<p class="fixes">Fixes services-panel-2-05, stack-scale-04, services-panel-2-01, journey-new-project-02 · Backend: the published service state, with the services the run left out counted (Backend 1; <code>CC-7</code>, <code>CC-25</code>)</p></div>
+</section>
+
+<section class="step" id="open-panel">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>Services panel opened with Enter; the rows fit</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:273.8px"></span>
+<div class="from">Opened from the Services trigger with Enter</div>
+<div class="row"><b>Acme Shop · 3 of 6 running · 1 failed · 2 not started</b><span class="n">1</span></div>
+<div class="grp">storefront · 3 · 1 failed <span class="n">2</span></div>
+<div class="svc"><span>● <a>web</a></span><span>running · changed: src/nav.tsx<span class="rt">shop.acme.test/ · port 5173</span></span><span><span class="btn focusring">Restart</span><span class="btn">Logs</span><span class="n">4</span></span></div>
+<div class="svc"><span>▲ <a>api</a></span><span>failed its health check at 14:02 <span class="n">3</span><span class="rt">shop.acme.test/api/* · port 55891</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span></span></div>
+<div class="svc"><span>● <a>docs</a></span><span>running · changed: content/start.md<span class="rt">docs.acme.test/ · port 4321</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="grp">backoffice · 3 · 2 not started</div>
+<div class="svc"><span>● worker</span><span>running<span class="rt">no route · port 9100</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc dim"><span>○ admin</span><span>not started · left out of this run<span class="rt">admin.acme.test/</span></span><span><span class="btn">Start</span></span></div>
+<div class="svc dim"><span>○ mail</span><span>not started · left out of this run<span class="rt">mail.acme.test/</span></span><span><span class="btn">Start</span></span></div>
+<div class="pft"><span class="btn pri">Restart 2 Changed</span><span class="btn">Start 2 Services</span><span class="n">5</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+</div>
+<div class="row" style="justify-content:flex-end;align-items:flex-start;flex-wrap:nowrap"><span class="n">12</span><span class="banner bad" style="margin:0;min-width:0">api failed its health check · 14:02 <span class="btn">Logs</span></span><div class="tbar" style="flex:none"><span class="seg"><b>Acme Shop</b></span><span class="seg open">▲ ● ● ● ○ ○ ▾</span><span class="seg">2 changed ↻</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Platform › Services panel, scrolled down</b><span>two repositories, one blocked; external services</span></div>
+<div class="work small">
+<div class="grp">acme-web · fix-nav ~/acme/.worktrees/fix-nav · 2</div>
+<div class="banner">The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it. <a>Return to Configured Checkout in Worktrees</a> · <a>Choose another checkout in Worktrees</a> <span class="btn">Check Again</span> <span class="n">6</span></div>
+<div class="svc"><span>● <a>web</a></span><span>running<span class="rt">shop.acme.test/ · port 5173</span></span><span><span class="btn off">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>⊘ storybook</span><span>blocked<span class="rt">ui.acme.test/</span></span><span><span class="btn off">Restart</span><span class="btn">Logs</span></span></div>
+<div class="grp">data · 2</div>
+<div class="svc"><span>◇ postgres</span><span>reachable · TCP port 5432 · checked 14:02 · runs outside devhost<span class="rt">port 5432 · external</span></span><span></span></div>
+<div class="svc"><span>◇ search</span><span>not reachable · GET search.acme.test/health · checked 14:02 · runs outside devhost<span class="rt">search.acme.test/ · external</span></span><span><span class="btn">Check Again</span></span></div>
+<div class="muted" style="margin-top:4px">devhost checks external services but cannot restart them. <span class="n">7</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Platform › docs page</b><span>40 services: the rows overflow the panel</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:269.6px"></span>
+<div class="from">Opened from the Services trigger with Enter</div>
+<div class="row"><b>Acme Platform · 38 of 40 running · 2 failed</b></div>
+<div class="row" style="margin:4px 0"><span class="in focusring" style="flex:1"><span class="muted">Filter by name, hostname or group</span></span><span class="n">8</span></div>
+<div class="grp">Needs attention · 2 <span class="n">9</span></div>
+<div class="svc"><span>▲ <a>flood</a></span><span>failed its health check at 14:02<span class="rt">flood.acme.test/ · port 6100</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span></span></div>
+<div class="svc"><span>✕ s27</span><span>exited with code 1 at 13:58<span class="rt">no route · port 7027</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span></span></div>
+<div class="grp">packages/ · 10 · all running</div>
+<div class="svc"><span>● <a>docs</a></span><span>running<span class="rt">docs.acme.test/ · port 4321</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc dim"><span></span><span>… 9 more in packages/, then 3 more groups with 28 services</span><span></span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Platform</b></span><span class="seg open">38/40 · 2 failed: flood, s27 ▾</span><span class="seg">Chat</span><span class="seg">main ~/platform ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Platform › Services panel</b><span>the filter matches nothing</span></div>
+<div class="work small">
+<div class="row"><span class="in focusring" style="flex:1">s99</span></div>
+<div class="row" style="margin:8px 0">No service matches "s99". <span class="btn">Clear Filter</span><span class="n">10</span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>after devhost stop, with the tab still open</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:293.5px"></span>
+<div class="from">Opened from the Services trigger</div>
+<div class="banner" style="margin-top:0">Acme Shop stopped at 16:24 by devhost stop. Start it with devhost start in ~/acme <span class="n">11</span></div>
+<div class="svc"><span>? web</span><span>unknown · last seen running at 16:24</span><span><span class="btn off">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>? api</span><span>unknown · last seen failed at 16:24</span><span><span class="btn off">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc dim"><span></span><span>… 4 more, unknown · last seen 16:24</span><span></span></div>
+<div class="pft"><span class="btn pri off">Restart 2 Changed</span><span class="btn off">Start 2 Services</span><span class="sp"></span><span class="vsep"></span><span class="btn off">Restart Stack</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open">? lost connection ▾</span><span class="seg muted">2 changed ↻</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>2. Open the Services panel</h2>
+<p>The trigger still opens the panel, and the panel still lists the stack's services with <b>Restart</b> on each, as today. What changes is that it lists every service, the ones the run left out included, says where each runs and why it is not running, and keeps its actions within reach at any size. Keys: Tab and Shift+Tab move through the filter, each row's actions and the footer in visual order; Tab past the last control or Shift+Tab before the first closes the panel and returns focus to the trigger (<code>KEY-7</code>); Escape or a click outside the panel closes it and returns focus to the trigger, or, when the panel was opened with the pointer, to the page element that had focus before (<code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-8</code>).</p>
+<ol><li><span class="n">1</span> The panel opens anchored to the trigger and keeps the page, its scroll position and the person's place. Its first line is the stack's summary sentence, and no heading inside it repeats "Services" (<code>SURF-2</code>, <code>ACT-6</code>, <code>MENU-2</code>).</li>
+<li><span class="n">2</span> Rows are grouped by the manifest's group or include file, and by repository first when the stack has more than one; each header carries its count and its state, and every group starts expanded (<code>MENU-2</code>, <code>SURF-10</code>).</li>
+<li><span class="n">3</span> Whenever a service is not plainly running, its row says so in one word with its cause and time. Every row shows its route as text and its port, and a "changed" tag names the changed files. A name links only to an address that answers and opens it in the same tab, as every devhost link does except Watch Live Activity and <b>Open in Editor</b> (today it opens a new tab): api's name opens its health URL /api/hello, never devhost's 404 page; worker has no route, so its name is plain text. Each row's shape, word and accessible name come from the shared state indicator (<code>ACT-2</code>, <code>WORD-6</code>, <code>WORD-8</code>, <code>SURF-14</code>, <code>SURF-15</code>).</li>
+<li><span class="n">4</span> Row actions are Tab stops in row order, each named with its target ("Restart web", "Logs web"): <b>Restart</b> on a managed service, <b>Start</b> on a not-started one, <b>Logs</b>, and <b>Edit</b> on a failed or exited one. Opened from the keyboard while the rows fit, the panel puts focus on the first row action. <b>Restart</b> and <b>Start</b> match the terminal's <code>devhost service restart web</code> and <code>devhost service start admin</code> (<code>KEY-6</code>, <code>KEY-10</code>, <code>WORD-2</code>, <code>MENU-6</code>, <code>CC-11</code>).</li>
+<li><span class="n">5</span> The footer keeps <b>Restart 2 Changed</b> and <b>Start 2 Services</b> together, and <b>Restart Stack</b> at the far end past a separator, in another button style; steps 5, 6 and 7 show each (<code>BAR-2</code>, <code>REV-2</code>).</li>
+<li><span class="n">6</span> A blocked repository says once why and offers its ways out, led by returning to the configured checkout: links to <b>Return to Configured Checkout</b> and to choosing another checkout in the Worktrees panel, which worktree-switch owns, and <b>Check Again</b>, which reads the checkout list again and clears the block once the checkout loads, stopping nothing. Its services that do not run read "blocked", and every <b>Restart</b> of the repository is unavailable with that sentence as its accessible description, never drawn as failed (<code>HOLD-4</code>, <code>HOLD-1</code>, <code>MENU-5</code>, <code>MENU-3</code>, <code>ACT-2</code>).</li>
+<li><span class="n">7</span> External services show what devhost checks, the result and when, and that they run outside devhost, with no <b>Restart</b>, <b>Start</b>, <b>Logs</b> or changed tag; an unreachable one leads with <b>Check Again</b>, which runs the check now and updates the row's result and time; the panel says once that devhost checks them but cannot restart them (<code>ACT-9</code>, <code>MENU-5</code>, <code>HOLD-1</code>, <code>MENU-3</code>).</li>
+<li><span class="n">8</span> When the rows overflow, a filter appears and takes focus on open. It matches name, hostname and group as the person types and keeps group headers with their counts: "s34" leaves only s34's row under its group header (<code>SEL-10</code>, <code>SURF-10</code>, <code>KEY-6</code>).</li>
+<li><span class="n">9</span> Rows that need the person (failed, exited, blocked, changed) are pinned in a group above the rest. Only the rows scroll: the summary, the filter and the footer stay in view at every acceptance viewport (<code>SURF-10</code>, <code>SURF-9</code>).</li>
+<li><span class="n">10</span> A filter with no match says what was searched, with <b>Clear Filter</b> (<code>SEL-10</code>, <code>STATE-2</code>).</li>
+<li><span class="n">11</span> From the moment the status stream closes, every row keeps its last known state drawn as unknown with the time it was last seen, never down; the trigger shows the connection's state instead of a count, and every write is unavailable with the one reason the backend sent, said once in the panel's status line and given to each write as its accessible description: here, after <code>devhost stop</code>, the stopped stack's one sentence with its time, reason and start command. Notices-and-feedback owns the lost-connection notice and <b>Retry Now</b> (<code>ACT-5</code>, <code>ACT-10</code>, <code>HOLD-1</code>, <code>HOLD-2</code>, <code>MENU-3</code>, <code>CC-26</code>).</li>
+<li><span class="n">12</span> The notice stack sits beside the bar, and the open panel is placed and sized so it never covers a notice, in either corner and with chat docked: api's failure notice and its <b>Logs</b> stay readable and clickable while the panel is open (<code>SURF-1</code>, <code>SURF-9</code>).</li></ol>
+<p class="fixes">Fixes services-panel-02, stack-scale-05, services-panel-2-05, services-panel-2-06, services-panel-2-04, notices-and-feedback-02 · Backend: the published state with each service's cause, route, port, link and group and an external service's check, result and time; <b>Check Again</b> runs that check now; the status stream sends its reason before it closes (Backend 1, 6, 12; <code>CC-25</code>, <code>CC-26</code>)</p></div>
+</section>
+
+<section class="step" id="restart-one">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>Enter pressed on api's Restart</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:273.8px"></span>
+<div class="from">Opened from the Services trigger</div>
+<div class="row"><b>Acme Shop · 3 of 6 running · 1 restarting · 2 not started</b></div>
+<div class="grp">storefront · 3 · 1 restarting</div>
+<div class="svc"><span>● <a>web</a></span><span>running · changed: src/nav.tsx<span class="rt">shop.acme.test/ · port 5173</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>◐ <a>api</a></span><span>restarting · health check 2 s of 30 s <span class="n">2</span><span class="rt">shop.acme.test/api/* · port 55891</span></span><span><span class="btn focusring">Restarting api…</span><span class="n">1</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>● <a>docs</a></span><span>running · changed: content/start.md<span class="rt">docs.acme.test/ · port 4321</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="grp">backoffice · 3 · 2 not started</div>
+<div class="svc"><span>● worker</span><span>running · queued behind Restart api<span class="rt">no route · port 9100</span></span><span><span class="btn">Cancel Restart</span><span class="n">3</span><span class="btn">Logs</span></span></div>
+<div class="svc dim"><span></span><span>… admin and mail, not started</span><span></span></div>
+<div class="pft"><span class="btn pri">Restart 2 Changed</span><span class="btn">Start 2 Services</span><span class="sp"></span><span class="vsep"></span><span class="btn off">Restart Stack</span><span class="muted">Restart api is running · health check 2 s of 30 s</span><span class="n">4</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open">◐ ● ● ● ○ ○ ▾</span><span class="seg">2 changed ↻</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel rows</b><span>mail's daemon stop command is slow</span></div>
+<div class="work small">
+<div class="lab">12 s into Restart mail</div>
+<div class="svc"><span>◐ <a>mail</a></span><span>stopping · stop command 12 s <span class="n">5</span><span class="rt">mail.acme.test/ · daemon</span></span><span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>● worker</span><span>running · queued behind Restart mail, which waits for its stop command<span class="rt">no route · port 9100</span></span><span><span class="btn">Cancel Restart</span><span class="btn">Logs</span></span></div>
+<div class="lab">At the lifecycle command deadline, 20 s</div>
+<div class="svc"><span>▲ <a>mail</a></span><span>mail's stop command did not finish within 20 s; the daemon may still be running <span class="n">6</span><span class="rt">mail.acme.test/ · daemon</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span></span></div>
+<div class="svc"><span>◐ worker</span><span>restarting · stopping<span class="rt">no route · port 9100</span></span><span><span class="btn">Logs</span></span></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference has no product decision for the lifecycle command deadline; 20 s is this proposal's recommendation and must fit stack-run-stop's stop budget (<code>O30</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>3. Restart one service</h2>
+<p><b>Restart</b> on a row still restarts one service, keeps its automatic port, and succeeds only once the service passes its health check with its routes updated, as today. What changes is that the row shows each step, other restarts wait in a visible queue instead of on a hidden lock, and focus stays on the button. Keys: Enter or Space on <b>Restart</b> starts it and focus stays on it while it runs; <b>Cancel Restart</b> on a queued row is an ordinary Tab stop named with its target, "Cancel Restart of worker" (<code>KEY-10</code>, <code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> <b>Restart</b> runs on one press, because restarting one named service is not disruptive. The pressed button keeps focus and reads "Restarting api…", <code>aria-busy</code> and <code>aria-disabled</code> but never <code>disabled</code>, so focus never drops to the page (<code>REV-1</code>, <code>KEY-11</code>, <code>FB-9</code>).</li>
+<li><span class="n">2</span> The row shows each step with its elapsed time, updated at least once a second: queued, stopping, starting, "health check 2 s of 30 s", then running. Every other row keeps its own state. The route answers <code>202 Accepted</code> with the operation's record before the restart runs (<code>FB-1</code>, <code>ACT-3</code>, <code>STATE-1</code>, <code>ACT-1</code>).</li>
+<li><span class="n">3</span> A <b>Restart</b> of another service queues behind the running one, or behind a hot reload, instead of being locked out: worker reads "queued behind Restart api" with <b>Cancel Restart</b> on every open tab, which takes it out of the queue and reports "Cancelled the queued restart of worker", and it keeps its place through a page reload. A second <b>Restart</b> of api is unavailable with "api is already restarting"; while the stack starts or shuts down, every <b>Restart</b> and <b>Start</b> is unavailable with that operation and its progress, "Starting Acme Shop · 2 of 6 started" (<code>SEL-7</code>, <code>WORD-2</code>, <code>HOLD-3</code>, <code>CC-8</code>, <code>REV-12</code>, <code>WORD-7</code>).</li>
+<li><span class="n">4</span> <b>Restart Stack</b>, a stack-wide write, is unavailable while any other operation runs, with that operation and its progress beside it, which is also its accessible description (<code>HOLD-3</code>, <code>HOLD-1</code>, <code>MENU-3</code>).</li>
+<li><span class="n">5</span> A daemon whose stop command is slow shows it on its row with the elapsed time, and the rows queued behind it say what they wait for (<code>FAIL-3</code>, <code>HOLD-3</code>).</li>
+<li><span class="n">6</span> At the lifecycle command deadline, devhost ends the command and the row says so in one sentence; the operation ends failed for mail, and the queue, manifest saves and Ctrl-C go on, so worker's restart starts. The deadline's value is a pending product decision (Backend 4).</li></ol>
+<p class="fixes">Fixes keyboard-and-screen-reader-01, manifest-hot-reload-2-05 · Backend: the operation record with <code>operationId</code> and <code>202 Accepted</code>, the queue and its cancel route, the lifecycle command deadline (Backend 2, 3, 4; <code>CC-8</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="outcome">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel rows</b><span>api's restart succeeded</span></div>
+<div class="work small">
+<div class="svc flash"><span>● <a>api</a></span><span>Restarted api · 2.6 s <span class="n">1</span><span class="rt">shop.acme.test/api/* · port 55891</span></span><span><span class="btn focusring">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>● worker</span><span>running · last exit: terminated by SIGTERM (143) at 21:53:34, not sent by devhost <span class="n">2</span><span class="rt">no route · port 9100</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel rows</b><span>api's restart failed; worker was killed from outside</span></div>
+<div class="work small">
+<div class="svc"><span>✕ api</span><span>api exited with code 1 at 14:02 before its health check <span class="n">3</span><span class="rt">shop.acme.test/api/* · port 55891</span></span><span><span class="btn focusring">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span><span class="n">4</span></span></div>
+<div class="box"><b>api · last output, frozen at its exit</b>
+<pre class="term" style="padding:2px 0">Error: Cannot find module './db'
+    at src/server.ts:3:1</pre>
+<div class="row"><span class="muted">Ran bun run src/server.ts in api/ · devhost.toml line 14</span><span class="sp"></span><span class="btn">Dismiss</span><span class="n">5</span></div></div>
+<div class="svc"><span>✕ worker</span><span>terminated by SIGTERM (143) at 21:53:34, not sent by devhost <span class="n">6</span><span class="rt">no route · port 9100</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span></span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>Logs pressed on api's row</span></div>
+<div class="app" style="grid-template-columns:minmax(0,1fr) 330px;min-height:0">
+<div class="pg" style="min-height:150px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner"><div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ○ ○ ▾</span><span class="seg">Chat</span></div></div>
+</div>
+<div class="dock"><h3>Logs <span class="n">7</span></h3>
+<div class="row"><span class="chip acc">api ▾</span><span class="sp"></span><span class="btn">Close</span></div>
+<pre class="term" style="padding:4px 0;background:var(--panel)">14:02:09 bun run src/server.ts
+14:02:11 Error: Cannot find module './db'
+14:02:11     at src/server.ts:3:1</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>4. Read the outcome on the row, or recover in place</h2>
+<p>A restart still ends with the service running or not, as today; what changes is that the row says which, why and what to do next, and keeps saying it until the person deals with it. A response devhost cannot read, such as the proxy's HTML page, becomes one sentence naming what is not running and the command that starts it, with the original text behind <b>Copy Error</b>, never markup (<code>FAIL-2</code>). Keys: focus stays on <b>Restart</b>; Tab reaches <b>Logs</b>, <b>Edit</b> and <b>Dismiss</b> in order (<code>KEY-10</code>, <code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> Success replaces the busy state on the row, "Restarted api · 2.6 s", announced once in the polite region while focus stays on <b>Restart</b>; it stays while the panel is open. With the panel closed, the same outcome is one notice instead, never both (<code>FB-2</code>, <code>FB-3</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-4</code>).</li>
+<li><span class="n">2</span> After a restart, a service's row keeps its last exit until the stack stops: "last exit: terminated by SIGTERM (143) at 21:53:34, not sent by devhost" (<code>FAIL-3</code>, <code>FAIL-5</code>, <code>WORD-8</code>).</li>
+<li><span class="n">3</span> A failure turns the row exited or failed with one cause sentence and its evidence: its own last output lines frozen at the exit, the health check's probe with the status it got, or the program that holds a fixed port, and what devhost ran: the command, its folder when it differs from the stack's, and the manifest file and line. It is announced once in the assertive region, and the sentence becomes <b>Restart</b>'s accessible description (<code>FAIL-2</code>, <code>FAIL-3</code>, <code>FB-9</code>, <code>WORD-7</code>).</li>
+<li><span class="n">4</span> The row leads with the action for its cause: <b>Restart</b>, which keeps focus, then <b>Logs</b> and <b>Edit</b>; a retry that fails the same way updates the row's one report in place, "api exited with code 1 · 2 times, last at 14:05", and <b>Edit</b> then leads (<code>FAIL-4</code>). <b>Edit</b> opens the Configuration window at api's definition with the exit and last lines in its banner; with the config editor off, the row shows devhost.toml line 14 with <b>Copy</b> and <b>Open in Editor</b> instead (<code>MENU-5</code>, <code>MENU-4</code>, <code>SURF-4</code>, <code>KEY-11</code>).</li>
+<li><span class="n">5</span> The failure stays on the row until the person dismisses it with <b>Dismiss</b> (named "Dismiss api's failure") or the same restart succeeds; health messages, reconnects and closing the panel never remove it, and a closed panel leaves it as a failure notice (<code>FB-6</code>, <code>FB-2</code>).</li>
+<li><span class="n">6</span> A service killed from outside names the signal with the status a shell reports for it, its time and that devhost did not send it, with its last lines; a service devhost stops for an operation reads as that operation's step, never as an exit (<code>FAIL-3</code>, <code>FAIL-5</code>, <code>WORD-7</code>).</li>
+<li><span class="n">7</span> <b>Logs</b> on a row opens the pinned log panel filtered to that service, with focus in it, at the end of its output; it is one more way into the panel that log-minimap owns, beside its own entry points (<code>SURF-13</code>, <code>KEY-12</code>).</li></ol>
+<p class="fixes">Fixes notices-and-feedback-01, keyboard-and-screen-reader-01, interrupted-operations-04 · Backend: exit records with the code or signal, time and sender, and each service's last lines frozen at its exit; one JSON error body (Backend 7, 9; <code>CC-24</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="restart-changed">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>api and web changed; Restart 2 Changed focused</span></div>
+<div class="work small">
+<div class="svc"><span>● <a>web</a></span><span>running · changed: src/nav.tsx, src/nav.css <span class="n">2</span><span class="rt">shop.acme.test/ · port 5173</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>● <a>api</a></span><span>running · changed: src/routes.ts<span class="rt">shop.acme.test/api/* · port 55891</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>● <a>docs</a></span><span>running<span class="rt">docs.acme.test/ · port 4321</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="popover" style="width:21rem;margin-top:8px"><span class="caret-dn" style="left:64.2px"></span>
+<div class="from">Tooltip of Restart 2 Changed (macOS)</div>
+<div>Restarts 2 changed services: api, web</div>
+<div class="row"><kbd>⌃⌥R</kbd></div>
+</div>
+<div class="pft" style="margin-top:10px"><span class="btn pri open focusring">Restart 2 Changed</span><span class="n">1</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>Alt+Ctrl+R pressed with the panel closed</span></div>
+<div class="pg" style="min-height:120px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="banner info" style="max-width:31rem;margin:0">Restart Changed · api, web · 1 of 2 restarted · 3 s <span class="n">3</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">◐ ● ● ● ○ ○ ▾</span><span class="seg">1 changed ↻</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Services panel footer in two other situations</b></div>
+<div class="work small">
+<div class="lab">Acme Shop's docs page, nothing changed; the stack's primary service is web</div>
+<div class="pft" style="margin-top:0"><span class="btn pri">Restart docs</span><span class="n">4</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+<div class="lab">Acme Shop while Restart Stack runs</div>
+<div class="pft" style="margin-top:0"><span class="btn pri off">Restart 2 Changed</span><span class="muted">Restart Stack is running · 3 of 6 started</span><span class="n">5</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restarting Stack · 3 of 6 started</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › checkout page</b><span>the page's own modal dialog is open</span></div>
+<div class="scrim" style="min-height:0">
+<div class="dlg"><div class="hd"><h3>Edit shipping address</h3></div>
+<div class="body"><span class="muted">The app's own dialog: street, city, postcode …</span>
+<div class="corner" style="margin-top:10px">
+<div class="muted">Paused while this page's dialog is open</div>
+<div class="toastrow" style="padding:0"><div class="toast">Restarted api and web · 4.1 s</div></div>
+</div></div>
+<div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div></div>
+</div>
+<div class="corner" style="padding:6px 10px">
+<div class="popover" style="width:min(100%,24rem);opacity:.55"><span class="caret-dn" style="right:46.9px"></span>
+<div class="from">The Services panel, open when the dialog opened: anchored, paused</div>
+<div class="row"><b>Acme Shop · 6 of 6 running</b></div>
+<div class="svc dim"><span>● web</span><span>running</span><span><span class="btn off">Restart</span></span></div>
+<div class="svc dim"><span>● api</span><span>running</span><span><span class="btn off">Restart</span></span></div>
+</div>
+<div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="tbar" style="opacity:.55"><span class="seg"><b>Acme Shop</b></span><span class="seg">paused</span><span class="seg open">● ● ● ● ● ● ▾</span></span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>5. Restart the changed services</h2>
+<p><b>Restart Changed</b>, its badge icon and Alt+Ctrl+R remain the three ways to restart the changed services, share one target selector, and the key still never fires while focus is in a text field. What changes is that each names its set before it runs and reports what it did. Keys: Alt+Ctrl+R (<code>restartServices</code>, configurable), suspended in text entry and while a devhost menu or modal is open (<code>KEY-1</code>, <code>KEY-2</code>).</p>
+<ol><li><span class="n">1</span> The footer's button names its set, "Restart 2 Changed", with the members in its tooltip and accessible description and its key hint from the binding's one definition: ⌃⌥R on macOS, Ctrl+Alt+R elsewhere (<code>SEL-1</code>, <code>BAR-2</code>, <code>BAR-4</code>, <code>KEY-13</code>, <code>WORD-2</code>).</li>
+<li><span class="n">2</span> A service is changed while its watched files differ from what its running process launched with, so undoing an edit, for example with <code>git checkout</code>, clears the mark within a second without a restart, and a file saved during a restart marks the service again only if it differs from what the new process launched with. Only services devhost can restart are ever marked: <code>watch</code> on an external service is ignored with a warning, so <b>Restart Changed</b> never sends one (<code>ACT-8</code>, <code>CC-25</code>).</li>
+<li><span class="n">3</span> The badge's icon and Alt+Ctrl+R restart the same set, read from one selector. With the panel closed, progress is one activity line, then one outcome notice, "Restarted api and web · 4.1 s", which closes 4 s after the pointer and focus leave it and stays readable in the stack's log; with the panel open, both show on the rows instead (<code>SEL-1</code>, <code>FB-1</code>, <code>FB-2</code>, <code>FB-6</code>, <code>FB-7</code>, <code>O14</code>).</li>
+<li><span class="n">4</span> With nothing changed, the button names its fallback, the page's own service, else the stack's primary service: on the docs page it reads "Restart docs", and Alt+Ctrl+R restarts docs, never web (<code>SEL-2</code>, <code>SEL-3</code>, <code>O4</code>, <code>CC-6</code>).</li>
+<li><span class="n">5</span> While the stack starts, shuts down, restarts or a repository switches, the button and the badge's icon are unavailable with that operation and its progress beside them, and Alt+Ctrl+R shows that reason in a notice instead of doing nothing; while only another service restarts or a hot reload runs, the set queues behind it (<code>SEL-2</code>, <code>MENU-3</code>, <code>HOLD-3</code>, <code>SEL-7</code>, <code>CC-8</code>).</li>
+<li><span class="n">6</span> While the page's own modal dialog is open, Alt+Ctrl+R still acts: the notice stack and the announcer move into the dialog, which shows the outcome, and the rest of the toolbar shows its paused state with its reason in one line there. A Services panel that was open stays anchored and paused with the bar, inert with its writes unavailable, and is live again, its rows read from the published state, when the dialog closes (<code>SURF-11</code>, <code>KEY-1</code>, <code>KEY-7</code>, <code>FB-9</code>).</li></ol>
+<p class="fixes">Fixes services-panel-2-02, services-panel-2-01, journey-agent-fix-03, stack-scale-08, services-panel-2-06 · Backend: the changed mark computed from file content against each launch; the page's own service named by the document injection; <code>watch</code> on an external service ignored with a warning (Backend 5, 10; <code>CC-6</code>, <code>CC-25</code>)</p></div>
+</section>
+
+<section class="step" id="start-left-out">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>started with devhost start storefront mail</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:187.1px"></span>
+<div class="from">Opened from the Services trigger</div>
+<div class="row"><b>Acme Shop · 4 of 6 running · 2 not started</b></div>
+<div class="grp">storefront · 3 · all running</div>
+<div class="svc dim"><span></span><span>web, api and docs, running</span><span></span></div>
+<div class="grp">backoffice · 3 · 2 not started</div>
+<div class="svc"><span>● <a>mail</a></span><span>running<span class="rt">mail.acme.test/ · daemon</span></span><span><span class="btn">Restart</span><span class="btn">Logs</span></span></div>
+<div class="svc dim"><span>○ worker</span><span>not started · left out of this run <span class="n">1</span><span class="rt">no route</span></span><span><span class="btn">Start</span></span></div>
+<div class="svc dim"><span>○ admin</span><span>not started · left out of this run<span class="rt">admin.acme.test/</span></span><span><span class="btn">Start</span><span class="muted">also starts worker</span><span class="n">2</span></span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="btn focusring">Start 2 Services</span><span class="n">3</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>3 s after Start 2 Services</span></div>
+<div class="work small">
+<div class="svc"><span>● <a>mail</a></span><span>running</span><span></span></div>
+<div class="svc"><span>◐ worker</span><span>starting · health check 1 s of 30 s <span class="n">4</span></span><span><span class="btn">Logs</span></span></div>
+<div class="svc"><span>◐ admin</span><span>queued · starts after worker</span><span><span class="btn">Logs</span></span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="btn focusring">Starting 2 Services…</span><span class="n">5</span><span class="sp"></span><span class="vsep"></span><span class="btn off">Restart Stack</span><span class="muted">Start 2 Services is running · 0 of 2 started</span></div>
+<div class="row" style="margin-top:8px"><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ◐ ◐ ▾</span></span><span class="muted">running services keep their dots</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the stack's own terminal</span></div>
+<pre class="term">14:05:12 Started admin and worker · 5.2 s
+  https://admin.acme.test/   admin <span class="n">6</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Platform › Services panel footer</b><span>5 not started; the filter "api" shows 3 of them</span></div>
+<div class="work small">
+<div class="row"><span class="in" style="flex:1">api</span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="btn">Start 3 Services</span><span class="muted">2 more hidden by the filter, not included</span><span class="n">7</span><span class="sp"></span><span class="vsep"></span><span class="btn">Restart Stack</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>6. Start the services the run left out</h2>
+<p><b>Start</b> still brings a service's dependencies along and never touches running services, as today. What changes is that not-started services join the main list in place of the separate Stopped services view, starts and restarts of different services queue instead of disabling one another, and <b>Cancel Start</b> or <b>Cancel Restart</b> takes a queued one out of the queue (<code>SEL-7</code>, <code>WORD-2</code>, <code>CC-8</code>). Keys: <b>Start</b> and <b>Start 2 Services</b> are Tab stops like every row action, and focus stays on the pressed one (<code>KEY-10</code>, <code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> Services the run left out sit in their group, dimmed, as "not started · left out of this run" ("stopped by you" after <code>devhost service stop</code>), with their hostname and <b>Start</b>; the trigger and the summary count them (<code>SEL-7</code>, <code>ACT-2</code>, <code>ACT-6</code>, <code>CC-7</code>).</li>
+<li><span class="n">2</span> One line of visible text beside <b>Start</b> names what else it starts, "also starts worker"; <b>Start</b>'s accessible name is "Start admin" and its accessible description "Also starts worker". It never touches running services (<code>SEL-1</code>, <code>SEL-7</code>, <code>WORD-2</code>, <code>KEY-10</code>).</li>
+<li><span class="n">3</span> With two or more not-started services, the footer offers <b>Start 2 Services</b>, its members in its tooltip and accessible description; it supplements each row's <b>Start</b> (<code>BAR-2</code>, <code>WORD-2</code>).</li>
+<li><span class="n">4</span> Each started row stays in place through queued, starting with its health check, and running; running rows keep their state and their dots never turn red, because <b>Start</b> no longer closes the page's status stream (<code>SEL-7</code>, <code>ACT-3</code>, <code>ACT-5</code>, <code>HOLD-2</code>).</li>
+<li><span class="n">5</span> The pressed button keeps focus and reads "Starting 2 Services…", while <b>Restart Stack</b> is unavailable with "Start 2 Services is running · 0 of 2 started" beside it; once both run, the outcome "Started admin and worker · 5.2 s" takes its place and takes focus on its sentence (<code>FB-3</code>, <code>FB-9</code>, <code>KEY-11</code>, <code>HOLD-3</code>).</li>
+<li><span class="n">6</span> The stack's terminal and log print one outcome line and only the URLs of what started (<code>FB-10</code>, <code>FB-7</code>).</li>
+<li><span class="n">7</span> While a filter hides some not-started services, the action starts only the ones shown and says how many it leaves out; clearing the filter restores <b>Start 5 Services</b> (<code>BAR-3</code>).</li></ol>
+<p class="fixes">Fixes services-panel-2-05, stack-scale-06, agent-cli-journey-08 · Backend: <code>start-service</code> with <code>operationId</code> and <code>202 Accepted</code>, documented with <code>stop-service</code> and the cancel route, and a test that keeps the documented route list complete; <b>Start</b> keeps every page's status stream open (Backend 2, 6, 7, 8; <code>CC-7</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="restart-stack">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>first press of Restart Stack</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:187.1px"></span>
+<div class="from">Opened from the Services trigger</div>
+<div class="row"><b>Acme Shop · 6 of 6 running</b></div>
+<div class="svc dim"><span></span><span>web, api, docs, worker, admin and mail, running</span><span></span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="sp"></span><span class="vsep"></span>
+<div class="box" style="margin:0;flex:0 1 25rem">Restart all 6 services with new automatic ports? Took 14 s last time. <span class="n">1</span>
+<div class="muted">Runs from main ~/acme</div>
+<div class="row" style="margin-top:4px"><span class="sp"></span><span class="btn">Restart Stack</span><span class="btn focusring">Cancel</span><span class="n">2</span></div></div></div>
+</div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>Restart Stack confirmed, 6 s in</span></div>
+<div class="work small">
+<div class="svc"><span>● worker</span><span>running</span><span></span></div>
+<div class="svc"><span>● <a>api</a></span><span>running · new port 55902</span><span></span></div>
+<div class="svc"><span>◐ <a>web</a></span><span>starting · health check 3 s of 30 s</span><span></span></div>
+<div class="svc dim"><span></span><span>docs, admin and mail · restarting · stopped for Restart Stack, starting next</span><span></span></div>
+<div class="pft"><span class="btn pri off">Restart docs</span><span class="muted">Restart Stack is running · 2 of 6 started</span><span class="sp"></span><span class="vsep"></span><span class="btn focusring">Restarting Stack · 2 of 6 started</span><span class="n">3</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>Restart Stack ended</span></div>
+<div class="work small">
+<div class="svc flash"><span>● <a>api</a></span><span>running · new port 55902</span><span></span></div>
+<div class="svc flash"><span>● <a>web</a></span><span>running · new port 5174</span><span></span></div>
+<div class="svc flash"><span></span><span>docs, worker, admin and mail, running</span><span></span></div>
+<div class="pft"><span class="btn pri">Restart docs</span><span class="sp"></span><span class="vsep"></span><span class="banner ok focusring" style="margin:0">Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s</span><span class="n">4</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>Restart Stack: api cannot start</span></div>
+<div class="work small">
+<div class="banner focusring" style="margin-top:0">Restart Stack: 5 of 6 running · api exited with code 1 before its health check <span class="n">5</span>
+<div class="row" style="margin-top:4px"><span class="btn">Restart api</span><span class="btn">Logs</span><span class="btn">Edit</span></div></div>
+<div class="muted">Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails</div>
+<div class="svc"><span>✕ api</span><span>exited with code 1 at 14:20 before its health check</span><span></span></div>
+<div class="svc"><span>● <a>web</a></span><span>running</span><span></span></div>
+<div class="svc dim"><span></span><span>docs, worker, admin and mail, running</span><span></span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel footer</b><span>devhost.toml line 12 was not applied</span></div>
+<div class="work small">
+<div class="box" style="margin:0">Restart all 6 services with new automatic ports? Took 14 s last time.
+<div class="muted">Runs from main ~/acme · uses the accepted manifest; devhost.toml line 12 is not applied <span class="n">6</span></div>
+<div class="row" style="margin-top:4px"><span class="sp"></span><span class="btn">Restart Stack</span><span class="btn focusring">Cancel</span></div></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <b>Restart Stack</b> has no terminal command, so this proposal records an exception to <code>MENU-6</code> until the reference names one; <code>devhost stack restart</code> replaces the devhost process, a different operation (<code>O18</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<h2>7. Restart the whole stack</h2>
+<p><b>Restart Stack</b> still stops every managed service and starts them again with new automatic ports, keeping fixed ports, the selected checkouts, external services, connected pages and chat sessions, as today. What changes in the Services panel is that it sits apart from <b>Restart Changed</b> and asks first, in place; in the crash view and on recovery pages it still runs on one press, with the same reach in a line beside its button. While any other operation runs, it is unavailable with that operation and its progress named (<code>HOLD-3</code>). Keys: Enter in the question takes <b>Cancel</b>; Escape cancels (<code>KEY-9</code>, <code>KEY-8</code>).</p>
+<ol><li><span class="n">1</span> The first press expands <b>Restart Stack</b> in place into the statement of its reach: how many services restart, that automatic ports change, how long it took last time, and the checkout it runs from. The label keeps the operation's name and carries no count; its tooltip and accessible description list the 6 services. The question is a group labelled by its sentence and described by "web, api, docs, worker, admin and mail" (<code>REV-2</code>, <code>REV-4</code>, <code>BAR-2</code>, <code>SEL-4</code>, <code>CC-17</code>).</li>
+<li><span class="n">2</span> <b>Cancel</b> takes the pressed button's place, focused and taking Enter, so a double press cancels; the confirming <b>Restart Stack</b> sits beside it (<code>REV-4</code>, <code>KEY-9</code>). Escape, or a click in the panel that lands on no control, cancels the question and returns focus to <b>Restart Stack</b> with the panel open (<code>KEY-8</code>); a click on another control cancels it and that control acts. Tab past the panel's last control closes the panel and the question with focus on the Services trigger (<code>KEY-7</code>); a click outside the panel closes both (<code>SURF-2</code>, <code>KEY-6</code>).</li>
+<li><span class="n">3</span> Once confirmed, the confirm button stays in place as the busy control with focus, and each row shows its step. The services runtime checks everything it can before it stops anything, and the page's status stream stays open, so no row or dot is ever drawn unknown or down (<code>REV-4</code>, <code>KEY-11</code>, <code>FB-1</code>, <code>REV-11</code>, <code>HOLD-2</code>).</li>
+<li><span class="n">4</span> The outcome replaces the question and takes focus on its sentence (<code>FB-3</code>, <code>FB-9</code>, <code>WORD-4</code>).</li>
+<li><span class="n">5</span> When one service cannot start, the outcome counts what runs and names the failure with its lead actions, and takes focus on its sentence; the rollback puts back the services as they ran before Restart Stack, service by service with their previous automatic ports, so the healthy services keep running, and reports that in its own words, never as the accepted manifest, which Restart Stack runs before and after. The <code>error-pages-01</code> stopgap ships this rollback first (<code>FAIL-1</code>, <code>UNDO-1</code>, <code>MENU-5</code>).</li>
+<li><span class="n">6</span> While a manifest edit is rejected, <b>Restart Stack</b> still runs, from the accepted manifest, and its reach line names the change it leaves out (<code>HOLD-6</code>).</li></ol>
+<p class="fixes">Fixes services-panel-2-03, services-panel-2-04 · Backend: the operation record keeps the last Restart Stack's duration; the status stream stays open across the route swap; per-service rollback (Backend 2, 6; <code>CC-17</code>, <code>CC-26</code>)</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>The repository-wide block after a failed Restart Stack rollback; the per-service rollback replaces it (<code>UNDO-1</code>)</li>
+<li>The Stopped services button and its separate view</li>
+<li>The hover title as Restart Stack's only warning</li>
+<li>The all-red redraw at the end of Restart Stack and after each Start</li>
+<li>A failure erased by the next health message</li>
+<li>The "Services" heading repeated inside the Services panel</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li>Not-started and running services in one list with one count</li>
+<li>The badge icon, Restart Changed and Alt+Ctrl+R on one target set, from one server-computed changed mark</li>
+<li>A row's progress and its outcome in one place, the row</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li>One shared state indicator and state words for the toolbar and the status pages; a state word with its cause and time, the route, the port and a link that answers on every row</li>
+<li>Per-row steps and outcomes, and failures that stay until <b>Dismiss</b>, a repeat counted in one report</li>
+<li>Queued rows with Cancel Restart or Cancel Start, Start 2 Services, Logs and Edit on rows, and Check Again on an unreachable external row and a blocked repository</li>
+<li>The in-place Restart Stack question</li>
+<li>A filter, groups with counts and a pinned attention group at scale</li>
+<li>The last exit kept after a restart; a deadline on daemon lifecycle commands</li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li>Restart Changed's fallback: the page's own service, named in the label (<code>O4</code>, <code>CC-6</code>)</li>
+<li>Starts and restarts of different services queue instead of disabling one another (<code>CC-8</code>)</li>
+<li>Changed means the files differ from what the running process launched with (<code>CC-25</code>)</li>
+<li>A lost connection is unknown, never down (<code>CC-26</code>); <code>watch</code> on an external service is ignored with a warning</li>
+<li>A row's link opens in the same tab (<code>SURF-15</code>)</li>
+<li>Restart Stack's rollback names the services it put back, never the accepted manifest (<code>UNDO-1</code>)</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>A row's Restart acts on one service, keeps its automatic port, and succeeds only when it is healthy with its routes updated</li>
+<li>External services show status only: no Restart, Start, logs or changed mark</li>
+<li>One operation at a time per stack, now a visible queue; an unknown or external name is refused with nothing stopped</li>
+<li>Start brings its dependencies along and never touches running services; status pages keep telling starting, could not start, exited and not responding apart, now with the shared indicator</li>
+<li>Restart Stack keeps fixed ports, checkouts, external services, pages and chat, uses the accepted manifest, and rolls back on failure</li>
+<li>A blocked repository never falls back to another checkout; the crash view and recovery pages hand off to this flow's restart</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>The published service state with causes, routes and groups (Backend 1; <code>CC-25</code>, <code>CC-7</code>)</li>
+<li>The operation record: <code>operationId</code>, <code>202 Accepted</code>, the queue and its cancel (Backend 2, 3; <code>CC-37</code>, <code>CC-8</code>)</li>
+<li>A lifecycle command deadline, its value pending (Backend 4)</li>
+<li>The changed mark from file content; streams that stay open (Backend 5, 6; <code>CC-26</code>)</li>
+<li>Documented routes with one error body and a complete route list; a Check Again route, still to be named (Backend 7, 8, 12)</li>
+<li>Exit records; the page's own service named (Backend 9, 10; <code>CC-24</code>, <code>CC-6</code>)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

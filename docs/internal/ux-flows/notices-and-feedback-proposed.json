@@ -1,0 +1,588 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How devhost reports operations and problems: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/notices-and-feedback-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "database": {
+          "label": "Terminal line and stack log"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Starting surface: ask"
+    },
+    {
+      "id": "stack",
+      "label": "Notice stack"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "terminal",
+      "label": "Terminal and log"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "entry",
+    "busy",
+    "record",
+    "progress",
+    "outcome"
+  ],
+  "nodes": [
+    {
+      "id": "entry",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Any write or its key",
+      "sublabel": "Restart, Save, Alt+Ctrl+R",
+      "explanation": "Every write a page sends starts the same way: a row's Restart, Restart Changed with its badge icon and Alt+Ctrl+R, Start, Restart Stack, Switch and Restart Stack, Return to Configured Checkout, Save, and Send in the Disable Reloads popover. The operation's name is the label of the control or command that started it, the same on every surface (MENU-6, WORD-2); a key or an icon acts on the set its control names, and its outcome names that set: Alt+Ctrl+R is Restart Changed, on 'api, web' when they are changed, else on the page's own service, 'docs' on the docs page (SEL-1, SEL-2, O4). Writes that ask first ask in their own flow's surface (REV-1); this flow adds no question, and no question ever sits in a notice (REV-4, SURF-2). A key whose action is unavailable reports why in a neutral notice, 'Restart Changed did not run: Restart Stack is running · 3 of 6 started', which closes like a success and stays in the log (MENU-3, HOLD-3, WORD-7). Today each control keeps its own progress and error; one model replaces them (notices-and-feedback-03).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 309,
+          "end_line": 319,
+          "label": "Replaces: row Restart's shared error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 24,
+          "end_line": 38,
+          "label": "Replaces: Restart Stack's own pending, error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
+          "line": 80,
+          "end_line": 87,
+          "label": "Replaces: the picker's own error"
+        }
+      ]
+    },
+    {
+      "id": "busy",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Control keeps focus",
+      "sublabel": "Restarting api…",
+      "explanation": "The pressed control keeps focus as the busy control, aria-busy and aria-disabled, never disabled, its label naming what runs: 'Restarting api…', 'Restarting Stack · 2 of 6 started' (KEY-11, FB-9, WORD-4), drawn with toolbar-shell's unavailable and busy Button state. The request carries an operationId, a lowercase UUID the page generates, and the page ID of this page load; the page-side operation store keeps each ID the tab sent in sessionStorage, so only this tab treats the operation as its own and a reload in the middle keeps following it (ACT-1, CC-37). The announcer says the start once, in its polite region: 'Restarting api' (FB-9). Each control's own key starts it; this step adds no key.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 310,
+          "end_line": 318,
+          "label": "Replaces: row Restart disabled while it runs"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 66,
+          "end_line": 73,
+          "label": "Replaces: Restart Stack disabled while it runs"
+        }
+      ]
+    },
+    {
+      "id": "record",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "Operation record",
+      "sublabel": "202 · one write",
+      "explanation": "Every write route takes the operationId and the page ID and answers 202 Accepted with the operation record before the operation runs: its ID, kind, targets, origin (a page with its page ID and hostname, the CLI, an agent with its DEVHOST_CHAT_SESSION conversation, or the watcher with the changed file), each target's step and outcome with cause and evidence, the work it ended, and its start and end times (ACT-1, CC-37). It streams on /__devhost__/ws/health at least once a second while it runs and stays until the next operation of the same kind on the same target; a failed outcome stays until it is handled. A lost response is read from the record by its ID, and a repeated ID returns the record and runs nothing again (REV-12); no surface infers a result by counting reloads or health messages. services-panel ships it first for restart-service, restart-stack, start-service and stop-service; this flow requires it for the worktrees POST, config/save, a reload from a file changed on disk and the Disable Reloads send. One operation at a time per stack stays.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 153,
+          "end_line": 216,
+          "label": "Reuses: name checks, then stop and start each"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 72,
+          "end_line": 82,
+          "label": "Reuses: Restart Stack as one change"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/postControlAction.ts",
+          "line": 9,
+          "end_line": 33,
+          "label": "Replaces: POST with no operation ID"
+        }
+      ]
+    },
+    {
+      "id": "progress",
+      "lane": "ask",
+      "col": 3,
+      "type": "frontend",
+      "label": "Progress in one place",
+      "sublabel": "2 of 6 started · 5 s",
+      "tag": "services-panel-2-04",
+      "explanation": "While the surface that started the operation is open, it shows each target's step (queued, stopping, starting, 'health check 2 s of 30 s', running, failed), updated at least once a second, and the busy control's elapsed time (FB-1, ACT-3, STATE-1). Whenever no open surface on the page shows it, because its panel closed (Escape, a click outside, Tab past its last control: KEY-7, KEY-8) or it started in another tab, the terminal, an agent or a file saved on disk, the notice stack shows one activity line, 'Restart Stack · 2 of 6 started · 5 s', ending with its origin when it came from elsewhere, '· from the terminal' (FB-1, WORD-4, ACT-1). It has no Dismiss; its outcome replaces it (FB-2). Touched rows show restarting, starting or stopping on every surface and the others keep their state; starting one service never draws running ones as down (ACT-3, ACT-4, SEL-7). Ticking text sits outside every live region (FB-9). Every page's stream stays open through Restart Stack and Start (services-panel's backend), so no all-down second ends them (services-panel-2-04, stack-scale-06).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 345,
+          "end_line": 355,
+          "label": "Replaces: dot states with no step or time"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx",
+          "line": 193,
+          "end_line": 203,
+          "label": "Replaces: 'Switching and restarting stack…'"
+        }
+      ]
+    },
+    {
+      "id": "outcome",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "One outcome where it ran",
+      "sublabel": "Restarted api · 2.6 s",
+      "tag": "notices-and-feedback-03",
+      "explanation": "The outcome replaces the progress in place: in the surface that started it while it is open, else as an outcome notice in place of the activity line, never both (FB-2). It names the operation in the past tense, its targets, what changed and the time: 'Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s' (FB-3, WORD-4, WORD-5). It certifies the end state, never a step (FB-5), and names the work it ended, '· ended 1 conversation: Fix the nav (working)' (FB-4). A success notice closes 4 s after the pointer and focus leave it and says 'also in the log' (FB-6, O14, FB-7); each outcome is announced once, politely (FB-9, keyboard-and-screen-reader-02). From another origin it ends with that origin, '· from the terminal', and shows only when it failed or touched the page's own service (FB-2, SEL-3). After a reload it caused, the next page reads it by the stored ID and focus starts on its control, else its sentence (ACT-1, KEY-6). Most operations start or stop processes, so there is no Undo: a failed Restart Stack or switch reports its own rollback (UNDO-1), and every outcome stays in the log (FB-7).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 28,
+          "end_line": 38,
+          "label": "Replaces: success clears the button"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts",
+          "line": 117,
+          "end_line": 131,
+          "label": "Replaces: applied once a reload is counted"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 102,
+          "end_line": 110,
+          "label": "Replaces: a switch reloads, says nothing"
+        }
+      ]
+    },
+    {
+      "id": "termline",
+      "lane": "terminal",
+      "col": 5,
+      "type": "database",
+      "label": "Same line in terminal",
+      "sublabel": "log and agent output",
+      "tag": "notices-and-feedback-03",
+      "explanation": "Every operation on a running stack, from any origin, prints one outcome line in the stack's terminal and in its per-manifest log: the sentence the page shows, built from the record by the outcome sentence builders' Go counterpart in apps/devhost/internal/cliout (FB-10, FB-7, WORD-4, WORD-9, CC-22). 'Restarted api · 2.6 s · from a page on shop.localhost' now follows 'restarting service: api'; a fix saved from the Configuration window prints 'Applied devhost.toml: restarted web (changed) · 6 of 6 running · 1.2 s', so the terminal never ends on a rejection already fixed (notices-and-feedback-03). The page's origin phrase is a proposed addition to WORD-4 ([discuss]). The URL list prints at the first start and on request (devhost status), never after each action (FB-10). Every stack writes its log, a foreground one included, and the pinned log panel offers devhost's own lines (CC-21; log-minimap). Agent output keeps a failure on one devhost: ERR: line, and agents read the last outcome from devhost status and the log (FB-11, CC-23).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 191,
+          "end_line": 191,
+          "label": "Replaces: 'restarting service:', no end line"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 264,
+          "end_line": 268,
+          "label": "Replaces: URL list after every change"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 627,
+          "end_line": 632,
+          "label": "Replaces: 'configuration reload rejected'"
+        }
+      ]
+    },
+    {
+      "id": "elsewhere",
+      "lane": "terminal",
+      "col": 2,
+      "type": "external",
+      "label": "Another tab, CLI, agent",
+      "sublabel": "or a file saved on disk",
+      "explanation": "An operation can start where this page sees no press: another tab, the terminal, an agent, or a manifest file saved on disk. Its record carries its origin as far as the backend can see it: each page sends its page ID, the CLI marks its requests, an agent devhost started runs with DEVHOST_CHAT_SESSION, and the watcher cannot tell an editor's save from an agent's edit, so it reads 'after devhost.toml changed on disk' (ACT-1, WORD-4). Every open page shows its activity line and draws its rows' transitions (FB-1, ACT-3); its outcome reaches a page as a notice only when it failed or touched the page's own service, and always as a log line (FB-2, FB-7).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 617,
+          "end_line": 632,
+          "label": "Reuses: a saved manifest file reloads"
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "Failure stays in place",
+      "sublabel": "lead action · rollback",
+      "tag": "notices-and-feedback-01",
+      "explanation": "A failure leads with the target and what happened, then the cause, the evidence and where to fix it: 'api exited with code 1 at 14:02 before its health check', its last lines, the probe or a port's holder (FAIL-2, FAIL-3, WORD-7). It stays in its surface, and as a failure notice once that closes, until Dismiss or the same operation succeeds; stream messages, reconnects and reloads never remove it (FB-6, ACT-1). Focus stays on the control, which the failure describes; the assertive region says it once (KEY-11, FB-9). It leads with MENU-5's action for its cause. An unreadable response never shows: the shared request helper makes one sentence, 'Acme Shop is not running, so api was not restarted. Start it with devhost start in ~/acme', with the original behind Copy Error (FAIL-2; notices-and-feedback-01, journey-new-project-02). A partial result counts every target, and a rollback names what it restored, 'Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails' (FAIL-1, UNDO-1). Repeats update a count (FAIL-4); a deliberate stop is neutral (FAIL-5); a stale write is refused (REV-13). error-pages-02 is startup-and-recovery's.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 55,
+          "end_line": 71,
+          "label": "Replaces: each status message clears the error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/postControlAction.ts",
+          "line": 16,
+          "end_line": 29,
+          "label": "Replaces: any non-JSON body as the error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorClient.ts",
+          "line": 130,
+          "end_line": 140,
+          "label": "Replaces: any non-2xx body as the message"
+        }
+      ]
+    },
+    {
+      "id": "condStart",
+      "lane": "stack",
+      "col": 4,
+      "type": "external",
+      "label": "A condition starts",
+      "sublabel": "crash, not applied, …",
+      "explanation": "A condition is a state that lasts until something changes it. Each comes from the published state, worded by the flow that owns it: the page's service or a dependency exited, its crash view minimized (startup-and-recovery); a manifest file or the devhost config file not applied (manifest-hot-reload); a repository blocked by its checkout (worktree-switch); an external service not reachable (services-panel); an agent waiting for the person, or chat turned off with conversations still running (agent-chat); a held or blocked reload (reload-control); the lost connection (this flow). This flow owns their form, order, lifetime and announcements (ACT-7)."
+    },
+    {
+      "id": "conditions",
+      "lane": "stack",
+      "col": 5,
+      "type": "frontend",
+      "label": "Conditions in one stack",
+      "sublabel": "3 shown, then 2 More",
+      "tag": "keyboard-and-screen-reader-02",
+      "explanation": "Each condition is one notice while it lasts, starting and ending with the published state and clearing with its cause, never by a timer or a reload (ACT-7). Each leads with MENU-5's action: Edit for a file not applied, Check Again for an external service, Reload for Reload blocked. Order: what needs the person or blocks writes, then activity lines, then other conditions, then successes, newest first; three show and the rest fold into 2 More, which reads Show Fewer while open (FB-8). The stack sits beside the bar, never covered by a panel, docked chat or the Configuration window (SURF-1, CC-1). Dismissing a lasting condition leaves a marker on the control that owns it, such as '1 not applied' on Config (SURF-8, UNDO-3); a collapsed toolbar keeps a one-line form per condition and failure. A notice has no live role: the one announcer says each start and end once, politely, and failures assertively, also from inside the topmost modal (FB-9); Alert stops being role=alert. Nothing that arrives takes focus, and Escape on a notice dismisses nothing (KEY-6, KEY-8).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 283,
+          "end_line": 307,
+          "label": "Replaces: three notices with no order"
+        },
+        {
+          "path": "packages/devhost-ui/src/components/ui/Alert.tsx",
+          "line": 22,
+          "end_line": 31,
+          "label": "Replaces: role=alert on every notice"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx",
+          "line": 18,
+          "end_line": 41,
+          "label": "Replaces: rejection notice with no dismiss"
+        }
+      ]
+    },
+    {
+      "id": "stopEntry",
+      "lane": "terminal",
+      "col": 0,
+      "type": "external",
+      "label": "devhost stop, caddy stop",
+      "sublabel": "idle, Ctrl-C, a new port",
+      "explanation": "A page loses its stack's stream when the stack stops (devhost stop from a terminal or an agent, Ctrl-C, the idle timeout, a replacement by devhost stack restart, or a stop from another stack's page), when devhost caddy stop takes the shared proxy away, or when proxy-settings moves the HTTPS port. devhost never opens a browser or starts a stack from the page: its notices offer commands to copy (owner rule, ACT-10)."
+    },
+    {
+      "id": "ending",
+      "lane": "backend",
+      "col": 0,
+      "type": "backend",
+      "label": "Stopping, final message",
+      "sublabel": "reason, by, start command",
+      "tag": "notices-and-feedback-02",
+      "explanation": "The shutdown, which already stops services before the control server, first publishes the stack's stopping state with the count stopped, so pages show 'Stopping Acme Shop · 3 of 6 stopped' instead of 6 of 6 running (ACT-3, WORD-4). After the last service stopped or its allowance ran out, it sends one final message on the health stream, stack-ended with its reason, who stopped it, when, the folder and start command, survivors with PID and port, and the conversations it ended, then closes with 1001 as today (HOLD-2, ACT-10, ACT-11, CC-26). devhost caddy stop has each stack send proxy-stopping first; proxy-settings sends listeners-moving with the new origin before Caddy moves. The reconnecting socket passes the close event and that message to the page, which today drops both; a stream that closes with no message probes once to tell a stopped stack from an unreachable proxy (notices-and-feedback-02).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 247,
+          "end_line": 285,
+          "label": "Reuses: services stop before control server"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 505,
+          "end_line": 523,
+          "label": "Reuses: streams close with a reason"
+        },
+        {
+          "path": "apps/devhost/internal/services/shutdown_progress.go",
+          "line": 23,
+          "end_line": 35,
+          "label": "Replaces: stopping lines only in the terminal"
+        }
+      ]
+    },
+    {
+      "id": "lost",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Lost connection: unknown",
+      "sublabel": "last seen · writes off",
+      "tag": "journey-new-project-02",
+      "explanation": "From the moment the stream closes, every write on the page (Restart, Restart Changed and its key, Start, Restart Stack, switches, Stop Stack, Save, chat Send, Disable Reloads' Send) is unavailable with one reason, said once in this notice and in each open panel's status line and given to each control as its description (HOLD-2, HOLD-1, MENU-3); every service keeps its last known state as unknown, 'last seen 16:24', never down (ACT-5, CC-26, WORD-6). The reason names the cause: 'Acme Shop stopped at 16:24 by devhost stop. Start it with devhost start in ~/acme' with Copy; '… but api still runs (PID 4242, port 5173)'; 'devhost's proxy is not reachable. Start it with devhost caddy start'; 'devhost moved to port 21198' with Open; else 'Lost connection to devhost; retrying' with Retry Now. Stopped is read only from the final message (ACT-11). It has no Dismiss; drafts, page context and queued operations stay (UNDO-2, SEL-7). Resolves journey-new-project-02's stopped-stack slice and the drawing of notices-and-feedback-02 and services-panel-2-04.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 73,
+          "end_line": 82,
+          "label": "Replaces: disconnect marks every service down"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts",
+          "line": 3,
+          "end_line": 28,
+          "label": "Replaces: unknown drawn as status false"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts",
+          "line": 61,
+          "end_line": 79,
+          "label": "Replaces: close code and reason dropped"
+        }
+      ]
+    },
+    {
+      "id": "reconnect",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Connected again · 6 of 6",
+      "sublabel": "said once, outage clears",
+      "tag": "proxy-settings-03",
+      "explanation": "The page retries with today's back-off, 1 s doubling to 10 s, and Retry Now tries at once (HOLD-2). After a port move, Open goes to the new address with the path and query kept, and the page stops retrying the old one (proxy-settings-03; proxy-settings sends the address). When the stream returns, states update in place, every write is available again without a reload and nothing it blocked is replayed (HOLD-1, REV-12); the page says once, politely, 'Connected again · 6 of 6 running', or after a replacement 'Connected again · Acme Shop was replaced by PID 85102 · 6 of 6 running' (ACT-5, ACT-10, WORD-4). The notices the outage raised clear with it; a reload held meanwhile clears when the page's service still runs the process it ran at load, else stays as Reload blocked; failures the record keeps stay (ACT-7, FB-6). A tab left open on a stopped stack keeps its stopped notice and reconnects when the stack starts again.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts",
+          "line": 80,
+          "end_line": 84,
+          "label": "Reuses: retry after 1 s, doubling to 10 s"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 84,
+          "end_line": 90,
+          "label": "Replaces: reopening clears errors silently"
+        },
+        {
+          "path": "apps/devhost/internal/services/shared_caddy.go",
+          "line": 57,
+          "end_line": 83,
+          "label": "Replaces: Caddy moves before pages learn"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "entry-busy",
+      "from": "entry",
+      "to": "busy",
+      "label": "press",
+      "role": "main"
+    },
+    {
+      "id": "busy-record",
+      "from": "busy",
+      "to": "record",
+      "label": "Restart api",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "record-progress",
+      "from": "record",
+      "to": "progress",
+      "label": "steps, 1/s",
+      "role": "main"
+    },
+    {
+      "id": "progress-outcome",
+      "from": "progress",
+      "to": "outcome",
+      "label": "end state",
+      "role": "main"
+    },
+    {
+      "id": "elsewhere-record",
+      "from": "elsewhere",
+      "to": "record",
+      "label": "with its origin",
+      "role": "branch"
+    },
+    {
+      "id": "record-failure",
+      "from": "record",
+      "to": "failure",
+      "label": "a target fails",
+      "role": "error"
+    },
+    {
+      "id": "outcome-termline",
+      "from": "outcome",
+      "to": "termline",
+      "label": "same sentence",
+      "role": "branch"
+    },
+    {
+      "id": "condStart-conditions",
+      "from": "condStart",
+      "to": "conditions",
+      "label": "one notice",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "stopEntry-ending",
+      "from": "stopEntry",
+      "to": "ending",
+      "label": "stop",
+      "role": "branch",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "ending-lost",
+      "from": "ending",
+      "to": "lost",
+      "label": "stream closes",
+      "role": "error"
+    },
+    {
+      "id": "lost-reconnect",
+      "from": "lost",
+      "to": "reconnect",
+      "label": "stream returns",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: the toolbar-wide error that each status message clears; role=alert on every notice; a lost connection drawn as every service down; response bodies, markup and Go error chains as error text; 6 of 6 running through a shutdown; the silent reconnection; a Reload blocked that outlives its outage; the URL list after every change; 'Saved and applied.' and 'configuration reload rejected' as words",
+        "Merged: the toolbar-wide error, Restart Stack's and Restart Changed's own errors, the Worktrees picker's notice and the Configuration window's result strip into one outcome model, one record and one notice stack; a stopped stack, a stopped proxy, a moved port and an unexplained drop into one lost connection that names its cause",
+        "New: the notice stack component (failure, condition, activity, success, neutral); the announcer with a polite and an assertive region; activity lines; outcome notices with their origin; 2 More and Show Fewer; dismissal markers and collapsed one-line forms; the page-side operation store; the shared request helper; Retry Now and 'Connected again'; the stopping state and the stopped notice with its command; the stack's final message; one outcome line per operation in the terminal and the log; a foreground stack's log",
+        "Changed: Alert is a group named by its sentence, not role=alert; a lost connection is unknown, never down (CC-26); the reconnecting socket passes its close event and the final message; control errors are sentences; Reload blocked clears with its cause; every write carries an operationId and gets 202 Accepted (CC-37); a switch stores its ID before the reload; every stack writes its log (CC-21)",
+        "Kept: progress where the operation started, now with steps and time; colliding controls unavailable, now naming the running operation; reconnecting after 1 s, doubling to 10 s; a save reported only once applied, now from the reload that read it; Copy on failures and Edit on a file not applied; a log line per completed change, now per operation; Reload on a held reload; a rejected reload keeps the accepted manifest and blocks nothing; saves apply without a question; devhost's own reloads never held; readouts hidden while disconnected; services stop before the control server; devhost never opens a browser; no chat delivery claimed or resent; a failed service leaves the rest running; human and agent output differ by design"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "One outcome where it ran, and in the terminal: notices-and-feedback-03",
+        "Progress with no all-down second: services-panel-2-04, with its duplicate stack-scale-06",
+        "Failures kept, in one sentence: notices-and-feedback-01, journey-new-project-02",
+        "Conditions and the announcer: keyboard-and-screen-reader-02",
+        "Stopping, stopped, lost connection: notices-and-feedback-02 (a duplicate of services-panel-2-04), journey-new-project-02, services-panel-2-04",
+        "Reconnect and a moved port: proxy-settings-03 (a partial duplicate of services-panel-2-04)",
+        "Slices here, the rest elsewhere: journey-new-project-02 and services-panel-2-04 (services-panel); notices-and-feedback-01 (config-editor, services-panel); notices-and-feedback-03 (toolbar-shell); proxy-settings-03 (proxy-settings)",
+        "Related, not covered: error-pages-02 (P1, startup-and-recovery), which keeps a failed Restart Stack's outcome in the crash view; this flow's record keeps that failure until it is handled"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Operation record for every write: operationId and page ID, 202 Accepted with the record, streamed at least once a second, kept until the next operation of its kind, a failure until handled; a repeated ID runs nothing (CC-37; services-panel ships its first routes)",
+        "[discuss]: POST /__devhost__/operations/<id>/dismiss marks a failure handled for every page; no CC-n names it yet",
+        "The stream's final message before it closes: stack-ended with reason, by, at, folder, start command, survivors, ended conversations and replacedBy; proxy-stopping from devhost caddy stop; listeners-moving from proxy-settings (CC-26)",
+        "Stopping published before services stop, with the count stopped (CC-26)",
+        "Streams stay open across Restart Stack and Start: services-panel's backend, relied on here",
+        "One outcome line per operation in the terminal and the per-manifest log, built in cliout; a foreground stack writes its log; failure lines carry ERR: (CC-21, CC-22, CC-23)",
+        "Each service's launch time in the published state tells whether a held reload is still needed (services-panel's state; no new field)",
+        "[discuss]: the origin phrase '· from a page on <hostname>' for the terminal and the log, for WORD-4"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-26: a lost connection is unknown, never down, with every write unavailable and its reason",
+        "CC-37: operationId, 202 Accepted and the record on the health stream (services-panel lands it; this flow reads it)",
+        "CC-21: every stack writes its per-manifest log, a foreground one included",
+        "CC-22: one outcome line for every operation on a running stack (this flow); stop and ready lines (stack-run-stop); the reload line (manifest-hot-reload)",
+        "CC-23: an agent-output error is one devhost: ERR: line, and failure lines in the log carry ERR: (devhost status, reload and logs are stack-run-stop's)",
+        "CC-1: no devhost surface covers the notice stack (toolbar-shell lands it)",
+        "[discuss]: guides/devtools.md gains a section on the notice stack; no CC-n names it yet"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none",
+        "Lanes are the surfaces this flow reports on; there is no review lane, because this flow adds no question and writes that ask first ask in their own flows (REV-1)"
+      ]
+    }
+  ]
+}

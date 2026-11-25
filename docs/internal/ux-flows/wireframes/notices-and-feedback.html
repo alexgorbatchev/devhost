@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How devhost reports operations and problems · proposed flow wireframe</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* The dock in the top-right placement: the corner sits at the top of the page mockup */
+.mock .corner.attop{margin-top:0}
+/* One notice in the stack: kept to a readable width beside the bar */
+.mock .corner > .banner{max-width:36rem;margin:0}
+.mock .corner .toastrow{padding:0}
+</style>
+</head>
+<body>
+<header class="page">
+<nav class="top"><a href="index.html">← All flows</a><a href="../notices-and-feedback-current.html">Today's flow diagram</a><a href="../notices-and-feedback-proposed.html">Proposed flow diagram</a><a href="../proposals/notices-and-feedback.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
+<h1>How devhost reports operations and problems</h1>
+<p><b>TLDR:</b> Every operation reports the same way, from one record: its progress where it started or as one activity line, then one outcome in that place that names what changed; failures stay until handled, conditions share one ordered notice stack beside the bar, and a lost connection says why with every service drawn unknown instead of down.</p>
+<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
+</header>
+<div class="key"><div>
+<div class="legend"><b style="color:var(--ink)">How to read:</b>
+<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
+<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
+<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
+<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
+<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
+<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><span class="n">1</span>Callout, explained on the right</span></div>
+</div></div>
+<main>
+
+<section class="step" id="start">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel rows</b><span>Enter pressed on api's Restart</span></div>
+<div class="work small">
+<table class="t"><tbody>
+<tr><td style="width:16%">● web</td><td>running · changed: src/nav.tsx</td><td style="width:30%;text-align:right"><span class="btn">Restart</span> <span class="btn">Logs</span></td></tr>
+<tr><td>◐ api</td><td>restarting · stopping · 0.4 s</td><td style="text-align:right"><span class="btn focusring">Restarting api…</span><span class="n">1</span> <span class="btn">Logs</span></td></tr>
+<tr><td>● docs</td><td>running</td><td style="text-align:right"><span class="btn">Restart</span> <span class="btn">Logs</span></td></tr>
+</tbody></table>
+<div class="box"><span class="muted">The announcer, visually hidden, in a host of its own · polite region:</span> "Restarting api" <span class="muted">· assertive region: nothing</span> <span class="n">2</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › what the page sends for that press</b></div>
+<pre class="term">POST /__devhost__/restart-service
+{"service": "api", "operationId": "3f2a91c4-…", "pageId": "9c1e07b2-…"}
+← 202 Accepted · {"id": "3f2a91c4-…", "kind": "restart-service", "targets": ["api"],
+   "origin": {"page": "9c1e07b2-…", "hostname": "docs.acme.test"}, "startedAt": "…"} <span class="n">3</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>Alt+Ctrl+R pressed while Restart Stack runs</span></div>
+<div class="pg" style="min-height:120px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="banner info">◐ Restart Stack · 3 of 6 started · 6 s</div>
+<div class="toastrow"><div class="toast">○ Restart Changed did not run: Restart Stack is running · 3 of 6 started</div><span class="n">4</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ◐ ◐ ◐ ▾</span><span class="seg muted">2 changed ↻</span><span class="n">5</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: the reference sets lifetimes only for successes and failures (<code>FB-6</code>); this proposal gives a key's refusal the neutral style and a success's lifetime, a reading recorded as a question for the reference. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>1. Start an operation</h2>
+<p>Every control, key and command that starts work keeps its place and its key, as today: a row's <b>Restart</b>, Restart Changed with its badge icon and Alt+Ctrl+R, <b>Start</b>, <b>Restart Stack</b>, <b>Switch and Restart Stack</b>, <b>Return to Configured Checkout</b>, <b>Save</b> and <b>Send</b> in the Disable Reloads popover. What changes is that each write is one recorded operation from its first moment, the control that started it says what runs, and a start is heard once. Writes that ask first still ask where their own flow says (<code>REV-1</code>); this flow adds no question, and no question ever sits in a notice: a decision lives in its panel, popover or dialog (<code>REV-4</code>, <code>SURF-2</code>). Keys: this step adds none; each control's own key starts it (2.11 of the reference).</p>
+<ol><li><span class="n">1</span> The pressed control keeps focus as the busy control, <code>aria-busy</code> and <code>aria-disabled</code>, never <code>disabled</code>, its label naming what runs: "Restarting api…", or "Restarting Stack · 2 of 6 started" for a confirmed Restart Stack. It is drawn with toolbar-shell's unavailable and busy state of <code>Button</code>, so focus never drops to the page (<code>KEY-11</code>, <code>FB-9</code>, <code>WORD-4</code>).</li>
+<li><span class="n">2</span> The page's one announcer says the start once in its polite region, "Restarting api". Its assertive region carries failures only, and step text and elapsed times never enter either region, so nothing ticks aloud (<code>FB-9</code>).</li>
+<li><span class="n">3</span> Every write carries an <code>operationId</code>, a lowercase UUID the page generates, and this page load's ID; the route answers <code>202 Accepted</code> with the operation record before the operation runs. The page-side operation store keeps each ID this tab sent in <code>sessionStorage</code>, so only this tab treats the operation as its own and a reload in the middle keeps following it; a request repeated with the same ID returns the same record and runs nothing again (<code>ACT-1</code>, <code>REV-12</code>, <code>CC-37</code>).</li>
+<li><span class="n">4</span> A key whose action is unavailable says why instead of doing nothing: Alt+Ctrl+R during Restart Stack restarts nothing and shows a neutral notice naming the operation that blocks it and its progress. It closes like a success and stays in the stack's log (<code>MENU-3</code>, <code>HOLD-3</code>, <code>WORD-7</code>).</li>
+<li><span class="n">5</span> The badge's icon and the Restart Changed button are unavailable while Restart Stack runs; their reason is the activity line in the notice stack, the dock's status line, and each one's accessible description is the same sentence, "Restart Stack is running · 3 of 6 started" (<code>HOLD-3</code>, <code>HOLD-1</code>). Defaults: an operation's name is the label of the control or command that started it, on every surface; a key acts on the set its control names, here Restart Changed's set, "api, web", or its named fallback, the page's own service (<code>MENU-6</code>, <code>WORD-2</code>, <code>SEL-1</code>, <code>SEL-2</code>, <code>O4</code>).</li></ol>
+<p class="fixes">Fixes keyboard-and-screen-reader-02, notices-and-feedback-03 · Backend: the operation record for every write, with <code>operationId</code>, the page ID and <code>202 Accepted</code> (Backend 1; <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="progress">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel rows</b><span>Restart Stack confirmed, 5 s in</span></div>
+<div class="work small">
+<table class="t"><tbody>
+<tr><td style="width:16%">● api</td><td>running · new port 55902</td></tr>
+<tr><td>● worker</td><td>running</td></tr>
+<tr><td>◐ web</td><td>starting · health check 2 s of 30 s <span class="n">1</span></td></tr>
+<tr class="dim"><td></td><td>docs, admin and mail · restarting · stopped for Restart Stack, starting next</td></tr>
+</tbody></table>
+<div class="row" style="margin-top:6px"><span class="sp"></span><span class="btn focusring">Restarting Stack · 2 of 6 started · 5 s</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>the panel closed with Escape 5 s in</span></div>
+<div class="pg" style="min-height:110px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="banner info">◐ Restart Stack · 2 of 6 started · 5 s <span class="n">2</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ◐ ◐ ◐ ◐ ▾</span><span class="n">3</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>devhost service restart api, run in a terminal</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">Acme Shop · Checkout …</div>
+<div class="corner">
+<div class="banner info">◐ Restart api · health check 2 s of 30 s · from the terminal <span class="n">4</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ◐ ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>2. Follow its progress in one place</h2>
+<p>Progress still shows in the surface that started the operation while it is open, as today. What changes is that it shows each target's step with its elapsed time, and that it never disappears: when that surface closes, or when the operation started somewhere else, one activity line in the notice stack carries it. Keys: Escape, a click outside the panel or Tab past its last control closes the panel and moves its operation's progress to the activity line (<code>KEY-7</code>, <code>KEY-8</code>).</p>
+<ol><li><span class="n">1</span> While the surface that started it is open, each target shows its step (queued, stopping, starting, "health check 2 s of 30 s", running, failed), updated at least once a second, and the busy control shows the elapsed time; services-panel draws the rows from the published state (<code>FB-1</code>, <code>ACT-3</code>, <code>STATE-1</code>, <code>ACT-2</code>).</li>
+<li><span class="n">2</span> Whenever no open surface on the page shows the operation, the notice stack shows it as one activity line: the operation, its target, the targets done of the total and the elapsed time, joined by " · ". Reopening the panel moves the progress back into it and removes the line, so the page never shows both. An activity line has no <b>Dismiss</b>: it ends when its outcome replaces it (<code>FB-1</code>, <code>FB-2</code>, <code>WORD-4</code>, <code>WORD-5</code>).</li>
+<li><span class="n">3</span> The services the operation touches show restarting, starting or stopping on every surface, and every other service keeps its own state: Restart Stack never ends with the stack drawn down, and starting one service never draws the running ones as down (<code>ACT-3</code>, <code>ACT-4</code>, <code>SEL-7</code>).</li>
+<li><span class="n">4</span> An operation started in another tab, the terminal, an agent or a file saved on disk shows on every open page of the stack as an activity line ending with its origin. The step text and the elapsed time update in place, outside every live region (<code>FB-1</code>, <code>ACT-1</code>, <code>WORD-4</code>, <code>FB-9</code>).</li></ol>
+<p class="fixes">Fixes notices-and-feedback-03, services-panel-2-04, stack-scale-06 · Backend: the record streams each target's step at least once a second; streams stay open across Restart Stack and Start (Backend 1, 5; <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="outcome">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel footer</b><span>Restart Stack ended with the panel open</span></div>
+<div class="work small">
+<div class="row"><span class="sp"></span><span class="banner ok focusring" style="margin:0">✓ Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s</span><span class="n">1</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>the same outcome with the panel closed</span></div>
+<div class="pg" style="min-height:100px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="toastrow"><div class="toast">✓ Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s</div><span class="n">2</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › api page</b><span>devhost service restart api ended; web's page shows no notice</span></div>
+<div class="pg" style="min-height:90px">
+<div class="corner">
+<div class="toastrow"><div class="toast">✓ Restarted api · 2.6 s · from the terminal</div><span class="n">3</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page, reloaded by devhost</b><span>after Switch and Restart Stack</span></div>
+<div class="pg" style="min-height:90px">
+<div class="corner">
+<div class="toastrow"><div class="toast focusring">✓ Switched to fix-nav ~/acme/.worktrees/fix-nav from main ~/acme · 6 of 6 running · 9.8 s</div><span class="n">4</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › outcome sentences, from one set of builders</b></div>
+<div class="work small">
+<div>Restarted api · 2.6 s <span class="muted">(a row's Restart)</span></div>
+<div>Restarted api and web · 4.1 s <span class="muted">(Restart Changed)</span> · Restarted docs · 2.2 s <span class="muted">(its fallback on docs' page)</span></div>
+<div>Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s</div>
+<div>Applied devhost.toml · nothing restarted · 0.4 s <span class="n">5</span></div>
+<div>… · ended 1 conversation: Fix the nav (working) <span class="muted">(after a stop)</span> · … · 1 held reload discarded <span class="muted">(after a switch)</span> <span class="n">6</span></div>
+<div>Sent to Fix the nav · Claude Code <span class="muted">(on the sent message; agent-chat draws it)</span> <span class="n">7</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>3. Read one outcome where the progress was</h2>
+<p>Each operation still ends where it was started, as today. What changes is that every operation ends with exactly one outcome, in the words of the control that started it, which states what happened to each target and the time it took; a success says so instead of saying nothing, and it certifies the end state, never a step. Most operations start or stop processes and cannot be taken back, so there is no Undo: each outcome says what changed and stays in the log. Keys: focus stays where the person is, and nothing that arrives takes it (<code>KEY-6</code>).</p>
+<ol><li><span class="n">1</span> With the surface that started it still open, the outcome replaces the progress there and stays until the person leaves the surface. When it replaces the busy control, as after a confirmed Restart Stack, focus moves to its sentence, a <code>tabindex="-1"</code> element named by it, never to an action, so a repeated Enter cannot start a second write (<code>FB-2</code>, <code>FB-3</code>, <code>FB-6</code>, <code>KEY-11</code>, <code>FB-9</code>, <code>ACT-6</code>, <code>WORD-5</code>).</li>
+<li><span class="n">2</span> With that surface closed, the outcome notice takes the activity line's place, never both. It is announced once in the polite region and closes by itself 4 s after neither the pointer nor focus is in it, never while either is; its accessible description says "also in the log", where its line stays to be read again. It shows only once each target passed its health check, with no leftover of a killed run answering in its place (<code>FB-2</code>, <code>FB-5</code>, <code>FB-6</code>, <code>FB-7</code>, <code>O14</code>, <code>ACT-11</code>).</li>
+<li><span class="n">3</span> An operation this page did not start reaches it as a notice only when it failed or touched the page's own service, ending with its origin as the backend saw it: "· from the terminal", "· from another tab", "· from Claude Code, conversation Fix the nav", "· after devhost.toml changed on disk"; otherwise its rows and the log show it. Targets are named, never identified by an ID (<code>FB-2</code>, <code>SEL-3</code>, <code>ACT-1</code>, <code>WORD-4</code>, <code>WORD-1</code>).</li>
+<li><span class="n">4</span> Across the page reload an operation causes, such as a switch or Restart Stack on a recovery page, the next page in the same tab reads the outcome from the record by the ID the tab stored and shows it once, with focus on the control that started it when the new page shows it, else on the outcome's sentence. No page greets its load with an older success: a second tab shows nothing for it, and a page loaded more than 4 s later shows no success, while a failure not yet handled shows on every page (<code>FB-2</code>, <code>ACT-1</code>, <code>KEY-6</code>, <code>FB-6</code>).</li>
+<li><span class="n">5</span> One set of outcome sentence builders, in services-panel's shared module of state words under <code>packages/devhost-ui/src/</code> with its Go counterpart in <code>apps/devhost/internal/cliout</code>, writes every outcome: the operation in the past tense, its target set, what changed, the time, then details after " · ". Restart Changed names exactly the set it restarted; a save names each restart with its reason, or that nothing restarted; a switch names both checkouts by their labels; times read "2.6 s", "14 s" and "14:02" (<code>FB-3</code>, <code>WORD-4</code>, <code>WORD-8</code>, <code>MENU-6</code>, <code>SEL-1</code>, <code>SEL-2</code>, <code>SEL-4</code>, <code>REV-10</code>, <code>O9</code>, <code>SURF-14</code>).</li>
+<li><span class="n">6</span> An outcome names the work it ended, discarded or left behind, whether or not its write asked first; a conversation a stop ended stays listed and can be resumed (<code>FB-4</code>, <code>UNDO-4</code>).</li>
+<li><span class="n">7</span> A chat <b>Send</b> reports on the sent message, naming the conversation it went to, and claims only the delivery the agent confirmed: without an acknowledgement the message keeps <b>Delivery unconfirmed</b> and is never resent (owner rule; <code>SEL-8</code>, <code>FB-5</code>, <code>REV-12</code>). A Disable Reloads request stays "Request sent to Claude Code · working" on its notice until its turn ends (<code>O24</code>; step 5).</li></ol>
+<p class="fixes">Fixes notices-and-feedback-03, keyboard-and-screen-reader-02 · Backend: the record's origin, ended work and end time; the page-side operation store (Backend 1; <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="failure">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>api's restart failed after the panel closed</span></div>
+<div class="pg" style="min-height:150px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="banner bad">✕ api exited with code 1 at 14:02 before its health check <span class="n">1</span>
+<div class="muted">Error: Cannot find module './db' · at src/server.ts:3:1 · ran bun run src/server.ts · devhost.toml line 14</div>
+<div class="row" style="margin-top:4px"><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span><span class="sp"></span><span class="btn">Dismiss</span><span class="n">2</span></div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › lead actions by cause</b><span>the first action leads</span></div>
+<div class="work small">
+<div class="banner bad">✕ api exited with code 1 · 2 times, last at 14:05 <span class="btn">Edit</span> <span class="btn">Restart</span> <span class="btn">Logs</span> <span class="n">3</span></div>
+<div class="banner">◆ search is not reachable · GET search.acme.test/health · checked 14:02 <span class="btn">Check Again</span></div>
+<div class="banner">◆ The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it <span class="btn">Return to Configured Checkout</span> <a>choose another checkout in Worktrees</a> <span class="btn">Check Again</span></div>
+<div class="banner">◆ Manifest file not applied: devhost.toml:12:8 <span class="btn">Copy</span> <span class="btn">Open in Editor</span> <span class="muted">(config editor off)</span> <span class="n">4</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › failed requests, each as one sentence</b></div>
+<div class="work small">
+<div class="banner bad">✕ Acme Shop is not running, so api was not restarted. Start it with devhost start in ~/acme <span class="btn">Copy</span> <span class="btn">Copy Error</span> <span class="n">5</span></div>
+<div class="banner bad">✕ devhost's proxy is not reachable. Start it with devhost caddy start <span class="btn">Copy</span> <span class="btn">Copy Error</span></div>
+<div class="banner bad">✕ Restart Stack failed: devhost answered 500 · see the stack's log <span class="btn">Copy Error</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel</b><span>Restart Stack: api cannot start</span></div>
+<div class="work small">
+<div class="banner bad focusring" style="margin-top:0">✕ Restart Stack: 5 of 6 running · api exited with code 1 before its health check <span class="n">6</span>
+<div class="row" style="margin-top:4px"><span class="btn">Restart api</span><span class="btn">Logs</span><span class="btn">Edit</span></div></div>
+<div class="muted">Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › stops, cancels and refusals</b></div>
+<div class="work small">
+<div class="toastrow" style="padding:0"><div class="toast">○ Cancelled the queued restart of worker</div><span class="n">7</span></div>
+<div class="muted" style="margin-top:6px">worker · not started · Stopped by you</div>
+<div class="banner">worker was not restarted: devhost.toml no longer defines it <span class="n">8</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>4. Read a failure and recover in place</h2>
+<p>A failure is still reported where the operation started, and its original text can still be copied. What changes is that it says what failed, why and what to do in plain words, offers the action that fixes it first, and stays until the person deals with it: today's toolbar-wide error, which the status stream clears on every message, disconnect and reconnect, goes away, because each failure is the outcome of its own operation. Each retry is one write. Keys: focus stays on the control that started the operation while it exists, with the failure as its accessible description; Tab reaches the failure's actions in order (<code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> A failure leads with the target and what happened, then the cause, the evidence (its last output lines, the probe it failed or the program holding its port) and what devhost ran, each once. It is announced once, in the assertive region, which carries failures only (<code>FAIL-2</code>, <code>FAIL-3</code>, <code>WORD-7</code>, <code>FB-9</code>).</li>
+<li><span class="n">2</span> It stays, in its surface and as this failure notice once that surface closes, until <b>Dismiss</b> (named "Dismiss api's failure") or the same operation succeeds on the same target. Status messages, reconnects, closing the surface, switching files and page reloads never remove it, because the record keeps it, and a dismissed failure does not come back on reload or in another tab (<code>FB-6</code>, <code>ACT-1</code>).</li>
+<li><span class="n">3</span> The action for its cause leads, with the others beside it: an exited service leads with <b>Restart</b>, with <b>Logs</b> and <b>Edit</b>, and after a retry fails the same way the one report counts the repeat and <b>Edit</b> leads; an unreachable external service leads with <b>Check Again</b>; a blocked checkout with <b>Return to Configured Checkout</b>, choosing another checkout and <b>Check Again</b>. No failure is drawn without a way forward (<code>MENU-5</code>, <code>FAIL-4</code>).</li>
+<li><span class="n">4</span> A manifest file not applied leads with <b>Edit</b>; while the config editor is off, its file and line come with <b>Copy</b> and <b>Open in Editor</b> instead (<code>MENU-4</code>).</li>
+<li><span class="n">5</span> A response devhost cannot read never shows. The shared request helper, used by every control request and the configuration client, turns each failed request into one sentence: the proxy's HTML means the stack is not running, a request that cannot connect means the proxy is not reachable, a JSON error keeps its message, anything else names the operation and the status. The original text stays behind <b>Copy Error</b>, and no message contains markup; a stopped stack leads with its start command and <b>Copy</b> (<code>FAIL-2</code>, <code>SURF-9</code>, <code>STATE-4</code>, <code>HOLD-2</code>, <code>WORD-7</code>).</li>
+<li><span class="n">6</span> A partial result counts every target and is never a plain success or failure; it takes the failure style and the assertive region with api's lead actions. Restart Stack's rollback, devhost's own undo here, reports its own outcome naming what it put back (<code>FAIL-1</code>, <code>UNDO-1</code>).</li>
+<li><span class="n">7</span> A deliberate stop, cancel or replacement is never a failure: services devhost stops for an operation are its steps, a service a person stopped reads "Stopped by you", and a cancel is reported as one. Both take the neutral style, never the failure look and never the assertive region (<code>FAIL-5</code>, <code>WORD-7</code>, <code>CC-24</code>).</li>
+<li><span class="n">8</span> A write refused because the view was stale shows the refusal with the current state, and the panel redraws from it; an open question whose action becomes unavailable closes and says why, and a refused save keeps its draft (<code>REV-13</code>, <code>HOLD-1</code>).</li></ol>
+<p class="fixes">Fixes notices-and-feedback-01, journey-new-project-02 · Backend: a failed outcome stays in the record until handled; a route that records a dismissal, still to be settled; one JSON error body (Backend 1, 2; <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="notice-stack">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page · dock at bottom right</b><span>five notices live; Services opened with Enter</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,28rem)"><span class="caret-dn" style="right:281.4px"></span>
+<div class="from">Opened from the Services trigger, beyond the notice stack</div>
+<div class="row"><b>Acme Shop · 5 of 6 running · 1 exited</b><span class="n">3</span></div>
+<table class="t"><tbody>
+<tr><td style="width:22%">✕ api</td><td>exited with code 1 at 14:02</td></tr>
+<tr><td>● web</td><td>running</td></tr>
+</tbody></table>
+</div>
+<div class="banner bad">✕ <a>api exited with code 1 at 14:02</a> › <span class="n">1</span></div>
+<div class="banner info">◐ Restart Stack · 2 of 6 started · 5 s</div>
+<div class="banner">◆ Reload blocked · 1 reload held <span class="btn">Reload</span> <span class="btn">Dismiss</span> <span class="n">4</span></div>
+<div class="row"><span class="btn">2 More</span><span class="n">2</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open">✕ ● ◐ ◐ ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page · dock at top right</b><span>[devtools.status].position = "top-right"</span></div>
+<div class="pg">
+<div class="corner attop">
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg open">✕ ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="banner bad">✕ <a>api exited with code 1 at 14:02</a> ›</div>
+<div class="banner">◆ Manifest file not applied: devhost.toml line 12 <span class="btn">Edit</span> <span class="n">5</span></div>
+<div class="popover" style="width:min(100%,28rem)"><span class="caret-up" style="right:188.1px"></span>
+<div class="from">Opened from the Services trigger, beyond the notice stack</div>
+<div class="row"><b>Acme Shop · 5 of 6 running · 1 exited</b></div>
+</div>
+</div>
+<div class="apptxt">Acme docs · Getting started …</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>Disable Reloads pressed on the hot reload notice</span></div>
+<div class="pg">
+<div class="corner">
+<div class="popover" style="width:min(100%,38rem)"><span class="caret-dn" style="right:498px"></span>
+<div class="from">Opened from Disable Reloads on the hot reload notice</div>
+<div class="row"><b>Ask Claude Code to turn off reloads?</b></div>
+<div class="box" style="margin:4px 0">Turn off automatic reloads in this checkout (~/acme) for local development: set Vite's server.hmr to false in vite.config.ts.</div>
+<div class="row"><span class="muted">reload-control draws this popover</span><span class="sp"></span><span class="btn">Hold Reloads</span><span class="btn">Cancel</span><span class="btn pri">Send</span></div>
+</div>
+<div class="banner">◆ web's dev server, Vite, reloads this page when files change <span class="btn open">Disable Reloads</span> <span class="btn">Dismiss</span> <span class="n">6</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>after Send</span></div>
+<div class="pg" style="min-height:80px">
+<div class="corner">
+<div class="banner">◆ Request sent to Claude Code · working <span class="n">7</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat · working</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>the toolbar collapsed</span></div>
+<div class="pg" style="min-height:96px">
+<div class="corner">
+<div class="banner bad">✕ api exited with code 1 at 14:02 · <span class="btn">Restart</span></div>
+<div class="banner">◆ Manifest file not applied: devhost.toml line 12 · <span class="btn">Edit</span> <span class="n">8</span></div>
+<div class="tbar"><span class="seg">✕ 1 exited · devhost.toml not applied</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › the other one-line forms beside the collapsed badge</b></div>
+<div class="work small">
+<div>◆ The checkout ~/acme/.worktrees/fix-nav was deleted · <span class="btn">Return to Configured Checkout</span></div>
+<div>◆ search is not reachable · <span class="btn">Check Again</span></div>
+<div>◆ Claude Code is waiting for you · <span class="btn">Fix the nav</span></div>
+<div>◆ Chat is off · <span class="btn">Fix the nav</span> is still working</div>
+<div>◆ Reload blocked · 1 reload held · <span class="btn">Reload</span></div>
+<div>? Lost connection to devhost; retrying · <span class="btn">Retry Now</span> <span class="n">9</span></div>
+<div class="row" style="margin-top:6px"><span class="tbar"><span class="seg">Config · 1 not applied</span><span class="seg">Hold Reloads · 1 held</span></span><span class="muted">markers after dismissing a condition that persists</span><span class="n">10</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › checkout page</b><span>the page's own modal dialog is open</span></div>
+<div class="scrim" style="min-height:0">
+<div class="dlg"><div class="hd"><h3>Edit shipping address</h3></div>
+<div class="body"><span class="muted">The app's own dialog: street, city, postcode …</span>
+<div class="corner" style="margin-top:10px">
+<div class="muted">Paused while this page's dialog is open</div>
+<div class="banner bad" style="margin:0">✕ <a>api exited with code 1 at 14:02</a> ›</div>
+<div class="toastrow"><div class="toast">✓ Restarted api and web · 4.1 s</div><span class="n">11</span></div>
+</div></div>
+<div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Configuration window header</b><span>api exits while the window is open</span></div>
+<div class="work small">
+<div class="row"><b>Configuration · devhost.toml</b><span class="sp"></span><span class="muted">api exited with code 1 at 14:02 · its notice waits in the notice stack</span><span class="n">12</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: this page writes the fold control "2 More", title-style per <code>WORD-3</code>, where <code>FB-8</code>'s example writes "2 more"; it puts a blocked repository and an unreachable external service in <code>FB-8</code>'s first group and chat off in its third, which <code>FB-8</code> does not name; and what Escape does on a focused notice is a reading toolbar-shell must share. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>5. See what needs you in one notice stack</h2>
+<p><b>Reload blocked</b>, the hot reload notice and the configuration notice stay notices beside the bar, never dialogs, as today. What changes is that every condition that needs the person is one notice that starts and ends with the published state, clears by itself when its cause ends, never by a timer or a page reload, and shares one stack in one order with activity lines and outcomes. Each condition notice leads with the action for its cause; its words are its owning flow's (startup-and-recovery, manifest-hot-reload, worktree-switch, services-panel, agent-chat, reload-control). Keys: Alt+Ctrl+B focuses the bar; Shift+Tab from the bar reaches the notices in drawn order; each notice's actions and <b>2 More</b> are Tab stops. A focused notice action keeps Enter, Space, the arrows, Home, End and Escape, and every other key reaches the page; Escape there returns focus to the element that had it before the dock was focused and dismisses nothing. Nothing that arrives takes focus; when a focused notice closes, focus moves to the next notice's sentence, else the element focused before the notice stack, else the Services trigger, never the page body (<code>KEY-3</code>, <code>KEY-4</code>, <code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-8</code>).</p>
+<ol><li><span class="n">1</span> The order: what needs the person or blocks writes first (the crash notice, failures, a configuration not applied, a blocked repository, an unreachable external service, an agent waiting, the lost connection), then activity lines, then other conditions (<b>Reload blocked</b>, chat off with conversations still running, the hot reload notice with a pending request), then successes and neutral notices; newest first within a group. The crash notice names api and its exit; activating it reopens the crash view with focus on its heading (<code>FB-8</code>, <code>ACT-7</code>, <code>SURF-3</code>).</li>
+<li><span class="n">2</span> At most three notices show; the rest fold into <b>2 More</b>, which expands the stack in place with <code>aria-expanded="true"</code>, reads <b>Show Fewer</b> while expanded, and keeps focus (<code>FB-8</code>, <code>WORD-3</code>).</li>
+<li><span class="n">3</span> The notice stack fills toolbar-shell's notice slot beside the bar, between the bar and every other devhost surface: the Services panel opens beyond it, on its trigger's side, and no panel, docked chat or the Configuration window covers a notice, so every notice button answers native hit testing at 1600×1000, 1280×800 and 900×900 in both themes and at 1280×800 under 200% zoom (<code>SURF-1</code>, <code>CC-1</code>, <code>SURF-9</code>).</li>
+<li><span class="n">4</span> Each notice kind has its own icon and its kind's word in its accessible name, distinct in forced colors: ✕ failure, ◆ condition, ? lost connection, ◐ activity, ✓ success, ○ neutral. A notice carries no live role: it is a group named by its sentence, and only the announcer speaks, once when a condition starts and once when it ends; the project's <code>Alert</code> stops rendering <code>role="alert"</code> (<code>ACT-13</code>, <code>FB-9</code>, <code>WORD-6</code>).</li>
+<li><span class="n">5</span> With the dock at the top, the stack hangs below the bar and the panel opens beyond it; the DOM and Tab order follow the drawn order, so here the bar comes first. A configuration notice names the file's kind ("Devhost config file not applied: config.toml line 3" for the other kind), says the stack still runs the accepted manifest, blocks nothing, and is replaced by its outcome when the stack accepts a configuration (<code>KEY-3</code>, <code>WORD-1</code>, <code>HOLD-6</code>, <code>FAIL-4</code>, <code>MENU-4</code>).</li>
+<li><span class="n">6</span> The Disable Reloads popover anchors to the hot reload notice, which keeps its place and stays visible beside it at every acceptance viewport; the notice is never the question itself (<code>REV-5</code>, <code>O2</code>, <code>SURF-2</code>).</li>
+<li><span class="n">7</span> After <b>Send</b>, the hot reload notice stays in the third group with its pending request, naming the agent, until the request's turn ends; then it shows the result in place of <b>Disable Reloads</b>, which reload-control words (<code>FB-5</code>, <code>O24</code>, <code>FB-8</code>).</li>
+<li><span class="n">8</span> Collapsed, every condition notice and failure keeps a one-line form beside the badge, its first clause and its lead action; activity lines and successes are not shown there and stay in the log, and a routine restart never changes the badge's look. toolbar-shell places the forms and draws the badge (<code>SURF-8</code>, <code>ACT-7</code>, <code>ACT-3</code>).</li>
+<li><span class="n">9</span> The one-line forms of the other conditions: a blocked repository, an unreachable external service, an agent waiting, chat off with a running conversation, <b>Reload blocked</b> and the lost connection. The agent-waiting and chat-off forms lead with the conversation itself, which opens its decision card, or the conversation to answer or stop it, in docked chat in one activation; agent-chat words both (<code>SURF-8</code>, <code>HOLD-4</code>, <code>ACT-9</code>, <code>REV-9</code>, <code>HOLD-5</code>).</li>
+<li><span class="n">10</span> Dismissing a condition notice whose condition persists leaves a marker on the control that owns the condition until it ends; activating the marker shows its notice again. The lost-connection notice has no <b>Dismiss</b>, because it is the reason every write is unavailable (<code>SURF-8</code>, <code>UNDO-3</code>).</li>
+<li><span class="n">11</span> Under the page's own modal dialog, native or scripted, the notice stack and the announcer move into the dialog, so its buttons work and its reports are heard; Alt+Ctrl+R's outcome shows there, and the rest of the toolbar shows its paused state with that one line (<code>SURF-11</code>, <code>FB-9</code>, <code>KEY-7</code>).</li>
+<li><span class="n">12</span> While the Configuration window is open it makes the notice stack inert; the announcer moves into the window, and a report that needs the person shows as one line in its header saying that its notice waits in the notice stack, which config-editor draws. Over the crash view, the notice stack and docked chat stay operable inside its Tab cycle (<code>SURF-4</code>, <code>SURF-3</code>, <code>KEY-7</code>, <code>FB-9</code>).</li></ol>
+<p class="fixes">Fixes keyboard-and-screen-reader-02, notices-and-feedback-03 · Backend: the record and the published state that start and end each condition; the launch time that tells whether a page is current (Backend 1, 7; <code>CC-1</code>, <code>CC-37</code>)</p></div>
+</section>
+
+<section class="step" id="lost-connection">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>devhost stop run in the stack's terminal, 1 s in</span></div>
+<div class="pg" style="min-height:96px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="banner info">◐ Stopping Acme Shop · 3 of 6 stopped <span class="n">1</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">◐ stopping · 3 of 6 stopped ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>after the status stream closed</span></div>
+<div class="pg" style="min-height:120px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner">
+<div class="banner">? Acme Shop stopped at 16:24 by devhost stop. Start it with devhost start in ~/acme <span class="btn">Copy</span> <span class="n">2</span>
+<div>· ended Fix the nav (working) <span class="n">3</span></div></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">? lost connection ▾</span><span class="n">4</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › the lost-connection notice for its other causes</b></div>
+<div class="work small">
+<div class="banner">? devhost's proxy is not reachable. Start it with devhost caddy start <span class="btn">Copy</span> <span class="muted">· 1 reload held meanwhile</span> <span class="n">5</span></div>
+<div class="banner">? devhost moved to port 21198 <span class="btn">Open</span> <span class="n">6</span></div>
+<div class="banner">? Acme Shop stopped at 16:24 by devhost stop, but api still runs (PID 4242, port 5173) <span class="btn">Copy</span> <span class="n">7</span></div>
+<div class="banner">? Lost connection to devhost; retrying at 16:25:10 <span class="btn focusring">Retry Now</span> <span class="n">8</span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › Services panel rows</b><span>while the connection is lost; services-panel draws them</span></div>
+<div class="work small">
+<div class="muted">Acme Shop stopped at 16:24 by devhost stop. Start it with devhost start in ~/acme</div>
+<table class="t"><tbody>
+<tr><td style="width:16%">? web</td><td>unknown · last seen running at 16:24 <span class="n">9</span></td><td style="width:22%;text-align:right"><span class="btn off">Restart</span> <span class="btn">Logs</span></td></tr>
+<tr><td>? api</td><td>unknown · last seen exited at 16:24</td><td style="text-align:right"><span class="btn off">Restart</span> <span class="btn">Logs</span></td></tr>
+<tr class="dim"><td></td><td colspan="2">… 4 more, unknown · last seen 16:24</td></tr>
+</tbody></table>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>the stream returned after devhost start</span></div>
+<div class="pg" style="min-height:90px">
+<div class="corner">
+<div class="toastrow"><div class="toast">✓ Connected again · 6 of 6 running</div><span class="n">10</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">CPU 12%</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>6. Lose the connection and get it back</h2>
+<p>The page still reconnects by itself, 1 s after a drop and doubling up to 10 s, and the CPU, RAM and Disk readouts still hide while it is disconnected, so a stale number never passes for a current one. What changes is that a lost connection is no longer drawn as an outage: every service keeps its last known state as unknown, every write is unavailable with one sentence that names the cause, and the page says when it is connected again. devhost never opens a browser or starts a stack from the page: these notices offer commands to copy (owner rule). Keys: <b>Retry Now</b>, <b>Copy</b> and <b>Open</b> are ordinary buttons; a focused control that becomes unavailable keeps focus (<code>KEY-11</code>).</p>
+<ol><li><span class="n">1</span> Before a stop, the stack publishes stopping before its first service stops, with the count stopped, on the trigger and as an activity line, so the toolbar never shows 6 of 6 running while the stack shuts down (<code>ACT-3</code>, <code>WORD-4</code>).</li>
+<li><span class="n">2</span> From the moment the status stream closes, the lost-connection notice names the cause the stack sent before it closed: here its time, how it stopped and the command that starts it again, with <b>Copy</b> for the command and its folder. The other reasons read "after 1 h idle", "by Ctrl-C in its terminal", "from Acme Admin's page" or "replaced by devhost stack restart". Stopped is read only from the stack's final message (<code>ACT-10</code>, <code>HOLD-2</code>, <code>ACT-11</code>).</li>
+<li><span class="n">3</span> The conversations the stop ended are named; each stays listed and can be resumed (<code>FB-4</code>, <code>UNDO-4</code>).</li>
+<li><span class="n">4</span> The Services trigger shows the connection's state instead of a count, and no row, dot or notice takes the failed look; failure looks stay for failures the server reported (<code>ACT-5</code>, <code>CC-26</code>).</li>
+<li><span class="n">5</span> After <code>devhost caddy stop</code>, the notice says the proxy is not reachable, with its start command; a reload the dev server asked for meanwhile is a detail of this notice, never a separate <b>Reload blocked</b> whose <b>Reload</b> would load the browser's connection error (<code>ACT-10</code>, <code>HOLD-2</code>).</li>
+<li><span class="n">6</span> When proxy-settings moves the HTTPS port, the notice names the new address with <b>Open</b>, which keeps the path and query, and the page stops retrying the old address (<code>HOLD-2</code>).</li>
+<li><span class="n">7</span> A stop that left a process running never reads stopped: the notice names the survivor with stack-run-stop's command that stops it (<code>ACT-11</code>).</li>
+<li><span class="n">8</span> Otherwise, including a stream that closed without the stack's final message, the notice reads "Lost connection to devhost; retrying" with the next attempt's time and <b>Retry Now</b>, which tries at once. No delay hides a disconnect, and none is needed: the routine drop at the end of Restart Stack and at each <b>Start</b> is removed at its source by services-panel (<code>HOLD-2</code>, <code>ACT-5</code>, <code>WORD-1</code>).</li>
+<li><span class="n">9</span> Every service keeps its last known state, drawn as unknown with the time it was last seen, never down or failed; every write on the page (<b>Restart</b>, Restart Changed and its key, <b>Start</b>, <b>Restart Stack</b>, switches, <b>Stop Stack</b>, <b>Save</b>, chat <b>Send</b> and the Disable Reloads <b>Send</b>) is unavailable with the notice's one sentence, said again in each open panel's status line and given to each blocked control as its accessible description. Drafts, page context and queued operations stay (<code>HOLD-1</code>, <code>HOLD-2</code>, <code>MENU-3</code>, <code>ACT-12</code>, <code>WORD-6</code>, <code>STATE-3</code>, <code>UNDO-2</code>, <code>SEL-7</code>).</li>
+<li><span class="n">10</span> When the stream returns, states update in place, every write becomes available again without a page reload and nothing it blocked is replayed; the page says once, politely, "Connected again · 6 of 6 running", or after a replacement "Connected again · Acme Shop was replaced by PID 85102 · 6 of 6 running". The notices the outage raised clear with it: a reload held during the outage clears when the page's service still runs the process it ran when the page loaded, and otherwise stays as <b>Reload blocked</b>; failures the record keeps stay (<code>ACT-5</code>, <code>ACT-7</code>, <code>ACT-10</code>, <code>REV-12</code>, <code>FB-6</code>).</li></ol>
+<p class="fixes">Fixes notices-and-feedback-02, services-panel-2-04, stack-scale-06, proxy-settings-03, journey-new-project-02 · Backend: the stack's final message before its streams close; stopping published before services stop; streams open across Restart Stack and Start; each service's launch time (Backend 3, 4, 5, 7; <code>CC-26</code>)</p></div>
+</section>
+
+<section class="step" id="terminal-and-log">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>Terminal › ~/acme</b><span>the stack's own terminal, human output</span></div>
+<pre class="term">14:02:09 restarting service: api
+14:02:12 Restarted api · 2.6 s · from a page on shop.acme.test <span class="n">1</span>
+14:05:40 Manifest file not applied: devhost.toml:12:8 services.api.port: expected a number
+14:06:02 Applied devhost.toml: restarted web (changed) · 6 of 6 running · 1.2 s · from a page on shop.acme.test <span class="n">2</span>
+14:07:30 Restarted api · 2.4 s · from the terminal
+14:09:11 Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s · from Claude Code, conversation Fix the nav <span class="n">3</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>Terminal › an agent's shell</b><span>AGENT=1 devhost service restart api</span></div>
+<pre class="term">devhost: ERR: Restart api failed: api exited with code 1 at 14:20 before its health check; last output: Error: Cannot find module './db'; ran bun run src/server.ts in api/ (devhost.toml:14) <span class="n">4</span></pre>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>the pinned log panel, filtered to devhost's own lines</span></div>
+<div class="app" style="grid-template-columns:minmax(0,1fr) 330px;min-height:0">
+<div class="pg" style="min-height:130px">
+<div class="apptxt">Acme docs · Getting started …</div>
+<div class="corner"><div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span></div></div>
+</div>
+<div class="dock"><h3>Logs</h3>
+<div class="row"><span class="chip acc">devhost ▾</span><span class="n">5</span><span class="sp"></span><span class="btn">Close</span></div>
+<pre class="term" style="padding:4px 0;background:var(--panel)">14:02:12 Restarted api · 2.6 s
+14:06:02 Applied devhost.toml: restarted web (changed) …
+14:09:11 Restarted Acme Shop · 6 of 6 running …</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: <code>WORD-4</code> names no origin for an operation a page started, as the terminal and the log print it; this proposal proposes "· from a page on &lt;hostname&gt;" as an exception for the reference to settle. <a href="index.html#conflicts">See conflicts</a></div>
+<h2>7. Read the same outcomes in the terminal and the log</h2>
+<p>The stack's terminal still logs every completed configuration change once it is complete, and human and agent output still differ by design. What changes is that every operation on a running stack, from any origin, ends with one outcome line, the same sentence the page shows, so a restart started from a page no longer leaves only "restarting service: api" behind, and every stack writes its log. Keys: in the pinned log panel, log-minimap's keys apply (<code>KEY-12</code>).</p>
+<ol><li><span class="n">1</span> Each operation prints one outcome line in the stack's terminal and in its per-manifest log, built from the record by the Go counterpart of the outcome sentence builders in <code>apps/devhost/internal/cliout</code>, with its origin at the end (<code>FB-10</code>, <code>FB-7</code>, <code>WORD-4</code>, <code>WORD-9</code>).</li>
+<li><span class="n">2</span> A fix saved from the Configuration window prints the applied line, so the terminal never ends on a rejection that was already fixed; the reload's own words are manifest-hot-reload's (<code>FB-10</code>, <code>FAIL-4</code>).</li>
+<li><span class="n">3</span> Lines report what changed: the URL list prints at the first start and on request, with <code>devhost status</code>, never again after each action (<code>FB-10</code>, <code>CC-22</code>).</li>
+<li><span class="n">4</span> In agent output a failure is one <code>devhost: ERR:</code> line holding every issue, and a failure line in the stack's log carries <code>ERR:</code> as a warning carries <code>WARN:</code>; agents and scripts read the last outcome from <code>devhost status</code> and the log, which stack-run-stop builds (<code>FB-11</code>, <code>WORD-9</code>, <code>CC-23</code>).</li>
+<li><span class="n">5</span> Every stack writes its per-manifest log, a foreground stack included, and the pinned log panel offers devhost's own lines as a source in its service filter, so an outcome that closed or was dismissed can be read again; log-minimap draws the panel, and devhost keeps no second activity list (<code>FB-7</code>, <code>CC-21</code>, <code>SURF-13</code>).</li></ol>
+<p class="fixes">Fixes notices-and-feedback-03 · Backend: one outcome line per operation and a log for every stack; the page's origin phrase, still to be settled (Backend 6, 8; <code>CC-21</code>, <code>CC-22</code>, <code>CC-23</code>)</p></div>
+</section>
+
+<section class="changes">
+<div><h3>Removed</h3><ul>
+<li>The toolbar-wide error that the next status message, disconnect or reconnect clears</li>
+<li><code>role="alert"</code> on every notice and the nested <code>role="status"</code>; one announcer replaces them</li>
+<li>A lost connection drawn as every service down, with live <b>Restart</b> buttons</li>
+<li>Response bodies, markup and raw error chains as error text</li>
+<li>6 of 6 running shown through a shutdown; the silent reconnection</li>
+<li>The URL list printed again after every configuration change</li>
+</ul></div>
+<div><h3>Merged</h3><ul>
+<li>The toolbar-wide error, Restart Stack's and Restart Changed's own error copies, the Worktrees picker's notice and the Configuration window's result strip: one outcome model from one record, one notice stack component</li>
+<li>A stopped stack, a stopped proxy, a moved port and an unexplained drop: one lost-connection condition that names its cause</li>
+</ul></div>
+<div><h3>New</h3><ul>
+<li>The notice stack component with failure, condition, activity, success and neutral notices, its order, <b>2 More</b> and <b>Show Fewer</b></li>
+<li>The announcer, the page-side operation store, the shared request helper and the outcome sentence builders, which the other flows cite</li>
+<li>Activity lines, outcome notices with their origin, outcomes across the reloads operations cause</li>
+<li>Dismissal markers and one-line forms beside the collapsed badge</li>
+<li>Stopping, the stopped-stack notice with its command, <b>Retry Now</b> and "Connected again"</li>
+<li>One outcome line per operation in the terminal and the log; a foreground stack's log</li>
+</ul></div>
+<div><h3>Changed</h3><ul>
+<li><code>Alert</code> renders a group named by its sentence; its stories' <code>alert</code> role checks change</li>
+<li>A lost connection is unknown, never down (<code>CC-26</code>); the tests that assert unavailable services on a drop change</li>
+<li>The reconnecting socket passes the close event and the stack's final message to its handler</li>
+<li>Control errors are sentences; <code>restartStack.test.ts</code> and <code>restartServices.test.ts</code> change</li>
+<li>Every write carries an <code>operationId</code> and is answered <code>202 Accepted</code> (<code>CC-37</code>); a switch stores its ID before devhost reloads the page</li>
+<li><b>Reload blocked</b> clears with its cause; every stack writes its log (<code>CC-21</code>)</li>
+</ul></div>
+<div><h3>Kept</h3><ul>
+<li>Progress where the operation started; colliding controls unavailable, now with the running operation as their reason; other services' starts queue</li>
+<li>Reconnecting by itself after 1 s, doubling to 10 s; readouts hidden while disconnected; a shutdown stops services before the control server</li>
+<li>A save reports success only once applied; failures keep their original text, behind <b>Copy Error</b>; a configuration not applied leads to <b>Edit</b> and blocks nothing</li>
+<li><b>Reload</b> on <b>Reload blocked</b>; devhost's own reloads never held; a saved manifest edit applies without a question</li>
+<li>devhost never opens a browser or starts a stack from a page; a chat Send never claims an unconfirmed delivery and is never resent</li>
+<li>A failed service leaves the rest running; human and agent output differ by design</li>
+</ul></div>
+<div><h3>Backend work</h3><ul>
+<li>The operation record for every write: <code>operationId</code>, the page ID, <code>202 Accepted</code>, origin, steps, outcome, ended work (Backend 1; <code>CC-37</code>)</li>
+<li>A route that records a dismissed failure for every page, still to be settled (Backend 2)</li>
+<li>The stack's final message before its streams close, and stopping published first (Backend 3, 4; <code>CC-26</code>)</li>
+<li>Streams that stay open across Restart Stack and Start, from services-panel; each service's launch time (Backend 5, 7)</li>
+<li>One outcome line per operation and a log for every stack; the page's origin phrase, still to be settled (Backend 6, 8; <code>CC-21</code>, <code>CC-22</code>, <code>CC-23</code>)</li>
+</ul></div>
+</section>
+</main>
+</body>
+</html>

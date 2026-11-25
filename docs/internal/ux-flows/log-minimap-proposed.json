@@ -1,0 +1,572 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Read service logs in the page: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/log-minimap-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Strip and log panel: ask"
+    },
+    {
+      "id": "read",
+      "label": "Log panel: read"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 4
+    }
+  ],
+  "mainPath": [
+    "strip",
+    "peek",
+    "panel",
+    "filter",
+    "lines",
+    "copied"
+  ],
+  "nodes": [
+    {
+      "id": "strip",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Glance at the strip",
+      "sublabel": "maps every held line",
+      "tag": "source-and-minimap-05",
+      "yOffset": -60,
+      "explanation": "The 12 px strip at the window's right edge maps every line the page holds onto its height, newest at the bottom: one 2 px mark per line while they fit, else each mark stands for several consecutive lines, drawn from the most severe, so the oldest held line is always at the top and reachable (SURF-13, source-and-minimap-04). Severity comes from the line, never its stream: an error (ERROR, FATAL, PANIC, 'Error:', 'panic:', devhost's failure lines) spans the full width in the danger color, a warning five sixths in the warning color, and every other line, stdout or stderr, scales up to two thirds in the faint color, so a service that logs to stderr by default draws a quiet strip (ACT-13, source-and-minimap-05). devhost's own lines take the toolbar's accent color (source-and-minimap-11). The strip shows what the panel's filter shows, from one selector (SEL-1, SEL-10). It never widens on hover, so it never covers the dock (SURF-1, SURF-5, SURF-11), and stays aria-hidden: the panel is its keyboard equivalent (KEY-12, SURF-9). [devtools.minimap].enabled = false removes the strip and its peek only; the log panel stays (SEL-11).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/createVisibleLogRows.ts",
+          "line": 36,
+          "end_line": 40,
+          "label": "Replaces: mapping that stops at the top edge"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/createVisibleLogRows.ts",
+          "line": 71,
+          "end_line": 83,
+          "label": "Replaces: every stderr mark at full width"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 147,
+          "end_line": 152,
+          "label": "Replaces: strip widened to 96 px on hover"
+        }
+      ]
+    },
+    {
+      "id": "logsKey",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Logs or Alt+Ctrl+O",
+      "sublabel": "there from page load",
+      "tag": "source-and-minimap-07",
+      "yOffset": 60,
+      "explanation": "Logs on the bar, there whenever the toolbar renders, and Alt+Ctrl+O (the logs binding, configurable, hinted ⌃⌥O on macOS and Ctrl+Alt+O elsewhere from the binding's one definition, with aria-keyshortcuts on Logs) open the log panel with focus in its find field (KEY-2, KEY-12, KEY-13, BAR-4; keyboard-02, keyboard-14). Pressed while the panel is open, Alt+Ctrl+O closes it: from inside the panel focus returns per KEY-6; from the page focus stays where it is, so a page element the panel covers can be revealed without moving focus (WCAG 2.4.11, keyboard-15). Alt+Ctrl+B's cycle reaches the open panel after the bar and before docked chat (KEY-3). The bar's Logs item and the binding registry are toolbar-shell's, the foundation this flow depends on. While the page's own modal dialog is open, Alt+Ctrl+O reports 'The log panel is paused while this page's dialog is open' in the notice stack moved into that dialog (SURF-11, MENU-3, KEY-1). Resolves the missing keyboard path of source-and-minimap-07.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 209,
+          "end_line": 235,
+          "label": "Reuses: page-wide shortcut handler"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 242,
+          "end_line": 242,
+          "label": "Replaces: log UI only once a line exists"
+        }
+      ]
+    },
+    {
+      "id": "peek",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Peek by hovering",
+      "sublabel": "held · 7 new lines",
+      "tag": "source-and-minimap-07",
+      "yOffset": -60,
+      "explanation": "Hovering the strip opens the peek to its left: at most 15 rows around the hovered mark, each with the service column, devhost's own lines labelled 'devhost' in the accent color, and the line in its service's own colors, one line per row, because the peek is a glance and the panel is where lines are read (SURF-13). The peek holds its own rows still while the pointer is on the strip or the peek, its header saying 'Held while you point · 7 new lines', while the strip, the log panel and the crash view keep receiving every line; leaving applies them. Its header names the filter, 'api · 14 of 512 lines', and the scale, '512 lines · 1 mark = 2 lines' (WORD-5, language-14). It is hoverable and dismissible (WCAG 1.4.13): the pointer moves onto it without closing it, and Escape hides it while the key still reaches the page (KEY-5, KEY-8, keyboard-07). It sits clear of the dock, the notices, docked chat and the open panel (SURF-1). A click on the strip or a peek row opens the log panel at that line, highlighted. Resolves the frozen preview of source-and-minimap-07.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/resolveLogPreviewLayout.ts",
+          "line": 4,
+          "end_line": 5,
+          "label": "Reuses: at most 15 rows per peek"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 176,
+          "end_line": 181,
+          "label": "Replaces: preview that ignores the pointer"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 194,
+          "end_line": 194,
+          "label": "Replaces: whole stream paused while hovered"
+        }
+      ]
+    },
+    {
+      "id": "panel",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Open the log panel",
+      "sublabel": "docked · width saved",
+      "tag": "source-and-minimap-07",
+      "yOffset": 60,
+      "explanation": "The pinned log panel is a docked panel along the right edge, between the strip and the dock, that overlays the page and never pushes, resizes or restyles it; the dock and docked chat shift inward by its width (SURF-5, SURF-4; surfaces-01, surfaces-12). It opens at the width the person last left it, 480 px by default or 40% of a narrower window, never under 320 px, saved with its open state in the layout record, so it opens the same on every hostname of the stack and through a reload (SURF-7, surfaces-07). Header: the source filter, the find field, the count line 'All sources · 512 lines', Copy 512 Lines and Close; then the status line, the lines and Jump to Latest. Escape or Close closes it, focus back on the control that opened it; a docked panel, it stays open when focus leaves it, Tab moving on to docked chat's composer (KEY-5, KEY-6, KEY-7, KEY-8). Its resize handle is a focusable separator: arrows by 16 px, Home, End, a click steps 320, 480 and 640 px (SURF-13, KEY-12). A region named by its filter, never a live region (FB-9). At 900x900 it opens 360 px wide (SURF-9, O8).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 147,
+          "end_line": 148,
+          "label": "Replaces: aria-hidden strip, nothing focusable"
+        }
+      ]
+    },
+    {
+      "id": "failLogs",
+      "lane": "ask",
+      "col": 3,
+      "type": "external",
+      "label": "A failure's Logs",
+      "sublabel": "Services row, rejection",
+      "explanation": "Logs on a service's row in the Services panel opens the log panel filtered to that service at its newest line; on a failed or exited service's row, and in a rejected reload's notice, it opens filtered to that service, scrolled so its exit line, 'api exited with code 1 at 14:02:31', is the last in view and highlighted, the service's last lines above it, focus in the find field (SURF-13, MENU-5, KEY-6; feedback-08). The crash view and the panel show that service's lines from one log store, the same lines in the same order, rendered by one renderer (SURF-14; surfaces-02). The rows' Logs are services-panel's; the rejection notice's Logs and the crashed service's lines it keeps are manifest-hot-reload's (journey-crash-to-fix-03, related); the lines a failure keeps, per service and frozen at the exit, are startup-and-recovery's backend (startup-recovery-03 and its duplicate stack-scale-02, related). While the crash view or the Configuration window is open, the panel stays visible and inert behind it and is live again, its place kept, when it closes or the crash view is minimized (SURF-3, SURF-4).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 59,
+          "end_line": 90,
+          "label": "Reuses: crash view listing one service's lines"
+        }
+      ]
+    },
+    {
+      "id": "filter",
+      "lane": "read",
+      "col": 2,
+      "type": "frontend",
+      "label": "Choose what to read",
+      "sublabel": "api · 14 of 512 lines",
+      "tag": "source-and-minimap-04",
+      "yOffset": -60,
+      "explanation": "The source filter is a picker (KEY-10): a button naming the choice, 'All sources', opening a list with its own find field that lists every managed service with its line count and its state word from the shared state indicator and words module, 'api · 14 lines · exited', 'admin · no lines · not started', the left-out ones included (SEL-3, SEL-10, WORD-6, ACT-6; selection-03, selection-13, language-13), then, after a separator, 'devhost': operation outcome lines, failure lines and chat lines labelled by conversation title, 'devhost · Fix the nav' (FB-7, WORD-1, WORD-4; language-05, language-06). External services are absent, said once: 'External services run outside devhost; their output is not here' (MENU-3, ACT-9). Choosing api shows its lines and devhost's lines about it; the count line reads 'api · 14 of 512 lines' and the strip follows (WORD-5, SEL-1; language-14). The find field filters as the person types, '3 of 14 lines match \"ECONNREFUSED\"'; no match offers Clear Filter (SEL-10, KEY-9, STATE-2). Before any line: 'No output from any service since Acme Shop started at 14:02' (STATE-1, STATE-2, STATE-3). Resolves source-and-minimap-04.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/constants.ts",
+          "line": 20,
+          "end_line": 20,
+          "label": "Replaces: one 512-line limit for the stack"
+        }
+      ]
+    },
+    {
+      "id": "lines",
+      "lane": "read",
+      "col": 3,
+      "type": "frontend",
+      "label": "Read, select and copy",
+      "sublabel": "time · source · wrapped",
+      "tag": "source-and-minimap-06",
+      "yOffset": -60,
+      "explanation": "The lines are one focusable scrolling element, 'Log lines', never a live region; each shows its time, '14:02:31', its source, then its text wrapped in full, its ANSI colors and styles rendered, never printed as escapes (SURF-13, SURF-9, WORD-8; language-09, language-18). A stderr line carries a gutter tick with 'stderr' as its text for assistive technology; only an error takes the danger bar and tint (ACT-13, source-and-minimap-05). The person selects with the pointer and copies with the browser's copy; Copy 14 Lines copies the filtered lines as plain text with times and sources (FB-9, WORD-2). ANSI colors map through one palette per theme from packages/design; the 4.5:1 check stays as the final guard, adjusting lightness in OKLCH with the hue kept, never turning a colored fragment black or white (source-and-minimap-06). The peek, the panel and the crash view render lines with this one renderer (SURF-14). Scrolled to the end it follows new lines; scrolled up it holds its place, and Jump to Latest · 7 new lines brings it back, never announced (SURF-13, FB-9). Resolves source-and-minimap-06 and the reading of source-and-minimap-07.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/resolveLogAnsiForeground.ts",
+          "line": 5,
+          "end_line": 16,
+          "label": "Replaces: AA fallback to black or white"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogAnsiFragment.tsx",
+          "line": 14,
+          "end_line": 42,
+          "label": "Reuses: ANSI fragment with color and style"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 196,
+          "end_line": 201,
+          "label": "Replaces: every stderr row tinted red"
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "lane": "read",
+      "col": 3,
+      "type": "frontend",
+      "label": "Status line hand-off",
+      "sublabel": "offers Restart api",
+      "yOffset": 60,
+      "explanation": "While the filter shows one service that needs the person, the panel's status line states it in the shared state words with its cause and offers MENU-5's lead action for that cause, the same control with the same request, reasons and outcome as the Services row's: 'api exited with code 1 at 14:02:31' with Restart api; 'admin is not started · left out of this run' with Start admin; a blocked repository's sentence with a link to Return to Configured Checkout and Check Again (MENU-5, MENU-6, HOLD-4, ACT-2). A starting service, 'api is starting · health check 4 s of 60 s', offers nothing (ACT-4, STATE-3). It is the panel's only write besides its layout; its blocks are the operation's own: unavailable with 'Lost connection to devhost; retrying' or 'Restart Stack is running · 3 of 6 started', queued behind another per-service operation or a reload, and available beside 'uses the accepted manifest; devhost.toml line 12 is not applied' while an edit is rejected (HOLD-1, HOLD-2, HOLD-3, HOLD-6, SEL-7). Chat and machine-only saves block nothing here (HOLD-5, HOLD-7). Adding the panel to MENU-1's entry points is an exception recorded for the reference's author.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/restartServices.ts",
+          "line": 5,
+          "end_line": 14,
+          "label": "Reuses: POST restart-service with the names"
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "One log store, sourced",
+      "sublabel": "time · source · kind",
+      "tag": "source-and-minimap-11",
+      "explanation": "Each entry carries its time (RFC 3339 with milliseconds, on entry and snapshot messages) and its source: a service with its name, or devhost with its kind, chat, operation or failure, the service it concerns and a chat line's conversation title. Chat activity is published as devhost's, not as a service named chat; devhost's failure text about a service, published today as that service's stderr, becomes kind failure; each operation's outcome line from the stack's log is published too (FB-7). ServiceLogLines and the crash view select service entries by source and name, and devhost's lines keep their own 200-line buffer that never evicts a service's lines; no service name is reserved (source-and-minimap-11). The snapshot names the stack's log file and, once per-service retention lands, each service's dropped lines (FB-11, CC-21, CC-23). Per-service retention and the log client's append fix are startup-and-recovery's (startup-recovery-03, stack-scale-02, related); agent-chat words the chat lines (chat-conversations-05, related). The stream keeps its snapshot-then-entries contract and its reconnect.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 475,
+          "end_line": 499,
+          "label": "Replaces: entry without time or source"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/chat_log.go",
+          "line": 45,
+          "end_line": 51,
+          "label": "Replaces: chat activity as service chat"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 356,
+          "end_line": 361,
+          "label": "Replaces: failure text as the service's stderr"
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Save panel layout",
+      "sublabel": "PUT /__devhost__/layout",
+      "tag": "source-and-minimap-07",
+      "explanation": "Opening, closing or resizing the panel writes its open state and width to toolbar-shell's layout record, not disruptive: logs: {open, width}, the width an integer of CSS pixels from 320, validated on PUT with 422 for a value it cannot use, kept per manifest, or per served folder for a serve session, never in browser storage, so the panel opens the same on every hostname of the stack (SURF-7, CC-5; surfaces-07). toolbar-shell lands the route; this flow adds the logs field. While devhost is not reachable the resize still applies on this page, the write is not sent, and the panel says 'Not saved: devhost is not reachable from this page', never sending that width again (WORD-7). Resolves the saved width of source-and-minimap-07.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/chat_panel.go",
+          "line": 58,
+          "end_line": 84,
+          "label": "Reuses: per-manifest file, replaced whole"
+        }
+      ]
+    },
+    {
+      "id": "restartOp",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Restart api operation",
+      "sublabel": "services-panel's route",
+      "explanation": "The status line's Restart api sends the same restart-service request with an operationId as the Services row's Restart and runs services-panel's operation unchanged. The pressed button stays in place as the busy control with focus, 'Restarting api…' (FB-2, KEY-11, FB-9). It is the one write the log panel starts; the panel's reading never waits for an operation.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 153,
+          "end_line": 216,
+          "label": "Reuses: name checks, then stop and start each"
+        }
+      ]
+    },
+    {
+      "id": "copied",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Copied 14 lines",
+      "sublabel": "no Undo: reading only",
+      "tag": "source-and-minimap-07",
+      "yOffset": -60,
+      "explanation": "The outcome is the line read where the work started: the person reads api's exit line in full with its time, selects it or presses Copy 14 Lines, and the announcer says 'Copied 14 lines' once (FB-9, WORD-2). Reading changes nothing, so there is no Undo; outcome + undo holds what is kept instead: the panel's width and open state, kept through every reload on every hostname of the stack and changed back the way they were set (SURF-7), and the source and find text, kept for this tab across reloads. Today this took 5 steps ending in the terminal: notice the strip, hover its 12 px edge, hunt 15 rows at a time, read a row that cannot be selected, copied or read past the window's edge, go back to the terminal to copy it. Proposed: 3 steps: open the log panel, choose the service or arrive filtered from a failure's Logs, read and copy the line; the glance stays 1 step, hovering the strip. Resolves the copy and the full line of source-and-minimap-07."
+    },
+    {
+      "id": "restarted",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Restarted api · 2.6 s",
+      "sublabel": "in the status line",
+      "yOffset": 60,
+      "explanation": "The restart's outcome replaces the busy control in the panel's status line, 'Restarted api · 2.6 s', and takes focus on its sentence (FB-2, KEY-11, FB-9). Every operation's outcome is also a line in the stack's log, which the panel lists under devhost, 'Restarted api · 2.6 s · from the terminal' for one started elsewhere (FB-7); notices-and-feedback builds those outcome lines."
+    },
+    {
+      "id": "lost",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Lost connection",
+      "sublabel": "lines and times kept",
+      "tag": "source-and-minimap-07",
+      "explanation": "When the stream is lost, the panel keeps every line it held, drawn as it was with its time, and its count line says how current it is, 'All sources · 512 lines · up to 16:24:07' (ACT-5; feedback-11). Its status line reads the one reason the backend sent, 'Lost connection to devhost; retrying', or the stopped stack's sentence, 'Acme Shop stopped at 16:24 by devhost stop. Start it with devhost start in ~/acme', and Restart api and Start admin are unavailable with that same sentence as their accessible description (HOLD-1, HOLD-2, STATE-3). Reading stays usable: scroll, filter, find, select and copy. A resize still applies on this page, and the layout write is not sent: 'Not saved: devhost is not reachable from this page' (WORD-7). notices-and-feedback owns the lost-connection notice and Retry Now. Resolves the times kept while disconnected of source-and-minimap-07.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/hooks/useServiceLogs.ts",
+          "line": 42,
+          "end_line": 45,
+          "label": "Reuses: lines kept while the stream is down"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts",
+          "line": 4,
+          "end_line": 5,
+          "label": "Reuses: reconnect from 1 s, backing off to 10 s"
+        }
+      ]
+    },
+    {
+      "id": "older",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Older output named",
+      "sublabel": "devhost logs api · file",
+      "tag": "source-and-minimap-07",
+      "explanation": "The panel's last line names where older output lives, as text with Copy beside each: 'Older output: devhost logs api · ~/.local/state/devhost/logs/3f9a….log', the command naming the filtered service and the file the stack's per-manifest log (FB-11, SURF-15; surfaces-15). When the server dropped older lines of a service, that service's lines start with 'Older lines of worker were dropped; devhost logs worker has them'. When the connection returns, the fresh snapshot replaces the held lines, the person's place is kept by line where that line is still held, and lines sent and dropped meanwhile leave one marker line, '37 lines arrived while this page was disconnected and are no longer kept; devhost logs has them'; a replaced stack shows its new snapshot from its start (ACT-5, STATE-4). The terminal stays the full record without being the only one; devhost logs and the per-manifest log are stack-run-stop's. Resolves the missing pointer to the full log of source-and-minimap-07.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/app/run.go",
+          "line": 159,
+          "end_line": 162,
+          "label": "Reuses: service output to the terminal, by name"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "strip-peek",
+      "from": "strip",
+      "to": "peek",
+      "label": "hover",
+      "role": "main"
+    },
+    {
+      "id": "peek-panel",
+      "from": "peek",
+      "to": "panel",
+      "label": "click strip or row",
+      "role": "main"
+    },
+    {
+      "id": "panel-filter",
+      "from": "panel",
+      "to": "filter",
+      "label": "choose a source",
+      "role": "main",
+      "fromSide": "right"
+    },
+    {
+      "id": "filter-lines",
+      "from": "filter",
+      "to": "lines",
+      "label": "api · 14 lines",
+      "role": "main"
+    },
+    {
+      "id": "lines-copied",
+      "from": "lines",
+      "to": "copied",
+      "label": "Copy 14 Lines",
+      "role": "main",
+      "fromSide": "right",
+      "toSide": "top",
+      "bias": 0,
+      "labelDx": 16
+    },
+    {
+      "id": "logsKey-panel",
+      "from": "logsKey",
+      "to": "panel",
+      "label": "open",
+      "role": "branch"
+    },
+    {
+      "id": "panel-layout",
+      "from": "panel",
+      "to": "layout",
+      "label": "save width",
+      "role": "branch"
+    },
+    {
+      "id": "store-filter",
+      "from": "store",
+      "to": "filter",
+      "label": "snapshot, then lines",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "failLogs-lines",
+      "from": "failLogs",
+      "to": "lines",
+      "label": "at api's exit",
+      "role": "branch"
+    },
+    {
+      "id": "lines-status",
+      "from": "lines",
+      "to": "status",
+      "label": "api exited",
+      "role": "branch"
+    },
+    {
+      "id": "status-restartOp",
+      "from": "status",
+      "to": "restartOp",
+      "label": "Restart api",
+      "role": "branch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "restartOp-restarted",
+      "from": "restartOp",
+      "to": "restarted",
+      "label": "healthy",
+      "role": "branch",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "store-lost",
+      "from": "store",
+      "to": "lost",
+      "label": "stream closes",
+      "role": "error",
+      "variant": "dashed"
+    },
+    {
+      "id": "lost-older",
+      "from": "lost",
+      "to": "older",
+      "label": "stream returns",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: the strip's 96 px widening on hover, which covered the toolbar's right end; the preview that ignores the pointer; the pause of the whole log stream while the strip is hovered; every stderr line drawn as a full-width red mark and a red row; the light theme's fallback of ANSI colors to black or white; devhost's chat activity and failure text published under a service's name",
+        "Merged: the strip, the peek, the log panel and the crash view read one log store and render lines with one renderer (SURF-14); the strip and the panel share one filter",
+        "New: the pinned log panel, docked at the right edge with a saved width, a source filter with counts and state words, a find field, selectable wrapped lines with times, Copy N Lines, Jump to Latest · N new lines, a focusable resize separator and the line naming where older output lives; Logs on the bar and Alt+Ctrl+O; devhost's own lines as a source; the status line's hand-off to a service's lead action; the strip mapping every held line with severity marks; a hoverable peek that holds its own rows and counts new lines; per-theme ANSI palettes; times and sources on log entries",
+        "Changed: severity comes from the line, not its stream; only the peek's own rows hold, never the stream; the peek is hoverable and Escape hides it; turning the minimap off removes the strip only (SEL-11); ServiceLogLines and the crash view select a service's lines by source and name; the light theme keeps the service's hues",
+        "Kept: every service's output live, a snapshot then each line, retried from 1 s backing off to 10 s; on by default with one manifest switch applied on save; the 12 px strip at the right edge with the toolbar shifted inward; the peek's service column, prefix stripping and ANSI colors and styles, now in both themes; 4.5:1 for every colored fragment as the final guard; the crash view's focusable list of one service's lines beside Restart; logs kept while disconnected (CC-26); activity lines that never hold message text; the terminal or a detached stack's log as the full record, now named; the page never pushed, resized or restyled (SURF-5)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Strip and peek: source-and-minimap-05, source-and-minimap-04, source-and-minimap-07",
+        "Log panel, keys and saved width: source-and-minimap-07",
+        "Choosing the source: source-and-minimap-04, source-and-minimap-11",
+        "Lines and colors: source-and-minimap-06, source-and-minimap-05, source-and-minimap-07",
+        "devhost's own source in the log store: source-and-minimap-11 (P3)",
+        "Lost connection and older output: source-and-minimap-07",
+        "Related, not covered: startup-recovery-03 (P1) and its duplicate stack-scale-02 (startup-and-recovery); journey-crash-to-fix-03 (manifest-hot-reload); chat-conversations-05 (agent-chat)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Times on log entries: time on entry and snapshot messages, RFC 3339 with milliseconds",
+        "devhost's own lines as their own source: source service or devhost, with kind chat, operation or failure, the service concerned and a chat line's conversation title; ServiceLogLines and the crash view select by source and name; a 200-line devhost buffer that never evicts a service's lines; no service name reserved",
+        "Where older output lives: the snapshot's logFile (CC-21) and, with per-service retention, each service's dropped count, for devhost logs <service> (CC-23)",
+        "The layout record gains logs: {open, width}, the width from 320 CSS pixels, 422 for a value it cannot use (SURF-7, CC-5)",
+        "The logs binding: [devtools.shortcuts].logs, default Alt+Ctrl+O, in toolbar-shell's binding registry (KEY-2, CC-29)",
+        "[devtools.minimap].enabled governs the strip and its peek only; a reload that changes it names it in its outcome line (SEL-11)",
+        "Built by startup-and-recovery: per-service retention and the log client's append fix, the page applying the server's per-service limits from one shared constant"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-29: the logs binding, Alt+Ctrl+O, in the docs' Keyboard section and devhost.example.toml; toolbar-shell lands the registry",
+        "CC-26: logs keep what they buffered while disconnected, kept; services-panel and notices-and-feedback land the rest",
+        "CC-5: control-api.md's /__devhost__/layout row, extended with the log panel's open state and width",
+        "[discuss]: no CC-n yet for guides/devtools.md's Log minimap section, the [devtools.minimap] description in devhost.example.toml, control-api.md's /__devhost__/ws/logs row, guides/annotations.md's activity sentence (agent-chat confirms it) and the devtools AGENTS.md ANSI fragment exception; the reference's author adds one"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

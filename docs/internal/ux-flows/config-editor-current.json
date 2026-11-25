@@ -1,0 +1,368 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Edit configuration in the browser today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/config-editor-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "toolbar", "label": "Toolbar and its notices" },
+    { "id": "window", "label": "Configuration window" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "open", "label": "Turn on + open", "fromCol": 0, "toCol": 1 },
+    { "id": "edit", "label": "Pick + edit", "fromCol": 2, "toCol": 3 },
+    { "id": "apply", "label": "Save + apply", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["enable", "config", "open", "file", "edit", "save", "write", "reload", "applied"],
+  "nodes": [
+    {
+      "id": "enable",
+      "lane": "entry",
+      "col": 0,
+      "type": "security",
+      "label": "Turn the editor on",
+      "sublabel": "files readable remotely",
+      "tag": "network-exposure-04",
+      "explanation": "The editor is off by default, on purpose: a manifest decides which commands devhost runs. A person sets [devtools.configEditor] enabled = true in a manifest with any text editor. Hot reload applies it, and open pages receive the new feature toggles with the next health message, so Config appears in the toolbar without a page reload. While the toggle is off, every config route of the control server answers 404. Once it is on, the routes that list the files and run live checks answer any client that names one of the stack's hostnames, another machine included, and Caddy listens on every interface by default, so anyone who reaches the stack can read every manifest and config.toml, env values included. Only Save checks for a browser on this machine, nothing tells the person, and the stack directory, which shows the same files, stays on this machine unless remote access is allowed (network-exposure-04).",
+      "sources": [
+        { "path": "apps/devhost/internal/manifest/validate.go", "line": 172, "end_line": 172, "label": "Manifest toggle [devtools.configEditor]" },
+        { "path": "apps/devhost/internal/devtools/control_settings.go", "line": 96, "end_line": 117, "label": "Hot reload pushes toggles to open pages" },
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 95, "end_line": 103, "label": "Config routes answer 404 while off" }
+      ]
+    },
+    {
+      "id": "crashed",
+      "lane": "entry",
+      "col": 1,
+      "type": "security",
+      "label": "A service crashed",
+      "sublabel": "fix it from the page",
+      "tag": "journey-crash-to-fix-02",
+      "explanation": "A common reason to open the editor is a service that crashed after a manifest change. On that service's page the full-screen crash view offers only Restart and Restart Stack, never names the manifest, and cancels Escape; Config is reached only through an Escape the view tries to block (journey-crash-to-fix-01). Once open, the editor shows nothing about the failure it was opened to fix: no failed service, exit code or error, and no marker on the lines that define the service, because it receives the configuration status but not service health; with includes, the File list does not say which file defines the service (journey-crash-to-fix-02). The person carries the error over from the crash view, the minimap or the service's 503 page.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx", "line": 27, "end_line": 31, "label": "Crash view opens as a modal" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx", "line": 45, "end_line": 51, "label": "Crash view cancels Escape" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 365, "end_line": 376, "label": "Editor gets configuration, not service health" }
+      ]
+    },
+    {
+      "id": "elsewhere",
+      "lane": "entry",
+      "col": 2,
+      "type": "external",
+      "label": "Save from another program",
+      "sublabel": "text editor, git, an agent",
+      "explanation": "Any write to the manifest, an include or config.toml, from a text editor, a git checkout or a coding agent, reaches the same watcher as the editor's own saves. When the reload that follows is rejected, devhost logs 'configuration reload rejected' in the terminal, and every open page receives the reason in the configuration status until a later reload of that source is accepted.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/manifest_watch.go", "line": 73, "end_line": 96, "label": "Watcher debounces any write" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 617, "end_line": 632, "label": "Reload result recorded, rejection logged" },
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 106, "end_line": 124, "label": "Status counts reloads, keeps the reason" }
+      ]
+    },
+    {
+      "id": "config",
+      "lane": "toolbar",
+      "col": 1,
+      "type": "frontend",
+      "label": "Click Config",
+      "sublabel": "turns red after a rejection",
+      "explanation": "Config is a toolbar button that opens and closes the editor window. After a rejected reload it turns red, with the tooltip 'Edit the configuration; devhost rejected its last change'.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorButton.tsx", "line": 16, "end_line": 31, "label": "Config toggles the window; red when rejected" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 330, "end_line": 338, "label": "Button shown only while enabled" }
+      ]
+    },
+    {
+      "id": "notice",
+      "lane": "toolbar",
+      "col": 2,
+      "type": "security",
+      "label": "Manifest change not applied",
+      "sublabel": "raw reason + Edit",
+      "tag": "config-editor-09",
+      "explanation": "After a rejected reload the toolbar shows 'Manifest change not applied' (or 'devhost config change not applied') with the raw reason and Edit. Edit only opens the window: it shows whichever file was open last, with no marker, no problem list and no word about the rejection, while the reason, which names a service table but not its file, stays behind the backdrop; the guide says Edit opens the file (config-editor-09). The reason gives an exit code, not what the service printed (journey-crash-to-fix-03). With chat open, the docked panel covers this notice and its Edit (chat-compose-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx", "line": 18, "end_line": 42, "label": "Raw reason with Edit, per source" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 238, "end_line": 241, "label": "Edit only opens the window" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 283, "end_line": 289, "label": "Notice in the toolbar's readout slot" }
+      ]
+    },
+    {
+      "id": "open",
+      "lane": "window",
+      "col": 1,
+      "type": "security",
+      "label": "Configuration window opens",
+      "sublabel": "files reload; Tab indents",
+      "tag": "config-editor-10",
+      "explanation": "Config opens a centered window over a full-page backdrop, reads every file again from disk, and focuses the text. Tab and Shift+Tab indent and un-indent, so File, Revert, Save and Close cannot be reached from the keyboard; Escape closes the window and leaves focus on the page body, not on Config. The window is a dialog without aria-modal and nothing behind it is inert, so after CodeMirror's undocumented tab-focus toggle, focus wanders into the page and the toolbar under the backdrop (config-editor-10). On laptop-size screens the window covers the notices above the toolbar, and a click on a visible fragment of one closes the editor (config-editor-11, a duplicate of chat-compose-04). Listing the files waits for the stack's operation lock, so the first open after a page load while a reload, a Restart or a worktree switch runs shows an empty, disabled File list, no text and no message until that operation ends (12-18 s for a whole-stack reload); live checks wait the same way (config-editor-14).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 118, "end_line": 135, "label": "Backdrop and dialog without aria-modal" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 87, "end_line": 115, "label": "Files and schema load on every open" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorView.ts", "line": 105, "end_line": 118, "label": "Keymap: Tab indents, Mod-s saves" }
+      ]
+    },
+    {
+      "id": "file",
+      "lane": "window",
+      "col": 2,
+      "type": "security",
+      "label": "Pick a file",
+      "sublabel": "clipped paths; no roles",
+      "tag": "config-editor-01",
+      "explanation": "The File list holds the root manifest, each include and the machine-wide config.toml (created when missing), each shown only as a path relative to the project or the home directory, with '(unsaved)' when it carries a draft. The list is as wide as its trigger and clips longer paths with no ellipsis or tooltip, and no entry says which file is the root manifest, an include, or the config file every stack on the machine shares, although the files API sends that role. A long selected path widens the trigger without limit and pushes Save and Close out of the window (config-editor-01). Drafts stay with each file across file switches and Close, but a save's outcome does not: choosing another file while a save applies clears its notice, and that save's 'Saved and applied.' or rejection never reaches the window, even after switching back (config-editor-13).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/config_editor.go", "line": 13, "end_line": 39, "label": "Root manifest, includes, then config.toml" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 106, "end_line": 109, "label": "Labels: path and (unsaved); kind unused" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 144, "end_line": 164, "label": "File select in the window header" }
+      ]
+    },
+    {
+      "id": "edit",
+      "lane": "window",
+      "col": 3,
+      "type": "security",
+      "label": "Edit with live checks",
+      "sublabel": "wrong lines; clipped list",
+      "tag": "config-editor-03",
+      "explanation": "After each pause in typing devhost checks the text, and problems appear in the gutter and in a problem list. They land on the wrong line and read as raw Go errors: an unclosed table header is marked on the next line with 'Failed to parse <absolute path>: toml: …', while dependency cycles, missing working directories and problems in another file are marked on line 1; the problem panel first opens over the last lines of the text (config-editor-03). Completions near the bottom of the window open outside it and are clipped to a thin strip, so Ctrl+Space seems to do nothing (config-editor-04). Revert drops the selected file's draft.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorView.ts", "line": 95, "end_line": 104, "label": "Completions and the delayed linter" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/readConfigDiagnostics.ts", "line": 9, "end_line": 27, "label": "No position or another file: start of file" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 129, "end_line": 129, "label": "Translated, overflow-hidden window" }
+      ]
+    },
+    {
+      "id": "check",
+      "lane": "backend",
+      "col": 3,
+      "type": "security",
+      "label": "Check like a reload",
+      "sublabel": "stops at first failing stage",
+      "tag": "config-editor-02",
+      "explanation": "The validate route runs a reload's checks on the unsaved text and writes nothing: TOML syntax and allowed settings (all schema issues at once), then the reload candidate (dependency cycles, ports), then working directories. Each stage returns at its first failure, so a file that looks clean after one fix shows the next stage's problem a moment later, although the guide promises the same checks as a reload in one list (config-editor-02). config.toml gets only its own parser. Errors other than parse and schema errors carry no line or key, so the editor marks them at the start of the file.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/config_editor.go", "line": 41, "end_line": 76, "label": "Staged checks; first failure returns" },
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 129, "end_line": 142, "label": "Validate route: issues, nothing written" },
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 286, "end_line": 309, "label": "Only parse and schema errors get positions" }
+      ]
+    },
+    {
+      "id": "save",
+      "lane": "window",
+      "col": 4,
+      "type": "security",
+      "label": "Save (Meta+S)",
+      "sublabel": "2nd save shows 1st's result",
+      "tag": "config-editor-12",
+      "explanation": "Save, or Meta+S (Ctrl+S elsewhere), sends the selected file's draft with the version it was opened at. Save is enabled whenever that file has unsaved changes and no save request is in flight, so it stays enabled while an earlier save applies. Once the file is written the window reads 'Saved. devhost is applying the change.' and the editor waits for that source's reload count, read when Save was pressed, to rise. A second save made while the first applies shows a bare Saving with no notice until the running reload finishes, then the first save's result ('Saved and applied.') as soon as that reload is counted, before its own reload has run, and even when its own reload is then rejected (config-editor-12). Only a browser on the same machine can save, on purpose.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 175, "end_line": 187, "label": "Save button and its shortcut" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 166, "end_line": 198, "label": "Save, then wait for the next reload count" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 247, "end_line": 249, "label": "Applying notice" }
+      ]
+    },
+    {
+      "id": "write",
+      "lane": "backend",
+      "col": 4,
+      "type": "backend",
+      "label": "Check version, write file",
+      "sublabel": "local clients only; atomic",
+      "explanation": "The save route accepts loopback clients only, compares the content hash on disk with the version the draft was based on (409 with the file on disk when they differ), runs the same checks again (422 with the issues), then replaces the file atomically, keeping its mode and following a symbolic link. A save starts no reload of its own: the manifest watcher sees the write.",
+      "sources": [
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 144, "end_line": 185, "label": "Local only; version, checks, write" },
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 240, "end_line": 260, "label": "Write keeps the mode and follows links" }
+      ]
+    },
+    {
+      "id": "reload",
+      "lane": "backend",
+      "col": 5,
+      "type": "security",
+      "label": "Watcher hot reloads",
+      "sublabel": "misses symlinks on Linux",
+      "tag": "manifest-hot-reload-08",
+      "explanation": "After a 200 ms debounce the watcher reads the manifest again, validates it and reloads the stack: changed services (with worktrees, a whole repository) stop, start and must pass their health checks; when one fails, devhost restores the previous services and records a rejection. Each finished reload raises that source's reload count, which pages receive with the next health message. A service with process health is checked for an exit only once, the instant it starts. One reload runs at a time; a save made meanwhile waits for it. On Linux a manifest, include or config.toml that is a symbolic link never reloads: the watcher records the link's own path and matches events by that name, but every write to the file, the editor's included, is reported under the target's name or not at all. No reload runs, the terminal prints nothing, the stack keeps the previous configuration and the window reads 'Saved. devhost is applying the change.' indefinitely; macOS reloads (manifest-hot-reload-08).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/reload_disk.go", "line": 24, "end_line": 52, "label": "Reload reads and validates the manifest" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 617, "end_line": 632, "label": "One reload at a time; result recorded" },
+        { "path": "apps/devhost/internal/services/health.go", "line": 63, "end_line": 69, "label": "Process health: one exit check at start" }
+      ]
+    },
+    {
+      "id": "applied",
+      "lane": "window",
+      "col": 5,
+      "type": "security",
+      "label": "Saved and applied.",
+      "sublabel": "even if a service just exited",
+      "tag": "config-editor-05",
+      "explanation": "When the reload count rises without an error, the window says 'Saved and applied.' It never says which services the save restarted, even when one was this page's own server, and a 'Reload blocked' toast follows with no link to the save. Because a service with process health is checked for an exit only the instant it starts, a command that fails a moment later passes: the terminal prints 'worker exited with code 127' and the editor still says 'Saved and applied.', with 5 of 6 in the toolbar as the only sign. The message also stays above the next unsaved edit (config-editor-05).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 117, "end_line": 131, "label": "Outcome from the next reload count" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 250, "end_line": 251, "label": "Saved and applied." }
+      ]
+    },
+    {
+      "id": "unloadable",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Could not be loaded",
+      "sublabel": "page HTML; Save pushed off",
+      "tag": "notices-and-feedback-01",
+      "explanation": "With the stack stopped and the tab still open, the shared proxy answers the config routes with its 404 page. The window shows 'The configuration could not be loaded' followed by that page's complete source, inline script included, as one unbroken block; its single grid column grows to about 40,000 px, so Revert, Save and Close sit far outside the window, the File list is empty and disabled, and focus stays on the toolbar's Config, so Escape does nothing (notices-and-feedback-01). The window does not retry while it stays open.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorClient.ts", "line": 130, "end_line": 140, "label": "Any non-2xx body becomes the message" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 231, "end_line": 236, "label": "Load error notice" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 99, "end_line": 102, "label": "Load error kept; no retry while open" }
+      ]
+    },
+    {
+      "id": "lost",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Drafts lost",
+      "sublabel": "page reload; enabled = false",
+      "tag": "config-editor-08",
+      "explanation": "Drafts live only in the page's memory. A page reload discards every file's unsaved changes without a prompt, since no beforeunload handler exists, and the editor's own saves make reloads likely: a save that restarts the page's server brings a 'Reload blocked' toast whose Reload drops the other drafts. Saving [devtools.configEditor] enabled = false from the editor removes it within two seconds, with no 'Saved and applied.', no word on how to turn it back on, and the other files' drafts gone (config-editor-08). Turning it back on takes a text editor.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 57, "end_line": 63, "label": "Drafts held in React state only" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 365, "end_line": 376, "label": "Panel unmounts when the toggle turns off" }
+      ]
+    },
+    {
+      "id": "refused",
+      "lane": "recovery",
+      "col": 3,
+      "type": "frontend",
+      "label": "devhost refused the save",
+      "sublabel": "not written; issues listed",
+      "explanation": "When the save's own checks fail (422), nothing is written. The window says 'devhost refused the save' with 'The file was not written. The issues are listed below the editor.' and checks the text again, so the problem list shows the reasons. The person fixes them and saves again.",
+      "sources": [
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 176, "end_line": 179, "label": "Failed checks: 422, nothing written" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 269, "end_line": 274, "label": "Refused notice" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 93, "end_line": 98, "label": "A refusal runs the checks again" }
+      ]
+    },
+    {
+      "id": "conflict",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "File changed on disk",
+      "sublabel": "only Load from disk (discard)",
+      "tag": "config-editor-07",
+      "explanation": "The window reads files only when it opens, so while it stays open it ignores changes on disk, with or without a draft, and keeps showing text that is no longer there, even under a stale rejection banner. Only Save reveals 'The file changed on disk … the unsaved changes to this file are discarded' with one action, Load from disk, which drops the edit: no comparison, no overwrite, no way to keep both. Revert in this state returns to the version the window opened with, neither on disk nor running, and shows it as clean under the banner (config-editor-07).",
+      "sources": [
+        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 167, "end_line": 175, "label": "409 with the file on disk" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 200, "end_line": 213, "label": "Load from disk drops the draft" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 258, "end_line": 268, "label": "Conflict notice with one action" }
+      ]
+    },
+    {
+      "id": "rejected",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Reload rejected",
+      "sublabel": "rejected text shown as saved",
+      "tag": "config-editor-06",
+      "explanation": "When a restarted service fails its health check, devhost restores the previous services, and the window shows 'devhost kept the previous configuration' over the wrapped error ('start reloaded service api: Service api exited before passing its health check with code 127.'). The rejected text, also on disk, stays on screen as saved: no '(unsaved)', Revert and Save disabled, and nothing shows what the stack runs or how to return to it; undo works only while the window keeps its history (config-editor-06). The message gives an exit code, not what the service printed, which only the terminal and the minimap show (journey-crash-to-fix-03). The toolbar notice and a red Config follow.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 192, "end_line": 196, "label": "Saved text becomes the file's content" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 252, "end_line": 257, "label": "Rejection banner with the raw message" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 300, "end_line": 303, "label": "Error wrapped as start reloaded service" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "enable-config", "from": "enable", "to": "config", "label": "Config appears", "role": "main" },
+    { "id": "config-open", "from": "config", "to": "open", "label": "click", "role": "main" },
+    { "id": "open-file", "from": "open", "to": "file", "label": "pick", "role": "main" },
+    { "id": "file-edit", "from": "file", "to": "edit", "label": "type", "role": "main" },
+    { "id": "edit-save", "from": "edit", "to": "save", "label": "save", "role": "main" },
+    { "id": "save-write", "from": "save", "to": "write", "label": "POST save", "role": "main" },
+    { "id": "write-reload", "from": "write", "to": "reload", "label": "watcher", "role": "main" },
+    { "id": "reload-applied", "from": "reload", "to": "applied", "label": "accepted", "role": "main" },
+    { "id": "crashed-config", "from": "crashed", "to": "config", "label": "Escape, then Config", "role": "branch" },
+    { "id": "elsewhere-notice", "from": "elsewhere", "to": "notice", "label": "rejected", "role": "branch" },
+    { "id": "notice-file", "from": "notice", "to": "file", "label": "Edit: last file", "role": "branch" },
+    { "id": "edit-check", "from": "edit", "to": "check", "label": "after a pause", "role": "branch", "variant": "dashed" },
+    { "id": "open-unloadable", "from": "open", "to": "unloadable", "label": "stack stopped", "role": "error" },
+    { "id": "file-lost", "from": "file", "to": "lost", "label": "page reload", "role": "error" },
+    { "id": "write-refused", "from": "write", "to": "refused", "label": "422", "role": "error" },
+    { "id": "write-conflict", "from": "write", "to": "conflict", "label": "409", "role": "error" },
+    { "id": "reload-rejected", "from": "reload", "to": "rejected", "label": "service fails", "role": "error" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "Off by default; turning it on in a manifest shows Config on the open page without a reload",
+        "Saves come only from this machine, run the reload's checks again and replace the file atomically, keeping its mode and links",
+        "A save based on an older version is refused instead of overwriting the file on disk",
+        "Text that fails the checks never reaches disk: the save is refused and the issues are listed",
+        "Drafts stay with each file across file switches and Close, marked (unsaved) in the File list",
+        "Completions for tables, keys and fixed-choice values; Meta+S saves from the text",
+        "A rejected reload keeps the stack on the configuration it accepted before and says why, in the window and under the toolbar"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "config-editor-01 The File list clips paths, never names the machine-wide config.toml, and a long path pushes Save off",
+        "config-editor-02 Live checks report problems in waves, so a file that looks clean still has more",
+        "config-editor-03 Problems are marked on the wrong line and read as raw Go errors with absolute paths",
+        "config-editor-04 Completions near the bottom open outside the window and are clipped",
+        "config-editor-05 Saved and applied. when a changed service exits at once; never says what restarted",
+        "config-editor-06 After a rejected save the rejected text shows as saved, with no way back to what runs",
+        "config-editor-07 Changes on disk are ignored until Save, and the conflict's only way out discards the edit",
+        "config-editor-08 Drafts vanish without a warning on a page reload, or when a save turns the editor off",
+        "config-editor-09 Edit in the rejection notice opens the last file, and the window says nothing about the rejection",
+        "config-editor-10 Keyboard users cannot reach File, Revert, Save or Close; focus wanders behind the window",
+        "config-editor-12 A second save made while the first applies reads Saved and applied. before its own reload has run",
+        "config-editor-13 Switching files while a save applies throws its result away; the window never says how it ended",
+        "config-editor-14 Opened first during a reload, Restart or worktree switch, the window is empty and disabled with no loading text",
+        "journey-crash-to-fix-02 Opened to fix a crashed service, the editor shows no failed service, error or marker",
+        "manifest-hot-reload-08 On Linux a manifest, include or config.toml that is a symbolic link never reloads; Config says applying indefinitely",
+        "network-exposure-04 With the editor on, any machine that reaches the stack can read every manifest and config.toml, env values included",
+        "notices-and-feedback-01 With the stack stopped the window prints a page's HTML and pushes Revert, Save and Close off screen",
+        "journey-crash-to-fix-01 (related) Config is reached from the crash view only through an Escape it tries to block",
+        "journey-crash-to-fix-03 (related) A rejection gives an exit code; the service's own error is only in the terminal and minimap",
+        "chat-compose-04 (related) Docked chat covers the toolbar's notices, including the rejection and its Edit",
+        "config-editor-11 (related, duplicate of chat-compose-04) On laptop screens the window covers the notices above the toolbar"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed (product code identical to the reviewed build 0.0.12); the review exercised the editor live: the File list, live checks and completions, saves that applied, were refused, rolled back or conflicted, Edit in the rejection notice, turning the editor off and on, the keyboard, and 1280x800 and 900x900 windows. config-editor-14, manifest-hot-reload-08 and network-exposure-04 were verified from code only. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

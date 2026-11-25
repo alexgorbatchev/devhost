@@ -1,0 +1,309 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How devhost reports operations and problems today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/notices-and-feedback-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "panels", "label": "Services, Worktrees, Config" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "toolbar", "label": "Toolbar dots and notices" },
+    { "id": "terminal", "label": "Terminals" },
+    { "id": "recovery", "label": "Failures, lost connection", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "begin", "label": "Start + progress", "fromCol": 0, "toCol": 1 },
+    { "id": "run", "label": "Run + report", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "end", "label": "Outcome + end", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["start", "progress", "job", "flash", "outcome"],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "entry",
+      "col": 0,
+      "type": "external",
+      "label": "Press Restart or Switch",
+      "sublabel": "Services or Worktrees",
+      "explanation": "Operations start in the toolbar: a row's Restart or Restart Changed in the Services popover, Restart Stack in its footer, the Alt+Ctrl+R shortcut, or Switch and restart stack in the Worktrees popover. Each control owns its progress and its error separately: a row Restart and the shortcut report through one toolbar-wide error, Restart Stack and Restart Changed keep their own copy, and the Worktrees picker shows its own notice. No list of past operations exists anywhere.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx", "line": 309, "end_line": 319, "label": "Row Restart reports via the toolbar-wide error" },
+        { "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx", "line": 24, "end_line": 38, "label": "Restart Stack keeps its own pending and error" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 80, "end_line": 87, "label": "Switch: the picker keeps its own error" }
+      ]
+    },
+    {
+      "id": "progress",
+      "lane": "panels",
+      "col": 1,
+      "type": "frontend",
+      "label": "Progress in the popover",
+      "sublabel": "spinner and button text",
+      "explanation": "Progress shows only inside the popover that started it, and only while that popover is open. A restarting service's dot spins and its row reads restarting; Restart Stack's button reads 'Restarting stack…' while every row spins for about 14 s; the Worktrees picker reads 'Switching and restarting stack…'; Config shows nothing until its save answers. The toolbar's n/N trigger shows the spinning dots but never names the operation or how long it has run. Controls that would collide are disabled meanwhile.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx", "line": 345, "end_line": 355, "label": "Dot states: restarting, down, changed, up" },
+        { "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx", "line": 66, "end_line": 74, "label": "'Restarting stack…' on the footer button" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 193, "end_line": 203, "label": "'Switching and restarting stack…'" }
+      ]
+    },
+    {
+      "id": "job",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "Stack runtime applies it",
+      "sublabel": "restart, switch, reload",
+      "explanation": "The control server hands each operation to the stack runtime. A service restart stops and starts each named service in order, logs 'restarting service: <name>' and publishes health after each. Restart Stack, a worktree switch, starting a stopped service and every accepted manifest reload are one configuration change: start the affected services, replace the routes (a Caddy reload), publish the accepted settings, then log one line with the URLs. A rejected reload keeps the previous configuration and records why; the health stream carries that to every open page.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 153, "end_line": 216, "label": "Service restart: stop, start, publish" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 72, "end_line": 82, "label": "Restart Stack: one configuration change" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 225, "end_line": 269, "label": "Start, replace routes, publish, log one line" }
+      ]
+    },
+    {
+      "id": "edit",
+      "lane": "entry",
+      "col": 2,
+      "type": "external",
+      "label": "Save a config edit",
+      "sublabel": "devhost.toml or Config",
+      "explanation": "A hot reload starts when devhost.toml or an included file is saved, from any editor or from the Config window. devhost validates and applies it without a prompt and records the result for that source. A save from the Config window then waits for devhost to count one more reload of that file before it reports anything.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 617, "end_line": 632, "label": "Manifest saved: reload, record the result" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 186, "end_line": 198, "label": "Editor save waits for the next reload" }
+      ]
+    },
+    {
+      "id": "saved",
+      "lane": "panels",
+      "col": 3,
+      "type": "security",
+      "label": "Saved and applied.",
+      "sublabel": "inside the editor only",
+      "tag": "notices-and-feedback-03",
+      "explanation": "A save from the Config window ends in a strip inside that window only: 'Saved and applied.', or 'devhost kept the previous configuration' with the reason. Closing the window takes the result with it and nothing in the toolbar confirms it. In the review the stack terminal printed no line for the applied fix, so it still ended on 'configuration reload rejected' (notices-and-feedback-03).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/hooks/useConfigEditor.ts", "line": 117, "end_line": 131, "label": "Applied once the stream counts a reload" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 247, "end_line": 257, "label": "Result strip inside the editor window" }
+      ]
+    },
+    {
+      "id": "flash",
+      "lane": "toolbar",
+      "col": 3,
+      "type": "security",
+      "label": "0/N red for a second",
+      "sublabel": "streams drop at the end",
+      "tag": "services-panel-2-04",
+      "explanation": "Every successful Restart Stack ends with the page's health and resource streams dropping: for about a second the toolbar reads 0/N with every dot red, the worktree button and the CPU, RAM and Disk readouts vanish, and every Services row turns red, the same picture as crashed services (services-panel-2-04). Starting one stopped service does the same and throws the open Stopped services list away (stack-scale-06). On any disconnect the toolbar marks every service status false and draws it as down: it has no disconnected or reconnecting look. The likely trigger is the Caddy reload of the route replacement closing proxied streams (a hypothesis in services-panel-2-04).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 73, "end_line": 82, "label": "Disconnect marks every service unavailable" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts", "line": 3, "end_line": 28, "label": "Unavailable is status false, drawn as down" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 225, "end_line": 233, "label": "Routes replaced after services restart" }
+      ]
+    },
+    {
+      "id": "outcome",
+      "lane": "toolbar",
+      "col": 4,
+      "type": "security",
+      "label": "N/N again, no result",
+      "sublabel": "success says nothing",
+      "tag": "notices-and-feedback-03",
+      "explanation": "Success says nothing. A restarted service's dot turns green and the count returns to N/N; Restart Stack's button label returns after its second of all-down; a worktree switch reloads the page and only the branch label shows that it worked. No notice names the operation, its result or how long it took, so people re-run it or reload to be sure. Each operation reports in its own place, words and lifetime, and the terminal's account differs from the page's (notices-and-feedback-03). Screen readers hear none of it: health changes and recoveries happen outside any live region (keyboard-and-screen-reader-02).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx", "line": 28, "end_line": 38, "label": "Success clears the button; no outcome" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 102, "end_line": 110, "label": "A switch that succeeds reloads the page" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx", "line": 357, "end_line": 368, "label": "Trigger label: n of N up, nothing more" }
+      ]
+    },
+    {
+      "id": "notices",
+      "lane": "toolbar",
+      "col": 5,
+      "type": "security",
+      "label": "Notices above the dock",
+      "sublabel": "all alerts; no order",
+      "tag": "keyboard-and-screen-reader-02",
+      "explanation": "Conditions get notices stacked above the end of the toolbar, shown only while it is expanded: 'Manifest change not applied' in red with Edit and Copy and no dismiss, removed without a word once a fix applies, which the terminal calls 'configuration reload rejected'; 'Reload blocked / Something tried to reload this page.' with Reload and dismiss, which never expires, even after the outage that caused it; and the hot reload notice. Every notice is role=alert, neutral ones included, so each interrupts a screen reader, while recoveries are never announced (keyboard-and-screen-reader-02). Notices and panels share the corner with no order: opening Services or Worktrees draws the panel over a showing notice (notices-and-feedback-03).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 283, "end_line": 307, "label": "Notices: rejection, Reload blocked, hot reload" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx", "line": 18, "end_line": 41, "label": "Rejection: Edit and Copy, no dismiss" },
+        { "path": "packages/devhost-ui/src/components/ui/Alert.tsx", "line": 22, "end_line": 31, "label": "Every notice is role=alert" }
+      ]
+    },
+    {
+      "id": "termline",
+      "lane": "terminal",
+      "col": 2,
+      "type": "security",
+      "label": "Stack terminal lines",
+      "sublabel": "restart end not logged",
+      "tag": "notices-and-feedback-03",
+      "explanation": "The stack's terminal tells a different story. A service restart prints 'restarting service: api' and never a devhost line saying it came back, only the service's own banner. Restart Stack ends with 'stack restarted with new automatic ports' and the URLs, a switch with 'worktree switched: project -> ui-polish', lines the page never shows. A rejected manifest prints 'configuration reload rejected'; after a fix saved from the Config window the review saw no applied line, so the terminal still ended on the rejection (notices-and-feedback-03).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/runtime.go", "line": 191, "end_line": 191, "label": "'restarting service:', no completion line" },
+        { "path": "apps/devhost/internal/services/reload.go", "line": 264, "end_line": 268, "label": "Change logged once complete, with URLs" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 627, "end_line": 632, "label": "'configuration reload rejected: …'" }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "terminal",
+      "col": 3,
+      "type": "external",
+      "label": "devhost stop, caddy stop",
+      "sublabel": "or a new httpsPort",
+      "explanation": "The page's connection ends when its stack stops (devhost stop from another terminal or an agent, Ctrl-C, the idle timeout, a crash), when the shared proxy stops (devhost caddy stop), or when httpsPort moves to another port. On a stop, devhost stops every service first, printing 'Stopping service …' lines to its terminal only, and closes the page streams last with the reason 'devhost is stopping'.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 247, "end_line": 285, "label": "Services stop before the control server" },
+        { "path": "apps/devhost/internal/services/shutdown_progress.go", "line": 23, "end_line": 35, "label": "Stopping lines go to the terminal only" },
+        { "path": "apps/devhost/internal/devtools/server.go", "line": 505, "end_line": 523, "label": "Streams close with 'devhost is stopping'" }
+      ]
+    },
+    {
+      "id": "lost",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Lost connection: 0/N red",
+      "sublabel": "reads as a crash",
+      "tag": "notices-and-feedback-02",
+      "explanation": "Through a whole devhost stop the toolbar keeps N/N green and live readouts (4 to 7 s in the review), because services stop before the control server and no stopping state reaches the page. Then it jumps to 0/N red, the same picture as N crashed services, and hides the branch and readouts; Services still lists every service with Restart, Restart Changed and Restart Stack enabled. The client drops the close code and its reason, so a stopped stack, a stopped proxy and crashed services look alike; with only the proxy stopped, the first sign can be 'Reload blocked / Something tried to reload this page.', which stays after the proxy returns (notices-and-feedback-02).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts", "line": 61, "end_line": 79, "label": "Close code and reason never reach the page" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx", "line": 208, "end_line": 222, "label": "Restart Stack stays enabled when disconnected" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 73, "end_line": 82, "label": "Disconnect: every service down, panels emptied" }
+      ]
+    },
+    {
+      "id": "stale",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "Restart while stopped",
+      "sublabel": "error is the 404's HTML",
+      "tag": "journey-new-project-02",
+      "explanation": "With the stack stopped and the proxy still running, every control action reaches the proxy's 404 page instead of the control server, and its full HTML becomes the error: 'Stack restart failed' followed by the routing page's source, inline script included, filling the panel (journey-new-project-02). Config prints the same source under 'The configuration could not be loaded', and its header grows about 40,000 px wide, pushing Revert, Save and Close out of the window; a click on the backdrop closes it (notices-and-feedback-01).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/postControlAction.ts", "line": 16, "end_line": 29, "label": "Any non-JSON answer becomes the error text" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/createConfigEditorClient.ts", "line": 130, "end_line": 140, "label": "Config: any non-2xx body is the message" },
+        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigEditorPanel.tsx", "line": 127, "end_line": 135, "label": "Window grid grows with its widest line" }
+      ]
+    },
+    {
+      "id": "reconnect",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Reconnects silently",
+      "sublabel": "1 to 10 s; no message",
+      "tag": "proxy-settings-03",
+      "explanation": "The page retries after 1 s, doubling up to 10 s. When the stack or proxy is back, the dots return to N/N a few seconds later with no message, so people reload to be sure, and a Reload blocked notice the outage caused stays (notices-and-feedback-02). After an httpsPort change the page never reconnects: Caddy moves to the new port before any page learns it, so the tab stays at 0/N on a port that no longer answers, and nothing names the new address (proxy-settings-03).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts", "line": 80, "end_line": 84, "label": "Retry after 1 s, doubling to 10 s" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 84, "end_line": 90, "label": "Reopening clears errors and says nothing" },
+        { "path": "apps/devhost/internal/services/shared_caddy.go", "line": 57, "end_line": 83, "label": "Port change: Caddy moves before pages learn" }
+      ]
+    },
+    {
+      "id": "erased",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Restart error erased",
+      "sublabel": "next status clears it",
+      "tag": "notices-and-feedback-01",
+      "explanation": "A row Restart and Alt+Ctrl+R report failure through the toolbar-wide error, which the health stream clears on every status message, disconnect and reconnect. 'Failed to restart api: Service api exited before passing its health check with code 1.' was visible for 0.1 to 0.2 s before the next status message erased it and the crash view took over; on a stopped stack the error vanished after 2 to 9 s, at the next reconnect attempt. Restart Stack and Restart Changed keep their own copies (notices-and-feedback-01).",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 55, "end_line": 71, "label": "Each status message clears the error" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 74, "end_line": 90, "label": "Disconnect and reconnect clear it too" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 209, "end_line": 235, "label": "Alt+Ctrl+R writes the same error" }
+      ]
+    },
+    {
+      "id": "stackfail",
+      "lane": "recovery",
+      "col": 0,
+      "type": "security",
+      "label": "Restart Stack fails",
+      "sublabel": "error dies with its view",
+      "tag": "error-pages-02",
+      "explanation": "When Restart Stack fails from the crash view, its error lives in the button's own state inside that view. The failure leaves the checkout in error, the toolbar drops that checkout's services from the crash view, and the view closes with the error in it, so the click reads as success while the whole stack is down. The failure shows up again only as the checkout's error when Worktrees is opened (error-pages-02, owned by startup-and-recovery). From the Services popover the same failure stays as 'Stack restart failed', with its reason repeated.",
+      "sources": [
+        { "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx", "line": 26, "end_line": 38, "label": "Error kept in the button's own state" },
+        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 181, "end_line": 192, "label": "Crash view drops a failed checkout's services" },
+        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/WorktreePicker.tsx", "line": 103, "end_line": 107, "label": "Failure resurfaces as the checkout's error" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "start-progress", "from": "start", "to": "progress", "label": "press", "role": "main" },
+    { "id": "progress-job", "from": "progress", "to": "job", "label": "request", "role": "main" },
+    { "id": "job-flash", "from": "job", "to": "flash", "label": "route swap", "role": "main" },
+    { "id": "flash-outcome", "from": "flash", "to": "outcome", "label": "reconnect", "role": "main" },
+    { "id": "edit-job", "from": "edit", "to": "job", "label": "hot reload", "role": "branch" },
+    { "id": "job-saved", "from": "job", "to": "saved", "label": "applied", "role": "branch" },
+    { "id": "job-notices", "from": "job", "to": "notices", "label": "rejected", "role": "branch" },
+    { "id": "job-termline", "from": "job", "to": "termline", "label": "logs", "role": "branch" },
+    { "id": "progress-erased", "from": "progress", "to": "erased", "label": "Restart fails", "role": "error" },
+    { "id": "progress-stackfail", "from": "progress", "to": "stackfail", "label": "Restart Stack fails", "role": "error" },
+    { "id": "stop-lost", "from": "stop", "to": "lost", "label": "streams close", "role": "error" },
+    { "id": "lost-stale", "from": "lost", "to": "stale", "label": "press Restart", "role": "branch" },
+    { "id": "stale-reconnect", "from": "stale", "to": "reconnect", "label": "stack back", "role": "branch", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "Progress shows where the operation started: spinning dots and restarting rows, 'Restarting stack…', 'Switching and restarting stack…'",
+        "Controls that would collide are disabled while a restart or switch runs",
+        "A lost stream reconnects by itself after 1 s, doubling to 10 s, and the server already names why it closes ('devhost is stopping')",
+        "The config editor waits until devhost has applied a save before it says 'Saved and applied.'",
+        "Danger notices carry Copy, and the rejection notice links Edit to the config editor",
+        "Every accepted configuration change logs one line with the service URLs once it is complete",
+        "A held reload is offered back in one click"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "notices-and-feedback-03 Each operation reports its result in its own place, words and lifetime; success is silent and open panels cover notices",
+        "notices-and-feedback-01 A failed per-service Restart's error is erased within seconds; Config on a stopped stack pushes its buttons 40,000 px away",
+        "notices-and-feedback-02 Through a stop the toolbar says N/N, then shows crashed services with live Restart buttons, and recovers without a word",
+        "services-panel-2-04 Every successful Restart Stack ends with a second of every service shown down",
+        "stack-scale-06 Starting one stopped service redraws the whole stack as down and drops the Stopped services list",
+        "proxy-settings-03 After an httpsPort change, open pages stay at 0/N and nothing names the new address",
+        "journey-new-project-02 On a stopped stack every Restart stays enabled and fails with the routing page's raw HTML (its starting-shown-as-down part is services-panel's)",
+        "keyboard-and-screen-reader-02 Screen readers hear every notice as an alert but never a recovery",
+        "error-pages-02 Owned by startup-and-recovery: a Restart Stack that fails from the crash view closes it without a word"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: service restarts that succeed and fail, Restart Stack, a worktree switch, a rejected manifest edit fixed from the Config editor, a held reload, devhost stop and devhost caddy stop with the page open, an httpsPort change, and a screen-reader live-region recording. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

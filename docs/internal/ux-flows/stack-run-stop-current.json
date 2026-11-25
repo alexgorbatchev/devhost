@@ -1,0 +1,373 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Start, find, stop and restart stacks from the terminal today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/stack-run-stop-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "fg", "label": "Foreground terminal" },
+    { "id": "browser", "label": "Browser" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "cmd", "label": "Command terminal" },
+    { "id": "log", "label": "Stack log file" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "begin", "label": "Start + validate", "fromCol": 0, "toCol": 1 },
+    { "id": "run", "label": "Launch, read + find", "fromCol": 2, "toCol": 3 },
+    { "id": "end", "label": "Stop + restart", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["start", "resolve", "launch", "detach", "find", "stop", "shutdown"],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "entry",
+      "col": 0,
+      "type": "security",
+      "label": "devhost start [names]",
+      "sublabel": "in a project; or --detach",
+      "tag": "stack-run-stop-12",
+      "explanation": "People and agents start with devhost start [names] in a project folder, in the foreground by default or with --detach. In a folder without a manifest the only answer is 'Could not find devhost.toml from <folder> upward.' and 'Run devhost from your project folder, or pass --manifest <path>.': the person is in their project folder, and nothing creates a manifest or links the docs. The Quickstart in devhost --help starts with Caddy setup and 'devhost start  # run the stack in devhost.toml', and start --help has no examples. Every AGENT=1 help screen opens with 'ALERT: Agents must read AGENT=1 devhost skill before using this tool.', but devhost skill prints only an npx install command and a GitHub URL on the main branch: not the guidance, and not the version of this binary (stack-run-stop-12).",
+      "sources": [
+        { "path": "apps/devhost/internal/manifest/resolve.go", "line": 15, "end_line": 33, "label": "Searches upward to the repository root" },
+        { "path": "apps/devhost/internal/cli/help.go", "line": 19, "end_line": 35, "label": "Skill command and the agent help alert" }
+      ]
+    },
+    {
+      "id": "resolve",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Find + validate manifest",
+      "sublabel": "names, ports, host claims",
+      "explanation": "Before anything runs, devhost start reads the manifest and its includes, validates the schema, checks the requested names and orders the services by dependsOn. The stack then claims every fixed port and hostname, so a second stack cannot take them. A detached start hands the same validated arguments to a background supervisor. Any check that fails here ends the start with exit 1 before a service runs.",
+      "sources": [
+        { "path": "apps/devhost/internal/app/run.go", "line": 112, "end_line": 157, "label": "Read, validate, check names; --detach" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 357, "end_line": 391, "label": "Claim fixed ports and hostnames" }
+      ]
+    },
+    {
+      "id": "launch",
+      "lane": "backend",
+      "col": 2,
+      "type": "security",
+      "label": "Start + health-check",
+      "sublabel": "one by one; pass or fail",
+      "tag": "journey-new-project-03",
+      "explanation": "Services start one after another in dependency order, and each waits for its health check before the next starts. After a short delay devhost prints 'Waiting for service api to pass its HTTP health check on http://127.0.0.1:<port>/healthz (elapsed: 2s; timeout: 30s)...', but the HTTP probe is pass or fail on a 2xx and never keeps the status it got: an API that answers the README's health = { http = \"/healthz\" } with 404 waits the full 30 s, then fails twice with 'did not pass its health check within 30000ms', never saying the path answered 404 (journey-new-project-03). After a killed stack, the TCP check connects to the orphaned old process, so a new process that failed with EADDRINUSE is reported ready (interrupted-operations-02).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 486, "end_line": 533, "label": "Start each service in dependency order" },
+        { "path": "apps/devhost/internal/services/startup_health.go", "line": 26, "end_line": 48, "label": "Waiting line with elapsed and timeout" },
+        { "path": "apps/devhost/internal/services/health.go", "line": 182, "end_line": 200, "label": "HTTP check keeps only pass or fail" }
+      ]
+    },
+    {
+      "id": "detach",
+      "lane": "cmd",
+      "col": 2,
+      "type": "security",
+      "label": "Detached start reports",
+      "sublabel": "blank wait; bare URLs",
+      "tag": "stack-run-stop-04",
+      "explanation": "devhost start --detach launches the supervisor in the background, sends its output only to the stack log, and waits. The terminal stays blank for the whole wait: no stack name, no service in progress, no elapsed time. On success it prints 'Started Acme Shop (PID n).', the URLs without service names or the primary marker (the /api/ route first) and the log path; it never names the services a partial start left out. Ctrl-C during the wait prints the log tail and '[ERROR] received SIGINT (Ctrl-C) (signal 2) before the stack was ready', reporting the person's own cancel as an error, and a failed start states its cause twice (stack-run-stop-04).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/detach.go", "line": 143, "end_line": 158, "label": "Child writes only to the log; command waits" },
+        { "path": "apps/devhost/internal/services/detach.go", "line": 398, "end_line": 417, "label": "Started line, bare URLs, log path" }
+      ]
+    },
+    {
+      "id": "already",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Already running, exit 0",
+      "sublabel": "asked-for service absent",
+      "tag": "stack-run-stop-01",
+      "explanation": "When the manifest's stack already runs, a detached start reports it and stops: 'Already running Acme Shop (PID n).' and the log path, exit 0, whatever names were asked for; AGENT=1 prints the same. devhost start --detach admin on a stack started with storefront never names admin, which stays not started, and its hostname answers the generic devhost 404 that blames routing. The running stack's URLs are not repeated either. stack-lifecycle.md documents that the selection does not change, but the terminal never tells the person or agent who asked (stack-run-stop-01).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/detach.go", "line": 121, "end_line": 125, "label": "Existing stack reported; names not compared" },
+        { "path": "apps/devhost/internal/services/detach.go", "line": 406, "end_line": 412, "label": "URLs only for a stack it started" }
+      ]
+    },
+    {
+      "id": "log",
+      "lane": "log",
+      "col": 3,
+      "type": "security",
+      "label": "Read the stack log",
+      "sublabel": "hashed path; moves",
+      "tag": "stack-run-stop-05",
+      "explanation": "The only way to read a detached stack is the printed Log path, <state>/logs/stack-<64 hex>.log, about 100 characters. The file appends every start without timestamps or a run separator, each run in the format of whoever launched it (an AGENT=1 start switches it to 'api: ...' lines mid-file), and after devhost stack restart the stack writes to a new restart-<random>/<old PID>.log while the old path goes silent; each restart leaves another folder (stack-run-stop-05). In the agent format, failures such as 'configuration reload rejected' and 'exited with code 1' carry no ERR: or WARN: marker while warnings do (agent-cli-journey-05). A foreground stack writes no log at all, so an agent cannot read a hot reload's outcome (agent-cli-journey-02). An idle stop of a detached stack is recorded only here (stack-run-stop-11).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/detach.go", "line": 98, "end_line": 105, "label": "Log path: logs/stack-<sha256>.log" },
+        { "path": "apps/devhost/internal/services/restart.go", "line": 92, "end_line": 116, "label": "Restart logs to restart-*/<PID>.log" }
+      ]
+    },
+    {
+      "id": "urls",
+      "lane": "fg",
+      "col": 2,
+      "type": "security",
+      "label": "URL list after slowest",
+      "sublabel": "no ready line; wraps",
+      "tag": "stack-run-stop-03",
+      "explanation": "A foreground start prints no line as each service starts. The URL lines appear together only after the last service passes its health check: the primary was serving at about 3 s, its URL appeared at about 10 s. No line says the stack is ready or how long it took, the API path route is listed before the primary, then 'not started: ...', and with a chatty service the list scrolls away and is never printed again (stack-run-stop-03). A service that crashed during the start is listed with its URL like the working ones, and the start never says one of six failed (journey-crash-to-fix-05, a duplicate). The stack directory URL never appears (stack-directory-06). Lines are hard-wrapped at the terminal width inside the label gutter, splitting URLs, paths and commands mid-word (stack-run-stop-10). A 40-service stack prints 40 URL lines (stack-scale-07).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 544, "end_line": 545, "label": "URL and not-started lists after all start" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 719, "end_line": 734, "label": "One line per URL; primary marked" },
+        { "path": "apps/devhost/internal/cliout/service_output.go", "line": 104, "end_line": 129, "label": "Hard wrap at the terminal width" }
+      ]
+    },
+    {
+      "id": "exits",
+      "lane": "fg",
+      "col": 3,
+      "type": "security",
+      "label": "Service exits, waits",
+      "sublabel": "no CLI restart",
+      "tag": "agent-cli-journey-03",
+      "explanation": "While the stack runs, a service that exits prints 'api exited with code 1; devhost is waiting for a restart.', but the CLI cannot restart one service: devhost service restart is an unknown command, every CLI path restarts the whole stack, and help and the skill name only browser buttons (agent-cli-journey-03). A SIGTERM from outside prints only 'exited with code 143', with no signal, time or sender (interrupted-operations-04); a daemon that dies prints nothing at all (manifest-hot-reload-2-02). Nothing shows the command, folder or manifest line behind a crash (journey-crash-to-fix-04). devhost prints the same crash line for stops it made itself: a worktree switch, which also names checkouts by folder (worktree-switch-04), and Restart Stack, while every toolbar Start reprints all URLs and the not-started list (stack-scale-07). A config.toml save prints 'Applied ...' and every URL again, never what changed (proxy-settings-04).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 633, "end_line": 634, "label": "Every exit: waiting for a restart" },
+        { "path": "apps/devhost/internal/cli/parse.go", "line": 335, "end_line": 362, "label": "The service command has only list" }
+      ]
+    },
+    {
+      "id": "open",
+      "lane": "browser",
+      "col": 3,
+      "type": "security",
+      "label": "Open a printed URL",
+      "sublabel": "/api misroutes, reads up",
+      "tag": "journey-new-project-01",
+      "explanation": "People open a printed URL in the browser. A manifest that mounts the API with path = \"/api\" on the front end's hostname starts without a warning, the API passes its health check (probed on its own port), the terminal prints 'api: https://newapp.localhost/api' and the toolbar shows 2/2 up. But Caddy renders the route as 'handle /api', an exact match, so /api/hello reaches the static site's 404 and the page's fetch fails with a JSON parse error; a path without a host is ignored the same silent way (journey-new-project-01). An HTTP client polling a service during the start gets about 750 KB of 404 HTML before routes exist, then empty 502s (agent-cli-journey-04).",
+      "sources": [
+        { "path": "apps/devhost/internal/caddy/routes.go", "line": 700, "end_line": 710, "label": "Path route renders as handle <path>" }
+      ]
+    },
+    {
+      "id": "find",
+      "lane": "cmd",
+      "col": 3,
+      "type": "security",
+      "label": "stack list / stack find",
+      "sublabel": "PID + path; no status",
+      "tag": "agent-cli-journey-01",
+      "explanation": "From another terminal, devhost stack list and devhost stack find print '<PID><TAB><manifest path>' and nothing else, exactly the same while a service is crashed: no stack name, foreground or detached, URLs, log or service state. devhost status and devhost logs are unknown commands, and devhost service list reads the manifest on disk, not the running stack (agent-cli-journey-01). stack find matches any query as a substring of a hostname, name or manifest path, so 'devhost stack find .' or the project's folder returns every stack below it, worktrees included, while a relative folder path returns nothing; two stacks named Acme Shop print only as PID and path (stack-run-stop-08). Neither prints the stack directory URL (stack-directory-06).",
+      "sources": [
+        { "path": "apps/devhost/internal/app/run.go", "line": 280, "end_line": 292, "label": "PID, tab and manifest path only" },
+        { "path": "apps/devhost/internal/caddy/stack_find.go", "line": 29, "end_line": 37, "label": "Substring match on host, name and path" }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "cmd",
+      "col": 4,
+      "type": "security",
+      "label": "devhost stop [--worktrees]",
+      "sublabel": "PIDs; 15 s, then kill",
+      "tag": "interrupted-operations-01",
+      "explanation": "devhost stop finds the stack through any path to its manifest and prints 'Stopping 1 active stack process(es) associated with manifest...', 'Sending SIGTERM to process 84244...' and 'Process 84244 stopped cleanly.': no stack name, a worktree hint before the action naming no stack, and stdout although reference/output.md says stop progress goes to stderr (stack-run-stop-06, agent-cli-journey-05). When the stack takes longer than 15 s, stop SIGKILLs only the supervisor, prints 'Process n terminated.' and exits 0 while its services keep running (interrupted-operations-01). --worktrees stops every stack in the repository one after another with no list first and no confirmation (stack-run-stop-07); it gives up at the first stack it cannot stop, exiting 1 on that PID without trying or naming the rest (stack-run-stop-14), and stops nothing while any running stack's folder is gone, even another repository's, failing on a raw Git error (stack-run-stop-16). Running chat conversations end without a word (chat-conversations-03). devhost caddy stop takes every stack offline with one line, 'managed caddy stopped.', naming none (notices-and-feedback-04).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stop.go", "line": 48, "end_line": 83, "label": "Worktree hint, PID lines, --worktrees loop" },
+        { "path": "apps/devhost/internal/services/stop.go", "line": 88, "end_line": 135, "label": "SIGTERM, 15 s, SIGKILL the supervisor" },
+        { "path": "apps/devhost/internal/services/stop_worktrees.go", "line": 29, "end_line": 44, "label": "Git per stack folder; errors end --worktrees" }
+      ]
+    },
+    {
+      "id": "restart",
+      "lane": "cmd",
+      "col": 5,
+      "type": "security",
+      "label": "devhost stack restart",
+      "sublabel": "--all: every stack",
+      "tag": "stack-run-stop-07",
+      "explanation": "devhost stack restart (--all after an upgrade) sends each stack SIGTERM, waits a fixed 15 s and relaunches the same command detached from this executable, logging to a new restart-<random>/<old PID>.log. A slower shutdown (two services each using their 10 s grace) makes it print 'stack is still stopping after 15s; replacement was not started', naming a log no replacement writes, and exit 1: the stack ends stopped, nothing replaces it, and no start command is printed (stack-run-stop-13). --all restarts every stack and serve session with 'Restarting Acme Shop (PID n); log: ...' lines that cannot be told apart when two checkouts share a name, ending 'Restarted ...; services may still be starting.' Neither it nor stop --worktrees lists what it will affect first, asks for confirmation or offers a dry run (stack-run-stop-07). A stack whose manifest is saved, even unchanged, after --all captured it is refused with 'stack ownership changed; refresh worktrees', a toolbar instruction, and keeps the old executable; one that stopped meanwhile counts as failed (stack-run-stop-15). A foreground stack it replaces ends its terminal like an ordinary shutdown (stack-run-stop-02).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/restart.go", "line": 62, "end_line": 89, "label": "Every live stack with --all; no preview" },
+        { "path": "apps/devhost/internal/services/restart.go", "line": 190, "end_line": 235, "label": "SIGTERM, wait, relaunch detached" },
+        { "path": "apps/devhost/internal/caddy/stack_occupant.go", "line": 75, "end_line": 85, "label": "Refused when the record changed since capture" }
+      ]
+    },
+    {
+      "id": "shutdown",
+      "lane": "backend",
+      "col": 5,
+      "type": "security",
+      "label": "Stop every service",
+      "sublabel": "TERM; 10 s each; KILL",
+      "tag": "process-containment-01",
+      "explanation": "Ctrl-C, devhost stop, stack restart and the idle timeout all end here. The supervisor sends SIGTERM to every service, then waits for them one at a time, up to 10 s each, and sends SIGKILL to any still running, so two slow services cost 20 s, and the Stopped lines print only after the slowest (interrupted-operations-03). Every stop path also signals every PID the service's tracker ever recorded and still finds alive, without checking it is the same process: stopping a long-running service can kill unrelated processes that reused its old child PIDs (process-containment-01). After every service has stopped, the supervisor can still hang with no time limit on a Caddy reload (stack-scale-01). Then it releases its hostnames, ports and routes, and unregisters the stack last.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 1227, "end_line": 1272, "label": "TERM all, wait each up to 10 s, KILL" },
+        { "path": "apps/devhost/internal/services/containment.go", "line": 108, "end_line": 118, "label": "Signals every tracked PID still alive" },
+        { "path": "apps/devhost/internal/services/containment.go", "line": 248, "end_line": 260, "label": "Tracked PIDs are only ever added" }
+      ]
+    },
+    {
+      "id": "fgstop",
+      "lane": "fg",
+      "col": 5,
+      "type": "security",
+      "label": "Shutdown lines, exit",
+      "sublabel": "2nd Ctrl-C ignored",
+      "tag": "interrupted-operations-03",
+      "explanation": "In the foreground terminal Ctrl-C prints 'Received SIGINT (Ctrl-C) (signal 2); shutting down the stack.' and one 'Stopping service <name>...' per service. A second Ctrl-C only echoes ^C: the supervisor reads one signal. The terminal then stays silent for 20 s or more while slow services are waited for; force-killed services print 'Stopped service <name>.' like clean stops, and services that exited minutes earlier are stopped again (interrupted-operations-03). A devhost stack restart from another terminal prints exactly this shutdown and exits 143 without saying the stack was replaced, and devhost start in this terminal then fails naming an included manifest first (stack-run-stop-02). An idle timeout prints 'Idle timeout of 30s reached. Automatically shutting down the stack...' and exits 0.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 216, "end_line": 232, "label": "Reads one signal; a second is ignored" },
+        { "path": "apps/devhost/internal/services/shutdown_progress.go", "line": 23, "end_line": 35, "label": "Stopping and Stopped service lines" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 316, "end_line": 320, "label": "Stack stopped. after cleanup" }
+      ]
+    },
+    {
+      "id": "gone",
+      "lane": "browser",
+      "col": 4,
+      "type": "security",
+      "label": "Generic 404 page",
+      "sublabel": "no stack, reason or time",
+      "tag": "stack-run-stop-11",
+      "explanation": "After any stop, and after an idle timeout nobody saw, the app's hostname answers Caddy's generic page: 'No active devhost route matched this hostname.' with the hint to check that the stack is running. It names no stack, stop reason or time, and no command or folder that starts it again; a detached start never mentioned the idle timeout, which only its log records (stack-run-stop-11).",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stack.go", "line": 644, "end_line": 651, "label": "Idle timeout shuts the stack down" },
+        { "path": "apps/devhost/internal/statuspage/not_found.go", "line": 10, "end_line": 17, "label": "Generic 404 title and hint" }
+      ]
+    },
+    {
+      "id": "refused",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Start refused",
+      "sublabel": "no file, line or fix",
+      "tag": "stack-run-stop-09",
+      "explanation": "Errors that stop a start name no file, line or next step: an unknown key in an included manifest prints 'Manifest schema is invalid:' and 'services.admin Unrecognized key: \"hostname\"' with no file and no 'did you mean host'; a TOML error names the line after the mistake behind the parser's prefix; a hostname clash names only the first clash and a PID, and the next appears only after fixing it; an unknown name lists services and groups mixed and points to devhost service list, which omits groups (stack-run-stop-09; a hot reload rejection has the same gap, manifest-hot-reload-03, a duplicate). A wrong cwd fails first with a raw git error from worktree discovery, so the documented services.<name>.cwd message is never reached (journey-new-project-04). With AGENT=1, ERR: marks only the first line of a multi-line error (agent-cli-journey-05). The person fixes the file and runs devhost start again.",
+      "sources": [
+        { "path": "apps/devhost/internal/manifest/errors.go", "line": 38, "end_line": 46, "label": "Schema errors: heading and key paths only" },
+        { "path": "apps/devhost/internal/services/worktrees.go", "line": 67, "end_line": 72, "label": "Git discovery runs before the cwd check" },
+        { "path": "apps/devhost/internal/cliout/cliout.go", "line": 41, "end_line": 48, "label": "Agent mode: one ERR: prefix" }
+      ]
+    },
+    {
+      "id": "orphans",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Services outlive stack",
+      "sublabel": "next start reads ready",
+      "tag": "interrupted-operations-02",
+      "explanation": "When the supervisor dies first (devhost stop's 15 s SIGKILL, a force-closed terminal, kill -9 or a crash), every service lives on in its own process group under PID 1 and keeps answering its hostname, while devhost stack list prints nothing and a second devhost stop reports no stack (interrupted-operations-01). The next devhost start drops the dead stack's records without a word; services on fixed ports fail with EADDRINUSE, yet their health checks connect to the orphans, the start lists their URLs as ready and only then reports the exits (interrupted-operations-02). Recovery means finding and killing the old processes by hand.",
+      "sources": [
+        { "path": "apps/devhost/internal/services/stop.go", "line": 116, "end_line": 130, "label": "SIGKILL reaches only the supervisor" },
+        { "path": "apps/devhost/internal/services/stack.go", "line": 327, "end_line": 345, "label": "Dead stack's records dropped silently" },
+        { "path": "apps/devhost/internal/services/health.go", "line": 171, "end_line": 180, "label": "TCP check passes on any listener" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "start-resolve", "from": "start", "to": "resolve", "label": "find devhost.toml", "role": "main" },
+    { "id": "resolve-launch", "from": "resolve", "to": "launch", "label": "valid", "role": "main" },
+    { "id": "launch-detach", "from": "launch", "to": "detach", "label": "--detach: ready", "role": "main" },
+    { "id": "detach-find", "from": "detach", "to": "find", "label": "later", "role": "main" },
+    { "id": "find-stop", "from": "find", "to": "stop", "label": "stop it", "role": "main" },
+    { "id": "stop-shutdown", "from": "stop", "to": "shutdown", "label": "SIGTERM", "role": "main", "fromSide": "top", "toSide": "bottom" },
+    { "id": "resolve-refused", "from": "resolve", "to": "refused", "label": "invalid", "role": "error" },
+    { "id": "refused-start", "from": "refused", "to": "start", "label": "fix, run again", "role": "return", "fromSide": "left", "toSide": "bottom" },
+    { "id": "detach-already", "from": "detach", "to": "already", "label": "stack already runs", "role": "branch" },
+    { "id": "detach-log", "from": "detach", "to": "log", "label": "progress only here", "role": "branch", "variant": "dashed" },
+    { "id": "launch-urls", "from": "launch", "to": "urls", "label": "foreground: ready", "role": "branch" },
+    { "id": "urls-open", "from": "urls", "to": "open", "label": "open a URL", "role": "branch" },
+    { "id": "urls-exits", "from": "urls", "to": "exits", "label": "runs on", "role": "branch" },
+    { "id": "exits-fgstop", "from": "exits", "to": "fgstop", "label": "Ctrl-C", "role": "branch" },
+    { "id": "shutdown-fgstop", "from": "shutdown", "to": "fgstop", "label": "shutdown lines", "role": "branch" },
+    { "id": "shutdown-gone", "from": "shutdown", "to": "gone", "label": "later: URL opened", "role": "branch", "variant": "dashed" },
+    { "id": "stop-orphans", "from": "stop", "to": "orphans", "label": "15 s: kills devhost only", "role": "error" },
+    { "id": "restart-shutdown", "from": "restart", "to": "shutdown", "label": "SIGTERM, relaunch", "role": "branch", "fromSide": "right", "toSide": "right" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "devhost start finds devhost.toml from any folder up to the repository root; stop, stack find and stack restart accept any path to the manifest",
+        "Every start is validated before a service runs, and hostname and fixed-port claims keep a second stack from taking them",
+        "A detached start waits for readiness, reuses a stack that already runs, serializes concurrent starts with a per-manifest lock, and on failure prints the log tail and stops what it started",
+        "A slow health check prints a waiting line with the elapsed time and the timeout",
+        "A failed service leaves the rest of the stack running (the recovery contract)",
+        "Ctrl-C names its signal, and every stop releases hostnames, ports and routes before it unregisters the stack",
+        "stack restart stops nothing when the executable is unavailable or the stack is its own ancestor",
+        "devhost stop with nothing running says so and points to devhost stack list"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "process-containment-01 Stopping a service can kill unrelated processes that reused its old child PIDs",
+        "interrupted-operations-01 After 15 s devhost stop kills only devhost, leaves the services running and exits 0",
+        "interrupted-operations-02 A killed stack's services keep serving unseen; the next start reports ready against them",
+        "journey-new-project-01 path = \"/api\" routes only the exact /api; API calls reach the static site while all reads healthy",
+        "agent-cli-journey-01 stack list and stack find print a PID and a path, the same while a service is crashed",
+        "stack-scale-01 Stopping can hang forever on a Caddy reload after every service stopped",
+        "stack-run-stop-01 start --detach for a service the running stack left out says Already running and exits 0",
+        "stack-run-stop-02 A foreground stack replaced by stack restart ends like an ordinary shutdown, exit 143",
+        "stack-run-stop-03 Foreground start prints URLs only after the slowest service and never says ready",
+        "stack-run-stop-04 Detached start is blank until done, then prints unlabeled URLs",
+        "stack-run-stop-05 The detached log has a hashed path and mixed formats, and a restart moves it",
+        "stack-run-stop-07 stop --worktrees and stack restart --all act on every stack with no preview",
+        "stack-run-stop-09 Errors that stop a start name no file, line or next step",
+        "stack-run-stop-10 Hard wrapping cuts URLs, paths and commands in half",
+        "stack-run-stop-12 Nothing creates devhost.toml, and devhost skill prints no skill",
+        "stack-run-stop-13 stack restart gives up after 15 s and leaves a slow-stopping stack stopped, not restarted",
+        "agent-cli-journey-03 A crashed service waits for a restart that the CLI cannot do",
+        "agent-cli-journey-05 ERR: marks only an error's first line, log failures carry no marker, and stop output contradicts output.md",
+        "interrupted-operations-03 A second Ctrl-C does nothing, slow stops are silent, and force-killed services read as stopped",
+        "interrupted-operations-04 A service killed from outside shows only exit code 143",
+        "journey-new-project-03 A health path answering 404 fails the start after 30 s without saying 404",
+        "journey-new-project-04 A wrong cwd fails with a raw git error, not the documented cwd message",
+        "manifest-hot-reload-2-02 A daemon that dies prints nothing in the terminal",
+        "manifest-hot-reload-03 Rejected settings never name the file or line (duplicate of stack-run-stop-09)",
+        "notices-and-feedback-04 devhost caddy stop takes every stack offline without naming them",
+        "chat-conversations-03 Stopping the stack ends every chat conversation without a word",
+        "proxy-settings-04 A config.toml save prints Applied and every URL, never what changed",
+        "stack-directory-06 start and stack list never show the stack directory URL",
+        "stack-scale-07 Every toolbar Start and Restart Stack reprint the whole stack in the terminal",
+        "worktree-switch-04 A worktree switch names checkouts by folder and reports its own stops as crashes",
+        "agent-cli-journey-02 A foreground stack writes no log, so an agent cannot read a reload's outcome",
+        "agent-cli-journey-04 HTTP clients get 750 KB of 404 HTML, then empty 502s, while a stack starts",
+        "journey-crash-to-fix-04 Nothing shows the command, folder or manifest line behind a crash",
+        "stack-run-stop-06 devhost stop talks about processes and PIDs, not the stack",
+        "stack-run-stop-08 stack find . or a folder returns every stack below it, worktrees included",
+        "stack-run-stop-11 After an idle stop the URL shows the generic 404 with no stack or reason",
+        "stack-run-stop-14 stop --worktrees gives up at the first stack it cannot stop and leaves the rest running, unnamed",
+        "stack-run-stop-15 stack restart --all refuses a stack whose manifest was saved meanwhile ('refresh worktrees') and leaves it on the old executable",
+        "stack-run-stop-16 stop --worktrees stops nothing while any running stack's folder is gone, failing on a raw Git error",
+        "journey-crash-to-fix-05 The start buries a crash and lists the crashed service's URL like the rest (duplicate of stack-run-stop-03)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: foreground, detached and partial starts, start errors, stack list and find, stop and stop --worktrees, stack restart and --all, Ctrl-C, idle shutdown, killed and slow-stopping stacks, and AGENT=1 output. This diagram was traced from source only. stack-run-stop-13 to stack-run-stop-16 were verified from code only, not reproduced live."
+      ]
+    }
+  ]
+}

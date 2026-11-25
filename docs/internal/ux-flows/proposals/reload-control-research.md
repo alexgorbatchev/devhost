@@ -1,0 +1,214 @@
+---
+created_on: 2026-11-17 03:45
+last_modified: 2026-11-18 06:44
+status: current
+---
+
+# Keep agent edits from reloading the page: research
+
+Proposal: [Keep agent edits from reloading the page](reload-control.md). Shared patterns: [UX pattern reference](../patterns.md).
+
+Scope: from a page whose dev server can reload it under the person, to an outcome they can trust and undo: reloads held in the browser, or the dev server's hot reloading turned off by a coding agent and the page current again. Operations: detecting the page's hot reload client; **Disable Reloads**, which opens chat and sends a request through the chat session API (`POST /__devhost__/chat/sessions`, the chat WebSocket's `send` command) so an agent edits project configuration, followed by whatever the edits trigger (a dev server restart, a manifest hot reload, held reloads); **Dismiss** on the hot reload notice; **Hold Reloads**; **Reload blocked** with **Reload** and its dismiss; turning the hold off. Hold Reloads and both notices write only browser storage; everything that changes files goes through the agent.
+
+Evidence: alexgorbatchev/devhost at `edb5c0fc01cabae490e92ac23d4c785ec896c4ed` (product code identical to the reviewed build), plus the installed type definitions and builds named under **Other products' behavior** (bun-types 1.4.3, Vite 7.3.2). "Verified" means read in code or tests at those revisions; "Hypothesis" means inferred and not tested. "Verified live" marks behavior a finding reproduced in the reviewed build, cited by its finding ID.
+
+Owner-confirmed product rule, decided by the product owner on 2026-11-16 and recorded as `O2` in the pattern reference: "keep the label **Disable Reloads** (no rename). Pressing it opens a confirm popover anchored to the hot reload notice that names the agent and shows the exact, editable request written for the detected framework (Bun `development.hmr`, Vite `server.hmr`, Next.js and webpack switches), scoped to this checkout (never a new worktree), with Send and Cancel, and offers **Hold Reloads** as the no-agent path." The request goes out in the **This checkout (live)** chat edit mode (`O1`). A standing owner rule adds: "Never treat **Hold Reloads** holding the app's own `location.reload()` as a bug; it is a documented limitation (a finding may still improve how it is explained)."
+
+Sending the request to a coding agent, and holding the application's own reloads, are intended, not defects. The gap is what surrounds them: today the request leaves on one click, unseen and generic (the part `O2` now specifies); nothing afterwards says what the agent changed, whether reloads actually stopped or what is still needed to apply the change; and the hold itself can drop, hide or silently stop holding a reload.
+
+## Today's flow, step by step
+
+Entry points and the surface:
+
+1. **The toolbar renders, and the hold runs only while it does.** The toolbar renders when service status, external toolbars, chat or the config editor is on, and the hold is armed with `shouldRenderToolbar && isReloadHoldEnabled` (Verified: `packages/devhost-ui/src/devtools/components/App.tsx:154`, `App.tsx:179-180`; the case where it does not render is `toolbar-shell-03`).
+2. **The page's hot reload client is detected.** `useHotReloadClient` reads the page once at mount and again on every resource entry and every child added to `document.body` (Verified: `packages/devhost-ui/src/devtools/features/hotReloadNotice/hooks/useHotReloadClient.ts:6-19`). `readHotReloadClient` checks, in order, Bun's `script[data-bun-dev-server-script]`, Next.js's `nextjs-portal` element, a loaded `/@vite/client` resource, and a `webpackHotUpdate*` global; it sees that a client loaded, not that it is connected or that hot reloading is enabled (Verified: `features/hotReloadNotice/readHotReloadClient.ts:3-16`; documented in `packages/docs/src/content/docs/guides/devtools.md:57`).
+3. **The hot reload notice shows.** Only with chat on, not dismissed, no request in flight from this page load and no tracked request in the settings store (Verified: `App.tsx:173-178`). It renders in the toolbar's readout slot with the rejected-manifest notice and **Reload blocked** (Verified: `App.tsx:283-306`), only while the toolbar is expanded (Verified: `packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx:95-102`), as `role="alert"` like every notice (Verified: `packages/devhost-ui/src/components/ui/Alert.tsx:22-32`). Copy: "\<Client\> hot reloading is on / Agent edits can refresh this page while you use it." with **Disable Reloads** and **Dismiss** (Verified: `features/hotReloadNotice/components/HotReloadNotice.tsx:14-24`, labels `features/hotReloadNotice/constants.ts:3-8`). The button carries no title or description naming the agent (Verified live: `reload-and-agents-01`).
+
+Disable Reloads, in the browser:
+
+4. **One click starts the request.** `onDisable` hides the notice for this page load, saves the chat target as Project, saves chat as open, and stores the request text in component state (Verified: `App.tsx:294-299`). No confirmation, preview or edit step exists between the click and the send (Verified: no confirm, preview or popover in `features/hotReloadNotice/`; the send in step 6).
+5. **The request text is fixed.** Three paragraphs: the page URL and client label, then "Disable hot module replacement, automatic page reloads, and server restarts on file changes in the development configuration. Leave application code alone.", then "Tell me what you changed and how to turn it back on." It names no setting, file or checkout (Verified: `features/hotReloadNotice/createDisableHotReloadMessage.ts:4-10`; no `development.hmr`, `server.hmr` or `liveReload` appears anywhere in `packages/devhost-ui/src` outside tests).
+6. **Chat sends it as soon as it is ready.** `PageChat` receives the text as `requestedMessage` (Verified: `App.tsx:256`) and calls `sendMessage` once the catalog has loaded and nothing is connecting or preparing (Verified: `features/agentChat/components/PageChat.tsx:185-188`). App clears the text and waits on the receipt (Verified: `App.tsx:160-169`).
+7. **The send carries only the text.** `sendMessage` joins a conversation, then sends `{ text }`: no selected elements, drawings or screenshot (Verified: `features/agentChat/hooks/useAgentChat.ts:142-160`; documented in `guides/devtools.md:53`).
+8. **It joins any open conversation in the checkout.** `joinRunningSession` lists the checkout's conversations and treats every status except `closed` and `error` as running, so an idle conversation counts. With one, the request joins it without asking; with several, chat asks "Several conversations are running. Which one should get this request?" (Verified: `features/agentChat/createAgentChatClient.ts:28`, `:298-311`; `components/ChatDecisionPrompt.tsx:37`). The expanded panel then says "Sent to the running conversation \<label\>." (Verified: `components/AgentChatPanel.tsx:177-181`); compact chat showed only "Working…" (Verified live: `reload-and-agents-01`).
+9. **Or it starts a new conversation.** With no open conversation, or one whose harness differs from the selected one, `send` starts a new conversation with the selected harness, Codex by default (Verified: `createAgentChatClient.ts:342`; default `shared/createDevtoolsSettingsStore.ts:17`). Before starting, chat asks **Start Anyway** or **Cancel** when an agent devhost did not start is working or waiting in the checkout (Verified: `createAgentChatClient.ts:187-195`, `:205`; `ChatDecisionPrompt.tsx:29-43`).
+10. **Delivery is confirmed or reported unconfirmed.** The client waits up to 45 s for the server's acknowledgement and otherwise settles the send as unconfirmed (Verified: `createAgentChatClient.ts:27`, `:333-361`). A receipt `{ sessionId, commandId }` is saved as `chat.hotReloadRequest` in the settings store (Verified: `App.tsx:163-165`; schema `shared/createDevtoolsSettingsStore.ts:23`).
+
+Disable Reloads, in the backend:
+
+11. **A conversation starts in the page's checkout.** `POST /__devhost__/chat/sessions` validates the harness and resolves the directory from the page URL's routed service, never from a browser-supplied path (Verified: `apps/devhost/internal/devtools/chat_server.go:112-145`, `internal/devtools/chat_project.go:12-19`).
+12. **The agent CLI is spawned.** `chatStore.start` creates the session (status `starting`), opens a replay journal in an unlinked temporary file and starts `claude -p … --permission-prompt-tool=stdio` or `codex app-server` with that directory as its working directory, in its own process group; Codex also gets `thread/start` with the directory as `cwd`; the session turns `idle` and is listed (Verified: `internal/devtools/chat_sessions.go:103-147`, `:151-209`; `internal/devtools/chat_process.go:62-75`; `internal/devtools/chat_journal.go:21-32`). devhost passes no approval policy: the CLI's own configuration decides whether it asks (Verified: no approval argument in `chat_sessions.go:135-141`; documented in `guides/annotations.md:87`).
+13. **The workflow instructions are appended.** Each `send` command is checked against the session's checkout, then the manifest's chat prompt is appended after "Devhost workflow instructions:"; the built-in prompt tells the agent to work in a new Git worktree and branch, commit, merge into local main and remove the worktree (Verified: `chat_server.go:249-257`; `internal/manifest/chat.go:3-5`, `:12-28`). The message, instructions included, must fit 8 MiB and is queued for the agent (Verified: `chat_server.go:259-273`).
+14. **The agent edits files under its own permissions.** devhost runs no command and edits no file itself (Verified: `guides/annotations.md:87`). In the review the agent first researched devhost's own `watch` behavior, then started `git worktree add … -b disable-hot-reload main`, and, told to edit in place, removed `watch` from `devhost.toml` before setting `hmr: false` in the dev server's entry file (Verified live: `reload-and-agents-01`).
+
+What the agent's edits trigger:
+
+15. **A dev server configuration edit applies only after the dev server restarts.** The playground's frontend runs `bun src/index.ts` without `--hot`, so `Bun.serve` keeps its `development.hmr: true` until the process restarts (Verified: `packages/playground/frontend/justfile:3-4`, `packages/playground/frontend/src/index.ts:21-23`; Verified live: `reload-and-agents-02`). A file under a service's `watch` path marks the service changed 200 ms after the last event; only a restart or reload clears the mark (Verified: `internal/services/watch.go:247-281`, `runtime.go:192-193`, `reload.go:278-282`; documented in `apps/devhost/devhost.example.toml:332-339`).
+16. **A manifest edit hot reloads the stack.** Saving `devhost.toml` applies it (`configuration reloaded:` on success, `configuration reload rejected:` otherwise) and restarts the services whose definition or injected environment changed, their dependents and every service of the same repository (Verified: `internal/services/reload.go:29-39`, `:85-152`; `internal/services/reload_plan.go:7-21`, `:23-54`; `internal/services/stack.go:631`). In the review that restart raised **Reload blocked** (Verified live: `reload-and-agents-01`).
+17. **The dev server asks the page to reload, and the hold cancels it.** A script reload is a `navigate` event of type `reload`; the hold cancels it when it is cancelable, not user initiated and not devhost's own, and sets one boolean (Verified: `features/reloadHold/hooks/useReloadHold.ts:24-30`). **Reload blocked** reads "Something tried to reload this page." with **Reload** and a dismiss (Verified: `features/reloadHold/components/ReloadBlockedNotice.tsx:10-20`; shown at `App.tsx:290`).
+
+The request settling and the notice returning:
+
+18. **The request is checked whenever chat state changes.** `PageChat` calls `isChatRequestSettled` with the conversation list, the open conversation and the delivery states (Verified: `PageChat.tsx:189-192`; evaluated only while the chat target is Project, `App.tsx:258`).
+19. **It settles on closed, failed, unlisted or finished.** Settled when the request's conversation is closed, failed or no longer listed, or when it is the open conversation and its delivery is completed, cancelled or failed (idle without delivery frames). While another conversation is open it never settles, whatever the request's conversation is doing (Verified: `features/agentChat/isChatRequestSettled.ts:9-19`; consequence `reload-and-agents-08`).
+20. **The notice comes back unchanged.** Settling clears `chat.hotReloadRequest` (Verified: `App.tsx:170-172`); the next render shows the notice again while the client is still detected, word for word with **Disable Reloads**, because the running dev server still serves its client (Verified: `App.tsx:175-178`; Verified live: `reload-and-agents-02`).
+
+Dismiss:
+
+21. **Dismiss is saved for good.** The X sets `chat.isHotReloadNoticeDismissed`, persisted under `devhost:settings:[<project root>, <page origin>]` in this browser (Verified: `App.tsx:300-302`; `shared/createDevtoolsSettingsStore.ts:21`, `:46`). Nothing sets it back: the only writer is that handler (Verified: searched `packages/devhost-ui/src` for `isHotReloadNoticeDismissed`: the schema, the read at `App.tsx:156`, the condition at `App.tsx:176` and the write at `App.tsx:301`).
+
+Hold Reloads and Reload blocked:
+
+22. **The toggle.** **Hold Reloads** is on by default, saved per project root and page origin, and shown only in browsers with the Navigation API; its label and title ("Stops scripts, such as a dev server, from reloading this page") are the same on and off, and `aria-pressed` carries the state (Verified: `shared/createDevtoolsSettingsStore.ts:22`; `useReloadHold.ts:18`; `App.tsx:343-350`; `features/reloadHold/components/ReloadHoldToggle.tsx:10-21`).
+23. **Reload applies the held reload.** **Reload** calls `reloadPage`, which sets a module flag and calls `location.reload()`; the hold lets every reload through while the flag is set, and nothing clears it (Verified: `packages/devhost-ui/src/devtools/shared/reloadPage.ts:1-11`; `useReloadHold.ts:27`; consequence `reload-and-agents-07`). The same function serves the crash view, restarts and **Restart Stack** (Verified: callers at `features/serviceStatusPanel/hooks/useServiceHealth.ts:105`, `features/serviceStatusPanel/components/ServiceCrashOverlay.tsx:40`, `shared/components/RestartStackButton.tsx:37`).
+24. **Dismissing Reload blocked keeps the old document.** The dismiss clears the one held flag; no count, time or marker remains (Verified: `useReloadHold.ts:17`, `:34`; consequence `reload-and-agents-04`).
+25. **Turning the hold off drops a held reload.** The effect sets the flag false and removes the listener; nothing replays the cancelled navigation (Verified: `useReloadHold.ts:19-23`; Verified live: `reload-and-agents-03`).
+
+Failures and undo:
+
+26. **A failed or cancelled send brings the notice back.** A rejected send, a cancelled conversation choice ("The request was not sent.") or a cancelled start ("No conversation was started.") returns a null receipt; App clears the in-flight flag so the notice shows again, and chat shows the error (Verified: `createAgentChatClient.ts:205`, `:308`; `useAgentChat.ts:151-154`; `App.tsx:163-164`).
+27. **There is no undo.** The request asks the agent to say "how to turn it back on" (Verified: `createDisableHotReloadMessage.ts:8`); devhost records no list of the files the agent changed and offers no revert, and the built-in workflow prompt commits and merges the change into local main (Verified: searched `apps/devhost` for hot reload or Disable Reloads handling: none, the server sees an ordinary chat message; `internal/manifest/chat.go:5`). Dismiss has no undo (step 21).
+
+## The contested behavior
+
+**One press of Disable Reloads hands a coding agent an unseen, generic request, possibly inside a conversation already open on other work, with devhost's worktree, commit and merge instructions attached; afterwards nothing tells the person what changed, whether reloads stopped, or what is still needed to apply the change (Verified in code; Verified live: `reload-and-agents-01`, `reload-and-agents-02`).**
+
+Supporting evidence:
+
+- The click reaches the agent with no stop in between: the handler stores the text and opens chat, and chat sends it as soon as it is ready (Verified: `App.tsx:294-299`, `PageChat.tsx:185-188`).
+- The request is identical for every client apart from its label, although the page has already told the four clients apart (Verified: `createDisableHotReloadMessage.ts:4-10`, `readHotReloadClient.ts:7-16`).
+- The workflow instructions go with this message as with any other, and the built-in prompt asks for a new worktree, a commit and a merge into local main, the opposite of `O2`'s "scoped to this checkout (never a new worktree)" (Verified: `chat_server.go:252-257`, `internal/manifest/chat.go:5`).
+- The only state devhost keeps about the request is its receipt, used to hide the notice until the request settles (Verified: `App.tsx:158`, `:163-165`, `:173-178`).
+
+Negative searches, recorded as evidence:
+
+- No confirmation, preview or editable draft exists for this request: `features/hotReloadNotice/` has no confirm, preview or popover, and the text never passes through the composer (Verified: searched the folder for confirm, preview and popover; `PageChat.tsx:185-188`).
+- No framework setting is named anywhere in the toolbar: `development.hmr`, `server.hmr`, `liveReload` and `hotUpdateGlobal` appear nowhere in `packages/devhost-ui/src` outside tests (Verified: searched).
+- The server does not know this message is special: `apps/devhost` has no hot reload or Disable Reloads code outside tests (Verified: searched case-insensitively for hotreload, hot_reload and "disable reloads").
+- Nothing records what the agent changed or offers a revert, and nothing compares the client before and after the request (Verified: the receipt is the only persisted trace, `shared/createDevtoolsSettingsStore.ts:23`, and it is cleared on settling, `App.tsx:170-172`).
+- Nothing brings a dismissed notice back (Verified: the only writer of `isHotReloadNoticeDismissed` sets it true, `App.tsx:301`).
+- Nothing replays a held reload or resets devhost's own-reload flag (Verified: `reloadPage.ts:5` is the only write of `isOwnReloadPending`; `useReloadHold.ts:19-23` and `:34` clear the held flag without reloading).
+
+What this means in practice:
+
+1. **The change can land away from the page.** Following the built-in prompt, the agent's next step was `git worktree add … -b disable-hot-reload main` (Verified live: `reload-and-agents-01`). The change reaches the page only after the agent commits and merges into local main and the dev server restarts (Verified: `internal/manifest/chat.go:5`), and never while the page runs a linked worktree on another branch (Hypothesis: holds when the stack's selected checkout is not the main checkout, as after a worktree switch).
+2. **Shared configuration can be committed without review.** The agent CLI's own approvals are the only brake (Verified: `guides/annotations.md:87`, no approval argument in `chat_sessions.go:135-141`); with a CLI configured never to ask, one press edits, commits and merges configuration with no prompt (Hypothesis: holds when the CLI allows edits and Git commands without asking, the configuration `chat-checkout-switch-04` describes).
+3. **The request can join unrelated work.** With exactly one open conversation, idle included, the request is appended to it without asking (Verified: `createAgentChatClient.ts:28`, `:302-306`); the built-in prompt tells the agent to treat follow-ups as "additional work for the current task" and to reuse that task's worktree (Verified: `internal/manifest/chat.go:3-5`), so the change can land in that worktree (Hypothesis: holds when the open conversation's earlier turn created one). The docs call this joining "running" conversations (Verified: `guides/devtools.md:53`).
+4. **Agents guess where the switch lives, and a wrong guess restarts the stack.** The phrase "server restarts on file changes" sent the agent into devhost's own `watch` in both runs, and removing `watch` from the manifest restarted the stack's services and raised **Reload blocked** (Verified live: `reload-and-agents-01`); a manifest edit restarts the changed services, their dependents and every service of the same repository (Verified: step 16).
+5. **The change is not applied when the turn ends.** The dev server keeps serving its client with hot reloading on until it restarts (Verified live: `reload-and-agents-02`; Verified: `packages/playground/frontend/justfile:3-4`). Nothing says a restart is needed; **Restart Changed** appears only when the edited file lies under the service's `watch` (Verified: step 15).
+6. **The notice cannot confirm success for every client.** Vite keeps loading `/@vite/client` with `server.hmr: false` (Verified in Vite 7.3.2, below), so after a correct change and a restart the notice would still say "Vite hot reloading is on" and offer **Disable Reloads** again (Hypothesis: not reproduced; holds when Vite serves the page's HTML). For Bun the docs say the dev script is absent with `hmr: false` (Verified: `guides/devtools.md:50`; not reproduced).
+7. **A second press is a second agent turn.** Each press sends the same fixed text with no link to an earlier request, and only one receipt is kept per project root and origin (Verified: `createDisableHotReloadMessage.ts:4`, `shared/createDevtoolsSettingsStore.ts:23`, `App.tsx:165`).
+8. **The notice can stay hidden long after the request ended.** After the person opens another conversation the request never settles (Verified: `isChatRequestSettled.ts:17`; `reload-and-agents-08`). In development builds the request is not evaluated at all while the Chat Directory is set to Devhost, yet it still hides the notice (Verified: `App.tsx:176`, `:258`; not covered by a finding).
+9. **The hold can hide that the page is stale.** Releasing the hold drops a held reload (Verified live: `reload-and-agents-03`); dismissing **Reload blocked** leaves no trace (Verified: `reload-and-agents-04`); a cancelled own reload ends the hold for the page's life while the toggle shows on (Verified live: `reload-and-agents-07`); the hold stops when the toolbar does not render (Verified: step 1, `toolbar-shell-03`).
+10. **Dismiss removes the only reminder for good.** It is saved per project root and origin, and every later load in that browser shows no notice whatever the client does (Verified: step 21; `reload-and-agents-01`).
+
+Reusable capabilities and their limits:
+
+- Chat's decision card already asks before joining one of several conversations or starting beside an agent devhost did not start, and its **Cancel** sends nothing (Verified: `ChatDecisionPrompt.tsx:21-56`, `createAgentChatClient.ts:205`, `:308`).
+- The page knows which of four clients loaded before the press (Verified: `readHotReloadClient.ts:7-16`); it does not know the dev server's configuration file or command.
+- The send path takes any text: up to 8 MiB including the workflow instructions, with delivery confirmed within 45 s or reported unconfirmed (Verified: `useAgentChat.ts:142-160`, `chat_server.go:263-264`, `createAgentChatClient.ts:27`).
+- One tracked request per project root and page origin, persisted in browser storage (Verified: `shared/createDevtoolsSettingsStore.ts:23`, `:46`).
+- One workflow prompt per manifest, applied to every message (Verified: `internal/manifest/chat.go:7-28`, `chat_server.go:255-256`); a per-message mode is `O1`'s backend work.
+- Changed marks: per service, 200 ms debounce, set by any file event under `watch`, never compared with what the process loaded (Verified: `watch.go:262-281`).
+- The hold: one boolean per page, only where the Navigation API exists (Verified: `useReloadHold.ts:17-18`; `guides/devtools.md:68`).
+
+### Other products' behavior
+
+- **Bun** (bun-types 1.4.3, `serve.d.ts:551-557`, the `Serve.Development` type): `Bun.serve({ development: { hmr } })`, "Enable Hot Module Replacement for routes (including React Fast Refresh, if React is in use)", default true when `NODE_ENV` is not `production`. Verified in the installed type definitions. The option is read when `Bun.serve` starts, so a server run without `--hot` needs a restart (Hypothesis, consistent with `reload-and-agents-02`); how `bun --hot` applies a changed `development` option is general knowledge, unverified.
+- **Vite** (7.3.2): `server.hmr?: HmrOptions | boolean` (`dist/node/index.d.ts:2360-2363`) and `server.ws?: false`, "Do not start the websocket connection" (`:2364-2368`). The development HTML transform always prepends `<script type="module" src="/@vite/client">`, without reading `server.hmr` (`dist/node/chunks/config.js:24687`, `:24794-24801`). A file change skips the HMR handler when `server.hmr` is `false`, so no update and no full-reload message is sent (`config.js:25559`). After its server connection returns from a restart the client calls `location.reload()` (`dist/client/client.mjs:865-870`), so a configuration change that restarts Vite still causes one reload attempt, which the hold catches. Verified in the installed build. Vite restarting itself when its configuration file changes is general knowledge, unverified here.
+- **Next.js** (general knowledge, unverified): `next dev` has no supported configuration switch that turns Fast Refresh off, and its development overlay element is present on every development page, so the notice would stay whatever the agent changes; stopping reloads usually means running a production build.
+- **webpack** (general knowledge, unverified): webpack-dev-server's `devServer.hot` and `devServer.liveReload` switch module replacement and full-page live reload; without the hot module replacement runtime the `webpackHotUpdate*` global is absent, so the notice would clear after a correct change and a restart. Projects using `webpack-hot-middleware` have no `devServer` block to edit.
+
+## What else changes
+
+Every row is Verified at the pinned revision unless it says otherwise; "Disable Reloads" means the request and what the agent's edits trigger.
+
+| Data | Today | Evidence |
+| --- | --- | --- |
+| Dev server configuration (the `Bun.serve()` options in the entry file, `vite.config.*`, and the like) | The agent edits whichever file it picks, under its own permissions; devhost names no setting or file and records nothing about the edit. The change applies only after the dev server restarts. | `createDisableHotReloadMessage.ts:4-10`; step 15; Verified live: `reload-and-agents-01`, `reload-and-agents-02` |
+| Manifest files (`devhost.toml` and its includes) | The request does not exclude them; the agent removed `watch` in the review. Each save hot reloads the stack, or is rejected while the accepted manifest keeps running. | `createDisableHotReloadMessage.ts:7`; `internal/services/reload.go:29-39`; `internal/services/stack.go:631`; Verified live: `reload-and-agents-01` |
+| Application code | The request asks the agent to leave it alone; nothing enforces that. | `createDisableHotReloadMessage.ts:7` |
+| Git worktrees, branches, commits and local main | The built-in workflow prompt asks for a new worktree and branch, a commit, a merge into local main and removal of the worktree and branch. devhost runs no Git command itself. | `chat_server.go:255-256`; `internal/manifest/chat.go:5`; `guides/annotations.md:87`; Verified live: `reload-and-agents-01` (`git worktree add` attempted) |
+| Agent CLI process | A new `claude` or `codex` process in its own process group, working in the page's checkout root, running until the conversation is closed or the stack stops; no new process when the request joins an open conversation. | `chat_sessions.go:103-147`; `chat_process.go:62-75`; `createAgentChatClient.ts:298-311` |
+| Service processes | The request itself restarts nothing. A manifest edit restarts the changed services, their dependents and every service of the same repository. A dev server configuration edit leaves the server running with hot reloading on until someone restarts it. | `internal/services/reload_plan.go:7-54`; `reload.go:278-286`; Verified live: `reload-and-agents-02` |
+| Ports, host claims and Caddy routes | Unchanged unless the agent edits the manifest; then the reload claims hosts and ports again and replaces the stack's route registrations. | `reload.go:119`, `:173`, `:231` |
+| devhost's state directory | Nothing for the request itself. A manifest reload rewrites the route registrations and claims above, and forgets the worktree selection when the edit turns worktrees on. | `reload.go:123-127`, `:173`, `:231` |
+| Services' changed marks (in memory) | Set 200 ms after any file event under a service's `watch` path, the agent's edits included; cleared only by a restart or a reload. | `internal/services/watch.go:262-281`; `internal/services/runtime.go:192-193`; `reload.go:278-282` |
+| Chat conversations and their replay | A started conversation is listed for the checkout, and a closed one stays listed for resuming; its replay lives in an unlinked temporary file for the conversation's life. | `chat_sessions.go:113-116`, `:198-209`; `chat_journal.go:21-32`; `chat_server.go:71-89` |
+| Terminal and minimap log | Session start and "message queued" lines go to the terminal and to the minimap's chat stream. | `internal/devtools/chat_log.go:45-71`; `chat_server.go:271`; `chat_sessions.go:115`, `:216` |
+| Browser storage: chat state under `devhost:settings:[<project root>, <page origin>]` | Disable Reloads saves the chat target as Project and chat as open; joining or starting a conversation saves its ID, harness and model; the receipt `chat.hotReloadRequest` is saved on delivery and cleared on settling. | `App.tsx:119`, `:144`, `:165`, `:171`, `:296-297`; `createAgentChatClient.ts:63-76`, `:103-107`; `shared/createDevtoolsSettingsStore.ts:13-32`, `:46` |
+| Browser storage: notice and hold settings | Dismiss saves `isHotReloadNoticeDismissed: true` with no way back; the toggle saves `isReloadHoldEnabled`, true by default. | `App.tsx:301`, `:347`; `shared/createDevtoolsSettingsStore.ts:21-22` |
+| Page memory | The in-flight flag hides the notice until the next load; the held flag records one held reload; devhost's own-reload flag is set by **Reload** and never cleared. | `App.tsx:157`, `:295`; `useReloadHold.ts:17`, `:29`, `:34`; `reloadPage.ts:1-7` |
+| The page's document and in-page state | A held reload leaves the old document running; **Reload**, or the next load, replaces it and loses whatever state the application does not keep. | `useReloadHold.ts:28`; `reloadPage.ts:6` |
+
+## Related tickets
+
+| Ticket | Source | One line |
+| --- | --- | --- |
+| `reload-and-agents-01` | same | Core: Disable Reloads looks like a switch but sends a vague request to an agent at once, with no preview; Dismiss is permanent. |
+| `reload-and-agents-02` | same | Core: after the turn the notice comes back word for word, with no word of the request or the restart it still needs. |
+| `reload-and-agents-03` | same | Core: turning Hold Reloads off while a reload is held drops that reload and leaves the page stale. |
+| `reload-and-agents-04` | same | Core: after **Reload blocked** is dismissed, nothing shows the page is out of date. |
+| `reload-and-agents-07` | same | Core: after a cancelled own reload, Hold Reloads stops holding for the page's life while it shows on. |
+| `reload-and-agents-08` | same | Core: after a new or switched conversation the request never settles, so the notice stays hidden. |
+| `journey-agent-fix-03` | same | Core, split: **Reload blocked** never says whether the page is already current (this flow's slice); the changed mark is the `services-panel` slice. |
+| `journey-agent-fix-03` | `stack-scale-08` | Feeds this flow: a reverted edit keeps the service marked changed until a restart, evidence for the `services-panel` slice. |
+| `journey-agent-fix-01` | same | Dependency: the stopgap that makes the built-in workflow prompt edit the checkout the page runs, which every Disable Reloads request carries today (`agent-chat`). |
+| `journey-agent-fix-01` | `chat-approvals-06` | Dependency: every message tells the agent to commit and merge into local main, unannounced before Send (`agent-chat`). |
+| `network-exposure-01` | same | Dependency: chat, this request included, can be started from the network through a forgeable `Origin` (`agent-chat` stopgap). |
+| `chat-checkout-switch-04` | same | Adjacent: chat never shows whether the agent asks before acting, the only brake on this request (`agent-chat`). |
+| `chat-compose-04` | same | Adjacent: opening chat hides the toolbar's notices, including the ones this flow raises (`toolbar-shell`). |
+| `toolbar-shell-01` | same | Adjacent: collapsed, the toolbar hides a held reload while its dot stays green (`toolbar-shell`). |
+| `toolbar-shell-03` | same | Dependency: the hold runs only while the toolbar renders, and stops silently when it does not (`toolbar-shell`). |
+| `toolbar-shell-07` | same | Adjacent: over a page's modal dialog, **Reload** on **Reload blocked** does nothing (`toolbar-shell`). |
+| `keyboard-and-screen-reader-02` | same | Adjacent: every notice is an assertive alert, the standing hot reload notice included (`notices-and-feedback`). |
+| `keyboard-and-screen-reader-04` | same | Adjacent: in forced colors, Hold Reloads on looks the same as off (`toolbar-shell`). |
+
+Other redesigns holding pieces of this journey: `agent-chat` (the send path, the choice of conversation, the chat edit mode, approvals and who may reach chat), `toolbar-shell` (where the notices and the toggle render and when the hold runs), `notices-and-feedback` (how notices announce and report outcomes), `services-panel` (changed marks and their restart), `manifest-hot-reload` (what a manifest edit restarts) and `running-agents` (the agent list chat checks before starting a conversation).
+
+## Open questions
+
+Already decided or tracked elsewhere, so not repeated here: the request's review popover and its **This checkout (live)** mode (`O2`, `O1`), whether the composer names the agent's approval behavior before Send (`O13`), and who may send the request from the network (`network-exposure-01`, as `O2` records).
+
+1. **What the notice can confirm after the request.**
+   - Unknown: whether the page can show that hot reloading is off, per client. Detection reads a loaded client (step 2); Vite 7.3.2 loads `/@vite/client` with `server.hmr: false` (Verified, **Other products' behavior**); Next.js's overlay is on every development page (general knowledge); the docs say Bun's script is absent with `hmr: false` (not reproduced).
+   - Why it matters: without it the notice returns after a correct change and offers a second agent turn on an already edited file (consequences 6 and 7; `reload-and-agents-02`).
+   - Evidence to close it: a fixture per client (Bun, Vite, Next.js, webpack-dev-server) recorded before and after its switch and a dev server restart: what the page exposes and what devhost detects.
+   - Proposed default: after a settled request the notice names that request and its outcome instead of offering **Disable Reloads** again; for a client whose state the page cannot show, it states what devhost saw (the client loaded), never that hot reloading is on.
+   - Who decides: the fixture evidence settles detection; the product owner approves the notice's changed claim, which `guides/devtools.md` documents.
+2. **The exact switch for Next.js and webpack, and what happens when none exists.**
+   - Unknown: `O2` names Bun's `development.hmr` and Vite's `server.hmr` but only "Next.js and webpack switches". Whether `next dev` has any supported switch is unverified (general knowledge says none), and webpack pages can come from webpack-dev-server (`hot`, `liveReload`) or from middleware with no `devServer` block.
+   - Why it matters: `O2` requires the exact request for the detected framework; a request naming a setting that does not exist sends the agent guessing again (consequence 4).
+   - Evidence to close it: each framework's documentation for its current release, confirmed in the fixtures of question 1.
+   - Proposed default: where no verified switch exists, the popover says so, leads with **Hold Reloads**, and keeps a generic request editable.
+   - Who decides: the product owner, as an extension of `O2`.
+3. **Whether the request may touch the manifest.**
+   - Unknown: whether a correct change ever belongs in `devhost.toml`. A service's `command` can carry the dev server's own flags, while `watch` only marks services changed (`apps/devhost/devhost.example.toml:332-339`); the finding's suggestion forbids manifest edits outright.
+   - Why it matters: a manifest save restarts the changed services, their dependents and the repository's other services (step 16), the reload the person wanted to avoid; yet a `command` change applied through hot reload is also the one edit that restarts the dev server for them (question 4).
+   - Evidence to close it: how the stacks devhost documents start their dev servers (flags in `command` against configuration files); the reviewed fixture runs `bun src/index.ts` with the switch in the entry file (Verified: `packages/playground/frontend/justfile:3-4`).
+   - Proposed default: the request names the detected client's own setting, says `watch` only marks services changed and must not be edited, and allows a `command` change only when the switch is a command-line flag, naming the services the reload will restart.
+   - Who decides: the product owner, with the `manifest-hot-reload` redesign, which owns what a manifest edit restarts (`O9`).
+4. **Who restarts the dev server to apply the change.**
+   - Unknown: after a configuration edit the server keeps hot reloading until it restarts (consequence 5). The agent could run devhost's CLI if its approvals allow, devhost could restart the service when the turn ends, or the person could, from the outcome.
+   - Why it matters: until the restart the person believes reloads are off (`reload-and-agents-02`); the restart itself drops server state and asks the page to reload, which the hold catches (Vite: **Other products' behavior**).
+   - Evidence to close it: per framework, whether a configuration edit restarts the server by itself (Bun without `--hot` does not, Verified live in `reload-and-agents-02`; Vite's own configuration watch is general knowledge); whether the agent CLIs may run `devhost` commands under their default approvals.
+   - Proposed default: devhost restarts nothing on its own; the outcome names the service to restart and offers its restart in place, the same restart the Services panel performs.
+   - Who decides: the product owner.
+5. **Which conversation receives the request.**
+   - Unknown: today the request joins the one open conversation, idle included, without asking (step 8). `O2` has the popover name the agent, but not whether the request may join a conversation that is on other work or in its own worktree.
+   - Why it matters: joined, the request becomes "additional work for the current task" under the built-in prompt and can land in that task's worktree, against `O2`'s "scoped to this checkout" (consequence 3).
+   - Evidence to close it: a chat run that joins a conversation which earlier created a worktree, with `O1`'s **This checkout (live)** instructions on the request, showing where the edit lands.
+   - Proposed default: a new conversation, with any open conversation offered by name as the alternative in the popover; never joined without being named.
+   - Who decides: the product owner, with the `agent-chat` redesign, which owns the choice of conversation; it refines `O2`.
+6. **A held reload when the hold is released or the notice dismissed.**
+   - Unknown: whether releasing the hold applies the held reload at once, keeps **Reload blocked** with its **Reload**, or asks; and whether a dismissed held reload leaves a lasting stale marker.
+   - Why it matters: reloading at once can discard the in-page work the hold protected; dropping it leaves a stale page with no signal (`reload-and-agents-03`, `reload-and-agents-04`), and the docs tell people to "Use **Reload** on the notice, or turn the hold off" (`guides/devtools.md:66`).
+   - Evidence to close it: none in code; it is a product call between losing in-page state and showing a stale page. Usage data on why people release the hold does not exist.
+   - Proposed default: releasing the hold keeps the held reload pending and visible with **Reload**, never reloading or dropping it; a dismissed held reload leaves a marker on **Hold Reloads** until the page reloads.
+   - Who decides: the product owner.
+7. **How the person undoes the agent's change.**
+   - Unknown: whether devhost offers its own way back (the files the agent changed, and a request to restore them) or relies on the agent's "how to turn it back on" and the person's Git.
+   - Why it matters: in **This checkout (live)** mode nothing is committed, so the edit sits in the working tree among the person's own changes; with today's prompt it is merged into local main (consequences 1 and 2).
+   - Evidence to close it: devhost's chat log already records each tool call's name and path (Verified: `internal/devtools/chat_log.go:146`); whether every harness reports the edited paths there needs a run per harness.
+   - Proposed default: the outcome lists the files the agent changed, from the conversation's tool calls, beside the agent's own instructions to turn reloads back on; devhost runs no revert itself.
+   - Who decides: the product owner.
