@@ -129,6 +129,9 @@ fn stale_identities_release_hosts_while_live_claims_and_registrations_reject_tak
     let mut owner = launch(&runtime, &owner_project, &[]);
     claim_ready(&runtime, &owner_project, "claim-owner", &mut owner);
     assert!(sentinel.0.try_wait().unwrap().is_none());
+    let live_owners = read_live_stack_owners(&runtime.state().join("caddy")).unwrap();
+    assert_eq!(live_owners.len(), 1, "{live_owners:?}");
+    let owner_pid = live_owners[0].pid;
     for host in stale_hosts {
         assert_eq!(routed_body(&runtime, host), "claim-owner");
         let claim: Value = serde_json::from_slice(
@@ -140,10 +143,15 @@ fn stale_identities_release_hosts_while_live_claims_and_registrations_reject_tak
             .unwrap(),
         )
         .unwrap();
-        assert_eq!(claim["ownerPid"], owner.0.id());
+        assert_eq!(claim["ownerPid"], owner_pid);
+        assert!(
+            claim["ownerStackId"]
+                .as_str()
+                .is_some_and(|id| !id.is_empty())
+        );
         let identity = claim["ownerStartIdentity"].as_str().unwrap();
         assert!(!identity.is_empty());
-        assert!(procid::is_record_owner_alive(owner.0.id() as i32, identity));
+        assert!(procid::is_record_owner_alive(owner_pid, identity));
     }
     assert!(
         !runtime
@@ -178,10 +186,7 @@ fn stale_identities_release_hosts_while_live_claims_and_registrations_reject_tak
             assert!(!rejected.0.wait().unwrap().success());
             let log = fs::read_to_string(attempt.join("lifecycle.log")).unwrap();
             assert!(
-                log.contains(&format!(
-                    "{host} is already claimed by PID {}",
-                    owner.0.id()
-                )),
+                log.contains(&format!("{host} is already claimed by PID {owner_pid}")),
                 "{log}"
             );
             assert!(

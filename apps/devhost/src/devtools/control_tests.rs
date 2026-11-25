@@ -80,9 +80,10 @@ impl Fixture {
                 result,
             }) = control.requests.recv_timeout(Duration::from_millis(500))
             {
-                let validation = crate::manifest::read_with_override(&root, &path, &content)
-                    .map(|_| ())
-                    .map_err(|e| e.message);
+                let validation =
+                    crate::manifest::read_with_override_env(&root, &path, &content, None)
+                        .map(|_| ())
+                        .map_err(|e| e.message);
                 let _ = result.send(validation);
             }
         })
@@ -371,6 +372,8 @@ fn directory_aggregates_registered_owners_filters_details_and_enforces_remote_po
     fixture.handle.live.update_manifest(&fixture.manifest);
     fixture.handle.live.finish_startup();
     let mut owner = RegisterStackOptions {
+        stack_id: String::new(),
+        daemon_socket: String::new(),
         remote: false,
         log_path: String::new(),
         control_port: fixture.server.port(),

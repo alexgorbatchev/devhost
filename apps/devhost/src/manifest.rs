@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use crate::{Failure, paths::clean};
 
@@ -18,25 +21,42 @@ pub use validation::{
 const NAME: &str = "devhost.toml";
 
 pub fn read_manifest(cwd: &Path, explicit: Option<&Path>) -> Result<Manifest, Failure> {
+    read_manifest_env(cwd, explicit, None)
+}
+
+pub fn read_manifest_env(
+    cwd: &Path,
+    explicit: Option<&Path>,
+    environment: Option<&BTreeMap<String, String>>,
+) -> Result<Manifest, Failure> {
     let path = resolve_path(cwd, explicit)?;
-    let raw = includes::read(&path)?;
+    let raw = includes::read_env(&path, environment)?;
     validation::validate(&path, raw).map_err(Into::into)
 }
 
-pub(crate) fn read_with_override(
+pub(crate) fn read_with_override_env(
     root: &Path,
     path: &Path,
     content: &str,
+    environment: Option<&BTreeMap<String, String>>,
 ) -> Result<Manifest, Failure> {
-    let raw = includes::read_with_override(root, &mut Inputs::default(), Some((path, content)))?;
+    let raw = includes::read_with_override_env(
+        root,
+        &mut Inputs::default(),
+        Some((path, content)),
+        environment,
+    )?;
     validation::validate(root, raw).map_err(Into::into)
 }
 
 /// Preserve discovered inputs even when a save is incomplete, so a later edit
 /// to a newly included file can recover the accepted running configuration.
-pub(crate) fn read_with_inputs(path: &Path) -> (Result<Manifest, Failure>, Inputs) {
+pub(crate) fn read_with_inputs_env(
+    path: &Path,
+    environment: Option<&BTreeMap<String, String>>,
+) -> (Result<Manifest, Failure>, Inputs) {
     let mut inputs = Inputs::default();
-    let result = includes::read_with_inputs(path, &mut inputs)
+    let result = includes::read_with_inputs_env(path, &mut inputs, environment)
         .and_then(|raw| validation::validate(path, raw).map_err(Into::into));
     (result, inputs)
 }

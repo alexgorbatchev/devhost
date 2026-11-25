@@ -447,7 +447,7 @@ impl Drop for Runtime {
 #[test]
 fn restart_preserves_foreground_and_detached_launches_and_isolates_projects() {
     let runtime = Runtime::start();
-    let (project, _foreground) = runtime.start_stack("foreground", false);
+    let (project, mut foreground_client) = runtime.start_stack("foreground", false);
     let (other, _) = runtime.start_stack("detached", true);
     let caddy = runtime.state().join("caddy");
     let original = read_live_stacks(&caddy).unwrap();
@@ -459,6 +459,8 @@ fn restart_preserves_foreground_and_detached_launches_and_isolates_projects() {
         .iter()
         .find(|stack| stack.name == "detached")
         .unwrap();
+    assert_eq!(foreground.pid, detached.pid);
+    assert_ne!(foreground.stack_id, detached.stack_id);
     let output = runtime
         .command()
         .current_dir(project.join("nested/deep"))
@@ -478,7 +480,21 @@ fn restart_preserves_foreground_and_detached_launches_and_isolates_projects() {
         fs::read_to_string(project.join("launches")).unwrap(),
         "token-foreground\ntoken-foreground\n"
     );
-    assert!(!procid::is_process_alive(foreground.pid));
+    if let Some(client) = foreground_client.as_mut() {
+        wait_until(|| client.0.try_wait().unwrap().is_some());
+    }
+    let after_first = read_live_stacks(&caddy).unwrap();
+    let restarted_foreground = after_first
+        .iter()
+        .find(|stack| stack.name == "foreground")
+        .unwrap();
+    assert_ne!(restarted_foreground.stack_id, foreground.stack_id);
+    assert_eq!(restarted_foreground.pid, detached.pid);
+    let still_detached = after_first
+        .iter()
+        .find(|stack| stack.name == "detached")
+        .unwrap();
+    assert_eq!(still_detached.stack_id, detached.stack_id);
     assert!(detached.is_alive());
     assert_eq!(
         fs::read_to_string(other.join("launches"))
@@ -506,28 +522,9 @@ fn restart_preserves_foreground_and_detached_launches_and_isolates_projects() {
         .iter()
         .find(|stack| stack.name == "detached")
         .unwrap();
-    assert_ne!(replacement.pid, detached.pid);
+    assert_eq!(replacement.pid, detached.pid);
+    assert_ne!(replacement.stack_id, detached.stack_id);
     assert!(replacement.log_path.contains("/restart-"));
-    let mut system = sysinfo::System::new();
-    let pid = sysinfo::Pid::from_u32(replacement.pid as u32);
-    system.refresh_processes_specifics(
-        sysinfo::ProcessesToUpdate::Some(&[pid]),
-        true,
-        sysinfo::ProcessRefreshKind::nothing()
-            .without_tasks()
-            .with_environ(sysinfo::UpdateKind::Always),
-    );
-    let environment = system.process(pid).unwrap().environ();
-    assert!(!environment.iter().any(|entry| {
-        entry
-            .as_encoded_bytes()
-            .starts_with(b"DEVHOST_INTERNAL_DETACHED_LOG=")
-    }));
-    assert!(environment.iter().any(|entry| {
-        entry
-            .as_encoded_bytes()
-            .starts_with(b"DEVHOST_INTERNAL_STACK_LOG=")
-    }));
     assert_eq!(
         fs::metadata(runtime.state().join("restart.lock"))
             .unwrap()
@@ -616,6 +613,8 @@ fn global_restart_works_outside_a_project_and_preserves_serve_sessions() {
     wait_until(|| runtime.serve_response().as_deref() == Some("preserved serve session"));
     let after = read_live_stacks(&caddy).unwrap();
     assert_eq!(after.len(), 3);
+    assert_eq!(after[0].pid, after[1].pid);
+    assert_eq!(after[1].pid, after[2].pid);
     for stack in &before {
         assert!(!stack.is_alive());
         let replacement = after
@@ -623,6 +622,7 @@ fn global_restart_works_outside_a_project_and_preserves_serve_sessions() {
             .find(|replacement| replacement.name == stack.name)
             .unwrap();
         assert_ne!(replacement.pid, stack.pid);
+        assert_ne!(replacement.stack_id, stack.stack_id);
         assert!(replacement.control_port > 0);
     }
 }
@@ -699,13 +699,22 @@ fn global_restart_preserves_an_unavailable_file_root_and_replaces_healthy_sessio
     assert_eq!(response().as_deref(), Some("retained file root"));
     let after = read_live_stacks(&caddy).unwrap();
     assert_eq!(after.len(), 2);
+    let before_healthy = before
+        .iter()
+        .find(|stack| !stack.manifest_path.is_empty())
+        .unwrap();
+    let after_healthy = after
+        .iter()
+        .find(|stack| !stack.manifest_path.is_empty())
+        .unwrap();
+    assert_ne!(after_healthy.pid, before_healthy.pid);
+    assert_ne!(after_healthy.pid, file_session.pid);
+    assert_ne!(after_healthy.stack_id, before_healthy.stack_id);
     assert!(
-        before
+        after
             .iter()
-            .filter(|stack| !stack.manifest_path.is_empty())
-            .all(|stack| !stack.is_alive())
+            .any(|stack| stack.pid == file_session.pid && stack.stack_id == file_session.stack_id)
     );
-    assert!(after.iter().any(|stack| stack.pid == file_session.pid));
 }
 
 #[test]

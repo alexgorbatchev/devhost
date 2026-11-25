@@ -51,6 +51,8 @@ On start, devhost:
 
 The shared Caddy must already be running; see [Prepare Caddy](../managed-caddy/#prepare-caddy).
 
+All stacks and standalone `devhost serve` sessions in the same state directory run inside a single on-demand devhost supervisor process. It starts automatically on the first `devhost start` or `devhost serve` and exits automatically once the last stack stops. A foreground command stays attached to stream its own stack's logs and stops only that stack on **Ctrl-C**, `SIGTERM`, or terminal disconnect.
+
 During foreground startup, or after a detached stack is ready, a service that exits or fails its health check does not stop the stack. Its hostname shows the error and recent logs with a **Restart** button; see [Restarts and recovery](../../stacks/recovery/).
 
 ## Keep a stack running after the terminal closes
@@ -72,7 +74,7 @@ devhost | https://hello.localhost
 devhost | Log: ~/.local/state/devhost/logs/stack-<sha256>.log
 ```
 
-The stack runs in a session and process group of its own and reads from `/dev/null`, so closing the terminal or ending the calling process group leaves it running. Its output goes to that log, one private file per manifest in the [state directory](../../reference/cli/#files-and-directories), and every detached start of the manifest appends to it. Follow it with `tail -f` on the printed path.
+The stack runs inside the shared devhost supervisor in a session of its own and reads from `/dev/null`, so closing the terminal or ending the calling process group leaves it running. Its output goes to that log, one private file per manifest in the [state directory](../../reference/cli/#files-and-directories), and every detached start of the manifest appends to it. Follow it with `tail -f` on the printed path.
 
 If a started service fails to launch, fails its health check, or exits before the stack is ready, devhost stops the stack and removes its routes and registration. It does the same when startup runs out of time, and when you press Ctrl-C, send `SIGTERM`, or close the terminal while the command waits. The command waits for that cleanup, prints up to the last 30 lines this start wrote to the log, and exits `1`. Its last line names the cause and the full log; [Terminal output](../../reference/output/#detached-start) lists the causes. Shared Caddy and externally managed services keep running. Once startup succeeds, ordinary [service recovery](../../stacks/recovery/) and [idle shutdown](#stop-automatically-when-idle) apply.
 
@@ -207,7 +209,7 @@ devhost stop --manifest path/to/devhost.toml
 
 devhost prints `Stopping service <name>...` and `Stopped service <name>.` for each service, then `Stack stopped.` once every service and route is cleaned up. If cleanup fails, it names the services instead of claiming success. Ctrl-C exits with code `130`, `SIGTERM` with `143`.
 
-`devhost stop` sends the stack `SIGTERM`, waits up to 15 seconds, and then kills whatever is left. When nothing runs from that manifest, it says so, exits `0`, and points to `devhost stack list` if other stacks are running.
+`devhost stop` asks the supervisor to stop only the matching stack (waiting up to 15 seconds for its services to exit), leaving other stacks in the same supervisor process untouched. When the last stack in the state directory stops, the shared supervisor exits automatically. When nothing runs from that manifest, `devhost stop` says so, exits `0`, and points to `devhost stack list` if other stacks are running.
 
 ### Stop a stack started elsewhere
 
@@ -245,19 +247,19 @@ This stops every stack whose root manifest is in the current Git repository, inc
 
 ## Restart after upgrading devhost
 
-After installing a new devhost executable, replace the running supervisors:
+After installing a new devhost executable, replace the shared supervisor and every stack it hosts:
 
 ```bash
 devhost restart-all
 ```
 
-Run this from any directory. It includes every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables). `restart-all` stops instances whose launch working directory was removed. If a file serve session's working directory still exists but its served directory cannot be opened, the command reports the path and leaves the original session running. Other instances are still restarted.
+Run this from any directory. It drains the previous supervisor and relaunches every manifest stack and standalone `serve` session registered in the [selected state directory](../../reference/cli/#environment-variables) inside a single new supervisor process running the current executable. `restart-all` stops instances whose launch working directory was removed. If a file serve session's working directory still exists but its served directory cannot be opened, the command reports the path and leaves that session running in the draining supervisor while restarting the other instances in the new supervisor.
 
-To restart a single project, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`.
+To restart a single project without disturbing sibling stacks, run `devhost stack restart --all` or `devhost stack restart`. Both select the nearest `devhost.toml` from the current directory or its parents. To select another project, omit `--all` and use `--manifest path/to/devhost.toml` or `DEVHOST_MANIFEST`. If other stacks share the supervisor, `devhost stack restart` restarts only the selected stack in place (and warns if the supervisor runs an older binary, pointing to `devhost restart-all`); if it is the only stack and the binary changed, it replaces the supervisor too.
 
-Both commands capture the arguments, working directory, and environment for every replacement before stopping any stack. An unexpected capture error aborts the command before shutdown. Each relaunch uses the executable running the restart command. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
+Both commands capture the launch configuration, working directory, and environment for every replacement before stopping any stack. An unexpected capture error aborts the command before shutdown. Service selections, flags, and saved worktree choices carry over. Services started later through the UI follow the original launch selection. Manifests and shared configuration are read again from disk.
 
-Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and new PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or `devhost stop --session <name>` for a standalone session, to stop its replacement. Command sessions preserve their generated names.
+Replacements run in the background with closed standard input. Each gets a private log under the devhost state directory; the command prints its path and supervisor PID. The original foreground command exits. Use `devhost stop` for a manifest stack, or `devhost stop --session <name>` for a standalone session, to stop its replacement. Command sessions preserve their generated names.
 
 A manifest stack replacement starts like a foreground stack, even when it replaces a stack started with `--detach`: no command waits for its readiness, so a service that fails its health check goes to [recovery](../../stacks/recovery/) while the rest of the stack keeps running. A detached stack's replacement records its new log path, which `devhost start --detach` then reports. Command-mode `serve` replacements still require an initial HTTP listener within their startup timeout.
 

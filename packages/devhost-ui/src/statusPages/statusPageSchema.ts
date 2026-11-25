@@ -81,6 +81,7 @@ export const statusPageSchema = z.object({
   stacks: z
     .array(
       z.object({
+        id: z.string().optional().default(""),
         name: z.string(),
         pid: z.number(),
         manifestPath: z.string(),

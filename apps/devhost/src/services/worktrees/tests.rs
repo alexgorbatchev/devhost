@@ -49,15 +49,21 @@ impl Fixture {
         self.directory.path().join("state")
     }
     fn resolved(&self, root: &Path) -> ResolvedManifest {
-        let configuration = manifest::read_with_inputs(&root.join("devhost.toml"))
+        let configuration = manifest::read_with_inputs_env(&root.join("devhost.toml"), None)
             .0
             .unwrap();
         resolve_service_ports(&configuration, &PortResolutionOptions::default()).unwrap()
     }
     fn worktrees(&self) -> Worktrees {
-        Worktrees::build(&self.resolved(&self.root), &self.state(), None)
-            .unwrap()
-            .unwrap()
+        Worktrees::build(
+            &self.resolved(&self.root),
+            &self.state(),
+            None,
+            "",
+            &BTreeMap::new(),
+        )
+        .unwrap()
+        .unwrap()
     }
 }
 
@@ -113,9 +119,15 @@ fn discovery_selection_and_recovery_preserve_repository_identity_and_target_memb
     assert_eq!(target.unwrap(), configuration);
     let mut resolved = fixture.resolved(&fixture.linked);
     resolved.manifest_path = fixture.root.join("devhost.toml");
-    let mut live = Worktrees::build(&resolved, &fixture.state(), Some(&restored))
-        .unwrap()
-        .unwrap();
+    let mut live = Worktrees::build(
+        &resolved,
+        &fixture.state(),
+        Some(&restored),
+        "",
+        &BTreeMap::new(),
+    )
+    .unwrap()
+    .unwrap();
     live.finish(&BTreeMap::new());
     let selected = live.snapshot().remove(0);
     assert_eq!(selected.id, repo.id);
@@ -187,7 +199,7 @@ fn grouping_rejects_mixed_checkouts_external_services_and_escaping_directories()
     let mut resolved = fixture.resolved(&fixture.root);
     resolved.services.get_mut("web").unwrap().cwd = fixture.linked.join("web");
     assert!(
-        Worktrees::build(&resolved, &fixture.state(), None)
+        Worktrees::build(&resolved, &fixture.state(), None, "", &BTreeMap::new())
             .err()
             .unwrap()
             .contains("different checkouts")
@@ -195,7 +207,7 @@ fn grouping_rejects_mixed_checkouts_external_services_and_escaping_directories()
     resolved.services.get_mut("web").unwrap().cwd = fixture.root.join("web");
     resolved.services.get_mut("web").unwrap().command.clear();
     resolved.services.get_mut("web").unwrap().managed = false;
-    let mut blocked = Worktrees::build(&resolved, &fixture.state(), None)
+    let mut blocked = Worktrees::build(&resolved, &fixture.state(), None, "", &BTreeMap::new())
         .unwrap()
         .unwrap();
     let repo = blocked.snapshot().remove(0);
@@ -224,7 +236,7 @@ fn grouping_rejects_mixed_checkouts_external_services_and_escaping_directories()
     assert_eq!(joining, BTreeSet::from(["web".to_owned()]));
     resolved.worktrees.enabled = false;
     assert!(
-        Worktrees::build(&resolved, &fixture.state(), None)
+        Worktrees::build(&resolved, &fixture.state(), None, "", &BTreeMap::new())
             .unwrap()
             .is_none()
     );
@@ -243,7 +255,14 @@ fn malformed_selection_is_rejected_and_atomic_selection_is_private() {
     ] {
         fs::write(&path, data).unwrap();
         assert!(
-            Worktrees::build(&fixture.resolved(&fixture.root), &fixture.state(), None).is_err()
+            Worktrees::build(
+                &fixture.resolved(&fixture.root),
+                &fixture.state(),
+                None,
+                "",
+                &BTreeMap::new()
+            )
+            .is_err()
         );
     }
     fs::remove_file(&path).unwrap();
@@ -333,9 +352,15 @@ fn submodules_and_bare_repositories_keep_checkout_identity() {
             linked.to_str().unwrap(),
         ],
     );
-    let mut worktrees = Worktrees::build(&fixture.resolved(&root), &fixture.state(), None)
-        .unwrap()
-        .unwrap();
+    let mut worktrees = Worktrees::build(
+        &fixture.resolved(&root),
+        &fixture.state(),
+        None,
+        "",
+        &BTreeMap::new(),
+    )
+    .unwrap()
+    .unwrap();
     let repo = worktrees.snapshot().remove(0);
     assert_eq!(repo.worktrees.len(), 2);
     for path in [&root, &linked] {
@@ -372,10 +397,10 @@ fn external_owning_manifest_remains_available_and_local_manifest_takes_precedenc
         );
     fs::write(&external, body).unwrap();
     fs::remove_file(fixture.root.join("devhost.toml")).unwrap();
-    let configuration = manifest::read_with_inputs(&external).0.unwrap();
+    let configuration = manifest::read_with_inputs_env(&external, None).0.unwrap();
     let resolved =
         resolve_service_ports(&configuration, &PortResolutionOptions::default()).unwrap();
-    let mut worktrees = Worktrees::build(&resolved, &fixture.state(), None)
+    let mut worktrees = Worktrees::build(&resolved, &fixture.state(), None, "", &BTreeMap::new())
         .unwrap()
         .unwrap();
     let id = worktrees.snapshot()[0].id.clone();
@@ -386,9 +411,15 @@ fn external_owning_manifest_remains_available_and_local_manifest_takes_precedenc
     let target = worktrees.prepare(&id, &fixture.linked).unwrap();
     let mut next = resolve_service_ports(&target, &PortResolutionOptions::default()).unwrap();
     next.manifest_path = external.clone();
-    let mut selected = Worktrees::build(&next, &fixture.state(), Some(&worktrees))
-        .unwrap()
-        .unwrap();
+    let mut selected = Worktrees::build(
+        &next,
+        &fixture.state(),
+        Some(&worktrees),
+        "",
+        &BTreeMap::new(),
+    )
+    .unwrap()
+    .unwrap();
     assert_eq!(
         selected.prepare(&id, &fixture.root).unwrap().manifest_path,
         external
@@ -401,14 +432,20 @@ fn external_owning_manifest_remains_available_and_local_manifest_takes_precedenc
 fn missing_configured_linked_checkout_keeps_the_previous_repository_identity() {
     let fixture = Fixture::new();
     let configured = fixture.resolved(&fixture.linked);
-    let worktrees = Worktrees::build(&configured, &fixture.state(), None)
+    let worktrees = Worktrees::build(&configured, &fixture.state(), None, "", &BTreeMap::new())
         .unwrap()
         .unwrap();
     let id = worktrees.snapshot()[0].id.clone();
     fs::remove_dir_all(&fixture.linked).unwrap();
-    let missing = Worktrees::build(&configured, &fixture.state(), Some(&worktrees))
-        .unwrap()
-        .unwrap();
+    let missing = Worktrees::build(
+        &configured,
+        &fixture.state(),
+        Some(&worktrees),
+        "",
+        &BTreeMap::new(),
+    )
+    .unwrap()
+    .unwrap();
     assert_eq!(missing.snapshot()[0].id, id);
 }
 

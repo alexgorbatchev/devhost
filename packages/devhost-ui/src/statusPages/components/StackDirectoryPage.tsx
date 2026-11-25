@@ -74,7 +74,7 @@ export function StackDirectoryPage({ stacks, query }: IStackDirectoryPageProps):
       {stacks.length ? (
         <div className="grid min-w-0 grid-cols-1 gap-3">
           {stacks.map((stack) => (
-            <StackDirectoryCard key={stack.pid} stack={stack} />
+            <StackDirectoryCard key={stack.id || `${stack.pid}:${stack.manifestPath}:${stack.name}`} stack={stack} />
           ))}
         </div>
       ) : (

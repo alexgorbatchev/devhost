@@ -30,7 +30,7 @@ devhost stack info --session dashboard-a13f0c92
 devhost stop --session dashboard-a13f0c92
 ```
 
-`stack list --sessions` prints PID, a tab, and session name. `--session` selects a manifest-free session instead of manifest discovery or `DEVHOST_MANIFEST`; an explicit `--manifest` is incompatible. Each command session uses its own log and process ownership. Caddy stays running after the session stops.
+`stack list --sessions` prints the supervisor PID, a tab, and session name. `--session` selects a manifest-free session instead of manifest discovery or `DEVHOST_MANIFEST`; an explicit `--manifest` is incompatible. Serve sessions run inside the same shared devhost supervisor as manifest stacks, while each command session keeps its own log and independent lifecycle. Caddy stays running after the session stops.
 
 ## Serve a folder
 

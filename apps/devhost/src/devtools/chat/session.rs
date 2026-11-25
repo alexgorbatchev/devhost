@@ -90,12 +90,14 @@ impl Store {
             stopping: self.cancel.clone(),
         });
         let weak = Arc::downgrade(&session);
+        let environment = handle.live.environment();
         let process = Process::start(
             self,
             &request.harness,
             root,
             &request.resume_id,
             true,
+            &environment,
             move |frame| {
                 if let Some(session) = weak.upgrade() {
                     session.receive(frame);

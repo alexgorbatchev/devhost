@@ -338,6 +338,10 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
         post(&origin, "start-service", json!({"serviceNames":["worker"]})).status(),
         500
     );
+    let before_owners = read_live_stacks(&runtime.state().join("caddy")).unwrap();
+    assert_eq!(before_owners.len(), 1);
+    let original_pid = before_owners[0].pid;
+    let original_stack_id = before_owners[0].stack_id.clone();
     assert_eq!(post(&origin, "restart-stack", json!({})).status(), 204);
     wait_until(|| launches() >= 3);
     lifecycle::ready(&origin);
@@ -345,7 +349,8 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
     assert!(process.as_mut().unwrap().0.try_wait().unwrap().is_none());
     let owners = read_live_stacks(&runtime.state().join("caddy")).unwrap();
     assert_eq!(owners.len(), 1);
-    assert_eq!(owners[0].pid, process.as_ref().unwrap().0.id() as i32);
+    assert_eq!(owners[0].pid, original_pid);
+    assert_eq!(owners[0].stack_id, original_stack_id);
     let io = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

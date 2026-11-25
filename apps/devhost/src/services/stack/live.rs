@@ -65,6 +65,9 @@ struct View {
     repositories: Vec<crate::devtools::WorktreeRepository>,
     caddy_dir: PathBuf,
     control_port: u16,
+    stack_id: String,
+    environment: BTreeMap<String, String>,
+    output: Option<ServiceOutput>,
     dev_source: Option<crate::devtools::dev_source::DevSourceCheckout>,
     config_path: Option<PathBuf>,
     config_inputs: Vec<PathBuf>,
@@ -191,6 +194,26 @@ impl LiveState {
         self.view.write().expect("live view").control_port = port;
     }
 
+    pub fn set_stack_id(&self, stack_id: String) {
+        self.view.write().expect("live view").stack_id = stack_id;
+    }
+
+    pub fn set_environment(&self, environment: BTreeMap<String, String>) {
+        self.view.write().expect("live view").environment = environment;
+    }
+
+    pub fn environment(&self) -> BTreeMap<String, String> {
+        self.view.read().expect("live view").environment.clone()
+    }
+
+    pub fn set_output(&self, output: ServiceOutput) {
+        self.view.write().expect("live view").output = Some(output);
+    }
+
+    pub fn output(&self) -> Option<ServiceOutput> {
+        self.view.read().expect("live view").output.clone()
+    }
+
     pub fn manifest(&self) -> Option<ResolvedManifest> {
         self.view.read().expect("live view").manifest.clone()
     }
@@ -210,6 +233,7 @@ impl LiveState {
                 manifest_path: manifest.manifest_path.display().to_string(),
                 control_port: port,
                 owner_pid: None,
+                owner_stack_id: (!view.stack_id.is_empty()).then_some(view.stack_id),
             },
             href,
         )

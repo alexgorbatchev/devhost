@@ -35,9 +35,20 @@ fn occupied_checkout_requires_a_matching_owner_before_stopping_the_competing_sta
         .iter()
         .find(|entry| entry["path"] == linked.to_str().unwrap())
         .unwrap();
+    let live_before = read_live_stacks(&runtime.state().join("caddy")).unwrap();
+    let occupied_stack = live_before
+        .iter()
+        .find(|s| s.name == "occupied-contract")
+        .unwrap();
+    let primary_stack = live_before
+        .iter()
+        .find(|s| s.name == "owner-contract")
+        .unwrap();
+    assert_eq!(occupied_stack.pid, primary_stack.pid);
+    assert_ne!(occupied_stack.stack_id, primary_stack.stack_id);
     assert_eq!(checkout["available"], false);
     assert_eq!(checkout["owners"].as_array().unwrap().len(), 1);
-    assert_eq!(checkout["owners"][0]["pid"], occupant.0.id());
+    assert_eq!(checkout["owners"][0]["pid"], occupied_stack.pid);
     assert!(!checkout["owners"][0]["urls"].as_array().unwrap().is_empty());
     let owner = checkout["owners"][0]["id"].clone();
     for (id, path, stop_id) in [
@@ -93,7 +104,8 @@ fn occupied_checkout_requires_a_matching_owner_before_stopping_the_competing_sta
     assert_ne!(content(&runtime).as_deref(), Some("main checkout"));
     let stacks = read_live_stacks(&runtime.state().join("caddy")).unwrap();
     assert_eq!(stacks.len(), 1);
-    assert_eq!(stacks[0].pid, process.0.id() as i32);
+    assert_eq!(stacks[0].pid, primary_stack.pid);
+    assert_eq!(stacks[0].stack_id, primary_stack.stack_id);
     assert_eq!(
         stacks[0].manifest_path,
         project.join("devhost.toml").to_str().unwrap()
@@ -127,7 +139,8 @@ fn stop_worktrees_stops_the_matching_family_and_preserves_an_independent_reposit
     assert!(foreign.0.try_wait().unwrap().is_none());
     let stacks = read_live_stacks(&runtime.state().join("caddy")).unwrap();
     assert_eq!(stacks.len(), 1);
-    assert_eq!(stacks[0].pid, foreign.0.id() as i32);
+    assert_eq!(stacks[0].name, "other-repository");
+    assert!(stacks[0].is_alive());
     let invalid = runtime.root.path().join("no-repository");
     fs::create_dir(&invalid).unwrap();
     fs::write(

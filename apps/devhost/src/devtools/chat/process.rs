@@ -1,7 +1,7 @@
 use super::{CALL_TIMEOUT, CLAUDE, Store, request_key};
 use serde_json::{Value, json};
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     io::{BufReader, Read, Write},
     os::unix::process::CommandExt,
     path::Path,
@@ -48,6 +48,7 @@ impl Process {
         root: &Path,
         resume: &str,
         replay: bool,
+        environment: &BTreeMap<String, String>,
         receive: impl Fn(Value) + Send + Sync + 'static,
     ) -> Result<Arc<Self>, String> {
         let tracked_reader = store.begin()?;
@@ -58,6 +59,12 @@ impl Process {
             .cloned()
             .unwrap_or_else(|| if harness == CLAUDE { "claude" } else { "codex" }.into());
         let mut command = Command::new(executable);
+        if !environment.is_empty() {
+            command.env_clear();
+            for (key, value) in environment {
+                command.env(key, value);
+            }
+        }
         if harness == CLAUDE {
             command
                 .args([

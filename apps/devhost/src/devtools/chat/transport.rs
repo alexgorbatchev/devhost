@@ -57,11 +57,16 @@ fn query(request: &Request<Body>, name: &str) -> String {
         .unwrap_or_default()
 }
 
-async fn discover(store: &Store, harness: &str, root: &FsPath) -> Value {
+async fn discover(
+    store: &Store,
+    harness: &str,
+    root: &FsPath,
+    environment: &std::collections::BTreeMap<String, String>,
+) -> Value {
     let mut result = json!({"id":harness,"label":if harness==CODEX{"Codex"}else{"Claude Code"},"available":false,"models":[]});
     let discovered=async {
         let _tracked=store.begin()?;
-        let process=Process::start(store,harness,root,"",false,|_|{})?;
+        let process=Process::start(store,harness,root,"",false,environment,|_|{})?;
         let cleanup=process.cancel.clone().drop_guard();
         let models=async {
             let initialized=process::initialize(&process).await.map_err(|e|e.to_string())?;
@@ -99,8 +104,9 @@ pub(in crate::devtools) async fn harnesses(
         Ok(root) => root,
         Err(e) => return diagnostic(StatusCode::BAD_REQUEST, &e),
     };
+    let environment = handle.live.environment();
     json(
-        &json!({"harnesses":[discover(&handle.chat,CODEX,&root).await,discover(&handle.chat,CLAUDE,&root).await]}),
+        &json!({"harnesses":[discover(&handle.chat,CODEX,&root,&environment).await,discover(&handle.chat,CLAUDE,&root,&environment).await]}),
     )
 }
 

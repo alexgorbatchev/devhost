@@ -186,6 +186,11 @@ fn read_owner(owner: &LiveStack) -> Stack {
             ..Default::default()
         },
     };
+    stack.id = if !owner.stack_id.is_empty() {
+        owner.stack_id.clone()
+    } else {
+        format!("{}:{}:{}", owner.pid, owner.manifest_path, owner.name)
+    };
     stack.pid = owner.pid;
     stack.manifest_path.clone_from(&owner.manifest_path);
     stack.started_at.clone_from(&owner.started_at);

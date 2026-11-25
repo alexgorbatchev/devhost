@@ -108,15 +108,23 @@ fn sample(handle: &RuntimeHandle, stopped: &AtomicBool, signal: &Signal) {
             if let Err(error) = &result
                 && !failing[index]
             {
-                use std::io::Write;
-                let warning = crate::cliout::warning(
-                    cli_command_kit::Mode::from_env(),
-                    &format!(
-                        "Could not read {} usage: {error}",
-                        ["cpu", "memory", "disk"][index]
-                    ),
+                let text = format!(
+                    "Could not read {} usage: {error}",
+                    ["cpu", "memory", "disk"][index]
                 );
-                let _ = writeln!(std::io::stderr(), "{warning}");
+                if let Some(output) = handle.live.output() {
+                    let label = handle
+                        .live
+                        .manifest()
+                        .map(|m| m.name)
+                        .unwrap_or_else(|| "devhost".to_owned());
+                    let warning = crate::cliout::warning(output.mode(), &text);
+                    output.log_stderr(&label, &warning);
+                } else {
+                    use std::io::Write;
+                    let warning = crate::cliout::warning(cli_command_kit::Mode::from_env(), &text);
+                    let _ = writeln!(std::io::stderr(), "{warning}");
+                }
             }
             failing[index] = result.is_err();
             values[index] = result.ok();

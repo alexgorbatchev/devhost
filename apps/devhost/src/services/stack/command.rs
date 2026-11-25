@@ -20,6 +20,7 @@ impl Runtime<'_> {
         loop {
             if let Some(signal) = check_termination_signal(
                 self.cancel,
+                self.options.external_signal.as_deref(),
                 self.options.install_signal_handlers,
                 &self.options.output,
                 &self.manifest.name,
@@ -33,11 +34,16 @@ impl Runtime<'_> {
             if Instant::now() >= next_discovery {
                 self.refresh_command_routes(discovery, false, Some(deadline))?;
                 if self.manifest.services.len() > 1 {
-                    caddy::stacks::set_stack_ready(
+                    let urls = collect_manifest_service_urls(self.manifest);
+                    caddy::stacks::set_stack_ready_for(
                         &self.options.caddy_dir,
-                        collect_manifest_service_urls(self.manifest),
+                        &self.options.stack_id,
+                        urls.clone(),
                     )?;
                     self.control.live.finish_startup();
+                    if let Some(tx) = self.ready_notify.take() {
+                        let _ = tx.send(urls);
+                    }
                     return Ok(None);
                 }
                 next_discovery = Instant::now() + Duration::from_millis(500);
@@ -139,10 +145,11 @@ impl Runtime<'_> {
         }
         for host in collect_claimed_hosts(&next.services) {
             if !self.hosts.contains(&host) {
-                routes::claim_host_with_options(
+                routes::claim_host_for_stack(
                     &self.options.caddy_dir,
                     &host,
                     "",
+                    &self.options.stack_id,
                     false,
                     None,
                     Some(&self.options.output),
@@ -151,11 +158,12 @@ impl Runtime<'_> {
             }
         }
         let routes = self.documents.routes(&next)?;
-        routes::replace_routes(
+        routes::replace_routes_for_stack(
             &self.options.caddy_dir,
             self.routes,
             &routes,
             "",
+            &self.options.stack_id,
             self.options.output.mode(),
             &mut self.options.output.caddy_stderr_writer(),
             !self.options.debug_caddy,
@@ -180,7 +188,11 @@ impl Runtime<'_> {
             }
         }
         if ready {
-            caddy::stacks::set_stack_ready(&self.options.caddy_dir, urls)?;
+            caddy::stacks::set_stack_ready_for(
+                &self.options.caddy_dir,
+                &self.options.stack_id,
+                urls,
+            )?;
         }
         Ok(())
     }

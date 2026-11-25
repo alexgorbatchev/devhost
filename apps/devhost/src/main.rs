@@ -14,18 +14,20 @@ use cli_command_kit::{
 use devhost::{
     Failure, caddy,
     cli::boolean_arg,
-    cliout, config, machine, manifest, paths,
+    cliout, config,
+    daemon::{
+        client::{DetachedDaemonStartOptions, run_detached, run_foreground},
+        protocol::{LaunchKind, StoredLaunchSpec},
+        server::run_daemon,
+    },
+    machine, manifest, paths,
     services::{
-        detach::{
-            DETACHED_LOG_ENV, DetachedStartOptions, STACK_LOG_ENV, start_detached_stack,
-            take_launch_metadata,
-        },
+        detach::{DETACHED_LOG_ENV, STACK_LOG_ENV, take_launch_metadata},
         resolve::{
             PortResolutionOptions, resolve_service_order, resolve_service_ports,
             validate_requested_services,
         },
-        serve::start_serve,
-        stack::{StartStackError, StartStackOptions, format_overlap_for_cwd, start_stack},
+        stack::{StartStackError, format_overlap_for_cwd},
         stop::{StopStackOptions, stop_stack},
     },
 };
@@ -89,14 +91,23 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
         &options,
     )?;
     let completion_root = root.clone();
-    root = root.subcommand(
-        Command::new("_remote-worker").hide(true).arg(
-            Arg::new("state-dir")
-                .long("state-dir")
-                .required(true)
-                .value_parser(value_parser!(PathBuf)),
-        ),
-    );
+    root = root
+        .subcommand(
+            Command::new("_remote-worker").hide(true).arg(
+                Arg::new("state-dir")
+                    .long("state-dir")
+                    .required(true)
+                    .value_parser(value_parser!(PathBuf)),
+            ),
+        )
+        .subcommand(
+            Command::new("_daemon").hide(true).arg(
+                Arg::new("state-dir")
+                    .long("state-dir")
+                    .required(true)
+                    .value_parser(value_parser!(PathBuf)),
+            ),
+        );
     let mut stdout = io::stdout().lock();
 
     match root.try_get_matches_from_mut(std::env::args_os()) {
@@ -125,6 +136,16 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
                         .build()?;
                     runtime.block_on(devhost::remote::worker::run(state))?;
                     return Ok(ExitCode::SUCCESS);
+                }
+                Some(("_daemon", args)) => {
+                    drop(stdout);
+                    let state = args
+                        .get_one::<PathBuf>("state-dir")
+                        .expect("required state directory");
+                    return Ok(match run_daemon(state, VERSION) {
+                        Ok(()) => ExitCode::SUCCESS,
+                        Err(error) => write_failure(mode, error.into())?,
+                    });
                 }
                 Some(("serve", serve_matches)) => {
                     drop(stdout);
@@ -384,10 +405,9 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
             },
         )?);
     }
-    let service_order = match resolve_service_order(&validated) {
-        Ok(order) => order,
-        Err(err) => return Ok(write_failure(mode, err.into())?),
-    };
+    if let Err(err) = resolve_service_order(&validated) {
+        return Ok(write_failure(mode, err.into())?);
+    }
 
     let shared = match config::read() {
         Ok(cfg) => cfg,
@@ -411,7 +431,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
     }
 
     let remote_settings = if local { None } else { shared.remote.clone() };
-    let mut resolved = match resolve_service_ports(
+    let resolved = match resolve_service_ports(
         &validated,
         &PortResolutionOptions {
             requested: requested.clone(),
@@ -464,40 +484,30 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         env::remove_var(STACK_LOG_ENV);
     }
 
-    if args.get_flag("detach") {
-        let mut child_args = vec![
-            "start".to_owned(),
-            "--manifest".to_owned(),
-            resolved.manifest_path.to_string_lossy().into_owned(),
-        ];
-        if args.get_flag("debug") {
-            child_args.push("--debug".to_owned());
-        }
-        child_args.push(
-            if remote_settings.is_some() {
-                "--remote"
-            } else {
-                "--local"
-            }
-            .to_owned(),
-        );
-        if let Some(raw) = raw_idle_timeout {
-            child_args.push("--idle-timeout".to_owned());
-            child_args.push(raw);
-        }
-        child_args.push("--".to_owned());
-        child_args.extend(requested);
+    let spec = StoredLaunchSpec {
+        kind: LaunchKind::Manifest {
+            manifest_path: resolved.manifest_path.clone(),
+            requested: requested.clone(),
+            debug_caddy: args.get_flag("debug"),
+            local: remote_settings.is_none(),
+            remote: remote_settings.is_some(),
+            idle_timeout_ms: idle_timeout.map(|d| d.as_millis() as u64),
+        },
+        cwd: cwd.clone(),
+        environment: environment.clone(),
+        mode: mode.into(),
+        detached: args.get_flag("detach"),
+        log_path: launch.log_path.clone(),
+    };
 
+    if args.get_flag("detach") {
         let output = cliout::ServiceOutput::stdio(mode, &["devhost"]);
         return Ok(
-            match start_detached_stack(DetachedStartOptions {
+            match run_detached(DetachedDaemonStartOptions {
                 manifest: resolved,
-                arguments: child_args,
-                directory: cwd,
+                spec,
                 state_dir,
-                environment,
                 output,
-                executable: None,
                 startup_timeout: None,
                 cleanup_timeout: None,
                 target_os: None,
@@ -510,37 +520,7 @@ fn run_start(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<dyn Er
         );
     }
 
-    let caddy_dir = paths::clean(&state_dir.join("caddy"));
-    let mut label_names: Vec<String> = vec![
-        resolved.name.trim().to_owned(),
-        "devhost".to_owned(),
-        "caddy".to_owned(),
-    ];
-    label_names.extend(service_order.iter().cloned());
-    let label_refs: Vec<&str> = label_names.iter().map(String::as_str).collect();
-    let output = cliout::ServiceOutput::stdio(mode, &label_refs);
-
-    match start_stack(
-        &mut resolved,
-        &service_order,
-        StartStackOptions {
-            runtime_control: None,
-            command_serve_timeout: None,
-            serve_session: false,
-            runtime_errors: None,
-            configuration: Some(validated),
-            caddy_dir,
-            config_path: None,
-            environment,
-            output,
-            debug_caddy: args.get_flag("debug"),
-            shutdown_grace_period: None,
-            idle_timeout,
-            install_signal_handlers: true,
-            external_cancel: None,
-            launch,
-        },
-    ) {
+    match run_foreground(&state_dir, spec, mode) {
         Ok(code) => Ok(ExitCode::from((code & 0xff) as u8)),
         Err(StartStackError::Overlap(overlap)) => {
             let env_manifest = env::var_os("DEVHOST_MANIFEST").map(PathBuf::from);

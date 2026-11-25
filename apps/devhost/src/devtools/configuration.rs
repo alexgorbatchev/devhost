@@ -35,7 +35,13 @@ pub(crate) fn injected_config(handle: &RuntimeHandle) -> InjectedConfig {
         component_editor: features.editor.ide.clone(),
         chat_enabled: features.chat.enabled,
         config_editor_enabled: features.config_editor_enabled,
-        home_directory_path: std::env::var("HOME").unwrap_or_default(),
+        home_directory_path: handle
+            .live
+            .environment()
+            .get("HOME")
+            .cloned()
+            .or_else(|| std::env::var("HOME").ok())
+            .unwrap_or_default(),
         position: features.status.position.clone(),
         project_root_path: manifest.manifest_directory.display().to_string(),
         devhost_source_root_path: handle

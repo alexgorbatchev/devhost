@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     env, fs, io,
     path::{Path, PathBuf},
 };
@@ -12,24 +12,32 @@ use super::{
 };
 use crate::{Failure, paths::clean};
 
-pub(super) fn read(root: &Path) -> Result<RawManifest, Failure> {
+pub(super) fn read_env(
+    root: &Path,
+    environment: Option<&BTreeMap<String, String>>,
+) -> Result<RawManifest, Failure> {
     let mut inputs = Inputs::default();
-    read_with_inputs(root, &mut inputs)
+    read_with_inputs_env(root, &mut inputs, environment)
 }
 
-pub(super) fn read_with_inputs(root: &Path, inputs: &mut Inputs) -> Result<RawManifest, Failure> {
-    read_with_override(root, inputs, None)
+pub(super) fn read_with_inputs_env(
+    root: &Path,
+    inputs: &mut Inputs,
+    environment: Option<&BTreeMap<String, String>>,
+) -> Result<RawManifest, Failure> {
+    read_with_override_env(root, inputs, None, environment)
 }
 
-pub(super) fn read_with_override(
+pub(super) fn read_with_override_env(
     root: &Path,
     inputs: &mut Inputs,
     replacement: Option<(&Path, &str)>,
+    environment: Option<&BTreeMap<String, String>>,
 ) -> Result<RawManifest, Failure> {
     let (mut table, service_order) = load(root, root, &mut HashSet::new(), inputs, replacement)?;
     let mut missing = BTreeSet::new();
     for (_, value) in &mut table {
-        interpolate(value, &mut missing);
+        interpolate(value, environment, &mut missing);
     }
     if !missing.is_empty() {
         return Err(format!(
@@ -279,24 +287,34 @@ fn merge(
     Ok(())
 }
 
-fn interpolate(value: &mut Value, missing: &mut BTreeSet<String>) {
+fn interpolate(
+    value: &mut Value,
+    environment: Option<&BTreeMap<String, String>>,
+    missing: &mut BTreeSet<String>,
+) {
     match value {
-        Value::String(text) if text.contains("{{") => *text = interpolate_text(text, missing),
+        Value::String(text) if text.contains("{{") => {
+            *text = interpolate_text(text, environment, missing)
+        }
         Value::Table(table) => {
             for (_, child) in table {
-                interpolate(child, missing);
+                interpolate(child, environment, missing);
             }
         }
         Value::Array(items) => {
             for child in items {
-                interpolate(child, missing);
+                interpolate(child, environment, missing);
             }
         }
         _ => {}
     }
 }
 
-fn interpolate_text(text: &str, missing: &mut BTreeSet<String>) -> String {
+fn interpolate_text(
+    text: &str,
+    environment: Option<&BTreeMap<String, String>>,
+    missing: &mut BTreeSet<String>,
+) -> String {
     let mut rest = text;
     let mut result = String::with_capacity(text.len());
     while let Some(start) = rest.find("{{") {
@@ -309,8 +327,12 @@ fn interpolate_text(text: &str, missing: &mut BTreeSet<String>) -> String {
             .strip_prefix("env.")
             .map(str::trim);
         if let Some(name) = name.filter(|name| valid_env_name(name)) {
-            match env::var_os(name) {
-                Some(value) => result.push_str(&value.to_string_lossy()),
+            let resolved = match environment {
+                Some(map) => map.get(name).cloned(),
+                None => env::var_os(name).map(|v| v.to_string_lossy().into_owned()),
+            };
+            match resolved {
+                Some(value) => result.push_str(&value),
                 None => {
                     missing.insert(name.to_owned());
                 }
@@ -360,7 +382,7 @@ mod tests {
             ",
         )
         .unwrap();
-        let raw = read(&root.join("devhost.toml"))
+        let raw = read_env(&root.join("devhost.toml"), None)
             .unwrap_or_else(|failure| panic!("{}", failure.message));
         let manifest = &raw.table;
         assert_eq!(raw.service_order, vec!["web", "api", "assets", "templated"]);

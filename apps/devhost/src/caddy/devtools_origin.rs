@@ -12,6 +12,7 @@ pub struct DevtoolsRouteOwner {
     pub manifest_path: String,
     pub control_port: u16,
     pub owner_pid: Option<i32>,
+    pub owner_stack_id: Option<String>,
 }
 
 pub fn allows_devtools_url(
@@ -100,10 +101,17 @@ pub(crate) fn owns_devtools_document(
 
 fn owns_devtools_registration(reg: &RouteRegistration, owner: &DevtoolsRouteOwner) -> bool {
     let expected_pid = owner.owner_pid.unwrap_or_else(current_pid);
+    let matches_stack = match owner.owner_stack_id.as_deref() {
+        Some(stack_id) if !stack_id.is_empty() && !reg.owner_stack_id.is_empty() => {
+            reg.owner_stack_id == stack_id
+        }
+        _ => true,
+    };
     owner.control_port > 0
         && reg.devtools_control_port == Some(owner.control_port)
         && reg.manifest_path == owner.manifest_path
         && reg.owner_pid == expected_pid
+        && matches_stack
 }
 
 fn normalize_devtools_request_path(value: &str) -> String {

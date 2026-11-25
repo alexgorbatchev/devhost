@@ -15,11 +15,16 @@ use std::{
 };
 
 use super::detach::{DETACHED_LOG_ENV, STACK_LOG_ENV};
+use std::collections::{BTreeMap, BTreeSet};
 #[cfg(any(target_os = "macos", test))]
 mod macos;
 use crate::{
     caddy::stacks::{LiveStack, read_live_stacks, signal_live_stack},
     cliout::{self, ServiceOutput},
+    daemon::{
+        self,
+        protocol::{LaunchKind, StoredLaunchSpec},
+    },
     paths::manifest_identity,
 };
 
@@ -47,6 +52,19 @@ struct StackLaunch {
 
 enum RestartAction {
     Replace(StackLaunch),
+    Retire(LiveStack),
+    Preserve(LiveStack, String),
+}
+
+enum DaemonRestartAction {
+    Replace {
+        stack: LiveStack,
+        spec: StoredLaunchSpec,
+        record_log: bool,
+        log_path: PathBuf,
+        daemon_exe_identity: String,
+        daemon_stack_count: usize,
+    },
     Retire(LiveStack),
     Preserve(LiveStack, String),
 }
@@ -104,8 +122,112 @@ pub fn restart_stacks(
         .permissions(fs::Permissions::from_mode(0o700))
         .tempdir_in(state_dir)
         .map_err(|error| format!("create restart logs: {error}"))?;
-    let mut launches = Vec::with_capacity(stacks.len());
+
+    let mut legacy_launches = Vec::new();
+    let mut daemon_actions = Vec::new();
+    let mut daemon_specs_cache: BTreeMap<String, daemon::client::ExportedDaemonSpecs> =
+        BTreeMap::new();
+
     for stack in stacks {
+        if !stack.daemon_socket.is_empty() {
+            if let Err(error) = check_not_ancestor(stack.pid) {
+                return Err(format!(
+                    "capture {} (PID {}); no stacks were stopped: {error}",
+                    stack.name, stack.pid
+                ));
+            }
+            if !daemon_specs_cache.contains_key(&stack.daemon_socket) {
+                let exported = daemon::client::export_specs(Path::new(&stack.daemon_socket))
+                    .map_err(|error| {
+                        format!(
+                            "capture {} (PID {}); no stacks were stopped: {error}",
+                            stack.name, stack.pid
+                        )
+                    })?;
+                daemon_specs_cache.insert(stack.daemon_socket.clone(), exported);
+            }
+            let daemon_info = daemon_specs_cache
+                .get(&stack.daemon_socket)
+                .expect("cached daemon specs");
+            let Some(exported) = daemon_info
+                .stacks
+                .iter()
+                .find(|entry| entry.stack_id == stack.stack_id)
+            else {
+                return Err(format!(
+                    "capture {} (PID {}); no stacks were stopped: stack record was not found in its daemon",
+                    stack.name, stack.pid
+                ));
+            };
+            let dir_exists =
+                launch_directory_exists(&exported.spec.cwd, &stack, manifest.is_none()).map_err(
+                    |error| {
+                        format!(
+                            "capture {} (PID {}); no stacks were stopped: {error}",
+                            stack.name, stack.pid
+                        )
+                    },
+                )?;
+            if !dir_exists {
+                daemon_actions.push(DaemonRestartAction::Retire(stack));
+                continue;
+            }
+            if let LaunchKind::Serve {
+                directory: ref serve_dir,
+                port: None,
+                ..
+            } = exported.spec.kind
+            {
+                let root = if serve_dir.is_absolute() {
+                    serve_dir.clone()
+                } else {
+                    exported.spec.cwd.join(serve_dir)
+                };
+                if let Err(error) =
+                    crate::files::FileHandler::open(&root)
+                        .map(drop)
+                        .map_err(|err| {
+                            format!("{}: {err}", cliout::display_path(&root.to_string_lossy()))
+                        })
+                {
+                    daemon_actions.push(DaemonRestartAction::Preserve(stack, error));
+                    continue;
+                }
+            }
+            let mut spec = exported.spec.clone();
+            if let LaunchKind::Manifest {
+                ref mut local,
+                ref mut remote,
+                ..
+            } = spec.kind
+            {
+                *remote = stack.remote;
+                *local = !stack.remote;
+            }
+            let log_name = if stack.stack_id.is_empty() {
+                format!("{}.log", stack.pid)
+            } else {
+                format!("{}.log", stack.stack_id)
+            };
+            let log_path = directory.path().join(log_name);
+            OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .mode(0o600)
+                .open(&log_path)
+                .map_err(|error| format!("create restart log: {error}"))?;
+            let record_log = !exported.spec.log_path.is_empty();
+            daemon_actions.push(DaemonRestartAction::Replace {
+                stack,
+                spec,
+                record_log,
+                log_path,
+                daemon_exe_identity: daemon_info.exe_identity.clone(),
+                daemon_stack_count: daemon_info.stacks.len(),
+            });
+            continue;
+        }
+
         let captured = capture_launch(&stack, manifest.is_none()).map_err(|error| {
             format!(
                 "capture {} (PID {}); no stacks were stopped: {error}",
@@ -113,11 +235,11 @@ pub fn restart_stacks(
             )
         })?;
         let Some((args, cwd, environment)) = captured else {
-            launches.push(RestartAction::Retire(stack));
+            legacy_launches.push(RestartAction::Retire(stack));
             continue;
         };
         if let Err(error) = validate_serve_launch(&args, &cwd) {
-            launches.push(RestartAction::Preserve(stack, error));
+            legacy_launches.push(RestartAction::Preserve(stack, error));
             continue;
         }
         let log_path = directory.path().join(format!("{}.log", stack.pid));
@@ -127,7 +249,7 @@ pub fn restart_stacks(
             .mode(0o600)
             .open(&log_path)
             .map_err(|error| format!("create restart log: {error}"))?;
-        launches.push(RestartAction::Replace(StackLaunch {
+        legacy_launches.push(RestartAction::Replace(StackLaunch {
             stack,
             args,
             directory: cwd,
@@ -136,10 +258,250 @@ pub fn restart_stacks(
             log_path,
         }));
     }
+
     // Runtime logs remain available to the replacement and for failure diagnosis.
     let _retained_logs = directory.keep();
     let mut errors = Vec::new();
-    for action in launches {
+    let current_exe_id = daemon::exe_identity(&executable);
+
+    if manifest.is_some() {
+        for action in daemon_actions {
+            let DaemonRestartAction::Replace {
+                stack,
+                spec,
+                record_log,
+                log_path,
+                daemon_exe_identity,
+                daemon_stack_count,
+            } = action
+            else {
+                continue;
+            };
+            output
+                .log_stdout_checked(
+                    "devhost",
+                    &format!(
+                        "Restarting {} (PID {}); log: {}",
+                        stack.name,
+                        stack.pid,
+                        cliout::display_path(&log_path.to_string_lossy())
+                    ),
+                )
+                .map_err(|error| error.to_string())?;
+            let binary_changed =
+                !daemon_exe_identity.is_empty() && daemon_exe_identity != current_exe_id;
+            let result = if binary_changed && daemon_stack_count == 1 {
+                daemon::client::drain_daemon(
+                    Path::new(&stack.daemon_socket),
+                    stack.pid,
+                    Vec::new(),
+                    STOP_TIMEOUT,
+                )
+                .and_then(|drain| {
+                    if !drain.errors.is_empty() {
+                        Err(drain.errors.join("; "))
+                    } else {
+                        daemon::client::start_replaced_in_daemon(
+                            state_dir,
+                            &executable,
+                            spec,
+                            &log_path,
+                            record_log,
+                            output.mode(),
+                        )
+                    }
+                })
+            } else {
+                if binary_changed {
+                    output.log_stderr(
+                        "devhost",
+                        &cliout::warning(
+                            output.mode(),
+                            &format!(
+                                "shared daemon PID {} hosts other stacks; run \"devhost restart-all\" to switch it to the new binary",
+                                stack.pid
+                            ),
+                        ),
+                    );
+                }
+                daemon::client::restart_stack_in_daemon(
+                    Path::new(&stack.daemon_socket),
+                    &stack.stack_id,
+                    &log_path,
+                    record_log,
+                )
+            };
+            match result {
+                Ok((_, new_pid, new_name)) => output
+                    .log_stdout_checked(
+                        "devhost",
+                        &format!(
+                            "Restarted {new_name} (PID {new_pid}); services may still be starting."
+                        ),
+                    )
+                    .map_err(|error| error.to_string())?,
+                Err(error) => errors.push(format!(
+                    "restart {} (PID {}), log {}: {error}",
+                    stack.name,
+                    stack.pid,
+                    cliout::display_path(&log_path.to_string_lossy())
+                )),
+            }
+        }
+    } else if !daemon_actions.is_empty() {
+        struct PendingReplace {
+            stack: LiveStack,
+            spec: StoredLaunchSpec,
+            record_log: bool,
+            log_path: PathBuf,
+        }
+        #[derive(Default)]
+        struct DaemonDrainGroup {
+            daemon_pid: i32,
+            preserve_ids: Vec<String>,
+            retire_list: Vec<LiveStack>,
+            replace_list: Vec<PendingReplace>,
+        }
+        let mut by_socket: BTreeMap<String, DaemonDrainGroup> = BTreeMap::new();
+        for action in daemon_actions {
+            match action {
+                DaemonRestartAction::Preserve(stack, error) => {
+                    errors.push(format!(
+                        "restart {} (PID {}), left running: {error}",
+                        stack.name, stack.pid
+                    ));
+                    let entry = by_socket.entry(stack.daemon_socket.clone()).or_default();
+                    entry.daemon_pid = stack.pid;
+                    entry.preserve_ids.push(stack.stack_id.clone());
+                }
+                DaemonRestartAction::Retire(stack) => {
+                    let entry = by_socket.entry(stack.daemon_socket.clone()).or_default();
+                    entry.daemon_pid = stack.pid;
+                    entry.retire_list.push(stack);
+                }
+                DaemonRestartAction::Replace {
+                    stack,
+                    spec,
+                    record_log,
+                    log_path,
+                    ..
+                } => {
+                    let entry = by_socket.entry(stack.daemon_socket.clone()).or_default();
+                    entry.daemon_pid = stack.pid;
+                    entry.replace_list.push(PendingReplace {
+                        stack,
+                        spec,
+                        record_log,
+                        log_path,
+                    });
+                }
+            }
+        }
+
+        let mut ready_to_start = Vec::new();
+        for (
+            socket,
+            DaemonDrainGroup {
+                daemon_pid,
+                preserve_ids,
+                retire_list,
+                replace_list,
+            },
+        ) in by_socket
+        {
+            if retire_list.is_empty() && replace_list.is_empty() {
+                continue;
+            }
+            for item in &replace_list {
+                output
+                    .log_stdout_checked(
+                        "devhost",
+                        &format!(
+                            "Restarting {} (PID {}); log: {}",
+                            item.stack.name,
+                            item.stack.pid,
+                            cliout::display_path(&item.log_path.to_string_lossy())
+                        ),
+                    )
+                    .map_err(|error| error.to_string())?;
+            }
+            match daemon::client::drain_daemon(
+                Path::new(&socket),
+                daemon_pid,
+                preserve_ids,
+                STOP_TIMEOUT,
+            ) {
+                Ok(drain) => {
+                    let stopped: BTreeSet<String> = drain.stopped.into_iter().collect();
+                    for err in drain.errors {
+                        errors.push(err);
+                    }
+                    for stack in retire_list {
+                        if stopped.contains(&stack.stack_id) {
+                            output
+                                .log_stdout_checked(
+                                    "devhost",
+                                    &format!(
+                                        "Stopped {} (PID {}) because its launch directory was removed.",
+                                        stack.name, stack.pid
+                                    ),
+                                )
+                                .map_err(|error| error.to_string())?;
+                        }
+                    }
+                    for item in replace_list {
+                        if stopped.contains(&item.stack.stack_id) {
+                            ready_to_start.push(item);
+                        }
+                    }
+                }
+                Err(error) => {
+                    for stack in retire_list {
+                        errors.push(format!(
+                            "stop {} (PID {}) with missing launch directory: {error}",
+                            stack.name, stack.pid
+                        ));
+                    }
+                    for item in replace_list {
+                        errors.push(format!(
+                            "restart {} (PID {}), log {}: {error}",
+                            item.stack.name,
+                            item.stack.pid,
+                            cliout::display_path(&item.log_path.to_string_lossy())
+                        ));
+                    }
+                }
+            }
+        }
+
+        for item in ready_to_start {
+            match daemon::client::start_replaced_in_daemon(
+                state_dir,
+                &executable,
+                item.spec,
+                &item.log_path,
+                item.record_log,
+                output.mode(),
+            ) {
+                Ok((_, new_pid, new_name)) => output
+                    .log_stdout_checked(
+                        "devhost",
+                        &format!(
+                            "Restarted {new_name} (PID {new_pid}); services may still be starting."
+                        ),
+                    )
+                    .map_err(|error| error.to_string())?,
+                Err(error) => errors.push(format!(
+                    "restart {} (PID {}), log {}: {error}",
+                    item.stack.name,
+                    item.stack.pid,
+                    cliout::display_path(&item.log_path.to_string_lossy())
+                )),
+            }
+        }
+    }
+
+    for action in legacy_launches {
         let launch = match action {
             RestartAction::Replace(launch) => launch,
             RestartAction::Preserve(stack, error) => {
@@ -193,6 +555,45 @@ pub fn restart_stacks(
     } else {
         Err(errors.join("\n"))
     }
+}
+
+#[cfg(target_os = "linux")]
+fn check_not_ancestor(target_pid: i32) -> Result<(), String> {
+    let mut ancestor = std::process::id() as i32;
+    while ancestor > 1 {
+        if ancestor == target_pid {
+            return Err(
+                "cannot restart an ancestor of this command; run it from a separate terminal"
+                    .to_owned(),
+            );
+        }
+        ancestor = crate::procid::read_linux_stat(ancestor)
+            .map_err(|error| error.to_string())?
+            .parent_pid;
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn check_not_ancestor(target_pid: i32) -> Result<(), String> {
+    let mut ancestor = std::process::id() as i32;
+    while ancestor > 1 {
+        if ancestor == target_pid {
+            return Err(
+                "cannot restart an ancestor of this command; run it from a separate terminal"
+                    .to_owned(),
+            );
+        }
+        ancestor = crate::procid::read_macos_info(ancestor)
+            .map_err(|error| error.to_string())?
+            .pbi_ppid as i32;
+    }
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn check_not_ancestor(_target_pid: i32) -> Result<(), String> {
+    Ok(())
 }
 
 type CapturedLaunch = (Vec<OsString>, PathBuf, Vec<(OsString, OsString)>);
@@ -615,6 +1016,8 @@ mod tests {
 
     fn stack(pid: i32) -> LiveStack {
         LiveStack {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             remote: false,
             ready: false,
             urls: vec![],

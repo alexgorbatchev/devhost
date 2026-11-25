@@ -10,9 +10,10 @@ use std::{
 use crate::{
     caddy::{
         ctx, path_ctx,
-        stacks::{StackOwner, read_live_stack_owners},
+        stacks::{LiveStack, StackOwner, read_live_stack_owners, read_live_stacks},
     },
     cliout::{self, ServiceOutput},
+    daemon,
     paths::{clean, manifest_identity},
     procid,
 };
@@ -96,6 +97,7 @@ pub fn stop_stack(
             targets.len()
         ),
     );
+    let live_stacks = read_live_stacks(caddy_dir).unwrap_or_default();
     let grace = options.grace_period.unwrap_or(STOP_GRACE_PERIOD);
     for owner in &targets {
         if options.worktrees {
@@ -103,6 +105,45 @@ pub fn stop_stack(
                 "devhost",
                 &format!("Stopping stack PID {}: {}", owner.pid, owner.manifest_path),
             );
+        }
+        let target_id = manifest_identity(Path::new(&owner.manifest_path));
+        let daemon_stacks: Vec<&LiveStack> = live_stacks
+            .iter()
+            .filter(|stack| {
+                !stack.daemon_socket.is_empty()
+                    && stack.pid == owner.pid
+                    && manifest_identity(Path::new(&stack.manifest_path)) == target_id
+            })
+            .collect();
+        if !daemon_stacks.is_empty() {
+            for stack in daemon_stacks {
+                output.log_stdout(
+                    "devhost",
+                    &format!("Stopping stack {} (PID {})...", stack.name, stack.pid),
+                );
+                let already_stopped = ctx(
+                    daemon::client::stop_live_stack(
+                        Path::new(&stack.daemon_socket),
+                        &stack.stack_id,
+                        stack.pid,
+                        libc::SIGTERM,
+                        grace,
+                    ),
+                    &format!("stop stack {} (PID {})", stack.name, stack.pid),
+                )?;
+                if already_stopped {
+                    output.log_stdout(
+                        "devhost",
+                        &format!("Stack {} (PID {}) already stopped.", stack.name, stack.pid),
+                    );
+                } else {
+                    output.log_stdout(
+                        "devhost",
+                        &format!("Stack {} (PID {}) stopped cleanly.", stack.name, stack.pid),
+                    );
+                }
+            }
+            continue;
         }
         ctx(
             stop_process(owner.pid, grace, output),

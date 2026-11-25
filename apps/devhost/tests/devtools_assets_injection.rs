@@ -1273,6 +1273,7 @@ fn request_guard_and_devtools_origin() {
         manifest_path: "/tmp/a/devhost.toml".to_owned(),
         control_port: 4100,
         owner_pid: Some(std::process::id() as i32),
+        owner_stack_id: None,
     };
     assert!(!allows_devtools_url(&caddy_dir, &owner, "https://app.localhost/").unwrap());
 
@@ -1348,6 +1349,7 @@ fn request_guard_and_devtools_origin() {
         manifest_path: "/tmp/other/devhost.toml".to_owned(),
         control_port: 4100,
         owner_pid: Some(std::process::id() as i32),
+        owner_stack_id: None,
     };
     assert!(!allows_devtools_url(&caddy_dir, &wrong_owner, "https://app.localhost:8443/").unwrap());
 

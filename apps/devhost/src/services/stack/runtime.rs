@@ -33,6 +33,7 @@ pub(super) struct Runtime<'a> {
     pub manifest_watch: Option<InputWatch>,
     pub worktrees: Option<Worktrees>,
     pub blocked: BTreeMap<String, String>,
+    pub ready_notify: Option<mpsc::Sender<Vec<String>>>,
 }
 
 struct AcceptedChange {
@@ -95,6 +96,7 @@ impl Runtime<'_> {
             }
             if let Some(sig) = check_termination_signal(
                 self.cancel,
+                self.options.external_signal.as_deref(),
                 self.options.install_signal_handlers,
                 &self.options.output,
                 &self.manifest.name,
@@ -231,8 +233,10 @@ impl Runtime<'_> {
             .configuration
             .as_ref()
             .ok_or("the stack runs without a manifest")?;
-        let next = manifest::read_with_override(&configuration.manifest_path, path, content)
-            .map_err(|error| error.message)?;
+        let env_ref = (!self.environment.is_empty()).then_some(self.environment);
+        let next =
+            manifest::read_with_override_env(&configuration.manifest_path, path, content, env_ref)
+                .map_err(|error| error.message)?;
         super::super::resolve::resolve_service_order(&next)?;
         super::super::resolve::validate_requested_services(&next, &self.manifest.requested)?;
         let candidate = resolve_service_ports(
@@ -447,26 +451,42 @@ impl Runtime<'_> {
                 if self.cancel.load(Ordering::Relaxed) {
                     return Err("worktree operation canceled".to_owned());
                 }
-                caddy::stacks::signal_stack_owner(&self.options.caddy_dir, &owner, libc::SIGTERM)?;
-                let mut deadline = Instant::now() + SHUTDOWN_GRACE_PERIOD;
-                let mut forced = false;
-                while owner.is_alive() {
-                    if self.cancel.load(Ordering::Relaxed) {
-                        return Err("worktree operation canceled".to_owned());
-                    }
-                    if Instant::now() >= deadline {
-                        if forced {
-                            return Err("stack did not exit after being force-stopped".to_owned());
+                if !owner.daemon_socket.is_empty() {
+                    crate::daemon::client::stop_live_stack(
+                        Path::new(&owner.daemon_socket),
+                        &owner.stack_id,
+                        owner.pid,
+                        libc::SIGTERM,
+                        SHUTDOWN_GRACE_PERIOD,
+                    )?;
+                } else {
+                    caddy::stacks::signal_stack_owner(
+                        &self.options.caddy_dir,
+                        &owner,
+                        libc::SIGTERM,
+                    )?;
+                    let mut deadline = Instant::now() + SHUTDOWN_GRACE_PERIOD;
+                    let mut forced = false;
+                    while owner.is_alive() {
+                        if self.cancel.load(Ordering::Relaxed) {
+                            return Err("worktree operation canceled".to_owned());
                         }
-                        caddy::stacks::signal_stack_owner(
-                            &self.options.caddy_dir,
-                            &owner,
-                            libc::SIGKILL,
-                        )?;
-                        forced = true;
-                        deadline = Instant::now() + Duration::from_secs(1);
+                        if Instant::now() >= deadline {
+                            if forced {
+                                return Err(
+                                    "stack did not exit after being force-stopped".to_owned()
+                                );
+                            }
+                            caddy::stacks::signal_stack_owner(
+                                &self.options.caddy_dir,
+                                &owner,
+                                libc::SIGKILL,
+                            )?;
+                            forced = true;
+                            deadline = Instant::now() + Duration::from_secs(1);
+                        }
+                        thread::sleep(Duration::from_millis(100));
                     }
-                    thread::sleep(Duration::from_millis(100));
                 }
                 self.worktrees
                     .as_mut()
@@ -599,7 +619,8 @@ impl Runtime<'_> {
             .as_ref()
             .map(|configuration| &configuration.manifest_path)
             .unwrap_or(&self.manifest.manifest_path);
-        let (candidate, mut inputs) = manifest::read_with_inputs(path);
+        let env_ref = (!self.environment.is_empty()).then_some(self.environment);
+        let (candidate, mut inputs) = manifest::read_with_inputs_env(path, env_ref);
         let watch = self
             .manifest_watch
             .as_mut()
@@ -701,8 +722,9 @@ impl Runtime<'_> {
             return Ok(());
         }
         if self.launch.detached || self.manifest.remote.is_some() {
-            caddy::stacks::set_stack_ready(
+            caddy::stacks::set_stack_ready_for(
                 &self.options.caddy_dir,
+                &self.options.stack_id,
                 collect_manifest_service_urls(self.manifest),
             )?;
         }
@@ -793,7 +815,13 @@ impl Runtime<'_> {
             .parent()
             .ok_or("Caddy state directory requires a parent")?
             .to_owned();
-        let mut next_worktrees = Worktrees::build(&candidate, &state, self.worktrees.as_ref())?;
+        let mut next_worktrees = Worktrees::build(
+            &candidate,
+            &state,
+            self.worktrees.as_ref(),
+            &self.options.stack_id,
+            self.environment,
+        )?;
         for service in candidate
             .services
             .values()
@@ -936,8 +964,9 @@ impl Runtime<'_> {
             failures.push(error);
         }
         if (self.launch.detached || self.manifest.remote.is_some())
-            && let Err(error) = caddy::stacks::set_stack_ready(
+            && let Err(error) = caddy::stacks::set_stack_ready_for(
                 &self.options.caddy_dir,
+                &self.options.stack_id,
                 collect_manifest_service_urls(self.manifest),
             )
         {
@@ -960,6 +989,8 @@ impl Runtime<'_> {
         register_stack(
             &self.options.caddy_dir,
             &RegisterStackOptions {
+                stack_id: self.options.stack_id.clone(),
+                daemon_socket: self.options.daemon_socket.clone(),
                 remote: self.manifest.remote.is_some(),
                 log_path: self.launch.log_path.clone(),
                 control_port: self.control_port,
@@ -1004,11 +1035,12 @@ impl Runtime<'_> {
         let mut cleanup = ZombieCleanup::default();
         for (host, port) in fixed_ports(candidate) {
             if !self.ports.contains(&(host.clone(), port)) {
-                routes::claim_fixed_port_with_options(
+                routes::claim_fixed_port_for_stack(
                     &self.options.caddy_dir,
                     &host,
                     port,
                     &path,
+                    &self.options.stack_id,
                     candidate.kill_zombies,
                     Some(&mut cleanup),
                     Some(&self.options.output),
@@ -1018,10 +1050,11 @@ impl Runtime<'_> {
         }
         for host in collect_claimed_hosts(&candidate.services) {
             if !self.hosts.contains(&host) {
-                routes::claim_host_with_options(
+                routes::claim_host_for_stack(
                     &self.options.caddy_dir,
                     &host,
                     &path,
+                    &self.options.stack_id,
                     candidate.kill_zombies,
                     Some(&mut cleanup),
                     Some(&self.options.output),
@@ -1039,7 +1072,12 @@ impl Runtime<'_> {
             if hosts.contains(host) {
                 return true;
             }
-            match routes::release_host_claim(&self.options.caddy_dir, host, &path) {
+            match routes::release_host_claim_for_stack(
+                &self.options.caddy_dir,
+                host,
+                &path,
+                &self.options.stack_id,
+            ) {
                 Ok(()) => false,
                 Err(error) => {
                     errors.push(error);
@@ -1051,7 +1089,13 @@ impl Runtime<'_> {
             if ports.contains(&(host.clone(), *port)) {
                 return true;
             }
-            match routes::release_fixed_port_claim(&self.options.caddy_dir, host, *port, &path) {
+            match routes::release_fixed_port_claim_for_stack(
+                &self.options.caddy_dir,
+                host,
+                *port,
+                &path,
+                &self.options.stack_id,
+            ) {
                 Ok(()) => false,
                 Err(error) => {
                     errors.push(error);
@@ -1198,11 +1242,12 @@ impl Runtime<'_> {
 
     fn replace_routes(&mut self) -> Result<(), String> {
         let next = self.documents.routes(self.manifest)?;
-        routes::replace_routes(
+        routes::replace_routes_for_stack(
             &self.options.caddy_dir,
             self.routes,
             &next,
             &self.manifest.manifest_path.display().to_string(),
+            &self.options.stack_id,
             self.options.output.mode(),
             &mut self.options.output.caddy_stderr_writer(),
             !self.options.debug_caddy,

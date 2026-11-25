@@ -43,12 +43,12 @@ extern "C" fn handle_detach_signal(sig: libc::c_int) {
     let _ = DETACH_SIGNAL.compare_exchange(0, sig, Ordering::SeqCst, Ordering::SeqCst);
 }
 
-struct DetachSignalGuard {
+pub(crate) struct DetachSignalGuard {
     previous: Vec<(libc::c_int, libc::sigaction)>,
 }
 
 impl DetachSignalGuard {
-    fn install() -> Self {
+    pub(crate) fn install() -> Self {
         DETACH_SIGNAL.store(0, Ordering::SeqCst);
         let mut previous = Vec::new();
         for sig in [libc::SIGINT, libc::SIGHUP, libc::SIGTERM] {
@@ -118,7 +118,9 @@ pub fn record_detached_failure(log_path: &str, service: &str) -> Result<(), Stri
     })
     .expect("serialize detached failure record");
     let pid = std::process::id();
-    let temp = parent.join(format!(".failure-{pid}.tmp"));
+    static FAILURE_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let seq = FAILURE_SEQ.fetch_add(1, Ordering::Relaxed);
+    let temp = parent.join(format!(".failure-{pid}-{seq}.tmp"));
     let write_res = (|| -> io::Result<()> {
         let mut opts = OpenOptions::new();
         opts.create(true).truncate(true).write(true).mode(0o600);
@@ -194,13 +196,13 @@ pub struct DetachedStartOptions {
     pub install_signal_handlers: bool,
 }
 
-struct SignalSource<'a> {
-    external: Option<&'a Arc<AtomicI32>>,
-    use_process: bool,
+pub(crate) struct SignalSource<'a> {
+    pub(crate) external: Option<&'a Arc<AtomicI32>>,
+    pub(crate) use_process: bool,
 }
 
 impl SignalSource<'_> {
-    fn take(&self) -> Option<i32> {
+    pub(crate) fn take(&self) -> Option<i32> {
         if let Some(ext) = self.external {
             let sig = ext.swap(0, Ordering::SeqCst);
             if sig != 0 {
@@ -530,7 +532,7 @@ pub fn start_detached_stack(options: DetachedStartOptions) -> Result<(), Failure
     }
 }
 
-fn acquire_detached_lock(
+pub(crate) fn acquire_detached_lock(
     file: &File,
     deadline: Instant,
     limit: Duration,
@@ -568,7 +570,7 @@ fn acquire_detached_lock(
     }
 }
 
-fn await_earlier_start(
+pub(crate) fn await_earlier_start(
     caddy_dir: &Path,
     canonical: &str,
     log_path: &str,
@@ -737,14 +739,17 @@ fn finish_detached_failure(
     detached_failure(err_failure, &log_str, "")
 }
 
-fn find_detached_stack(caddy_dir: &Path, canonical: &str) -> Result<Option<LiveStack>, String> {
+pub(crate) fn find_detached_stack(
+    caddy_dir: &Path,
+    canonical: &str,
+) -> Result<Option<LiveStack>, String> {
     let stacks = read_live_stacks(caddy_dir)?;
     Ok(stacks
         .into_iter()
         .find(|s| launch_identity(Path::new(&s.manifest_path), &s.name) == canonical))
 }
 
-fn launch_identity(path: &Path, name: &str) -> String {
+pub(crate) fn launch_identity(path: &Path, name: &str) -> String {
     if path.as_os_str().is_empty() {
         format!("serve:{name}")
     } else {
@@ -752,7 +757,7 @@ fn launch_identity(path: &Path, name: &str) -> String {
     }
 }
 
-fn report_detached_stack(
+pub(crate) fn report_detached_stack(
     output: &ServiceOutput,
     stack: &LiveStack,
     existing: bool,
@@ -777,7 +782,7 @@ fn report_detached_stack(
     Ok(())
 }
 
-fn write_detached_log_tail(output: &ServiceOutput, path: &Path, offset: u64) {
+pub(crate) fn write_detached_log_tail(output: &ServiceOutput, path: &Path, offset: u64) {
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(err) => {
@@ -811,7 +816,7 @@ fn write_detached_log_tail(output: &ServiceOutput, path: &Path, offset: u64) {
     }
 }
 
-fn detached_failure(cause: Failure, log_path: &str, hint: &str) -> Failure {
+pub(crate) fn detached_failure(cause: Failure, log_path: &str, hint: &str) -> Failure {
     let read_hint = if hint.is_empty() {
         format!("Read the full log in {log_path}.")
     } else {
@@ -828,7 +833,7 @@ fn detached_failure(cause: Failure, log_path: &str, hint: &str) -> Failure {
     }
 }
 
-fn still_stopping(cause: Failure, pid: i32) -> Failure {
+pub(crate) fn still_stopping(cause: Failure, pid: i32) -> Failure {
     let suffix = format!("; the stack (PID {pid}) is still stopping");
     let person_summary = cause
         .summary
@@ -841,7 +846,7 @@ fn still_stopping(cause: Failure, pid: i32) -> Failure {
     }
 }
 
-fn detached_setup_failure(step: &str, err: &str, hint: &str) -> Failure {
+pub(crate) fn detached_setup_failure(step: &str, err: &str, hint: &str) -> Failure {
     Failure {
         message: format!("{step}: {err}"),
         summary: Some(step.to_owned()),
@@ -849,7 +854,7 @@ fn detached_setup_failure(step: &str, err: &str, hint: &str) -> Failure {
     }
 }
 
-fn describe_signal(sig: i32) -> String {
+pub(crate) fn describe_signal(sig: i32) -> String {
     let name = match sig {
         libc::SIGINT => "SIGINT (Ctrl-C)",
         libc::SIGHUP => "SIGHUP",

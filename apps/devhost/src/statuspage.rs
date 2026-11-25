@@ -80,6 +80,8 @@ pub struct StackConfig {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Stack {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub id: String,
     pub name: String,
     pub pid: i32,
     pub manifest_path: String,
@@ -394,6 +396,7 @@ mod tests {
         assert!(filtered.contains("No matching stacks."));
         let populated = stack_directory(
             vec![Stack {
+                id: "stk-demo".to_owned(),
                 name: "demo".to_owned(),
                 pid: 42,
                 manifest_path: "/tmp/devhost.toml".to_owned(),

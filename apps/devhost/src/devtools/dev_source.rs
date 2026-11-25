@@ -92,11 +92,16 @@ pub fn resolve_dev_source_directory(
     environment: &BTreeMap<String, String>,
     manifest_directory: &Path,
 ) -> Option<PathBuf> {
-    let raw = environment
-        .get(DEV_SOURCE_DIR_ENV)
-        .filter(|s| !s.is_empty())
-        .cloned()
-        .or_else(|| env::var(DEV_SOURCE_DIR_ENV).ok().filter(|s| !s.is_empty()))?;
+    let raw = if environment.is_empty() {
+        env::var(DEV_SOURCE_DIR_ENV)
+            .ok()
+            .filter(|s| !s.is_empty())?
+    } else {
+        environment
+            .get(DEV_SOURCE_DIR_ENV)
+            .filter(|s| !s.is_empty())
+            .cloned()?
+    };
     let path = PathBuf::from(raw);
     if path.is_absolute() {
         Some(path)

@@ -151,7 +151,8 @@ fn file_sessions_bypass_invalid_manifests_and_preserve_concurrent_host_owners() 
     wait_until(|| response(&runtime, second_host).as_deref() == Some("second standalone document"));
     let first_owner = live(&runtime, first_host);
     let second_owner = live(&runtime, second_host);
-    assert_ne!(first_owner.pid, second_owner.pid);
+    assert_eq!(first_owner.pid, second_owner.pid);
+    assert_ne!(first_owner.stack_id, second_owner.stack_id);
 
     let rejected = runtime
         .command()
@@ -185,7 +186,12 @@ fn file_sessions_bypass_invalid_manifests_and_preserve_concurrent_host_owners() 
     let (address, clients) = file_clients(&runtime, first_host);
     stop(&runtime, first_host, &mut first);
     released_file_listener(address, clients);
-    assert!(!first_owner.is_alive());
+    assert!(
+        !read_live_stacks(&runtime.state().join("caddy"))
+            .unwrap()
+            .iter()
+            .any(|s| s.stack_id == first_owner.stack_id)
+    );
     assert_ne!(
         response(&runtime, first_host).as_deref(),
         Some("first standalone document")
@@ -213,7 +219,9 @@ fn file_sessions_bypass_invalid_manifests_and_preserve_concurrent_host_owners() 
     wait_until(|| {
         response(&runtime, first_host).as_deref() == Some("replacement standalone document")
     });
-    assert_ne!(live(&runtime, first_host).pid, first_owner.pid);
+    let replacement_owner = live(&runtime, first_host);
+    assert_eq!(replacement_owner.pid, second_owner.pid);
+    assert_ne!(replacement_owner.stack_id, first_owner.stack_id);
     assert_eq!(live(&runtime, second_host).pid, second_owner.pid);
     assert_eq!(
         response(&runtime, second_host).as_deref(),
@@ -226,6 +234,7 @@ fn file_sessions_bypass_invalid_manifests_and_preserve_concurrent_host_owners() 
             .unwrap()
             .is_empty()
     );
+    assert!(!second_owner.is_alive());
     assert_eq!(
         fs::read_to_string(runtime.state().join("caddy/caddy.pid")).unwrap(),
         caddy_pid

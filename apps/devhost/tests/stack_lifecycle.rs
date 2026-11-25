@@ -153,6 +153,8 @@ fn managed_directory_service_serves_live_files_and_releases_routes() {
     );
     let cancel = Arc::new(AtomicBool::new(false));
     let options = StartStackOptions {
+        stack_id: String::new(),
+        daemon_socket: String::new(),
         runtime_control: None,
         command_serve_timeout: None,
         serve_session: false,
@@ -167,6 +169,8 @@ fn managed_directory_service_serves_live_files_and_releases_routes() {
         idle_timeout: None,
         install_signal_handlers: false,
         external_cancel: Some(cancel.clone()),
+        external_signal: None,
+        ready_notify: None,
         launch: LaunchMetadata::default(),
     };
     let mut running = RunningFileStack {
@@ -627,7 +631,6 @@ process = true
         .spawn()
         .unwrap();
 
-    let stack_pid = stack_proc.id() as i32;
     let stack_stdout_buf = SharedBuf::default();
     let stdout_pipe = stack_proc.stdout.take().unwrap();
     let stdout_capture = stack_stdout_buf.clone();
@@ -646,12 +649,20 @@ process = true
         if stack_proc.try_wait().ok().flatten().is_some() {
             return true;
         }
+        let has_record = devhost::caddy::stacks::read_live_stacks(&caddy.caddy_dir)
+            .ok()
+            .is_some_and(|stacks| {
+                stacks.iter().any(|s| {
+                    !s.stack_id.is_empty()
+                        && caddy
+                            .caddy_dir
+                            .join(format!("stacks/{}.json", s.stack_id))
+                            .exists()
+                })
+            });
         descendant_pid_file.exists()
             && daemon_marker.exists()
-            && caddy
-                .caddy_dir
-                .join(format!("stacks/{stack_pid}.json"))
-                .exists()
+            && has_record
             && stack_stdout_buf.text().contains("not started: worker")
             && http_get_host(caddy.settings.http_port, "live-web.localhost", "/hello")
                 .contains("web:/hello:")
@@ -662,18 +673,20 @@ process = true
         let _ = stdout_reader.join();
         let resp = http_get_host(caddy.settings.http_port, "live-web.localhost", "/hello");
         panic!(
-            "stack failed to become ready (status={:?}, desc={}, marker={}, stack_file={})\nhttp={resp}\nstdout={}\nstderr={}",
+            "stack failed to become ready (status={:?}, desc={}, marker={}, stacks={:?})\nhttp={resp}\nstdout={}\nstderr={}",
             out.status,
             descendant_pid_file.exists(),
             daemon_marker.exists(),
-            caddy
-                .caddy_dir
-                .join(format!("stacks/{stack_pid}.json"))
-                .exists(),
+            devhost::caddy::stacks::read_live_stacks(&caddy.caddy_dir),
             stack_stdout_buf.text(),
             String::from_utf8_lossy(&out.stderr),
         );
     }
+    let live_stack = devhost::caddy::stacks::read_live_stacks(&caddy.caddy_dir)
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap();
 
     // Verify routed traffic through Caddy for managed web, api, and unmanaged ext.
     let web_resp = http_get_host(caddy.settings.http_port, "live-web.localhost", "/ping");
@@ -742,10 +755,17 @@ process = true
     assert!(
         !caddy
             .caddy_dir
-            .join(format!("stacks/{stack_pid}.json"))
+            .join(format!("stacks/{}.json", live_stack.stack_id))
             .exists()
     );
     assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
+    assert!(
+        wait_until(Duration::from_secs(3), || !procid::is_process_alive(
+            live_stack.pid
+        )),
+        "shared daemon pid {} survived stopping last stack",
+        live_stack.pid
+    );
 
     ext_stop.store(true, Ordering::Relaxed);
     ext_thread.join().unwrap();
@@ -814,6 +834,8 @@ process = true
         &mut resolved,
         &order,
         StartStackOptions {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             runtime_control: None,
             command_serve_timeout: None,
             serve_session: false,
@@ -828,6 +850,8 @@ process = true
             idle_timeout: Some(Duration::from_millis(400)),
             install_signal_handlers: false,
             external_cancel: None,
+            external_signal: None,
+            ready_notify: None,
             launch: LaunchMetadata::default(),
         },
     )
@@ -1027,6 +1051,7 @@ process = true
             manifest_files: vec![main_manifest.to_string_lossy().into_owned()],
             manifest_path: main_manifest.to_string_lossy().into_owned(),
             stack_name: "wt".to_owned(),
+            ..RegisterStackOptions::default()
         },
     )
     .unwrap();
@@ -1044,6 +1069,8 @@ process = true
         &mut dummy_manifest,
         &order,
         StartStackOptions {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             runtime_control: None,
             command_serve_timeout: None,
             serve_session: false,
@@ -1058,6 +1085,8 @@ process = true
             idle_timeout: None,
             install_signal_handlers: false,
             external_cancel: None,
+            external_signal: None,
+            ready_notify: None,
             launch: LaunchMetadata::default(),
         },
     )
@@ -1216,6 +1245,8 @@ retries = 2
         &mut resolved,
         &order,
         StartStackOptions {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             runtime_control: None,
             command_serve_timeout: None,
             serve_session: false,
@@ -1230,6 +1261,8 @@ retries = 2
             idle_timeout: None,
             install_signal_handlers: false,
             external_cancel: Some(cancel),
+            external_signal: None,
+            ready_notify: None,
             launch: LaunchMetadata::default(),
         },
     )

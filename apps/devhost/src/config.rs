@@ -126,9 +126,46 @@ pub fn path() -> Result<PathBuf, String> {
         })
 }
 
+pub fn path_from_env(
+    environment: &std::collections::BTreeMap<String, String>,
+) -> Result<PathBuf, String> {
+    if environment.is_empty() {
+        return path();
+    }
+    let directory = if let Some(val) = env_nonempty(environment, "DEVHOST_CONFIG_DIR") {
+        PathBuf::from(val)
+    } else if let Some(val) = env_nonempty(environment, "XDG_CONFIG_HOME") {
+        PathBuf::from(val).join("devhost")
+    } else if let Some(val) = env_nonempty(environment, "HOME") {
+        PathBuf::from(val).join(".config/devhost")
+    } else {
+        return Err(
+            "could not determine the devhost config directory; set DEVHOST_CONFIG_DIR, XDG_CONFIG_HOME, or HOME"
+                .to_owned(),
+        );
+    };
+    Ok(clean(&directory.join("config.toml")))
+}
+
+fn env_nonempty<'a>(
+    environment: &'a std::collections::BTreeMap<String, String>,
+    name: &str,
+) -> Option<&'a str> {
+    let value = environment.get(name)?.trim();
+    (!value.is_empty()).then_some(value)
+}
+
 pub fn read() -> Result<MachineConfig, String> {
     let config_path = path()?;
     read_from(&config_path)
+}
+
+pub fn read_from_env(
+    environment: &std::collections::BTreeMap<String, String>,
+) -> Result<(PathBuf, MachineConfig), String> {
+    let config_path = path_from_env(environment)?;
+    let cfg = read_from(&config_path)?;
+    Ok((config_path, cfg))
 }
 
 pub fn read_from(path: &Path) -> Result<MachineConfig, String> {
@@ -390,5 +427,34 @@ fn valid_relay_url(value: &str) -> bool {
                     .is_ok_and(|address| address.is_loopback())
         }),
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+
+    #[test]
+    fn path_from_env_respects_precedence_and_errors_when_unset() {
+        let mut env = BTreeMap::new();
+        env.insert("HOME".to_owned(), "/home/u".to_owned());
+        assert_eq!(
+            path_from_env(&env).unwrap(),
+            PathBuf::from("/home/u/.config/devhost/config.toml")
+        );
+        env.insert("XDG_CONFIG_HOME".to_owned(), "/xdg".to_owned());
+        assert_eq!(
+            path_from_env(&env).unwrap(),
+            PathBuf::from("/xdg/devhost/config.toml")
+        );
+        env.insert("DEVHOST_CONFIG_DIR".to_owned(), "/custom".to_owned());
+        assert_eq!(
+            path_from_env(&env).unwrap(),
+            PathBuf::from("/custom/config.toml")
+        );
+        let empty_home = BTreeMap::from([("OTHER".to_owned(), "1".to_owned())]);
+        assert!(path_from_env(&empty_home).is_err());
     }
 }

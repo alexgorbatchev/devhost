@@ -22,6 +22,60 @@ const PROCESS_TREE_POLL_INTERVAL: Duration = Duration::from_millis(200);
 
 static CONTAINMENT_TOKEN_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+#[cfg(target_os = "linux")]
+const MAX_ORPHAN_WATCHLIST: usize = 4096;
+
+#[cfg(target_os = "linux")]
+fn orphan_watchlist() -> &'static Mutex<BTreeMap<i32, String>> {
+    static WATCHLIST: OnceLock<Mutex<BTreeMap<i32, String>>> = OnceLock::new();
+    WATCHLIST.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+#[cfg(target_os = "linux")]
+fn try_reap_tracked_orphan(pid: i32, expected_identity: &str) -> bool {
+    if pid <= 0 {
+        return false;
+    }
+    let Ok(stat) = procid::read_linux_stat(pid) else {
+        return false;
+    };
+    if stat.parent_pid != std::process::id() as i32 || stat.state != b'Z' {
+        return false;
+    }
+    let Ok(identity) = procid::linux_stat_identity(&stat) else {
+        return false;
+    };
+    if identity != expected_identity {
+        return false;
+    }
+    let mut status: libc::c_int = 0;
+    // SAFETY: `pid` is verified to be a zombie child of this subreaper with the
+    // exact recorded start identity of a tracked descendant (never a direct Child).
+    unsafe { libc::waitpid(pid, &mut status, libc::WNOHANG) == pid }
+}
+
+/// Reap exited reparented descendants that were tracked by this process's Linux subreaper.
+pub fn reap_orphaned_descendants() -> usize {
+    #[cfg(target_os = "linux")]
+    {
+        let mut reaped = 0;
+        let mut list = orphan_watchlist().lock().expect("orphan watchlist lock");
+        list.retain(|&pid, identity| {
+            if try_reap_tracked_orphan(pid, identity) {
+                reaped += 1;
+                return false;
+            }
+            // Retain only while the tracked descendant is still alive with the same identity.
+            matches_identity(pid, identity)
+        });
+        reaped
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        0
+    }
+}
+
 pub fn create_service_containment_token() -> String {
     let seq = CONTAINMENT_TOKEN_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
     format!("{}-{seq}", std::process::id())
@@ -106,7 +160,14 @@ impl ServiceContainment {
         let mut guard = self.tracked.lock().expect("tracked lock");
         let mut live = Vec::new();
         guard.retain(|&pid, identity| {
-            if pid == self.root_pid || !matches_identity(pid, identity) {
+            if pid == self.root_pid {
+                return false;
+            }
+            #[cfg(target_os = "linux")]
+            if try_reap_tracked_orphan(pid, identity) {
+                return false;
+            }
+            if !matches_identity(pid, identity) {
                 false
             } else {
                 live.push(pid);
@@ -178,6 +239,19 @@ impl ServiceContainment {
         self.stop_flag.store(true, Ordering::Relaxed);
         if let Some(handle) = self.poller.take() {
             let _ = handle.join();
+        }
+        #[cfg(target_os = "linux")]
+        {
+            let tracked = self.tracked.lock().expect("tracked lock");
+            let mut list = orphan_watchlist().lock().expect("orphan watchlist lock");
+            for (&pid, identity) in tracked.iter() {
+                if pid == self.root_pid {
+                    continue;
+                }
+                if !try_reap_tracked_orphan(pid, identity) && list.len() < MAX_ORPHAN_WATCHLIST {
+                    list.insert(pid, identity.clone());
+                }
+            }
         }
     }
 }
@@ -823,6 +897,66 @@ mod tests {
             thread::sleep(Duration::from_millis(20));
         }
         assert!(!containment.has_live_descendants());
+        containment.close();
+        reap_orphaned_descendants();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn subreaper_reaps_tracked_orphaned_grandchild_without_stealing_direct_children() {
+        // SAFETY: PR_SET_CHILD_SUBREAPER takes no pointer arguments and scopes to this test process.
+        unsafe {
+            let _ = libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let pid_file = dir.path().join("grandchild.pid");
+        let token = create_service_containment_token();
+        // Spawn a parent that forks a short-lived grandchild and exits immediately,
+        // reparenting the grandchild to this subreaper process.
+        let mut parent = Command::new("sh")
+            .args([
+                "-c",
+                &format!(
+                    "sleep 0.5 & echo $! > {}.tmp && mv {}.tmp {}",
+                    pid_file.to_string_lossy(),
+                    pid_file.to_string_lossy(),
+                    pid_file.to_string_lossy()
+                ),
+            ])
+            .env(SERVICE_CONTAINMENT_TOKEN_ENV, &token)
+            .spawn()
+            .unwrap();
+        let root_pid = parent.id() as i32;
+        let mut containment = ServiceContainment::start(root_pid, token).unwrap();
+        let _ = parent.wait();
+        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        while !pid_file.exists() && std::time::Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(10));
+        }
+        let grandchild_pid: i32 = fs::read_to_string(&pid_file)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        let stat = procid::read_linux_stat(grandchild_pid).unwrap();
+        let identity = procid::linux_stat_identity(&stat).unwrap();
+        orphan_watchlist()
+            .lock()
+            .unwrap()
+            .insert(grandchild_pid, identity);
+        // Wait for grandchild to become zombie and verify reap_orphaned_descendants() reaps it.
+        let reap_deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while procid::read_linux_stat(grandchild_pid).is_ok() {
+            reap_orphaned_descendants();
+            if std::time::Instant::now() >= reap_deadline {
+                break;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        assert!(
+            procid::read_linux_stat(grandchild_pid).is_err(),
+            "orphaned grandchild {grandchild_pid} should have been reaped"
+        );
         containment.close();
     }
 

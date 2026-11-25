@@ -418,6 +418,7 @@ async fn retired_native_process_rejects_new_input_without_waiting_for_acknowledg
         fixture.root.path(),
         "",
         false,
+        &std::collections::BTreeMap::new(),
         |_| {},
     )
     .unwrap();

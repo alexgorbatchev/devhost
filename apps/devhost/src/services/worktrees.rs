@@ -26,6 +26,8 @@ pub(crate) struct Worktrees {
     groups: Vec<Group>,
     selection_file: PathBuf,
     caddy_dir: PathBuf,
+    stack_id: String,
+    environment: BTreeMap<String, String>,
 }
 
 #[derive(Clone)]
@@ -51,6 +53,8 @@ impl Worktrees {
         manifest: &ResolvedManifest,
         state: &Path,
         previous: Option<&Self>,
+        stack_id: &str,
+        environment: &BTreeMap<String, String>,
     ) -> Result<Option<Self>, String> {
         if !manifest.worktrees.enabled {
             return Ok(None);
@@ -67,6 +71,8 @@ impl Worktrees {
             groups: Vec::new(),
             selection_file,
             caddy_dir: state.join("caddy"),
+            stack_id: stack_id.to_owned(),
+            environment: environment.clone(),
         };
         let mut names = manifest.service_order.clone();
         names.extend(
@@ -157,19 +163,23 @@ impl Worktrees {
     }
 
     pub(crate) fn refresh(&mut self) -> Result<(), String> {
+        let caddy_dir = self.caddy_dir.clone();
+        let stack_id = self.stack_id.clone();
+        let environment = self.environment.clone();
         for group in &mut self.groups {
-            group.refresh(&self.caddy_dir)?;
+            group.refresh(&caddy_dir, &stack_id, &environment)?;
         }
         Ok(())
     }
 
     pub(crate) fn restore(&mut self) -> (Option<Manifest>, BTreeMap<String, String>) {
         let mut blocked = BTreeMap::new();
+        let environment = self.environment.clone();
         for group in &mut self.groups {
             if Path::new(&group.view.selected_path) == group.repository.root {
                 continue;
             }
-            match group.validate_selection(Path::new(&group.view.selected_path)) {
+            match group.validate_selection(Path::new(&group.view.selected_path), &environment) {
                 Ok(configuration) => return (Some(configuration), blocked),
                 Err(error) => {
                     group.view.error = error.clone();
@@ -184,12 +194,14 @@ impl Worktrees {
 
     pub(crate) fn prepare(&mut self, id: &str, path: &Path) -> Result<Manifest, String> {
         let caddy_dir = self.caddy_dir.clone();
+        let stack_id = self.stack_id.clone();
+        let environment = self.environment.clone();
         let group = self.group_mut(id)?;
         if !group.view.blocked_reason.is_empty() {
             return Err(group.view.blocked_reason.clone());
         }
-        group.refresh(&caddy_dir)?;
-        group.validate_selection(path)
+        group.refresh(&caddy_dir, &stack_id, &environment)?;
+        group.validate_selection(path, &environment)
     }
 
     pub(crate) fn select(&mut self, id: &str, path: &Path) -> Result<(), String> {
@@ -263,16 +275,18 @@ impl Worktrees {
         owner_id: &str,
     ) -> Result<LiveStack, String> {
         let caddy_dir = self.caddy_dir.clone();
+        let stack_id = self.stack_id.clone();
+        let environment = self.environment.clone();
         let group = self.group_mut(id)?;
-        group.refresh(&caddy_dir)?;
+        group.refresh(&caddy_dir, &stack_id, &environment)?;
         if group
             .view
             .worktrees
             .iter()
             .any(|entry| Path::new(&entry.path) == path)
         {
-            let configuration = group.configuration(path)?;
-            for owner in occupants(&caddy_dir, &configuration)? {
+            let configuration = group.configuration(path, &environment)?;
+            for owner in occupants(&caddy_dir, &configuration, &stack_id)? {
                 if occupant_id(&owner) == owner_id {
                     return Ok(owner);
                 }
@@ -290,20 +304,27 @@ impl Worktrees {
 }
 
 impl Group {
-    fn configuration(&self, root: &Path) -> Result<Manifest, String> {
+    fn configuration(
+        &self,
+        root: &Path,
+        environment: &BTreeMap<String, String>,
+    ) -> Result<Manifest, String> {
         let mut path = root.join(&self.manifest_offset);
         if !path.exists()
             && let Some(known) = self.configuration_paths.get(root)
         {
             path = known.clone();
         }
-        let configuration = manifest::read_with_inputs(&path).0.map_err(|error| {
-            format!(
-                "load checkout configuration {}: {}",
-                path.display(),
-                error.message
-            )
-        })?;
+        let env_ref = (!environment.is_empty()).then_some(environment);
+        let configuration = manifest::read_with_inputs_env(&path, env_ref)
+            .0
+            .map_err(|error| {
+                format!(
+                    "load checkout configuration {}: {}",
+                    path.display(),
+                    error.message
+                )
+            })?;
         for (name, service) in &configuration.services {
             if !service.cwd.is_dir() {
                 return Err(format!(
@@ -336,9 +357,13 @@ impl Group {
         Ok(())
     }
 
-    fn directories(&self, root: &Path) -> Result<Vec<WorktreeDirectory>, String> {
+    fn directories(
+        &self,
+        root: &Path,
+        environment: &BTreeMap<String, String>,
+    ) -> Result<Vec<WorktreeDirectory>, String> {
         self.belongs(root)?;
-        let configuration = self.configuration(root)?;
+        let configuration = self.configuration(root, environment)?;
         super::resolve::resolve_service_order(&configuration)?
             .into_iter()
             .map(|name| {
@@ -350,7 +375,12 @@ impl Group {
             .collect()
     }
 
-    fn refresh(&mut self, caddy_dir: &Path) -> Result<(), String> {
+    fn refresh(
+        &mut self,
+        caddy_dir: &Path,
+        stack_id: &str,
+        environment: &BTreeMap<String, String>,
+    ) -> Result<(), String> {
         let mut entries = git::list(&self.repository.common_dir)?;
         self.view.default_branch = git::default_branch(&self.repository.common_dir)?;
         for entry in &mut entries {
@@ -368,15 +398,15 @@ impl Group {
                 }
                 continue;
             }
-            match self.directories(Path::new(&entry.path)) {
+            match self.directories(Path::new(&entry.path), environment) {
                 Ok(directories) => entry.directories = directories,
                 Err(error) => {
                     entry.reason = error;
                     continue;
                 }
             }
-            let configuration = self.configuration(Path::new(&entry.path))?;
-            entry.owners = occupants(caddy_dir, &configuration)?
+            let configuration = self.configuration(Path::new(&entry.path), environment)?;
+            entry.owners = occupants(caddy_dir, &configuration, stack_id)?
                 .into_iter()
                 .map(|owner| {
                     let id = occupant_id(&owner);
@@ -411,7 +441,11 @@ impl Group {
         Ok(())
     }
 
-    fn validate_selection(&self, path: &Path) -> Result<Manifest, String> {
+    fn validate_selection(
+        &self,
+        path: &Path,
+        environment: &BTreeMap<String, String>,
+    ) -> Result<Manifest, String> {
         if !self.view.blocked_reason.is_empty() && path != Path::new(&self.view.configured_path) {
             return Err(self.view.blocked_reason.clone());
         }
@@ -429,8 +463,8 @@ impl Group {
         if !entry.available {
             return Err(format!("Worktree is unavailable: {}", entry.reason));
         }
-        self.directories(path)?;
-        self.configuration(path)
+        self.directories(path, environment)?;
+        self.configuration(path, environment)
     }
 }
 
@@ -461,7 +495,11 @@ fn configured_repository(
     }
 }
 
-fn occupants(caddy_dir: &Path, configuration: &Manifest) -> Result<Vec<LiveStack>, String> {
+fn occupants(
+    caddy_dir: &Path,
+    configuration: &Manifest,
+    current_stack_id: &str,
+) -> Result<Vec<LiveStack>, String> {
     let mut inputs = configuration.inputs.files.clone();
     inputs.push(configuration.manifest_path.clone());
     let inputs: BTreeSet<_> = inputs
@@ -471,7 +509,7 @@ fn occupants(caddy_dir: &Path, configuration: &Manifest) -> Result<Vec<LiveStack
     let mut owners: Vec<_> = stacks::read_live_stacks(caddy_dir)?
         .into_iter()
         .filter(|owner| {
-            owner.pid != std::process::id() as i32
+            !owner.is_same_stack(current_stack_id)
                 && owner
                     .manifest_files
                     .iter()
@@ -480,17 +518,22 @@ fn occupants(caddy_dir: &Path, configuration: &Manifest) -> Result<Vec<LiveStack
         })
         .collect();
     for owner in &mut owners {
-        owner.urls =
-            crate::caddy::routes::owner_urls(caddy_dir, owner.pid, &owner.owner_start_identity)?;
+        owner.urls = crate::caddy::routes::owner_urls(
+            caddy_dir,
+            owner.pid,
+            &owner.owner_start_identity,
+            &owner.stack_id,
+        )?;
     }
     Ok(owners)
 }
 
 fn occupant_id(owner: &LiveStack) -> String {
     let value = format!(
-        "{}\0{}\0{}\0{}\0{}",
+        "{}\0{}\0{}\0{}\0{}\0{}",
         owner.pid,
         owner.owner_start_identity,
+        owner.stack_id,
         owner.manifest_path,
         owner.started_at,
         owner.manifest_files.join("\0")

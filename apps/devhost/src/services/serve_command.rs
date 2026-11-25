@@ -20,11 +20,22 @@ pub fn resolve_command(
     session: &str,
     timeout: Duration,
 ) -> Result<ResolvedManifest, String> {
+    let shared = config::read()?;
+    resolve_command_with_config(directory, command, name, session, timeout, shared)
+}
+
+pub fn resolve_command_with_config(
+    directory: &Path,
+    command: Vec<String>,
+    name: &str,
+    session: &str,
+    timeout: Duration,
+    shared: config::MachineConfig,
+) -> Result<ResolvedManifest, String> {
     if command.is_empty() || timeout.is_zero() {
         return Err("command and positive startup timeout are required".to_owned());
     }
     let directory = std::path::absolute(directory).map_err(|error| error.to_string())?;
-    let shared = config::read()?;
     let suffix_label = shared.domain_suffix.split('.').next().unwrap_or_default();
     let limit = 48usize
         .checked_sub(suffix_label.len())

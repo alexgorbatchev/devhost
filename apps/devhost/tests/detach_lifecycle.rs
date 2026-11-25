@@ -393,9 +393,10 @@ fn detach_state_faults_preserve_logs_and_prevent_launch() {
     assert!(!failure.exists());
 
     record_detached_failure(log.to_str().unwrap(), "original").unwrap();
-    let scratch = logs.join(format!(".failure-{}.tmp", std::process::id()));
-    fs::create_dir(&scratch).unwrap();
-    assert!(record_detached_failure(log.to_str().unwrap(), "replacement").is_err());
+    fs::set_permissions(&logs, fs::Permissions::from_mode(0o500)).unwrap();
+    let fault = record_detached_failure(log.to_str().unwrap(), "replacement");
+    fs::set_permissions(&logs, fs::Permissions::from_mode(0o700)).unwrap();
+    assert!(fault.is_err());
     assert_eq!(read_detached_failure(&failure).as_deref(), Some("original"));
 }
 
@@ -938,6 +939,7 @@ interval = 50
             manifest_files: vec![fail_manifest.to_string_lossy().into_owned()],
             manifest_path: fail_manifest.to_string_lossy().into_owned(),
             stack_name: "fail-detach".to_owned(),
+            ..RegisterStackOptions::default()
         },
     )
     .unwrap();
@@ -1180,6 +1182,7 @@ fn detach_await_earlier_unsettled_start() {
             manifest_files: vec![manifest_path.to_string_lossy().into_owned()],
             manifest_path: manifest_path.to_string_lossy().into_owned(),
             stack_name: "unsettled".to_owned(),
+            ..RegisterStackOptions::default()
         },
     )
     .unwrap();
@@ -1220,6 +1223,7 @@ fn detach_await_earlier_unsettled_start() {
             manifest_files: vec![manifest_path.to_string_lossy().into_owned()],
             manifest_path: manifest_path.to_string_lossy().into_owned(),
             stack_name: "unsettled".to_owned(),
+            ..RegisterStackOptions::default()
         },
     )
     .unwrap();

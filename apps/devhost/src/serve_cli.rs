@@ -48,36 +48,31 @@ pub(super) fn run(args: &clap::ArgMatches, mode: Mode) -> Result<ExitCode, Box<d
     let cwd = env::current_dir()?;
     let directory = args
         .get_one::<PathBuf>("dir")
-        .map(PathBuf::as_path)
-        .unwrap_or(&cwd);
+        .map(|path| {
+            if path.is_absolute() {
+                paths::clean(path)
+            } else {
+                paths::clean(&cwd.join(path))
+            }
+        })
+        .unwrap_or_else(|| paths::clean(&cwd));
     let state_dir = match machine::state_directory() {
         Ok(path) => path,
         Err(error) => return Ok(write_failure(mode, error.into())?),
     };
-    let label = format!("serve-{domain}");
-    let output = cliout::ServiceOutput::stdio(mode, &[&label, "serve", "devhost", "caddy"]);
-    match start_serve(
-        directory,
-        domain,
-        port,
-        StartStackOptions {
-            runtime_control: None,
-            command_serve_timeout: None,
-            serve_session: true,
-            runtime_errors: None,
-            configuration: None,
-            caddy_dir: state_dir.join("caddy"),
-            config_path: None,
-            environment: devhost::environment::unicode(),
-            output,
-            debug_caddy: false,
-            shutdown_grace_period: None,
-            idle_timeout: None,
-            install_signal_handlers: true,
-            external_cancel: None,
-            launch: Default::default(),
+    let spec = StoredLaunchSpec {
+        kind: LaunchKind::Serve {
+            directory,
+            domain: domain.to_owned(),
+            port,
         },
-    ) {
+        cwd,
+        environment: devhost::environment::unicode(),
+        mode: mode.into(),
+        detached: false,
+        log_path: String::new(),
+    };
+    match run_foreground(&state_dir, spec, mode) {
         Ok(code) => Ok(ExitCode::from((code & 0xff) as u8)),
         Err(StartStackError::Failure(failure)) => Ok(write_failure(mode, failure)?),
         Err(StartStackError::Overlap(overlap)) => {
@@ -91,7 +86,7 @@ fn run_command(
     mut command: Vec<String>,
     mode: Mode,
 ) -> Result<ExitCode, Box<dyn Error>> {
-    use devhost::services::serve_command::{resolve_command, start_command};
+    use devhost::services::serve_command::resolve_command;
     for flag in ["dir", "port", "domain"] {
         if args.value_source(flag) == Some(clap::parser::ValueSource::CommandLine) {
             return Err(format!("command serving and --{flag} are mutually exclusive").into());
@@ -131,7 +126,7 @@ fn run_command(
         env::remove_var(DETACHED_LOG_ENV);
         env::remove_var(STACK_LOG_ENV);
     }
-    let mut resolved = resolve_command(
+    let resolved = resolve_command(
         &cwd,
         command.clone(),
         args.get_one::<String>("name")
@@ -140,26 +135,26 @@ fn run_command(
         session,
         timeout,
     )?;
-    let output =
-        cliout::ServiceOutput::stdio(mode, &[&resolved.name, "command", "devhost", "caddy"]);
+    let spec = StoredLaunchSpec {
+        kind: LaunchKind::ServeCommand {
+            command,
+            session_name: resolved.name.clone(),
+            startup_timeout_ms: timeout.as_millis() as u64,
+        },
+        cwd,
+        environment,
+        mode: mode.into(),
+        detached: args.get_flag("detach"),
+        log_path: launch.log_path,
+    };
     if args.get_flag("detach") {
-        let mut arguments = vec![
-            "serve".to_owned(),
-            "--session-id".to_owned(),
-            resolved.name.clone(),
-            "--startup-timeout".to_owned(),
-            devhost::services::detach::format_go_duration(timeout),
-            "--".to_owned(),
-        ];
-        arguments.extend(command);
-        start_detached_stack(DetachedStartOptions {
+        let output =
+            cliout::ServiceOutput::stdio(mode, &[&resolved.name, "command", "devhost", "caddy"]);
+        run_detached(DetachedDaemonStartOptions {
             manifest: resolved,
-            arguments,
-            directory: cwd,
+            spec,
             state_dir,
-            environment,
             output,
-            executable: None,
             startup_timeout: None,
             cleanup_timeout: None,
             target_os: None,
@@ -169,32 +164,7 @@ fn run_command(
         .map_err(|failure| failure.message)?;
         return Ok(ExitCode::SUCCESS);
     }
-    output.log_stdout(&resolved.name, &format!("Session: {}", resolved.name));
-    output.log_stdout(
-        &resolved.name,
-        &format!("Stop: devhost stop --session {}", resolved.name),
-    );
-    match start_command(
-        &mut resolved,
-        timeout,
-        StartStackOptions {
-            command_serve_timeout: None,
-            runtime_control: None,
-            serve_session: true,
-            runtime_errors: None,
-            configuration: None,
-            caddy_dir: state_dir.join("caddy"),
-            config_path: None,
-            environment,
-            output,
-            debug_caddy: false,
-            shutdown_grace_period: None,
-            idle_timeout: None,
-            install_signal_handlers: true,
-            external_cancel: None,
-            launch,
-        },
-    ) {
+    match run_foreground(&state_dir, spec, mode) {
         Ok(code) => Ok(ExitCode::from((code & 0xff) as u8)),
         Err(StartStackError::Failure(failure)) => Err(failure.message.into()),
         Err(StartStackError::Overlap(overlap)) => Err(overlap.default_message().into()),

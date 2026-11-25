@@ -61,8 +61,9 @@ export const MultipleStacks: Story = {
       fixture_directoryStack,
       {
         ...fixture_directoryStack,
+        id: "stk-api",
         name: "a-much-longer-stack-name",
-        pid: 456,
+        pid: 123,
         services: [
           { name: "api-with-a-long-service-name", directory: "", status: "Running", urls: ["https://api.localhost/"] },
         ],

@@ -25,7 +25,7 @@ use crate::{
         },
         stacks::{
             ManifestOverlapError, RegisterStackError, RegisterStackOptions,
-            cleanup_stale_stack_records, register_stack, unregister_stack,
+            cleanup_stale_stack_records, register_stack,
         },
     },
     cliout::{self, ServiceOutput},
@@ -128,6 +128,8 @@ impl From<String> for StartStackError {
 }
 
 pub struct StartStackOptions {
+    pub stack_id: String,
+    pub daemon_socket: String,
     pub command_serve_timeout: Option<Duration>,
     pub runtime_control: Option<super::control::RuntimeControl>,
     pub serve_session: bool,
@@ -142,6 +144,8 @@ pub struct StartStackOptions {
     pub idle_timeout: Option<Duration>,
     pub install_signal_handlers: bool,
     pub external_cancel: Option<Arc<AtomicBool>>,
+    pub external_signal: Option<Arc<AtomicI32>>,
+    pub ready_notify: Option<Sender<Vec<String>>>,
     pub launch: LaunchMetadata,
 }
 
@@ -408,18 +412,29 @@ pub fn start_stack(
         .unwrap_or_else(|| Arc::new(AtomicBool::new(false)));
     let stop_signal_forwarder = Arc::new(AtomicBool::new(false));
     let runtime_failure = Arc::new(Mutex::new(None));
-    let signal_forwarder = if options.install_signal_handlers || options.runtime_errors.is_some() {
+    let signal_forwarder = if options.install_signal_handlers
+        || options.runtime_errors.is_some()
+        || options.external_signal.is_some()
+    {
         let cancel_ref = cancel.clone();
         let stop_ref = stop_signal_forwarder.clone();
         let failure_ref = runtime_failure.clone();
         let runtime_errors = options.runtime_errors.take();
         let install_signal_handlers = options.install_signal_handlers;
+        let external_signal = options.external_signal.clone();
         Some(thread::spawn(move || {
             while !stop_ref.load(Ordering::Relaxed) {
                 if let Some(errors) = &runtime_errors
                     && let Ok(error) = errors.try_recv()
                 {
                     *failure_ref.lock().expect("runtime failure") = Some(error);
+                    cancel_ref.store(true, Ordering::SeqCst);
+                    break;
+                }
+                if external_signal
+                    .as_ref()
+                    .is_some_and(|sig| sig.load(Ordering::SeqCst) != 0)
+                {
                     cancel_ref.store(true, Ordering::SeqCst);
                     break;
                 }
@@ -460,7 +475,13 @@ pub fn start_stack(
         let mut worktrees = if options.serve_session {
             None
         } else {
-            super::worktrees::Worktrees::build(manifest, state, None)?
+            super::worktrees::Worktrees::build(
+                manifest,
+                state,
+                None,
+                &options.stack_id,
+                &environment,
+            )?
         };
         let mut blocked = BTreeMap::new();
         let mut initial_order = service_order.to_vec();
@@ -482,7 +503,13 @@ pub fn start_stack(
                     )?;
                     next.manifest_path = manifest.manifest_path.clone();
                     next.caddy = manifest.caddy.clone();
-                    let groups = super::worktrees::Worktrees::build(&next, state, Some(previous))?;
+                    let groups = super::worktrees::Worktrees::build(
+                        &next,
+                        state,
+                        Some(previous),
+                        &options.stack_id,
+                        &environment,
+                    )?;
                     Ok::<_, String>((next, order, groups))
                 })();
                 match restored {
@@ -522,12 +549,18 @@ pub fn start_stack(
             options.output.log_stdout(&manifest.name, &warning);
         }
         control.live.configure(&options.caddy_dir, dev_source);
+        control.live.set_stack_id(options.stack_id.clone());
+        control.live.set_environment(environment.clone());
         control
             .live
             .set_config_path(options.config_path.clone().or_else(|| config::path().ok()));
         for (name, error) in &blocked {
             control.live.failed(name, error);
         }
+        // Store the un-observed output on LiveState before attaching the observer closure,
+        // which captures `control.live`, to avoid an Arc reference cycle that would leak
+        // stack output handles after shutdown.
+        control.live.set_output(options.output.clone());
         let live_logs = control.live.clone();
         options.output =
             options
@@ -543,6 +576,8 @@ pub fn start_stack(
         if let Err(err) = register_stack(
             &options.caddy_dir,
             &RegisterStackOptions {
+                stack_id: options.stack_id.clone(),
+                daemon_socket: options.daemon_socket.clone(),
                 remote: manifest.remote.is_some(),
                 log_path: launch.log_path.clone(),
                 control_port: control_server.port(),
@@ -616,11 +651,12 @@ pub fn start_stack(
             let Some(port) = service.port else {
                 continue;
             };
-            routes::claim_fixed_port_with_options(
+            routes::claim_fixed_port_for_stack(
                 &options.caddy_dir,
                 &service.bind_host,
                 port,
                 &manifest_path_str,
+                &options.stack_id,
                 manifest.kill_zombies,
                 Some(&mut zombie_cleanup),
                 Some(&options.output),
@@ -629,10 +665,11 @@ pub fn start_stack(
         }
 
         for host in collect_claimed_hosts(&manifest.services) {
-            routes::claim_host_with_options(
+            routes::claim_host_for_stack(
                 &options.caddy_dir,
                 &host,
                 &manifest_path_str,
+                &options.stack_id,
                 manifest.kill_zombies,
                 Some(&mut zombie_cleanup),
                 Some(&options.output),
@@ -642,11 +679,12 @@ pub fn start_stack(
 
         let initial_routes = documents.routes(manifest)?;
         caddy::ctx(
-            routes::replace_routes(
+            routes::replace_routes_for_stack(
                 &options.caddy_dir,
                 &[],
                 &initial_routes,
                 &manifest_path_str,
+                &options.stack_id,
                 options.output.mode(),
                 &mut caddy_out,
                 !options.debug_caddy,
@@ -678,7 +716,8 @@ pub fn start_stack(
                 .as_ref()
                 .map(|configuration| &configuration.manifest_path)
                 .unwrap_or(&manifest.manifest_path);
-            let (_, inputs) = crate::manifest::read_with_inputs(path);
+            let env_ref = (!environment.is_empty()).then_some(&environment);
+            let (_, inputs) = crate::manifest::read_with_inputs_env(path, env_ref);
             Some(super::watch::InputWatch::new(inputs)?)
         };
 
@@ -688,6 +727,7 @@ pub fn start_stack(
             }
             if let Some(sig) = check_termination_signal(
                 &cancel,
+                options.external_signal.as_deref(),
                 options.install_signal_handlers,
                 &options.output,
                 &manifest.name,
@@ -714,6 +754,7 @@ pub fn start_stack(
                     ) {
                         if let Some(sig) = check_termination_signal(
                             &cancel,
+                            options.external_signal.as_deref(),
                             options.install_signal_handlers,
                             &options.output,
                             &manifest.name,
@@ -764,11 +805,12 @@ pub fn start_stack(
                         Ok(started) => {
                             let updated_routes = documents.routes(manifest)?;
                             if updated_routes != active_routes {
-                                routes::replace_routes(
+                                routes::replace_routes_for_stack(
                                     &options.caddy_dir,
                                     &active_routes,
                                     &updated_routes,
                                     &manifest_path_str,
+                                    &options.stack_id,
                                     options.output.mode(),
                                     &mut caddy_out,
                                     !options.debug_caddy,
@@ -783,6 +825,7 @@ pub fn start_stack(
                         Err(StartServiceError::Canceled) => {
                             if let Some(sig) = check_termination_signal(
                                 &cancel,
+                                options.external_signal.as_deref(),
                                 options.install_signal_handlers,
                                 &options.output,
                                 &manifest.name,
@@ -832,6 +875,7 @@ pub fn start_stack(
                         Err(HealthWaitError::Canceled) => {
                             if let Some(sig) = check_termination_signal(
                                 &cancel,
+                                options.external_signal.as_deref(),
                                 options.install_signal_handlers,
                                 &options.output,
                                 &manifest.name,
@@ -869,6 +913,7 @@ pub fn start_stack(
 
         if let Some(sig) = check_termination_signal(
             &cancel,
+            options.external_signal.as_deref(),
             options.install_signal_handlers,
             &options.output,
             &manifest.name,
@@ -878,6 +923,7 @@ pub fn start_stack(
         if cancel.load(Ordering::Relaxed) {
             if let Some(sig) = check_termination_signal(
                 &cancel,
+                options.external_signal.as_deref(),
                 options.install_signal_handlers,
                 &options.output,
                 &manifest.name,
@@ -887,6 +933,7 @@ pub fn start_stack(
             return Ok(0);
         }
 
+        let mut ready_notify = options.ready_notify.take();
         if launch.detached && options.command_serve_timeout.is_none() {
             for started in &started_services {
                 if let Some(code) = started.read_exit_code() {
@@ -914,6 +961,7 @@ pub fn start_stack(
                     None => {
                         if let Some(sig) = check_termination_signal(
                             &cancel,
+                            options.external_signal.as_deref(),
                             options.install_signal_handlers,
                             &options.output,
                             &manifest.name,
@@ -925,6 +973,7 @@ pub fn start_stack(
                     Some(false) => {
                         if let Some(sig) = check_termination_signal(
                             &cancel,
+                            options.external_signal.as_deref(),
                             options.install_signal_handlers,
                             &options.output,
                             &manifest.name,
@@ -947,12 +996,30 @@ pub fn start_stack(
                 }
             }
             let urls = collect_manifest_service_urls(manifest);
-            caddy::stacks::set_stack_ready(&options.caddy_dir, urls)?;
-        } else if manifest.remote.is_some() {
-            caddy::stacks::set_stack_ready(
+            caddy::stacks::set_stack_ready_for(
                 &options.caddy_dir,
-                collect_manifest_service_urls(manifest),
+                &options.stack_id,
+                urls.clone(),
             )?;
+            if let Some(tx) = ready_notify.take() {
+                let _ = tx.send(urls);
+            }
+        } else if manifest.remote.is_some() {
+            let urls = collect_manifest_service_urls(manifest);
+            caddy::stacks::set_stack_ready_for(
+                &options.caddy_dir,
+                &options.stack_id,
+                urls.clone(),
+            )?;
+            if options.command_serve_timeout.is_none()
+                && let Some(tx) = ready_notify.take()
+            {
+                let _ = tx.send(urls);
+            }
+        } else if options.command_serve_timeout.is_none()
+            && let Some(tx) = ready_notify.take()
+        {
+            let _ = tx.send(collect_manifest_service_urls(manifest));
         }
 
         was_ready = true;
@@ -993,6 +1060,7 @@ pub fn start_stack(
             manifest_watch,
             worktrees,
             blocked,
+            ready_notify,
         }
         .run(shared)
     })();
@@ -1032,18 +1100,24 @@ pub fn start_stack(
     }
 
     for host in &claimed_hosts {
-        if let Err(err) = routes::release_host_claim(&options.caddy_dir, host, &manifest_path_str) {
+        if let Err(err) = routes::release_host_claim_for_stack(
+            &options.caddy_dir,
+            host,
+            &manifest_path_str,
+            &options.stack_id,
+        ) {
             cleanup_errors.push(err);
         }
     }
 
     if !active_routes.is_empty() {
         let mut caddy_out = options.output.caddy_stderr_writer();
-        if let Err(err) = routes::replace_routes(
+        if let Err(err) = routes::replace_routes_for_stack(
             &options.caddy_dir,
             &active_routes,
             &[],
             &manifest_path_str,
+            &options.stack_id,
             options.output.mode(),
             &mut caddy_out,
             !options.debug_caddy,
@@ -1053,17 +1127,20 @@ pub fn start_stack(
     }
 
     for (bind_host, port) in &claimed_fixed_ports {
-        if let Err(err) = routes::release_fixed_port_claim(
+        if let Err(err) = routes::release_fixed_port_claim_for_stack(
             &options.caddy_dir,
             bind_host,
             *port,
             &manifest_path_str,
+            &options.stack_id,
         ) {
             cleanup_errors.push(err);
         }
     }
 
-    if stack_registered && let Err(err) = unregister_stack(&options.caddy_dir) {
+    if stack_registered
+        && let Err(err) = caddy::stacks::unregister_stack_for(&options.caddy_dir, &options.stack_id)
+    {
         cleanup_errors.push(err);
     }
 
@@ -1097,14 +1174,21 @@ pub fn start_stack(
 
 fn check_termination_signal(
     cancel: &AtomicBool,
+    external_signal: Option<&AtomicI32>,
     install_signals: bool,
     output: &ServiceOutput,
     stack_name: &str,
 ) -> Option<i32> {
-    if !install_signals {
-        return None;
-    }
-    let sig = RECEIVED_SIGNAL.swap(0, Ordering::SeqCst);
+    let ext = external_signal
+        .map(|sig| sig.swap(0, Ordering::SeqCst))
+        .unwrap_or(0);
+    let sig = if ext != 0 {
+        ext
+    } else if install_signals {
+        RECEIVED_SIGNAL.swap(0, Ordering::SeqCst)
+    } else {
+        0
+    };
     if sig != 0 {
         cancel.store(true, Ordering::SeqCst);
         output.log_stdout(

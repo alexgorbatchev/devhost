@@ -44,6 +44,8 @@ impl Stack {
         let cancel = Arc::new(AtomicBool::new(false));
         let (handle, control) = RuntimeControl::channel();
         let options = StartStackOptions {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             runtime_control: Some(control),
             command_serve_timeout: None,
             serve_session: false,
@@ -58,6 +60,8 @@ impl Stack {
             idle_timeout: idle,
             install_signal_handlers: false,
             external_cancel: Some(cancel.clone()),
+            external_signal: None,
+            ready_notify: None,
             launch: LaunchMetadata::default(),
         };
         let running = RunningFileStack {

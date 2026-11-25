@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs, io,
     path::{Path, PathBuf},
+    sync::{Arc, OnceLock},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -104,6 +105,8 @@ pub(crate) struct HostClaimRecord {
     pub(crate) owner_pid: i32,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub(crate) owner_start_identity: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub(crate) owner_stack_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,6 +118,8 @@ pub(crate) struct FixedPortClaimRecord {
     pub(crate) owner_pid: i32,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub(crate) owner_start_identity: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub(crate) owner_stack_id: String,
     pub(crate) port: u16,
 }
 
@@ -131,6 +136,8 @@ pub(crate) struct RouteRegistration {
     pub(crate) owner_pid: i32,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub(crate) owner_start_identity: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub(crate) owner_stack_id: String,
     pub(crate) path: String,
     pub(crate) service_name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -139,6 +146,54 @@ pub(crate) struct RouteRegistration {
     pub(crate) document_injection_port: Option<u16>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub(crate) access_log_name: String,
+}
+
+type InProcessStackStopper = Arc<dyn Fn(&str) -> Result<(), String> + Send + Sync>;
+
+static IN_PROCESS_STACK_STOPPER: OnceLock<InProcessStackStopper> = OnceLock::new();
+
+pub(crate) fn set_in_process_stack_stopper(stopper: InProcessStackStopper) {
+    let _ = IN_PROCESS_STACK_STOPPER.set(stopper);
+}
+
+fn stop_in_process_zombie(
+    owner_stack_id: &str,
+    claim: &str,
+    output: Option<&ServiceOutput>,
+) -> Result<(), String> {
+    if let Some(output) = output {
+        output.log_stdout(
+            "devhost",
+            &format!("Stopping zombie stack {owner_stack_id} holding {claim}..."),
+        );
+    }
+    if let Some(stopper) = IN_PROCESS_STACK_STOPPER.get() {
+        stopper(owner_stack_id)?;
+    }
+    if let Some(output) = output {
+        output.log_stdout(
+            "devhost",
+            &format!("Stopped zombie stack {owner_stack_id} holding {claim}."),
+        );
+    }
+    Ok(())
+}
+
+fn is_same_owner(
+    owner_pid: i32,
+    owner_stack_id: &str,
+    owner_manifest: &str,
+    my_stack_id: &str,
+    my_manifest: &str,
+) -> bool {
+    if owner_pid != current_pid() {
+        return false;
+    }
+    if !my_stack_id.is_empty() || !owner_stack_id.is_empty() {
+        owner_stack_id == my_stack_id
+    } else {
+        owner_manifest == my_manifest
+    }
 }
 
 struct RegistrationSnapshot {
@@ -152,7 +207,16 @@ pub fn claim_fixed_port(
     port: u16,
     manifest_path: &str,
 ) -> Result<(), String> {
-    claim_fixed_port_with_options(caddy_dir, bind_host, port, manifest_path, false, None, None)
+    claim_fixed_port_for_stack(
+        caddy_dir,
+        bind_host,
+        port,
+        manifest_path,
+        "",
+        false,
+        None,
+        None,
+    )
 }
 
 pub fn claim_fixed_port_with_options(
@@ -164,6 +228,29 @@ pub fn claim_fixed_port_with_options(
     zombie_cleanup: Option<&mut ZombieCleanup>,
     output: Option<&ServiceOutput>,
 ) -> Result<(), String> {
+    claim_fixed_port_for_stack(
+        caddy_dir,
+        bind_host,
+        port,
+        manifest_path,
+        "",
+        kill_zombies,
+        zombie_cleanup,
+        output,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn claim_fixed_port_for_stack(
+    caddy_dir: &Path,
+    bind_host: &str,
+    port: u16,
+    manifest_path: &str,
+    stack_id: &str,
+    kill_zombies: bool,
+    zombie_cleanup: Option<&mut ZombieCleanup>,
+    output: Option<&ServiceOutput>,
+) -> Result<(), String> {
     let claim_path = fixed_port_claim_path(caddy_dir, bind_host, port);
     let claim = FixedPortClaimRecord {
         bind_host: bind_host.to_owned(),
@@ -171,6 +258,7 @@ pub fn claim_fixed_port_with_options(
         manifest_path: manifest_path.to_owned(),
         owner_pid: current_pid(),
         owner_start_identity: own_start_identity(),
+        owner_stack_id: stack_id.to_owned(),
         port,
     };
     let text = serde_json::to_string_pretty(&claim).expect("serialize fixed port claim");
@@ -188,32 +276,42 @@ pub fn claim_fixed_port_with_options(
     let stale = existing.owner_pid != current_pid()
         && !procid::is_record_owner_alive(existing.owner_pid, &existing.owner_start_identity);
     if !stale {
-        if kill_zombies
-            && existing.manifest_path == manifest_path
-            && existing.owner_pid != current_pid()
-        {
+        if kill_zombies && existing.manifest_path == manifest_path {
             let claim_label = format!("port {port}");
-            if let Some(cleanup) = zombie_cleanup {
-                cleanup.kill(
-                    existing.owner_pid,
-                    &existing.owner_start_identity,
-                    &claim_label,
-                    output,
-                )?;
-            } else {
-                stop_zombie(
-                    existing.owner_pid,
-                    &existing.owner_start_identity,
-                    &claim_label,
-                    output,
-                )?;
+            if existing.owner_pid == current_pid()
+                && !existing.owner_stack_id.is_empty()
+                && existing.owner_stack_id != stack_id
+            {
+                stop_in_process_zombie(&existing.owner_stack_id, &claim_label, output)?;
+                remove_if_exists(&claim_path)?;
+                return path_ctx(
+                    write_exclusive(&claim_path, text.as_bytes()),
+                    "write fixed port claim",
+                    &claim_path,
+                );
+            } else if existing.owner_pid != current_pid() {
+                if let Some(cleanup) = zombie_cleanup {
+                    cleanup.kill(
+                        existing.owner_pid,
+                        &existing.owner_start_identity,
+                        &claim_label,
+                        output,
+                    )?;
+                } else {
+                    stop_zombie(
+                        existing.owner_pid,
+                        &existing.owner_start_identity,
+                        &claim_label,
+                        output,
+                    )?;
+                }
+                remove_if_exists(&claim_path)?;
+                return path_ctx(
+                    write_exclusive(&claim_path, text.as_bytes()),
+                    "write fixed port claim",
+                    &claim_path,
+                );
             }
-            remove_if_exists(&claim_path)?;
-            return path_ctx(
-                write_exclusive(&claim_path, text.as_bytes()),
-                "write fixed port claim",
-                &claim_path,
-            );
         }
         return Err(format!(
             "{bind_host}:{port} is already claimed via {}.",
@@ -255,6 +353,16 @@ pub fn release_fixed_port_claim(
     port: u16,
     manifest_path: &str,
 ) -> Result<(), String> {
+    release_fixed_port_claim_for_stack(caddy_dir, bind_host, port, manifest_path, "")
+}
+
+pub fn release_fixed_port_claim_for_stack(
+    caddy_dir: &Path,
+    bind_host: &str,
+    port: u16,
+    manifest_path: &str,
+    stack_id: &str,
+) -> Result<(), String> {
     let claim_path = fixed_port_claim_path(caddy_dir, bind_host, port);
     let bytes = match fs::read(&claim_path) {
         Ok(bytes) => bytes,
@@ -266,20 +374,46 @@ pub fn release_fixed_port_claim(
         "parse fixed port claim",
         &claim_path,
     )?;
-    if claim.owner_pid != current_pid() || claim.manifest_path != manifest_path {
+    if !is_same_owner(
+        claim.owner_pid,
+        &claim.owner_stack_id,
+        &claim.manifest_path,
+        stack_id,
+        manifest_path,
+    ) {
         return Ok(());
     }
     remove_if_exists(&claim_path)
 }
 
 pub fn claim_host(caddy_dir: &Path, host: &str, manifest_path: &str) -> Result<(), String> {
-    claim_host_with_options(caddy_dir, host, manifest_path, false, None, None)
+    claim_host_for_stack(caddy_dir, host, manifest_path, "", false, None, None)
 }
 
 pub fn claim_host_with_options(
     caddy_dir: &Path,
     host: &str,
     manifest_path: &str,
+    kill_zombies: bool,
+    zombie_cleanup: Option<&mut ZombieCleanup>,
+    output: Option<&ServiceOutput>,
+) -> Result<(), String> {
+    claim_host_for_stack(
+        caddy_dir,
+        host,
+        manifest_path,
+        "",
+        kill_zombies,
+        zombie_cleanup,
+        output,
+    )
+}
+
+pub fn claim_host_for_stack(
+    caddy_dir: &Path,
+    host: &str,
+    manifest_path: &str,
+    stack_id: &str,
     kill_zombies: bool,
     mut zombie_cleanup: Option<&mut ZombieCleanup>,
     output: Option<&ServiceOutput>,
@@ -294,6 +428,7 @@ pub fn claim_host_with_options(
         caddy_dir,
         host,
         manifest_path,
+        stack_id,
         kill_zombies,
         zombie_cleanup.as_deref_mut(),
         output,
@@ -305,6 +440,7 @@ pub fn claim_host_with_options(
         manifest_path: manifest_path.to_owned(),
         owner_pid: current_pid(),
         owner_start_identity: own_start_identity(),
+        owner_stack_id: stack_id.to_owned(),
     };
     let text = serde_json::to_string_pretty(&claim).expect("serialize host claim");
     match write_exclusive(&claim_path, text.as_bytes()) {
@@ -328,31 +464,50 @@ pub fn claim_host_with_options(
             &claim_path,
         );
     }
-    if existing.owner_pid == current_pid() && existing.manifest_path == manifest_path {
+    if is_same_owner(
+        existing.owner_pid,
+        &existing.owner_stack_id,
+        &existing.manifest_path,
+        stack_id,
+        manifest_path,
+    ) {
         return Ok(());
     }
     if kill_zombies && existing.manifest_path == manifest_path {
-        if let Some(cleanup) = zombie_cleanup {
-            cleanup.kill(
-                existing.owner_pid,
-                &existing.owner_start_identity,
-                host,
-                output,
-            )?;
-        } else {
-            stop_zombie(
-                existing.owner_pid,
-                &existing.owner_start_identity,
-                host,
-                output,
-            )?;
+        if existing.owner_pid == current_pid()
+            && !existing.owner_stack_id.is_empty()
+            && existing.owner_stack_id != stack_id
+        {
+            stop_in_process_zombie(&existing.owner_stack_id, host, output)?;
+            remove_if_exists(&claim_path)?;
+            return path_ctx(
+                write_exclusive(&claim_path, text.as_bytes()),
+                "write host claim",
+                &claim_path,
+            );
+        } else if existing.owner_pid != current_pid() {
+            if let Some(cleanup) = zombie_cleanup {
+                cleanup.kill(
+                    existing.owner_pid,
+                    &existing.owner_start_identity,
+                    host,
+                    output,
+                )?;
+            } else {
+                stop_zombie(
+                    existing.owner_pid,
+                    &existing.owner_start_identity,
+                    host,
+                    output,
+                )?;
+            }
+            remove_if_exists(&claim_path)?;
+            return path_ctx(
+                write_exclusive(&claim_path, text.as_bytes()),
+                "write host claim",
+                &claim_path,
+            );
         }
-        remove_if_exists(&claim_path)?;
-        return path_ctx(
-            write_exclusive(&claim_path, text.as_bytes()),
-            "write host claim",
-            &claim_path,
-        );
     }
     Err(format!(
         "{host} is already claimed by PID {} from {}.",
@@ -361,6 +516,15 @@ pub fn claim_host_with_options(
 }
 
 pub fn release_host_claim(caddy_dir: &Path, host: &str, manifest_path: &str) -> Result<(), String> {
+    release_host_claim_for_stack(caddy_dir, host, manifest_path, "")
+}
+
+pub fn release_host_claim_for_stack(
+    caddy_dir: &Path,
+    host: &str,
+    manifest_path: &str,
+    stack_id: &str,
+) -> Result<(), String> {
     let claim_path = host_claim_path(caddy_dir, host);
     let bytes = match fs::read(&claim_path) {
         Ok(bytes) => bytes,
@@ -372,7 +536,13 @@ pub fn release_host_claim(caddy_dir: &Path, host: &str, manifest_path: &str) -> 
         "parse host claim",
         &claim_path,
     )?;
-    if claim.owner_pid != current_pid() || claim.manifest_path != manifest_path {
+    if !is_same_owner(
+        claim.owner_pid,
+        &claim.owner_stack_id,
+        &claim.manifest_path,
+        stack_id,
+        manifest_path,
+    ) {
         return Ok(());
     }
     remove_if_exists(&claim_path)
@@ -418,6 +588,29 @@ pub fn replace_routes(
     output: &mut impl io::Write,
     quiet: bool,
 ) -> Result<(), String> {
+    replace_routes_for_stack(
+        caddy_dir,
+        previous,
+        options,
+        manifest_path,
+        "",
+        mode,
+        output,
+        quiet,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn replace_routes_for_stack(
+    caddy_dir: &Path,
+    previous: &[ActivateRouteOptions],
+    options: &[ActivateRouteOptions],
+    manifest_path: &str,
+    stack_id: &str,
+    mode: Mode,
+    output: &mut impl io::Write,
+    quiet: bool,
+) -> Result<(), String> {
     let mut affected: Vec<&ActivateRouteOptions> = options.iter().collect();
     affected.extend(previous.iter());
     if affected.is_empty() {
@@ -442,6 +635,7 @@ pub fn replace_routes(
                 manifest_path: manifest_path.to_owned(),
                 owner_pid: current_pid(),
                 owner_start_identity: own_start_identity(),
+                owner_stack_id: stack_id.to_owned(),
                 path: normalize_route_path(&route.path),
                 service_name: route.service_name.clone(),
                 devtools_control_port: route.devtools_control_port,
@@ -466,7 +660,13 @@ pub fn replace_routes(
                 "parse route registration",
                 &path,
             )?;
-            if existing.manifest_path != manifest_path || existing.owner_pid != current_pid() {
+            if !is_same_owner(
+                existing.owner_pid,
+                &existing.owner_stack_id,
+                &existing.manifest_path,
+                stack_id,
+                manifest_path,
+            ) {
                 return Err(format!(
                     "route {} is owned by another stack",
                     path.display()
@@ -611,6 +811,7 @@ pub(crate) fn owner_urls(
     caddy_dir: &Path,
     pid: i32,
     identity: &str,
+    stack_id: &str,
 ) -> Result<Vec<String>, String> {
     let settings = read_running_settings(caddy_dir, &CaddySettings::default())?;
     let mut urls = BTreeSet::new();
@@ -628,7 +829,10 @@ pub(crate) fn owner_urls(
             "read managed route registration",
             &path,
         )?;
-        if record.owner_pid == pid && record.owner_start_identity == identity {
+        let matches_stack = stack_id.is_empty()
+            || record.owner_stack_id.is_empty()
+            || record.owner_stack_id == stack_id;
+        if record.owner_pid == pid && record.owner_start_identity == identity && matches_stack {
             let path = record
                 .path
                 .split('*')
@@ -879,6 +1083,7 @@ fn assert_host_available(
     caddy_dir: &Path,
     host: &str,
     manifest_path: &str,
+    stack_id: &str,
     kill_zombies: bool,
     mut zombie_cleanup: Option<&mut ZombieCleanup>,
     output: Option<&ServiceOutput>,
@@ -902,17 +1107,32 @@ fn assert_host_available(
         {
             continue;
         }
-        if record.owner_pid == current_pid() && record.manifest_path == manifest_path {
+        if is_same_owner(
+            record.owner_pid,
+            &record.owner_stack_id,
+            &record.manifest_path,
+            stack_id,
+            manifest_path,
+        ) {
             continue;
         }
         if kill_zombies && record.manifest_path == manifest_path {
-            if let Some(cleanup) = zombie_cleanup.as_deref_mut() {
-                cleanup.kill(record.owner_pid, &record.owner_start_identity, host, output)?;
-            } else {
-                stop_zombie(record.owner_pid, &record.owner_start_identity, host, output)?;
+            if record.owner_pid == current_pid()
+                && !record.owner_stack_id.is_empty()
+                && record.owner_stack_id != stack_id
+            {
+                stop_in_process_zombie(&record.owner_stack_id, host, output)?;
+                remove_if_exists(&path)?;
+                continue;
+            } else if record.owner_pid != current_pid() {
+                if let Some(cleanup) = zombie_cleanup.as_deref_mut() {
+                    cleanup.kill(record.owner_pid, &record.owner_start_identity, host, output)?;
+                } else {
+                    stop_zombie(record.owner_pid, &record.owner_start_identity, host, output)?;
+                }
+                remove_if_exists(&path)?;
+                continue;
             }
-            remove_if_exists(&path)?;
-            continue;
         }
         return Err(format!(
             "{host} is already claimed by PID {} from {}.",

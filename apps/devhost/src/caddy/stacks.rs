@@ -20,8 +20,25 @@ use crate::{cliout, paths::clean, procid};
 
 static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+pub fn generate_stack_id() -> String {
+    let mut bytes = [0u8; 8];
+    if getrandom::fill(&mut bytes).is_err() {
+        let seq = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+        bytes = seq.to_ne_bytes();
+    }
+    let mut out = String::with_capacity(20);
+    out.push_str("stk-");
+    for byte in bytes {
+        use std::fmt::Write as _;
+        let _ = write!(out, "{byte:02x}");
+    }
+    out
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LiveStack {
+    pub stack_id: String,
+    pub daemon_socket: String,
     pub remote: bool,
     pub ready: bool,
     pub urls: Vec<String>,
@@ -38,6 +55,17 @@ pub struct LiveStack {
 impl LiveStack {
     pub fn is_alive(&self) -> bool {
         procid::is_record_owner_alive(self.pid, &self.owner_start_identity)
+    }
+
+    pub fn is_same_stack(&self, stack_id: &str) -> bool {
+        if self.pid != current_pid() {
+            return false;
+        }
+        if !stack_id.is_empty() && !self.stack_id.is_empty() {
+            self.stack_id == stack_id
+        } else {
+            stack_id.is_empty() && self.stack_id.is_empty()
+        }
     }
 }
 
@@ -88,6 +116,10 @@ impl From<String> for RegisterStackError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StackRecord {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub stack_id: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub daemon_socket: String,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub remote: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -112,8 +144,10 @@ fn is_zero_u16(value: &u16) -> bool {
     *value == 0
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RegisterStackOptions {
+    pub stack_id: String,
+    pub daemon_socket: String,
     pub remote: bool,
     pub log_path: String,
     pub control_port: u16,
@@ -140,6 +174,8 @@ pub fn register_stack(
     let manifest_files = canonical_manifest_files(&all_files)?;
 
     let mut record = StackRecord {
+        stack_id: options.stack_id.clone(),
+        daemon_socket: options.daemon_socket.clone(),
         remote: options.remote,
         ready: false,
         urls: Vec::new(),
@@ -153,11 +189,11 @@ pub fn register_stack(
         stack_name: options.stack_name.clone(),
     };
 
-    let own_path = stack_record_path(&stacks_dir, record.owner_pid);
+    let own_path = stack_record_path(&stacks_dir, record.owner_pid, &record.stack_id);
     match fs::read(&own_path) {
         Ok(bytes) => {
             let previous = parse_stack_record(&bytes)?;
-            if previous.owner_pid == record.owner_pid
+            if same_stack_record(&previous, &record)
                 && previous.owner_start_identity == record.owner_start_identity
                 && previous.manifest_path == record.manifest_path
             {
@@ -187,9 +223,13 @@ pub fn register_stack(
 }
 
 pub fn unregister_stack(caddy_dir: &Path) -> Result<(), String> {
+    unregister_stack_for(caddy_dir, "")
+}
+
+pub fn unregister_stack_for(caddy_dir: &Path, stack_id: &str) -> Result<(), String> {
     let stacks_dir = caddy_dir.join("stacks");
     let _lock = stack_records_lock(&stacks_dir)?;
-    remove_if_exists(&stack_record_path(&stacks_dir, current_pid()))
+    remove_if_exists(&stack_record_path(&stacks_dir, current_pid(), stack_id))
 }
 
 pub fn cleanup_stale_stack_records(caddy_dir: &Path) -> Result<(), String> {
@@ -231,6 +271,8 @@ pub fn read_live_stacks(caddy_dir: &Path) -> Result<Vec<LiveStack>, String> {
         let record = path_ctx(parse_stack_record(&bytes), "read stack", &path)?;
         if procid::is_record_owner_alive(record.owner_pid, &record.owner_start_identity) {
             stacks.push(LiveStack {
+                stack_id: record.stack_id,
+                daemon_socket: record.daemon_socket,
                 remote: record.remote,
                 ready: record.ready,
                 urls: record.urls,
@@ -250,6 +292,7 @@ pub fn read_live_stacks(caddy_dir: &Path) -> Result<Vec<LiveStack>, String> {
             .cmp(&b.name)
             .then_with(|| a.manifest_path.cmp(&b.manifest_path))
             .then_with(|| a.pid.cmp(&b.pid))
+            .then_with(|| a.stack_id.cmp(&b.stack_id))
     });
     Ok(stacks)
 }
@@ -268,7 +311,7 @@ pub(crate) fn signal_stack_owner(
     }
     let stacks_dir = caddy_dir.join("stacks");
     let _lock = stack_records_lock(&stacks_dir)?;
-    let path = stack_record_path(&stacks_dir, stack.pid);
+    let path = stack_record_path(&stacks_dir, stack.pid, &stack.stack_id);
     let bytes = fs::read(&path)
         .map_err(|error| format!("stack registration changed before restart: {error}"))?;
     let current = path_ctx(parse_stack_record(&bytes), "read stack record", &path)?;
@@ -296,9 +339,17 @@ pub(crate) fn signal_stack_owner(
 }
 
 pub fn set_stack_ready(caddy_dir: &Path, urls: Vec<String>) -> Result<(), String> {
+    set_stack_ready_for(caddy_dir, "", urls)
+}
+
+pub fn set_stack_ready_for(
+    caddy_dir: &Path,
+    stack_id: &str,
+    urls: Vec<String>,
+) -> Result<(), String> {
     let stacks_dir = caddy_dir.join("stacks");
     let _lock = stack_records_lock(&stacks_dir)?;
-    let path = stack_record_path(&stacks_dir, current_pid());
+    let path = stack_record_path(&stacks_dir, current_pid(), stack_id);
     let bytes = path_ctx(fs::read(&path), "read stack record", &path)?;
     let mut record = path_ctx(parse_stack_record(&bytes), "read stack record", &path)?;
     record.ready = true;
@@ -486,6 +537,17 @@ fn parse_route_registration_owner(bytes: &[u8]) -> Result<RecordedOwner, String>
     Err("Registration file is malformed.".to_owned())
 }
 
+fn same_stack_record(left: &StackRecord, right: &StackRecord) -> bool {
+    if left.owner_pid != right.owner_pid {
+        return false;
+    }
+    if !left.stack_id.is_empty() || !right.stack_id.is_empty() {
+        left.stack_id == right.stack_id
+    } else {
+        true
+    }
+}
+
 fn check_manifest_overlap(
     stacks_dir: &Path,
     candidate: &StackRecord,
@@ -500,7 +562,7 @@ fn check_manifest_overlap(
             Err(error) => return path_ctx(Err(error), "read stack record", &path),
         };
         let owner = path_ctx(parse_stack_record(&bytes), "read stack record", &path)?;
-        if owner.owner_pid == candidate.owner_pid
+        if same_stack_record(&owner, candidate)
             || !procid::is_record_owner_alive(owner.owner_pid, &owner.owner_start_identity)
         {
             continue;
@@ -558,7 +620,7 @@ fn write_stack_record(stacks_dir: &Path, record: &StackRecord) -> Result<(), Str
     let text = serde_json::to_string_pretty(record).expect("serialize stack record");
     let seq = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
     let temp_path = stacks_dir.join(format!("stack-{}-{seq}.tmp", record.owner_pid));
-    let target = stack_record_path(stacks_dir, record.owner_pid);
+    let target = stack_record_path(stacks_dir, record.owner_pid, &record.stack_id);
     let mut file = path_ctx(
         OpenOptions::new()
             .create_new(true)
@@ -582,8 +644,12 @@ fn write_stack_record(stacks_dir: &Path, record: &StackRecord) -> Result<(), Str
     Ok(())
 }
 
-fn stack_record_path(stacks_dir: &Path, pid: i32) -> PathBuf {
-    stacks_dir.join(format!("{pid}.json"))
+fn stack_record_path(stacks_dir: &Path, pid: i32, stack_id: &str) -> PathBuf {
+    if !stack_id.is_empty() {
+        stacks_dir.join(format!("{}.json", files::encode_path_segment(stack_id)))
+    } else {
+        stacks_dir.join(format!("{pid}.json"))
+    }
 }
 
 struct StackRecordsLock(File);
@@ -633,6 +699,8 @@ mod tests {
         let manifest_str = manifest.to_string_lossy().into_owned();
 
         let opts = RegisterStackOptions {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             remote: false,
             log_path: String::new(),
             control_port: 0,
@@ -646,8 +714,20 @@ mod tests {
         assert_eq!(owners.len(), 1);
         assert_eq!(owners[0].pid, current_pid());
 
+        // Two distinct stack IDs in the same PID still detect manifest overlap.
+        let same_pid_conflict = RegisterStackOptions {
+            stack_id: "stk-second".to_owned(),
+            ..opts.clone()
+        };
+        assert!(matches!(
+            register_stack(&caddy_dir, &same_pid_conflict),
+            Err(RegisterStackError::Overlap(_))
+        ));
+
         // Write a stale stack record and verify cleanup removes it.
         let stale = StackRecord {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             remote: false,
             ready: false,
             urls: Vec::new(),
@@ -680,6 +760,8 @@ mod tests {
             .unwrap();
         let other_pid = sleeper.id() as i32;
         let other = StackRecord {
+            stack_id: String::new(),
+            daemon_socket: String::new(),
             remote: false,
             ready: false,
             urls: Vec::new(),

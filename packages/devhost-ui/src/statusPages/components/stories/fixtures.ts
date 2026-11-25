@@ -39,6 +39,7 @@ export const fixture_invalidFrontMatterMarkdownPage: FilePageData = {
 };
 
 export const fixture_directoryStack: DirectoryStack = {
+  id: "stk-shop",
   name: "shop",
   pid: 123,
   directory: "/workspace/shop",

@@ -138,12 +138,24 @@ fn concurrent_stop_orphan_recovery_and_rejected_takeover_preserve_other_routes()
     claim_ready(&runtime, &stopped_project, "mutation-stop", &mut stopped);
     let caddy_pid = fs::read(runtime.state().join("caddy/caddy.pid")).unwrap();
 
+    let initial_stacks = read_live_stacks(&runtime.state().join("caddy")).unwrap();
+    let keeper_stack = initial_stacks
+        .iter()
+        .find(|stack| stack.name == "mutation-keeper")
+        .unwrap()
+        .clone();
+    let orphan_stack = initial_stacks
+        .iter()
+        .find(|stack| stack.name == "mutation-orphan")
+        .unwrap()
+        .clone();
+
     // Leave the real live owner's routes and claims but remove its registry
     // publication, as after an interrupted registry update.
     fs::remove_file(
         runtime
             .state()
-            .join(format!("caddy/stacks/{}.json", orphan.0.id())),
+            .join(format!("caddy/stacks/{}.json", orphan_stack.stack_id)),
     )
     .unwrap();
     record(
@@ -180,7 +192,11 @@ fn concurrent_stop_orphan_recovery_and_rejected_takeover_preserve_other_routes()
         let replacement_published = read_live_stacks(&runtime.state().join("caddy"))
             .unwrap()
             .iter()
-            .any(|stack| stack.pid == replacement.0.id() as i32 && stack.control_port > 0);
+            .any(|stack| {
+                stack.name == "mutation-orphan"
+                    && stack.stack_id != orphan_stack.stack_id
+                    && stack.control_port > 0
+            });
         if replacement_published
             && stopping.0.try_wait().unwrap().is_some()
             && rejected.0.try_wait().unwrap().is_some()
@@ -207,7 +223,7 @@ fn concurrent_stop_orphan_recovery_and_rejected_takeover_preserve_other_routes()
     assert!(
         rejected_log.contains(&format!(
             "mutation-keeper.localhost is already claimed by PID {}",
-            keeper.0.id()
+            keeper_stack.pid
         )),
         "{rejected_log}"
     );
@@ -235,13 +251,13 @@ fn concurrent_stop_orphan_recovery_and_rejected_takeover_preserve_other_routes()
     );
     let log = fs::read_to_string(orphan_project.join("lifecycle.log")).unwrap();
     assert_eq!(
-        log.matches(&format!("Stopping zombie PID {}", orphan.0.id()))
+        log.matches(&format!("Stopping zombie stack {}", orphan_stack.stack_id))
             .count(),
         1,
         "{log}"
     );
     assert_eq!(
-        log.matches(&format!("Stopped zombie PID {}", orphan.0.id()))
+        log.matches(&format!("Stopped zombie stack {}", orphan_stack.stack_id))
             .count(),
         1,
         "{log}"
