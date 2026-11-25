@@ -466,6 +466,8 @@ kbd {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .changes h3 {
   margin: 0 0 4px;
