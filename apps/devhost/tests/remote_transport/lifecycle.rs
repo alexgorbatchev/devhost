@@ -86,7 +86,12 @@ impl Machine {
             .process_group(0)
             .spawn()
             .unwrap();
-        Stack { child, project }
+        Stack {
+            child,
+            project,
+            state_dir: self.root.path().join("state"),
+            paused_daemon: None,
+        }
     }
 
     fn command(&self, project: &Path) -> Command {
@@ -126,7 +131,14 @@ impl Drop for Machine {
     fn drop(&mut self) {
         // Detached supervisors outlive their launching CLI, including when an
         // assertion fails before the explicit stop command.
-        let dir = self.root.path().join("state/caddy");
+        let state_dir = self.root.path().join("state");
+        if let Some(daemon) = devhost::daemon::read_live_daemon(&state_dir) {
+            // SAFETY: daemon record was verified live for this isolated state directory.
+            unsafe {
+                libc::kill(daemon.pid, libc::SIGCONT);
+            }
+        }
+        let dir = state_dir.join("caddy");
         if let Ok(owners) = caddy::stacks::read_live_stack_owners(&dir) {
             for owner in owners {
                 let _ = devhost::services::stop::stop_stack(
@@ -183,13 +195,38 @@ impl Drop for Machine {
 struct Stack {
     child: Child,
     project: PathBuf,
+    state_dir: PathBuf,
+    paused_daemon: Option<(i32, String)>,
 }
 impl Stack {
     fn pause_for_backend_override(&mut self) {
         assert!(self.child.try_wait().unwrap().is_none(), "{}", self.logs());
-        let pid = self.child.id() as i32;
         // Fault injection owns the lease until stop resumes the supervisor.
         // Otherwise its initial config reconciliation can restore the real backend.
+        if let Some(daemon) = devhost::daemon::read_live_daemon(&self.state_dir) {
+            let pid = daemon.pid;
+            self.paused_daemon = Some((pid, daemon.start_identity));
+            // SAFETY: the live daemon belongs to this isolated fixture state directory.
+            assert_eq!(unsafe { libc::kill(pid, libc::SIGSTOP) }, 0);
+            let target = sysinfo::Pid::from_u32(pid as u32);
+            let mut system = sysinfo::System::new();
+            wait(|| {
+                system.refresh_processes_specifics(
+                    sysinfo::ProcessesToUpdate::Some(&[target]),
+                    true,
+                    sysinfo::ProcessRefreshKind::nothing().without_tasks(),
+                );
+                let Some(process) = system.process(target) else {
+                    panic!(
+                        "supervisor daemon PID {pid} exited before fault injection: {}",
+                        self.logs()
+                    );
+                };
+                matches!(process.status(), sysinfo::ProcessStatus::Stop)
+            });
+            return;
+        }
+        let pid = self.child.id() as i32;
         // SAFETY: this is the owned, unreaped child; only that supervisor is paused.
         assert_eq!(unsafe { libc::kill(pid, libc::SIGSTOP) }, 0);
         wait(|| {
@@ -222,6 +259,14 @@ impl Stack {
         )
     }
     fn stop(&mut self) {
+        if let Some((daemon_pid, identity)) = self.paused_daemon.take()
+            && procid::is_record_owner_alive(daemon_pid, &identity)
+        {
+            // SAFETY: verified live start identity for the isolated fixture daemon.
+            unsafe {
+                libc::kill(daemon_pid, libc::SIGCONT);
+            }
+        }
         if self.child.try_wait().unwrap().is_some() {
             return;
         }
