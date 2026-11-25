@@ -129,5 +129,5 @@ export async function verifyRustParity(reference: string): Promise<void> {
 }
 
 if (import.meta.main) {
-  await verifyRustParity(Bun.argv[2] ?? "origin/main");
+  await verifyRustParity(Bun.argv[2] ?? "golang");
 }

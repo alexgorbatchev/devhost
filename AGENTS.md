@@ -9,20 +9,19 @@ Monorepo root for the `devhost` Go app, the injected devtools UI package, and th
 - Check the full repo: `just check`
 - Prepare the workspace dependencies and embedded bundle: `just setup`
 - Repo-wide formatting command: `just fix` (`oxfmt` for the repo, `gofmt -w` for `apps/devhost`, first-party Rust formatting through `just rust fmt`)
-- Check the experimental Rust CLI: `just rust check`; run or build it with `just rust run <args>` or `just rust build`. Run `just setup` on fresh checkouts; Rust execution and validation recipes refresh embedded browser assets. Its package checks remain separate from the released Go CLI checks.
-- Rust `run` and `run-ai` record this checkout for live devtools assets. `DEVHOST_DEV_SOURCE_DIR` overrides it at runtime; a missing recorded checkout warns and uses embedded assets. Optimized release candidates omit this source stamp.
-- Rust CI uses `apps/devhost/rust/rust-toolchain.toml`, checks the declared minimum with Rust 1.98.1, enforces formatting/Clippy and 90% line/function coverage, validates current-Go inventory drift, and compares optimized Rust with isolated unchanged and repaired Go binaries. Hosted Linux x64, Linux ARM64, macOS ARM64 and macOS Intel run native tests and comparisons; root `just check` remains the shared repository gate.
-- Build a versioned, optimized Rust candidate with `just rust build-release`; the native executable is `apps/devhost/rust/target/release/devhost`. Metadata and release tags must agree. This candidate command leaves the Go publisher and protected development override in place.
-- Package Rust candidates with `just rust build-release-artifacts --targets=linux-x64` (omit the filter for all five distribution targets). Linux builds require Zig and cargo-zigbuild; build the macOS archive on macOS with its SDK. Candidate output, checksums and provenance live in a unique `apps/devhost/dist/rust-candidates/` directory; this command never publishes a release.
-- Dispatch `CI` with `rustCandidates=true` for unpublished native packaging on hosted Linux x64, Linux ARM64 and macOS ARM64. It retains archives and receipts for seven days and leaves the Go publisher selected; see `apps/devhost/RELEASE.md`.
+- Check the Rust CLI: `just rust check`; run or build it with `just rust run <args>` or `just rust build`. Run `just setup` on fresh checkouts; Rust execution and validation recipes refresh embedded browser assets.
+- Rust `run` and `run-ai` record this checkout for live devtools assets. `DEVHOST_DEV_SOURCE_DIR` overrides it at runtime; a missing recorded checkout warns and uses embedded assets. Optimized release builds omit this source stamp.
+- Rust CI uses `apps/devhost/rust/rust-toolchain.toml`, checks the declared minimum with Rust 1.98.1, enforces formatting/Clippy and 90% line/function coverage, validates inventory parity against the `golang` tag (`v0.0.20`), and compares optimized Rust with isolated unchanged and repaired Go binaries. Hosted Linux x64, Linux ARM64, macOS ARM64 and macOS Intel run native tests and comparisons; root `just check` remains the shared repository gate.
+- Build a versioned, optimized Rust release executable with `just rust build-release`; the native executable is `apps/devhost/rust/target/release/devhost`. Metadata and release tags must agree.
+- Package Rust release archives with `just rust build-release-artifacts --targets=linux-x64` (omit the filter for all five distribution targets). Linux builds require Zig and cargo-zigbuild; build the macOS archive on macOS with its SDK. Output, checksums and provenance live in a unique `apps/devhost/dist/rust-candidates/` directory (or `--output`); this command never publishes a release.
+- Dispatch `CI` with `rustCandidates=true` for unpublished native packaging and extracted distribution comparisons on hosted Linux x64, Linux ARM64 and macOS ARM64.
 - Refresh the generated embedded devtools bundle and standalone page scripts and stylesheets: `just devhost build-devtools-bundle`
-- Check `devhost` app-only validations: `just devhost check`
-- Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just cli <args>` is the human-mode equivalent); they forward to `devhost run-ai` and `devhost run`, respectively
+- Check `devhost` Go reference/script validations: `just devhost check`
+- Run `devhost` from source in the current directory with agent-facing output: `just run-ai <args>` (`just cli <args>` is the human-mode equivalent); they forward to `rust run-ai` and `rust run`, respectively
 - Run every workspace test suite: `just test`
 - Run `devhost` Go tests only: `just devhost test`
-- Build `devhost` release tarballs: `just devhost build-release-artifacts`
-- Build the current-platform `devhost` binary: `just devhost compile`
-- Build and register a protected `devhost` development override in `~/.dotfiles`, stamped `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) and with this checkout as its source, so it serves the devtools UI from the checkout and chat can target it: `just dev-bootstrap` (or `just dev-bootstrap /path/to/dotfiles`). Requires a dotfiles CLI with `tool dev use` support; see the app's development workflow for returning to managed releases.
+- Build the retained Go reference/rollback binary: `just devhost compile`
+- Build and register a protected Rust `devhost` development override in `~/.dotfiles`, stamped `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) and with this checkout as its source, so it serves the devtools UI from the checkout and chat can target it: `just dev-bootstrap` (or `just dev-bootstrap /path/to/dotfiles`). Requires a dotfiles CLI with `tool dev use` support; see the app's development workflow for returning to managed releases.
 - Check the shared design tokens package: `just design check`
 - Regenerate `packages/design/tokens.css` after editing `packages/design/src/constants.ts`: `just design write-tokens`
 - Check the injected devtools UI package: `just ui check`

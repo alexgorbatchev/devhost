@@ -9,10 +9,10 @@ mod playground-frontend 'packages/playground/frontend/justfile'
 mod archify 'docs/internal/architecture/justfile'
 
 # Run devhost from source in the calling directory
-cli *args: (devhost::run args)
+cli *args: (rust::run args)
 
 # Run devhost from source in the calling directory with agent-facing output
-run-ai *args: (devhost::run-ai args)
+run-ai *args: (rust::run-ai args)
 
 # Run every workspace test suite
 test:
@@ -43,12 +43,13 @@ fix:
 
 # Build and register a protected devhost development override
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
-    base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)" && revision="$(git rev-parse --short HEAD)" && just --justfile apps/devhost/justfile --set build-version "999.0.0-dev--${base#v}+$revision" --set build-source-directory "{{ justfile_directory() }}" compile
+    just devhost build-devtools-bundle
+    base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)" && revision="$(git rev-parse --short HEAD)" && DEVHOST_BUILD_VERSION="999.0.0-dev--${base#v}+$revision" DEVHOST_BUILD_SOURCE_DIRECTORY="{{ justfile_directory() }}" cargo build --manifest-path apps/devhost/rust/Cargo.toml --release --locked --bin devhost
     bun run ./apps/devhost/scripts/devBootstrap.ts
 
 # Start the root devhost stack using machine routing
-run: devhost::build-devtools-bundle
-    apps/devhost/scripts/runFromSource.sh start --detach --manifest devhost.toml
+run:
+    just rust run start --detach --manifest devhost.toml
 
 # Clean all node_modules directories across the repository
 clean:

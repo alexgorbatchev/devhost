@@ -25,13 +25,13 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 - Do not leave docs, README, or AGENTS examples/rules stale after changing implementation details.
 - Repo-root `README.md` is a symlink to this workspace README; update `README.md` here, not the root symlink.
 
-## Rust port
+## Rust CLI
 
-The experimental Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` from the repository root to keep its binary separate from the Go development executable.
+The shipping Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` (also forwarded from root `just cli` and `just run-ai`).
 
-Rust `run` and `run-ai` stamp the checkout with compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`. For a standalone development executable, set that variable while invoking `just rust build`. The runtime `DEVHOST_DEV_SOURCE_DIR` takes precedence; a missing stamped checkout warns and serves embedded assets. `build-release` clears the source stamp so optimized candidates remain independent of the build checkout.
+Rust `run` and `run-ai` stamp the checkout with compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`. For a standalone development executable, set that variable while invoking `just rust build`. The runtime `DEVHOST_DEV_SOURCE_DIR` takes precedence; a missing stamped checkout warns and serves embedded assets. `build-release` clears the source stamp so optimized release executables remain independent of the build checkout.
 
-Use `just rust build-release` for an optimized native candidate at `apps/devhost/rust/target/release/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig. This command builds a candidate; the Go publisher and `just dev-bootstrap` remain the production and protected-development entrypoints.
+Use `just rust build-release` for an optimized native release binary at `apps/devhost/rust/target/release/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig. `just devhost compile` remains available to build the retained Go reference/rollback executable (`golang` tag baseline).
 
 Run `just setup` for a fresh checkout. Rust run, build, test, lint, and coverage recipes refresh the generated browser assets before Cargo embeds them; direct Cargo commands require those assets to exist already.
 
@@ -62,7 +62,7 @@ just dev-bootstrap
 just dev-bootstrap /path/to/dotfiles
 ```
 
-The default target is `~/.dotfiles`. The command uses the app's `compile` recipe with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) version override and a `build-source-directory` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just devhost compile` retains the metadata version.
+The default target is `~/.dotfiles`. The command rebuilds the embedded devtools bundle and compiles `apps/devhost/rust/target/release/devhost` with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) `DEVHOST_BUILD_VERSION` override and a `DEVHOST_BUILD_SOURCE_DIRECTORY` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just rust build-release` retains the metadata version and clears the source stamp.
 
 Run the app from source in the current directory with agent-facing output (`AGENT=1`); `just devhost run` is the human-mode equivalent:
 

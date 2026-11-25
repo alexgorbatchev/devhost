@@ -88,7 +88,7 @@ describe("devBootstrap", () => {
     const installed = Bun.spawn([developmentPath, "--version"]);
     expect(await new Response(installed.stdout).text()).toBe(`999.0.0-dev--${releaseText}+${revisionText}\n`);
     expect(await installed.exited).toBe(0);
-  }, 120_000);
+  }, 300_000);
 
   it("registers the build and resolves its configured development path without overwriting the release", async () => {
     expect(await devBootstrap(sourcePath, dotfilesPath)).toBe(developmentPath);

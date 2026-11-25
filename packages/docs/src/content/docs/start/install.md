@@ -26,7 +26,7 @@ sudo install "devhost-$tag-$platform/devhost" /usr/local/bin/devhost
 devhost --version
 ```
 
-Any directory on your `PATH` works in place of `/usr/local/bin`.
+Any directory on your `PATH` works in place of `/usr/local/bin`. Each release also publishes `SHA256SUMS` (verify a downloaded tarball with `sha256sum -c --ignore-missing SHA256SUMS` on Linux or `shasum -a 256 --check --ignore-missing SHA256SUMS` on macOS) and includes `THIRD_PARTY_LICENSES.txt` inside the archive.
 
 ## Prepare Caddy
 

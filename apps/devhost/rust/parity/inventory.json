@@ -1497,7 +1497,7 @@
     },
     {
       "path": "packages/docs/src/content/docs/development/building.md",
-      "blob": "1a1c8da4b13de8e0ca7b8c40d0c460cd8e853161",
+      "blob": "d943377022cfa8ee5cd6dc2fcc91f9f6666c98d8",
       "reason": "Documents Rust candidates, native comparisons, the explicit trusted HTTPS fixture prerequisite on macOS and source-run checkout metadata."
     },
     {
@@ -1552,7 +1552,7 @@
     },
     {
       "path": "skills/devhost/SKILL.md",
-      "blob": "107edd3bd9c612b8903ba1c5cfa322a2d3bea9c2",
+      "blob": "009d25ed420d68f20ad552c4b3f4811ef9983470",
       "reason": "Shared operator contract documents verified Rust behavior, completion portability, final attempted retry ports, daemon helper escalation and failed-start cleanup retry. Separate negative idle durations are accepted by the experimental Rust CLI, including detached forwarding. Development source selection preserves explicit override precedence and unavailable recorded-checkout fallback."
     },
     {
@@ -1599,6 +1599,16 @@
       "path": "apps/devhost/internal/services/reload.go",
       "blob": "df8e780c03e6005a8ba4e81518fd11affb1046fc",
       "reason": "Publish the accepted configuration pointer under the manifest snapshot lock for concurrent read-only file discovery."
+    },
+    {
+      "path": "packages/docs/src/content/docs/development/release-pipeline.md",
+      "blob": "ecb6f50c6f5b4ba7d4831045112c3be5bf4bf48f",
+      "reason": "Rust production cutover switches release packaging to the three-host Rust matrix and SHA256SUMS"
+    },
+    {
+      "path": "packages/docs/src/content/docs/start/install.md",
+      "blob": "3605ded5c2d6df286868c51c01522591543b7f10",
+      "reason": "Document SHA256SUMS verification and THIRD_PARTY_LICENSES.txt shipped with Rust release archives"
     }
   ],
   "branchAdditions": [

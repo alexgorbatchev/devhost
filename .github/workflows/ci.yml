@@ -66,6 +66,22 @@ jobs:
       - name: Setup Just
         uses: extractions/setup-just@v4
 
+      - name: Setup Rust
+        if: runner.environment != 'self-hosted'
+        shell: bash
+        run: |
+          set -euo pipefail
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
+          rustup toolchain install "$channel" --profile minimal --no-self-update
+          rustup default "$channel"
+
+      - name: Cache Rust dependencies for dev-bootstrap test
+        if: runner.environment != 'self-hosted'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/devhost/rust -> target
+          key: check-bootstrap-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -110,6 +126,22 @@ jobs:
 
       - name: Setup Just
         uses: extractions/setup-just@v4
+
+      - name: Setup Rust
+        if: runner.environment != 'self-hosted'
+        shell: bash
+        run: |
+          set -euo pipefail
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
+          rustup toolchain install "$channel" --profile minimal --no-self-update
+          rustup default "$channel"
+
+      - name: Cache Rust dependencies for dev-bootstrap test
+        if: runner.environment != 'self-hosted'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/devhost/rust -> target
+          key: check-bootstrap-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

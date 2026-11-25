@@ -1,6 +1,6 @@
 ---
 created_on: 2026-04-15 13:04
-last_modified: 2026-11-24 13:25
+last_modified: 2026-11-24 16:56
 status: current
 ---
 
@@ -25,27 +25,28 @@ status: current
 bun install --frozen-lockfile
 just ui install-browser
 just check
-just devhost build-release-artifacts
+just rust check
+just rust build-release
 ```
 
-The preflight is not optional. The publish workflow repeats the same validations before attaching binaries to the GitHub Release.
+The preflight is not optional. The publish workflow repeats the same validations (`just check`, `just rust check`, and Go-oracle inventory parity against the `golang` tag) before packaging and attaching binaries to the GitHub Release.
 
-Native media and headed-browser tests require FFmpeg (including `ffprobe`), unzip, and Xvfb on Linux. The hosted release runner installs these tools before `just check`, matching hosted CI.
+Native media and headed-browser tests require FFmpeg (including `ffprobe`), unzip, and Xvfb on Linux. The hosted release runner installs these tools alongside `caddy`, `chisel`, and `cargo-llvm-cov` before verification.
 
-`just check` includes the Go logging-boundary analyzer (`go tool logpolicy ./...`) through `just devhost lint`. Resolve its findings through `internal/cliout` before release; `just devhost lint-logging` runs that check alone.
+`just check` still checks the retained Go reference implementation, including the Go logging-boundary analyzer (`go tool logpolicy ./...`) through `just devhost lint`.
 
 ## Local standalone executable
 
-To build a native executable for the current platform:
+To build an optimized Rust executable for the current platform:
 
 ```sh
-just devhost compile
-./apps/devhost/bin/devhost --version
+just rust build-release
+./apps/devhost/rust/target/release/devhost --version
 ```
 
-This first refreshes the embedded injected devtools assets under `internal/devtools/dist/`, then runs `go build` with linker flags that embed the current `apps/devhost/metadata.json` version into `devhost --version`.
-The asset build explicitly selects production mode and embeds the static entry, lazy terminal chunks, separate font subsets, terminal stylesheet, and precompressed gzip representations. Obsolete generated assets are removed from production builds. Instance configuration is served separately and is not baked into the static entry.
-The generated binary is the same Go runtime that ships in the release archives.
+This refreshes production browser assets under `apps/devhost/internal/devtools/dist/` and runs a locked Cargo release build (`opt-level = 3`, thin LTO, one codegen unit, stripped debug info, unwinding preserved, checkout/Cargo paths remapped) embedding the `apps/devhost/metadata.json` version into `devhost --version`. A GitHub tag build rejects a mismatched tag. The generated binary is the same Rust runtime that ships in the release archives.
+
+To build the retained Go reference/rollback executable (pinned at the `golang` tag for `v0.0.20`), run `just devhost compile` (`./apps/devhost/bin/devhost --version`).
 
 To use a local development build through a configured dotfiles project, run from the repository root:
 
@@ -53,9 +54,9 @@ To use a local development build through a configured dotfiles project, run from
 just dev-bootstrap
 ```
 
-This builds the current checkout and registers a protected development copy with dotfiles, preserving the managed release payload. See [Use a protected development build](../../packages/docs/src/content/docs/development/building.md#use-a-protected-development-build) for prerequisites, selecting a different dotfiles project, and returning to managed releases. The build reports `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`); plain `just devhost compile` and release builds retain the metadata version.
+This builds the current Rust checkout (`cargo build --release --locked --bin devhost` with checkout and `999.0.0-dev--<release>+<short git SHA>` stamps) and registers a protected development copy with dotfiles, preserving the managed release payload. See [Use a protected development build](../../packages/docs/src/content/docs/development/building.md#use-a-protected-development-build) for prerequisites, selecting a different dotfiles project, and returning to managed releases. Plain `just rust build-release` and tagged release builds omit the checkout stamp and retain the metadata version.
 
-## Optimized Rust candidate
+## Release packaging and cross-platform validation
 
 From a prepared checkout, build a separate native candidate:
 
@@ -66,9 +67,9 @@ just rust build-release
 
 This refreshes production browser assets and runs a locked Cargo release build. The authoritative version is `apps/devhost/metadata.json`; a GitHub tag build rejects a different tag. The release profile uses optimization level 3, thin LTO, one codegen unit, and stripped debug information. It preserves unwinding for lifecycle cleanup and remaps checkout and Cargo source paths in diagnostics. Normal development builds preserve their debug and incremental defaults.
 
-Pass `--target <installed Rust triple>` to select another target. `--cross` selects `cargo zigbuild` and requires cargo-zigbuild, Zig, and the target's platform prerequisites. Cargo's configured target directory determines the output location. A packaged candidate uses embedded assets and requires no source checkout.
+Pass `--target <installed Rust triple>` to select another target. `--cross` selects `cargo zigbuild` and requires cargo-zigbuild, Zig, and the target's platform prerequisites. Cargo's configured target directory determines the output location. A packaged release binary uses embedded assets and requires no source checkout.
 
-This command leaves the Go release publisher and the protected Go development override selected. Rust candidates require their separate parity, packaging, and native acceptance before production cutover.
+The final Go production release (`v0.0.20`) is preserved at the `golang` Git tag for rollback and historical parity checks.
 
 ### Candidate archives
 
