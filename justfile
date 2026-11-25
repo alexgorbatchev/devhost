@@ -1,5 +1,4 @@
 mod devhost 'apps/devhost/justfile'
-mod rust 'apps/devhost/rust/justfile'
 mod design 'packages/design/justfile'
 mod ui 'packages/devhost-ui/justfile'
 mod docs 'packages/docs/justfile'
@@ -9,15 +8,16 @@ mod playground-frontend 'packages/playground/frontend/justfile'
 mod archify 'docs/internal/architecture/justfile'
 
 # Run devhost from source in the calling directory
-cli *args: (rust::run args)
+cli *args: (devhost::run args)
 
 # Run devhost from source in the calling directory with agent-facing output
-run-ai *args: (rust::run-ai args)
+run-ai *args: (devhost::run-ai args)
 
 # Run every workspace test suite
 test:
     bash test-support/runTests.test.sh
     just devhost test
+    just devhost test-scripts
     just design test
     just ui test
     just docs test
@@ -38,18 +38,17 @@ check:
 # Human-only repo-wide formatting command for explicit manual cleanup
 fix:
     bun --bun oxfmt --write .
-    gofmt -w apps/devhost
-    just rust fmt
+    just devhost fmt
 
 # Build and register a protected devhost development override
 dev-bootstrap $dotfiles_dir=(env_var("HOME") / ".dotfiles"):
     just devhost build-devtools-bundle
-    base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)" && revision="$(git rev-parse --short HEAD)" && DEVHOST_BUILD_VERSION="999.0.0-dev--${base#v}+$revision" DEVHOST_BUILD_SOURCE_DIRECTORY="{{ justfile_directory() }}" cargo build --manifest-path apps/devhost/rust/Cargo.toml --release --locked --bin devhost
+    base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || echo v0.0.0)" && revision="$(git rev-parse --short HEAD)" && DEVHOST_BUILD_VERSION="999.0.0-dev--${base#v}+$revision" DEVHOST_BUILD_SOURCE_DIRECTORY="{{ justfile_directory() }}" cargo build --manifest-path apps/devhost/Cargo.toml --release --locked --bin devhost
     bun run ./apps/devhost/scripts/devBootstrap.ts
 
 # Start the root devhost stack using machine routing
 run:
-    just rust run start --detach --manifest devhost.toml
+    just devhost run start --detach --manifest devhost.toml
 
 # Clean all node_modules directories across the repository
 clean:

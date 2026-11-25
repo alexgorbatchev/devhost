@@ -1,4 +1,0 @@
-{"name":"duplicate-table","args":["service","list"],"env":{"AGENT":"1","DEVHOST_MANIFEST":"devhost.toml"},"files":{"devhost.toml":"name = 'sample'\n[services.web]\nport = 3000\n\n[services.web]\nalwaysStart = true\n"}}
-{"name":"duplicate-key","args":["service","list"],"env":{"AGENT":"1","DEVHOST_MANIFEST":"devhost.toml"},"files":{"devhost.toml":"name = 'sample'\n[services.web]\nport = 3000\nport = 3001\n"}}
-{"name":"unterminated-table","args":["service","list"],"env":{"AGENT":"1","DEVHOST_MANIFEST":"devhost.toml"},"files":{"devhost.toml":"name = 'sample'\n[services.web\n"}}
-{"name":"unterminated-string","args":["service","list"],"env":{"AGENT":"1","DEVHOST_MANIFEST":"devhost.toml"},"files":{"devhost.toml":"name = \"sample\n[services.web]\n"}}

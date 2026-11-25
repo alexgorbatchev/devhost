@@ -56,7 +56,7 @@ if (import.meta.main) {
     throw new Error("Run this script through just dev-bootstrap.");
   }
   const destinationPath = await devBootstrap(
-    fileURLToPath(new URL("../rust/target/release/devhost", import.meta.url)),
+    fileURLToPath(new URL("../target/release/devhost", import.meta.url)),
     dotfilesPath,
   );
   console.log(`Registered local devhost build at ${destinationPath}`);

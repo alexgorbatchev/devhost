@@ -30,7 +30,7 @@ The agent works in the checkout the page belongs to. After a [worktree switch](.
 
 Chat opens compact, showing a working spinner and then the latest reply. **Expand Chat** shows the whole conversation with streamed replies and tool activity, with consecutive tool calls in one collapsible group; **Compact Chat** goes back. The panel opens at the same edge as the toolbar's popups, on either side of the page, and collapsing it does not stop the agent.
 
-Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts, including when switching between the Go and experimental Rust CLIs with the same state directory. On phone-sized screens the panel stays docked. The **Chat** button shows a spinner while the agent works or waits for you.
+Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts. On phone-sized screens the panel stays docked. The **Chat** button shows a spinner while the agent works or waits for you.
 
 | To                            | Use                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -114,7 +114,7 @@ A development build of devhost knows its own source checkout (see [Build from so
 - **devhost** starts conversations in the devhost checkout, lists only those conversations, and lets you select and draw over devhost's own toolbar and panels.
 - **Project** returns to your app and its conversation.
 
-Changing the directory clears current selections and drawings, and the choice is remembered per project and origin. UI changes the agent makes show up when you reload the page; Go changes need the devhost binary rebuilt and the stack restarted, which ends its conversations.
+Changing the directory clears current selections and drawings, and the choice is remembered per project and origin. UI changes the agent makes show up when you reload the page; Rust changes need the devhost binary rebuilt and the stack restarted, which ends its conversations.
 
 ## Turn it off
 

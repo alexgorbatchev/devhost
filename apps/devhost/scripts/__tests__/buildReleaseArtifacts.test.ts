@@ -1,71 +1,45 @@
-import { Archive } from "bun";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import assert from "node:assert";
-import { mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { buildReleaseArtifacts } from "../buildReleaseArtifacts";
+import { afterEach, beforeEach, expect, it } from "bun:test";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buildRustReleaseArtifacts } from "../buildReleaseArtifacts";
 
-const repositoryPath: string = resolve(import.meta.dir, "../../../..");
-
-it("prints the workspace command when requesting release build help", async () => {
-  const command = Bun.spawn(["just", "devhost", "build-release-artifacts", "--help"], {
-    cwd: repositoryPath,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-
-  expect(await new Response(command.stdout).text()).toBe(
-    "Usage: just devhost build-release-artifacts [--targets=<comma-separated targets>]\n" +
-      "Default targets: darwin-arm64, linux-x64, linux-arm64, linux-x64-musl, linux-arm64-musl\n",
-  );
-  await new Response(command.stderr).text();
-  expect(await command.exited).toBe(0);
+let directoryPath: string;
+beforeEach(async () => {
+  directoryPath = await mkdtemp(join(tmpdir(), "dha."));
+});
+afterEach(async () => {
+  await rm(directoryPath, { recursive: true, force: true });
 });
 
-describe("buildReleaseArtifacts", () => {
-  let directoryPath: string;
-  let outputDirectoryPath: string;
+it("rejects unsupported targets before creating or replacing output", async () => {
+  await expect(
+    buildRustReleaseArtifacts({ targets: ["windows-x64"], outputDirectoryPath: directoryPath }),
+  ).rejects.toThrow("Unsupported Rust archive target");
+  expect(await readdir(directoryPath)).toEqual([]);
+});
 
-  beforeEach(async () => {
-    const temporaryRootPath = join(repositoryPath, ".tmp");
-    await mkdir(temporaryRootPath, { recursive: true });
-    directoryPath = await mkdtemp(join(temporaryRootPath, "release-artifacts-"));
-    outputDirectoryPath = join(directoryPath, "release");
-  });
+it("rejects an empty target set", async () => {
+  await expect(buildRustReleaseArtifacts({ targets: [] })).rejects.toThrow("at least one release target");
+});
 
-  afterEach(async () => {
-    await rm(directoryPath, { recursive: true, force: true });
-  });
+it("preserves an existing candidate directory instead of merging or deleting it", async () => {
+  const markerPath = join(directoryPath, "prior-candidate");
+  await Bun.write(markerPath, "retain");
+  await expect(
+    buildRustReleaseArtifacts({ targets: ["linux-x64"], outputDirectoryPath: directoryPath }),
+  ).rejects.toThrow("Candidate output already exists");
+  expect(await Bun.file(markerPath).text()).toBe("retain");
+  expect(await readdir(directoryPath)).toEqual(["prior-candidate"]);
+});
 
-  it("packages the binary with the README and the repository license", async () => {
-    await buildReleaseArtifacts({ outputDirectoryPath, targets: ["linux-x64"] });
-
-    const archiveNames = await readdir(outputDirectoryPath);
-    expect(archiveNames.length).toBe(1);
-    const archiveName = archiveNames[0];
-    assert(archiveName);
-    const files = await new Archive(await Bun.file(join(outputDirectoryPath, archiveName)).bytes()).files();
-    const archiveDirectoryName = archiveName.slice(0, -".tar.gz".length);
-
-    expect([...files.keys()].sort()).toEqual(
-      ["LICENSE", "README.md", "devhost"].map((fileName) => `${archiveDirectoryName}/${fileName}`),
-    );
-    const license = files.get(`${archiveDirectoryName}/LICENSE`);
-    assert(license);
-    expect(await license.text()).toBe(await Bun.file(join(repositoryPath, "LICENSE")).text());
-    // This test cross-compiles devhost. With an empty Go build cache the build alone outlasts the default five seconds.
-  }, 120_000);
-
-  it("fails before building anything when a release document is missing", async () => {
-    const missingDocumentPath = join(directoryPath, "LICENSE");
-
-    await expect(
-      buildReleaseArtifacts({
-        documentFilePaths: [missingDocumentPath],
-        outputDirectoryPath,
-        targets: ["linux-x64"],
-      }),
-    ).rejects.toThrow(`Release document not found: ${missingDocumentPath}`);
-    expect(await readdir(directoryPath)).toEqual([]);
-  });
+it("rejects missing documents before compiling or creating output", async () => {
+  await expect(
+    buildRustReleaseArtifacts({
+      targets: ["linux-x64"],
+      outputDirectoryPath: join(directoryPath, "output"),
+      documentFilePaths: [join(directoryPath, "README.md")],
+    }),
+  ).rejects.toThrow("Release document not found");
+  expect(await readdir(directoryPath)).toEqual([]);
 });

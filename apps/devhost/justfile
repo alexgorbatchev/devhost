@@ -1,65 +1,83 @@
-mod rust 'rust/justfile'
+set dotenv-load := false
 
-build-version := `bun -e 'const metadata = await Bun.file("./metadata.json").json(); console.log(metadata.version)'`
-build-version-variable := "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion"
-# Development builds set this to the checkout root; release builds leave it empty.
-build-source-directory := ""
-build-source-directory-variable := "github.com/alexgorbatchev/devhost/apps/devhost/internal/devbuild.sourceDirectory"
-
-# Build embedded devtools bundle
+# Build embedded devtools bundle and standalone status pages
 build-devtools-bundle:
     bun run ./scripts/buildDevtoolsBundle.ts
 
+# Prepare Rust dependencies and embedded browser assets
 setup:
-    go mod download
+    cargo fetch --locked
     just build-devtools-bundle
-
-# Compile devhost executable for the current platform
-compile: build-devtools-bundle
-    mkdir -p ./bin
-    go build -trimpath -ldflags "-X '{{ build-version-variable }}={{ build-version }}' -X '{{ build-source-directory-variable }}={{ build-source-directory }}'" -o ./bin/devhost ./cmd/devhost
 
 # Run devhost from source in the calling directory
 [no-cd]
 run *args: build-devtools-bundle
-    {{ source_directory() }}/scripts/runFromSource.sh {{ args }}
+    DEVHOST_BUILD_SOURCE_DIRECTORY='{{ clean(source_directory() / "../..") }}' cargo run --manifest-path '{{ source_directory() }}/Cargo.toml' --locked -- {{ args }}
 
 # Run devhost from source in the calling directory with agent-facing output
 [no-cd]
 run-ai *args: build-devtools-bundle
-    AGENT=1 {{ source_directory() }}/scripts/runFromSource.sh {{ args }}
+    AGENT=1 DEVHOST_BUILD_SOURCE_DIRECTORY='{{ clean(source_directory() / "../..") }}' cargo run --manifest-path '{{ source_directory() }}/Cargo.toml' --locked -- {{ args }}
 
 # Preview startup and recovery pages with a deliberately unhealthy service
 demo-recovery: build-devtools-bundle
-    ./scripts/runFromSource.sh start --manifest ../../demos/recovery/devhost.toml
+    just run start --manifest ../../demos/recovery/devhost.toml
 
-# Run Go tests fresh: live-process integration tests have volatile /proc inputs
-test: build-devtools-bundle
-    bash ../../test-support/runTests.sh go test -count=1 ./...
+# Compile devhost release executable for the current platform into bin/
+compile: build-devtools-bundle
+    bun ./scripts/buildRelease.ts
+    mkdir -p ./bin
+    cp ./target/release/devhost ./bin/devhost
 
-# Fail on unformatted Go files, go vet findings, shadowed built-ins such as a variable named error, and module drift
-lint: build-devtools-bundle
-    #!/usr/bin/env bash
-    set -euo pipefail
-    unformatted="$(gofmt -l .)"
-    if [ -n "${unformatted}" ]; then
-        echo "gofmt is not clean, run 'just fix' from the repo root:" >&2
-        echo "${unformatted}" >&2
-        exit 1
-    fi
-    go vet ./...
-    go tool predeclared ./...
-    go tool logpolicy ./...
-    go mod tidy -diff
+# Build devhost debug executable
+build: build-devtools-bundle
+    cargo build --locked
 
-# Enforce the shared CLI output boundary
-lint-logging:
-    go tool logpolicy ./...
+# Build versioned, optimized executable without touching installed tools
+build-release *args: build-devtools-bundle
+    bun ./scripts/buildRelease.ts {{ args }}
 
-# Run Go formatting, vetting, module hygiene, and tests
-check: lint test
+# Build versioned release archives, checksums, notices, and provenance
+[no-cd]
+build-release-artifacts *args:
+    bun {{ source_directory() }}/scripts/buildReleaseArtifacts.ts {{ args }}
+
+# Run Rust test suite
+test *args: build-devtools-bundle
+    bash ../../test-support/runTests.sh cargo test --locked {{ args }}
+
+# Run devhost script tests
+test-scripts:
     bash ../../test-support/runTests.sh bun test ./scripts/__tests__
 
-# Build versioned release archives
-build-release-artifacts *args: build-devtools-bundle
-    bun run ./scripts/buildReleaseArtifacts.ts {{ args }}
+# Every test links this single library package. Cargo tracks its transitive inputs.
+test-affected base=`git merge-base HEAD origin/main`:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    changed="$(git diff --name-only "{{ base }}" -- . ../../packages/design ../../packages/devhost-ui ../../test-support ../../bun.lock ../../package.json ../../patches; git ls-files --others --exclude-standard -- .)"
+    if [[ -z "$changed" ]]; then
+        echo 'No devhost package inputs changed; no tests selected.'
+        exit 0
+    fi
+    echo 'Selected devhost: one Cargo package; source, fixtures, embedded UI/design assets, or shared test inputs changed.'
+    just test
+    just test-scripts
+
+# Apply first-party Rust formatting (preserving vendored crates)
+fmt:
+    cargo fmt --package devhost
+
+# Fail on unformatted first-party Rust files
+fmt-check:
+    cargo fmt --package devhost -- --check
+
+# Run strict Clippy checks
+lint: build-devtools-bundle
+    cargo clippy --all-targets --locked -- -D warnings
+
+# Enforce 90% first-party line and function coverage
+coverage: build-devtools-bundle
+    CARGO_PROFILE_DEV_DEBUG=line-tables-only CARGO_PROFILE_TEST_DEBUG=line-tables-only bash ../../test-support/runTests.sh cargo llvm-cov --locked --fail-under-lines 90 --fail-under-functions 90
+
+# Run Rust formatting, Clippy, script tests, and Rust test suite
+check: fmt-check lint test-scripts test

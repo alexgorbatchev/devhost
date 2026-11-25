@@ -32,10 +32,10 @@ For a silent feature, first determine whether it is mounted and enabled. Treat a
 | Symptom | First evidence | Source to inspect if needed |
 | --- | --- | --- |
 | Holding Alt does nothing | `chatEnabled` and `annotationEnabled` in `/__devhost__/config.json`, presence of the chat panel | `packages/devhost-ui/src/devtools/components/App.tsx`; `packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx` |
-| Toolbar missing | Routed document, injected entry request, config request, `#devhost-devtools-host` and its shadow root | `apps/devhost/internal/devtools/document_injection.go`; `packages/devhost-ui/src/devtools/startDevtools.ts` |
+| Toolbar missing | Routed document, injected entry request, config request, `#devhost-devtools-host` and its shadow root | `apps/devhost/src/devtools/injection.rs`; `packages/devhost-ui/src/devtools/startDevtools.ts` |
 | Service fails or recovery stays open | Startup health target and timeout, preceding stack logs, service state, route readiness | `packages/docs/src/content/docs/stacks/recovery.md`; `apps/devhost/internal/services/` |
 | Logs, resources, queues, or highlights stop updating | Relevant feature flag and same-origin WebSocket lifecycle | `packages/docs/src/content/docs/reference/control-api.md`; corresponding UI feature and server handler |
-| Source edits do not appear | Executable actually running, injected asset URLs, configured source checkout | `apps/devhost/internal/services/dev_source.go`; `apps/devhost/internal/devtools/asset_handlers.go` |
+| Source edits do not appear | Executable actually running, injected asset URLs, configured source checkout | `apps/devhost/src/devtools/dev_source.rs`; `apps/devhost/src/devtools/assets.rs` |
 
 For Alt selection specifically:
 

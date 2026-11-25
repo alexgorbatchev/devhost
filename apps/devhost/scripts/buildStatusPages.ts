@@ -9,7 +9,7 @@ export async function buildStatusPages(): Promise<void> {
     format: "iife",
     minify: true,
     define: { "process.env.NODE_ENV": JSON.stringify("production") },
-    outdir: fileURLToPath(new URL("../internal/statuspage/dist/", import.meta.url)),
+    outdir: fileURLToPath(new URL("../dist/statuspage/", import.meta.url)),
     naming: "statusPages.js",
   });
   if (!result.success) throw new Error(`Failed to build status pages: ${result.logs.map(String).join("\n")}`);
@@ -19,7 +19,7 @@ export async function buildStatusPages(): Promise<void> {
     ],
     plugins: [tailwindPlugin],
     minify: true,
-    outdir: fileURLToPath(new URL("../internal/statuspage/dist/", import.meta.url)),
+    outdir: fileURLToPath(new URL("../dist/statuspage/", import.meta.url)),
   });
   if (!stylesheet.success)
     throw new Error(`Failed to build status page styles: ${stylesheet.logs.map(String).join("\n")}`);

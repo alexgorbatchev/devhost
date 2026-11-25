@@ -16,7 +16,7 @@ const devtoolsStylesheetPath: string = fileURLToPath(
   new URL("../../../packages/devhost-ui/src/devtools/shared/devtools.css", import.meta.url),
 );
 const devtoolsStylesheetTextModuleImportPath: string = "./devtoolsCssText";
-const assetOutputDirectoryPath: string = fileURLToPath(new URL("../internal/devtools/dist/", import.meta.url));
+const assetOutputDirectoryPath: string = fileURLToPath(new URL("../dist/devtools/", import.meta.url));
 const tsconfigPath: string = fileURLToPath(new URL("../../../packages/devhost-ui/tsconfig.json", import.meta.url));
 
 interface IBuildDevtoolsBundleOptions {

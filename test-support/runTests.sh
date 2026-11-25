@@ -88,7 +88,6 @@ PS_ENVIRONMENT=(eww -u "$USER_ID")
 if [[ $(uname -s) == Darwin ]]; then PS_ENVIRONMENT=(-Eww -x -U "$USER_ID"); fi
 
 export TMPDIR="$RUN_DIRECTORY"
-export GOTMPDIR="$RUN_DIRECTORY"
 export DEVHOST_TEST_RUN_ID="$RUN_DIRECTORY"
 export CHROME_CONFIG_HOME="$RUN_DIRECTORY/chrome-config"
 export XDG_RUNTIME_DIR="$RUN_DIRECTORY/runtime"

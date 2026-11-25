@@ -52,11 +52,9 @@ The diagram has three stages. The films are made and published by hand, and only
 
 Pushing a tag such as `v0.0.21` starts `.github/workflows/publish.yml`. The workflow fails unless the tag matches the version in `apps/devhost/metadata.json`.
 
-1. **Verification (`verify`)**: The hosted Linux runner installs Playwright Chromium, FFmpeg (including `ffprobe`), unzip, Xvfb, the pinned Rust toolchain, `cargo-llvm-cov`, Caddy, and Chisel, then runs `just check`, `just rust check` (formatting, strict Clippy, and 90% first-party line/function coverage), and Go-oracle inventory verification against the `golang` tag.
-2. **Native packaging (`package`)**: A three-host matrix (`ubuntu-24.04`, `ubuntu-24.04-arm`, and `macos-15`) runs `just rust build-release-artifacts` to produce all five archives (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) with Zig/glibc-2.28 and static-musl checks, `THIRD_PARTY_LICENSES.txt`, `SHA256SUMS`, provenance, and matching-host runtime smoke verification.
+1. **Verification (`verify`)**: The hosted Linux runner installs Playwright Chromium, FFmpeg (including `ffprobe`), unzip, Xvfb, the pinned Rust toolchain, `cargo-llvm-cov`, and pinned Caddy and Chisel release binaries, then runs `just check` and `just devhost coverage` (formatting, strict Clippy, script tests, Rust tests, and 90% first-party line/function coverage).
+2. **Native packaging (`package`)**: A three-host matrix (`ubuntu-24.04`, `ubuntu-24.04-arm`, and `macos-15`) runs `just devhost build-release-artifacts` to produce all five archives (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) with Zig/glibc-2.28 and static-musl checks, `THIRD_PARTY_LICENSES.txt`, `SHA256SUMS`, provenance, and matching-host runtime smoke verification.
 3. **Publication (`publish`)**: The publish job downloads all five archives, merges and verifies `SHA256SUMS` (`sha256sum -c`), checks every archive's exact four-file layout (`devhost`, `README.md`, `LICENSE`, `THIRD_PARTY_LICENSES.txt`), creates the GitHub Release, and uploads all five archives and `SHA256SUMS`.
-
-`just check` still validates the retained Go reference code, including `logpolicy` (`just devhost lint-logging`) and `go test -count=1 ./...`. Every Go test runs afresh because the integration suite observes live processes, ports, and kernel state.
 
 ### Documentation site
 

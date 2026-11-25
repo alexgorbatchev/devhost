@@ -64,8 +64,7 @@ BASH
 RUNNER_TEMP_ALIAS="$FIXTURE/logical" BASH_ENV="$FIXTURE/logical-temp.bash" \
   bash "$ROOT/test-support/runTests.sh" bash -ec '
     physical=$(cd -- "$TMPDIR" && pwd -P)
-    [[ "$TMPDIR" == "$physical" ]]
-    [[ "$GOTMPDIR" == "$physical" && "$DEVHOST_TEST_RUN_ID" == "$physical" ]]
+    [[ "$TMPDIR" == "$physical" && "$DEVHOST_TEST_RUN_ID" == "$physical" ]]
     [[ "$CHROME_CONFIG_HOME" == "$physical/chrome-config" ]]
     [[ "$XDG_RUNTIME_DIR" == "$physical/runtime" && "$PULSE_RUNTIME_PATH" == "$physical/runtime/pulse" ]]
     printf "%s\n" "$TMPDIR" > "$1"

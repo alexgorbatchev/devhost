@@ -1,238 +1,199 @@
-import { mkdir, readFile, rm } from "node:fs/promises";
-import { basename, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
+import { Archive } from "bun";
+import { chmod, mkdir, mkdtemp, rename, rm, stat } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
+import { parseArgs } from "node:util";
 import { buildDevtoolsBundle } from "./buildDevtoolsBundle";
+import { buildRustRelease, readRustReleaseVersion } from "./buildRelease";
+import { buildStatusPages } from "./buildStatusPages";
+import { generateRustReleaseNotices } from "./generateReleaseNotices";
+import { inspectRustReleaseBinary } from "./inspectReleaseBinary";
+import { verifyRustReleaseRuntime } from "./verifyReleaseRuntime";
 
-const releaseTargets = ["darwin-arm64", "linux-x64", "linux-arm64", "linux-x64-musl", "linux-arm64-musl"] as const;
-
-type ReleaseTarget = (typeof releaseTargets)[number];
-
-interface IPackageMetadata {
-  name: string;
-  version: string;
-}
-
-interface IBuildReleaseArtifactsOptions {
-  documentFilePaths?: readonly string[];
-  outputDirectoryPath?: string;
-  targets: ReleaseTarget[];
-}
-
-interface IBuildReleaseArtifactOptions {
-  artifactName: string;
-  documentFilePaths: readonly string[];
-  outputDirectoryPath: string;
-  target: ReleaseTarget;
-  version: string;
-}
-
-interface IReleaseTargetDetails {
-  archivePlatformName: string;
-  goArch: string;
-  goOS: string;
-}
-
-const targetPlatformNames: Readonly<Record<ReleaseTarget, IReleaseTargetDetails>> = {
-  "darwin-arm64": { archivePlatformName: "darwin-arm64", goArch: "arm64", goOS: "darwin" },
-  "linux-arm64": { archivePlatformName: "linux-arm64", goArch: "arm64", goOS: "linux" },
-  "linux-arm64-musl": { archivePlatformName: "linux-arm64-musl", goArch: "arm64", goOS: "linux" },
-  "linux-x64": { archivePlatformName: "linux-x64", goArch: "amd64", goOS: "linux" },
-  "linux-x64-musl": { archivePlatformName: "linux-x64-musl", goArch: "amd64", goOS: "linux" },
+const targets = {
+  "darwin-arm64": "aarch64-apple-darwin",
+  "linux-x64": "x86_64-unknown-linux-gnu.2.28",
+  "linux-arm64": "aarch64-unknown-linux-gnu.2.28",
+  "linux-x64-musl": "x86_64-unknown-linux-musl",
+  "linux-arm64-musl": "aarch64-unknown-linux-musl",
 };
-const releaseTargetNames: ReadonlySet<string> = new Set(releaseTargets);
+type RustReleaseTarget = keyof typeof targets;
 
-const packageDirectoryPath: string = fileURLToPath(new URL("..", import.meta.url));
-const defaultOutputDirectoryPath: string = join(packageDirectoryPath, "dist", "release");
-const buildVersionVariablePath: string = "github.com/alexgorbatchev/devhost/apps/devhost/internal/version.buildVersion";
-const packageManifestPath: string = join(packageDirectoryPath, "metadata.json");
-const cliEntrypointPath: string = "./cmd/devhost";
-// The license is the repository's; this workspace has no copy of its own.
-const defaultDocumentFilePaths: readonly string[] = [
-  join(packageDirectoryPath, "README.md"),
-  join(packageDirectoryPath, "..", "..", "LICENSE"),
-];
-
-export async function buildReleaseArtifacts(
-  options: IBuildReleaseArtifactsOptions = { targets: [...releaseTargets] },
-): Promise<void> {
-  const documentFilePaths = options.documentFilePaths ?? defaultDocumentFilePaths;
-  const outputDirectoryPath = options.outputDirectoryPath ?? defaultOutputDirectoryPath;
-
-  await requireReleaseDocuments(documentFilePaths);
-
-  const packageMetadata = await readPackageMetadata(packageManifestPath);
-  const artifactName = readArtifactName(packageMetadata.name);
-
-  await buildDevtoolsBundle();
-  await rm(outputDirectoryPath, { force: true, recursive: true });
-  await mkdir(outputDirectoryPath, { recursive: true });
-
-  for (const target of options.targets) {
-    await buildReleaseArtifact({
-      artifactName,
-      documentFilePaths,
-      outputDirectoryPath,
-      target,
-      version: packageMetadata.version,
-    });
-  }
+interface IBuildRustReleaseArtifactsOptions {
+  targets?: readonly string[];
+  outputDirectoryPath?: string;
+  documentFilePaths?: readonly string[];
 }
 
-async function requireReleaseDocuments(documentFilePaths: readonly string[]): Promise<void> {
-  for (const documentFilePath of documentFilePaths) {
-    if (!(await Bun.file(documentFilePath).exists())) {
-      throw new Error(`Release document not found: ${documentFilePath}`);
-    }
-  }
+const repositoryDirectoryPath = resolve(import.meta.dir, "../../..");
+const appDirectoryPath = join(repositoryDirectoryPath, "apps/devhost");
+
+async function command(args: string[], cwd = repositoryDirectoryPath): Promise<string> {
+  const child = Bun.spawn(args, { cwd, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+  const [exitCode, output, error] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ]);
+  if (exitCode !== 0) throw new Error(`${args[0]} failed (${exitCode}): ${error}`);
+  return output.trim();
 }
 
-async function buildReleaseArtifact(options: IBuildReleaseArtifactOptions): Promise<void> {
-  const platformName: IReleaseTargetDetails = targetPlatformNames[options.target];
-  const artifactBaseName: string = `${options.artifactName}-v${options.version}-${platformName.archivePlatformName}`;
-  const stagingDirectoryPath: string = join(options.outputDirectoryPath, artifactBaseName);
-  const archiveFilePath: string = join(options.outputDirectoryPath, `${artifactBaseName}.tar.gz`);
-  const executableFilePath: string = join(stagingDirectoryPath, options.artifactName);
-  const ldflags: string = `-X ${buildVersionVariablePath}=${options.version}`;
+function isTarget(value: string): value is RustReleaseTarget {
+  return Object.hasOwn(targets, value);
+}
 
-  await mkdir(stagingDirectoryPath, { recursive: true });
+async function sha256(filePath: string): Promise<string> {
+  return new Bun.CryptoHasher("sha256").update(await Bun.file(filePath).bytes()).digest("hex");
+}
 
-  const buildProcess = Bun.spawn(
-    ["go", "build", "-trimpath", "-ldflags", ldflags, "-o", executableFilePath, cliEntrypointPath],
-    {
-      cwd: packageDirectoryPath,
-      env: {
-        ...process.env,
-        CGO_ENABLED: "0",
-        GOARCH: platformName.goArch,
-        GOOS: platformName.goOS,
-      },
-      stderr: "inherit",
-      stdout: "inherit",
-    },
+export async function buildRustReleaseArtifacts(options: IBuildRustReleaseArtifactsOptions = {}): Promise<string> {
+  const selectedTargets = [...new Set(options.targets ?? Object.keys(targets))];
+  if (!selectedTargets.length) throw new Error("Expected at least one release target.");
+  for (const target of selectedTargets) {
+    if (!isTarget(target)) throw new Error(`Unsupported Rust archive target: ${target}`);
+  }
+  const documentFilePaths = options.documentFilePaths ?? [
+    join(appDirectoryPath, "README.md"),
+    join(repositoryDirectoryPath, "LICENSE"),
+  ];
+  for (const filePath of documentFilePaths) {
+    if (!(await Bun.file(filePath).exists())) throw new Error(`Release document not found: ${filePath}`);
+  }
+  if (!["README.md", "LICENSE"].every((name) => documentFilePaths.some((filePath) => basename(filePath) === name)))
+    throw new Error("Rust archives require README.md and LICENSE.");
+  const metadata: unknown = await Bun.file(join(appDirectoryPath, "metadata.json")).json();
+  const version = readRustReleaseVersion(
+    metadata,
+    process.env.GITHUB_REF_TYPE === "tag" ? process.env.GITHUB_REF_NAME : undefined,
   );
-
-  const exitCode: number = await buildProcess.exited;
-
-  if (exitCode !== 0) {
-    throw new Error(`go build exited with code ${exitCode} while building ${options.target}.`);
-  }
-
-  for (const documentFilePath of options.documentFilePaths) {
-    await Bun.write(join(stagingDirectoryPath, basename(documentFilePath)), Bun.file(documentFilePath));
-  }
-
-  await createTarGzArchive(options.outputDirectoryPath, artifactBaseName, archiveFilePath);
-  await rm(stagingDirectoryPath, { force: true, recursive: true });
-
-  console.log(`Built ${archiveFilePath}`);
-}
-
-function parseBuildReleaseArtifactsArguments(rawArguments: string[]): IBuildReleaseArtifactsOptions {
-  let targets: ReleaseTarget[] = [...releaseTargets];
-
-  for (const rawArgument of rawArguments) {
-    if (rawArgument === "--help") {
-      printHelp();
-      process.exit(0);
-    }
-
-    if (rawArgument.startsWith("--targets=")) {
-      targets = parseReleaseTargets(rawArgument.slice("--targets=".length));
-      continue;
-    }
-
-    throw new Error(`Unknown argument: ${rawArgument}`);
-  }
-
-  return { targets };
-}
-
-function parseReleaseTargets(rawValue: string): ReleaseTarget[] {
-  const parsedTargets: ReleaseTarget[] = [];
-
-  for (const rawTarget of rawValue.split(",")) {
-    const target = rawTarget.trim();
-
-    if (target.length === 0) {
-      continue;
-    }
-
-    if (!isReleaseTarget(target)) {
-      throw new Error(`Unsupported release target: ${target}`);
-    }
-
-    if (!parsedTargets.includes(target)) {
-      parsedTargets.push(target);
-    }
-  }
-
-  if (parsedTargets.length === 0) {
-    throw new Error("Expected at least one release target.");
-  }
-
-  return parsedTargets;
-}
-
-function isReleaseTarget(value: string): value is ReleaseTarget {
-  return releaseTargetNames.has(value);
-}
-
-function printHelp(): void {
-  console.log(`Usage: just devhost build-release-artifacts [--targets=<comma-separated targets>]`);
-  console.log(`Default targets: ${releaseTargets.join(", ")}`);
-}
-
-async function readPackageMetadata(filePath: string): Promise<IPackageMetadata> {
-  const rawPackageMetadata: unknown = JSON.parse(await readFile(filePath, "utf8"));
-
-  if (!isPackageMetadata(rawPackageMetadata)) {
-    throw new Error(`Invalid package metadata in ${filePath}.`);
-  }
-
-  return rawPackageMetadata;
-}
-
-function isPackageMetadata(value: unknown): value is IPackageMetadata {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "name" in value &&
-    typeof value.name === "string" &&
-    "version" in value &&
-    typeof value.version === "string"
+  const revision = await command(["git", "rev-parse", "HEAD"]);
+  const outputDirectoryPath = resolve(
+    options.outputDirectoryPath ??
+      join(appDirectoryPath, "dist/rust-candidates", `${version}-${revision.slice(0, 12)}-${Date.now()}`),
   );
-}
-
-function readArtifactName(packageName: string): string {
-  const nameSegments = packageName.split("/");
-  const artifactName = nameSegments.at(-1);
-
-  if (artifactName === undefined || artifactName.length === 0) {
-    throw new Error(`Invalid package name: ${packageName}`);
+  // Rename an entire completed candidate into place; never merge with or erase a prior candidate.
+  try {
+    await stat(outputDirectoryPath);
+    throw new Error(`Candidate output already exists: ${outputDirectoryPath}`);
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
   }
-
-  return artifactName;
-}
-
-async function createTarGzArchive(
-  outputDirectoryPath: string,
-  stagingDirectoryName: string,
-  archiveFilePath: string,
-): Promise<void> {
-  const tarProcess = Bun.spawn(["tar", "-czf", archiveFilePath, stagingDirectoryName], {
-    cwd: outputDirectoryPath,
-    stderr: "inherit",
-    stdout: "inherit",
-  });
-  const exitCode: number = await tarProcess.exited;
-
-  if (exitCode !== 0) {
-    throw new Error(`tar exited with code ${exitCode} while creating ${archiveFilePath}.`);
+  await mkdir(join(repositoryDirectoryPath, ".tmp"), { recursive: true });
+  const temporaryDirectoryPath = await mkdtemp(join(repositoryDirectoryPath, ".tmp/rust-archives-"));
+  try {
+    const candidateDirectoryPath = join(temporaryDirectoryPath, "candidate");
+    await mkdir(candidateDirectoryPath);
+    await buildDevtoolsBundle();
+    await buildStatusPages();
+    const cargoMetadata: unknown = JSON.parse(
+      await command(["cargo", "metadata", "--locked", "--format-version", "1"], appDirectoryPath),
+    );
+    const sourceHasher = new Bun.CryptoHasher("sha256");
+    const sourcePaths = (await command(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"]))
+      .split("\0")
+      .filter(Boolean)
+      .sort();
+    for (const filePath of sourcePaths) {
+      sourceHasher.update(`${filePath}\0`).update(await Bun.file(join(repositoryDirectoryPath, filePath)).bytes());
+    }
+    const sourceSha256 = sourceHasher.digest("hex");
+    const artifacts = [];
+    for (const target of selectedTargets) {
+      if (!isTarget(target)) throw new Error(`Unsupported Rust archive target: ${target}`);
+      if (target.startsWith("darwin") && process.platform !== "darwin")
+        throw new Error("Build the macOS candidate on a matching native macOS host with its SDK.");
+      const artifactLogPath = join(temporaryDirectoryPath, `${target}.jsonl`);
+      const binaryPath = await buildRustRelease({
+        target: targets[target],
+        isCross: !target.startsWith("darwin"),
+        artifactLogPath,
+      });
+      const inspection = await inspectRustReleaseBinary(binaryPath, target);
+      const artifactName = `devhost-v${version}-${target}`;
+      const stagingDirectoryPath = join(temporaryDirectoryPath, artifactName);
+      await mkdir(stagingDirectoryPath);
+      await Bun.write(join(stagingDirectoryPath, "devhost"), Bun.file(binaryPath));
+      await chmod(join(stagingDirectoryPath, "devhost"), 0o755);
+      for (const filePath of documentFilePaths) {
+        await Bun.write(join(stagingDirectoryPath, basename(filePath)), Bun.file(filePath));
+        await chmod(join(stagingDirectoryPath, basename(filePath)), 0o644);
+      }
+      await Bun.write(
+        join(stagingDirectoryPath, "THIRD_PARTY_LICENSES.txt"),
+        await generateRustReleaseNotices(cargoMetadata, await Bun.file(artifactLogPath).text()),
+      );
+      const archiveName = `${artifactName}.tar.gz`;
+      const archivePath = join(candidateDirectoryPath, archiveName);
+      // System tar preserves executable modes; Bun's content-map archive API has no mode input.
+      await command(["tar", "-czf", archivePath, artifactName], temporaryDirectoryPath);
+      const files = await new Archive(await Bun.file(archivePath).bytes()).files();
+      const expectedNames = ["devhost", "README.md", "LICENSE", "THIRD_PARTY_LICENSES.txt"]
+        .map((name) => `${artifactName}/${name}`)
+        .sort();
+      if (JSON.stringify([...files.keys()].sort()) !== JSON.stringify(expectedNames))
+        throw new Error(`Unexpected archive layout: ${archiveName}`);
+      const archivedBinary = files.get(`${artifactName}/devhost`);
+      if (
+        !archivedBinary ||
+        new Bun.CryptoHasher("sha256").update(await archivedBinary.bytes()).digest("hex") !== (await sha256(binaryPath))
+      )
+        throw new Error(`Archive executable differs: ${archiveName}`);
+      const extractionDirectoryPath = join(temporaryDirectoryPath, `extract-${target}`);
+      await mkdir(extractionDirectoryPath);
+      await command(["tar", "-xzf", archivePath, "-C", extractionDirectoryPath]);
+      const executablePath = join(extractionDirectoryPath, artifactName, "devhost");
+      if (((await stat(executablePath)).mode & 0o111) === 0)
+        throw new Error(`Archive executable is not executable: ${archiveName}`);
+      const isNative =
+        target.startsWith("darwin") === (process.platform === "darwin") &&
+        target.includes("arm64") === (process.arch === "arm64");
+      let runtimeAcceptance: string = "requires matching native host";
+      if (isNative) {
+        if ((await command([executablePath, "--version"], extractionDirectoryPath)) !== version)
+          throw new Error("Extracted executable has the wrong version.");
+        await command([executablePath, "--help"], extractionDirectoryPath);
+        await Bun.write(
+          join(extractionDirectoryPath, "devhost.toml"),
+          "name = 'archive-check'\n[services.web]\ncommand = 'echo archive-check'\nport = 39871\n",
+        );
+        if (!(await command([executablePath, "service", "list"], extractionDirectoryPath)).includes("web"))
+          throw new Error("Extracted executable did not load its manifest.");
+        runtimeAcceptance = await verifyRustReleaseRuntime(executablePath);
+      }
+      artifacts.push({
+        target,
+        rustTarget: targets[target],
+        archive: archiveName,
+        sha256: await sha256(archivePath),
+        binarySha256: await sha256(binaryPath),
+        ...inspection,
+        nativeStartup: isNative ? "version/help/manifest passed" : "requires matching native host",
+        runtimeAcceptance,
+      });
+    }
+    await Bun.write(
+      join(candidateDirectoryPath, "SHA256SUMS"),
+      `${artifacts.map((artifact) => `${artifact.sha256}  ${artifact.archive}`).join("\n")}\n`,
+    );
+    await Bun.write(
+      join(candidateDirectoryPath, "provenance.json"),
+      `${JSON.stringify({ version, revision, sourceSha256, isDirty: (await command(["git", "status", "--porcelain"])).length > 0, rustc: await command(["rustc", "--version"]), cargo: await command(["cargo", "--version"]), zig: selectedTargets.some((target) => target.startsWith("linux")) ? await command(["zig", "version"]) : null, artifacts }, null, 2)}\n`,
+    );
+    await mkdir(resolve(outputDirectoryPath, ".."), { recursive: true });
+    await rename(candidateDirectoryPath, outputDirectoryPath);
+    return outputDirectoryPath;
+  } finally {
+    await rm(temporaryDirectoryPath, { recursive: true, force: true });
   }
 }
 
 if (import.meta.main) {
-  const options = parseBuildReleaseArtifactsArguments(Bun.argv.slice(2));
-  await buildReleaseArtifacts(options);
+  const { values } = parseArgs({
+    args: Bun.argv.slice(2),
+    options: { targets: { type: "string" }, output: { type: "string" } },
+    strict: true,
+  });
+  console.log(
+    await buildRustReleaseArtifacts({ targets: values.targets?.split(","), outputDirectoryPath: values.output }),
+  );
 }

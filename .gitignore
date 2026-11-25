@@ -3,6 +3,7 @@
 node_modules/
 dist
 /apps/devhost/bin/
+/apps/devhost/target/
 
 caddy/routes/*.caddy
 caddy/routes/.registrations/*.json

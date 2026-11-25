@@ -1,6 +1,6 @@
 # devhost app contributor notes
 
-Local rules for the `devhost` Go app in `apps/devhost/`.
+Local rules for the `devhost` Rust CLI app in `apps/devhost/`.
 
 ## Documentation policy
 
@@ -27,31 +27,26 @@ Local rules for the `devhost` Go app in `apps/devhost/`.
 
 ## Rust CLI
 
-The shipping Cargo package lives in `apps/devhost/rust/`. Use `just rust build`, `just rust run <args>`, or `just rust run-ai <args>` (also forwarded from root `just cli` and `just run-ai`).
+The Cargo package lives directly in `apps/devhost/` (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `src/`, `tests/`, `vendor/`, `licenses/`). Use `just devhost build`, `just devhost run <args>`, or `just devhost run-ai <args>` (also forwarded from root `just cli` and `just run-ai`).
 
-Rust `run` and `run-ai` stamp the checkout with compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`. For a standalone development executable, set that variable while invoking `just rust build`. The runtime `DEVHOST_DEV_SOURCE_DIR` takes precedence; a missing stamped checkout warns and serves embedded assets. `build-release` clears the source stamp so optimized release executables remain independent of the build checkout.
+`just devhost run` and `just devhost run-ai` stamp the checkout with compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`. For a standalone development executable, set that variable while invoking `just devhost build`. The runtime `DEVHOST_DEV_SOURCE_DIR` takes precedence; a missing stamped checkout warns and serves embedded assets. `build-release` clears the source stamp so optimized release executables remain independent of the build checkout.
 
-Use `just rust build-release` for an optimized native release binary at `apps/devhost/rust/target/release/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig. `just devhost compile` remains available to build the retained Go reference/rollback executable (`golang` tag baseline).
+Use `just devhost build-release` for an optimized native release binary at `apps/devhost/target/release/devhost`, or `just devhost compile` to also copy it to `apps/devhost/bin/devhost`. It stamps `metadata.json`, rejects mismatched GitHub release tags, and remaps source paths. The release profile uses optimization level 3, thin LTO, one codegen unit, stripped debug information, and unwinding for cleanup; normal debug and incremental builds retain their defaults. `--target <triple>` selects an installed target; `--cross` uses an installed `cargo-zigbuild` and Zig.
 
-Run `just setup` for a fresh checkout. Rust run, build, test, lint, and coverage recipes refresh the generated browser assets before Cargo embeds them; direct Cargo commands require those assets to exist already.
+Run `just setup` for a fresh checkout. Run, build, test, lint, and coverage recipes refresh the generated browser assets under `apps/devhost/dist/devtools/` and `apps/devhost/dist/statuspage/` before Cargo embeds them; direct Cargo commands require those assets to exist already.
 
-`just rust build-release-artifacts` builds the five existing distribution targets as candidates, with the established executable/archive layout plus compiled-dependency licenses, SHA-256 checksums and source/toolchain provenance. Use `--targets=<comma-separated archive suffixes>` for a subset and `--output=<new directory>` for an explicit output. Linux GNU uses cargo-zigbuild's glibc 2.28 baseline; musl must be static. Build the macOS archive on macOS and verify its system-library dependencies, minimum OS and ad-hoc signature. Existing candidate directories are never overwritten. See `RELEASE.md` for prerequisites and native acceptance.
+`just devhost build-release-artifacts` builds the five distribution targets (`darwin-arm64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`) with the established executable/archive layout plus compiled-dependency licenses, SHA-256 checksums, and source/toolchain provenance. Use `--targets=<comma-separated archive suffixes>` for a subset and `--output=<new directory>` for an explicit output. Linux GNU uses `cargo-zigbuild`'s glibc 2.28 baseline; musl must be static. Build the macOS archive on macOS and verify its system-library dependencies, minimum OS, and ad-hoc signature. Existing output directories are never overwritten. See `RELEASE.md` for prerequisites and native acceptance.
 
-Use `just rust test-affected <base>` to select the Rust package from changed source, fixtures, embedded UI/design assets, or shared test inputs. This is one Cargo package; changes with uncertain internal impact select its enclosing package. Use `just rust test <args>` for focused feedback. Run its package gate with formatting, Clippy, and at least 90% line and function coverage for first-party Rust sources (integration tests are excluded from the denominator):
+Use `just devhost test-affected <base>` to select the package from changed source, fixtures, embedded UI/design assets, or shared test inputs. Use `just devhost test <args>` for focused feedback, `just devhost check` for formatting, strict Clippy, script tests, and Rust tests, and `just devhost coverage` for 90% first-party line and function coverage (integration tests are excluded from the denominator):
 
 ```bash
-just rust check
+just devhost check
+just devhost coverage
 ```
 
-Root `just fix` formats first-party Rust with `cargo fmt --package devhost-rust`, preserving vendored dependency formatting. Coverage builds use line-table debug information in their separate instrumented target; normal development builds retain their configured debug information and incremental state. The experimental package has its own checks; root `just check` continues checking the released Go app and browser workspaces. Compare ported features against the Go revision and record evidence as described in [Go baseline for the Rust port](../../docs/internal/references/rust-port-parity.md).
+Root `just fix` formats first-party Rust with `cargo fmt --package devhost`, preserving vendored dependency formatting. Coverage builds use line-table debug information in their separate instrumented target; normal development builds retain their configured debug information and incremental state. Cargo uses the pinned `rust-toolchain.toml` toolchain. CI requires hosted native Rust checks on Linux x64 (with MSRV Rust 1.98.1 and 90% coverage), Linux ARM64, macOS ARM64, and macOS Intel alongside root `just check`.
 
-The [feature matrix](../../docs/internal/references/rust-port-feature-matrix.md) maps Go contracts to Rust code and executable checks. From the repository root, run `bun apps/devhost/scripts/verifyRustParity.ts` to detect reference drift, unassigned source files, stale hashes, missing evidence paths, or incomplete acceptance-case assignments in `rust/parity/obligations.json`. This verifies inventory integrity; case plans and Rust regressions alone do not establish behavior parity. Run the listed behavioral and platform checks separately. Cargo uses the pinned `rust/rust-toolchain.toml` toolchain. CI requires hosted native Rust checks and comparisons on Linux x64, Linux ARM64, macOS ARM64 and macOS Intel, with Linux x64 coverage and Rust 1.98.1 minimum-version checking.
-
-Use `just rust comparisons <clean-Go-oracle-checkout> <repaired-Go-binary> <optimized-Rust-binary> <new-evidence-directory>` from the root after building the three binaries. The oracle checkout must match `rust/parity/inventory.json` without tracked changes. The runner records input/binary hashes, platform, revisions, per-command results and logs, replays every Rust Anything corpus, and exercises shared native fixtures. Each command writes stdout and stderr directly to its evidence files; `pending-command.json` identifies an unfinished command after cancellation. Duplicate restarts and legacy-document corruption have exact oracle failure assertions. On macOS, the oracle's unsupported listener API has a separate failure assertion; repaired Go and optimized Rust must pass every command-serving scenario. Readline tests bind `devhost` on an isolated PATH to the selected executable. Reconcile new semantic differences rather than expanding the allowlist to obtain a green check.
-
-Run `just rust distribution-comparisons <candidate-directory> <clean-Go-oracle-checkout> <repaired-Go-binary> <new-evidence-directory>` to apply that gate to each archive executable on its native host. It verifies archive and binary hashes, retains distribution provenance with comparison receipts, and removes temporary extractions. Candidate CI runs both GNU and musl executables on each Linux architecture and the Apple-silicon executable on macOS.
-
-On macOS, the shared HTTPS health fixture requires `DEVHOST_HEALTH_TRUST_DIR` with a trusted `root.pem` and its `server.pem`/`server.key` for `127.0.0.1`. Hosted CI creates its own temporary CA on disposable GitHub-hosted macOS VMs through `test-support/macosHealthTrust.sh prepare` and relies on disposable VM teardown for final removal of the temporary trust record; that script refuses contributor machines. Follow the [native HTTPS fixture procedure](../../docs/internal/references/rust-port-parity.md#native-https-health-fixture) before running this test locally; never install its CA implicitly.
+On macOS, the shared HTTPS health fixture requires `DEVHOST_HEALTH_TRUST_DIR` with a trusted `root.pem` and its `server.pem`/`server.key` for `127.0.0.1`. Hosted CI creates its own temporary CA on disposable GitHub-hosted macOS VMs through `test-support/macosHealthTrust.sh prepare` and relies on disposable VM teardown for final removal of the temporary trust record; that script refuses contributor machines. Follow the [native HTTPS fixture procedure](../../docs/internal/references/macos-https-health-fixture.md) before running this test locally; never install its CA implicitly.
 
 ## Development workflow
 
@@ -62,7 +57,7 @@ just dev-bootstrap
 just dev-bootstrap /path/to/dotfiles
 ```
 
-The default target is `~/.dotfiles`. The command rebuilds the embedded devtools bundle and compiles `apps/devhost/rust/target/release/devhost` with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) `DEVHOST_BUILD_VERSION` override and a `DEVHOST_BUILD_SOURCE_DIRECTORY` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just rust build-release` retains the metadata version and clears the source stamp.
+The default target is `~/.dotfiles`. The command rebuilds the embedded devtools bundle and compiles `apps/devhost/target/release/devhost` with a `999.0.0-dev--<release>+<short git SHA>` (`<release>` is the nearest reachable `vX.Y.Z` tag without its `v`, or `0.0.0`) `DEVHOST_BUILD_VERSION` override and a `DEVHOST_BUILD_SOURCE_DIRECTORY` override naming this checkout, then registers the executable through `dotfiles tool dev use devhost`. Dotfiles copies it into its configured development store and routes the shim there; release payloads remain unchanged. The selected project must declare `devhost`, and the dotfiles CLI on PATH must support `tool dev use`. An old CLI produces an update instruction. Run `dotfiles tool dev off devhost` in the target project to resume managed releases. Plain `just devhost build-release` retains the metadata version and clears the source stamp.
 
 Run the app from source in the current directory with agent-facing output (`AGENT=1`); `just devhost run` is the human-mode equivalent:
 
@@ -72,65 +67,21 @@ just devhost run-ai --help
 
 Preview startup timeout and recovery pages from the repository root with `just devhost demo-recovery`. The separate `demos/recovery/devhost.toml` deliberately leaves its automatic port closed and times out after ten seconds. Open the URL printed by devhost (`https://recovery.localhost/` with the default local config). Machine config selects the suffix and configured relay automatically. Restart repeats the deliberate failure; Ctrl-C stops the demo stack.
 
-With a source checkout (recorded by development builds, including the source shim behind `just run`, or set through `DEVHOST_DEV_SOURCE_DIR`), the control server exposes `/__devhost__/pages/` on root-routed domains. This standalone page gallery shares the real 404, recovery, backend-unavailable, and file renderers. Preview snapshots stay non-ready, use sample logs and worktrees, and reject restart/worktree mutations without calling live stack callbacks. File examples are read from `demos/pages/files/` in the selected checkout. The gallery is absent outside development mode; restart the source stack after editing embedded templates or styles.
+With a source checkout (recorded by development builds, including `just run`, or set through `DEVHOST_DEV_SOURCE_DIR`), the control server exposes `/__devhost__/pages/` on root-routed domains. This standalone page gallery shares the real 404, recovery, backend-unavailable, and file renderers. Preview snapshots stay non-ready, use sample logs and worktrees, and reject restart/worktree mutations without calling live stack callbacks. File examples are read from `demos/pages/files/` in the selected checkout. The gallery is absent outside development mode; restart the source stack after editing embedded templates or styles.
 
-Run the Go tests:
+Rust and Bun script test recipes use the root `test-support/runTests.sh` for command-owned temporary storage and cancellation cleanup. The runner exports the physical temporary path so Git, shells, and tests agree on macOS.
 
-```bash
-just devhost test
-```
+`scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `dist/devtools/` and status-page assets under `dist/statuspage/` embedded at compile time via `include_dir!` / `include_str!`: the static `devtools.js` entry, lazy JavaScript chunks and WOFF2 subsets under `assets/`, and precompressed `.gz` representations. Both output directories are intentionally ignored. Production builds must define `process.env.NODE_ENV` as `"production"`; the source loop sets the internal `DEVHOST_DEVTOOLS_DEVELOPMENT=1` build switch for development diagnostics and retains old hashed chunks for active tabs. Production builds remove obsolete artifacts before embedding.
 
-Go and Bun script test recipes use the root `test-support/runTests.sh` for command-owned temporary storage and cancellation cleanup. The runner exports the physical temporary path so Git, shells, and tests agree on macOS. Service subprocess helpers inherit isolation through `testenv.InheritIsolation`, including when they supply explicit environment overrides. Register shutdown before waiting for readiness, and join worktree-stack shutdown before temporary-directory cleanup.
-
-The recipe runs `go test -count=1 ./...`: the suite exercises live processes, ports, and kernel state, so each invocation runs the tests afresh. Retain this flag. On Linux, process containment polls `/proc`; caching its millions of filesystem observations creates a large input log that Go must validate on later runs. The flag disables test-result caching while retaining the build cache. Signal-driven test helpers publish a readiness file only after installing their signal handler; wait for that handshake before testing shutdown, and register cleanup before waiting. Browser preview acceptance holds initial status responses behind explicit gates to verify disconnected controls start disabled, then waits for enabled controls before clicking after connection. Visibility alone is not readiness. It reports each navigation phase on failure; retain the existing time budget rather than hiding readiness bugs with sleeps or longer deadlines.
-
-Build a standalone executable for the current platform:
-
-```bash
-just devhost compile
-```
-
-Refresh the generated embedded devtools bundle without building the binary:
-
-```bash
-just devhost build-devtools-bundle
-```
-
-Build the versioned cross-platform release tarballs:
-
-```bash
-just devhost build-release-artifacts
-```
-
-Format the repo:
-
-```bash
-just fix
-```
-
-Run the app check suite:
-
-```bash
-just devhost check
-```
-
-The root `fix` recipe runs `oxfmt --write` for the repo using the shared root config and `gofmt -w` for this app; the pre-commit hook also formats staged files. `just devhost check` refreshes the generated embedded devtools bundle, then runs `just devhost lint` (fails on unformatted Go files, then `go vet ./...`, `go tool predeclared ./...`, `go tool logpolicy ./...`, and `go mod tidy -diff`) and the Bun script tests and `just devhost test` from this app. `run` and `run-ai` use `[no-cd]` and the `scripts/runFromSource.sh` shim, so relative manifest paths (`--manifest`, `-m`, `DEVHOST_MANIFEST`) and manifest discovery resolve from the directory you call `just` in. The shim runs `go build` on every call and leaves staleness to it, so a change to a Go source, an embedded asset, or the module files is rebuilt and nothing else is; do not add a file-time check or change directory before starting `devhost`. The shim builds to `bin/source/devhost`, without a version stamp (`--version` prints `dev`) but stamped with the repository root as its source checkout, and keeps that apart from the `bin/devhost` that `just devhost compile` writes so neither build replaces the other. Compiled binaries go under `bin/`, which is ignored; never write one elsewhere or commit one. The injected UI checks and Storybook coverage now live in `packages/devhost-ui/`. Shared `oxfmt` / `oxlint` enforcement runs from the repo root.
-
-`scripts/buildDevtoolsBundle.ts` refreshes the generated injected devtools assets under `internal/devtools/dist/` used by Go `//go:embed`: the static `devtools.js` entry, lazy JavaScript chunks and WOFF2 subsets under `assets/`, and precompressed `.gz` representations. The whole directory is intentionally ignored. Production builds must define `process.env.NODE_ENV` as `"production"`; the source loop sets the internal `DEVHOST_DEVTOOLS_DEVELOPMENT=1` build switch for development diagnostics and retains old hashed chunks for active tabs. Production builds remove obsolete artifacts before embedding.
-
-The same build command bundles the UI package's `status-pages` entry and `src/statusPages/statusPages.css` into ignored `internal/statuspage/dist/` for Go embedding. Render every built-in page through the shared React views in `packages/devhost-ui/src/statusPages/`, composed from `@alexgorbatchev/shadcn`; do not add hand-written HTML page templates or inline page behavior. This includes 404, recovery, unavailable-backend, running-stack directory, file listing, Markdown, and preview-gallery views. Their JavaScript is embedded in the document so pages need no app, control-asset route, or CDN. Keep `internal/statuspage/document.html` limited to document bootstrapping, an escaped fallback, and the JSON payload; service data must never become trusted script or HTML. The managed proxy serves its 404 stylesheet beside the page; other pages inline the same stylesheet. Markdown uses the UI package's `react-markdown`, `remark-frontmatter`, and `remark-gfm` dependencies with raw HTML disabled and the default safe URL handling; leading YAML front matter, parsed with `yaml`, renders through `renderFrontMatter` as a GitHub-style key/value table, or as a YAML code block when it is not a valid mapping. All pages share the system-theme script. Keep token values in the design package.
+`assets/statuspage/theme.js` is the tracked shared theme script embedded by `src/statuspage.rs`. Render every built-in page through the shared React views in `packages/devhost-ui/src/statusPages/`, composed from `@alexgorbatchev/shadcn`; do not add hand-written HTML page templates or inline page behavior. This includes 404, recovery, unavailable-backend, running-stack directory, file listing, Markdown, and preview-gallery views. Their JavaScript is embedded in the document so pages need no app, control-asset route, or CDN. Service data must never become trusted script or HTML. The managed proxy serves its 404 stylesheet beside the page; other pages inline the same stylesheet. Markdown uses the UI package's `react-markdown`, `remark-frontmatter`, and `remark-gfm` dependencies with raw HTML disabled and the default safe URL handling; leading YAML front matter, parsed with `yaml`, renders through `renderFrontMatter` as a GitHub-style key/value table, or as a YAML code block when it is not a valid mapping. All pages share the system-theme script. Keep token values in the design package.
 
 The builder resolves the browser main and Redux registration through the UI package's public exports, using that package's own resolution context. Keep the served entrypoint list explicit: additional component-library exports are available for composition, and enter the browser asset graph when imported by a served entrypoint. The Redux monitor remains a separate internal browser entry beside its public registration module.
 
-Devtools control requests are token-free for trusted local development; native chat mutations and WebSocket attachments require an Origin matching the request authority. `/__devhost__/config.json` serves instance configuration with `no-store`; the static entry fetches it before mounting. Unversioned `inject.js` URLs redirect without caching to content-versioned URLs. Production entry URLs, hashed chunks, and fonts use one-year immutable caching; source-mode `inject.js` stays uncached. Gzip negotiation belongs only to asset responses, preserving native WebSocket handling. Keep generated chunk/font URLs and the Go asset route aligned.
+Devtools control requests are token-free for trusted local development; native chat mutations and WebSocket attachments require an Origin matching the request authority. `/__devhost__/config.json` serves instance configuration with `no-store`; the static entry fetches it before mounting. Unversioned `inject.js` URLs redirect without caching to content-versioned URLs. Production entry URLs, hashed chunks, and fonts use one-year immutable caching; source-mode `inject.js` stays uncached. Gzip negotiation belongs only to asset responses, preserving native WebSocket handling. Keep generated chunk/font URLs and the Rust asset route aligned.
 
-The same existing browser build embeds `redux.js` (public host registration), `redux-monitor.js` (genuine upstream inspector), and its emitted `redux-monitor.css`. The separate `/__devhost__/redux` document loads the upstream inspector stylesheet; it never reaches the host document. Preserve the complete build output graph, including emitted chunks/fonts and gzip representations, rather than a fixed entry-file count. Redux modules and styles use the same content-versioned immutable production responses and uncached source rebuilds as other browser assets. Failed source builds return HTTP 503 instead of stale registration, monitor code, or styles; injection retains its compilation-banner behavior. Test actual store instrumentation and monitor transport through the compiled Go routes, not only fixture servers. No Node/desktop runtime is shipped.
+The same existing browser build embeds `redux.js` (public host registration), `redux-monitor.js` (genuine upstream inspector), and its emitted `redux-monitor.css`. The separate `/__devhost__/redux` document loads the upstream inspector stylesheet; it never reaches the host document. Preserve the complete build output graph, including emitted chunks/fonts and gzip representations, rather than a fixed entry-file count. Redux modules and styles use the same content-versioned immutable production responses and uncached source rebuilds as other browser assets. Failed source builds return HTTP 503 instead of stale registration, monitor code, or styles; injection retains its compilation-banner behavior. No Node/desktop runtime is shipped.
 
-A development build records its checkout root in `internal/devbuild` through `-ldflags -X`: `just dev-bootstrap` and `scripts/runFromSource.sh` set it; plain `just devhost compile`, the demo recordings that use it, and release artifacts must leave it empty. `loadDevSourceCheckout` in `internal/services/dev_source.go` uses `DEVHOST_DEV_SOURCE_DIR` first and the recorded checkout otherwise, and points the running stack at that devhost checkout. A recorded checkout that is not a devhost checkout only warns and keeps the embedded assets, because the bootstrapped binary runs every project's stack; `cmd/devhost/shim_test.go` keeps the shim's `-X` symbol tied to the real variable. Each request for `/__devhost__/inject.js` compares `packages/devhost-ui/src/devtools/` against `apps/devhost/internal/devtools/dist/devtools.js` in that checkout and, when sources are newer, runs `just --justfile <checkout>/apps/devhost/justfile build-devtools-bundle` before serving the bundle, so a browser reload shows UI changes. All three paths derive from the checkout root in `internal/devtools/dev_source.go`; keep them in sync with `scripts/buildDevtoolsBundle.ts` and the `build-devtools-bundle` recipe, which the rebuild tests in `internal/devtools/dev_source_test.go` run for real through `just`. `devhost start` rejects a path that is not a devhost checkout (`NewDevSourceCheckout`), naming the variable. A build that fails or writes no `devtools.js` renders a `DEVHOST COMPILATION ERROR` banner and is retried on the next reload; builds are serialized, so retries never overlap.
-
-`just devhost build-release-artifacts` refreshes that bundle, cross-compiles the supported Go release targets, embeds the current `metadata.json` version into `devhost --version`, and writes versioned `.tar.gz` archives to `apps/devhost/dist/release/`.
-
-`just devhost compile` refreshes that bundle, embeds the current `metadata.json` version into `devhost --version`, then writes the current-platform executable to `apps/devhost/bin/devhost`.
+A development build records its checkout root through compile-time `DEVHOST_BUILD_SOURCE_DIRECTORY`: `just dev-bootstrap`, `just devhost run`, and `just devhost run-ai` set it; plain `just devhost build-release`, `just devhost compile`, the demo recordings that use it, and release artifacts leave it empty. `load_dev_source_checkout` in `src/devtools/dev_source.rs` uses `DEVHOST_DEV_SOURCE_DIR` first and the recorded checkout otherwise, and points the running stack at that devhost checkout. A recorded checkout that is not a devhost checkout only warns and keeps the embedded assets, because the bootstrapped binary runs every project's stack. Each request for `/__devhost__/inject.js` compares `packages/devhost-ui/src/devtools/` against `apps/devhost/dist/devtools/devtools.js` in that checkout and, when sources are newer, runs `just --justfile <checkout>/apps/devhost/justfile build-devtools-bundle` before serving the bundle, so a browser reload shows UI changes. All three paths derive from the checkout root in `src/devtools/dev_source.rs`; keep them in sync with `scripts/buildDevtoolsBundle.ts` and the `build-devtools-bundle` recipe. `devhost start` rejects a path that is not a devhost checkout, naming the variable. A build that fails or writes no `devtools.js` renders a `DEVHOST COMPILATION ERROR` banner and is retried on the next reload; builds are serialized, so retries never overlap.
 
 ## Release workflow
 
@@ -147,25 +98,26 @@ A development build records its checkout root in `internal/devbuild` through `-l
 
 ## Internal app layout
 
-- `cmd/devhost/main.go` — shipped CLI entrypoint
-- `scripts/runFromSource.sh` — local shell shim that builds and launches the Go runtime for workspace recipes and source-checkout use
-- `bin/` — ignored build output: `bin/devhost` from `just devhost compile`, `bin/source/devhost` from the shim
-- `internal/app/` — top-level Go CLI dispatch
-- `internal/cliout/` — human stack and service log presentation and the failure and warning lines devhost prints outside its logs, in the form for people or for agents (`AGENT=1`)
-- `internal/cli/` — command definitions (boa on top of cobra) and help screens; help is rendered by `cobra-help-tree/v4`, which documents positional arguments, environment variables, and quickstart examples from the catalog in `internal/cli/help.go` because cobra has no fields for them. Long descriptions print verbatim, so keep their lines at 60 columns or less.
-- `skills/devhost/` at the repository root holds the AI agent skill, the only copy, so `npx skills add alexgorbatchev/devhost --skill devhost` installs it from the root `skills/` directory; its frontmatter `name` is `devhost`. The binary never embeds it: `skillSource` in `internal/cli/help.go` names the repository and branch, and `cobra-help-tree` builds the `skill` command, which prints the install command and the skill URL, and the alert that opens every agent help screen. `internal/cli/skill_test.go` reads the skill from disk to check the printed path, the frontmatter name, interface coverage, and wording.
-- `internal/manifest/` — manifest discovery, parsing, validation, and defaults
-- `internal/config/` — the devhost config file (`config.toml`) every stack on the machine shares: its path resolution and validation
-- `internal/choices/` — words the allowed values of a setting for validation issues, shared by the manifest and config validation
-- `internal/files/` — confined static serving and safe GFM rendering for standalone `serve` sessions and manifest `serve` services; the embedded GitHub Markdown CSS retains its upstream version/source and MIT license
-- `internal/services/` — child process orchestration, health checks, port resolution, and cleanup, including detached `start` (see the detached-start rule under **Service supervision boundary**).
-- `internal/caddy/` — managed Caddy lifecycle, paths, config, and routing
-- `internal/browsertest/`, `internal/caddy/caddytest/`, `internal/nettest/`, `internal/testenv/` — test support: the repository's Chromium for browser tests, stand-ins for Caddy's admin endpoint and executable, reserved loopback ports, and the test process environment
-- `internal/procid/` — the start identity that tells a process from a later one with the same PID, and the Linux `/proc/<pid>/stat` reader the service containment shares
-- `internal/devtools/` — Go devtools control servers plus embedded browser assets
-- `internal/devbuild/` — the source checkout a development build records at build time
-- `internal/hostusage/` — samples host CPU, memory, and disk usage for the toolbar readouts (gopsutil; Linux reads sysfs to leave out USB-attached and removable drives)
-- `scripts/buildDevtoolsBundle.ts` — generates the production entry, lazy chunks, fonts, and gzip representations under ignored `internal/devtools/dist/` for `go:embed`
+- `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` — Rust crate manifest, lockfile, and pinned toolchain
+- `bin/` — ignored build output: `bin/devhost` from `just devhost compile`
+- `target/` — ignored Cargo build output (`target/release/devhost` from `just devhost build-release`)
+- `dist/` — ignored generated assets: `dist/devtools/` and `dist/statuspage/` from `scripts/buildDevtoolsBundle.ts`
+- `assets/statuspage/theme.js` — tracked shared theme script embedded by `src/statuspage.rs`
+- `src/main.rs` — shipped CLI entrypoint and command dispatch
+- `src/cli.rs`, `src/serve_cli.rs`, `src/completion.rs` — CLI command definitions (`clap`), help rendering (`cli-command-kit`), and shell completions
+- `src/cliout.rs` — human and agent (`AGENT=1`) stack/service log presentation, failure, and warning formatting
+- `skills/devhost/` at the repository root holds the AI agent skill, the only copy, so `npx skills add alexgorbatchev/devhost --skill devhost` installs it from the root `skills/` directory; its frontmatter `name` is `devhost`. `tests/cli.rs` verifies the skill command output and published skill frontmatter.
+- `src/manifest/`, `src/manifest.rs` — manifest discovery, parsing, validation, and defaults
+- `src/config.rs` — the shared machine config file (`config.toml`)
+- `src/files/`, `src/files.rs` — confined static serving and safe GFM rendering for standalone `serve` sessions and manifest `serve` services
+- `src/services/` — child process orchestration, health checks, port resolution, worktrees, and detached startup/cleanup
+- `src/caddy/`, `src/caddy.rs` — managed Caddy lifecycle, paths, config, routing, and restart generations (`src/caddy/generation.rs`)
+- `src/procid.rs` — process start identity that distinguishes a process from a later one with the same PID
+- `src/devtools/` — devtools control server, chat harnesses, agent activity streaming, source-checkout asset rebuilds (`src/devtools/dev_source.rs`), and embedded browser assets (`src/devtools/assets.rs`)
+- `src/remote/` — remote preview relay transport (vendored `vendor/makiko`) and enrollment
+- `src/statuspage.rs` — built-in 404, recovery, directory, and Markdown page rendering
+- `tests/` — native integration and behavioral test suites
+- `scripts/buildDevtoolsBundle.ts` — generates the production entry, lazy chunks, fonts, gzip representations, and status-page bundles under ignored `dist/devtools/` and `dist/statuspage/` for compile-time embedding
 
 ## Manifest configuration and casing rules
 
@@ -175,7 +127,7 @@ A development build records its checkout root in `internal/devbuild` through `-l
 
 - **MANDATORY camelCase rule:** All keys across the entire TOML manifest must use standard `camelCase` naming conventions. Never introduce kebab-case (hyphenated), snake_case, or mixed casing for properties in the manifest.
 - This rule applies to both top-level tables and nested keys, including (but not limited to) `idleTimeout`, `externalToolbars`, `bindHost`, `httpPort`, `httpsPort`, `adminAddress`, `defaultAction`, `injectPort`, `dependsOn`, `primary`, `managed`, `restartServices`, etc.
-- When defining or updating schema validation logic or structs in Go (e.g., `validate.go` or `types.go`), always ensure allowed-keys lists, parsed fields, struct members, and serialization tags explicitly enforce and respect `camelCase`.
+- When defining or updating schema validation logic or structs in Rust (`src/manifest/`), always ensure allowed-keys lists, parsed fields, struct members, and `serde` rename attributes explicitly enforce and respect `camelCase`.
 - Never submit or merge schema additions that break this naming contract.
 
 ## Service supervision boundary
@@ -234,10 +186,10 @@ A development build records its checkout root in `internal/devbuild` through `-l
 
 ## Devtools UI boundary
 
-- Standalone recovery documents and the managed Caddy 404 page share the embedded stylesheet in `internal/statuspage/`. Keep their common typography, themes, card layout, and responsive spacing there; recovery controls stay in `internal/devtools/recovery_page.html`.
-- The injected UI source now lives in `packages/devhost-ui/`.
+- Standalone recovery documents and the managed Caddy 404 page share the embedded stylesheet in `dist/statuspage/` and `assets/statuspage/theme.js` (`src/statuspage.rs`).
+- The injected UI source lives in `packages/devhost-ui/`.
 - For injected UI work, follow `packages/devhost-ui/AGENTS.md` plus the nested files under `packages/devhost-ui/src/devtools/`.
-- Keep Go-side bundle generation and browser-side UI changes in sync when the embedding contract changes.
+- Keep Rust-side bundle embedding and browser-side UI changes in sync when the embedding contract changes.
 
 ## Native chat boundary
 
@@ -282,17 +234,12 @@ A development build records its checkout root in `internal/devbuild` through `-l
 - Do not make a test beat a timer. Use an unreachable timeout while a test attaches or inspects, a short one only where the test waits for the timer to fire, and read scheduled state directly instead of sleeping to prove that nothing happened.
 - Git and the shell report physical paths, and tests compare them with paths built from `t.TempDir()`. The shared runner resolves `/tmp` before exporting it; packages also call `testenv.UsePhysicalTempDir()` from `TestMain` when direct `go test` invocations need the same guarantee, as `internal/app`, `internal/services`, and `internal/devtools` do. Reproduce a failure of this kind on Linux by running the tests with `TMPDIR` set to a symbolic link.
 - Managed Caddy defaults to `bindHost = "0.0.0.0"` (all IPv4/IPv6 interfaces), with `http = false`; admin and service bind defaults remain on loopback. Route changes render the Caddyfile for `runtime.GOOS`, and macOS retains its omitted `default_bind` behavior for explicit `127.0.0.1`. A Caddy test fixture that route code later rewrites, or an expectation compared with what it wrote, renders for `runtime.GOOS` too; a literal operating system belongs only in tests of the rendering itself.
-- Bump `managedCaddyRestartGeneration` in `internal/caddy/generation.go` when a changed runtime policy requires a fresh Caddy process; ordinary reloadable changes keep the generation. Update the accepting Caddy fixture's generation in `internal/caddy/caddytest` with it. Keep restart proof bound to PID and process start identity, write it only after a healthy start, and preserve downgrade checks under the shared route lock. Cover new restart requirements with native Caddy regression tests.
-
-## Go naming rule
-
-- Name error variables `err`, never `error`. A local `error` hides the built-in `error` type for every function literal declared after it in that scope, so a later `func() (T, error)` fails to compile. `just devhost lint` runs `go tool predeclared ./...` (a `tool` directive in `go.mod`), which rejects any declaration that shadows a built-in identifier.
+- Bump the restart generation in `src/caddy/generation.rs` when a changed runtime policy requires a fresh Caddy process; ordinary reloadable changes keep the generation. Keep restart proof bound to PID and process start identity, write it only after a healthy start, and preserve downgrade checks under the shared route lock. Cover new restart requirements with native Caddy regression tests.
 
 ## CLI output boundary
 
-- Route terminal diagnostics through `internal/cliout`: `WriteLog` returns write errors, `Log` is best-effort, and `WriteFailure` / `WriteWarning` apply the shared label, severity, and home-path formatting. Reuse the stack's `ServiceOutputWriters` layout. Keep filesystem paths absolute internally.
-- Child process text goes through `WriteChildLine` with the shared `Prefix`; retained records keep their canonical brackets. Machine-readable command lists and certificate bytes go through `WriteData` without diagnostic formatting. Never use these byte-preserving APIs to bypass diagnostic formatting.
-- `just devhost lint-logging` runs the type-aware `go tool logpolicy ./...` analyzer. It is also mandatory in `just devhost lint`, `just devhost check`, and root `just check`. The analyzer rejects direct terminal/generic-writer output, standard logging imports, output function aliases, and hand-built log/severity prefixes outside `cliout`; tests, HTTP bodies, buffers, and file writes have separate contracts. Keep analyzer regression cases under `internal/logpolicy/testdata/`.
+- Route terminal diagnostics through `src/cliout.rs`: apply the shared label, severity, and home-path formatting for human and agent (`AGENT=1`) modes, and keep filesystem paths absolute internally.
+- Keep machine-readable command lists and certificate bytes free of diagnostic formatting.
 
 ## Shared tooling boundary
 

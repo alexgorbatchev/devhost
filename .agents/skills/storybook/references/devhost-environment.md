@@ -49,13 +49,13 @@ By default, `devhost` proxies to `127.0.0.1` (IPv4). However, many modern machin
 
 ## 4. Standalone Storybook Mock Environment
 
-When running Storybook standalone, the `devhost-ui` React components cannot reach the actual Go supervisor endpoints. To keep stories runnable, `.storybook/preview.tsx` sets up robust mock providers:
+When running Storybook standalone, the `devhost-ui` React components cannot reach the actual devhost supervisor endpoints. To keep stories runnable, `.storybook/preview.tsx` sets up robust mock providers:
 
 - **Config Injection**: Injects mock `IInjectedDevtoolsConfig` into `globalThis[DEVTOOLS_INJECTED_CONFIG_GLOBAL_NAME]`.
 - **Fetch Mocking**: Intercepts REST queries (such as terminal start sessions) to return simulated JSON IDs.
 - **WebSocket Mocking**: Overrides `globalThis.WebSocket` with a `MockStorybookWebSocket` class that emits compliant status snapshot frames (for health streams, mock tailing logs, and terminal input/output interaction).
 
-When modifying or adding new UI dependencies on the Go supervisor, always update `.storybook/preview.tsx` to preserve mock correctness.
+When modifying or adding new UI dependencies on the devhost supervisor, always update `.storybook/preview.tsx` to preserve mock correctness.
 
 ---
 

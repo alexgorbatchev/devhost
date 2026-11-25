@@ -11,12 +11,8 @@ on:
         description: Run a Linux-only pilot without enabling automatic local CI
         type: boolean
         default: false
-      stress:
-        description: Repeat CI regression tests before the full check suite
-        type: boolean
-        default: false
-      rustCandidates:
-        description: Build and compare unpublished Rust archives on native distribution hosts
+      candidates:
+        description: Build and verify unpublished release archives on native distribution hosts
         type: boolean
         default: false
 
@@ -52,12 +48,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: apps/devhost/go.mod
-          cache-dependency-path: apps/devhost/go.sum
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -66,21 +56,60 @@ jobs:
       - name: Setup Just
         uses: extractions/setup-just@v4
 
+      - name: Cache Rust toolchains
+        if: runner.environment != 'self-hosted'
+        uses: actions/cache@v5
+        with:
+          path: ~/.rustup/toolchains
+          key: rust-toolchain-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/devhost/rust-toolchain.toml') }}-check
+
       - name: Setup Rust
         if: runner.environment != 'self-hosted'
         shell: bash
         run: |
           set -euo pipefail
-          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
-          rustup toolchain install "$channel" --profile minimal --no-self-update
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust-toolchain.toml").text()).toolchain.channel)')"
+          rustup toolchain install "$channel" --profile minimal --component rustfmt,clippy --no-self-update
           rustup default "$channel"
 
-      - name: Cache Rust dependencies for dev-bootstrap test
+      - name: Cache Rust dependencies
         if: runner.environment != 'self-hosted'
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/devhost/rust -> target
-          key: check-bootstrap-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}
+          workspaces: apps/devhost -> target
+          key: check-${{ hashFiles('apps/devhost/rust-toolchain.toml') }}
+
+      - name: Cache native runtime test tools
+        id: tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/share/devhost-check-tools
+          key: check-tools-${{ runner.os }}-${{ runner.arch }}-caddy2.11.9-chisel1.12.0
+
+      - name: Install native runtime test tools
+        if: steps.tools.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_root="$HOME/.local/share/devhost-check-tools"
+          mkdir -p "$tool_root/bin"
+          caddy_archive="caddy_2.11.9_linux_amd64.tar.gz"
+          curl --fail --location --retry 3 "https://github.com/caddyserver/caddy/releases/download/v2.11.9/$caddy_archive" --output "$RUNNER_TEMP/$caddy_archive"
+          printf '%s  %s\n' '5b8cb7faf8726a2028ad96a66e54e6e81e8f361bc6175e5d22bbd997cc5177fb' "$RUNNER_TEMP/$caddy_archive" | shasum -a 256 --check
+          tar -xzf "$RUNNER_TEMP/$caddy_archive" -C "$tool_root/bin" caddy
+          chmod +x "$tool_root/bin/caddy"
+          chisel_archive="chisel_1.12.0_linux_amd64.gz"
+          curl --fail --location --retry 3 "https://github.com/jpillora/chisel/releases/download/v1.12.0/$chisel_archive" --output "$RUNNER_TEMP/$chisel_archive"
+          printf '%s  %s\n' 'f3f180f1d93aa72cce4e6386f98cc06569a0146fbd65eb4423cf83e6434bcfe6' "$RUNNER_TEMP/$chisel_archive" | shasum -a 256 --check
+          gzip -dc "$RUNNER_TEMP/$chisel_archive" > "$tool_root/bin/chisel"
+          chmod +x "$tool_root/bin/chisel"
+
+      - name: Add native tools and seed reusable relay dependency
+        shell: bash
+        run: |
+          echo "$HOME/.local/share/devhost-check-tools/bin" >> "$GITHUB_PATH"
+          mkdir -p .cache/test-dependencies
+          cp "$HOME/.local/share/devhost-check-tools/bin/chisel" .cache/test-dependencies/chisel-v1.12.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -92,67 +121,8 @@ jobs:
         if: runner.environment != 'self-hosted'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg unzip xvfb
 
-      - name: Stress CI regression tests
-        if: github.event_name == 'workflow_dispatch' && inputs.stress
-        run: |
-          just devhost build-devtools-bundle
-          cd apps/devhost
-          go test -failfast -count=20 -v -run '^(TestStopStartedServicePreservesLateExternalPortRespawns|TestRecoveryDesignInBrowser)$' ./internal/services ./internal/devtools
-
       - name: Run checks
         run: just check
-
-  # Keep advisory Go verification available without spending another macOS runner on every change.
-  go-macos:
-    if: github.event_name == 'workflow_dispatch' && !inputs.selfHosted && !inputs.rustCandidates
-    runs-on: macos-latest
-    continue-on-error: true
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: apps/devhost/go.mod
-          cache-dependency-path: apps/devhost/go.sum
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - name: Setup Just
-        uses: extractions/setup-just@v4
-
-      - name: Setup Rust
-        if: runner.environment != 'self-hosted'
-        shell: bash
-        run: |
-          set -euo pipefail
-          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
-          rustup toolchain install "$channel" --profile minimal --no-self-update
-          rustup default "$channel"
-
-      - name: Cache Rust dependencies for dev-bootstrap test
-        if: runner.environment != 'self-hosted'
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: apps/devhost/rust -> target
-          key: check-bootstrap-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Install native Caddy
-        run: brew install caddy
-
-      - name: Run Go checks
-        run: |
-          bash test-support/runTests.test.sh
-          just devhost check
 
   rust-check:
     if: github.event_name != 'workflow_dispatch' || !inputs.selfHosted
@@ -165,80 +135,83 @@ jobs:
         include:
           - platform: linux-x64
             runner: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-            rust-anything-sha: e0b3456a9b1a6ae2f1205397815f21f3797be1e3ca505985d5ae9e054ee5dcc0
+            caddy-archive: caddy_2.11.9_linux_amd64.tar.gz
+            caddy-sha: 5b8cb7faf8726a2028ad96a66e54e6e81e8f361bc6175e5d22bbd997cc5177fb
+            chisel-archive: chisel_1.12.0_linux_amd64.gz
+            chisel-sha: f3f180f1d93aa72cce4e6386f98cc06569a0146fbd65eb4423cf83e6434bcfe6
           - platform: linux-arm64
             runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            rust-anything-sha: a56790fbc6a0615deb969b272ce53114d66032da462f061818cf6206513d4b02
+            caddy-archive: caddy_2.11.9_linux_arm64.tar.gz
+            caddy-sha: 5e377cff994fc9362a6fcf695c53f226cfca3a3ef85bd3a3687cf252d6310165
+            chisel-archive: chisel_1.12.0_linux_arm64.gz
+            chisel-sha: 2ec6152cd2c74fe0146d4d79e4e7aa174521368c56e433d55e023a92ea404ec3
           - platform: darwin-arm64
             runner: macos-15
-            target: aarch64-apple-darwin
-            rust-anything-sha: a39bf2b336a5e4030560dba68906fb089a10f61ac9d5b12dde4269bf679ae1da
+            caddy-archive: caddy_2.11.9_mac_arm64.tar.gz
+            caddy-sha: d075afc620376679a77b453399bf7ada264cab3280b2833e4ed1372abc0c1c13
+            chisel-archive: chisel_1.12.0_darwin_arm64.gz
+            chisel-sha: 707a4b932eea214765146504a0df246cefc415b4297af65a80dd67cf69ba85a9
           - platform: darwin-x64
             runner: macos-15-intel
-            target: x86_64-apple-darwin
-            rust-anything-sha: 0d96dc91c952db24f831b2ed36d295a0db7aad0df39bc4c95f3beb696774f2ca
+            caddy-archive: caddy_2.11.9_mac_amd64.tar.gz
+            caddy-sha: 22af256a2cc45606f6bfa8786cd89130529331319665926f4e972234a658fb30
+            chisel-archive: chisel_1.12.0_darwin_amd64.gz
+            chisel-sha: 4aeae36c867f11c8e8c3f2b913a0e063ea3c6d29e1c14a52ed2e6eef8cfc4395
     steps:
-      - name: Checkout candidate and Go history
+      - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - name: Setup Just
         uses: extractions/setup-just@v4
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: apps/devhost/go.mod
-          cache-dependency-path: apps/devhost/go.sum
       - name: Cache Rust toolchains
         uses: actions/cache@v5
         with:
           path: ~/.rustup/toolchains
-          key: rust-toolchain-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}-msrv1.98.1
+          key: rust-toolchain-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/devhost/rust-toolchain.toml') }}-msrv1.98.1
       - name: Setup pinned Rust and minimum supported Rust
         shell: bash
         run: |
           set -euo pipefail
-          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust-toolchain.toml").text()).toolchain.channel)')"
           rustup toolchain install "$channel" --profile minimal --component rustfmt,clippy,llvm-tools-preview --no-self-update
           rustup default "$channel"
           if [[ '${{ matrix.platform }}' == linux-x64 ]]; then rustup toolchain install 1.98.1 --profile minimal --no-self-update; fi
       - name: Cache Rust dependencies and test objects
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/devhost/rust -> target
-          key: checks-${{ matrix.platform }}-${{ hashFiles('apps/devhost/rust/rust-toolchain.toml') }}
+          workspaces: apps/devhost -> target
+          key: checks-${{ matrix.platform }}-${{ hashFiles('apps/devhost/rust-toolchain.toml') }}
       - name: Cache native test tools
         id: tools
         uses: actions/cache@v5
         with:
-          path: ~/.local/share/devhost-parity-tools
-          key: parity-tools-${{ runner.os }}-${{ runner.arch }}-caddy2.11.9-chisel1.12.0-cov0.9.1-anything3.3.0-${{ matrix.rust-anything-sha }}
+          path: ~/.local/share/devhost-test-tools
+          key: test-tools-${{ runner.os }}-${{ runner.arch }}-caddy2.11.9-chisel1.12.0-cov0.9.1
       - name: Install native test tools
         if: steps.tools.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          tool_root="$HOME/.local/share/devhost-parity-tools"
+          tool_root="$HOME/.local/share/devhost-test-tools"
           mkdir -p "$tool_root/bin"
-          GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
-          GOBIN="$tool_root/bin" go install github.com/jpillora/chisel@v1.12.0
+          curl --fail --location --retry 3 "https://github.com/caddyserver/caddy/releases/download/v2.11.9/${{ matrix.caddy-archive }}" --output "$RUNNER_TEMP/${{ matrix.caddy-archive }}"
+          printf '%s  %s\n' '${{ matrix.caddy-sha }}' "$RUNNER_TEMP/${{ matrix.caddy-archive }}" | shasum -a 256 --check
+          tar -xzf "$RUNNER_TEMP/${{ matrix.caddy-archive }}" -C "$tool_root/bin" caddy
+          chmod +x "$tool_root/bin/caddy"
+          curl --fail --location --retry 3 "https://github.com/jpillora/chisel/releases/download/v1.12.0/${{ matrix.chisel-archive }}" --output "$RUNNER_TEMP/${{ matrix.chisel-archive }}"
+          printf '%s  %s\n' '${{ matrix.chisel-sha }}' "$RUNNER_TEMP/${{ matrix.chisel-archive }}" | shasum -a 256 --check
+          gzip -dc "$RUNNER_TEMP/${{ matrix.chisel-archive }}" > "$tool_root/bin/chisel"
+          chmod +x "$tool_root/bin/chisel"
           if [[ '${{ matrix.platform }}' == linux-x64 ]]; then cargo install --locked cargo-llvm-cov --version 0.9.1 --root "$tool_root"; fi
-          archive="rust-anything-v3.3.0-${{ matrix.target }}.tar.gz"
-          curl --fail --location --retry 3 "https://github.com/erkamyaman/rust-anything/releases/download/v3.3.0/$archive" --output "$RUNNER_TEMP/$archive"
-          printf '%s  %s\n' '${{ matrix.rust-anything-sha }}' "$RUNNER_TEMP/$archive" | shasum -a 256 --check
-          tar -xzf "$RUNNER_TEMP/$archive" -C "$tool_root/bin" --strip-components=1 "rust-anything-v3.3.0-${{ matrix.target }}/rust-anything"
       - name: Add native tools and seed reusable relay dependency
         shell: bash
         run: |
-          echo "$HOME/.local/share/devhost-parity-tools/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/share/devhost-test-tools/bin" >> "$GITHUB_PATH"
           mkdir -p .cache/test-dependencies
-          cp "$HOME/.local/share/devhost-parity-tools/bin/chisel" .cache/test-dependencies/chisel-v1.12.0
+          cp "$HOME/.local/share/devhost-test-tools/bin/chisel" .cache/test-dependencies/chisel-v1.12.0
       - name: Install native Bash completion fixture
         if: runner.os == 'macOS'
         shell: bash
@@ -254,61 +227,30 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.bun/install/cache
-          key: bun-parity-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-parity-${{ runner.os }}-${{ runner.arch }}-
+          key: bun-rust-checks-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-rust-checks-${{ runner.os }}-${{ runner.arch }}-
       - name: Install dependencies without browser setup
         run: bun install --frozen-lockfile --ignore-scripts
-      - name: Validate current Go inventory and select unchanged oracle
-        id: oracle
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main --tags
-          bun apps/devhost/scripts/verifyRustParity.ts
-          echo "revision=$(bun -e 'console.log((await Bun.file("apps/devhost/rust/parity/inventory.json").json()).goSha)')" >> "$GITHUB_OUTPUT"
-      - name: Checkout unchanged Go oracle
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.oracle.outputs.revision }}
-          path: .state/ci-go-oracle
       - name: Check formatting and strict Clippy
         run: |
-          just rust fmt-check
-          just rust lint
+          just devhost fmt-check
+          just devhost lint
       - name: Check minimum supported Rust
         if: matrix.platform == 'linux-x64'
-        working-directory: apps/devhost/rust
+        working-directory: apps/devhost
         run: cargo +1.98.1 check --locked --all-targets
       - name: Enforce first-party line and function coverage
         if: matrix.platform == 'linux-x64'
-        run: just rust coverage
-      - name: Run native Rust tests
+        run: just devhost coverage
+      - name: Run native tests
         if: matrix.platform != 'linux-x64'
-        run: just rust test
-      - name: Build unchanged Go oracle
-        working-directory: .state/ci-go-oracle
         run: |
-          bun install --frozen-lockfile --ignore-scripts
-          just devhost compile
-      - name: Build repaired Go and optimized Rust candidates
-        run: |
-          just devhost compile
-          just rust build-release
-      - name: Compare all corpora and shared native fixtures
-        shell: bash
-        run: just rust comparisons "$GITHUB_WORKSPACE/.state/ci-go-oracle" "$GITHUB_WORKSPACE/apps/devhost/bin/devhost" "$GITHUB_WORKSPACE/apps/devhost/rust/target/release/devhost" "$GITHUB_WORKSPACE/.state/ci-rust-comparisons"
-      - name: Retain comparison provenance and results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: rust-comparisons-${{ matrix.platform }}
-          path: .state/ci-rust-comparisons/
-          if-no-files-found: warn
-          retention-days: 7
+          just devhost test-scripts
+          just devhost test
 
-  rust-candidates:
-    if: github.event_name == 'workflow_dispatch' && inputs.rustCandidates && !inputs.selfHosted
-    name: Rust candidate (${{ matrix.platform }})
+  release-candidates:
+    if: github.event_name == 'workflow_dispatch' && inputs.candidates && !inputs.selfHosted
+    name: Release candidate (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     strategy:
@@ -319,48 +261,41 @@ jobs:
             runner: ubuntu-24.04
             targets: linux-x64,linux-x64-musl
             rust-targets: x86_64-unknown-linux-gnu x86_64-unknown-linux-musl
-            rust-anything-target: x86_64-unknown-linux-gnu
-            rust-anything-sha: e0b3456a9b1a6ae2f1205397815f21f3797be1e3ca505985d5ae9e054ee5dcc0
+            caddy-archive: caddy_2.11.9_linux_amd64.tar.gz
+            caddy-sha: 5b8cb7faf8726a2028ad96a66e54e6e81e8f361bc6175e5d22bbd997cc5177fb
           - platform: linux-arm64
             runner: ubuntu-24.04-arm
             targets: linux-arm64,linux-arm64-musl
             rust-targets: aarch64-unknown-linux-gnu aarch64-unknown-linux-musl
-            rust-anything-target: aarch64-unknown-linux-gnu
-            rust-anything-sha: a56790fbc6a0615deb969b272ce53114d66032da462f061818cf6206513d4b02
+            caddy-archive: caddy_2.11.9_linux_arm64.tar.gz
+            caddy-sha: 5e377cff994fc9362a6fcf695c53f226cfca3a3ef85bd3a3687cf252d6310165
           - platform: darwin-arm64
             runner: macos-15
             targets: darwin-arm64
             rust-targets: aarch64-apple-darwin
-            rust-anything-target: aarch64-apple-darwin
-            rust-anything-sha: a39bf2b336a5e4030560dba68906fb089a10f61ac9d5b12dde4269bf679ae1da
+            caddy-archive: caddy_2.11.9_mac_arm64.tar.gz
+            caddy-sha: d075afc620376679a77b453399bf7ada264cab3280b2833e4ed1372abc0c1c13
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - name: Setup Just
         uses: extractions/setup-just@v4
-      - name: Setup Go for the native proxy dependency
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: apps/devhost/go.mod
-          cache-dependency-path: apps/devhost/go.sum
       - name: Setup Rust
         shell: bash
         run: |
           set -euo pipefail
-          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust/rust-toolchain.toml").text()).toolchain.channel)')"
+          channel="$(bun -e 'console.log(Bun.TOML.parse(await Bun.file("apps/devhost/rust-toolchain.toml").text()).toolchain.channel)')"
           rustup toolchain install "$channel" --profile minimal --no-self-update
           rustup default "$channel"
           rustup target add ${{ matrix.rust-targets }}
       - name: Cache Rust dependencies and release objects
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/devhost/rust -> target
+          workspaces: apps/devhost -> target
           key: candidate-${{ matrix.platform }}
       - name: Setup Zig
         if: runner.os == 'Linux'
@@ -372,7 +307,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.local/share/devhost-candidate-tools
-          key: candidate-tools-${{ runner.os }}-${{ runner.arch }}-rust1.99.1-zigbuild0.24.1-caddy2.11.9-chisel1.12.0-anything3.3.0-${{ matrix.rust-anything-sha }}
+          key: candidate-tools-${{ runner.os }}-${{ runner.arch }}-rust1.99.1-zigbuild0.24.1-caddy2.11.9
       - name: Install native build and runtime tools
         if: steps.tools.outputs.cache-hit != 'true'
         shell: bash
@@ -380,32 +315,16 @@ jobs:
           set -euo pipefail
           tool_root="$HOME/.local/share/devhost-candidate-tools"
           mkdir -p "$tool_root/bin"
-          GOBIN="$tool_root/bin" go install github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
-          GOBIN="$tool_root/bin" go install github.com/jpillora/chisel@v1.12.0
-          archive="rust-anything-v3.3.0-${{ matrix.rust-anything-target }}.tar.gz"
-          curl --fail --location --retry 3 "https://github.com/erkamyaman/rust-anything/releases/download/v3.3.0/$archive" --output "$RUNNER_TEMP/$archive"
-          printf '%s  %s\n' '${{ matrix.rust-anything-sha }}' "$RUNNER_TEMP/$archive" | shasum -a 256 --check
-          tar -xzf "$RUNNER_TEMP/$archive" -C "$tool_root/bin" --strip-components=1 "rust-anything-v3.3.0-${{ matrix.rust-anything-target }}/rust-anything"
+          curl --fail --location --retry 3 "https://github.com/caddyserver/caddy/releases/download/v2.11.9/${{ matrix.caddy-archive }}" --output "$RUNNER_TEMP/${{ matrix.caddy-archive }}"
+          printf '%s  %s\n' '${{ matrix.caddy-sha }}' "$RUNNER_TEMP/${{ matrix.caddy-archive }}" | shasum -a 256 --check
+          tar -xzf "$RUNNER_TEMP/${{ matrix.caddy-archive }}" -C "$tool_root/bin" caddy
+          chmod +x "$tool_root/bin/caddy"
           if [[ "$RUNNER_OS" == Linux ]]; then
             cargo install --locked cargo-zigbuild --version 0.24.1 --root "$tool_root"
           fi
       - name: Add cached tools to PATH
         shell: bash
-        run: |
-          echo "$HOME/.local/share/devhost-candidate-tools/bin" >> "$GITHUB_PATH"
-          mkdir -p .cache/test-dependencies
-          cp "$HOME/.local/share/devhost-candidate-tools/bin/chisel" .cache/test-dependencies/chisel-v1.12.0
-      - name: Install native Bash completion fixture
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          brew install bash bash-completion@2
-          echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
-          echo "DEVHOST_TEST_BASH_COMPLETION=$(brew --prefix bash-completion@2)/share/bash-completion/bash_completion" >> "$GITHUB_ENV"
-      - name: Prepare disposable macOS HTTPS health trust
-        if: runner.os == 'macOS'
-        timeout-minutes: 2
-        run: bash test-support/macosHealthTrust.sh prepare
+        run: echo "$HOME/.local/share/devhost-candidate-tools/bin" >> "$GITHUB_PATH"
       - name: Cache Bun dependency downloads
         uses: actions/cache@v5
         with:
@@ -414,43 +333,13 @@ jobs:
           restore-keys: bun-candidates-${{ runner.os }}-${{ runner.arch }}-
       - name: Install dependencies without browser setup
         run: bun install --frozen-lockfile --ignore-scripts
-      - name: Validate distribution inventory and select unchanged oracle
-        id: oracle
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main --tags
-          bun apps/devhost/scripts/verifyRustParity.ts
-          echo "revision=$(bun -e 'console.log((await Bun.file("apps/devhost/rust/parity/inventory.json").json()).goSha)')" >> "$GITHUB_OUTPUT"
-      - name: Checkout unchanged distribution oracle
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.oracle.outputs.revision }}
-          path: .state/ci-go-oracle
-      - name: Build unchanged distribution oracle
-        working-directory: .state/ci-go-oracle
-        run: |
-          bun install --frozen-lockfile --ignore-scripts
-          just devhost compile
-      - name: Build repaired Go comparison executable
-        run: just devhost compile
       - name: Build and verify native candidate archives
-        run: just rust build-release-artifacts --targets=${{ matrix.targets }} --output=apps/devhost/dist/rust-candidates/ci
-      - name: Compare every extracted native distribution executable
-        run: just rust distribution-comparisons "$GITHUB_WORKSPACE/apps/devhost/dist/rust-candidates/ci" "$GITHUB_WORKSPACE/.state/ci-go-oracle" "$GITHUB_WORKSPACE/apps/devhost/bin/devhost" "$GITHUB_WORKSPACE/.state/ci-distribution-comparisons"
-      - name: Retain distribution comparison receipts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: rust-distribution-comparisons-${{ matrix.platform }}
-          path: .state/ci-distribution-comparisons/
-          if-no-files-found: warn
-          retention-days: 7
+        run: just devhost build-release-artifacts --targets=${{ matrix.targets }} --output=apps/devhost/dist/candidates/ci
       - name: Retain unpublished candidate archives and verification receipts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: rust-candidate-${{ matrix.platform }}
-          path: apps/devhost/dist/rust-candidates/ci/
+          name: release-candidate-${{ matrix.platform }}
+          path: apps/devhost/dist/candidates/ci/
           if-no-files-found: error
           retention-days: 7

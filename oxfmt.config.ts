@@ -5,9 +5,10 @@ export default createOxfmtConfig(() => ({
     ".agents/**",
     ".cache/**",
     "**/node_modules/**",
-    "apps/devhost/internal/devtools/dist/**",
+    "apps/devhost/dist/**",
+    "apps/devhost/target/**",
+    "apps/devhost/vendor/**",
     "docs/internal/architecture/**/*.html",
-    "apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/**",
     "packages/playground/**",
   ],
 }));

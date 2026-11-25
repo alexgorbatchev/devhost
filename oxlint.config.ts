@@ -3,8 +3,9 @@ import createOxlintConfig from "@alexgorbatchev/typescript-ai-policy/oxlint-conf
 export default createOxlintConfig(() => ({
   ignorePatterns: [
     "**/coverage/**",
-    "apps/devhost/internal/devtools/dist/**",
-    "apps/devhost/internal/devtools/nvim/devhost-react-highlight.nvim/tests/**",
+    "apps/devhost/dist/**",
+    "apps/devhost/target/**",
+    "apps/devhost/vendor/**",
     "packages/playground/**",
   ],
 }));
