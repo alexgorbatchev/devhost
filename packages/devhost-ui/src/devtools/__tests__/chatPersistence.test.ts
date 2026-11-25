@@ -98,6 +98,10 @@ test.each([fixture_savedChatSnapshot, fixture_runningChatSnapshot])(
       expect(host.chatCommands).toEqual([]);
       expect(host.requestMethods.every((method) => method === "GET")).toBe(true);
       await page.getByRole("button", { name: "Close Conversation" }).click();
+      await page
+        .getByRole("alertdialog", { name: "Close Conversation?" })
+        .getByRole("button", { name: "Close" })
+        .click();
       await page.getByRole("button", { name: "Close Conversation" }).waitFor({ state: "hidden" });
       const connections = host.requestUrls.filter((url) => url.startsWith("/__devhost__/ws/chat?")).length;
       await page.reload();

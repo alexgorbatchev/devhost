@@ -25,6 +25,7 @@ export const NewConversationStaysSelectedAfterReload: Story = {
     const closeConversation = canvas.getByRole("button", { name: "Close Conversation" });
     const newConversation = canvas.getByRole("button", { name: "New Conversation" });
     const shareTab = canvas.getByRole("button", { name: "Share Tab" });
+    const sendMessage = canvas.getByRole("button", { name: "Send Message" });
     const actionsGroup = canvas.getByRole("group", { name: "Conversation actions" });
     expect(actionsGroup).toContainElement(closeConversation);
     expect(actionsGroup).toContainElement(shareTab);
@@ -32,6 +33,9 @@ export const NewConversationStaysSelectedAfterReload: Story = {
       newConversation.getBoundingClientRect().left,
     );
     expect(newConversation.getBoundingClientRect().right).toBeLessThanOrEqual(shareTab.getBoundingClientRect().left);
+    // Send Message sits outside the group but keeps the same spacing as the actions inside it.
+    const actionGap = shareTab.getBoundingClientRect().left - newConversation.getBoundingClientRect().right;
+    expect(sendMessage.getBoundingClientRect().left - shareTab.getBoundingClientRect().right).toBe(actionGap);
     expect(closeConversation.getBoundingClientRect().height).toBe(shareTab.getBoundingClientRect().height);
     expect(newConversation.getBoundingClientRect().height).toBe(shareTab.getBoundingClientRect().height);
     await expect(newConversation).toBeEnabled();

@@ -32,12 +32,12 @@ Chat opens compact, showing a working spinner and then the latest reply. **Expan
 
 Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts. On phone-sized screens the panel stays docked. The **Chat** button shows a spinner while the agent works or waits for you.
 
-| To                            | Use                                                                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Stop the current turn         | **Stop Generating**, or **Escape** in the composer                                                                                   |
-| Start a separate conversation | **New Conversation** (compose icon next to **Share Tab**)                                                                            |
-| Switch conversations          | **Conversation** in **Chat Settings**                                                                                                |
-| End a conversation's process  | **Close Conversation** (trash icon in the composer). It stays in the list as `closed`; selecting it resumes the CLI's saved session. |
+| To                            | Use                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stop the current turn         | **Stop Generating**, or **Escape** in the composer                                                                                                      |
+| Start a separate conversation | **New Conversation** (compose icon next to **Share Tab**)                                                                                               |
+| Switch conversations          | **Conversation** in **Chat Settings**                                                                                                                   |
+| End a conversation's process  | **Close Conversation** (trash icon in the composer, with confirmation). It stays in the list as `closed`; selecting it resumes the CLI's saved session. |
 
 You can send more messages while the agent works, including while it waits for an approval. Codex receives them as steering for the current turn, Claude Code as streaming input, and the agent decides when to use them. Sending never approves a pending tool or interrupts the agent. A model change applies from the next turn.
 
@@ -66,7 +66,7 @@ With each marker the agent receives the element's path, nearby text, accessibili
 
 Screenshots are optional; markers and drawings work without them.
 
-1. Choose **Share Tab** next to **Send Message**, and pick the current tab in the browser's picker. Windows and whole screens are rejected.
+1. Choose **Share Tab** (the screen-share icon next to **Send Message**), and pick the current tab in the browser's picker. Windows and whole screens are rejected.
 2. While **Include Tab Snapshot** (the camera) is on, each message takes a fresh screenshot of the tab. Turn it off to send messages without one.
 3. Before the screenshot is sent, a preview opens. Drag to select an area, or adjust **Left**, **Top**, **Width**, and **Height** with the keyboard, then choose **Share Selected Area** or **Share Whole Tab**.
 

@@ -27,7 +27,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const ShareTab: Story = {
   play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole("button", { name: "Share Tab" }));
+    const shareButton = within(canvasElement).getByRole("button", { name: "Share Tab" });
+    expect(shareButton).toHaveAttribute("aria-pressed", "false");
+    expect(shareButton.getBoundingClientRect().width).toBe(shareButton.getBoundingClientRect().height);
+    await userEvent.click(shareButton);
     expect(share).toHaveBeenCalledOnce();
   },
 };
@@ -58,10 +61,13 @@ export const SkipSnapshotsWhileSharing: Story = {
     expect(toggle).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(canvas.getByRole("button", { name: "Stop Sharing" })).toBeVisible();
+    const stopSharing = canvas.getByRole("button", { name: "Stop Sharing" });
+    expect(stopSharing).toBeVisible();
+    expect(stopSharing).toHaveAttribute("aria-pressed", "true");
+    expect(stopSharing.getBoundingClientRect().width).toBe(stopSharing.getBoundingClientRect().height);
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await userEvent.click(canvas.getByRole("button", { name: "Stop Sharing" }));
+    await userEvent.click(stopSharing);
     expect(canvas.queryByRole("button", { name: "Include Tab Snapshot" })).toBeNull();
     expect(canvas.getByRole("button", { name: "Share Tab" })).toBeVisible();
   },

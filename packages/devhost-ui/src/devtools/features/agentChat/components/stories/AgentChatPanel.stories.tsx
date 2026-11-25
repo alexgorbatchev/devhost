@@ -838,9 +838,18 @@ export const CloseKeepsConversationToResume: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await openSavedChatConversation(canvasElement);
+    // Cancelling the confirmation keeps the conversation open.
     await userEvent.click(canvas.getByRole("button", { name: "Close Conversation" }));
+    const cancelDialog = await canvas.findByRole("alertdialog", { name: "Close Conversation?" });
+    await userEvent.click(within(cancelDialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(canvas.queryByRole("alertdialog", { name: "Close Conversation?" })).toBeNull());
+    expect(canvas.getByText("codex · idle")).toBeVisible();
+    // Confirming closes the session and leaves it listed for resume.
+    await userEvent.click(canvas.getByRole("button", { name: "Close Conversation" }));
+    const confirmDialog = await canvas.findByRole("alertdialog", { name: "Close Conversation?" });
+    await userEvent.click(within(confirmDialog).getByRole("button", { name: "Close" }));
     await canvas.findByText("Chat with your configured coding agent.");
-    expect(canvas.queryByRole("button", { name: "Close Conversation" })).toBeNull();
+    await waitFor(() => expect(canvas.queryByRole("button", { name: "Close Conversation" })).toBeNull());
     // Closing stops the conversation; it stays offered so it can be resumed later.
     expect(await readOfferedConversations(canvasElement)).toEqual([
       "New conversation",
@@ -877,6 +886,8 @@ export const HeaderShowsHarnessLogoSpinnerAndCompactState: Story = {
     expect(within(moveHandle).getByTestId("OpenAILogo")).toBeVisible();
     // Switching harness to Claude Code shows the Claude logo in the header.
     await userEvent.click(canvas.getByRole("button", { name: "Close Conversation" }));
+    const confirmDialog = await canvas.findByRole("alertdialog", { name: "Close Conversation?" });
+    await userEvent.click(within(confirmDialog).getByRole("button", { name: "Close" }));
     await canvas.findByText("Agent Chat");
     await userEvent.click(within(header!).getByRole("button", { name: "Chat Settings" }));
     await chooseChatSetting(canvas, "Harness", "Claude Code");

@@ -1,6 +1,5 @@
-import { Button } from "@alexgorbatchev/shadcn";
 import { TooltipIconButton } from "@alexgorbatchev/shadcn/assistant-ui/tooltip-icon-button";
-import { CameraIcon, MonitorUpIcon, SquareIcon } from "lucide-react";
+import { CameraIcon, MonitorOffIcon, MonitorUpIcon } from "lucide-react";
 import { useContext, type JSX } from "react";
 import { Icon } from "../../../../components/ui/Icon";
 import { TabShareContext } from "../TabShareContext";
@@ -8,6 +7,7 @@ import { TabShareContext } from "../TabShareContext";
 export function TabShareActions(): JSX.Element | null {
   const sharing = useContext(TabShareContext);
   if (!sharing) return null;
+  const shareLabel = sharing.stream ? "Stop Sharing" : sharing.isRequesting ? "Sharing…" : "Share Tab";
   return (
     <div data-testid="TabShareActions" role="group" aria-label="Tab sharing" className="flex items-center gap-1.5">
       {sharing.stream ? (
@@ -21,9 +21,11 @@ export function TabShareActions(): JSX.Element | null {
           <Icon glyph={CameraIcon} />
         </TooltipIconButton>
       ) : null}
-      <Button
-        size="default"
-        variant="outline"
+      <TooltipIconButton
+        tooltip={shareLabel}
+        side="top"
+        variant={sharing.stream ? "secondary" : "ghost"}
+        aria-pressed={Boolean(sharing.stream)}
         disabled={sharing.isRequesting}
         onClick={() => {
           if (sharing.stream) sharing.stop();
@@ -33,9 +35,11 @@ export function TabShareActions(): JSX.Element | null {
           }
         }}
       >
-        <Icon glyph={sharing.stream ? SquareIcon : MonitorUpIcon} />
-        {sharing.stream ? "Stop Sharing" : sharing.isRequesting ? "Sharing…" : "Share Tab"}
-      </Button>
+        <Icon
+          glyph={sharing.stream ? MonitorOffIcon : MonitorUpIcon}
+          tone={sharing.stream ? "destructive" : "current"}
+        />
+      </TooltipIconButton>
     </div>
   );
 }
