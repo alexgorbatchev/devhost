@@ -158,22 +158,25 @@
       <div class="decide" id="product-decisions">
         <h2>Product decisions</h2>
         <p class="small">
-          Revision 7 settles the 96 gaps and cross-flow disagreements the 19 Phase 8 reconciliation units reported (see
+          Revision 7 settles the 100 gaps and cross-flow disagreements the 19 Phase 8 reconciliation units reported (see
           <a href="#revision-7">Revision 7 items</a>): one sign-in sentence, a rejected configuration drawn as a
           condition, Restart Stack's terminal command, focus after a pick or a menu, the toolbar's segment order, one
           fixture set, new rules <b>BAR-5</b>, <b>FAIL-6</b>, <b>FB-13</b>, <b>WORD-12</b>, <b>SD-1</b> to
           <b>SD-7</b> and <b>WF-1</b> to <b>WF-6</b>, and contract changes <code>CC-41</code> to <code>CC-52</code>; its
           last items (R7-89 to R7-96) add the stopped, blocked and external glyphs to every legend, draw a stopped
           stack's notice as a condition, put relay fixture hostnames under the passkey's own subdomain, settle long log
-          lines and move shared wireframe parts into the stylesheet; two product calls (q84, q85) wait for the product
-          owner. Revision 6 records the product owner's final Phase 7 answers of 2026-11-25, settles <code>O30</code>'s
-          parallel-shutdown design, and migrates all backend implementation paths to Rust
-          <code>main</code> (<code>190a8bb5</code>; Go retired, <code>q82a1</code>). Of the 63 entries: 60 are
-          <b>Decided</b> (O1–O49, O52–O59 and O61–O63 — zero open follow-ups remain on O18 or O30), 2 are
-          <b>Withdrawn</b> (O50 and O51: editor support dropped completely), 1 is <b>Retired</b> (O60, retired by O51),
-          and <b>0 remain Awaiting owner</b>. Sections 5.1 and 5.2 of the full reference list every owner item's verdict
-          and the product owner's four rules: <code>HOLD-8</code>, <code>ACT-14</code>, <code>FB-12</code> and
-          <code>WORD-11</code>.
+          lines and move shared wireframe parts into the stylesheet; after the rebase onto Rust
+          <code>main</code> (<code>bc33e2f1</code>), R7-97 to R7-100 follow the shared supervisor the product owner
+          shipped (one supervisor runs every stack and serve session, no per-stack PID) and <code>O64</code> records
+          three shipped Agent Chat behaviors; three product calls (q84, q85 and the form of the Close Conversation
+          confirmation) wait for the product owner. Revision 6 records the product owner's final Phase 7 answers of
+          2026-11-25, settles <code>O30</code>'s parallel-shutdown design, and migrates all backend implementation paths
+          to Rust <code>main</code> (<code>190a8bb5</code>; Go retired, <code>q82a1</code>). Of the 64 entries: 61 are
+          <b>Decided</b> (O1–O49, O52–O59 and O61–O64; O64 records Agent Chat behaviors the product owner shipped on
+          <code>main</code>), 2 are <b>Withdrawn</b> (O50 and O51: editor support dropped completely), 1 is
+          <b>Retired</b> (O60, retired by O51), and <b>0 remain Awaiting owner</b>. Sections 5.1 and 5.2 of the full
+          reference list every owner item's verdict and the product owner's four rules: <code>HOLD-8</code>,
+          <code>ACT-14</code>, <code>FB-12</code> and <code>WORD-11</code>.
         </p>
         <ul class="small">
           <li>
@@ -312,17 +315,22 @@
           </li>
           <li>
             <b
-              >O18 Process-replacement commands and self-upgrade. Decided (product owner, 2026-11-25, q79a2; supersedes
-              q28a1):</b
+              >O18 Restart commands and self-upgrade under the shared supervisor. Decided (product owner, 2026-11-25,
+              q79a2; supersedes q28a1; updated at revision 7 to the shared supervisor shipped on <code>main</code>):</b
             >
             add built-in <code>devhost upgrade</code> (downloads the latest release excluding <code>media</code>,
             verifies checksums, swaps a user-writable binary or clearly reports read-only/externally managed installs
             without breaking them, and replaces running manifest stacks) and keep shipped
             <code>devhost restart</code> (named <code>devhost restart-all</code> until main renamed it in
             <code>da28d008</code>) and project-scoped <code>devhost stack restart</code> on one verb for dotfiles,
-            package managers and local rebuilds, withdrawing the <code>devhost stack replace</code> rename while stating
-            clearly in help and output that they replace the running devhost supervisor process (<code>CC-12</code>,
-            <code>CC-31</code>).
+            package managers and local rebuilds, withdrawing the <code>devhost stack replace</code> rename. Revision 7
+            (<code>39011adc</code>, <code>74ed9a8b</code>): one shared supervisor runs every stack and serve session and
+            gives each run a stack ID; every PID it reports is its own. <code>devhost stack restart</code> starts a new
+            run of the project's stack inside that supervisor (switching executables only when no other stack shares
+            it); <code>devhost restart</code> drains it and restarts every stack and serve session in one new supervisor
+            running this executable; <code>devhost upgrade</code> swaps the executable and then does the same, since a
+            new devhost otherwise only warns and joins the old supervisor. No line names a per-stack PID
+            (<code>CC-12</code>, <code>CC-24</code>, <code>CC-31</code>, <code>CC-36</code>).
           </li>
           <li>
             <b
@@ -417,10 +425,12 @@
           <li>
             <b
               >O31 Whether <code>devhost restart</code> and <code>devhost upgrade</code> replace foreground stacks and
-              serve sessions. Decided (product owner, 2026-11-18; names updated by O18):</b
+              serve sessions. Decided (product owner, 2026-11-18; names updated by O18; revision 7 follows
+              <code>main</code>):</b
             >
-            they replace every manifest stack, each saying in its own terminal that it was replaced and where its
-            replacement logs; serve sessions are listed and left running, with the command that restarts each.
+            they replace every manifest stack and serve session, each foreground one saying in its own terminal that it
+            was replaced and how to follow and stop its new run; a file serve session whose folder cannot be opened
+            keeps running in the draining supervisor and is reported with <code>devhost stop --session</code>.
           </li>
           <li>
             <b
@@ -704,6 +714,18 @@
             with its start command; keep close-hostname typo suggestions (O46) on plain HTTP (when
             <code>httpEnabled = true</code>) and in the stack directory (<code>CC-27</code>).
           </li>
+          <li>
+            <b
+              >O64 Agent Chat behaviors shipped on main. Decided (product owner, 2026-11-25, shipped in
+              <code>46975d66</code>, <code>bc33e2f1</code> and <code>3636aa0b</code>):</b
+            >
+            <b>Close Conversation</b> asks first ("Close Conversation?", "This ends the agent process. You can resume
+            the conversation from Chat Settings.", <b>Close</b>), the product owner's exception to
+            <code>REV-1</code> and <code>UNDO-4</code>, shipped as a dialog where <code>SURF-2</code> asks in place
+            (open, R7-98); the chat header shows only the agent's name, its state told by the logo or spinner and a
+            visually hidden status, spelled out only after an error or while reconnecting (<code>ACT-13</code>); chat
+            remembers whether it was expanded after a reload.
+          </li>
         </ul>
       </div>
       <p class="muted small">
@@ -844,8 +866,8 @@
             <div class="bar"><b>Terminal › ~/acme</b></div>
             <pre class="term">$ devhost stop --worktrees --dry-run <span class="n">5</span>
 Would stop 2 stacks:
-  Acme Shop   main ~/acme             PID 84244  detached
-  Acme Shop   fix-nav ~/wt/fix-nav    PID 85102  foreground</pre>
+  Acme Shop   main ~/acme             detached
+  Acme Shop   fix-nav ~/wt/fix-nav    foreground</pre>
           </div>
         </div>
         <div class="cap">
@@ -892,8 +914,8 @@ Would stop 2 stacks:
             <li>
               <b>SEL-6</b> <span class="n">5</span> Terminal commands resolve stacks by one rule (the nearest manifest
               upward, or <code>--manifest</code>) and a command acting on several stacks prints its set first: name,
-              worktree, PID, foreground or detached, and for <code>caddy stop</code> the hostnames it takes offline.
-              <code>--dry-run</code> prints the set and exits 0.
+              worktree, foreground or detached (no PID: every stack shares the supervisor's, <code>O18</code>), and for
+              <code>caddy stop</code> the hostnames it takes offline. <code>--dry-run</code> prints the set and exits 0.
             </li>
             <li>
               <b>SEL-7</b> <span class="n">3</span> The run's service selection is visible and changeable while it runs:
@@ -1152,10 +1174,10 @@ Would stop 2 stacks:
             <li>
               <b>MENU-6</b> One name, one behavior, on every surface: the toolbar, status pages, the terminal and the
               control API. Every browser lifecycle action has a terminal command: <b>Restart Stack</b>'s is
-              <code>devhost service restart --all</code> (revision 7), because <code>devhost stack restart</code>, like
-              <code>devhost restart</code> and <code>devhost upgrade</code>, replaces the running devhost supervisor
-              process (<code>O18</code>, 2.12); the control API answers a mistyped or inapplicable service with
-              <code>422</code> and <code>{error, service}</code>.
+              <code>devhost service restart --all</code> (revision 7), because <code>devhost stack restart</code> starts
+              a new run of the stack inside the shared supervisor and <code>devhost restart</code> and
+              <code>devhost upgrade</code> restart every stack in a new supervisor (<code>O18</code>, 2.12); the control
+              API answers a mistyped or inapplicable service with <code>422</code> and <code>{error, service}</code>.
             </li>
           </ol>
           <p class="fixes">
@@ -1437,8 +1459,8 @@ Would stop 2 stacks:
             <div class="bar"><b>Terminal › ~/acme</b></div>
             <pre class="term">$ devhost stop --worktrees
 Stopping 2 stacks:
-  Acme Shop   main ~/acme             PID 84244  detached
-  Acme Shop   fix-nav ~/wt/fix-nav    PID 85102  foreground
+  Acme Shop   main ~/acme             detached
+  Acme Shop   fix-nav ~/wt/fix-nav    foreground
 This ends Claude Code's turn in fix-nav (working).
 Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
           </div>
@@ -1968,7 +1990,9 @@ Error: Cannot find module './db'
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b><span>the foreground stack's own terminal</span></div>
             <pre class="term">14:10:02 Stopping Acme Shop · 5 of 6 stopped · worker force-stopped after 10 s
-14:10:05 Replaced from another terminal: new stack PID 85102, logs with devhost logs <span class="n">4</span>
+14:10:05 Replaced by devhost restart from another terminal; it keeps running without this terminal <span class="n">4</span>
+devhost logs -f
+devhost stop
 $ echo $?
 0</pre>
           </div>
@@ -2010,8 +2034,9 @@ $ echo $?
             <li>
               <b>FAIL-5</b> <span class="n">4</span> A deliberate stop, cancel or replacement is never a failure:
               services devhost stops are steps of the operation; a person's stop reads stopped; one devhost had to force
-              reads force-stopped; a replaced foreground stack prints who replaced it, the new PID and its log, and
-              exits 0; a stopped chat turn ends with a neutral line (<code>O31</code>).
+              reads force-stopped; a replaced foreground stack or serve session prints who replaced it and the commands
+              that follow and stop its new run, never a PID, and exits 0; a stopped chat turn ends with a neutral line
+              (<code>O18</code>, <code>O31</code>).
             </li>
             <li>
               <b>FAIL-6</b> A retired setting warns and is ignored; an unknown one is rejected (revision 7):
@@ -2611,11 +2636,11 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               and past-tense outcome; a queued restart or start offers <b>Cancel Restart</b> or <b>Cancel Start</b>, its
               accessible name adding the target ("Cancel Restart of worker"); a question's choices are verbs, and only a
               question's <b>Cancel</b> changes nothing. <b>Open in Editor</b> is removed (<code>O51</code>);
-              <code>devhost upgrade</code> downloads, verifies, swaps and replaces stacks while
-              <code>devhost restart</code> and <code>devhost stack restart</code> keep one verb and state clearly that
-              they replace the running devhost supervisor process (<code>O18</code>, withdrawing
-              <code>stack replace</code>); <code>devhost stack info</code> and alias <code>devhost status</code> share
-              one contract (<code>O62</code>).
+              <code>devhost upgrade</code> downloads, verifies, swaps and then does what
+              <code>devhost restart</code> does, while <code>devhost restart</code> and
+              <code>devhost stack restart</code> keep one verb and say what each does inside the shared supervisor
+              (<code>O18</code>, withdrawing <code>stack replace</code>); <code>devhost stack info</code> and alias
+              <code>devhost status</code> share one contract (<code>O62</code>).
             </li>
             <li>
               <b>WORD-3</b> Action labels use title-style capitalization; everything else, the edit modes included, is
@@ -3442,10 +3467,10 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 running stack, and the crash line, help and skill name it; <code>devhost upgrade</code> downloads,
                 verifies, swaps and replaces stacks while shipped <code>devhost restart</code> and project-scoped
                 <code>devhost stack restart</code> keep one verb and state clearly that they replace the supervisor
-                process (<code>O18</code>, withdrawing <code>stack replace</code>); every surface leads to the stack
-                directory; restarting one service has one owner, to which the crash view and recovery pages hand off;
-                the restart routes answer a script's mistakes with documented codes. Browser lifecycle stays as
-                <code>O10</code> decides; names are 2.12's.
+                process (<code>O18</code>, withdrawing <code>stack replace</code>; revision 7: they start new runs
+                inside the shared supervisor); every surface leads to the stack directory; restarting one service has
+                one owner, to which the crash view and recovery pages hand off; the restart routes answer a script's
+                mistakes with documented codes. Browser lifecycle stays as <code>O10</code> decides; names are 2.12's.
               </td>
               <td>MENU-6, MENU-1, SEL-7, SURF-15</td>
             </tr>
@@ -4181,8 +4206,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>The noun for a running devhost unit: stack, serve session, project, process</td>
               <td>
                 A running unit is a stack, named by its manifest name, with its worktree when two share the name, the
-                PID a detail; a serve session is not a stack; no "Start a project"; chat edits "this worktree", not
-                "this project".
+                PID a detail (revision 7: the stack ID, since every PID is the shared supervisor's); a serve session is
+                not a stack; no "Start a project"; chat edits "this worktree", not "this project".
               </td>
               <td>WORD-1, WORD-10, WORD-11, STATE-2</td>
             </tr>
@@ -4250,7 +4275,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 off to the Services panel's restart; <code>devhost upgrade</code> downloads, verifies, swaps and
                 replaces stacks while <code>devhost restart</code> and <code>devhost stack restart</code> keep one verb
                 and state clearly that they replace the running supervisor process (<code>O18</code>, withdrawing
-                <code>stack replace</code>).
+                <code>stack replace</code>; revision 7: they start new runs inside the shared supervisor).
               </td>
               <td>WORD-2, MENU-6</td>
             </tr>
@@ -4922,8 +4947,9 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 devhost sent it, and devhost's own stops are reported as part of their operation.
                 <code>reference/cli.md</code>'s <code>143</code> row: a foreground stack that
                 <code>devhost stack restart</code>, <code>devhost restart</code> or
-                <code>devhost upgrade</code> replaced prints the new stack's PID and log and exits <code>0</code>.
-                Roster STK-01, STK-07, STK-09, REC-02, REC-03, CHAT-04.
+                <code>devhost upgrade</code> replaced says which command replaced it and how to follow and stop its new
+                run, never a PID, and exits <code>0</code> (revision 7). Roster STK-01, STK-07, STK-09, REC-02, REC-03,
+                CHAT-04.
               </td>
             </tr>
             <tr>
@@ -4963,8 +4989,9 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 HTTPS tab renders the stopped-stack page naming when and why it stopped and its start command;
                 close-hostname typo suggestions (<code>O46</code>) show on plain HTTP (when
                 <code>httpEnabled = true</code>) and in the stack directory. <code>guides/stack-lifecycle.md</code>:
-                recently stopped stacks stay listed with when, why and their start command, and each card counts running
-                services of the total, names failures and updates while open. Roster REC-06, REC-07, STK-04, STK-08.
+                recently stopped stacks stay listed with when, why and their start command, and each card shows its
+                name, worktree, directory and services instead of the shared supervisor's PID, counts running services
+                of the total, names failures and updates while open (revision 7). Roster REC-06, REC-07, STK-04, STK-08.
               </td>
             </tr>
             <tr>
@@ -5022,10 +5049,11 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 page served with hot reloading" becomes a page whose dev server reloads it when files change;
                 <code>reference/cli.md</code> withdraws the <code>devhost stack replace</code> rename
                 (<code>O18</code>), keeps shipped <code>devhost restart</code> and project-scoped
-                <code>devhost stack restart</code> (stating clearly that they replace the running supervisor process,
-                and <code>restart</code> leaves serve sessions running), and adds <code>devhost upgrade</code>; existing
-                docs that say "checkout" for a working copy move to "worktree" (<code>WORD-11</code>). Roster WT-06,
-                CHAT-01, CHAT-04, RLD-01, STK-07.
+                <code>devhost stack restart</code> (saying that <code>stack restart</code> starts a new run inside the
+                shared supervisor and that <code>restart</code> restarts every stack and serve session in a new
+                supervisor running this executable, revision 7), and adds <code>devhost upgrade</code>; existing docs
+                that say "checkout" for a working copy move to "worktree" (<code>WORD-11</code>). Roster WT-06, CHAT-01,
+                CHAT-04, RLD-01, STK-07.
               </td>
             </tr>
             <tr>
@@ -5080,11 +5108,11 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>CC-36</td>
               <td>FAIL-5, SEL-6; O18, O31</td>
               <td>
-                <code>guides/stack-lifecycle.md</code>: "This includes manifest stacks and standalone
-                <code>serve</code> sessions in the same state directory." becomes: <code>devhost restart</code> and
-                <code>devhost upgrade</code> replace every manifest stack, foreground ones included, each saying in its
-                own terminal that it was replaced and where its replacement logs; <code>serve</code> sessions are listed
-                and keep running, restarted in their own terminal to use the new executable. Roster STK-07, SRV-01.
+                <code>guides/stack-lifecycle.md</code>: "It drains the previous supervisor and relaunches every manifest
+                stack and standalone <code>serve</code> session … inside a single new supervisor process running the
+                current executable." (the text on <code>main</code>, revision 7) is kept and extended:
+                <code>devhost upgrade</code> ends with the same step, and a foreground stack or serve session says in
+                its own terminal that it was replaced and how to follow and stop its new run. Roster STK-07, SRV-01.
               </td>
             </tr>
             <tr>
@@ -5387,9 +5415,10 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>
                 A command, not an exception: <code>devhost service restart --all</code> restarts every managed service
                 inside the running stack, the terminal form of <b>Restart Stack</b>, and ships with <code>CC-11</code>'s
-                <code>devhost service</code> commands. <code>devhost stack restart</code> keeps its shipped meaning
-                (replace the supervisor, <code>O18</code>), so the label and the command differ by design; the command's
-                help says "Restart Stack in the browser". The crash line and recovery page name it. Exception refused.
+                <code>devhost service</code> commands. <code>devhost stack restart</code> keeps its shipped meaning (a
+                new run of the stack inside the shared supervisor, <code>O18</code>), so the label and the command
+                differ by design; the command's help says "Restart Stack in the browser". The crash line and recovery
+                page name it. Exception refused.
                 <span class="muted">Raised by startup-and-recovery, services-panel.</span>
               </td>
               <td>MENU-6, CC-11</td>
@@ -6310,6 +6339,56 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 <span class="muted">Raised by notices-and-feedback, services-panel.</span>
               </td>
               <td>WF-3</td>
+            </tr>
+            <tr>
+              <td>R7-97</td>
+              <td>One shared supervisor runs every stack (<code>main</code> after the run's base)</td>
+              <td>
+                The product owner's shipped model wins: <code>devhost stack restart</code> starts a new run of the stack
+                inside the shared supervisor; <code>devhost restart</code> restarts every stack and serve session in a
+                new supervisor running this executable; <code>devhost upgrade</code> swaps the executable, then does the
+                same. No line names a per-stack PID: name and worktree, the stack ID in agent output, the supervisor's
+                PID once on a line about the supervisor. Serve sessions restart with the stacks.
+                <span class="muted"
+                  >Raised by the re-check of stack-run-stop, stack-directory, serve-folder, worktree-switch,
+                  first-run-setup, notices-and-feedback.</span
+                >
+              </td>
+              <td>O18, O31, SEL-6, MENU-6, FAIL-5, ACT-10, WORD-2, WORD-7, 2.12, CC-12, CC-24, CC-27, CC-31, CC-36</td>
+            </tr>
+            <tr>
+              <td>R7-98</td>
+              <td>Agent Chat behaviors shipped on <code>main</code></td>
+              <td>
+                Recorded as the product owner's decisions: <b>Close Conversation</b> asks first (exception to
+                <code>REV-1</code> and <code>UNDO-4</code>), the header shows only the agent's name, chat remembers
+                whether it was expanded. Whether the exception covers the shipped dialog form, where <code>SURF-2</code>
+                asks in place, waits for the product owner.
+                <span class="muted">Raised by the re-check of agent-chat.</span>
+              </td>
+              <td>O64</td>
+            </tr>
+            <tr>
+              <td>R7-99</td>
+              <td>What a replaced stack's last message names</td>
+              <td>
+                The <code>stack-ended</code> message's <code>replacedBy</code> names the command, the time and the new
+                run's stack ID, never a PID, which the old and new run share after an in-place restart.
+                <span class="muted">Raised by notices-and-feedback.</span>
+              </td>
+              <td>ACT-10</td>
+            </tr>
+            <tr>
+              <td>R7-100</td>
+              <td>A stack that stops answering, under one supervisor</td>
+              <td>
+                Ctrl-Z in a foreground terminal suspends only that terminal, so no page says to run <code>fg</code>. One
+                stack's control server that stops answering reads unknown and offers <code>devhost stack restart</code>;
+                another stack can still serve the stack directory. A supervisor that stops answering stalls every stack,
+                and Caddy answers the directory hostname itself.
+                <span class="muted">Raised by stack-directory, stack-run-stop.</span>
+              </td>
+              <td>STATE-4</td>
             </tr>
           </tbody>
         </table>
