@@ -952,12 +952,12 @@ devhost: ERR: devhost caddy untrust changes this machine's certificate trust, so
         <div class="mock">
           <div class="win">
             <div class="bar">
-              <b>Terminal › ~</b><span>Acme Shop and Blog run, and a serve session for ~/acme/docs</span>
+              <b>Terminal › ~</b><span>Acme Shop and Acme Admin run, and a serve session for ~/acme/docs</span>
             </div>
             <pre class="term">$ devhost caddy stop
 Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running: <span class="n">1</span>
-Acme Shop · main ~/acme · detached · shop.acme.test, docs.acme.test, +3 <span class="n">2</span>
-Blog · main ~/blog · foreground · blog.acme.test
+Acme Shop · main ~/acme · detached · shop.acme.test, docs.shop.acme.test, +3 <span class="n">2</span>
+Acme Admin · main ~/acme-admin · foreground · admin.acme.test
 serve session for ~/acme/docs (notes.acme.test)
 Stopped Caddy · 2 stacks and 1 serve session offline until devhost caddy start · 0.4 s <span class="n">3</span>
 
@@ -969,11 +969,11 @@ Dry run: Caddy keeps running; nothing changed <span class="n">4</span>
 <span class="muted">an agent on a Linux machine</span>
 $ AGENT=1 devhost caddy stop
 devhost: Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running:
-devhost: Acme Shop · /work/acme/devhost.toml · stack stk-8c41e07d2a9b5f36 · detached · shop.acme.test, docs.acme.test, admin.acme.test, mail.acme.test, api.acme.test <span class="n">5</span>
+devhost: Acme Shop · /work/acme/devhost.toml · stack stk-8c41e07d2a9b5f36 · detached · shop.acme.test, docs.shop.acme.test, admin.shop.acme.test, mail.shop.acme.test, api.shop.acme.test <span class="n">5</span>
 <span class="muted">…</span>
 
 <span class="muted">a stack that does not answer the stop's notice within 1 s: its own line, after the set</span>
-Blog did not answer; its terminal may not say why its routes stopped <span class="n">6</span>
+Acme Admin did not answer; its terminal may not say why its routes stopped <span class="n">6</span>
 <span class="muted">with nothing running, then with Caddy already stopped</span>
 Stopped Caddy · no stack or serve session was running · 0.3 s
 Caddy is not running · nothing changed</pre>
