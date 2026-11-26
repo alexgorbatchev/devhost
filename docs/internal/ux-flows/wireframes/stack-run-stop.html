@@ -45,9 +45,9 @@
 <div class="bar"><b>Terminal › ~/acme</b><span>human output (with [remote] configured), then agent output</span></div>
 <pre class="term">$ devhost start
 Starting Acme Shop from main ~/acme · 6 services <span class="n">1</span>
-web     https://shop.acme.test/ (local) · https://shop.devbox.preview.acme.test/ (preview) <span class="n">2</span>
-docs    https://docs.acme.test/ (local) · https://docs.devbox.preview.acme.test/ (preview · DNS not configured)
-api     https://shop.acme.test/api/ (local) · https://shop.devbox.preview.acme.test/api/ (preview)
+web     https://shop.acme.test/ (local) · https://shop--devbox--preview.acme.test/ (preview) <span class="n">2</span>
+docs    https://docs.acme.test/ (local) · https://docs--devbox--preview.acme.test/ (preview · DNS not configured)
+api     https://shop.acme.test/api/ (local) · https://shop--devbox--preview.acme.test/api/ (preview)
 admin   https://admin.acme.test/ (local)
 mail    https://mail.acme.test/ (local)
 Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running <span class="n">3</span>
@@ -57,7 +57,7 @@ Ctrl-C stops Acme Shop <span class="n">4</span>
 
 $ AGENT=1 devhost start
 Acme Shop: Starting Acme Shop from main /work/acme · 6 services
-Acme Shop: web local=https://shop.acme.test/ preview=https://shop.devbox.preview.acme.test/
+Acme Shop: web local=https://shop.acme.test/ preview=https://shop--devbox--preview.acme.test/
 <span class="muted">…</span>
 Acme Shop: Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running <span class="n">5</span></pre>
 </div>
@@ -123,8 +123,8 @@ Quickstart: https://docs.devhost.example/quickstart/ <span class="n">12</span></
 <pre class="term">$ devhost start --detach
 Starting Acme Shop in the background from main ~/acme · 6 services <span class="n">1</span>
 Starting Acme Shop · 3 of 6 running · waiting for api · health check 2 s of 30 s · 7 s <span class="n">2</span>
-web     https://shop.acme.test/ (local) · https://shop.devbox.preview.acme.test/ (preview)
-api     https://shop.acme.test/api/ (local) · https://shop.devbox.preview.acme.test/api/ (preview)
+web     https://shop.acme.test/ (local) · https://shop--devbox--preview.acme.test/ (preview)
+api     https://shop.acme.test/api/ (local) · https://shop--devbox--preview.acme.test/api/ (preview)
 <span class="muted">…</span>
 Ready in 8.4 s: https://shop.acme.test/ · 6 of 6 running
 All stacks on devbox: https://devhost.acme.test/
@@ -152,7 +152,7 @@ $ echo $?
 <pre class="term">$ devhost start --detach admin
 Started admin and mail in Acme Shop · https://admin.acme.test/ · 3.1 s <span class="n">7</span>
 $ devhost start --detach web
-Already running in Acme Shop: web · https://shop.acme.test/ (local) · https://shop.devbox.preview.acme.test/ (preview offline) <span class="n">8</span>
+Already running in Acme Shop: web · https://shop.acme.test/ (local) · https://shop--devbox--preview.acme.test/ (preview offline) <span class="n">8</span>
 $ devhost start --detach admin   <span class="muted"># during Restart Stack</span>
 Not started: Restart Stack is running · 3 of 6 started <span class="n">9</span>
 $ echo $?
@@ -189,7 +189,7 @@ Acme Shop · main ~/acme · PID 84244 · detached · failed · 4 of 6 running ·
 api     exited with code 1 at 14:01 · devhost service restart api <span class="n">2</span>
 admin   not started · left out of this run · devhost service start admin
 docs    running · changed: docs/astro.config.mjs · https://docs.acme.test/
-web     running since 13:58 · https://shop.acme.test/ (local) · https://shop.devbox.preview.acme.test/ (preview offline)
+web     running since 13:58 · https://shop.acme.test/ (local) · https://shop--devbox--preview.acme.test/ (preview offline)
 worker  running since 13:58
 mail    running since 13:58 · https://mail.acme.test/
 search  not reachable · GET search.acme.test/health · checked 14:02 · runs outside devhost <span class="n">3</span>
@@ -280,6 +280,8 @@ $ devhost service start admin
 Started admin and mail (admin depends on mail) · 3.1 s
 $ devhost service stop worker
 Stopped worker · it reads not started, stopped by you
+$ devhost service restart --all   <span class="muted"># Restart Stack</span>
+Restarted Acme Shop · 6 of 6 running · 14 s
 $ devhost service restart search
 search runs outside devhost; devhost checks it but cannot restart it <span class="n">2</span>
 $ devhost service restart worker   <span class="muted"># while api restarts</span>
@@ -314,7 +316,7 @@ $ devhost logs --path
 </div>
 <div class="cap">
 <h2>4. Act on one service, reload, and read the stack's log</h2>
-<p>New: the terminal becomes one of each service's entry points, beside its row in the Services panel, the crash view and the control API, and every stack writes one log that follows it through replacements (<code>MENU-1</code>, <code>MENU-6</code>, <code>FB-7</code>). <code>devhost service start|stop|restart &lt;service|group&gt;…</code> targets named services or groups only (<code>CC-11</code>); in-process <b>Restart Stack</b> lives in the toolbar, crash view, recovery pages and control API, while <code>devhost stack restart</code>, <code>devhost restart-all</code>, and <code>devhost upgrade</code> replace the running devhost supervisor process (<code>O18</code>). These commands reach the running stack through its control server on the loopback port recorded in the state directory.</p>
+<p>New: the terminal becomes one of each service's entry points, beside its row in the Services panel, the crash view and the control API, and every stack writes one log that follows it through replacements (<code>MENU-1</code>, <code>MENU-6</code>, <code>FB-7</code>). <code>devhost service start|stop|restart &lt;service|group&gt;…</code> targets named services or groups, and <code>devhost service restart --all</code> is the terminal form of in-process <b>Restart Stack</b>, which the toolbar, crash view, recovery pages and control API offer; its help says "Restart Stack in the browser" (<code>CC-11</code>, <code>MENU-6</code>, applied default of owner item q86), while <code>devhost stack restart</code>, <code>devhost restart-all</code>, and <code>devhost upgrade</code> replace the running devhost supervisor process (<code>O18</code>). These commands reach the running stack through its control server on the loopback port recorded in the state directory.</p>
 <ol><li><span class="n">1</span> Each command sends an <code>operationId</code>, waits for health checks with one progress line, then prints one outcome per target, as the toolbar's <b>Restart</b> would; a lost response is read back from the operation record and never sent again (<code>SEL-7</code>, <code>REV-12</code>, <code>ACT-1</code>, <code>FB-3</code>, <code>WORD-4</code>, <code>CC-11</code>, <code>CC-37</code>). A failure prints the target, the exit with its time, its last output lines and what devhost ran, and exits 1 (<code>FAIL-3</code>); with <code>devhost.toml</code> rejected, "Restarted api from the accepted manifest · devhost.toml line 12 is not applied · 2.6 s" (<code>HOLD-6</code>).</li>
 <li><span class="n">2</span> An external service is refused with why, exit 1 (<code>MENU-3</code>, <code>ACT-9</code>).</li>
 <li><span class="n">3</span> A restart of another service queues and runs after the current one; one clashing with a stack-wide operation is refused with one sentence naming it, its progress and the way out (<code>HOLD-3</code>, <code>HOLD-1</code>, <code>CC-8</code>).</li>
@@ -514,7 +516,7 @@ $ echo $?
 <pre class="term">$ devhost skill | head -5
 # devhost 0.0.22 · agent guidance embedded in this binary
 - Are the services up? devhost status / devhost stack info (exit 3 names what is not running)
-- Restart one service: devhost service restart &lt;service&gt;
+- Restart one service: devhost service restart &lt;service&gt; · every service: devhost service restart --all
 - Follow output: devhost logs -f · apply a manifest edit: devhost reload
 - Upgrade binary or replace supervisors: devhost upgrade · devhost restart-all · devhost stack restart <span class="n">10</span></pre>
 </div>
@@ -531,7 +533,7 @@ $ echo $?
 <li><span class="n">7</span> An exit from outside names the signal, its status, the time and whether devhost sent it (<code>FAIL-3</code>, <code>FAIL-5</code>, <code>WORD-8</code>).</li>
 <li><span class="n">8</span> A daemon that stops on its own prints one line naming its check and what its status command reported, and one line when it recovers, never one per poll (<code>FAIL-3</code>).</li>
 <li><span class="n">9</span> A devhost config file save prints its outcome, whose change summary proxy-settings words, and "All stacks on devbox: …" when the directory URL moves; a rejected manifest edit prints manifest-hot-reload's "not applied" line with its file and line, and a blocked repository is named once with its sentence (<code>FB-3</code>, <code>SURF-15</code>, <code>MENU-4</code>, <code>HOLD-4</code>, <code>O61</code>).</li>
-<li><span class="n">10</span> <code>devhost skill</code> prints the agent guidance embedded in this binary, for this version and offline, naming <code>devhost stack info</code> / <code>devhost status</code>, <code>devhost service</code>, <code>devhost logs</code>, <code>devhost reload</code>, <code>devhost upgrade</code>, <code>devhost restart-all</code> and <code>devhost stack restart</code>; <code>devhost skill --install</code> keeps today's install text, and the Quickstart in <code>devhost --help</code> starts with <code>devhost init</code> (<code>MENU-6</code>, <code>SURF-15</code>, <code>O18</code>, <code>O52</code>, <code>O62</code>, <code>CC-11</code>, <code>CC-23</code>).</li></ol>
+<li><span class="n">10</span> <code>devhost skill</code> prints the agent guidance embedded in this binary, for this version and offline, naming <code>devhost stack info</code> / <code>devhost status</code>, <code>devhost service</code>, <code>devhost logs</code>, <code>devhost reload</code>, <code>devhost upgrade</code>, <code>devhost restart-all</code> and <code>devhost stack restart</code>; <code>devhost skill --install</code> keeps today's install text, and the Quickstart in <code>devhost --help</code> puts <code>devhost init</code> right after first-run-setup's Caddy steps (<code>devhost caddy download</code>, <code>devhost caddy privileged-ports</code> on Linux, <code>devhost caddy start</code>) (<code>MENU-6</code>, <code>SURF-15</code>, <code>O18</code>, <code>O52</code>, <code>O62</code>, <code>CC-11</code>, <code>CC-23</code>).</li></ol>
 <p class="fixes">Fixes stack-run-stop-13, stack-run-stop-15, stack-run-stop-02, stack-scale-07, worktree-switch-04, interrupted-operations-04, manifest-hot-reload-2-02, proxy-settings-04, stack-run-stop-12 · Backend: <code>devhost upgrade</code> plus replacement by identity on <code>restart-all</code> / <code>stack restart</code> with parallel stop routine and current selection, foreground handoff; exit, daemon and proxy lines; one outcome line per operation from any origin; offline embedded skill (Backend 5, 11, 14, 16; <code>CC-24</code>, <code>CC-31</code>, <code>CC-35</code>, <code>CC-36</code>)</p></div>
 </section>
 
@@ -551,12 +553,12 @@ $ echo $?
 <li><code>stack list</code>, <code>stack find</code> and <code>devhost stop</code> share one resolver (<code>SEL-6</code>)</li>
 </ul></div>
 <div><h3>New</h3><ul>
-<li><code>devhost upgrade</code> (<code>O18</code>), <code>devhost status</code> alias for extended <code>devhost stack info [--json] [--wait]</code> (<code>O62</code>), <code>devhost logs</code>, <code>devhost reload</code>, <code>devhost service start|stop|restart &lt;service|group&gt;…</code> (<code>CC-11</code>), <code>devhost init</code> (<code>O52</code>), and offline embedded <code>devhost skill</code></li>
+<li><code>devhost upgrade</code> (<code>O18</code>), <code>devhost status</code> alias for extended <code>devhost stack info [--json] [--wait]</code> (<code>O62</code>), <code>devhost logs</code>, <code>devhost reload</code>, <code>devhost service start|stop|restart &lt;service|group&gt;…</code> and <code>devhost service restart --all</code> (<code>CC-11</code>), <code>devhost init</code> (<code>O52</code>), and offline embedded <code>devhost skill</code></li>
 <li><code>--timeout</code>, <code>--dry-run</code> and <code>--yes</code> on multi-stack commands, and their question when an agent's turn would end (<code>O30</code>, <code>O33</code>)</li>
 <li>Top-level <code>devhost.toml</code> and <code>config.toml</code> <code>stopTimeout</code> (<code>5s</code>..<code>10m</code>, default <code>30s</code>) and <code>machineName</code> (<code>O30</code>, <code>O61</code>)</li>
 <li>The ready line, labelled local + preview URLs, "All stacks on devbox: …", proxy line, and detached/stop status lines</li>
 <li>Active serve-session hints from <code>stop</code>, interactive <code>stack list</code>, <code>stack find</code>, and <code>stack info</code> / <code>status</code> (<code>serve-command-04</code>)</li>
-<li>Stopped-stack record, 24-hour active HTTPS route (<code>O63</code>), page and end line; leftover detection; fail-fast &amp; reconnect relay reporting; probe's last status</li>
+<li>Stopped-stack record with the worktree label and the leftover service processes, 24-hour active HTTPS route (<code>O63</code>), page and end line; leftover detection; fail-fast &amp; reconnect relay reporting; probe's last status</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li><code>path = "/api"</code> uses prefix routing (<code>O44</code>); <code>path</code> without <code>host</code> and <code>watch</code> on external services warn without refusing</li>
