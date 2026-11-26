@@ -274,7 +274,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 <div class="row">
                   <b>demoapp</b><span class="chip">Serve session · command</span><span class="n">8</span>
                 </div>
-                <div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
+                <div>Command: <code>bun run dev</code> · ● running</div>
                 <div class="muted">… its discovered URLs and Configuration line, as step 7 draws them</div>
               </div>
               <div class="sd-grp" style="margin-top: 8px">Stopped recently · 2</div>
@@ -525,7 +525,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               <div class="sd-card">
                 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
                 <div>killed at 09:02; the devhost supervisor ended without cleaning up <span class="n">14</span></div>
-                <div>api still runs from the killed stack (PID 8123, port 4001)</div>
+                <div>Still running from its killed run: api (PID 8812, port 4000)</div>
                 <div class="sd-act">
                   Stop it: <code>cd ~/acme &amp;&amp; devhost stop</code><span class="btn">Copy</span>
                 </div>
@@ -769,8 +769,8 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 <span class="n">6</span>
               </div>
               <div class="muted small" style="margin: 0 0 4px">
-                devhost stack list shows which stacks still run; devhost stack restart in a listed stack's folder starts
-                a new run of it.
+                devhost stack list shows which stacks still run; once the devhost supervisor has ended, devhost start in
+                a stack's folder starts it again.
               </div>
               <div class="tb">
                 <span class="in" style="flex: 1"><span class="muted">Filter stacks and services</span></span
@@ -830,8 +830,9 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
             <code>devhost upgrade</code> replaced continues in a new run with a new stack ID: the new run takes over the
             old card's place, matched by the replaced run's end record, which names the command, the time and the new
             stack ID, or else by its root manifest; the card keeps its name, worktree label and any focus, its details
-            line reads "detached · restarted by devhost stack restart at 14:12 · 1 min ago", and the replaced run is not
-            listed under "Stopped recently" (<code>O18</code>, <code>R7-99</code>, <code>KEY-6</code>).
+            line reads "detached · started 14:12 · 1 min ago" with "Acme Shop was replaced by devhost stack restart at
+            14:12" under it, and the replaced run is not listed under "Stopped recently" (<code>O18</code>,
+            <code>R7-99</code>, <code>KEY-6</code>).
           </p>
           <ol>
             <li>
@@ -860,7 +861,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
               another running stack serves the page. When it answers again, or its new run takes over the card, it is
               live at the next read; the announcer says once that it stopped answering and once that it answers again
               (<code>ACT-5</code>, <code>STATE-3</code>, <code>STATE-4</code>, <code>ACT-11</code>, <code>WORD-6</code>,
-              <code>FB-9</code>, <code>R7-100</code>; the <code>MENU-5</code> exception of step 6).
+              <code>FB-9</code>, <code>R7-100</code>, <code>MENU-5</code>).
             </li>
             <li>
               <span class="n">4</span> When no read succeeds, one status sentence gives the age of what the page shows
@@ -1251,7 +1252,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
               </div>
               <div class="box">
                 <div class="row"><b>demoapp</b><span class="chip">Serve session · command</span></div>
-                <div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
+                <div>Command: <code>bun run dev</code> · ● running</div>
                 <div><a>https://demoapp.acme.test/ ↗</a> (4001) · <a>https://demoapp-4002.acme.test/ ↗</a> (4002)</div>
                 <div class="fld">
                   <span>Configuration</span><span>None: command session (reads no devhost.toml)</span>
