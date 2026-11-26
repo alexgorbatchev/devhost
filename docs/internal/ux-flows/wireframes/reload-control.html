@@ -12,17 +12,13 @@
 .mock .rc-req > div + div{margin-top:2px}
 /* A notice's or a popover's action row, kept at the right edge so a caret can point at one of its buttons */
 .mock .rc-acts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center;margin-top:4px}
-/* The page's right edge: the app's own content, then docked chat, the popover, the notice stack and the bar */
-.mock .rc-edge{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,27rem);gap:10px;flex:1}
-.mock .rc-edge > .corner{margin-top:0;justify-content:flex-end}
-.mock .rc-edge > .corner > .popover,.mock .rc-edge > .corner > .banner,.mock .rc-edge > .corner > .dock{align-self:stretch}
 </style>
 </head>
 <body>
 <header class="page">
 <nav class="top"><a href="index.html">← All flows</a><a href="../reload-control-current.html">Today's flow diagram</a><a href="../reload-control-proposed.html">Proposed flow diagram</a><a href="../proposals/reload-control.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
 <h1>Keep agent edits from reloading the page</h1>
-<p><b>TLDR:</b> Disable Reloads opens a popover that shows the agent, the conversation and the exact request for this dev server before anything is sent; the request's progress, the agent's question and its result then stay in the notice's slot with the restart the change needs, and Hold Reloads counts, explains and keeps every held reload instead of dropping, hiding or silently letting it through.</p>
+<p><b>TLDR:</b> Disable Reloads opens a popover that shows the agent, the conversation and the exact request before anything is sent, the request's progress, question and result stay in the notice's slot with the restart the change needs, Hold Reloads counts and keeps every held reload, and once reloads are disabled later chat turns end with "Reload to see the change" and Reload Page instead of a reload devhost starts.</p>
 <p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
 </header>
 <div class="key"><div>
@@ -48,7 +44,7 @@
 <div class="banner" style="margin:0;max-width:30rem">◆ <b>Vite reloads this page when files change</b> <span class="n">1</span>
 <div>Agent edits can reload it while you work.</div>
 <div class="rc-acts"><span class="btn">Disable Reloads</span><span class="n">2</span><span class="btn">Dismiss</span><span class="n">3</span></div></div>
-<div class="row" style="justify-content:flex-end"><span class="n">4</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="n">4</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -58,8 +54,8 @@
 <div class="corner">
 <div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Restart</span></div>
 <div class="banner" style="margin:0">◆ Reload blocked · 1 reload held since 14:02 <span class="btn">Reload</span> <span class="btn">Dismiss</span></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">5</span><div class="banner" style="margin:0">◆ Vite reloads this page when files change <span class="btn">Disable Reloads</span> <span class="btn">Dismiss</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">5</span><div class="banner" style="margin:0">◆ <b>Vite reloads this page when files change</b><div>Agent edits can reload it while you work.</div><div class="rc-acts"><span class="btn">Disable Reloads</span><span class="btn">Dismiss</span></div></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -67,51 +63,50 @@
 <div class="bar"><b>devhost › Acme Shop › the notice in other situations</b></div>
 <div class="work small">
 <div class="vlab">the toolbar collapsed</div>
-<div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="banner" style="margin:0">◆ Vite reloads this page <span class="btn">Disable Reloads</span></span><span class="tbar oneline"><span class="seg"><b>dh</b></span></span></div>
+<div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="banner" style="margin:0">◆ Vite reloads this page <span class="btn">Disable Reloads</span></span><span class="tbar oneline"><span class="seg"><b>dh</b> ▴</span></span></div>
 <div class="vlab">Dismiss pressed on the notice</div>
 <div class="toastrow" style="padding:0"><div class="toast">Reload notice hidden <a>Undo</a></div><span class="n">7</span></div>
 <div class="vlab">a browser without the Navigation API</div>
 <div class="row" style="justify-content:flex-end"><span class="n">8</span><div class="banner" style="margin:0;max-width:30rem">◆ <b>Vite reloads this page when files change</b>
 <div>Agent edits can reload it while you work. This browser cannot hold reloads.</div>
 <div class="rc-acts"><span class="btn">Disable Reloads</span><span class="btn">Dismiss</span></div></div></div>
-<div class="row" style="justify-content:flex-end;margin-top:6px"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end;margin-top:6px"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>FB-8</code>'s groups name the hot reload notice only with a pending request, in the third group; this proposal also places the plain notice last in that group, and a request waiting for the person's answer or a failed request in the first group. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap"><div class="banner">Open conflict: toolbar-shell and notices-and-feedback word this notice and its one-line form differently from this page, which owns it. <a href="index.html#conflicts">See conflicts</a></div>
 <h2>1. Read the notice</h2>
-<p>The hot reload notice still shows only with chat on, on a page whose dev server's reload client loaded: Bun's development script, Next.js's portal element, a loaded <code>/@vite/client</code> or a webpack hot-update global, read at load and again as resources arrive, as today. <b>Hold Reloads</b> on the bar is still on by default. What changes is the notice's words, its place in the stack and its two buttons: <b>Disable Reloads</b> opens a popover instead of sending (step 2), and <b>Dismiss</b> can be undone. The notice shows on every load of such a page until dismissed; the dismissal and every other choice of this flow are kept per stack and page origin in this browser, never per checkout, so a worktree switch keeps them (<code>SEL-11</code>, <code>CC-9</code>). Keys: Alt+Ctrl+B moves focus to the dock, whose notices come before the bar in DOM and Tab order; <b>Disable Reloads</b> and <b>Dismiss</b> are Tab stops in the notice stack, and a focused notice action keeps only Enter, Space, the arrow keys, Home, End and Escape, so every other key reaches the page (<code>KEY-3</code>, <code>KEY-4</code>, <code>KEY-5</code>). This flow binds no new key; every hint comes from the one binding definition (<code>KEY-13</code>, <code>BAR-4</code>).</p>
+<p>The hot reload notice still shows only with chat on, on a page whose dev server's reload client loaded: Bun's development script, Next.js's portal element, a loaded <code>/@vite/client</code> or a webpack hot-update global, read at load and again as resources arrive, as today. <b>Hold Reloads</b> on the bar is still on by default. What changes is the notice's words, its place in the stack and its two buttons: <b>Disable Reloads</b> opens a popover instead of sending (step 2), and <b>Dismiss</b> can be undone. The notice shows on every load of such a page until dismissed; the dismissal and <b>Hold Reloads</b> are kept per stack and page origin in this browser, never per worktree, so a worktree switch keeps them, while the request and whether reloads are disabled are kept on the server (step 3) (<code>SEL-11</code>, <code>CC-9</code>). Keys: Alt+Ctrl+B moves focus to the dock, whose notices come before the bar in DOM and Tab order; <b>Disable Reloads</b> and <b>Dismiss</b> are Tab stops in the notice stack, and a focused notice action keeps only Enter, Space, the arrow keys, Home, End and Escape, so every other key reaches the page (<code>KEY-3</code>, <code>KEY-4</code>, <code>KEY-5</code>). This flow binds no new key; every hint comes from the one binding definition (<code>KEY-13</code>, <code>BAR-4</code>).</p>
 <ol><li><span class="n">1</span> The title names the dev server and what it does, "Vite reloads this page when files change", with the body "Agent edits can reload it while you work."; for the other clients it names Bun, Next.js or webpack. Visible text says reloads, never hot reloading, which names applying a manifest. The notice means the client loaded, not that it is connected or that reloads are on, and never claims more (<code>WORD-1</code>, <code>O24</code>, <code>CC-31</code>).</li>
-<li><span class="n">2</span> <b>Disable Reloads</b> keeps its label (<code>O2</code>); its accessible description says an agent receives the request: "Opens a request for Claude Code to turn off reloads in this checkout; nothing is sent until you press Send" (<code>REV-5</code>).</li>
+<li><span class="n">2</span> <b>Disable Reloads</b> keeps its label (<code>O2</code>); its accessible description says an agent receives the request: "Opens a request for Claude Code to turn off reloads in this worktree; nothing is sent until you press Send" (<code>REV-5</code>).</li>
 <li><span class="n">3</span> <b>Dismiss</b> hides the notice for now, never for good: callout 7 shows its <b>Undo</b>, and <b>Show Reload Notice</b> in the Hold Reloads popover (step 6) brings it back later (<code>UNDO-3</code>, <code>CC-20</code>).</li>
-<li><span class="n">4</span> <b>Hold Reloads</b> already keeps every script reload from replacing the page, with no agent and no project change. Its state is drawn by shape and text, ☑ on and ☐ off, in forced colors too, and the bar item opens its popover (step 6) (<code>ACT-13</code>, <code>SEL-11</code>).</li>
-<li><span class="n">5</span> The notice is a card named by its sentence with no live role, so it is never announced on load: it is standing information, and the announcer reads only its request's start and result. It sits last in the third group of the notice stack, with <b>Reload blocked</b>, below anything that needs the person, such as api's exit (<code>FB-8</code>, <code>FB-9</code>).</li>
+<li><span class="n">4</span> <b>Hold Reloads</b> already keeps every script reload from replacing the page, with no agent and no change to the worktree's files. Its state is drawn by shape and text, ☑ on and ☐ off, in forced colors too, and the bar item opens its popover (step 6) (<code>ACT-13</code>, <code>SEL-11</code>).</li>
+<li><span class="n">5</span> The notice is a card named by its sentence with no live role, so it is never announced on load: it is standing information, and the announcer reads only its request's start and result. It is one of <code>FB-8</code>'s other conditions, so it sits in the third group with <b>Reload blocked</b>, below anything that needs the person, such as api's exit; a request waiting for the person's answer and a failed request rise to the first group, as an agent waiting and a failure (<code>FB-8</code>, <code>FB-9</code>).</li>
 <li><span class="n">6</span> Collapsed, the toolbar keeps the notice's one-line form beside the badge, "Vite reloads this page", whose <b>Disable Reloads</b> opens the same popover; while the page's own modal dialog is open, the notice moves into that dialog with the notice stack and stays operable. Step 2 draws the popover in both; toolbar-shell places both forms (<code>SURF-8</code>, <code>SURF-11</code>).</li>
 <li><span class="n">7</span> <b>Dismiss</b> replaces the notice with "Reload notice hidden" and <b>Undo</b> for 4 s, not counted while the pointer or focus is in it; <b>Undo</b> brings the notice back where it was with focus on <b>Disable Reloads</b>. Its accessible description says where it stays: "also in the Hold Reloads popover" (<code>UNDO-3</code>, <code>FB-6</code>, <code>O14</code>).</li>
 <li><span class="n">8</span> A browser without the Navigation API has no <b>Hold Reloads</b>, as today; the notice says so once in its body, "This browser cannot hold reloads", so <b>Disable Reloads</b> is the remaining way (<code>MENU-3</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-01 · Backend: none; detection stays today's, and the notice's choices are kept per stack and page origin in this browser (<code>CC-9</code>, <code>CC-20</code>, <code>CC-31</code>)</p></div>
+<p class="fixes">Fixes reload-and-agents-01 · Backend: none; detection stays today's, and the notice's dismissal is kept per stack and page origin in this browser (<code>CC-9</code>, <code>CC-20</code>, <code>CC-31</code>)</p></div>
 </section>
 
 <section class="step" id="review-request">
 <div class="mock">
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › web page</b><span>1280×800, chat docked compact; Disable Reloads pressed with Enter</span></div>
+<div class="app" style="grid-template-columns:minmax(0,1fr) minmax(0,15rem);min-height:0">
 <div class="pg" style="min-height:420px">
-<div class="rc-edge">
 <div class="apptxt">Acme Shop · Products · Running shoes …</div>
 <div class="corner">
-<div class="dock"><b>Chat · Fix the nav</b> <span class="n">8</span><div class="muted">Codex · idle · compact</div></div>
 <div class="popover"><i class="caret-dn" style="right:141.4px"></i>
 <div class="from">Opened from Disable Reloads on the hot reload notice, with Enter</div>
 <div class="row"><b>Ask Claude Code to turn off reloads?</b><span class="n">1</span></div>
 <div class="row" style="margin-top:4px"><span class="chip acc">Claude Code · Haiku 4.5</span><span>starts a new conversation</span><span class="n">2</span></div>
-<div class="muted" style="margin-top:2px">Or send it to an open conversation of this checkout</div>
+<div class="muted" style="margin-top:2px">Or send it to an open conversation of this worktree</div>
 <div>◉ New conversation</div>
 <div>○ Fix the nav · Codex · idle</div>
-<div class="banner" style="margin:4px 0">Claude Code edits files without asking in this checkout <span class="n">3</span></div>
-<div>This checkout (live) · main ~/acme · no worktree, commit or merge <span class="n">4</span></div>
+<div class="banner" style="margin:4px 0">Never asks: Claude Code runs commands and edits without approval <span class="n">3</span></div>
+<div>This worktree (live) · main ~/acme · no new worktree, commit or merge <span class="n">4</span></div>
 <div class="row" style="flex-wrap:nowrap;align-items:flex-start;margin-top:4px"><div class="in focusring rc-req" style="flex:1;min-width:0">
-<div>Turn off automatic reloads in this checkout (~/acme) for local development:</div>
+<div>Turn off automatic reloads in this worktree (~/acme) for local development:</div>
 <div>The page https://shop.acme.test/ comes from web, whose dev server is Vite.</div>
 <div>Set <code>server.hmr: false</code> in Vite's config file (vite.config.*), so file changes no longer update or reload the page.</div>
 <div>Do not edit devhost.toml: <code>watch</code> only marks services changed. Change a service's <code>command</code> only when the switch is a command-line flag, and name every service that reload restarts.</div>
@@ -123,9 +118,10 @@
 <div class="banner" style="margin:0">◆ <b>Vite reloads this page when files change</b>
 <div>Agent edits can reload it while you work.</div>
 <div class="rc-acts"><span class="btn open">Disable Reloads</span><span class="btn">Dismiss</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◆ Chat</span></div></div>
 </div>
 </div>
+<div class="dock"><h3>Chat · Fix the nav</h3> <span class="n">8</span><div class="muted">Codex · idle · compact</div><div class="in" style="display:block;margin-top:6px"><span class="muted">the composer</span></div></div>
 </div>
 </div>
 <div class="win">
@@ -136,10 +132,10 @@
 <div class="from">Opened from Disable Reloads on the hot reload notice</div>
 <div class="row"><b>Ask Claude Code to turn off reloads?</b></div>
 <div class="row" style="margin-top:4px"><span class="chip acc">Claude Code · Haiku 4.5</span><span>starts a new conversation</span></div>
-<div>This checkout (live) · main ~/acme · no worktree, commit or merge</div>
+<div>This worktree (live) · main ~/acme · no new worktree, commit or merge</div>
 <div class="banner" style="margin:4px 0">devhost knows no verified switch for Next.js, so the agent has to find one; Hold Reloads keeps this page without an agent <span class="n">9</span></div>
 <div class="in focusring rc-req">
-<div>Turn off automatic reloads in this checkout (~/acme) for local development:</div>
+<div>Turn off automatic reloads in this worktree (~/acme) for local development:</div>
 <div>The page https://admin.acme.test/ comes from admin, whose dev server is Next.js.</div>
 <div class="muted">The rest of the generic request, which names no setting</div></div>
 <div class="rc-acts"><span class="btn pri">Hold Reloads</span><span class="btn">Cancel</span><span class="btn">Send</span></div>
@@ -147,7 +143,7 @@
 <div class="banner" style="margin:0;width:min(100%,27rem)">◆ <b>Next.js reloads this page when files change</b>
 <div>Agent edits can reload it while you work.</div>
 <div class="rc-acts"><span class="btn open">Disable Reloads</span><span class="btn">Dismiss</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☐ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☐ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -159,18 +155,18 @@
 <div class="from">Opened from Disable Reloads on the hot reload notice</div>
 <div class="row"><b>Ask Claude Code to turn off reloads?</b></div>
 <div class="row" style="margin-top:4px"><span class="chip acc">Claude Code · Haiku 4.5</span><span>starts a new conversation</span></div>
-<div>This checkout (live) · main ~/acme · no worktree, commit or merge</div>
+<div>This worktree (live) · main ~/acme · no new worktree, commit or merge</div>
 <div class="in focusring rc-req" style="margin-top:4px">
-<div>Turn off automatic reloads in this checkout (~/acme) for local development:</div>
+<div>Turn off automatic reloads in this worktree (~/acme) for local development:</div>
 <div class="muted">… the request as the person edited it</div></div>
 <div class="muted" style="margin-top:4px">Hold Reloads is on: this page keeps every reload until you choose to reload</div>
 <div class="rc-acts"><span class="btn">Copy</span><span class="btn">Cancel</span><span class="btn pri off">Send</span><span class="n">10</span></div>
-<div class="muted" style="text-align:right">Chat lost its connection to devhost; retrying</div>
+<div class="muted" style="text-align:right">Lost connection to this conversation; reconnecting</div>
 </div>
 <div class="banner" style="margin:0;width:min(100%,27rem)">◆ <b>Vite reloads this page when files change</b>
 <div>Agent edits can reload it while you work.</div>
 <div class="rc-acts"><span class="btn open">Disable Reloads</span><span class="btn">Dismiss</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -178,21 +174,21 @@
 <div class="bar"><b>devhost › Acme Shop › web page</b><span>the toolbar collapsed</span></div>
 <div class="pg" style="min-height:200px">
 <div class="corner">
-<div class="popover" style="width:min(100%,24rem)"><i class="caret-dn" style="right:106.2px"></i>
+<div class="popover" style="width:min(100%,24rem)"><i class="caret-dn" style="right:119.4px"></i>
 <div class="from">Opened from Disable Reloads on the notice's one-line form</div>
 <div class="row"><b>Ask Claude Code to turn off reloads?</b></div>
-<div class="muted">Claude Code · Haiku 4.5 · starts a new conversation · This checkout (live) · main ~/acme</div>
+<div class="muted">Claude Code · Haiku 4.5 · starts a new conversation · This worktree (live) · main ~/acme</div>
 <div class="in focusring rc-req" style="margin-top:4px">
-<div>Turn off automatic reloads in this checkout (~/acme) for local development:</div>
+<div>Turn off automatic reloads in this worktree (~/acme) for local development:</div>
 <div class="muted">… the rest of the request, as in the first window</div></div>
 <div class="rc-acts"><span class="btn">Cancel</span><span class="btn pri">Send</span></div>
 </div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">11</span><span class="banner" style="margin:0">◆ Vite reloads this page <span class="btn open">Disable Reloads</span></span><span class="tbar oneline"><span class="seg"><b>dh</b></span></span></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">11</span><span class="banner" style="margin:0">◆ Vite reloads this page <span class="btn open">Disable Reloads</span></span><span class="tbar oneline"><span class="seg"><b>dh</b> ▴</span></span></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › checkout page</b><span>the page's own modal dialog is open</span></div>
+<div class="bar"><b>devhost › Acme Shop › cart page</b><span>the page's own modal dialog is open</span></div>
 <div class="scrim" style="min-height:0">
 <div class="dlg"><div class="hd"><h3>Edit shipping address</h3></div>
 <div class="body"><span class="muted">The app's own dialog: street, city, postcode …</span>
@@ -201,7 +197,7 @@
 <div class="from">Opened from Disable Reloads inside the page's dialog</div>
 <div class="row"><b>Ask Claude Code to turn off reloads?</b></div>
 <div class="in focusring rc-req" style="margin-top:4px">
-<div>Turn off automatic reloads in this checkout (~/acme) for local development:</div>
+<div>Turn off automatic reloads in this worktree (~/acme) for local development:</div>
 <div class="muted">… the same recipient, mode line and request</div></div>
 <div class="rc-acts"><span class="btn">Cancel</span><span class="btn pri">Send</span></div>
 </div>
@@ -211,58 +207,63 @@
 </div></div>
 <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div></div>
 </div>
-<div class="corner" style="padding:6px 10px"><div class="tbar paused"><span class="seg"><b>Acme Shop</b></span><span class="seg">paused</span><span class="seg">☑ Hold Reloads ▾</span></div></div>
+<div class="corner" style="padding:6px 10px"><div class="tbar paused"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">paused</span><span class="seg">☑ Hold Reloads ▾</span></div></div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › the popover's conversation list in two other states</b></div>
+<div class="bar"><b>devhost › the popover in three other states</b></div>
 <div class="work small">
-<div class="vlab">while this checkout's open conversations load</div>
-<div class="box" style="margin:0">Loading conversations of this checkout… <span class="n">13</span><div>◉ New conversation</div></div>
+<div class="vlab">while this worktree's open conversations load</div>
+<div class="box" style="margin:0">Loading conversations of this worktree… <span class="n">13</span><div>◉ New conversation</div></div>
 <div class="vlab">when the list cannot load</div>
-<div class="box" style="margin:0">Could not list this checkout's conversations: the control server did not answer <span class="btn">Retry</span><div>◉ New conversation</div></div>
+<div class="box" style="margin:0">Could not list this worktree's conversations: the control server did not answer <span class="btn">Retry</span><div>◉ New conversation</div></div>
+<div class="vlab">on a phone, 320 CSS pixels wide, that has not signed in to devhost</div>
+<div class="box" style="margin:0 0 0 auto;max-width:20rem">
+<div class="rc-acts"><span class="btn">Hold Reloads</span><span class="btn">Copy</span><span class="btn">Cancel</span><span class="btn pri off">Send</span><span class="n">14</span></div>
+<div class="muted" style="text-align:right">Sign in with passkey or pair this browser to use devhost here</div>
+<div class="rc-acts"><span class="btn">Sign In with Passkey</span><span class="muted">or open a link from devhost pair on the stack's machine</span></div></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: when chat stops taking messages while the popover is open, it stays open with the edited request, <b>Copy</b> and <b>Send</b> unavailable in place, as <code>REV-5</code> and <code>HOLD-5</code> keep the request visible; <code>HOLD-1</code> and <code>REV-13</code> close an open question whose action becomes blocked. This proposal records an exception to <code>HOLD-1</code>. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>2. Review the request</h2>
-<p>Pressing <b>Disable Reloads</b> still prepares a request asking a coding agent to turn off the dev server's reloads in this checkout. What changes is that nothing is sent and nothing starts until the person presses <b>Send</b>: the editable request is the question, every time (<code>REV-1</code>, <code>REV-5</code>, <code>O2</code>). Keys and focus: focus starts in the request, which is text entry, so page-wide chords are suspended there and Enter inserts a line break; Tab leaves the text and moves through the popover's controls in visual order; <b>Send</b> has no key. Escape or <b>Cancel</b> closes the popover, sends nothing and returns focus to <b>Disable Reloads</b>; Tab past the last control, Shift+Tab before the first, or a click outside also close it and send nothing, and focus returns to <b>Disable Reloads</b>, or, when the person opened the popover with the pointer, to the page element that had focus before that click. The popover is non-modal (<code>KEY-1</code>, <code>KEY-2</code>, <code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>, <code>KEY-9</code>, <code>REV-4</code>). An edited request is kept for the page's life, so reopening the popover shows the person's last text (<code>UNDO-4</code>). Who may send this request from another machine is <code>network-exposure-01</code>'s, whose agent-chat stopgap admits only loopback clients; this flow decides nothing about it.</p>
+<div class="cap"><h2>2. Review the request</h2>
+<p>Pressing <b>Disable Reloads</b> still prepares a request asking a coding agent to turn off the dev server's reloads in this worktree. What changes is that nothing is sent and nothing starts until the person presses <b>Send</b>: the editable request is the question, every time (<code>REV-1</code>, <code>REV-5</code>, <code>O2</code>). Keys and focus: focus starts in the request, which is text entry, so page-wide chords are suspended there and Enter inserts a line break; Tab leaves the text and moves through the popover's controls in visual order; <b>Send</b> has no key. Escape, <b>Cancel</b>, Tab past the last control, Shift+Tab before the first, or a click outside close the popover and send nothing, and focus returns to <b>Disable Reloads</b> when it was opened from the keyboard, or, when the person opened it with the pointer, to the page element that had focus before that click. The popover is non-modal (<code>KEY-1</code>, <code>KEY-2</code>, <code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>, <code>KEY-9</code>, <code>REV-4</code>). An edited request is kept for the page's life, so reopening the popover shows the person's last text (<code>UNDO-4</code>). From another environment, a phone included, a browser signed in with the shared devhost passkey or paired with a <code>devhost pair</code> link sends the request as this machine does; one that has not signed in sees callout 14 (<code>HOLD-8</code>, <code>O36</code>, <code>HOLD-7</code>, <code>review-16</code>).</p>
 <ol><li><span class="n">1</span> A non-modal dialog anchored to the notice and named by its title, "Ask Claude Code to turn off reloads?", which names the agent. <b>Disable Reloads</b> keeps its place, outlined, beside it, and no conversation, process or message exists until <b>Send</b> (<code>SURF-2</code>, <code>REV-5</code>, <code>WORD-10</code>).</li>
-<li><span class="n">2</span> The recipient: the agent and model as the composer's chip, which opens Chat Settings as it does there, and "starts a new conversation"; under it, each open conversation of this checkout is a radio option by its title, agent and state, a radio group the arrow keys move through. New conversation is selected by default, and the request never joins a conversation the popover does not name. Picking "Fix the nav" names its agent, which is fixed for that conversation, and the title follows: "Ask Codex to turn off reloads?". agent-chat owns the choice of conversation and the send; this popover only shows it (<code>SEL-8</code>, <code>O27</code>, <code>KEY-10</code>).</li>
+<li><span class="n">2</span> The recipient: the agent and model as the composer's chip, which opens Chat Settings as it does there, and "starts a new conversation"; under it, each open conversation of this worktree is a radio option by its title, agent and state, a radio group the arrow keys move through. New conversation is selected by default, and the request never joins a conversation the popover does not name. Picking "Fix the nav" names its agent, which is fixed for that conversation, and the title follows: "Ask Codex to turn off reloads?". agent-chat owns the choice of conversation and the send; this popover only shows it (<code>SEL-8</code>, <code>O27</code>, <code>KEY-10</code>).</li>
 <li><span class="n">3</span> The approval line agent-chat's composer shows, how the agent's CLI is configured to ask before edits and commands, here in its warning style because this Claude Code never asks: the agent's own approvals are the only brake on a change to shared configuration (<code>O13</code>, <code>REV-6</code>).</li>
-<li><span class="n">4</span> The mode line is text, never a control: This checkout (live) with the checkout's label and "no worktree, commit or merge" (<code>REV-5</code>, <code>O1</code>, <code>SEL-4</code>, <code>WORD-10</code>).</li>
-<li><span class="n">5</span> The request is editable and holds focus, written for the detected dev server and starting with what it asks and where; here it names Vite's <code>server.hmr</code>, and for Bun the switch line reads "In the <code>Bun.serve()</code> options of web's entry file, set <code>development: { hmr: false }</code>." The page's URL and its service come from the page, the checkout from the route that answered it; the manifest sentence is <code>O26</code>'s default (<code>WORD-10</code>, <code>SEL-3</code>, <code>O26</code>).</li>
+<li><span class="n">4</span> The mode line is text, never a control: This worktree (live) with the worktree's label and "no new worktree, commit or merge" (<code>REV-5</code>, <code>O1</code>, <code>SEL-4</code>, <code>WORD-10</code>).</li>
+<li><span class="n">5</span> The request is editable and holds focus, written for the detected dev server and starting with what it asks and where; here it names Vite's <code>server.hmr</code>, and for Bun the switch line reads "In the <code>Bun.serve()</code> options of web's entry file, set <code>development: { hmr: false }</code>." The page's URL and its service come from the page, the worktree from the route that answered it; the manifest sentence is <code>O26</code>'s default (<code>WORD-10</code>, <code>SEL-3</code>, <code>O26</code>).</li>
 <li><span class="n">6</span> While the hold is on, the hold line is text without a button: <b>Hold Reloads</b> already keeps this page without an agent (<code>O2</code>).</li>
 <li><span class="n">7</span> <b>Cancel</b>, then <b>Send</b>, which sends the text exactly as edited (step 3). Only <b>Send</b> sends, and it has no key (<code>KEY-9</code>).</li>
-<li><span class="n">8</span> Docked chat, compact or expanded, sits beside the notice stack and never covers the notice or the popover. At every acceptance viewport, in either corner, the popover opens inside the viewport, never clipped, with its title, mode line, request, <b>Send</b>, <b>Cancel</b> and the hold line in view; only the request scrolls (<code>SURF-1</code>, <code>SURF-6</code>, <code>SURF-9</code>).</li>
+<li><span class="n">8</span> Docked chat, compact or expanded, sits beside the notice stack as its own column and never covers the notice or the popover. At every acceptance viewport the popover opens inside the viewport, never clipped, with its title, mode line, request, <b>Send</b>, <b>Cancel</b> and the hold line in view; only the request scrolls (<code>SURF-1</code>, <code>SURF-6</code>, <code>SURF-9</code>).</li>
 <li><span class="n">9</span> For a dev server with no verified switch, Next.js and webpack until the fixtures verify one, a line above the request says so, and the request is the generic one, still editable. With the hold off, the hold line becomes <b>Hold Reloads</b>, which turns the hold on, sends nothing and closes the popover; for such a dev server it leads the buttons (<code>O25</code>, <code>O2</code>).</li>
-<li><span class="n">10</span> When chat cannot take a message, the request stays with <b>Copy</b>, <b>Send</b> is unavailable but focusable (<code>aria-disabled</code>) with one reason under it, which is also its accessible description, and <b>Hold Reloads</b> stays offered. When chat's connection is lost while the popover is open, it stays open and focus stays where it was. The other reasons read "No agent CLI is installed: install Claude Code or Codex, then use Refresh Agents in Chat Settings" and "Chat is off in this stack's manifest: set [devtools.chat] enabled = true to send this request"; after a lost status stream, "Lost connection to devhost; retrying"; while the page's checkout is deleted, "The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it", with worktree-switch's <b>Return to Configured Checkout</b> in the Worktrees panel. A rejected manifest blocks nothing (<code>HOLD-5</code>, <code>HOLD-2</code>, <code>HOLD-4</code>, <code>HOLD-6</code>, <code>HOLD-1</code>, <code>MENU-3</code>, <code>MENU-5</code>, <code>KEY-11</code>).</li>
+<li><span class="n">10</span> When chat cannot take a message, the request stays with <b>Copy</b>, <b>Send</b> is unavailable but focusable (<code>aria-disabled</code>) with one reason under it, which is also its accessible description, and <b>Hold Reloads</b> stays offered. When chat's connection is lost while the popover is open, it stays open and focus stays where it was: <code>HOLD-5</code> names this popover and keeps its request with <b>Copy</b>, which decides over <code>HOLD-1</code>'s general close. The other reasons read "No coding agent found: devhost looks for codex and claude on devbox's PATH. Install one, then press Refresh Agents." and "Chat is off in devhost.toml ([devtools.chat] enabled = false); running conversations stay reachable until they end"; after a lost status stream, "Lost connection to devhost; retrying"; while the page's worktree is deleted, "The worktree ~/acme/.worktrees/fix-nav was deleted; its services still run from it", with worktree-switch's <b>Return to Configured Worktree</b> in the Worktrees panel. A rejected manifest blocks nothing (<code>HOLD-5</code>, <code>HOLD-2</code>, <code>HOLD-4</code>, <code>HOLD-6</code>, <code>HOLD-1</code>, <code>MENU-3</code>, <code>MENU-5</code>, <code>KEY-11</code>).</li>
 <li><span class="n">11</span> Collapsed, the popover anchors to the notice's one-line form beside the badge and holds the same contents (<code>SURF-8</code>).</li>
 <li><span class="n">12</span> While the page's own modal dialog is open, the notice and its popover sit inside that dialog and work, <b>Send</b> included, and the rest of the toolbar shows its paused state with its reason, "Paused while this page's dialog is open" (<code>SURF-11</code>, <code>KEY-7</code>).</li>
-<li><span class="n">13</span> While the open conversations load, their place reads "Loading conversations of this checkout…" and the rest of the popover is usable, <b>Send</b> to a new conversation included; when the list cannot load, it says so with <b>Retry</b>, keeps New conversation selected and keeps the request (<code>STATE-1</code>, <code>STATE-4</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-01 · Backend: none beyond today's chat path, which sends the edited text in place of the prepared one; verified switches for Next.js and webpack, still to be settled (Backend 5, 6)</p></div>
+<li><span class="n">13</span> While the open conversations load, their place reads "Loading conversations of this worktree…" and the rest of the popover is usable, <b>Send</b> to a new conversation included; when the list cannot load, it says so with <b>Retry</b>, keeps New conversation selected and keeps the request (<code>STATE-1</code>, <code>STATE-4</code>).</li>
+<li><span class="n">14</span> On a browser in another environment that has not signed in, here a phone, <b>Send</b> is unavailable from the moment the popover opens, with <code>HOLD-7</code>'s reason, <b>Sign In with Passkey</b> when the shared passkey is configured for this domain and the <code>devhost pair</code> fallback; the request stays with <b>Copy</b>, and <b>Hold Reloads</b>, browser state only, stays offered. At 320 CSS pixels the popover takes the window's width less 16 px on each side (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>O8</code>).</li></ol>
+<p class="fixes">Fixes reload-and-agents-01 · Backend: agent-chat's send with the conversation the popover names and the live mode (Backend 1), never today's path, which joins a running conversation; verified switches for Next.js and webpack from fixtures, O25's state until then (Backend 5, 6)</p></div>
 </section>
 
 <section class="step" id="send-request">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › web page</b><span>Send pressed while Codex works in this checkout outside chat</span></div>
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>Send pressed while Codex works in this worktree outside chat</span></div>
 <div class="pg" style="min-height:220px">
 <div class="corner">
 <div class="popover" style="width:min(100%,27rem)"><i class="caret-dn" style="right:141.4px"></i>
 <div class="from">Opened from Disable Reloads on the hot reload notice</div>
 <div class="row"><b>Ask Claude Code to turn off reloads?</b></div>
 <div class="row" style="margin-top:4px"><span class="chip acc">Claude Code · Haiku 4.5</span><span>starts a new conversation</span></div>
-<div>This checkout (live) · main ~/acme · no worktree, commit or merge</div>
+<div>This worktree (live) · main ~/acme · no new worktree, commit or merge</div>
 <div class="in rc-req" style="margin-top:4px">
-<div>Turn off automatic reloads in this checkout (~/acme) for local development:</div>
+<div>Turn off automatic reloads in this worktree (~/acme) for local development:</div>
 <div class="muted">… the rest of the request</div></div>
-<div class="box">Codex is working in this checkout outside chat. Start Claude Code beside it? Both would edit the same files. <span class="n">1</span>
+<div class="box">Start a second agent in main ~/acme? Codex, which chat did not start, is working there, and both would edit the same files. <span class="n">1</span>
 <div class="rc-acts"><span class="btn">Start Second Agent</span><span class="btn focusring">Cancel</span></div></div>
 </div>
 <div class="banner" style="margin:0;width:min(100%,27rem)">◆ <b>Vite reloads this page when files change</b>
 <div>Agent edits can reload it while you work.</div>
 <div class="rc-acts"><span class="btn open">Disable Reloads</span><span class="btn">Dismiss</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">◐ Running agents</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">◐ Agents 1</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -271,7 +272,7 @@
 <div class="pg" style="min-height:110px">
 <div class="corner">
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">2</span><div class="banner" style="margin:0"><span class="focusring">◆ Request sent to Claude Code · working · 0 s</span> <span class="btn">Open Conversation</span></div></div>
-<div class="row" style="justify-content:flex-end"><span class="n">3</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◐ Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◐ Chat</span><span class="n">3</span></div></div>
 </div>
 </div>
 </div>
@@ -280,8 +281,8 @@
 <div class="app" style="grid-template-columns:minmax(0,1fr) minmax(0,20rem);min-height:0">
 <div class="pg" style="min-height:150px"><div class="apptxt">Acme Shop · Products · Running shoes …</div></div>
 <div class="dock"><h3>Chat · Turn off automatic reloads</h3>
-<div class="box" style="margin:4px 0">Turn off automatic reloads in this checkout (~/acme) for local development: … <span class="muted">(the request as sent)</span></div>
-<div class="muted">Mode: This checkout (live) · main ~/acme <span class="n">4</span></div>
+<div class="box" style="margin:4px 0">Turn off automatic reloads in this worktree (~/acme) for local development: … <span class="muted">(the request as sent)</span></div>
+<div class="muted">Mode: This worktree (live) · main ~/acme <span class="n">4</span></div>
 <div class="muted">▸ Added by devhost</div>
 <div class="muted" style="margin-top:6px">Claude Code · working</div>
 </div>
@@ -295,13 +296,13 @@
 </div>
 </div>
 <div class="cap"><h2>3. Send the request</h2>
-<p><b>Send</b> still sends the request without page context (no selected elements, drawings or screenshot) through today's chat path, and the server still resolves the conversation's checkout from the page's routed service, checks each send against it and limits a message to 8 MiB. What changes: the message goes out in This checkout (live) to the conversation the popover named, and the notice, not chat, shows what happens next. The request is one operation whose ID is its <code>commandId</code>, saved with its conversation, the detected client, the page's service and the checkout per stack and page origin, so every tab of that origin and a reloaded page show the same request (<code>ACT-1</code>, <code>CC-9</code>). Keys: Enter or Space on <b>Send</b> sends; in the second-agent question Enter takes <b>Cancel</b> and Escape cancels it, keeping the request unsent (<code>KEY-9</code>, <code>KEY-8</code>, <code>REV-4</code>).</p>
-<ol><li><span class="n">1</span> When an agent chat did not start works or waits in this checkout, <b>Send</b> for a new conversation expands in place into agent-chat's second-agent question, with <b>Cancel</b> in its place, focused and taking Enter, which keeps the request unsent, and <b>Start Second Agent</b> beside it (<code>REV-3</code>, <code>REV-4</code>, <code>CC-14</code>).</li>
+<p><b>Send</b> still sends the request without page context (no selected elements, drawings or screenshot), and the server still resolves the conversation's worktree from the page's routed service, checks each send against it and limits a message to 8 MiB. What changes: the message goes out in This worktree (live) to the conversation the popover named, and the notice, not chat, shows what happens next. The request is one operation whose ID is its <code>commandId</code>, recorded on the server with its conversation's delivery record, the detected client, the page's service and the worktree, so every browser and tab of the stack, a phone included, and a reloaded page show the same request (<code>ACT-1</code>, <code>CC-38</code>, <code>CC-40</code>). Keys: Enter or Space on <b>Send</b> sends; in the second-agent question Enter takes <b>Cancel</b> and Escape cancels it, keeping the request unsent (<code>KEY-9</code>, <code>KEY-8</code>, <code>REV-4</code>).</p>
+<ol><li><span class="n">1</span> When an agent chat did not start works or waits in this worktree, <b>Send</b> for a new conversation expands in place into agent-chat's second-agent question, with <b>Cancel</b> in its place, focused and taking Enter, which keeps the request unsent, and <b>Start Second Agent</b> beside it (<code>REV-3</code>, <code>REV-4</code>, <code>CC-14</code>).</li>
 <li><span class="n">2</span> After <b>Send</b>, the popover closes and the notice's slot shows the request's progress, with focus on its sentence, never on the page body; the time updates every second outside any live region, and the announcer reads the request's start once. <b>Open Conversation</b> opens docked chat on that conversation with focus in its composer (<code>FB-5</code>, <code>FB-9</code>, <code>KEY-6</code>, <code>KEY-11</code>).</li>
 <li><span class="n">3</span> Chat does not open by itself and keeps its open conversation: the notice is the one place the request's progress shows, and its transcript is one activation away. Chat's bar item shows its agent working (<code>FB-1</code>).</li>
-<li><span class="n">4</span> The message carries the live mode's instructions, never the worktree workflow, and shows in its conversation as the person's message with "Mode: This checkout (live) · main ~/acme" and the instructions under a collapsed "Added by devhost"; a reloaded page shows both again from the conversation's records. agent-chat draws them (<code>O1</code>, <code>CC-10</code>, <code>O19</code>, <code>WORD-10</code>, <code>UNDO-8</code>).</li>
+<li><span class="n">4</span> The message carries the live mode's instructions, never the worktree workflow, and shows in its conversation as the person's message with "Mode: This worktree (live) · main ~/acme" and the instructions under a collapsed "Added by devhost"; a reloaded page shows both again from the conversation's records. agent-chat draws them (<code>O1</code>, <code>CC-10</code>, <code>O19</code>, <code>WORD-10</code>, <code>UNDO-8</code>).</li>
 <li><span class="n">5</span> Without an acknowledgement within 45 s, the slot reads "Delivery unconfirmed: Claude Code may not have the request" with <b>Open Conversation</b>; devhost never sends it again (owner rule; <code>REV-12</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-01 · Backend: the request's <code>send</code> carries <code>mode: "live"</code> and the live mode's instructions, which the journey-agent-fix-01 stopgap ships first as the built-in prompt (Backend 1; <code>CC-10</code>, <code>CC-14</code>)</p></div>
+<p class="fixes">Fixes reload-and-agents-01 · Backend: the request's <code>send</code> carries <code>mode: "live"</code> and the live mode's instructions, which agent-chat's prompt stopgap ships first as the built-in prompt (Backend 1; <code>CC-10</code>, <code>CC-14</code>)</p></div>
 </section>
 
 <section class="step" id="follow-request">
@@ -310,21 +311,21 @@
 <div class="bar"><b>devhost › Acme Shop › web page</b><span>40 s into the turn; the agent's edit asked for a reload</span></div>
 <div class="pg" style="min-height:150px">
 <div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">2</span><div class="banner" style="margin:0">◆ Reload blocked · 1 reload held since 14:02 <span class="btn">Reload</span> <span class="btn">Dismiss</span></div></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">1</span><div class="banner" style="margin:0">◆ Request sent to Claude Code · working · 40 s <span class="btn">Open Conversation</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◐ Chat</span></div></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">1</span><div class="banner" style="margin:0">◆ Reload blocked · 1 reload held since 14:02 <span class="btn">Reload</span> <span class="btn">Dismiss</span></div></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">2</span><div class="banner" style="margin:0">◆ Request sent to Claude Code · working · 40 s <span class="btn">Open Conversation</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◐ Chat</span></div></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › web page</b><span>the agent asks before editing; api exited earlier</span></div>
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>the agent asks before editing; api exited earlier; "Restarted worker · 3.1 s" folds into 1 More</span></div>
 <div class="pg" style="min-height:170px">
 <div class="corner">
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">3</span><div class="banner" style="margin:0">◆ Claude Code is waiting for you · Edit vite.config.ts? <span class="btn">Answer</span></div></div>
 <div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Restart</span></div>
 <div class="banner" style="margin:0">◆ Reload blocked · 1 reload held since 14:02 <span class="btn">Reload</span> <span class="btn">Dismiss</span></div>
 <div class="row" style="justify-content:flex-end"><span class="n">4</span><span class="btn">1 More</span></div>
-<div class="row" style="justify-content:flex-end"><span class="n">5</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◆ Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◆ Chat</span><span class="n">5</span></div></div>
 </div>
 </div>
 </div>
@@ -334,7 +335,7 @@
 <div class="corner" style="margin-top:0">
 <div class="banner" style="margin:0">◆ Claude Code is waiting for you · Edit vite.config.ts? <span class="btn">Answer</span></div>
 <div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Restart</span></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="banner" style="margin:0;min-width:0">◆ Reload blocked · 1 reload held · <span class="btn">Reload</span></span><span class="tbar oneline"><span class="seg">✕ <b>dh</b> · 1 exited · 1 waiting for you · 1 reload held</span></span></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="banner" style="margin:0;min-width:0">◆ Reload blocked · 1 reload held · <span class="btn">Reload</span></span><span class="tbar oneline"><span class="seg">✕ <b>dh</b> · 1 exited · 1 waiting for you · 1 reload held ▴</span></span></div>
 </div>
 </div>
 </div>
@@ -346,7 +347,7 @@
 <div class="muted">Claude Code · waiting for you</div>
 <div class="box"><span class="focusring"><b>Edit vite.config.ts?</b></span> <span class="n">6</span>
 <pre class="term" style="padding:2px 0;background:var(--card)"><ins>+  server: { hmr: false },</ins></pre>
-<div class="row"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span></div></div>
+<div class="row"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span></div></div>
 <div class="in" style="display:block;margin-top:6px"><span class="muted">the composer</span></div>
 </div>
 </div>
@@ -357,7 +358,7 @@
 <div class="pg" style="min-height:150px">
 <div class="corner">
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">7</span><div class="banner" style="margin:0">◆ Request sent to Claude Code · working · 1&nbsp;min&nbsp;2&nbsp;s <span class="btn">Open Conversation</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◐ Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">◐ Chat</span></div></div>
 </div>
 </div>
 <div class="dock"><h3>Chat · New conversation</h3>
@@ -374,14 +375,14 @@
 </div>
 </div>
 <div class="cap"><h2>4. Follow the request</h2>
-<p>The agent still edits through its own approvals, which only the person answers, as today. What changes: the request's progress, the agent's question and a stop stay in the notice's slot, and the request no longer settles only while its conversation is the open one. A pending request takes <b>Disable Reloads</b>' place, so a second request cannot start beside it; another tab of the same origin shows the same request. Words: the conversation's state is working or waiting for you; the agent is named by its product name and the conversation by its title; a service's state, such as web restarting, comes only from the published state, and on a page that lost its status stream web shows unknown with the time it was last seen, never down (<code>WORD-1</code>, <code>WORD-4</code>, <code>WORD-6</code>, <code>ACT-2</code>, <code>ACT-5</code>). Keys: <b>Open Conversation</b> and <b>Answer</b> are Tab stops in the notice stack; in docked chat the decision card is one Tab stop entered on its question (<code>KEY-10</code>, <code>REV-9</code>).</p>
-<ol><li><span class="n">1</span> While the turn runs, the notice keeps its slot: "Request sent to Claude Code · working · 40 s", the time updated every second outside any live region, with <b>Open Conversation</b> (<code>FB-5</code>, <code>FB-9</code>).</li>
-<li><span class="n">2</span> Reloads the agent's edits cause are held and counted on <b>Reload blocked</b> (step 6), newest first in the stack's third group; a hot update the hold does not stop re-renders components in place, and page context's marks stay on their elements through it (<code>FB-8</code>, <code>SURF-12</code>).</li>
+<p>The agent still edits through its own approvals, which only the person answers, as today. What changes: the request's progress, the agent's question and a stop stay in the notice's slot, and the request no longer settles only while its conversation is the open one. A pending request takes <b>Disable Reloads</b>' place, so a second request cannot start beside it; every browser and tab of the stack shows the same request. Words: the conversation's state is working or waiting for you; the agent is named by its product name and the conversation by its title; a service's state, such as web restarting, comes only from the published state, and on a page that lost its status stream web shows unknown with the time it was last seen, never down (<code>WORD-1</code>, <code>WORD-4</code>, <code>WORD-6</code>, <code>ACT-2</code>, <code>ACT-5</code>). Keys: <b>Open Conversation</b> and <b>Answer</b> are Tab stops in the notice stack; in docked chat the decision card is one Tab stop entered on its question (<code>KEY-10</code>, <code>REV-9</code>).</p>
+<ol><li><span class="n">1</span> Reloads the agent's edits cause are held and counted on <b>Reload blocked</b> (step 6), newest first in the stack's third group; a hot update the hold does not stop re-renders components in place, and page context's marks stay on their elements through it (<code>FB-8</code>, <code>SURF-12</code>).</li>
+<li><span class="n">2</span> While the turn runs, the notice keeps its slot: "Request sent to Claude Code · working · 40 s", the time updated every second outside any live region, with <b>Open Conversation</b> (<code>FB-5</code>, <code>FB-9</code>).</li>
 <li><span class="n">3</span> When the agent waits for an answer, the notice reads "Claude Code is waiting for you · Edit vite.config.ts?" with <b>Answer</b>, rises to the stack's first group, newest first above api's exit, and is announced once (<code>FB-8</code>, <code>FB-9</code>, <code>REV-9</code>).</li>
 <li><span class="n">4</span> Three notices show; the rest fold into "1 More", which expands the stack in place (<code>FB-8</code>).</li>
 <li><span class="n">5</span> Chat's bar item shows its agent waiting for you, distinct from working; collapsed, the badge counts the wait and the waiting request keeps its one-line form with <b>Answer</b> (<code>ACT-7</code>, <code>SURF-8</code>).</li>
-<li><span class="n">6</span> <b>Answer</b> opens docked chat on that conversation with focus on its decision card's question in one activation. The person answers <b>Deny</b>, <b>Allow Once</b> or <b>Stop Turn</b>; devhost answers nothing. agent-chat draws the card (owner rule; <code>REV-9</code>, <code>SURF-8</code>, <code>KEY-6</code>).</li>
-<li><span class="n">7</span> The request is followed in its own conversation, read through the session list of every checkout of the stack and the conversation's records, whatever conversation chat shows, after <b>New Conversation</b> or a switch of conversations, and whatever <b>Chat Directory</b> a development build selects: the notice stays pending, then shows the result. It survives page reloads and closed tabs (<code>FB-5</code>, <code>CC-38</code>, <code>CC-40</code>).</li>
+<li><span class="n">6</span> <b>Answer</b> opens docked chat on that conversation with focus on its decision card's question in one activation. The person answers <b>Deny</b>, <b>Allow Once</b>, the agent CLI's own standing approval when it offers one (Claude Code's, <b>Allow for This Session</b>) or <b>Stop Turn</b>; devhost answers nothing, and only the person grants a standing approval, through the CLI's own option. agent-chat draws the card (owner rule; <code>REV-9</code>, <code>O12</code>, <code>SURF-8</code>, <code>KEY-6</code>).</li>
+<li><span class="n">7</span> The request is followed in its own conversation, read through the session list of every worktree of the stack and the conversation's records, whatever conversation chat shows, after <b>New Conversation</b> or a switch of conversations, and whatever <b>Chat Directory</b> a development build selects: the notice stays pending, then shows the result. It survives page reloads and closed tabs (<code>FB-5</code>, <code>CC-38</code>, <code>CC-40</code>).</li>
 <li><span class="n">8</span> <b>Stop Turn</b> in that conversation ends the request as stopped, a neutral result with <b>Show Changes</b> and <b>Disable Reloads</b>, never a failure (<code>FAIL-5</code>, <code>UNDO-4</code>).</li></ol>
 <p class="fixes">Fixes reload-and-agents-08, reload-and-agents-11, reload-and-agents-02 · Backend: every session of the stack listed with its directory, and a delivery record for each send in the conversation's journal, so the page follows the request by its <code>sessionId</code> and <code>commandId</code> (Backend 2; <code>CC-38</code>, <code>CC-40</code>)</p></div>
 </section>
@@ -394,7 +395,7 @@
 <div class="corner">
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">1</span><div class="banner" style="margin:0;max-width:34rem">◆ Request done: Claude Code changed vite.config.ts · Vite's client still loads until web restarts · 1&nbsp;min&nbsp;12&nbsp;s
 <div class="rc-acts"><span class="btn">Restart web</span><span class="n">2</span><span class="btn">Show Changes</span><span class="btn">Open Conversation</span></div></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -402,15 +403,17 @@
 <div class="bar"><b>devhost › Acme Shop › the result's slot while web restarts</b></div>
 <div class="work small">
 <div class="vlab">Restart web pressed with Enter</div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">3</span><span class="banner" style="margin:0;min-width:0">◆ Request done: Claude Code changed vite.config.ts · Vite's client still loads until web restarts <span class="btn focusring">Restarting web…</span></span></div>
-<div class="vlab">web is running again; the reload Vite asked for is held</div>
-<div class="toastrow" style="padding:0"><div class="toast">✓ Restarted web · 2.6 s</div></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start;margin-top:6px"><span class="n">4</span><span class="banner" style="margin:0;min-width:0">◆ Reload blocked · 1 reload held since 14:05 · web restarted at 14:05 <span class="btn">Reload</span> <span class="btn">Dismiss</span></span></div>
-<div class="vlab">Restart web when it cannot run now</div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">3</span><span class="banner" style="margin:0;min-width:0">◆ Request done: Claude Code changed vite.config.ts · Vite's client still loads until web restarts <span class="btn focusring">Restarting web… 3 s</span></span></div>
+<div class="vlab">the same slot once web runs again; the reload Vite asked for is held</div>
+<div class="row" style="justify-content:flex-end"><div class="toast">✓ Restarted web · 2.6 s</div></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start;margin-top:6px"><span class="n">4</span><span class="banner" style="margin:0;min-width:0">◆ Reload blocked · 2 reloads held since 14:02 · web restarted at 14:05 <span class="btn">Reload</span> <span class="btn">Dismiss</span></span></div>
+<div class="vlab">Restart web in other states</div>
 <div class="row"><span class="btn off">Restart web</span><span class="muted">Restart Stack is running · 3 of 6 started</span><span class="n">5</span></div>
-<div class="row" style="margin-top:3px"><span class="btn off">Restart web</span><span class="muted">The checkout ~/acme/.worktrees/fix-nav was deleted; its services still run from it</span><a>Return to Configured Checkout in Worktrees</a></div>
+<div class="row" style="margin-top:3px"><span class="btn off">Restart web</span><span class="muted">The worktree ~/acme/.worktrees/fix-nav was deleted; its services still run from it</span><a>Return to Configured Worktree in Worktrees</a></div>
 <div class="row" style="margin-top:3px"><span class="btn">Restart web</span><span class="muted">uses the accepted manifest; devhost.toml line 12 is not applied</span></div>
 <div class="row" style="margin-top:3px"><span class="btn off">Restart web</span><span class="muted">Lost connection to devhost; retrying · web: unknown · last seen 14:02</span></div>
+<div class="row" style="margin-top:3px"><span class="btn">Cancel Restart</span><span class="muted">web · queued: api is restarting</span></div>
+<div class="row" style="margin-top:3px"><span class="btn off">Restart web</span><span class="muted">Sign in with passkey or pair this browser to use devhost here</span></div>
 </div>
 </div>
 <div class="win">
@@ -423,7 +426,7 @@
 <div class="vlab">Bun, whose development script still loads</div>
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">8</span><span class="banner" style="margin:0;min-width:0">◆ Request done, but Bun's development script still loads after web restarted · reloads are still on <span class="btn">Disable Reloads</span> <span class="btn">Show Changes</span> <span class="btn">Open Conversation</span></span></div>
 <div class="vlab">the turn changed no file</div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">9</span><span class="banner" style="margin:0;min-width:0">◆ Claude Code changed no file · 48 s <span class="btn">Open Conversation</span> <span class="btn">Disable Reloads</span></span></div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">9</span><span class="box" style="margin:0;min-width:0">○ Claude Code changed no file · 48 s <span class="btn">Open Conversation</span> <span class="btn">Disable Reloads</span></span></div>
 <div class="vlab">the turn failed</div>
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">10</span><span class="banner bad" style="margin:0;min-width:0">✕ Request failed: Claude Code's turn ended with an error · 1 file changed before it stopped <span class="btn">Disable Reloads</span> <span class="btn">Show Changes</span> <span class="btn">Open Conversation</span></span></div>
 </div>
@@ -440,31 +443,31 @@
 </div>
 <div class="banner" style="margin:0;max-width:34rem">◆ Request done: Claude Code changed vite.config.ts · Vite's client still loads until web restarts · 1&nbsp;min&nbsp;12&nbsp;s
 <div class="rc-acts"><span class="btn">Restart web</span><span class="btn open">Show Changes</span><span class="btn">Open Conversation</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>Terminal › ~/acme</b><span>the stack's own terminal and log</span></div>
-<pre class="term">14:04:12 Disable Reloads: Claude Code changed vite.config.ts · Vite's client still loads until web restarts · 1&nbsp;min&nbsp;12&nbsp;s · from this page, conversation Turn off automatic reloads <span class="n">12</span></pre>
+<pre class="term">14:03:12 Disable Reloads: Claude Code changed vite.config.ts · Vite's client still loads until web restarts · 1&nbsp;min&nbsp;12&nbsp;s · from this page, conversation Turn off automatic reloads <span class="n">12</span></pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <b>Open Conversation</b> and <b>Show Changes</b> are labels <code>WORD-2</code> does not list yet, and <b>Copy</b> is named by <code>REV-5</code> but not by <code>WORD-2</code>; this proposal offers them for its list. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap"><div class="banner">Open conflict: <b>Open Conversation</b> (steps 3 to 5), <b>Show Changes</b> (steps 4 and 5), <b>Copy</b> (step 2, named by <code>REV-5</code> only), <b>Retry</b> (step 2) and <b>Reload</b> on <b>Reload blocked</b> beside <b>Reload Now</b> (step 6) are labels <code>WORD-2</code> does not list; this proposal offers them for its list, and the reference has not settled them.</div>
 <h2>5. Read the result and apply it</h2>
 <p>devhost still restarts nothing by itself to apply the agent's change. What changes: when the request's turn ends, the notice says what the agent changed and what devhost sees, offers the restart the change needs, and keeps a correct change from meeting the same warning and a second request on every load. There is no Undo: devhost cannot take back an agent's edit, so the result names its way back instead, and the page's own state survives because every reload waits for the person (<code>UNDO-5</code>, <code>UNDO-3</code>). Durations, clock times and paths follow one format ("1 min 12 s", "14:05", "~/acme") (<code>WORD-8</code>). Keys: the result's actions are Tab stops in the notice stack, its lead action first (<code>KEY-3</code>, <code>MENU-5</code>).</p>
-<ol><li><span class="n">1</span> When the turn ends (its delivery record completed, cancelled or failed, or its conversation closed, failed or gone), the slot shows the result in place of <b>Disable Reloads</b>, announced once and worded only from what devhost observed: web launched before the turn's edits and Vite's client still loads, so the change waits for a restart. It stays until web restarts or the person dismisses it, because the change is not applied yet (<code>FB-5</code>, <code>O24</code>, <code>FB-3</code>, <code>WORD-4</code>, <code>FB-6</code>).</li>
+<ol><li><span class="n">1</span> When the turn ends (its delivery record completed, cancelled or failed, or its conversation closed, failed or gone), the slot shows the result in place of <b>Disable Reloads</b>, announced once and worded only from what devhost observed: web launched before the turn's edits and Vite's client still loads, so the change waits for a restart. It stays until web restarts or the person dismisses it, because the change is not applied yet. From this result on, reloads count as disabled for web in every browser of the stack (step 6, callout 13) (<code>O56</code>, <code>FB-5</code>, <code>O24</code>, <code>FB-3</code>, <code>WORD-4</code>, <code>FB-6</code>).</li>
 <li><span class="n">2</span> <b>Restart web</b> leads: the Services panel's restart of the page's service, naming its one target in its label and accessible description, with its operation record (<code>MENU-5</code>, <code>SEL-1</code>, <code>SEL-3</code>, <code>ACT-1</code>).</li>
-<li><span class="n">3</span> Its progress and outcome show in this slot: the pressed button keeps focus as "Restarting web…", then "Restarted web · 2.6 s" (<code>FB-1</code>, <code>FB-2</code>, <code>KEY-11</code>, <code>WORD-4</code>).</li>
+<li><span class="n">3</span> Its progress and outcome show in this slot: the pressed button keeps focus as "Restarting web… 3 s", then "Restarted web · 2.6 s" in place of the result, which then gives way to <b>Reload blocked</b>'s count and, after the next load, to the result for the client. agent-chat's receipt names web with Restart Changed; with web the one changed service, both start the one restart, labelled <b>Restart web</b> (<code>O58</code>, <code>WORD-2</code>, <code>FB-1</code>, <code>FB-2</code>, <code>KEY-11</code>, <code>WORD-4</code>).</li>
 <li><span class="n">4</span> With <b>Hold Reloads</b> on, the reload the dev server asks for after its restart is held and joins <b>Reload blocked</b> (step 6), so the page does not reload under the person (<code>UNDO-3</code>).</li>
-<li><span class="n">5</span> <b>Restart web</b> is unavailable but focusable with its reason beside it, which is also its accessible description, while Restart Stack runs, or while web's repository is blocked by a deleted checkout, where a link to worktree-switch's <b>Return to Configured Checkout</b> in the Worktrees panel is the way out; while another service restarts it queues, and web shows queued. With devhost.toml rejected it stays available and names the change not applied; with the status stream lost, web reads unknown with the time it was last seen, never down (<code>HOLD-3</code>, <code>SEL-7</code>, <code>HOLD-4</code>, <code>MENU-5</code>, <code>HOLD-6</code>, <code>HOLD-2</code>, <code>HOLD-1</code>, <code>ACT-5</code>, <code>WORD-6</code>).</li>
-<li><span class="n">6</span> After the restart and the next load, a client that can show its state and is gone gets a success that closes by itself after 4 s and stays in the stack's log; the notice then shows no more while the client stays gone, as today (<code>FB-6</code>, <code>FB-7</code>, <code>O14</code>).</li>
+<li><span class="n">5</span> <b>Restart web</b> is unavailable but focusable with its reason beside it, which is also its accessible description, while Restart Stack runs, or while web's repository is blocked by a deleted worktree, where a link to worktree-switch's <b>Return to Configured Worktree</b> in the Worktrees panel is the way out; while another service restarts it queues, and web shows queued with <b>Cancel Restart</b>; on a browser elsewhere that has not signed in it reads <code>HOLD-7</code>'s reason. With devhost.toml rejected it stays available and names the change not applied; with the status stream lost, web reads unknown with the time it was last seen, never down (<code>HOLD-3</code>, <code>SEL-7</code>, <code>HOLD-4</code>, <code>MENU-5</code>, <code>HOLD-6</code>, <code>HOLD-2</code>, <code>HOLD-1</code>, <code>ACT-5</code>, <code>WORD-6</code>).</li>
+<li><span class="n">6</span> After the restart and the next load, a client that can show its state and is gone gets a success that closes by itself after its reading time, 5.1 s for its 12 words, counted from the next focus of the browser window when it arrived unfocused, and stays in the stack's log; the notice then shows no more while the client stays gone, as today (<code>FB-6</code>, <code>FB-7</code>, <code>O14</code>, <code>O53</code>).</li>
 <li><span class="n">7</span> A client that still loads and cannot show its state (Vite, which loads <code>/@vite/client</code> whatever <code>server.hmr</code> says, and Next.js) gets "devhost cannot tell" with <b>Show Changes</b> and <b>Dismiss</b>, never "Vite reloads this page" or <b>Disable Reloads</b>. After <b>Dismiss</b>, later loads of this stack and origin show no hot reload notice for that client until <b>Show Reload Notice</b> (<code>O24</code>, <code>UNDO-3</code>).</li>
-<li><span class="n">8</span> A client that can show its state and still loads after the restart: reloads are still on, and <b>Disable Reloads</b> leads, its popover offering the same conversation first (<code>O24</code>, <code>MENU-5</code>).</li>
+<li><span class="n">8</span> A client that can show its state and still loads after the restart: reloads are still on, so reloads no longer count as disabled, and <b>Disable Reloads</b> leads, its popover offering the same conversation first (<code>O24</code>, <code>MENU-5</code>, <code>O56</code>).</li>
 <li><span class="n">9</span> A turn that changed no file says so, with <b>Open Conversation</b> and <b>Disable Reloads</b>. A turn that also changed a manifest file, against the request, adds "also changed devhost.toml", and that hot reload's own outcome names every service it restarted and why; manifest-hot-reload reports it (<code>FB-3</code>, <code>O26</code>).</li>
 <li><span class="n">10</span> A failed turn, a dead agent process or a failed delivery is a failure that stays until dismissed or a new request succeeds, with <b>Disable Reloads</b> leading, its popover reopening with the last edited text; a second failure of the same request updates this report with its count (<code>FAIL-2</code>, <code>FAIL-3</code>, <code>FAIL-4</code>, <code>FB-6</code>, <code>MENU-5</code>).</li>
 <li><span class="n">11</span> <b>Show Changes</b> opens a popover anchored to the result, because a notice carries one sentence and links: the files the turn changed, not committed, with <b>Copy Reverse Patch</b>, the reverse of the agent's own edits, and <b>Ask to Undo</b>, which puts "Undo the changes you made in your last turn to vite.config.ts" into that conversation's composer, unsent; a file the record cannot reverse, such as one a shell command wrote, is listed with that warning; under the list, the agent's final reply, which says how to turn reloads back on. agent-chat builds the list and the patch, and devhost runs no Git command for it (<code>UNDO-5</code>, <code>O22</code>).</li>
 <li><span class="n">12</span> Every result is one outcome line in the stack's log and terminal, with its origin, and agent output carries the same facts in its own layout (<code>FB-7</code>, <code>FB-10</code>, <code>FB-11</code>, <code>WORD-9</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-02, reload-and-agents-12 · Backend: the turn's changed files and reverse patch, from agent-chat (Backend 3); the page's service and its launch time, from services-panel (Backend 4; <code>CC-25</code>); per-client evidence from fixtures, still to be settled (Backend 5)</p></div>
+<p class="fixes">Fixes reload-and-agents-02, reload-and-agents-12 · Backend: the turn's changed files and reverse patch, from agent-chat (Backend 3); the page's service and its launch time, from services-panel (Backend 4; <code>CC-25</code>); per-client evidence from fixtures, required before the per-client wording ships (Backend 5)</p></div>
 </section>
 
 <section class="step" id="hold-reloads">
@@ -477,7 +480,7 @@
 <div>web restarted at 14:05</div>
 <div>Changed: src/Button.tsx, vite.config.ts</div>
 <div class="rc-acts"><span class="btn">Reload</span><span class="btn">Dismiss</span></div></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -495,13 +498,13 @@
 <div class="corner">
 <div class="popover" style="width:min(100%,26rem)"><i class="caret-dn" style="right:133.5px"></i>
 <div class="from">Opened from Hold Reloads on the bar, with Enter</div>
-<div class="row"><span class="btn focusring">◉ Hold Reloads</span><b>On</b><span class="n">5</span></div>
+<div class="row"><span class="btn focusring">☑ Hold Reloads</span><b>On</b><span class="n">5</span></div>
 <div style="margin-top:4px">Holds every script's reload of this page, the dev server's and this app's own, such as after signing out. Your browser's refresh and devhost's own reloads always go through. <span class="n">6</span></div>
 <div class="row" style="margin-top:6px">◆ 2 reloads held<span class="sp"></span><span class="btn">Reload Now</span><span class="n">7</span></div>
 <div class="row" style="margin-top:4px"><span class="btn">Show Reload Notice</span></div>
 <div class="muted" style="margin-top:4px">This browser, for this stack and page origin</div>
 </div>
-<div class="row" style="justify-content:flex-end"><span class="n">4</span><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open">☑ Hold Reloads · ◆ 2 held ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><span class="n">4</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open">☑ Hold Reloads · ◆ 2 held ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -510,7 +513,7 @@
 <div class="pg" style="min-height:100px">
 <div class="corner">
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">8</span><div class="banner" style="margin:0">◆ 2 reloads pending <span class="btn">Reload Now</span></div></div>
-<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">☐ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">☐ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
@@ -522,11 +525,45 @@
 <div class="vlab">Reload pressed, then Stay answered at the page's "Leave site?" prompt; the dev server reloads once more</div>
 <div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="n">10</span><span class="banner" style="margin:0;min-width:0">◆ Reload blocked · 3 reloads held since 14:02 <span class="btn">Reload</span> <span class="btn">Dismiss</span></span><span class="tbar oneline"><span class="seg">☑ Hold Reloads ▾</span></span></div>
 <div class="vlab">Switch and Restart Stack picked in the Worktrees panel, which worktree-switch draws</div>
-<div class="box" style="margin:0"><b>Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main?</b> <span class="n">11</span><div>2 held reloads on this page are discarded by the reload</div></div>
+<div class="box" style="margin:0"><b>Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main?</b> <span class="n">11</span><div>Hold Reloads: 2 held reloads on this page are discarded by the switch</div></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>a chat turn that changed src/Button.tsx ends; no request has disabled reloads</span></div>
+<div class="work small">
+<div class="vlab">focus outside any text field: devhost reloads once</div>
+<div class="toastrow" style="padding:0"><div class="toast">✓ Reloaded to show Claude Code's change</div><span class="n">12</span></div>
+<div class="vlab">focus in chat's composer: nothing reloads</div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap;align-items:flex-start"><span class="banner" style="margin:0;min-width:0">◆ Reload blocked · 2 reloads held since 14:21 · The page reload this change needs waits for you <span class="btn">Reload Now</span> <span class="btn">Dismiss</span></span></div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>after the Disable Reloads result; a later chat turn changed src/Button.tsx</span></div>
+<div class="pg" style="min-height:250px">
+<div class="corner">
+<div class="popover" style="width:min(100%,26rem)"><i class="caret-dn" style="right:97.2px"></i>
+<div class="from">Opened from Hold Reloads on the bar</div>
+<div class="row"><span class="btn">☑ Hold Reloads</span><b>On</b></div>
+<div class="muted" style="margin-top:4px">Holds every script's reload of this page, the dev server's and this app's own … </div>
+<div class="row" style="margin-top:4px">Reloads disabled by your request at 14:05 · chat turns that change files end with Reload Page <span class="n">13</span></div>
+<div class="muted" style="margin-top:4px">Hold Reloads is kept in this browser, for this stack and page origin</div>
+</div>
+<div class="row" style="justify-content:flex-end"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open">☑ Hold Reloads ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: worktree-switch's question names a held reload as "Hold Reloads is keeping this page as it is; the switch reloads it", without a count; this proposal has it name this flow's count, "2 held reloads on this page are discarded by the reload". <a href="index.html#conflicts">See conflicts</a></div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › web page</b><span>docked chat at the same moment: the later turn's receipt</span></div>
+<div class="work small">
+<div class="dock"><h3>Chat · Restyle the buttons</h3>
+<div class="muted">Claude Code · idle</div>
+<div class="box" style="margin-top:6px">Changed 1 file: src/Button.tsx · Reload to see the change <span class="btn pri">Reload Page</span> <span class="n">14</span></div>
+<div class="in" style="display:block;margin-top:6px"><span class="muted">the composer</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cap"><div class="banner">Open conflict: toolbar-shell draws <b>Hold Reloads</b> as a pressed toggle; this page makes it a popover trigger whose switch, state and held count sit in its popover, accessible name and marker. <a href="index.html#conflicts">See conflicts</a></div>
 <h2>6. Keep the page through reloads</h2>
 <p><b>Hold Reloads</b> still holds every script reload of the page through the Navigation API: the dev server's, its reload after a restart, and the app's own <code>location.reload()</code>, a documented limitation whose explanation the popover gives. The browser's own refresh and devhost's own reloads always go through, and hot module replacement is never held, as today. What changes: held reloads are counted, explained and kept, never dropped, hidden or silently let through. The hold runs whenever the toolbar's script is injected and the person has it on, whatever other segment shows (<code>SEL-11</code>; toolbar-shell's). Keys: ArrowLeft and ArrowRight on the bar reach <b>Hold Reloads</b>; in its popover, Escape, Tab past the last control or a click outside closes it and returns focus to <b>Hold Reloads</b> (<code>KEY-4</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>SURF-2</code>).</p>
 <ol><li><span class="n">1</span> <b>Reload blocked</b> counts every held reload and says what devhost knows about them: how many since when, the cause it can see, here web's restart from the operation record or the service's launch time, and the files the published changed mark names under the page's service's watch paths, or "No watched file of web changed" when none did. A reverted edit leaves the list, because the mark compares content with what the running process launched with (<code>SEL-3</code>, <code>ACT-8</code>, <code>SEL-2</code>).</li>
@@ -537,10 +574,13 @@
 <li><span class="n">6</span> The switch's reach names everything it holds and what it never holds, the documented limitation included (<code>SEL-11</code>).</li>
 <li><span class="n">7</span> While any reload is held, the held count with <b>Reload Now</b>; while the hot reload notice is dismissed, <b>Show Reload Notice</b>; and where the choice is kept (<code>UNDO-3</code>, <code>FB-6</code>, <code>CC-9</code>).</li>
 <li><span class="n">8</span> Turning the hold off while reloads are held never reloads the page: <b>Reload blocked</b> becomes "2 reloads pending" with <b>Reload Now</b>, and later reloads go through; turning it on again holds again, and the pending count stays until a reload (<code>UNDO-3</code>, <code>CC-20</code>).</li>
-<li><span class="n">9</span> <b>Reload</b> and <b>Reload Now</b> are devhost's own reload. The reloaded page says what it applied, with focus on that sentence, never at the top of the document, a success that closes after 4 s; chat's unsent draft and page context come back with it (<code>FB-4</code>, <code>KEY-6</code>, <code>UNDO-2</code>, <code>O14</code>).</li>
+<li><span class="n">9</span> <b>Reload</b> and <b>Reload Now</b> are devhost's own reload. The reloaded page says what it applied, with focus on that sentence, never at the top of the document, a success that closes after its reading time, here the 4 s minimum; chat's unsent draft and page context come back with it (<code>FB-4</code>, <code>KEY-6</code>, <code>UNDO-2</code>, <code>O14</code>).</li>
 <li><span class="n">10</span> devhost's own reload lets exactly one navigation through: when the page stays, because the person answered Stay at the page's "Leave site?" prompt, the hold holds again at once and <b>Reload blocked</b> keeps its count, so the item never shows on while reloads go through (<code>UNDO-3</code>).</li>
-<li><span class="n">11</span> A worktree switch's question names the held reloads its reload discards, from this flow's count, and its outcome says it discarded them; worktree-switch draws both (<code>SEL-5</code>, <code>REV-3</code>, <code>FB-4</code>).</li></ol>
-<p class="fixes">Fixes journey-agent-fix-03, stack-scale-08, reload-and-agents-03, reload-and-agents-04, reload-and-agents-07 · Backend: the published changed mark from file content and each service's launch time, from services-panel (Backend 4; <code>CC-25</code>); devhost's own reload passes one navigation, browser code only (Backend 7; <code>CC-20</code>)</p></div>
+<li><span class="n">11</span> A worktree switch's question names the held reloads its reload discards, from this flow's count, and its outcome counts them; worktree-switch draws both (<code>SEL-5</code>, <code>REV-3</code>, <code>FB-4</code>).</li>
+<li><span class="n">12</span> While <b>Hold Reloads</b> is on and no request has disabled reloads, a chat turn that changed files and ends while this page, the one its message came from, holds reloads the turn caused applies them once as devhost's own reload, and the reloaded page shows "Reloaded to show Claude Code's change", announced once without moving focus, since no control started it. With focus in a text field, the page's or chat's composer, nothing reloads: <b>Reload blocked</b> says the reload waits for the person, with <b>Reload Now</b>, as the turn's receipt does. Nothing reloads while a turn runs, and a Disable Reloads request's own turn is never applied this way (<code>O57</code>, <code>UNDO-2</code>, <code>UNDO-3</code>, <code>FB-4</code>).</li>
+<li><span class="n">13</span> Once a Disable Reloads result reports the change, from its first "Request done", the Hold Reloads popover says reloads are disabled, by which request and what follows, and devhost never reloads the page by itself after a later turn, in any browser of the stack: the server keeps that record with the request (<code>O56</code>, <code>SEL-11</code>, <code>HOLD-8</code>, <code>CC-40</code>).</li>
+<li><span class="n">14</span> Each later turn that changed files ends with "Reload to see the change" and <b>Reload Page</b> on its receipt, devhost's own reload, which goes through the hold, clears the held count and lands focus on the reloaded page's outcome. agent-chat draws the receipt; what shows while chat is closed is agent-chat's turn-end signal, not a notice of this flow (<code>O56</code>, <code>FB-12</code>, <code>WORD-2</code>, <code>KEY-6</code>).</li></ol>
+<p class="fixes">Fixes journey-agent-fix-03, stack-scale-08, reload-and-agents-03, reload-and-agents-04, reload-and-agents-07 · Backend: the published changed mark from file content and each service's launch time, from services-panel (Backend 4; <code>CC-25</code>); devhost's own reload passes one navigation, browser code only (Backend 7; <code>CC-20</code>); the request's record and reloads disabled on the server, and the per-turn held count (Backend 8; <code>CC-38</code>, <code>CC-40</code>)</p></div>
 </section>
 
 <section class="changes">
@@ -559,8 +599,9 @@
 <li>The popover: agent, model, conversation choice, approval line, mode line and the request per dev server, and its "no verified switch" state</li>
 <li>Pending, waiting, stopped, unconfirmed and failed states with Open Conversation and Answer</li>
 <li>The result with Restart web, Show Changes, Copy Reverse Patch and Ask to Undo</li>
-<li>Counts, times, causes and changed files on Reload blocked; "Already current"; the held marker; pending reloads with Reload Now</li>
-<li>Undo and Show Reload Notice; the outcome of a reload that applied held reloads</li>
+<li>Counts, times, causes and changed files on Reload blocked; "Already current"; the held marker; pending reloads with Reload Now; Undo and Show Reload Notice</li>
+<li>Reloads recorded as disabled after a request's result; later chat turns end with "Reload to see the change" and Reload Page (<code>O56</code>)</li>
+<li>A chat turn's end applies this page's held reloads once, or waits with Reload Now while the person types (<code>O57</code>)</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li>Disable Reloads opens a popover; the request starts a new conversation unless the person picks one (<code>CC-15</code>, <code>O27</code>)</li>
@@ -573,16 +614,16 @@
 <li>Bun, Vite, Next.js and webpack detected as today, meaning only that the client loaded; the notice only with chat on</li>
 <li>No page context on the request; no second request while one is pending; no conversation joined unnamed</li>
 <li>Delivery unconfirmed and no resend; devhost never answers or pre-approves the agent's approvals</li>
-<li>The checkout resolved from the routed service, each send checked against it, the 8 MiB limit</li>
+<li>The worktree resolved from the routed service, each send checked against it, the 8 MiB limit</li>
 <li>devhost restarts nothing by itself; the hold also holds <code>location.reload()</code>, where the Navigation API exists</li>
 </ul></div>
 <div><h3>Backend work</h3><ul>
 <li>The live mode on the request (Backend 1; <code>CC-10</code>)</li>
 <li>The request followed in its own conversation (Backend 2; <code>CC-38</code>, <code>CC-40</code>)</li>
-<li>The turn's changed files and reverse patch, from agent-chat (Backend 3)</li>
-<li>The page's service, its launch time and changed files, from services-panel (Backend 4; <code>CC-25</code>, <code>CC-6</code>)</li>
-<li>Per-client fixtures and verified switches, still to be settled (Backend 5, 6)</li>
+<li>From sibling flows: the turn's changed files and reverse patch (agent-chat, Backend 3); the page's service, its launch time and changed files (services-panel, Backend 4; <code>CC-25</code>, <code>CC-6</code>)</li>
+<li>Per-client fixtures and verified switches; O25's state until then (Backend 5, 6)</li>
 <li>devhost's own reload passes one navigation (Backend 7)</li>
+<li>The request's record and reloads disabled on the server, and the per-turn held count a turn's end reads (Backend 8; <code>CC-40</code>)</li>
 </ul></div>
 </section>
 </main>

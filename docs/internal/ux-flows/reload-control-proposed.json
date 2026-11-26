@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -67,7 +67,7 @@
     },
     {
       "id": "outcome_phase",
-      "label": "Outcome + undo",
+      "label": "Outcome + way back",
       "fromCol": 3,
       "toCol": 5
     }
@@ -88,7 +88,7 @@
       "label": "Vite reloads this page",
       "sublabel": "Disable Reloads · Dismiss",
       "tag": "reload-and-agents-01",
-      "explanation": "With chat on, a page whose dev server's client loaded (today's detection of Bun, Next.js, Vite and webpack, read again as resources and elements arrive) shows the notice beside the bar: 'Vite reloads this page when files change' / 'Agent edits can reload it while you work.' with Disable Reloads and Dismiss (SURF-1). Visible text says reloads, never hot reloading (WORD-1). Disable Reloads keeps its label (O2), and its accessible description says an agent receives the request: 'Opens a request for Claude Code to turn off reloads in this checkout; nothing is sent until you press Send' (REV-5). The card has no live role, so this standing notice is never announced on load, and it sits last in FB-8's third group (FB-9, FB-8; keyboard-and-screen-reader-02, notices-and-feedback's, related). Collapsed, its one-line form opens the same popover (SURF-8); under the page's modal dialog it moves inside with the notice stack (SURF-11); toolbar-shell places both (chat-compose-04, toolbar-shell-01, toolbar-shell-07, related). Keys: Alt+Ctrl+B, then Tab or Shift+Tab (KEY-3, KEY-4, KEY-5). Resolves the switch-like label of reload-and-agents-01.",
+      "explanation": "With chat on, a page whose dev server's client loaded (today's detection of Bun, Next.js, Vite and webpack, read again as resources and elements arrive) shows the notice beside the bar: 'Vite reloads this page when files change' / 'Agent edits can reload it while you work.' with Disable Reloads and Dismiss (SURF-1). Visible text says reloads, never hot reloading (WORD-1). Disable Reloads keeps its label (O2), and its accessible description says an agent receives the request: 'Opens a request for Claude Code to turn off reloads in this worktree; nothing is sent until you press Send' (REV-5). The card has no live role, so this standing notice is never announced on load, and it sits in FB-8's third group, newest first (FB-9, FB-8; keyboard-and-screen-reader-02, notices-and-feedback's, related). Collapsed, its one-line form opens the same popover (SURF-8); under the page's modal dialog it moves inside with the notice stack (SURF-11); toolbar-shell places both (chat-compose-04, toolbar-shell-01, toolbar-shell-07, related). Keys: Alt+Ctrl+B, then Tab or Shift+Tab (KEY-3, KEY-4, KEY-5). Resolves the switch-like label of reload-and-agents-01.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/hotReloadNotice/components/HotReloadNotice.tsx",
@@ -118,7 +118,7 @@
       "label": "Review the request",
       "sublabel": "names agent · editable",
       "tag": "reload-and-agents-01",
-      "explanation": "Disable Reloads sends nothing: it opens a non-modal popover anchored to the notice, 'Ask Claude Code to turn off reloads?', every time, because the editable request is the question (SURF-2, REV-1, REV-5, O2, WORD-10). It names 'Claude Code · Haiku 4.5 · starts a new conversation', with each open conversation of this checkout as a radio option and new selected (SEL-8, O27); the approval line, 'Claude Code edits files without asking in this checkout' when the CLI never asks (O13); the fixed mode line 'This checkout (live) · main ~/acme · no worktree, commit or merge' (O1, SEL-4); and the request for the detected server, focused: Vite's server.hmr: false or Bun's development: { hmr: false }, telling the agent not to edit devhost.toml (O26); for Next.js, 'devhost knows no verified switch' above a generic request (O25). With the hold off it offers Hold Reloads. Enter inserts a line break and Send has no key (KEY-9); Escape, Cancel, Tab out or a click outside send nothing and return focus (REV-4, KEY-6, KEY-7, KEY-8). Resolves the unseen, generic one-click send of reload-and-agents-01.",
+      "explanation": "Disable Reloads sends nothing: it opens a non-modal popover anchored to the notice, 'Ask Claude Code to turn off reloads?', every time, because the editable request is the question (SURF-2, REV-1, REV-5, O2, WORD-10). It names 'Claude Code · Haiku 4.5 · starts a new conversation', with each open conversation of this worktree as a radio option and new selected (SEL-8, O27); the approval line, 'Never asks: Claude Code runs commands and edits without approval' when the CLI never asks (O13); the fixed mode line 'This worktree (live) · main ~/acme · no new worktree, commit or merge' (O1, SEL-4); and the request for the detected server, focused: Vite's server.hmr: false or Bun's development: { hmr: false }, telling the agent not to edit devhost.toml (O26); for Next.js, 'devhost knows no verified switch' above a generic request (O25). With the hold off it offers Hold Reloads. Enter inserts a line break and Send has no key (KEY-9); Escape, Cancel, Tab out or a click outside send nothing and return focus (REV-4, KEY-6, KEY-7, KEY-8). Resolves the unseen, generic one-click send of reload-and-agents-01.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
@@ -148,7 +148,7 @@
       "label": "Send in live mode",
       "sublabel": "one write · no resend",
       "tag": "reload-and-agents-01",
-      "explanation": "Send sends the text as edited, with no page context: POST /__devhost__/chat/sessions when it starts a conversation, then the chat socket's send with mode: 'live' and its commandId, into the conversation the popover named (O27, CC-10). Before a new conversation starts beside an agent chat did not start, Send expands in place into the second-agent question with Cancel focused, which keeps the request unsent (REV-3, REV-4, CC-14). The message carries the live mode's instructions, never the worktree, commit and merge workflow (O1, O19), and shows in its conversation with 'Mode: This checkout (live) · main ~/acme' and 'Added by devhost' (WORD-10, UNDO-8; agent-chat's). The agent edits vite.config.ts through its own approvals, which devhost never answers (REV-9). Chat does not open by itself (FB-1). The request is one operation whose ID is its commandId, kept per stack and page origin (ACT-1, CC-9); a delivery unconfirmed within 45 s reads 'Delivery unconfirmed' and is never resent (REV-12). Resolves the worktree prompt and the unnamed conversation of reload-and-agents-01.",
+      "explanation": "Send sends the text as edited, with no page context: POST /__devhost__/chat/sessions when it starts a conversation, then the chat socket's send with mode: 'live' and its commandId, into the conversation the popover named (O27, CC-10). Before a new conversation starts beside an agent chat did not start, Send expands in place into the second-agent question with Cancel focused, which keeps the request unsent (REV-3, REV-4, CC-14). The message carries the live mode's instructions, never the worktree, commit and merge workflow (O1, O19), and shows in its conversation with 'Mode: This worktree (live) · main ~/acme' and 'Added by devhost' (WORD-10, UNDO-8; agent-chat's). The agent edits vite.config.ts through its own approvals, which devhost never answers (REV-9). Chat does not open by itself (FB-1). The request is one operation whose ID is its commandId, kept on the server with its delivery record and read by every browser of the stack (ACT-1, CC-38, CC-40); a delivery unconfirmed within 45 s reads 'Delivery unconfirmed' and is never resent (REV-12). Resolves the worktree prompt and the unnamed conversation of reload-and-agents-01.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/hooks/useAgentChat.ts",
@@ -157,15 +157,15 @@
           "label": "Replaces: joins a running conversation"
         },
         {
-          "path": "apps/devhost/internal/devtools/chat_server.go",
-          "line": 252,
-          "end_line": 258,
+          "path": "apps/devhost/src/devtools/chat/transport.rs",
+          "line": 386,
+          "end_line": 397,
           "label": "Reuses: appends instructions to each send"
         },
         {
-          "path": "apps/devhost/internal/manifest/chat.go",
-          "line": 3,
-          "end_line": 5,
+          "path": "apps/devhost/src/manifest/types.rs",
+          "line": 9,
+          "end_line": 9,
           "label": "Replaces: worktree, commit and merge prompt"
         }
       ]
@@ -178,7 +178,7 @@
       "label": "Request sent · working",
       "sublabel": "Answer · Open Conversation",
       "tag": "reload-and-agents-08",
-      "explanation": "The popover closes and the notice keeps its slot with the request's progress, focus on its sentence: 'Request sent to Claude Code · working · 40 s', the time updated outside any live region, with Open Conversation (FB-5, FB-1, FB-9, KEY-6). When the agent asks, it reads 'Claude Code is waiting for you · Edit vite.config.ts?', rises to FB-8's first group, is announced once, and Answer opens docked chat on that conversation's decision card in one activation (REV-9, SURF-8, ACT-7). The request is followed in its own conversation, through the session list of every checkout of the stack and its delivery records (CC-38, CC-40), whatever conversation chat shows, after New Conversation or a switch, and whatever Chat Directory a development build selects; it survives reloads and closed tabs. Reloads its edits cause wait on Reload blocked. While pending it takes Disable Reloads' place, so no second request starts. Stop Turn ends it as 'Request stopped by you after 29 s' (FAIL-5). Resolves reload-and-agents-08 and reload-and-agents-11 (the request settled only while its conversation was open and the directory was Project).",
+      "explanation": "The popover closes and the notice keeps its slot with the request's progress, focus on its sentence: 'Request sent to Claude Code · working · 40 s', the time updated outside any live region, with Open Conversation (FB-5, FB-1, FB-9, KEY-6). When the agent asks, it reads 'Claude Code is waiting for you · Edit vite.config.ts?', rises to FB-8's first group, is announced once, and Answer opens docked chat on that conversation's decision card in one activation (REV-9, SURF-8, ACT-7). The request is followed in its own conversation, through the session list of every worktree of the stack and its delivery records (CC-38, CC-40), whatever conversation chat shows, after New Conversation or a switch, and whatever Chat Directory a development build selects; it survives reloads and closed tabs. Reloads its edits cause wait on Reload blocked. While pending it takes Disable Reloads' place, so no second request starts. Stop Turn ends it as 'Request stopped by you after 29 s' (FAIL-5). Resolves reload-and-agents-08 and reload-and-agents-11 (the request settled only while its conversation was open and the directory was Project).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
@@ -225,7 +225,7 @@
       "type": "backend",
       "label": "Restart web",
       "sublabel": "Services panel's restart",
-      "explanation": "Restart web is the Services panel's restart of the page's service, naming its one target in its label and accessible description (SEL-1, SEL-3): the same restart-service request with an operationId (ACT-1, CC-37). Its progress and outcome show in the result's slot, 'Restarting web…', then 'Restarted web · 2.6 s' (FB-1, FB-2, WORD-4). While Restart Stack runs it is unavailable but focusable, with 'Restart Stack is running · 3 of 6 started'; while another service restarts it queues (HOLD-3, SEL-7); while web's checkout is deleted it gives that checkout's reason (HOLD-4); with devhost.toml rejected it stays available, 'uses the accepted manifest; devhost.toml line 12 is not applied' (HOLD-6); on a lost stream it is unavailable with 'Lost connection to devhost; retrying' and web reads unknown, never down (HOLD-2, ACT-5). With Hold Reloads on, the reload Vite asks for after its restart is held and joins Reload blocked. It applies the restart reload-and-agents-02 left unsaid.",
+      "explanation": "Restart web is the Services panel's restart of the page's service, naming its one target in its label and accessible description (SEL-1, SEL-3): the same restart-service request with an operationId (ACT-1, CC-37). Its progress and outcome show in the result's slot, 'Restarting web… 3 s', then 'Restarted web · 2.6 s' (FB-1, FB-2, WORD-4). While Restart Stack runs it is unavailable but focusable, with 'Restart Stack is running · 3 of 6 started'; while another service restarts it queues (HOLD-3, SEL-7); while web's worktree is deleted it gives that worktree's reason (HOLD-4); with devhost.toml rejected it stays available, 'uses the accepted manifest; devhost.toml line 12 is not applied' (HOLD-6); on a lost stream it is unavailable with 'Lost connection to devhost; retrying' and web reads unknown, never down (HOLD-2, ACT-5). With Hold Reloads on, the reload Vite asks for after its restart is held and joins Reload blocked. It applies the restart reload-and-agents-02 left unsaid.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/shared/restartServices.ts",
@@ -321,7 +321,7 @@
       "label": "Notice hidden, with Undo",
       "sublabel": "Show Reload Notice later",
       "tag": "reload-and-agents-01",
-      "explanation": "Dismiss on the hot reload notice replaces it with 'Reload notice hidden' and Undo for O14's time, not counted while the pointer or focus is in it; Undo brings the notice back where it was with focus on Disable Reloads. Undo's accessible description says 'also in the Hold Reloads popover', where Show Reload Notice brings it back later, after a reload too: never a permanent hide (UNDO-3, FB-6, CC-20). The choice is kept per stack and page origin in this browser, never per checkout (SEL-11, CC-9). Resolves the permanent Dismiss of reload-and-agents-01.",
+      "explanation": "Dismiss on the hot reload notice replaces it with 'Reload notice hidden' and Undo for O14's time, not counted while the pointer or focus is in it; Undo brings the notice back where it was with focus on Disable Reloads. Undo's accessible description says 'also in the Hold Reloads popover', where Show Reload Notice brings it back later, after a reload too: never a permanent hide (UNDO-3, FB-6, CC-20). The choice is kept per stack and page origin in this browser, never per worktree (SEL-11, CC-9). Resolves the permanent Dismiss of reload-and-agents-01.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/components/App.tsx",
@@ -344,7 +344,7 @@
       "type": "security",
       "label": "Send unavailable",
       "sublabel": "reason · Copy · Hold",
-      "explanation": "When chat cannot take a message, the popover still shows the request with Copy and offers Hold Reloads; Send stays in place, focusable (aria-disabled), with one reason under it and as its accessible description (HOLD-5, MENU-3, HOLD-1): 'Chat is off in this stack's manifest: set [devtools.chat] enabled = true to send this request', 'No agent CLI is installed: install Claude Code or Codex, then use Refresh Agents in Chat Settings', 'Chat lost its connection to devhost; retrying', or after a lost status stream 'Lost connection to devhost; retrying' (HOLD-2). A deleted checkout gives its reason with Return to Configured Checkout (HOLD-4, MENU-5); a rejected manifest blocks nothing (HOLD-6). When chat stops taking messages while the popover is open, it stays open with the edited request, Send unavailable in place and focus kept (KEY-11): a proposed exception to HOLD-1 and REV-13, recorded in the proposal. Who may send it from another machine is network-exposure-01's."
+      "explanation": "When chat cannot take a message, the popover still shows the request with Copy and offers Hold Reloads; Send stays in place, focusable (aria-disabled), with one reason under it and as its accessible description (HOLD-5, MENU-3, HOLD-1): 'Chat is off in devhost.toml ([devtools.chat] enabled = false); running conversations stay reachable until they end', 'No coding agent found: devhost looks for codex and claude on devbox's PATH. Install one, then press Refresh Agents.', 'Lost connection to this conversation; reconnecting', or after a lost status stream 'Lost connection to devhost; retrying' (HOLD-2). A deleted worktree gives its reason with Return to Configured Worktree (HOLD-4, MENU-5); a rejected manifest blocks nothing (HOLD-6). When chat stops taking messages while the popover is open, it stays open with the edited request, Send unavailable in place and focus kept (KEY-11), as HOLD-5's clause for this popover says. A browser elsewhere that has not signed in reads 'Sign in with passkey or pair this browser to use devhost here' (HOLD-7, O36)."
     },
     {
       "id": "failed",
@@ -389,7 +389,7 @@
       "label": "Dismissed: 2 held shown",
       "sublabel": "marker on Hold Reloads",
       "tag": "reload-and-agents-04",
-      "explanation": "Dismiss on Reload blocked keeps the page as it is and leaves the held marker, '2 held', on Hold Reloads until a reload clears it, drawn with a shape of its own, never by color alone (SURF-8, UNDO-3, ACT-13); its accessible name reads 'Hold Reloads, on, 2 held', and its popover keeps the count with Reload Now. Collapsed, the badge carries the held reload: toolbar-shell's (toolbar-shell-01, related). A worktree switch names the held reloads in its question, '2 held reloads on this page are discarded by the reload', and its outcome says it discarded them (SEL-5, REV-3, FB-4; worktree-switch's). Resolves reload-and-agents-04 (after Dismiss, nothing showed that the page was out of date).",
+      "explanation": "Dismiss on Reload blocked keeps the page as it is and leaves the held marker, '2 held', on Hold Reloads until a reload clears it, drawn with a shape of its own, never by color alone (SURF-8, UNDO-3, ACT-13); its accessible name reads 'Hold Reloads, on, 2 held', and its popover keeps the count with Reload Now. Collapsed, the badge carries the held reload: toolbar-shell's (toolbar-shell-01, related). A worktree switch names the held reloads in its question, 'Hold Reloads: 2 held reloads on this page are discarded by the switch', and its outcome says it discarded them (SEL-5, REV-3, FB-4; worktree-switch's). Resolves reload-and-agents-04 (after Dismiss, nothing showed that the page was out of date).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/reloadHold/hooks/useReloadHold.ts",
@@ -402,6 +402,24 @@
           "line": 13,
           "end_line": 19,
           "label": "Replaces: toggle that shows nothing held"
+        }
+      ]
+    },
+    {
+      "id": "turnEnd",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "A chat turn ends",
+      "sublabel": "Reload Page · or one reload",
+      "tag": "reload-and-agents-03",
+      "explanation": "Once a Disable Reloads result reports the change, reloads count as disabled for web in every browser of the stack, kept on the server with the request's record, and the Hold Reloads popover says so (O56, SEL-11, HOLD-8, CC-40). From then on devhost never reloads the page by itself after a chat turn: each later turn that changed files ends with 'Reload to see the change' and Reload Page, devhost's own reload through the hold, drawn by agent-chat in the turn's receipt (O56, FB-12, WORD-2). Before that, with Hold Reloads on, a turn that changed files and ends while this page holds reloads it caused applies them once as devhost's own reload, and the reloaded page shows 'Reloaded to show Claude Code's change', announced without moving focus; with focus in a text field, the page's or chat's composer, nothing reloads and Reload blocked says 'The page reload this change needs waits for you' with Reload Now (O57, UNDO-2, UNDO-3). Nothing reloads while a turn runs, and the request's own turn is never applied this way.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/createDevtoolsSettingsStore.ts",
+          "line": 22,
+          "end_line": 22,
+          "label": "Reuses: Hold Reloads on by default"
         }
       ]
     }
@@ -505,6 +523,14 @@
       "to": "heldMarker",
       "label": "Dismiss",
       "role": "branch"
+    },
+    {
+      "id": "blocked-turnEnd",
+      "from": "blocked",
+      "to": "turnEnd",
+      "label": "chat turn ends",
+      "role": "branch",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -514,9 +540,9 @@
       "items": [
         "Removed: the one-click send; opening chat, switching it to the Project directory and joining the one open conversation unnamed; the fixed request that names no setting; the worktree, commit and merge instructions on this request; hiding the notice while a request is tracked; settling only in the open conversation and the Project directory; the permanent Dismiss; dropping a held reload when the hold is turned off; the own-reload flag left set after a cancelled reload; Reload blocked's fixed 'Something tried to reload this page.'",
         "Merged: the hot reload notice with the request's progress, waiting state and result in one notice slot; the Hold Reloads toggle, its held count, Reload Now and Show Reload Notice in one bar item with its popover",
-        "New: the popover with agent, model, conversation choice, approval line, mode line and the request per client; the no-verified-switch state; pending, waiting, stopped, unconfirmed and failed states with Open Conversation and Answer; the result with Restart web, Show Changes, Copy Reverse Patch and Ask to Undo; the request's record per stack and origin; held counts, times, causes and changed files on Reload blocked; Already current; the held marker; pending reloads with Reload Now; Undo and Show Reload Notice; the outcome of a reload that applied held reloads; per-client knowledge from fixtures",
+        "New: reloads recorded as disabled after a request's result, so later chat turns end with 'Reload to see the change' and Reload Page (O56); a chat turn's end applying this page's held reloads once, or waiting with Reload Now while the person types (O57); the popover with agent, model, conversation choice, approval line, mode line and the request per client; the no-verified-switch state; pending, waiting, stopped, unconfirmed and failed states with Open Conversation and Answer; the result with Restart web, Show Changes, Copy Reverse Patch and Ask to Undo; the request's record on the server, read by every browser of the stack; held counts, times, causes and changed files on Reload blocked; Already current; the held marker; pending reloads with Reload Now; Undo and Show Reload Notice; the outcome of a reload that applied held reloads; per-client knowledge from fixtures",
         "Changed: Disable Reloads opens a popover instead of sending, and the request starts a new conversation unless the person picks one (CC-15, O27); the notice shows the request's state across reloads instead of hiding; a failed request shows its result with Disable Reloads; the request settles from its own conversation in any directory; the request names the client's switch; turning the hold off keeps a held reload pending with Reload Now (CC-20); dismissing Reload blocked leaves the held marker; Dismiss is reversible (CC-20); Hold Reloads becomes a popover trigger; the words say reloads, not hot reloading (CC-31); the choices are kept per stack and page origin (CC-9)",
-        "Kept: Hold Reloads on by default, with no agent or project change, holding any dev server's location.reload(), server restarts included, without patching the page; the browser's refresh and devhost's own reloads never held, and Reload applying held reloads in one press; hot module replacement never held; detection of Bun, Vite, Next.js and webpack, meaning only that the client loaded, shown only with chat on; no page context in the request; no open conversation receiving it unchosen; a failed or cancelled send bringing back the way to ask again; no second request while one is pending; Delivery unconfirmed and no resend; devhost never answering or pre-approving the agent; the server resolving the checkout from the routed service, checking each send and keeping the 8 MiB limit; the hold also holding the app's own location.reload(), only where the Navigation API exists; devhost restarting nothing by itself"
+        "Kept: Hold Reloads on by default, with no agent and no change to the worktree's files, holding any dev server's location.reload(), server restarts included, without patching the page; the browser's refresh and devhost's own reloads never held, and Reload applying held reloads in one press; hot module replacement never held; detection of Bun, Vite, Next.js and webpack, meaning only that the client loaded, shown only with chat on; no page context in the request; no open conversation receiving it unchosen; a failed or cancelled send bringing back the way to ask again; no second request while one is pending; Delivery unconfirmed and no resend; devhost never answering or pre-approving the agent; the server resolving the worktree from the routed service, checking each send and keeping the 8 MiB limit; the hold also holding the app's own location.reload(), only where the Navigation API exists; devhost restarting nothing by itself"
       ]
     },
     {
@@ -535,33 +561,34 @@
       "dot": "violet",
       "title": "Backend work",
       "items": [
-        "The request's send carries mode: 'live' and the live mode's instructions, never the worktree workflow; agent-chat builds it, and the journey-agent-fix-01 stopgap ships the live text first (CC-10)",
-        "The request followed by its sessionId and commandId in its own conversation: every session of the stack listed and a delivery record per send in the journal; no new route (CC-38, CC-40)",
-        "The turn's changed files and the reverse patch of the agent's own edits, from the journal, with no Git command (O22; agent-chat builds it)",
-        "The page's service, its launch time and its changed files in the published state (CC-25, CC-6; services-panel builds it)",
-        "[discuss]: per-client fixtures (Bun, Vite, Next.js, webpack-dev-server) before and after each switch and a restart decide which clients can show their state and when Already current applies; the product owner approves the notice's changed claims (O24)",
-        "[discuss]: verified switches for Next.js and webpack; until then they get O25's state, an extension of O2",
-        "devhost's own reload passes exactly one navigation, so a reload cancelled at 'Leave site?' leaves the hold holding (browser code only)"
+        "The request's send carries mode: 'live' and the live mode's instructions, never the worktree workflow; agent-chat builds it, and its prompt stopgap ships the live text first (CC-10). Required",
+        "The request followed by its sessionId and commandId in its own conversation: every session of the stack listed and a delivery record per send in the journal; no new route (CC-38, CC-40). Required",
+        "The turn's changed files and the reverse patch of the agent's own edits, from the journal, with no Git command (O22; agent-chat builds it). Required",
+        "The page's service, its launch time and its changed files in the published state (CC-25, CC-6; services-panel builds it). Required",
+        "Per-client fixtures (Bun, Vite, Next.js, webpack-dev-server) before and after each switch and a restart decide which clients can show their state and when Already current applies; the notice's claims follow O24. Required before the per-client wording ships",
+        "Verified switches for Next.js and webpack; until then they get O25's state. Recommended",
+        "devhost's own reload passes exactly one navigation, so a reload cancelled at 'Leave site?' leaves the hold holding (browser code only). Required",
+        "The request's record and reloads disabled kept on the server with the conversation's delivery record, read by every browser of the stack, and the per-turn held count a turn's end applies (O56, O57, CC-38, CC-40). Required"
       ]
     },
     {
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-15: Disable Reloads opens a popover naming the agent and showing the editable request, scoped to this checkout; Hold Reloads is the way without an agent",
+        "CC-15: Disable Reloads opens a popover naming the agent and showing the editable request, scoped to this worktree; Hold Reloads is the way without an agent; the devtools AGENTS.md paragraph no longer selects the project target or hides the notice while a request runs",
         "CC-20: Dismiss is undone with Undo or Show Reload Notice; turning the hold off keeps a held reload pending with Reload Now",
         "CC-31: the docs say a page's dev server reloads it, not that it is served with hot reloading",
         "CC-32: CONTEXT.md gains Reloads",
-        "[discuss]: the docs' Disable Reloads paragraph, its client note and the Hold Reloads storage line need a CC-n of their own",
-        "Depends on: CC-9, CC-10, CC-14, CC-38 and CC-40 (agent-chat); CC-25 (services-panel); CC-1 and CC-3 (toolbar-shell)"
+        "Texts no CC-n covers yet, cited under REV-5, FB-5, O24, O27 and SEL-11: the docs' Disable Reloads paragraph, its client note, the Hold Reloads storage line, and the O56 sentence on later turns",
+        "Depends on: CC-9, CC-10, CC-14, CC-38 and CC-40 (agent-chat); CC-6, CC-25 and CC-37 (services-panel); CC-1 and CC-3 (toolbar-shell)"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
-        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+        "Designed against alexgorbatchev/devhost Rust main at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference revision 6",
+        "Drawn from the current diagram (frozen at the pre-Rust revision edb5c0fc) and the written proposal; sources cite only existing code a step reuses or replaces at 190a8bb5, and steps with no code yet have none"
       ]
     }
   ]
