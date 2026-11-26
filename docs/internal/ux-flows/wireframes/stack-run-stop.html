@@ -49,8 +49,9 @@
         <b>TLDR:</b> The terminal says when a stack is ready (keeping local URLs alongside remote previews),
         <code>devhost stack info</code> and <code>devhost status</code> report every service and rejection, parallel
         shutdown certifies that nothing remains within 30 s by default, <code>devhost upgrade</code> handles
-        self-managed updates while <code>restart</code> and <code>stack restart</code> replace supervisors, and
-        multi-stack commands print their set first and ask only when an agent's turn would end.
+        self-managed updates and then restarts every stack in a new devhost supervisor as <code>restart</code> does,
+        <code>stack restart</code> restarts one stack inside the shared supervisor, and multi-stack commands print their
+        set first and ask only when an agent's turn would end.
       </p>
       <p class="muted small">
         Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
@@ -279,7 +280,7 @@ Stops after 30 min without requests (idleTimeout) <span class="n">4</span></pre>
               <b>Terminal › an agent's shell</b><span>AGENT=1, output not a terminal: one line per change</span>
             </div>
             <pre class="term">$ AGENT=1 devhost start --detach
-devhost: Starting Acme Shop in the background from main /work/acme · 6 services · PID 84244
+devhost: Starting Acme Shop in the background from main /work/acme · 6 services · stack stk-3f2a9c41d7e05b68
 devhost: Starting Acme Shop · 2 of 6 running · waiting for api · health check 1 s of 30 s
 devhost: Starting Acme Shop · 5 of 6 running · waiting for worker · health check 3 s of 30 s
 devhost: Ready in 8.4 s: https://shop.acme.test/ · 6 of 6 running <span class="n">5</span></pre>
@@ -344,8 +345,9 @@ admin   https://admin.acme.test/</pre>
             </li>
             <li>
               <span class="n">5</span> When output is not a terminal, as for an agent or a script, the status line
-              becomes one line per change; agent output keeps the PID and absolute paths (<code>FB-10</code>,
-              <code>WORD-9</code>).
+              becomes one line per change; agent output adds the run's stack ID and keeps absolute paths, and no line
+              claims a PID for the stack, because every stack shares the devhost supervisor's (<code>FB-10</code>,
+              <code>WORD-9</code>, <code>O18</code>).
             </li>
             <li>
               <span class="n">6</span> Ctrl-C during the wait is a cancellation, never an error: it stops what had
@@ -391,7 +393,7 @@ admin   https://admin.acme.test/</pre>
               ><span>devhost stack info (short alias devhost status): api exited, docs changed, line 12 rejected</span>
             </div>
             <pre class="term">$ devhost status   <span class="muted"># identical to: devhost stack info</span>
-Acme Shop · main ~/acme · PID 84244 · detached · failed · 4 of 6 running · 1 exited · 1 not started · as of 14:02:31 <span class="n">1</span>
+Acme Shop · main ~/acme · detached · failed · 4 of 6 running · 1 exited · 1 not started · as of 14:02:31 <span class="n">1</span>
 api     exited with code 1 at 14:01 · devhost service restart api <span class="n">2</span>
 admin   not started · left out of this run · devhost service start admin
 docs    running · changed: docs/astro.config.mjs · https://docs.acme.test/
@@ -414,7 +416,7 @@ $ echo $?
               ><span>the same facts for programs (--json and --wait on both stack info and status)</span>
             </div>
             <pre class="term">$ AGENT=1 devhost stack info --json
-{"stack": "Acme Shop", "state": "failed", "pid": 84244, "manifest": "/work/acme/devhost.toml",
+{"stack": "Acme Shop", "stackId": "stk-3f2a9c41d7e05b68", "state": "failed", "manifest": "/work/acme/devhost.toml",
  "rejectedManifest": {"file": "devhost.toml", "line": 12, "key": "services.api.port"},
  "remotePreview": {"state": "offline", "since": "2026-11-25T14:12:04-08:00"},
  "services": [{"name": "api", "state": "exited", "exitCode": 1, "since": "2026-11-25T14:01:12-08:00"},
@@ -430,19 +432,21 @@ Restarted Acme Shop · 6 of 6 running · new automatic ports for api and docs ·
               <b>Terminal › ~/acme</b
               ><span>unresponsive control server, idle shutdown, and active serve session hint</span>
             </div>
-            <pre
-              class="term"
-            >$ devhost status   <span class="muted"># the stack's devhost process does not answer</span>
-Acme Shop's devhost process (PID 84244) does not answer; its state is unknown, last seen 14:02 <span class="n">8</span>
+            <pre class="term">$ devhost status   <span class="muted"># Acme Shop's control server does not answer</span>
+Acme Shop's control server does not answer; its state is unknown, last seen 14:02 <span class="n">8</span>
 api     exited with code 1 at 14:01 · last seen 14:02
 <span class="muted">…</span>
+Restart it in ~/acme with:
+devhost stack restart
+$ devhost status   <span class="muted"># the shared supervisor does not answer</span>
+The devhost supervisor (PID 84244) does not answer; every stack's state is unknown, Acme Shop last seen 14:02
 $ devhost status   <span class="muted"># the morning after an idle shutdown</span>
 Acme Shop is not running · stopped at 02:14 after 30 min without requests (idleTimeout)
 Start it again in ~/acme with:
 devhost start
-$ devhost status   <span class="muted"># in a folder with no stack while serve session "docs" runs</span>
+$ devhost status   <span class="muted"># in a folder with no stack while serve session docs.acme.test runs</span>
 No devhost.toml in ~/scratch or any parent folder · 1 serve session running (~/acme/docs)
-devhost stack info --session docs <span class="n">9</span></pre>
+devhost stack info --session docs.acme.test <span class="n">9</span></pre>
           </div>
           <div class="win">
             <div class="bar">
@@ -450,20 +454,20 @@ devhost stack info --session docs <span class="n">9</span></pre>
               ><span>finding stacks, interactive serve-session hint, and unchanged piped TSV</span>
             </div>
             <pre class="term">$ devhost stack find .
-Acme Shop  main ~/acme  PID 84244 · detached · 4 of 6 running <span class="n">10</span>
+Acme Shop  main ~/acme  detached · 4 of 6 running <span class="n">10</span>
 $ devhost stack list
-Acme Shop  main ~/acme                         PID 84244 · detached · 4 of 6 running · preview offline
-Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   PID 85102 · foreground · 6 of 6 running
-Blog       main ~/blog                         PID 86011 · detached · 2 of 2 running
+Acme Shop  main ~/acme                         detached · 4 of 6 running · preview offline
+Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   foreground · 6 of 6 running
+Blog       main ~/blog                         detached · 2 of 2 running
 1 serve session running (~/acme/docs) · devhost stack list --sessions
 All stacks on devbox: https://devhost.acme.test/ <span class="n">11</span>
 $ devhost stack list | cat
 84244	/work/acme/devhost.toml
-85102	/work/acme/.worktrees/fix-nav/devhost.toml
-86011	/work/blog/devhost.toml <span class="n">12</span>
+84244	/work/acme/.worktrees/fix-nav/devhost.toml
+84244	/work/blog/devhost.toml <span class="n">12</span>
 $ devhost stack find docs
-No manifest stack matches "docs", but serve session "docs" is running
-devhost stack info --session docs
+No manifest stack matches "docs", but serve session "docs.acme.test" is running
+devhost stack info --session docs.acme.test
 $ devhost stack find shopp
 No stack matches "shopp" · devhost stack list lists them all</pre>
           </div>
@@ -482,9 +486,11 @@ No stack matches "shopp" · devhost stack list lists them all</pre>
           </p>
           <ol>
             <li>
-              <span class="n">1</span> The header names the stack, its worktree, its PID, how it runs, its stack state
-              and its summary, leading with what needs the person, and the time of the snapshot, because this answer
-              does not update (<code>ACT-6</code>, <code>ACT-12</code>, <code>WORD-5</code>, <code>WORD-11</code>).
+              <span class="n">1</span> The header names the stack, its worktree, how it runs, its stack state and its
+              summary, leading with what needs the person, and the time of the snapshot, because this answer does not
+              update; it names no PID, because every stack shares the devhost supervisor's, and agent output adds the
+              stack ID (<code>ACT-6</code>, <code>ACT-12</code>, <code>WORD-5</code>, <code>WORD-11</code>,
+              <code>O18</code>).
             </li>
             <li>
               <span class="n">2</span> One line per service: its state word, cause and since when, its URL, changed-file
@@ -520,10 +526,13 @@ No stack matches "shopp" · devhost stack list lists them all</pre>
               <code>WORD-8</code>, <code>WORD-9</code>, <code>FB-1</code>, <code>O62</code>).
             </li>
             <li>
-              <span class="n">8</span> A stack whose devhost process runs but does not answer prints its last known
-              state marked with its age and exits 1, never an empty list or "not running"; a stopped stack names when
-              and why it stopped and the command that starts it, for <code>O15</code>'s 24 hours (<code>STATE-4</code>,
-              <code>STATE-3</code>, <code>ACT-5</code>, <code>ACT-10</code>, <code>STATE-2</code>).
+              <span class="n">8</span> A stack whose control server does not answer prints its last known state marked
+              with its age, offers <code>devhost stack restart</code> in its folder and exits 1, never an empty list or
+              "not running"; when the shared supervisor itself does not answer, one line about the supervisor names its
+              PID once, because every stack stalls with it, and exits 1. A paused foreground terminal (Ctrl-Z) suspends
+              only that terminal, so the stack keeps answering. A stopped stack names when and why it stopped and the
+              command that starts it, for <code>O15</code>'s 24 hours (<code>STATE-4</code>, <code>STATE-3</code>,
+              <code>ACT-5</code>, <code>ACT-10</code>, <code>STATE-2</code>, <code>R7-100</code>).
             </li>
             <li>
               <span class="n">9</span> When no manifest stack runs in the current directory and serve sessions are
@@ -539,7 +548,7 @@ No stack matches "shopp" · devhost stack list lists them all</pre>
               <code>--session</code> (<code>SEL-6</code>, <code>CC-34</code>, <code>serve-command-04</code>).
             </li>
             <li>
-              <span class="n">11</span> On a terminal each stack shows its name, worktree label, PID, how it runs, its
+              <span class="n">11</span> On a terminal each stack shows its name, worktree label, how it runs, its
               summary and offline preview flag, followed by any active serve-session hint (<code>--sessions</code>) and
               "All stacks on devbox: …"; a stack with leftovers of a killed run is listed with them (step 7)
               (<code>SEL-4</code>, <code>WORD-1</code>, <code>WORD-11</code>, <code>SURF-15</code>, <code>O61</code>,
@@ -548,8 +557,8 @@ No stack matches "shopp" · devhost stack list lists them all</pre>
             <li>
               <span class="n">12</span> Piped, or under <code>AGENT=1</code>, both commands print
               <code>&lt;PID&gt;&lt;TAB&gt;&lt;manifest path&gt;</code> byte for byte as today, because scripts and shell
-              completion read it; a search with no match says what was searched (<code>WORD-9</code>,
-              <code>SEL-10</code>, <code>STATE-2</code>).
+              completion read it; its PID field is the shared devhost supervisor's, the same on every line; a search
+              with no match says what was searched (<code>WORD-9</code>, <code>SEL-10</code>, <code>STATE-2</code>).
             </li>
           </ol>
           <p class="fixes">
@@ -603,11 +612,11 @@ Applied devhost.toml: restarted api (command changed) and worker (depends on api
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b><span>the stack's one log, whatever started it</span></div>
             <pre class="term">$ devhost logs -f api
-Run: devhost start --detach · PID 84244 · main ~/acme · 13:58:02 <span class="n">6</span>
+Run: devhost start --detach · stack stk-3f2a9c41d7e05b68 · main ~/acme · 13:58:02 <span class="n">6</span>
 14:01:10 api        Error: Cannot find module './db'
 14:01:12 Acme Shop  ERR: api exited with code 1 at 14:01
 14:02:40 Acme Shop  Restarted api · 2.6 s · from a page on shop.acme.test
-Run: devhost restart · PID 85502 · main ~/acme · 14:20:11
+Run: devhost restart · stack stk-9b04e7d2a61c3f85 · main ~/acme · 14:20:11
 14:20:15 api        listening on :4000
 $ devhost logs --path
 ~/.local/state/devhost/logs/stack-&lt;sha256&gt;.log <span class="n">7</span></pre>
@@ -623,9 +632,10 @@ $ devhost logs --path
             <code>devhost service restart --all</code> is the terminal form of in-process <b>Restart Stack</b>, which
             the toolbar, crash view, recovery pages and control API offer; its help says "Restart Stack in the browser"
             (<code>CC-11</code>, <code>MENU-6</code>, applied default of owner item q86), while
-            <code>devhost stack restart</code>, <code>devhost restart</code>, and <code>devhost upgrade</code> replace
-            the running devhost supervisor process (<code>O18</code>). These commands reach the running stack through
-            its control server on the loopback port recorded in the state directory.
+            <code>devhost stack restart</code> starts a new run of the stack inside the shared devhost supervisor and
+            <code>devhost restart</code> and <code>devhost upgrade</code> restart every stack and serve session in a new
+            supervisor running this executable (<code>O18</code>). These commands reach the running stack through its
+            control server on the loopback port recorded in the state directory.
           </p>
           <ol>
             <li>
@@ -658,11 +668,12 @@ $ devhost logs --path
             </li>
             <li>
               <span class="n">6</span> Foreground or detached, every stack appends to one log per manifest whose name no
-              replacement changes; each run starts with a header naming the command, the PID, the worktree and the time;
-              lines carry their time and one format, failures marked <code>ERR:</code> as warnings are
-              <code>WARN:</code>; <code>-f</code> follows across replacements and service names filter it. Every
-              operation from any origin is one outcome line here, so an outcome the toolbar closed stays readable
-              (<code>FB-7</code>, <code>FB-11</code>, <code>WORD-11</code>, <code>CC-21</code>, <code>CC-23</code>).
+              replacement changes; each run starts with a header naming the command, the run's stack ID (new for every
+              run, the PID being the shared supervisor's), the worktree and the time; lines carry their time and one
+              format, failures marked <code>ERR:</code> as warnings are <code>WARN:</code>; <code>-f</code> follows
+              across replacements and service names filter it. Every operation from any origin is one outcome line here,
+              so an outcome the toolbar closed stays readable (<code>FB-7</code>, <code>FB-11</code>,
+              <code>WORD-11</code>, <code>CC-21</code>, <code>CC-23</code>).
             </li>
             <li>
               <span class="n">7</span> <code>--path</code> prints where the log lives, for tools (<code>FB-7</code>).
@@ -687,7 +698,7 @@ $ devhost logs --path
               >
             </div>
             <pre class="term">$ devhost stop
-Stopping Acme Shop (main ~/acme, PID 84244) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working) <span class="n">1</span>
+Stopping Acme Shop (main ~/acme) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working) <span class="n">1</span>
 Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s · Ctrl-C forces them now <span class="n">2</span>
 Force-stopped mail and worker after 10 s: they ignored SIGTERM <span class="n">3</span>
 Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Claude Code, was working) <span class="n">4</span>
@@ -713,18 +724,18 @@ Acme Shop stopped at 14:10: Ctrl-C in this terminal</pre>
           <div class="win">
             <div class="bar">
               <b>Terminal › ~/scratch</b
-              ><span>no manifest stack running, while serve session "docs" runs (serve-command-04)</span>
+              ><span>no manifest stack running, while serve session docs.acme.test runs (serve-command-04)</span>
             </div>
             <pre class="term">$ devhost stop
 No devhost.toml in ~/scratch or any parent folder · 1 serve session running (~/acme/docs)
-devhost stop --session docs <span class="n">7</span></pre>
+devhost stop --session docs.acme.test <span class="n">7</span></pre>
           </div>
           <div class="win">
             <div class="bar">
               <b>Terminal › an agent's shell</b><span>AGENT=1: the same facts, one line per change</span>
             </div>
             <pre class="term">$ AGENT=1 devhost stop --timeout 45s
-devhost: Stopping Acme Shop (main /work/acme, PID 84244) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working)
+devhost: Stopping Acme Shop (main /work/acme, stack stk-3f2a9c41d7e05b68) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working)
 devhost: Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s
 devhost: Force-stopped mail and worker after 10 s: they ignored SIGTERM
 devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Claude Code, was working) <span class="n">8</span></pre>
@@ -746,8 +757,9 @@ devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Clau
           </p>
           <ol>
             <li>
-              <span class="n">1</span> The first line names the stack, its worktree, its PID as a detail, its size and
-              the conversations the stop will close, with each one's state; before it signals, the stop records why
+              <span class="n">1</span> The first line names the stack, its worktree, its size and the conversations the
+              stop will close, with each one's state, and no PID: every stack shares the devhost supervisor's, which
+              <code>devhost stop</code> asks over its socket and never signals; before it signals, the stop records why
               beside the stack's record so the stack's terminal, its open pages and its hostnames can say so (step 7)
               (<code>SEL-6</code>, <code>SEL-4</code>, <code>FB-4</code>, <code>ACT-10</code>, <code>WORD-1</code>,
               <code>WORD-11</code>).
@@ -797,9 +809,9 @@ devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Clau
               (<code>STATE-2</code>, <code>serve-command-04</code>).
             </li>
             <li>
-              <span class="n">8</span> Agent output gets the same facts with absolute paths, one line per change, on the
-              stream <code>reference/output.md</code> names for progress and outcomes (<code>WORD-9</code>,
-              <code>FB-11</code>).
+              <span class="n">8</span> Agent output gets the same facts with absolute paths and the run's stack ID, one
+              line per change, on the stream <code>reference/output.md</code> names for progress and outcomes
+              (<code>WORD-9</code>, <code>FB-11</code>).
             </li>
           </ol>
           <p class="fixes">
@@ -821,13 +833,13 @@ devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Clau
             </div>
             <pre class="term">$ devhost stop --worktrees
 3 stacks of the acme repository run: <span class="n">1</span>
-  Acme Shop  main ~/acme                         PID 84244 · detached
-  Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   PID 85102 · foreground · Claude Code working: "Fix the nav"
-  Acme Shop  Detached 3f9c2a1 ~/review/acme      PID 85390 · detached
+  Acme Shop  main ~/acme                         detached
+  Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   foreground · Claude Code working: "Fix the nav"
+  Acme Shop  Detached 3f9c2a1 ~/review/acme      detached
 Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N] y <span class="n">2</span>
 Stopped Acme Shop (main ~/acme) · 4.1 s
 Stopped Acme Shop (fix-nav ~/acme/.worktrees/fix-nav) · 3.8 s
-Acme Shop (Detached 3f9c2a1 ~/review/acme) was not stopped: its devhost process (PID 85390) belongs to another user <span class="n">3</span>
+Acme Shop (Detached 3f9c2a1 ~/review/acme) was not stopped: worker (PID 8830, port 4310) still runs after 30 s <span class="n">3</span>
 $ echo $?
 1</pre>
           </div>
@@ -859,11 +871,11 @@ $ echo $?
           </p>
           <ol>
             <li>
-              <span class="n">1</span> The set prints first: every stack of the repository with its worktree label, PID,
-              foreground or detached, and the conversation each would close with its state; a stack whose folder was
-              deleted is classified from the repository's worktree list, never by running Git in the missing folder
-              (<code>SEL-6</code>, <code>SEL-4</code>, <code>FB-4</code>, <code>FAIL-2</code>, <code>REV-11</code>,
-              <code>WORD-11</code>).
+              <span class="n">1</span> The set prints first: every stack of the repository with its worktree label,
+              foreground or detached (no PID, which every stack shares with the devhost supervisor), and the
+              conversation each would close with its state; a stack whose folder was deleted is classified from the
+              repository's worktree list, never by running Git in the missing folder (<code>SEL-6</code>,
+              <code>SEL-4</code>, <code>FB-4</code>, <code>FAIL-2</code>, <code>REV-11</code>, <code>WORD-11</code>).
             </li>
             <li>
               <span class="n">2</span> Only when the set would end an agent's turn that works or waits, a turn in a
@@ -873,8 +885,10 @@ $ echo $?
               <code>O33</code>).
             </li>
             <li>
-              <span class="n">3</span> A stack that cannot be stopped never ends the run: every stack is attempted, each
-              ends with its own line, and the command exits 1 naming each stack that still runs (<code>FAIL-1</code>).
+              <span class="n">3</span> A stack that cannot be stopped, such as one whose worker outlasts
+              <code>stopTimeout</code>, never ends the run: every stack is attempted, each ends with its own line naming
+              what still runs, and the command exits 1 naming each stack that still runs (<code>FAIL-1</code>,
+              <code>ACT-11</code>).
             </li>
             <li>
               <span class="n">4</span> Without a terminal, or under <code>AGENT=1</code>, it refuses with one line
@@ -930,7 +944,7 @@ $ echo $?
             </div>
           </div>
           <div class="win">
-            <div class="bar"><b>Terminal › ~/acme</b><span>after kill -9 of Acme Shop's devhost process</span></div>
+            <div class="bar"><b>Terminal › ~/acme</b><span>after kill -9 of the shared devhost supervisor</span></div>
             <pre class="term">$ devhost stack list
 Acme Shop is not running, but 2 services of its killed run still do: api (PID 8812, port 4000), worker (PID 8820) <span class="n">6</span>
 $ devhost start
@@ -947,10 +961,12 @@ Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <
             <code>DEVHOST_IDLE_TIMEOUT</code>), devhost never opens a browser, and only a terminal starts a stack. What
             changes is that every end says why, recently stopped stacks keep configured HTTPS routes and certificates
             active for 24 hours (<code>O15</code>, <code>O63</code>) while arbitrary unknown HTTPS hostnames keep strict
-            configured-hosts-only TLS, and the processes of a stack whose devhost process died are found and named
-            instead of answering unseen. Open pages of the stack learn the reason before their status stream closes, so
-            their lost-connection notice reads "Acme Shop stopped. Start it with devhost start in ~/acme";
-            notices-and-feedback draws that notice (<code>HOLD-2</code>, <code>ACT-5</code>).
+            configured-hosts-only TLS, and the service processes of a stack whose shared devhost supervisor died (<code
+              >kill -9</code
+            >
+            or a crash) are found and named instead of answering unseen. Open pages of the stack learn the reason before
+            their status stream closes, so their lost-connection notice reads "Acme Shop stopped. Start it with devhost
+            start in ~/acme"; notices-and-feedback draws that notice (<code>HOLD-2</code>, <code>ACT-5</code>).
           </p>
           <ol>
             <li>
@@ -1028,28 +1044,46 @@ Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <
             <pre class="term">$ devhost upgrade
 Downloading devhost 0.0.22 (verified SHA256SUMS) · replacing ~/.local/bin/devhost <span class="n">1</span>
 2 stacks and 1 serve session run in this state directory: <span class="n">2</span>
-  Acme Shop  main ~/acme   PID 84244 · detached
-  Blog       main ~/blog   PID 86011 · foreground
-  serve session ~/acme/docs   PID 86240 · keeps running
-Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0.22 <span class="n">3</span>
-Replaced Blog's devhost process: PID 86011 → 85530 · 4 s · devhost 0.0.22
-The serve session ~/acme/docs keeps running devhost 0.0.21; restart it in its terminal (or stop and re-run it if detached) to use devhost 0.0.22 <span class="n">4</span>
+  Acme Shop  main ~/acme   detached
+  Blog       main ~/blog   foreground
+  serve session for ~/acme/docs   detached
+Stopping every stack in the devhost supervisor · 2 of 3 stopped · forced in 24 s
+Restarted Acme Shop (main ~/acme) · 11 s <span class="n">3</span>
+Restarted Blog (main ~/blog) · 4 s
+Restarted the serve session for ~/acme/docs · 0.3 s <span class="n">5</span>
+Every stack now runs in a new devhost 0.0.22 supervisor (PID 85502)
 <span class="muted">when binary is externally managed or read-only:</span>
 Cannot swap /usr/local/bin/devhost (managed by Homebrew): upgrade with brew upgrade devhost, then run devhost restart
+<span class="muted">when a stack's folder is gone, or a serve session's folder cannot be opened:</span>
+Stopped Acme Shop (Detached 3f9c2a1 ~/review/acme): its folder ~/review/acme no longer exists
+Not restarted: the serve session for ~/acme/old-docs, because ~/acme/old-docs cannot be opened: no such file or directory. It keeps running in the previous devhost 0.0.21 supervisor.
+devhost stop --session old-docs.acme.test
 <span class="muted">when Acme Shop's shutdown outlasts stopTimeout (30 s default):</span>
-Acme Shop was not replaced: worker (PID 8820) is still stopping after 30 s; nothing was started
+Acme Shop was not restarted: worker (PID 8820) is still stopping after 30 s; nothing was started
 Start it again in ~/acme with:
 devhost start
 
 $ AGENT=1 devhost restart --yes
-devhost: Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0.22 · /work/acme/devhost.toml
-<span class="muted">…</span></pre>
+devhost: Restarted Acme Shop (main /work/acme) · stack stk-9b04e7d2a61c3f85 · 11 s · /work/acme/devhost.toml
+<span class="muted">…</span>
+devhost: Every stack now runs in a new devhost 0.0.22 supervisor (PID 85502)</pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>devhost stack restart after a local rebuild, while Blog shares the supervisor</span>
+            </div>
+            <pre class="term">$ devhost stack restart
+Restarting Acme Shop (main ~/acme) inside the devhost supervisor
+Still running devhost 0.0.21: Blog shares the devhost supervisor (PID 84244); devhost restart switches every stack to this executable <span class="n">4</span>
+Restarted Acme Shop (main ~/acme) · 6 of 6 running · 9 s</pre>
           </div>
           <div class="win">
             <div class="bar"><b>Terminal › ~/blog</b><span>Blog's own foreground terminal</span></div>
             <pre
               class="term"
-            >Replaced by devhost upgrade from another terminal at 14:02 · new PID 85530 <span class="n">5</span>
+            >Replaced by devhost upgrade at 14:02. Blog keeps running in the new devhost supervisor without this terminal. <span class="n">6</span>
+Follow and stop it with:
 devhost logs -f
 devhost stop
 $ echo $?
@@ -1059,12 +1093,12 @@ $ echo $?
             <div class="bar"><b>Terminal › ~/acme</b><span>a foreground Acme Shop reports each change once</span></div>
             <pre
               class="term"
-            >14:05:12 Started admin · https://admin.acme.test/ · 1.2 s · from a page on shop.acme.test <span class="n">6</span>
+            >14:05:12 Started admin · https://admin.acme.test/ · 1.2 s · from a page on shop.acme.test <span class="n">7</span>
 14:06:40 Restarted Acme Shop · 6 of 6 running · new automatic ports for api and docs · 14 s · from a page on shop.acme.test
-14:09:03 worker was terminated by SIGTERM (143) at 14:09:03, not sent by devhost <span class="n">7</span>
-14:11:20 mail stopped responding at 14:11: GET http://127.0.0.1:4100/ refused the connection; its status command reports it is not running <span class="n">8</span>
+14:09:03 worker was terminated by SIGTERM (143) at 14:09:03, not sent by devhost <span class="n">8</span>
+14:11:20 mail stopped responding at 14:11: GET http://127.0.0.1:4100/ refused the connection; its status command reports it is not running <span class="n">9</span>
 14:13:05 mail is running again at 14:13
-14:15:02 Applied config.toml: <span class="muted">…</span> · All stacks on devbox: https://devhost.acme.test:8443/ <span class="n">9</span></pre>
+14:15:02 Applied config.toml: <span class="muted">…</span> · All stacks on devbox: https://devhost.acme.test:8443/ <span class="n">10</span></pre>
           </div>
           <div class="win">
             <div class="bar"><b>Terminal › an agent's shell</b><span>offline, from this binary</span></div>
@@ -1073,22 +1107,25 @@ $ echo $?
 - Are the services up? devhost status / devhost stack info (exit 3 names what is not running)
 - Restart one service: devhost service restart &lt;service&gt; · every service: devhost service restart --all
 - Follow output: devhost logs -f · apply a manifest edit: devhost reload
-- Upgrade binary or replace supervisors: devhost upgrade · devhost restart · devhost stack restart <span class="n">10</span></pre>
+- Restart this stack: devhost stack restart · every stack on a new binary: devhost upgrade or devhost restart <span class="n">11</span></pre>
           </div>
         </div>
         <div class="cap">
-          <h2>8. Upgrade devhost, replace supervisors, and follow what a running stack reports</h2>
+          <h2>8. Upgrade devhost, restart stacks, and follow what a running stack reports</h2>
           <p>
-            Process replacement stops nothing when the executable is unavailable or a stack is the command's own
-            ancestor, re-checks each stack's identity just before its signal, keeps each stack's flags and worktrees,
-            and leaves the shared Caddy running (<code>REV-11</code>, <code>REV-13</code>). Under <code>O18</code>,
-            built-in <code>devhost upgrade</code> downloads, verifies and swaps user-writable installs and replaces
-            running stacks, while shipped <code>devhost restart</code> (global) and project-scoped
-            <code>devhost stack restart</code> (one stack, never asks, <code>REV-7</code>) stay on one verb for
-            dotfiles, package managers and local rebuilds and state clearly in help and output that they replace the
-            running devhost supervisor process (<code>O18</code>, <code>WORD-2</code>, <code>CC-31</code>,
-            <code>CC-36</code>). Every replacement uses step 5's unified parallel stop routine instead of giving up at
-            15 s (<code>O30</code>), and a running stack's terminal reports each change once instead of reprinting the
+            A restart stops nothing when the executable is unavailable or a run is the command's own ancestor, re-checks
+            each stack just before stopping it against the stack ID and root manifest it captured first, keeps each
+            stack's flags and worktrees, and leaves the shared Caddy running (<code>REV-11</code>,
+            <code>REV-13</code>). One devhost supervisor runs every stack and serve session of a state directory, and
+            under <code>O18</code> the three commands differ in what they restart: project-scoped
+            <code>devhost stack restart</code> (one stack, never asks, <code>REV-7</code>) starts a new run of its stack
+            inside that supervisor; shipped <code>devhost restart</code> restarts every stack and serve session in a new
+            supervisor running this executable; built-in <code>devhost upgrade</code> swaps a user-writable install and
+            then does what <code>devhost restart</code> does, because a new executable on its own only warns and starts
+            new stacks inside the old supervisor. Help and output say which, and no line names a PID for a stack
+            (<code>O18</code>, <code>MENU-6</code>, <code>WORD-2</code>, <code>CC-31</code>, <code>CC-36</code>). Every
+            restart uses step 5's unified parallel stop routine and <code>stopTimeout</code> instead of giving up at 15
+            s (<code>O30</code>), and a running stack's terminal reports each change once instead of reprinting the
             stack.
           </p>
           <ol>
@@ -1096,41 +1133,54 @@ $ echo $?
               <span class="n">1</span> <code>devhost upgrade</code> looks up the latest GitHub Release (skipping
               <code>media</code>), verifies <code>SHA256SUMS</code>, atomically swaps a user-writable binary, and
               clearly reports read-only paths, externally managed installs (dotfiles, package managers), or protected
-              <code>999.0.0-dev--…</code> dev builds without modifying them (<code>O18</code>, <code>FAIL-2</code>).
+              <code>999.0.0-dev--…</code> dev builds without modifying them; after a swap it runs
+              <code>devhost restart</code>'s step, so no stack keeps the old executable (<code>O18</code>,
+              <code>FAIL-2</code>).
             </li>
             <li>
               <span class="n">2</span> <code>devhost restart</code> and <code>devhost upgrade</code> print their set
-              first, as in step 6, with each stack's worktree, PID and how it runs, listing the serve sessions of the
-              state directory (which keep running). They ask or refuse only when the set would end an agent's turn, with
+              first, as in step 6, with each stack's worktree and how it runs and the serve sessions of the state
+              directory, which restart with them. They ask or refuse only when the set would end an agent's turn, with
               <code>--yes</code>, <code>--dry-run</code> and <code>--timeout</code>, and the documented post-upgrade
               step passes <code>--yes</code> (<code>SEL-6</code>, <code>REV-7</code>, <code>O30</code>,
               <code>O31</code>, <code>O33</code>, <code>CC-12</code>, <code>CC-36</code>).
             </li>
             <li>
-              <span class="n">3</span> Each stack waits for its old devhost process's parallel shutdown up to
-              <code>O30</code>'s <code>stopTimeout</code> (30 s default, widening for daemon overrides &gt; 20 s) with
-              step 5's progress line, then starts from the new executable with the services it runs at that moment,
-              those started later included, and reports one line. A stack that stopped after the command captured it
-              reads "Acme Shop had already stopped; not replaced", never a failure; one whose manifest was saved
-              meanwhile is still replaced, because the check compares its PID, start identity and root manifest; one
-              whose shutdown outlasts <code>stopTimeout</code> is named with what still stops and the command that
-              starts it, and the command exits 1 (<code>O30</code>, <code>ACT-11</code>, <code>SEL-7</code>,
-              <code>REV-13</code>, <code>FAIL-1</code>, <code>FAIL-5</code>, <code>UNDO-5</code>, <code>CC-35</code>).
+              <span class="n">3</span> They capture every run's launch first, then stop the old supervisor's runs
+              through step 5's routine up to <code>O30</code>'s <code>stopTimeout</code> (30 s default, widening for
+              daemon overrides &gt; 20 s) with its progress line, start one new supervisor running this executable and
+              start each stack in it with the services it runs at that moment, those started later included. Each stack
+              reports one line by name and worktree, and one line at the end names the new supervisor with its version
+              and its PID. A stack that stopped after the capture reads "Acme Shop had already stopped; not restarted",
+              never a failure; one whose manifest was saved meanwhile is still restarted, because the check compares the
+              stack ID and root manifest; one whose folder was removed is stopped and says so; one whose shutdown
+              outlasts <code>stopTimeout</code> is named with what still stops and the command that starts it, and the
+              command exits 1 (<code>O30</code>, <code>ACT-11</code>, <code>SEL-7</code>, <code>REV-13</code>,
+              <code>FAIL-1</code>, <code>FAIL-5</code>, <code>UNDO-5</code>, <code>CC-35</code>).
             </li>
             <li>
-              <span class="n">4</span> A serve session left running says which devhost it still runs and how to move it
-              to the new one (<code>O31</code>, <code>CC-36</code>).
+              <span class="n">4</span> <code>devhost stack restart</code> ends this project's run and starts a new one,
+              with a new stack ID, inside the shared supervisor, leaving its other stacks running. After a rebuild it
+              moves to this executable only when no other stack shares the supervisor; otherwise it keeps the running
+              one and says so once, naming the supervisor's PID and <code>devhost restart</code> (<code>O18</code>,
+              <code>MENU-6</code>, <code>WORD-2</code>).
             </li>
             <li>
-              <span class="n">5</span> A replaced foreground stack prints which command replaced it (<code
-                >devhost upgrade</code
-              >, <code>devhost restart</code>, or <code>devhost stack restart</code>), when, the new PID and the
-              commands that follow and stop the replacement, and exits 0, never 143; open pages reconnect to the
-              replacement and say so once (<code>FAIL-5</code>, <code>ACT-10</code>, <code>O18</code>,
-              <code>CC-24</code>).
+              <span class="n">5</span> Serve sessions restart in the new supervisor too. A file serve session whose
+              folder cannot be opened keeps running in the previous supervisor until it is stopped, is reported "Not
+              restarted" with <code>devhost stop --session &lt;name&gt;</code> on its own line, and the command exits 1
+              (<code>O31</code>, <code>FAIL-1</code>, <code>CC-36</code>).
             </li>
             <li>
-              <span class="n">6</span> Every operation on a running stack, from any origin, prints one outcome line with
+              <span class="n">6</span> A replaced foreground stack or serve session prints which command replaced it
+              (<code>devhost upgrade</code>, <code>devhost restart</code>, or <code>devhost stack restart</code>) and
+              when, that its new run keeps running in the devhost supervisor without this terminal, and on their own
+              lines the commands that follow and stop it (<code>devhost stop --session &lt;name&gt;</code> for a serve
+              session); it exits 0, never 143, and prints no PID. Open pages reconnect to the new run and say so once
+              (<code>FAIL-5</code>, <code>ACT-10</code>, <code>O18</code>, <code>CC-24</code>).
+            </li>
+            <li>
+              <span class="n">7</span> Every operation on a running stack, from any origin, prints one outcome line with
               its time and origin in the stack's terminal and log, never the whole URL list again, and services devhost
               stops for an operation (Restart Stack, a switch, a hot reload, a shutdown, a failed health check) never
               print as exits waiting for a restart; a switch's line, in worktree-switch's words, names both worktrees by
@@ -1138,22 +1188,22 @@ $ echo $?
               <code>WORD-5</code>, <code>WORD-11</code>, <code>CC-22</code>).
             </li>
             <li>
-              <span class="n">7</span> An exit from outside names the signal, its status, the time and whether devhost
+              <span class="n">8</span> An exit from outside names the signal, its status, the time and whether devhost
               sent it (<code>FAIL-3</code>, <code>FAIL-5</code>, <code>WORD-8</code>).
             </li>
             <li>
-              <span class="n">8</span> A daemon that stops on its own prints one line naming its check and what its
+              <span class="n">9</span> A daemon that stops on its own prints one line naming its check and what its
               status command reported, and one line when it recovers, never one per poll (<code>FAIL-3</code>).
             </li>
             <li>
-              <span class="n">9</span> A devhost config file save prints its outcome, whose change summary
+              <span class="n">10</span> A devhost config file save prints its outcome, whose change summary
               proxy-settings words, and "All stacks on devbox: …" when the directory URL moves; a rejected manifest edit
               prints manifest-hot-reload's "not applied" line with its file and line, and a blocked repository is named
               once with its sentence (<code>FB-3</code>, <code>SURF-15</code>, <code>MENU-4</code>, <code>HOLD-4</code>,
               <code>O61</code>).
             </li>
             <li>
-              <span class="n">10</span> <code>devhost skill</code> prints the agent guidance embedded in this binary,
+              <span class="n">11</span> <code>devhost skill</code> prints the agent guidance embedded in this binary,
               for this version and offline, naming <code>devhost stack info</code> / <code>devhost status</code>,
               <code>devhost service</code>, <code>devhost logs</code>, <code>devhost reload</code>,
               <code>devhost upgrade</code>, <code>devhost restart</code> and <code>devhost stack restart</code>;
@@ -1167,10 +1217,11 @@ $ echo $?
           <p class="fixes">
             Fixes stack-run-stop-13, stack-run-stop-15, stack-run-stop-02, stack-scale-07, worktree-switch-04,
             interrupted-operations-04, manifest-hot-reload-2-02, proxy-settings-04, stack-run-stop-12 · Backend:
-            <code>devhost upgrade</code> plus replacement by identity on <code>restart</code> /
-            <code>stack restart</code> with parallel stop routine and current selection, foreground handoff; exit,
-            daemon and proxy lines; one outcome line per operation from any origin; offline embedded skill (Backend 5,
-            11, 14, 16; <code>CC-24</code>, <code>CC-31</code>, <code>CC-35</code>, <code>CC-36</code>)
+            <code>devhost upgrade</code> (swap, then <code>devhost restart</code>'s step); restarts re-checked by stack
+            ID and root manifest, with the parallel stop routine, current selection, serve sessions and foreground
+            handoff; exit, daemon and proxy lines; one outcome line per operation from any origin; offline embedded
+            skill (Backend 5, 11, 14, 16; <code>CC-24</code>, <code>CC-31</code>, <code>CC-35</code>,
+            <code>CC-36</code>)
           </p>
         </div>
       </section>
@@ -1180,11 +1231,13 @@ $ echo $?
           <h3>Removed</h3>
           <ul>
             <li>
-              "Stopping 1 active stack process(es)…", "Sending SIGTERM to process n…" and PIDs as the stop's subject
+              "Stopping 1 active stack process(es)…", "Sending SIGTERM to process n…" and the shared supervisor's PID on
+              per-stack lines (stop, <code>stack info</code>, <code>stack list</code>, restart lines)
             </li>
             <li>
               <code>devhost stop</code> giving up after 15 s with no list of what still runs, duplicate shutdown signals
-              (<code>interrupted-operations-06</code>), and <code>stack restart</code>'s fixed 15 s
+              (<code>interrupted-operations-06</code>), and the fixed 15 s of <code>stack restart</code> and
+              <code>restart</code>
             </li>
             <li>
               "devhost is waiting for a restart" and "<span style="font-variant-ligatures: none">[ERROR]</span> received
@@ -1231,7 +1284,8 @@ $ echo $?
           <h3>New</h3>
           <ul>
             <li>
-              <code>devhost upgrade</code> (<code>O18</code>), <code>devhost status</code> alias for extended
+              <code>devhost upgrade</code>, which swaps the executable and then runs <code>devhost restart</code>'s step
+              (<code>O18</code>), <code>devhost status</code> alias for extended
               <code>devhost stack info [--json] [--wait]</code> (<code>O62</code>), <code>devhost logs</code>,
               <code>devhost reload</code>, <code>devhost service start|stop|restart &lt;service|group&gt;…</code> and
               <code>devhost service restart --all</code> (<code>CC-11</code>),
@@ -1278,15 +1332,16 @@ $ echo $?
               and certifies its end within <code>stopTimeout</code> (<code>O30</code>, <code>CC-35</code>)
             </li>
             <li>
-              Shipped <code>devhost restart</code> and <code>devhost stack restart</code> clearly state supervisor
-              replacement (<code>O18</code>, <code>CC-31</code>); a replaced foreground stack exits 0
-              (<code>CC-24</code>); <code>restart</code> / <code>upgrade</code> leave serve sessions running
+              Help and output say that <code>devhost stack restart</code> restarts one stack inside the shared
+              supervisor and <code>devhost restart</code> every stack and serve session in a new one, naming stacks, not
+              PIDs (<code>O18</code>, <code>CC-31</code>); a replaced foreground stack hands off and exits 0
+              (<code>CC-24</code>); a serve session whose folder cannot be opened is reported, not hidden
               (<code>O31</code>, <code>CC-36</code>)
             </li>
             <li>
-              A replacement keeps the services that run now; a foreground stack writes the per-manifest log
-              (<code>CC-21</code>); agent output keeps whole errors on one <code>ERR:</code> line (<code>CC-23</code>,
-              <code>CC-30</code>); Rust lifecycle tests update to match
+              A restart keeps the services that run now; log headers name the run's stack ID; a foreground stack writes
+              the per-manifest log (<code>CC-21</code>); agent output keeps whole errors on one <code>ERR:</code> line
+              (<code>CC-23</code>, <code>CC-30</code>); Rust lifecycle tests update to match
             </li>
           </ul>
         </div>
@@ -1307,8 +1362,9 @@ $ echo $?
               configured-hosts-only TLS for arbitrary unknown HTTPS hostnames (<code>O63</code>)
             </li>
             <li>
-              <code>stop --worktrees</code> touches only the named repository's stacks; replacements stop nothing
-              without their executable and re-check identity before each signal
+              <code>stop --worktrees</code> touches only the named repository's stacks; restarts stop nothing without
+              their executable or for the command's own ancestor, and re-check each stack's ID before stopping it;
+              <code>devhost stop</code> asks the shared supervisor over its socket and never signals it
             </li>
             <li>
               Two output contracts with the same facts and exit codes; devhost never opens a browser; idle shutdown as
@@ -1330,8 +1386,9 @@ $ echo $?
               <code>--dry-run</code> (Backend 3, 4; <code>CC-12</code>)
             </li>
             <li>
-              <code>devhost upgrade</code> and identity-checked replacement; one log per manifest (Backend 5, 6;
-              <code>CC-24</code>, <code>CC-21</code>, <code>CC-31</code>, <code>CC-36</code>)
+              <code>devhost upgrade</code> on <code>devhost restart</code>'s export, drain and start-in-a-new-supervisor
+              step; restarts re-checked by stack ID; one log per manifest (Backend 5, 6; <code>CC-24</code>,
+              <code>CC-21</code>, <code>CC-31</code>, <code>CC-36</code>)
             </li>
             <li>
               Extended <code>devhost stack info</code> / <code>devhost status</code> (<code>O62</code>),
