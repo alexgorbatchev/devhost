@@ -14,6 +14,6 @@ export function nativeArray(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : [];
 }
 export function nativeArgs(value: unknown): ToolCallMessagePart["args"] {
-  const parsed = z.record(z.string(), z.json()).safeParse(value);
-  return parsed.success ? parsed.data : {};
+  const parsed = z.json().safeParse(value);
+  return parsed.success && isNativeRecord(parsed.data) ? parsed.data : {};
 }
