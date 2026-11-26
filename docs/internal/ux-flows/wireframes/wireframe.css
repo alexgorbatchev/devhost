@@ -225,9 +225,12 @@ table.t {
   background: var(--selbar);
   font-size: 12px;
 }
+/* Buttons and fields keep a boundary of at least 3:1 against every surface they sit on (WF-6): --edge
+   measures 3.4:1 on --bar and --raised and 4.1:1 on --bg. Primary, destructive, edited and invalid
+   variants set their own border below. */
 .btn {
   display: inline-block;
-  border: 1px solid var(--line);
+  border: 1px solid var(--edge);
   border-radius: 5px;
   padding: 1px 9px;
   background: var(--bar);
@@ -275,7 +278,7 @@ table.t {
 .in {
   display: inline-block;
   min-width: 9rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--edge);
   border-radius: 4px;
   padding: 1px 6px;
   background: var(--field);
@@ -455,11 +458,26 @@ kbd {
   margin: 6px 0;
   background: var(--card);
 }
+/* Column counts that divide the box count, so no box is left alone on a row: six or five boxes in
+   three columns, four in two, then two columns and one as the window narrows. */
 .changes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: 30px;
+}
+.changes:has(> div:nth-child(4):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .changes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .changes {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .changes div {
   background: var(--card);
@@ -585,18 +603,34 @@ header.page:has(+ .key) {
     box-shadow: 0 4px 12px #0009;
   }
 }
+/* The key band's height, measured with Maple Mono at every width from 2560 to 760 px (2026-11-25): 55 px from 2560 to 2176, 79 px from 2175 to 1674, 102 px from 1673 to 1275, 126 px from 1274 to 1043, 149 px from 1042 to 1014, 166 px from 1013 to 901, 32 px from 900 to 760. A page whose band wraps differently sets its own values; re-measure after changing the legend,
+   the contents nav or the font. */
 html {
   scroll-padding-top: calc(var(--key-h, 3.5rem) + 10px);
 }
-@media (max-width: 1400px) {
+@media (max-width: 2175px) {
   :root {
     --key-h: 5rem;
   }
 }
-/* Below about 1045 px the eight-entry legend wraps to a fourth row (102 px band). */
-@media (max-width: 1080px) {
+@media (max-width: 1673px) {
   :root {
     --key-h: 6.4rem;
+  }
+}
+@media (max-width: 1274px) {
+  :root {
+    --key-h: 7.9rem;
+  }
+}
+@media (max-width: 1042px) {
+  :root {
+    --key-h: 9.4rem;
+  }
+}
+@media (max-width: 1013px) {
+  :root {
+    --key-h: 10.4rem;
   }
 }
 @media (max-width: 900px) {
@@ -694,4 +728,244 @@ html {
 }
 .mock .vlab:first-child {
   margin-top: 0;
+}
+
+/* The legend's state glyphs and notice kinds (WF-2, WF-3). Their words live here once, so every
+   page's legend says the same thing: a page puts <span class="lg-states"></span> and
+   <span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+   at the end of its .legend, then re-measures its key band. */
+.legend .lg-states::before {
+  content: "States: ● running ○ not started ◐ starting or stopping ■ stopped ✕ exited ▲ failed ⊘ blocked ◇ external ◆ condition ? unknown ⏸ paused";
+}
+.legend .lg-kinds {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+}
+.legend .lg-kinds::before {
+  content: "Notices:";
+}
+.legend .lg-kinds i {
+  font-style: normal;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.legend .lg-kinds .cond {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+.legend .lg-kinds .cond::before {
+  content: "◆ condition";
+}
+.legend .lg-kinds .fail {
+  background: var(--badbg);
+  color: var(--bad);
+}
+.legend .lg-kinds .fail::before {
+  content: "▲ ✕ failure";
+}
+.legend .lg-kinds .ok {
+  background: var(--okbg);
+  color: var(--ok);
+}
+.legend .lg-kinds .ok::before {
+  content: "✓ success";
+}
+.legend .lg-kinds .info {
+  background: var(--accbg);
+  color: var(--acc);
+}
+.legend .lg-kinds .info::before {
+  content: "◐ activity";
+}
+.legend .lg-kinds::after {
+  content: "? lost connection · ⓘ neutral";
+}
+
+/* Shared parts of devhost's surfaces (WF-6), drawn the same on every page that shows them. */
+
+/* Captions wrap long words instead of widening their column; code and terminal text keep
+   literal characters (no ligatures such as => or !=). */
+.cap {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.term,
+code {
+  font-variant-ligatures: none;
+}
+
+/* A notice in the dock's corner keeps a readable width. */
+.mock .corner > .banner {
+  max-width: 36rem;
+  margin: 0;
+}
+
+/* Bar items: pressed (a launcher whose panel is open; aria-pressed) and unavailable (stays in
+   place, dimmed, with its reason beside it or in its description, BAR-5). */
+.tbar .seg.on {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.tbar .seg.off {
+  opacity: 0.45;
+}
+
+/* A tooltip: a small card beside its control, drawn as a popover with its caret and a .from line
+   naming the control. */
+.mock .popover.tip {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+/* A library's own devtools panel inside the app page: at the page's bottom edge, or as a
+   full-height column at its right edge (.lib.col). */
+.mock .lib {
+  border-top: 1px solid var(--line);
+  background: var(--card);
+  margin: 0 -10px -8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--mute);
+}
+.mock .lib b {
+  color: var(--ink);
+}
+.mock .lib.col {
+  border-top: 0;
+  border-left: 1px solid var(--line);
+  margin: -8px -10px -8px 0;
+  padding: 6px 8px;
+}
+
+/* The 320 CSS px phone frame (O8, WF-4). */
+.mock .phone {
+  width: 320px;
+  max-width: 100%;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mock .phone .banner,
+.mock .phone .toastrow,
+.mock .phone .toast,
+.mock .phone .chat {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.mock .phone .tbar {
+  width: 100%;
+  justify-content: space-between;
+}
+
+/* Docked chat: the panel, its header row, a sent message with its meta line, the status line, a
+   decision card and a turn receipt. Pages set its width where the drawing needs another. */
+.mock .chat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: none;
+  width: min(100%, 27rem);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: inset 3px 0 var(--line);
+  text-align: left;
+}
+.mock .chat.wide {
+  width: 100%;
+}
+.mock .chat .hd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.mock .chat .hd b {
+  margin-right: auto;
+}
+.mock .me {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  background: var(--card);
+}
+.mock .meta {
+  color: var(--mute);
+  font-size: 11px;
+}
+.mock .stl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--mute);
+  border-top: 1px solid var(--rule);
+  padding-top: 4px;
+}
+.mock .card {
+  border: 1px solid var(--warnline);
+  border-radius: 6px;
+  padding: 5px 6px;
+  background: var(--card);
+}
+.mock .card .q {
+  font-weight: 600;
+}
+.mock .rcpt {
+  border-top: 1px solid var(--rule);
+  padding-top: 4px;
+}
+
+/* The Configuration window's code view and problem list (config-editor; proxy-settings draws the
+   devhost config file in it). */
+.mock .ce-code {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--field);
+  font-size: 11.5px;
+  line-height: 1.55;
+  padding: 3px 0;
+  margin: 6px 0;
+}
+.mock .ce-ln {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mock .ce-ln > :first-child {
+  color: var(--mute);
+  text-align: right;
+  padding-right: 8px;
+  border-right: 1px solid var(--rule);
+  margin-right: 6px;
+}
+.mock .ce-ln.bad {
+  background: var(--badbg);
+}
+.mock .ce-ln.bad > :first-child {
+  color: var(--bad);
+}
+.mock .ce-ln.dif > :first-child {
+  color: var(--warn);
+}
+.mock .ce-probs {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  font-size: 12px;
+}
+.mock .ce-probs > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--rule);
 }

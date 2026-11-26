@@ -1,106 +1,334 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Proposed UX flow wireframes</title>
-<link rel="stylesheet" href="wireframe.css">
-<style>
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(21rem,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
-.card h3{margin:0 0 4px;font-size:15px}.card p{margin:0 0 6px}
-.card .links{font-size:12px}.card .links a{margin-right:10px}
-.card.warn{background:var(--warnbg);border-color:var(--warnline)}
-main h2{font-size:17px;margin:26px 0 8px}
-</style>
-</head>
-<body>
-<header class="page">
-<nav class="top"><a href="../index.md">← Documentation index</a></nav>
-<h1>Proposed UX flow wireframes</h1>
-<p>One low-fidelity page per proposed flow. Each page walks the proposal step by step, with numbered callouts and the findings each step resolves. The redesign tickets and their acceptance criteria are authoritative; layout, names and numbers here are illustrative.</p>
-</header>
-<main>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Proposed UX flow wireframes</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 14px;
+      }
+      .card h3 {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+      .card p {
+        margin: 0 0 6px;
+      }
+      .card .links {
+        font-size: 12px;
+      }
+      .card .links a {
+        margin-right: 10px;
+      }
+      .card.warn {
+        background: var(--warnbg);
+        border-color: var(--warnline);
+      }
+      main h2 {
+        font-size: 17px;
+        margin: 26px 0 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top"><a href="../index.md">← Documentation index</a></nav>
+      <h1>Proposed UX flow wireframes</h1>
+      <p>
+        One low-fidelity page per proposed flow. Each page walks the proposal step by step, with numbered callouts and
+        the findings each step resolves. The redesign tickets and their acceptance criteria are authoritative; layout,
+        names and numbers here are illustrative.
+      </p>
+    </header>
+    <main>
+      <h2>Shared patterns</h2>
+      <p>
+        <b><a href="patterns.html">Shared UX pattern reference</a></b> (<a href="../patterns.md">full text</a>): the
+        rules, keyboard map, decision log and contract changes every flow follows. A flow that behaves differently names
+        its exception there.
+      </p>
 
-<h2>Shared patterns</h2>
-<p><b><a href="patterns.html">Shared UX pattern reference</a></b> (<a href="../patterns.md">full text</a>): the rules, keyboard map, decision log and contract changes every flow follows. A flow that behaves differently names its exception there.</p>
+      <h2 id="conflicts">Conflicts to settle before building</h2>
+      <p>
+        None open. Each settled conflict is recorded in the <a href="patterns.html#decision-log">decision log</a> and,
+        for this run's reconciliation, in the <a href="patterns.html#revision-7">revision 7 items</a>.
+      </p>
 
-<h2 id="conflicts">Conflicts to settle before building</h2>
-<!-- List every cross-flow disagreement found while drawing, with links to the pages that disagree. Each entry leaves
-     this list when the pattern reference decides it. Once none is open, replace the card with:
-     <p>None open. Each settled conflict is recorded in the <a href="patterns.html#decision-log">decision log</a>.</p> -->
-<div class="card warn">
-<ul>
-<li><b>A conversation's name in log lines.</b> <a href="agent-chat.html#follow">agent-chat</a> names a conversation in terminal and log lines by agent, model and checkout, never by its title, because the title is the first line of a message and log lines never hold message text; <a href="log-minimap.html#choose-source">log-minimap</a> shows each conversation's lines under "devhost" labelled with its title ("devhost · Fix the nav").</li>
-<li><b>Focus after an element pick.</b> <a href="../proposals/agent-chat.md">agent-chat's proposal</a> returns focus to the composer after every element pick or drawing made with chat's tools; <a href="page-context.html#point">page-context</a> returns it to the composer after a pointer pick only and keeps a selection latched from the keyboard on its toggle until Escape.</li>
-<li><b>Page context in the switch question.</b> <a href="worktree-switch.html#reach-and-press">worktree-switch</a> lists it as "Page context: 2 marks; a mark whose element is gone after the reload is listed as lost" and leaves the tab share out; <a href="page-context.html#review">page-context</a> has the question read page context's own summary, "3 marks · they come back where their elements still exist; the tab share ends".</li>
-<li><b>Sending a message that cites a missing mark.</b> <a href="agent-chat.html#send">agent-chat</a> asks "Send with #2 missing? Its element is no longer on this page.", which fits only a mark whose element left the page; <a href="page-context.html#send">page-context</a> writes "Your message mentions #3, which is no longer on this page.", which also fits a mark the person removed while its element stays.</li>
-<li><b>The hot reload notice's words.</b> <a href="reload-control.html#read-notice">reload-control</a>, which owns the notice, writes "Vite reloads this page when files change" with "Agent edits can reload it while you work." and the one-line form "Vite reloads this page"; <a href="toolbar-shell.html#mount">toolbar-shell</a> (also its steps <a href="toolbar-shell.html#reach-the-dock">reach the dock</a>, <a href="toolbar-shell.html#beside-the-notices">beside the notices</a> and <a href="toolbar-shell.html#collapsed">collapsed</a>) and <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> draw "web's dev server, Vite, reloads this page when files change".</li>
-<li><b>Held reloads in the switch question.</b> <a href="worktree-switch.html#reach-and-press">worktree-switch</a> writes "Hold Reloads is keeping this page as it is; the switch reloads it", without a count; <a href="reload-control.html#hold-reloads">reload-control</a> has the question name the held count, "2 held reloads on this page are discarded by the reload", and the outcome say they were discarded.</li>
-<li><b>Hold Reloads on the bar.</b> <a href="toolbar-shell.html#read-the-bar">toolbar-shell</a> draws it as a toggle, pressed with an inset border and a check mark, or as a plain segment; <a href="reload-control.html#hold-reloads">reload-control</a> makes it a popover trigger, "☑ Hold Reloads ▾" or "☐ Hold Reloads ▾", whose switch sits in the popover and whose state and held count are in its accessible name and marker, "☑ Hold Reloads · ◆ 2 held ▾".</li>
-<li><b>Agents devhost could not check.</b> <a href="running-agents.html#one-record">running-agents</a> publishes whether its agent scan is complete and has both questions name the agents it could not check ("Codex agents could not be checked"); <a href="agent-chat.html#send">agent-chat</a>'s second-agent question asks only when a listed agent works or waits, and <a href="worktree-switch.html#reach-and-press">worktree-switch</a>'s reach line says agents were not checked only while chat is off.</li>
-<li><b>Which requests come from this machine.</b> <a href="running-agents.html#watch-live-activity">running-agents</a> has the remote preview relay mark every request it forwards and counts a marked request as another machine's, because a relayed request reaches the control server from loopback; <a href="config-editor.html#turn-on">config-editor</a>, <a href="component-source.html#open">component-source</a> and <a href="worktree-switch.html#in-use">worktree-switch</a> limit their routes to this machine with the same check without the mark, so a relayed request passes as local.</li>
-<li><b>The Worktrees trigger's label.</b> <a href="worktree-switch.html#open-worktrees">worktree-switch</a> and <a href="running-agents.html#read-the-trigger">running-agents</a> draw the branch alone, "main ▾"; the <a href="patterns.html">pattern page</a> and most other pages that draw the bar show "main ~/acme ▾", for example <a href="services-panel.html#glance">services-panel</a>, <a href="notices-and-feedback.html#progress">notices-and-feedback</a> and <a href="toolbar-shell.html#read-the-bar">toolbar-shell</a>.</li>
-<li><b>Copy actions on the rejected-manifest notice.</b> With the config editor off, <a href="notices-and-feedback.html#failure">notices-and-feedback</a> and <a href="config-editor.html#turn-on">config-editor</a> offer Copy, then Open in Editor; <a href="manifest-hot-reload.html#rejection">manifest-hot-reload</a> offers Open in Editor, then one Copy Error whose copied text starts with the file's location.</li>
-<li><b>Where the "not applied" marker sits while the config editor is off.</b> <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> leaves a dismissed notice's marker, "1 not applied", on Config, which is absent while the editor is off, its default; <a href="manifest-hot-reload.html#rejection">manifest-hot-reload</a> puts it on the stack name then, which <a href="toolbar-shell.html#read-the-bar">toolbar-shell</a> does not draw.</li>
-<li><b>When Config shows "not applied".</b> <a href="config-editor.html#turn-on">config-editor</a> gives Config its not-applied look, "◆ Config · 1 not applied", while the rejection notice still shows; <a href="manifest-hot-reload.html#rejection">manifest-hot-reload</a> and <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> show the marker only after Dismiss, so the notice and the marker never repeat each other.</li>
-<li><b>When an open page follows a port move.</b> <a href="notices-and-feedback.html#lost-connection">notices-and-feedback</a> shows "devhost moved to port …" with Open as soon as the new address is sent, before Caddy moves, and stops retrying the old address; <a href="proxy-settings.html#pages-follow">proxy-settings</a> shows an activity line until the new listener answers, shows the notice only then, and goes back to the old address when the move is rolled back.</li>
-<li><b>The devhost config file's name and rejection title.</b> <a href="config-editor.html#pick-file">config-editor</a> labels the file "Devhost config file", and <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> and <a href="../proposals/manifest-hot-reload.md">manifest-hot-reload's proposal</a> title its rejection "Devhost config file not applied: …" without the values that keep running; <a href="proxy-settings.html#not-applied">proxy-settings</a> keeps devhost lowercase, "devhost config file not applied: …", and names the shared Caddy settings that keep running.</li>
-<li><b>The line beside Save for a devhost config file.</b> <a href="config-editor.html#edit">config-editor</a> writes "Saving moves the URLs of 3 stacks: Acme Shop, Docs and Blog"; <a href="proxy-settings.html#save-with-reach">proxy-settings</a>, which owns what each setting does, writes "Saving moves the URLs of 3 stacks to port 4443: Acme Shop, Docs and Blog" and adds a line for each other setting.</li>
-<li><b>A serve session's card in the stack directory.</b> <a href="stack-directory.html#config">stack-directory</a>, which owns the card, titles it "Serve session · ~/acme/docs" and leaves Configuration out; <a href="serve-folder.html#ready">serve-folder</a> titles it "~/acme/docs" with the kind label "Serve session · folder" beside it and keeps a Configuration line, "None: the serve session for ~/acme/docs reads no devhost.toml".</li>
-<li><b>A serve session's name when stacks are replaced.</b> <a href="stack-run-stop.html#replace">stack-run-stop</a> names it by its hostname in devhost stack replace --all's set and keep-running line ("serve session for docs.acme.test"); <a href="serve-folder.html#stop">serve-folder</a> names it by its folder or port ("Stopped the serve session for ~/acme/docs"), and <a href="../proposals/serve-folder.md">its proposal</a> prints "serve session ~/acme/docs (PID 48800) · keeps running" for the same set.</li>
-<li><b>Chat on the bar while chat is off.</b> <a href="serve-folder.html#ready">serve-folder</a> keeps Chat on the bar, unavailable with its reason and the way to turn chat on; <a href="agent-chat.html#conversations">agent-chat</a>, with chat turned off in the manifest, keeps Chat on the bar only while a conversation still runs.</li>
-<li><b>The stack directory's label in the terminal.</b> <a href="stack-run-stop.html#start">stack-run-stop</a>, <a href="stack-directory.html#reach">stack-directory</a> and <a href="proxy-settings.html#outcome-terminal">proxy-settings</a> print "All stacks on this machine:" before the directory's URL; <a href="first-run-setup.html#start">first-run-setup</a> prints "Stack directory:" before the same URL, followed by "· next: devhost start in your project's folder".</li>
-<li><b>Third-party launcher labels.</b> <a href="toolbar-shell.html#read-the-bar">toolbar-shell</a> draws today's labels, "Redux" and "TanStack", folding into "Devtools"; <a href="third-party-devtools.html#find-launcher">third-party-devtools</a> names them "Redux DevTools" and "TanStack Devtools" (also when they <a href="third-party-devtools.html#fold">fold</a>).</li>
-<li><b>Logs on the bar and in the layout record.</b> <a href="log-minimap.html#open-panel">log-minimap</a> adds a Logs item to the bar whenever the toolbar renders and keeps the log panel's open state and width in the layout record; <a href="toolbar-shell.html#read-the-bar">toolbar-shell</a>'s bar has no Logs item, and its layout record (<a href="toolbar-shell.html#move-or-collapse">move or collapse</a>) keeps only the toolbar's placement, its collapsed state and chat's position.</li>
-<li><b>Log lines in the crash view and the log panel.</b> <a href="startup-and-recovery.html#recovery">startup-and-recovery</a> folds a line over 2,000 characters to its first and last 300 with Show All 50,138 Characters, shows a repeated block once with its count, and selects a service's lines by that service's source; <a href="log-minimap.html#read-copy">log-minimap</a> renders the panel, the peek and the crash view with one renderer that wraps every line in full, and files devhost's failure line about a service under the source "devhost" (<a href="log-minimap.html#from-failure">from a failure</a>), which that selection would leave out.</li>
-<li><b>The log panel's header.</b> <a href="services-panel.html#outcome">services-panel</a>, <a href="notices-and-feedback.html#terminal-and-log">notices-and-feedback</a> and <a href="agent-chat.html#follow">agent-chat</a> draw the pinned log panel with a "Logs" title, a source chip and Close (✕ on agent-chat's); <a href="log-minimap.html#open-panel">log-minimap</a>, which owns the panel, draws a source filter, a find field, a count line, a Copy button that names the line count, and Close, with no visible title.</li>
-<li><b>The notice stack while a toolbar panel is open.</b> <a href="services-panel.html#open-panel">services-panel</a> draws a failure notice in the bar's row, left of the bar, with the Services panel directly above the bar; <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> and <a href="toolbar-shell.html#beside-the-notices">toolbar-shell</a>, like the pattern page, stack the notices above the bar and open the panel beyond them, its caret aimed at its trigger across the notices.</li>
-<li><b>Notice icons and state glyphs.</b> <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> marks notice kinds with ✕ for a failure, ◐ for activity and ? for a lost connection, among six shapes; <a href="services-panel.html#glance">services-panel</a>'s shared state indicator uses ✕ for exited, ◐ for starting or restarting and ? for unknown, so three shapes carry two meanings.</li>
-<li><b>The notice stack's fold control.</b> <a href="notices-and-feedback.html#notice-stack">notices-and-feedback</a> writes it "2 More", and "Show Fewer" while expanded, title-style like every button label; <a href="toolbar-shell.html#beside-the-notices">toolbar-shell</a> draws "2 more", as the reference's notice-stack example writes it.</li>
-<li><b>Owners of the operation record and what is built on it.</b> <a href="notices-and-feedback.html">notices-and-feedback</a> claims the operation record's model and readers, builds every operation's terminal outcome line, specifies the status stream's closing message, and lands the contract texts for a lost connection (CC-26) and the stack's log (CC-21); <a href="services-panel.html">services-panel</a> ships the record in its own backend work, builds the terminal outcome line with stack-run-stop, bundles the stream's close reason into its stream work and quotes the same CC-26 change; <a href="stack-run-stop.html">stack-run-stop</a> quotes the same CC-21 change.</li>
-</ul>
-</div>
+      <h2>Work with a coding agent</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><a href="agent-chat.html">Chat with a coding agent</a></h3>
+          <p>
+            Before Send the composer names who answers, which of the two edit modes applies (<b>This worktree (live)</b>
+            or <b>Make tickets</b>) and which worktree it edits; a card pinned above the composer keeps every answer
+            (including the CLI's own standing approval) in view on desktop and 320 px phone screens while Chat, notices
+            and the app tab title show the wait; each turn ends with a receipt of changed files, reload or restart
+            hand-off, and way back; conversations are named, listed across worktrees and resumable; and remote browsers
+            authenticate with one shared WebAuthn passkey (phone support included) or a one-time
+            <code>devhost pair</code> fallback.
+          </p>
+          <div class="links">
+            <a href="../agent-chat-proposed.html">Diagram</a><a href="../proposals/agent-chat.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="page-context.html">Point at the page and attach screenshots</a></h3>
+          <p>
+            Marks and drawings share one counter whose numbers never shift, stay on their elements through re-renders
+            and reloads, and are listed under the composer as rows that say exactly what leaves the machine, while the
+            tools sit in docked chat, work from the keyboard and on a phone, undo any change, and Escape never stops the
+            agent.
+          </p>
+          <div class="links">
+            <a href="../page-context-proposed.html">Diagram</a><a href="../proposals/page-context.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="reload-control.html">Keep agent edits from reloading the page</a></h3>
+          <p>
+            Disable Reloads opens a popover that shows the agent, the conversation and the exact request before anything
+            is sent, the request's progress, question and result stay in the notice's slot with the restart the change
+            needs, Hold Reloads counts and keeps every held reload, and once reloads are disabled later chat turns end
+            with "Reload to see the change" and Reload Page instead of a reload devhost starts.
+          </p>
+          <div class="links">
+            <a href="../reload-control-proposed.html">Diagram</a><a href="../proposals/reload-control.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="running-agents.html">See the agents working in this worktree</a></h3>
+          <p>
+            The trigger stays on the bar and marks a waiting agent, its list opens above docked chat in plain words with
+            <b>Answer</b>, and Watch Live Activity shows what each tool touched, says why it ended, and opens for a
+            signed-in browser elsewhere on the stack directory's hostname.
+          </p>
+          <div class="links">
+            <a href="../running-agents-proposed.html">Diagram</a><a href="../proposals/running-agents.md">Proposal</a>
+          </div>
+        </div>
+      </div>
 
-<h2>Work with a coding agent</h2>
-<div class="grid">
-<div class="card"><h3><a href="agent-chat.html">Chat with a coding agent</a></h3><p>Before Send the composer names who answers, how the agent handles the message and which checkout it edits; a card pinned above the composer keeps every answer in view while Chat and the notices show the wait; and each turn ends with a receipt of the files it changed and its way back, with conversations named, listed across checkouts and resumable after a close or a stop.</p><div class="links"><a href="../agent-chat-proposed.html">Diagram</a><a href="../proposals/agent-chat.md">Proposal</a></div></div>
-<div class="card"><h3><a href="page-context.html">Point at the page and attach screenshots</a></h3><p>Marks and drawings share one counter whose numbers never shift, stay on their elements through re-renders and reloads, and are listed under the composer as rows that say exactly what leaves the machine, while the tools sit in docked chat, work from the keyboard, undo any change, and Escape never stops the agent.</p><div class="links"><a href="../page-context-proposed.html">Diagram</a><a href="../proposals/page-context.md">Proposal</a></div></div>
-<div class="card"><h3><a href="reload-control.html">Keep agent edits from reloading the page</a></h3><p>Disable Reloads opens a popover that shows the agent, the conversation and the exact request for this dev server before anything is sent; the request's progress, the agent's question and its result then stay in the notice's slot with the restart the change needs, and Hold Reloads counts, explains and keeps every held reload instead of dropping, hiding or silently letting it through.</p><div class="links"><a href="../reload-control-proposed.html">Diagram</a><a href="../proposals/reload-control.md">Proposal</a></div></div>
-<div class="card"><h3><a href="running-agents.html">See the agents working in this checkout</a></h3><p>The running agents trigger stays on the bar and shows an agent waiting for you apart from a working one, its list opens above docked chat and names every agent in words people use with <b>Answer</b> leading to the decision card in one activation, and Watch Live Activity says what each tool call touches, shows the wait, says why it ended instead of reconnecting forever, and is unavailable with its reason on a page opened from another machine.</p><div class="links"><a href="../running-agents-proposed.html">Diagram</a><a href="../proposals/running-agents.md">Proposal</a></div></div>
-</div>
+      <h2>Keep services healthy</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><a href="worktree-switch.html">Switch the stack to another worktree</a></h3>
+          <p>
+            Worktrees becomes one shared worktree list, found by branch, path or commit, whose
+            <b>Switch and Restart Stack</b> names everything it restarts and leaves behind, switches managed services
+            freely beside external services with no warning (<code>O7</code>), asks only when other work is at stake,
+            shows its steps in place and its outcome on the reloaded page, rolls back service by service, and turns a
+            deleted worktree into an explicit choice instead of a restart that cannot work.
+          </p>
+          <div class="links">
+            <a href="../worktree-switch-proposed.html">Diagram</a><a href="../proposals/worktree-switch.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="startup-and-recovery.html">Startup pages, crash recovery and app error pages</a></h3>
+          <p>
+            Every state of a service gets one devhost page, or the crash view over the app, led by the action that can
+            fix its cause and showing the evidence that explains it; an app's own 404 or 5xx passes through with a
+            devhost notice instead of being replaced; and every restart shows its progress and its outcome where it
+            started, never closing without a word.
+          </p>
+          <div class="links">
+            <a href="../startup-and-recovery-proposed.html">Diagram</a
+            ><a href="../proposals/startup-and-recovery.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="services-panel.html">Watch and restart services from the toolbar</a></h3>
+          <p>
+            Every service of the stack is counted and listed with its state, cause and route; each restart or start
+            shows its steps and its outcome on the row that started it, with focus kept there; command-mode serve
+            sessions model their command first-class with <b>Restart Command</b>; narrow popovers wrap cleanly clear of
+            the minimap with <code>&gt;=3:1</code> button borders; and <b>Restart Stack</b> sits apart from
+            <b>Restart Changed</b> and asks first, in place.
+          </p>
+          <div class="links">
+            <a href="../services-panel-proposed.html">Diagram</a><a href="../proposals/services-panel.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="notices-and-feedback.html">How devhost reports operations and problems</a></h3>
+          <p>
+            Every operation reports the same way, from one record: its progress where it started or as one activity
+            line, then one outcome in that place that names what changed; successes close after calibrated reading time
+            (pausing when arriving unfocused), failures stay until handled, conditions share one ordered notice stack
+            beside the bar (with a 320 px phone layout and app tab-title prefixes), and a lost connection or closed
+            command-mode port says why without painting healthy services as down.
+          </p>
+          <div class="links">
+            <a href="../notices-and-feedback-proposed.html">Diagram</a
+            ><a href="../proposals/notices-and-feedback.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="log-minimap.html">Read service logs in the page</a></h3>
+          <p>
+            The strip at the window's edge maps every line the page holds, telling errors and warnings apart, and its
+            hover peek holds still, while a click, <b>Logs</b> or Alt+Ctrl+O pins a log panel where each line has its
+            time and source and can be filtered by service, found, selected, copied and followed, opened straight at a
+            failure's exit with the action that fixes it.
+          </p>
+          <div class="links">
+            <a href="../log-minimap-proposed.html">Diagram</a><a href="../proposals/log-minimap.md">Proposal</a>
+          </div>
+        </div>
+      </div>
 
-<h2>Keep services healthy</h2>
-<div class="grid">
-<div class="card"><h3><a href="worktree-switch.html">Switch the stack to another checkout</a></h3><p>Worktrees becomes one shared checkout list, found by branch, path or commit, whose Switch and Restart Stack names everything it restarts and leaves behind, asks only when other work is at stake, shows its steps in place and its outcome on the reloaded page, rolls back service by service, and turns a deleted checkout into an explicit choice instead of a restart that cannot work.</p><div class="links"><a href="../worktree-switch-proposed.html">Diagram</a><a href="../proposals/worktree-switch.md">Proposal</a></div></div>
-<div class="card"><h3><a href="startup-and-recovery.html">Startup pages, crash recovery and app error pages</a></h3><p>Every state of a service gets one devhost page, or the crash view over the app, led by the action that can fix its cause and showing the evidence that explains it; an app's own 404 or 5xx passes through with a devhost notice instead of being replaced; and every restart shows its progress and its outcome where it started, never closing without a word.</p><div class="links"><a href="../startup-and-recovery-proposed.html">Diagram</a><a href="../proposals/startup-and-recovery.md">Proposal</a></div></div>
-<div class="card"><h3><a href="services-panel.html">Watch and restart services from the toolbar</a></h3><p>Every service of the stack is counted and listed with its state, cause and route; each restart or start shows its steps and its outcome on the row that started it, with focus kept there; and Restart Stack sits apart from Restart Changed and asks first, in place.</p><div class="links"><a href="../services-panel-proposed.html">Diagram</a><a href="../proposals/services-panel.md">Proposal</a></div></div>
-<div class="card"><h3><a href="notices-and-feedback.html">How devhost reports operations and problems</a></h3><p>Every operation reports the same way, from one record: its progress where it started or as one activity line, then one outcome in that place that names what changed; failures stay until handled, conditions share one ordered notice stack beside the bar, and a lost connection says why with every service drawn unknown instead of down.</p><div class="links"><a href="../notices-and-feedback-proposed.html">Diagram</a><a href="../proposals/notices-and-feedback.md">Proposal</a></div></div>
-<div class="card"><h3><a href="log-minimap.html">Read service logs in the page</a></h3><p>The strip at the window's edge maps every line the page holds, telling errors and warnings apart, and its hover peek holds still, while a click, <b>Logs</b> or Alt+Ctrl+O pins a log panel where each line has its time and source and can be filtered by service, found, selected, copied and followed, opened straight at a failure's exit with the action that fixes it.</p><div class="links"><a href="../log-minimap-proposed.html">Diagram</a><a href="../proposals/log-minimap.md">Proposal</a></div></div>
-</div>
+      <h2>Configure a stack</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><a href="config-editor.html">Edit configuration in the browser</a></h3>
+          <p>
+            The Configuration window opens at the problem it was opened for, lists every problem on the line where the
+            fix goes, states beside Save what saving will restart, reports each save's own outcome there, and keeps
+            drafts and the way back to what the stack runs through reloads, disk changes and rejections.
+          </p>
+          <div class="links">
+            <a href="../config-editor-proposed.html">Diagram</a><a href="../proposals/config-editor.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="manifest-hot-reload.html">Edit the manifest and watch it apply</a></h3>
+          <p>
+            Every save names what it restarts and why in one activity line and one outcome line, and an edit devhost
+            cannot apply names its file, line and fix wherever it shows, while the stack keeps running the accepted
+            manifest.
+          </p>
+          <div class="links">
+            <a href="../manifest-hot-reload-proposed.html">Diagram</a
+            ><a href="../proposals/manifest-hot-reload.md">Proposal</a>
+          </div>
+        </div>
+      </div>
 
-<h2>Configure a stack</h2>
-<div class="grid">
-<div class="card"><h3><a href="config-editor.html">Edit configuration in the browser</a></h3><p>The Configuration window opens at the problem it was opened for, lists every problem on the line where the fix goes, states beside Save what saving will restart, reports each save's own outcome there, and keeps drafts and the way back to what the stack runs through reloads, disk changes and rejections.</p><div class="links"><a href="../config-editor-proposed.html">Diagram</a><a href="../proposals/config-editor.md">Proposal</a></div></div>
-<div class="card"><h3><a href="manifest-hot-reload.html">Edit the manifest and watch it apply</a></h3><p>Every save names what it restarts and why in one activity line and one outcome line, and an edit devhost cannot apply names its file, line and fix wherever it shows, while the stack keeps running the accepted manifest.</p><div class="links"><a href="../manifest-hot-reload-proposed.html">Diagram</a><a href="../proposals/manifest-hot-reload.md">Proposal</a></div></div>
-</div>
+      <h2>Set up and run stacks</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><a href="stack-run-stop.html">Start, find, stop and restart stacks from the terminal</a></h3>
+          <p>
+            The terminal says when a stack is ready (keeping local URLs alongside remote previews),
+            <code>devhost stack info</code> and <code>devhost status</code> report every service and rejection, parallel
+            shutdown certifies that nothing remains within 30 s by default, <code>devhost upgrade</code> handles
+            self-managed updates while <code>restart-all</code> and <code>stack restart</code> replace supervisors, and
+            multi-stack commands print their set first and ask only when an agent's turn would end.
+          </p>
+          <div class="links">
+            <a href="../stack-run-stop-proposed.html">Diagram</a><a href="../proposals/stack-run-stop.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="proxy-settings.html">Change the shared proxy settings</a></h3>
+          <p>
+            The terminal says where the shared Caddy settings live and who can reach the stacks; a save states its reach
+            before it is written, is checked and certified before it counts, and reports one outcome per stack, while
+            open pages follow their stack to the new address with Open, relay previews keep answering on any port, and a
+            refused change names its line and what keeps running.
+          </p>
+          <div class="links">
+            <a href="../proxy-settings-proposed.html">Diagram</a><a href="../proposals/proxy-settings.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="serve-folder.html">Serve a folder, port or command</a></h3>
+          <p>
+            Covers all three <code>devhost serve</code> modes — folder (<code>--dir</code>), running port
+            (<code>--port</code>), and command mode (<code>devhost serve -- &lt;command&gt;</code>, foreground or
+            <code>--detach</code>) — plus manifest <code>serve</code> services. The terminal states what is served,
+            where Caddy listens (honoring macOS <code>bindHost</code> from port 1024 upward), that chat is on by default
+            for folder and command sessions with <code>--no-chat</code> to turn it off (and always off for
+            <code>--port</code>), when it is ready, and how to stop it; command sessions appear first-class (<code
+              >1/1</code
+            >
+            with working <b>Restart Command</b>), handle multi-port changes without false <code>0/3</code> outages, exit
+            with the command's exit code in the foreground, and keep valid HTTPS crash recovery when detached; served
+            folders show the listing first with README below; and mistyped names stay in the file browser.
+          </p>
+          <div class="links">
+            <a href="../serve-folder-proposed.html">Diagram</a><a href="../proposals/serve-folder.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="first-run-setup.html">Install devhost and the shared HTTPS proxy</a></h3>
+          <p>
+            Help, docs and output teach one setup order (download, then start, whose first start trusts devhost's
+            certificate authority only when a person is at the terminal), every command ends with one line saying what
+            it did, who can reach the proxy and what comes next, the trust commands refuse agents, show what they
+            install and name how to remove it, <code>devhost caddy stop</code> names every stack it takes offline before
+            it acts, and the Install page says how devhost itself updates.
+          </p>
+          <div class="links">
+            <a href="../first-run-setup-proposed.html">Diagram</a><a href="../proposals/first-run-setup.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="stack-directory.html">Find running stacks and routes in the browser</a></h3>
+          <p>
+            The toolbar, the terminal and the plain-HTTP 404 link the stack directory, which leads with what needs you,
+            labels each worktree, draws every service in the toolbar's own state words with its way forward, updates
+            itself, filters as you type and offers the close hostname for a typo, never waits on a paused stack and
+            still opens when no stack answers; a browser elsewhere reads it once signed in, and the same hostname serves
+            each stack's Watch Live Activity.
+          </p>
+          <div class="links">
+            <a href="../stack-directory-proposed.html">Diagram</a><a href="../proposals/stack-directory.md">Proposal</a>
+          </div>
+        </div>
+      </div>
 
-<h2>Set up and run stacks</h2>
-<div class="grid">
-<div class="card"><h3><a href="stack-run-stop.html">Start, find, stop and restart stacks from the terminal</a></h3><p>The terminal says when a stack is ready, what runs and why a stack ended, a stop reports success only once nothing of the stack remains, and every command that reaches several stacks prints its set first and asks only when an agent's turn would end.</p><div class="links"><a href="../stack-run-stop-proposed.html">Diagram</a><a href="../proposals/stack-run-stop.md">Proposal</a></div></div>
-<div class="card"><h3><a href="proxy-settings.html">Change the shared proxy settings</a></h3><p>The terminal says where the shared Caddy settings live and who can reach the stacks; a save states its reach before it is written, is checked and certified before it counts, and reports one outcome per stack, while open pages follow their stack to the new address with Open instead of drawing every service down, and a refused change names its line and what keeps running.</p><div class="links"><a href="../proxy-settings-proposed.html">Diagram</a><a href="../proposals/proxy-settings.md">Proposal</a></div></div>
-<div class="card"><h3><a href="serve-folder.html">Serve a folder or a running port</a></h3><p>The terminal says what a serve session serves, where Caddy listens, whether chat is on, when it is ready and how to stop it, and a <code>--port</code> session waits for its server instead of claiming it is ready; the folder's page shows the folder itself, folders first in natural order with sizes, dates, a filter and its README below; a mistyped name stays in the file browser; and chat stays off unless <code>--chat</code> names the folder an agent may edit.</p><div class="links"><a href="../serve-folder-proposed.html">Diagram</a><a href="../proposals/serve-folder.md">Proposal</a></div></div>
-<div class="card"><h3><a href="first-run-setup.html">Install devhost and the shared HTTPS proxy</a></h3><p>Help, docs and output teach one setup order (download, then start, whose first start trusts devhost's certificate authority only when a person is at the terminal), every command ends with one line saying what it did and what comes next, the trust commands refuse agents, show what they install and name how to remove it, and <code>devhost caddy stop</code> names every stack it takes offline before it acts.</p><div class="links"><a href="../first-run-setup-proposed.html">Diagram</a><a href="../proposals/first-run-setup.md">Proposal</a></div></div>
-<div class="card"><h3><a href="stack-directory.html">Find running stacks and routes in the browser</a></h3><p>The toolbar, the terminal and the Caddy 404 link the stack directory, which leads with what needs you, labels each checkout, draws every service in the toolbar's own state words with its way forward, updates itself, filters as you type, never waits on a paused stack and still opens when no stack answers; a mistyped hostname's page names it and offers the close match, path kept.</p><div class="links"><a href="../stack-directory-proposed.html">Diagram</a><a href="../proposals/stack-directory.md">Proposal</a></div></div>
-</div>
-
-<h2>Inspect the page</h2>
-<div class="grid">
-<div class="card"><h3><a href="toolbar-shell.html">The toolbar itself</a></h3><p>The dock (the bar and its notices) mounts where each person last put it, takes only the clicks it draws, keeps every notice in view beside panels, docked chat and the collapsed badge, is one chord and one Tab stop away from the keyboard, and says when the page's own dialog pauses it.</p><div class="links"><a href="../toolbar-shell-proposed.html">Diagram</a><a href="../proposals/toolbar-shell.md">Proposal</a></div></div>
-<div class="card"><h3><a href="third-party-devtools.html">Use your framework's devtools from the toolbar</a></h3><p>Launchers name their library, panels on one window edge take turns while devhost's dock steps off them, the Redux window opens on a named store and survives reloads, a launcher that cannot act or fails says why, and each integration turns off on its own.</p><div class="links"><a href="../third-party-devtools-proposed.html">Diagram</a><a href="../proposals/third-party-devtools.md">Proposal</a></div></div>
-<div class="card"><h3><a href="component-source.html">Jump between the page and the source</a></h3><p>Alt + right-click always answers, on React 18 and React 19 alike, with a keyboard-reachable source menu that names your editor and the checkout and says what Open and Copy Path did, while highlight from the editor outlines the element the cursor sits in and keeps the outline on it.</p><div class="links"><a href="../component-source-proposed.html">Diagram</a><a href="../proposals/component-source.md">Proposal</a></div></div>
-<!-- flow cards: scaffold-flow.ts inserts new cards above this line -->
-</div>
-</main>
-</body>
+      <h2>Inspect the page</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><a href="toolbar-shell.html">The toolbar itself</a></h3>
+          <p>
+            The dock (the bar and its notices) mounts where each person last put it, takes only the clicks it draws,
+            keeps every notice in view beside panels, docked chat and the collapsed badge, reserves the minimap edge for
+            every popover, uses &gt;=3:1 button borders and a visible chevron affordance, prefixes app tab titles during
+            waits or failures, adapts to 320 px phones and remote sign-in, is one chord and one Tab stop away from the
+            keyboard, and says when the page's own dialog pauses it.
+          </p>
+          <div class="links">
+            <a href="../toolbar-shell-proposed.html">Diagram</a><a href="../proposals/toolbar-shell.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="third-party-devtools.html">Use your framework's devtools from the toolbar</a></h3>
+          <p>
+            Launchers name their library, panels on one window edge take turns, the Redux window opens on a named store
+            and survives reloads, a launcher that cannot act or fails says why, and each integration turns off on its
+            own.
+          </p>
+          <div class="links">
+            <a href="../third-party-devtools-proposed.html">Diagram</a
+            ><a href="../proposals/third-party-devtools.md">Proposal</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3><a href="component-source.html">Find a page element's source</a></h3>
+          <p>
+            Alt + right-click always answers, on React 18 and React 19 alike, with a keyboard-reachable source menu that
+            names the worktree and copies each file, line and column with a confirmation, while devhost no longer opens
+            editors, keeps no editor settings and drops highlight from an editor's cursor.
+          </p>
+          <div class="links">
+            <a href="../component-source-proposed.html">Diagram</a
+            ><a href="../proposals/component-source.md">Proposal</a>
+          </div>
+        </div>
+        <!-- flow cards: scaffold-flow.ts inserts new cards above this line -->
+      </div>
+    </main>
+  </body>
 </html>
