@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -92,24 +92,24 @@
       "sublabel": "names config.toml + path",
       "tag": "proxy-settings-05",
       "yOffset": -50,
-      "explanation": "Find where the shared Caddy settings live (read only). devhost caddy --help ends with 'Ports, listeners and the stack directory hostname are shared Caddy settings in the devhost config file: ~/.config/devhost/config.toml', the path resolved from DEVHOST_CONFIG_DIR, else XDG_CONFIG_HOME, else ~/.config/devhost, as today, and shortened with ~ (WORD-1, WORD-8, SURF-15). privileged-ports' help reads 'Let Caddy listen on ports below 1024 without root (Linux; downloads Caddy if needed and asks for your password)'; on Linux it says so before the download, with its size, and before sudo, and a download that replaces a binary holding the grant ends with 'Run devhost caddy privileged-ports again: the new Caddy cannot use ports below 1024' (WORD-9). Under AGENT=1 it refuses before any sudo with 'Ask the person to run devhost caddy privileged-ports in a terminal', a proposed extension of REV-8, which keeps the trust commands as written. Words: devhost config file and shared Caddy settings, never settings file or global config (WORD-1). Keys: none; terminal output only. Resolves proxy-settings-05.",
+      "explanation": "Find where the shared Caddy settings live (read only). devhost caddy --help ends with 'Ports, listeners and the stack directory hostname are shared Caddy settings in the devhost config file: ~/.config/devhost/config.toml', the path resolved from DEVHOST_CONFIG_DIR, else XDG_CONFIG_HOME, else ~/.config/devhost, as today, shortened with ~ (WORD-1, WORD-8, SURF-15). privileged-ports' help reads 'Let Caddy listen on ports below 1024 without root (Linux; downloads Caddy if needed and asks for your password)'; on Linux it names the download before it starts and the size once known, says before sudo that it may ask for a password, and a download that replaces a binary holding the grant ends with 'Run devhost caddy privileged-ports again' (WORD-9). On macOS it says bindHost 127.0.0.1 applies only from port 1024 (O39). Under AGENT=1 it refuses before any sudo with 'Ask the person to run devhost caddy privileged-ports in a terminal', an extension of REV-8 proposed for the reference. Keys: none; terminal output only. Resolves proxy-settings-05.",
       "sources": [
         {
-          "path": "apps/devhost/internal/cli/parse.go",
-          "line": 305,
-          "end_line": 307,
+          "path": "apps/devhost/src/main.rs",
+          "line": 804,
+          "end_line": 826,
           "label": "Replaces: caddy help without config.toml"
         },
         {
-          "path": "apps/devhost/internal/cli/parse.go",
-          "line": 451,
-          "end_line": 456,
+          "path": "apps/devhost/src/main.rs",
+          "line": 810,
+          "end_line": 813,
           "label": "Replaces: privileged-ports help line"
         },
         {
-          "path": "apps/devhost/internal/config/config.go",
-          "line": 44,
-          "end_line": 70,
+          "path": "apps/devhost/src/config.rs",
+          "line": 119,
+          "end_line": 127,
           "label": "Reuses: file path from env vars, else HOME"
         }
       ]
@@ -120,10 +120,10 @@
       "col": 0,
       "type": "external",
       "label": "Proxy line at start",
-      "sublabel": "every interface, reachable",
+      "sublabel": "reach, listeners, file",
       "tag": "proxy-settings-01",
       "yOffset": 50,
-      "explanation": "devhost caddy start names what runs, its listener, the file and how to stop it: 'Caddy runs HTTPS on port 443 on every interface, reachable from your network · settings: ~/.config/devhost/config.toml · stop it with devhost caddy stop' (FB-10). devhost start and devhost status print the same facts as one proxy line, 'Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml'; a loopback bindHost reads 'Proxy: HTTPS on 127.0.0.1:4443 and [::1]:4443, this machine only', and with http = true the line adds 'HTTP on port 8080' (FB-10, FB-11). Agent output carries the same facts with the absolute path (WORD-9). The line is built from the record of what Caddy runs, so it never states a listener Caddy does not have. This flow words it; stack-run-stop prints it at start and in status, first-run-setup in devhost caddy start's outcome. The default listener on every interface stays (owner rule), and who may reach a stack's control routes stays the owner's (network-exposure-01, related). Resolves the silence of proxy-settings-01; its loopback listener is the move's."
+      "explanation": "devhost caddy start names what runs, its listener, the file and how to stop it: 'Caddy runs HTTPS on port 443 on every interface, reachable from your network · settings: ~/.config/devhost/config.toml · stop it with devhost caddy stop' (FB-10). devhost start and devhost status (O62) print the same facts as one proxy line, 'Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml'; bindHost 127.0.0.1 with every port from 1024 reads 'Proxy: HTTPS on 127.0.0.1:4443 and [::1]:4443, direct connections from this machine only; relay previews and SSH forwards still reach it' (O39). On macOS with bindHost 127.0.0.1 and any port below 1024, Caddy keeps every interface and a warning naming httpsPort = 4443 or a privileged launcher follows on every start, status and save; nothing is refused (O39, WORD-7). Agent output carries the same facts with the absolute path (WORD-9, FB-11). The line is built from the record of what Caddy runs. stack-run-stop, first-run-setup and serve-folder print it. Resolves the silence of proxy-settings-01."
     },
     {
       "id": "edit",
@@ -132,18 +132,18 @@
       "type": "frontend",
       "label": "Edit [caddy] and save",
       "sublabel": "any editor; nothing asks",
-      "explanation": "Change a setting (one write, applied through hot reload). The person edits httpsPort, http and httpPort, bindHost, stackDirectoryHost, stackDirectoryAllowRemote or adminAddress in the [caddy] table and saves, in any editor or in the Configuration window, which keeps config-editor's owner rules: off by default, saves only from this machine (HOLD-7). Nothing asks: a save is reported, never reviewed (REV-1, REV-10). Every running stack watches config.toml with the manifest's debounce, as today, and the first to take the route lock every devhost process shares applies the change once for the machine. A save made while a move runs waits for it and is reported with its own apply; a save whose response was lost takes its outcome from the record by its operationId and never saves again; a save whose base version differs from the file is refused with 'Not saved: the file changed on disk', the draft kept (REV-12, REV-13, UNDO-3). An agent's save is reported like any save, '· after config.toml changed on disk', because the watcher cannot tell who wrote the file (ACT-1). Keys: Mod+S saves in the window, config-editor's (KEY-9).",
+      "explanation": "Change a setting (one write, applied through hot reload). The person edits httpsPort, http and httpPort, bindHost, stackDirectoryHost, stackDirectoryAllowRemote, adminAddress, domainSuffix or [remote] and saves, in any editor or in the Configuration window: off by default (owner rule), and with it on, it saves from this machine and from a browser elsewhere signed in with the shared devhost passkey or paired (O36, O54); an unauthenticated browser sees the unauthenticated state (HOLD-7). Nothing asks: a save is reported, never reviewed (REV-1, REV-10). Every running stack watches config.toml, and the first to take the shared route lock applies the change once for the machine. A save made while a move runs waits for it; a lost response takes its outcome from the record by its operationId and never saves again; a stale base is refused with 'Not saved: the file changed on disk', the draft kept (REV-12, REV-13, UNDO-3). An agent's save reads '· after config.toml changed on disk' (ACT-1). Keys: Mod+S saves in the window (KEY-9).",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/config_files.go",
-          "line": 146,
-          "end_line": 185,
+          "path": "apps/devhost/src/devtools/config_files.rs",
+          "line": 265,
+          "end_line": 295,
           "label": "Reuses: save checks the file, then writes it"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 599,
-          "end_line": 616,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 176,
+          "end_line": 199,
           "label": "Reuses: every stack's watch loop"
         }
       ]
@@ -156,18 +156,18 @@
       "label": "Reach stated beside Save",
       "sublabel": "3 stacks to port 4443",
       "tag": "proxy-settings-04",
-      "explanation": "In the Configuration window, with config.toml picked under 'This machine', the line 'Changes here apply to every stack on this machine' sits under the header, and beside Save one line states what saving does, from /__devhost__/config/validate (read only, CC-37): 'Saving moves the URLs of 3 stacks to port 4443: Acme Shop, Docs and Blog', the stacks in its tooltip and accessible description (REV-10, SEL-1, SEL-6, SEL-11). Per setting it names plain HTTP added or removed, 'reachable only from this machine' or, in the warning style, 'reachable from your network', the stack directory's new URL, remote access to the directory with no sign-in, the admin API moved with no URL changed, 'restarts web in Acme Shop (uses services.web.publicUrl)', 'Changes nothing that runs', and 'This page moves to port 4443; its unsent chat text and page context come along' (REV-3, UNDO-2). Statements, never a question: Save stays available. Problems show on their line before the save, and the line is checked again when the running settings change (MENU-4, REV-13). With the editor off, devhost reload --dry-run prints the plan (CC-23). Resolves the reach slice of proxy-settings-04.",
+      "explanation": "In the Configuration window, with config.toml picked under 'devbox', 'Changes here apply to every stack on devbox' sits under the header (O61), and beside Save one line states what saving does, from /__devhost__/config/validate (read only, CC-37): 'Saving moves the URLs of 3 stacks to port 4443: Acme Shop, Docs and Blog; no service restarts' (REV-10, SEL-1, SEL-6, SEL-11, O45). Per setting it names plain HTTP added or removed; 'reachable only from devbox ... relay previews and SSH forwards still reach them' or, warning style, 'reachable from devbox's network'; on macOS below port 1024 'Saving keeps 3 stacks reachable from devbox's network' (O39); the directory's new URL; anonymous directory access (O47); the admin API moved; the stacks a domainSuffix or [remote] change waits for; 'Changes nothing that runs'; and 'This page moves to port 4443; its unsent chat text and page context come along' (REV-3, UNDO-2). Statements, never a question. Problems show on their line before the save and are checked again when the running settings change (MENU-4, REV-13). Resolves the reach slice of proxy-settings-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/config_editor.go",
-          "line": 42,
-          "end_line": 76,
-          "label": "Replaces: check that returns only problems"
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 217,
+          "end_line": 229,
+          "label": "Replaces: config check returns only problems"
         },
         {
-          "path": "apps/devhost/internal/devtools/config_files.go",
-          "line": 129,
-          "end_line": 142,
+          "path": "apps/devhost/src/devtools/config_files.rs",
+          "line": 245,
+          "end_line": 264,
           "label": "Reuses: validate route for unsaved text"
         }
       ]
@@ -180,24 +180,24 @@
       "label": "Check before Caddy moves",
       "sublabel": "held port names its holder",
       "tag": "proxy-settings-02",
-      "explanation": "One check runs before anything moves, the same for a save, devhost start's apply, devhost caddy start and the validate route (REV-11, read only): the file's validation, each problem with its file, line, column and key, the offending line and a close key (MENU-4); a probe of each new listener port (httpsPort, and httpPort while http = true) on 127.0.0.1, ::1 and the bind host, naming the program and PID that hold it, Caddy's own listeners excluded (FAIL-3); on macOS, a loopback bindHost with any listener below port 1024, which macOS gives only to root; and a stackDirectoryHost that a running stack's service uses, named by stack, service and manifest line, never by a PID alone (WORD-4). A failed check refuses the change with nothing moved, and every stack keeps the running shared Caddy settings (HOLD-6). A devhost start whose service host is the stack directory's is refused naming config.toml line 4 and caddy.stackDirectoryHost. The port probe is the one manifest-hot-reload builds for fixed service ports. Resolves proxy-settings-02 (a port held on loopback was reported applied) and the collision words of proxy-settings-04.",
+      "explanation": "One check runs before anything moves, the same for a save, devhost start's apply, devhost caddy start and the validate route (REV-11, read only): the file's validation, each problem with its file, line, column and key, the offending line and a close key (MENU-4); a probe of each new listener port (httpsPort, and httpPort while http = true) on 127.0.0.1, ::1 and the bind host, naming the program and PID that hold it, Caddy's own listeners excluded (FAIL-3); and a stackDirectoryHost that a running stack's service uses, named by stack, service and manifest line, never by a PID alone (WORD-4). A failed check refuses the change with nothing moved, and every stack keeps the running shared Caddy settings (HOLD-6). A loopback bindHost below port 1024 on macOS is not refused: it applies with its warning (O39). A devhost start whose service host is the stack directory's is refused naming config.toml line 4 and caddy.stackDirectoryHost. The port probe is the one manifest-hot-reload builds. Resolves proxy-settings-02 and the collision words of proxy-settings-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/config/config.go",
-          "line": 95,
-          "end_line": 169,
+          "path": "apps/devhost/src/config.rs",
+          "line": 143,
+          "end_line": 218,
           "label": "Reuses: validation names each bad key"
         },
         {
-          "path": "apps/devhost/internal/services/shared_caddy.go",
-          "line": 57,
-          "end_line": 71,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 652,
+          "end_line": 656,
           "label": "Replaces: read, then apply with no port check"
         },
         {
-          "path": "apps/devhost/internal/caddy/stack_directory.go",
-          "line": 133,
-          "end_line": 146,
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 195,
+          "end_line": 214,
           "label": "Replaces: collision that names only a PID"
         }
       ]
@@ -208,20 +208,20 @@
       "col": 3,
       "type": "backend",
       "label": "Tell pages, move once",
-      "sublabel": "loopback kept on macOS",
+      "sublabel": "loopback from port 1024",
       "tag": "proxy-settings-01",
-      "explanation": "When the change moves a listener (a port, http or the bind host), the process applying it first calls each running stack's control server on the loopback control port the state directory records, and each stack sends every page whose address changes {type: listeners-moving, origin, operationId} on its health stream; a stack that does not answer within 1 s never holds the move up (HOLD-2; proxy-settings-03). Caddy then moves in one reload under the route lock, adminAddress included, as today. On macOS a loopback bindHost now renders default_bind 127.0.0.1 [::1] from port 1024, as on Linux, never every interface, and the check refuses it below 1024 (proxy-settings-01). devhost then certifies the move: a TLS handshake through 127.0.0.1 and [::1] on each new listener reaches Caddy, with Caddy's certificate, within 5 s (FB-5; proxy-settings-02); only then is the record written. Services, routes, terminals and chat sessions keep running, and moving URLs never changes a service's state (ACT-2), except services that use publicUrl. Resolves the loopback listener of proxy-settings-01.",
+      "explanation": "When the change moves a listener (a port, http or the bind host), the applying process first calls each running stack's control server on the loopback control port the state directory records, and each stack sends every page whose address changes {type: listeners-moving, origin, operationId}; relayed pages keep public port 443 and get none; a stack that does not answer within 1 s never holds the move up (HOLD-2). Caddy then moves in one reload under the route lock, adminAddress included, every configured route on the new port, stopped stacks' 24 h routes included, while an unconfigured hostname gets no certificate (O63, O15). On macOS a loopback bindHost renders default_bind 127.0.0.1 [::1] when every port is 1024 or above, as on Linux; below that every interface stays, with the warning (O39; proxy-settings-01). devhost certifies the move on every address the bind host resolves to: a TLS handshake with the stack directory's hostname, and a plain request on the HTTP port, reach Caddy within 5 s (FB-5); only then is the record written. Services keep running and no service restarts (ACT-2, O45; proxy-settings-06).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/bind.go",
-          "line": 19,
-          "end_line": 40,
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 497,
+          "end_line": 534,
           "label": "Replaces: macOS skips the loopback bind"
         },
         {
-          "path": "apps/devhost/internal/caddy/settings.go",
-          "line": 85,
-          "end_line": 114,
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 509,
+          "end_line": 535,
           "label": "Reuses: one reload under the route lock"
         }
       ]
@@ -234,25 +234,25 @@
       "label": "Stacks follow the record",
       "sublabel": "save, start or caddy start",
       "tag": "proxy-settings-07",
-      "explanation": "Only a certified move writes the record of what Caddy runs (applied.json), now with the operation ID, its origin (a save of config.toml, devhost start with its manifest's folder, or devhost caddy start), the time and the config.toml text it was read from (ACT-1). Every running stack watches it beside config.toml and follows it whoever moved Caddy: it replaces its own copy, publishes its state, prints its outcome line, and clears its devhost config file rejection when the running settings equal config.toml (ACT-7, ACT-12, FAIL-4). Printed URLs, the toolbar's service links, later manifest reloads, Restart Stack and switches read their ports from it, as the stack directory already does, so every surface names one port; Show Differences and Restore Running Version read its text (UNDO-6). A stack busy with an operation of its own follows when that ends and prints its line after that operation's (HOLD-3, REV-12). Resolves proxy-settings-07: when a start applied a change a save could not, running stacks kept the old port's links and the stale not-applied notice.",
+      "explanation": "Only a certified move writes the record of what Caddy runs (applied.json), now with the operation ID, its origin (a save of config.toml, devhost start or a devhost serve session with its folder, or devhost caddy start), the time, the resolved listeners and the config.toml text it was read from (ACT-1). Every running stack watches it beside config.toml and follows it whoever moved Caddy: it replaces its own copy, publishes its state, prints its outcome line, and clears its devhost config file rejection when the running settings equal config.toml (ACT-7, ACT-12, FAIL-4). Printed URLs, the toolbar's links, later reloads, Restart Stack, switches and the relay connector read their ports from it, as the stack directory already does, so every surface names one port; Show Differences and Restore Running Version read its text (UNDO-6). A stack busy with its own operation follows when that ends (HOLD-3, REV-12). Resolves proxy-settings-07: running stacks kept the old port's links after a start applied a change a save could not.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/shared_caddy.go",
-          "line": 72,
-          "end_line": 79,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 671,
+          "end_line": 716,
           "label": "Replaces: each stack's own copy of settings"
         },
         {
-          "path": "apps/devhost/internal/services/reload_ports.go",
-          "line": 39,
-          "end_line": 43,
-          "label": "Replaces: reloads keep that old copy"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 47,
+          "end_line": 60,
+          "label": "Reuses: applied.json written after a reload"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 1608,
-          "end_line": 1608,
-          "label": "Replaces: toolbar link port from that copy"
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 2034,
+          "end_line": 2050,
+          "label": "Replaces: URLs from each stack's own copy"
         }
       ]
     },
@@ -265,19 +265,19 @@
       "sublabel": "443 → 4443, moved URLs",
       "tag": "proxy-settings-04",
       "yOffset": -50,
-      "explanation": "Each stack prints one outcome line in its terminal and log, then only what changed: 'Applied config.toml: HTTPS port 443 → 4443 · 1.4 s · after config.toml changed on disk', its moved URLs by service and stack-run-stop's 'All stacks on this machine: https://devhost.localhost:4443/' (FB-3, FB-7, FB-10, WORD-4, CC-22; stack-directory-06, related). Each changed key reads old → new in plain words ('bindHost 0.0.0.0 → 127.0.0.1: reachable only from this machine'), plain HTTP adds each HTTP URL, 'restarted web (uses services.web.publicUrl)' names a restart, a bindHost or port change adds the proxy line, remote directory access adds a warning line, a start that applied the file ends '· from the terminal (devhost caddy start)', and a save that changes nothing that runs prints 'Applied config.toml: nothing changed'. Agent output prints the same facts on one line (WORD-9, FB-11). The Configuration window shows 'Applied config.toml: moved the URLs of 3 stacks to port 4443 · 1.4 s', focus on its sentence (FB-2, FB-9). There is no Undo: a setting is undone by saving the old value, which reports its own move (UNDO-6). Resolves the outcome slice of proxy-settings-04.",
+      "explanation": "Each stack prints one outcome line in its terminal and log, then only what changed: 'Applied config.toml: HTTPS port 443 → 4443 · 1.4 s · after config.toml changed on disk', its moved URLs by service and stack-run-stop's 'All stacks on devbox: https://devhost.localhost:4443/' (FB-3, FB-7, FB-10, WORD-4, CC-22, O61). Each changed key reads old → new ('bindHost 0.0.0.0 → 127.0.0.1: direct connections from this machine only'); plain HTTP adds each HTTP URL; a bindHost or port change adds the proxy line and, on macOS below port 1024, its warning (O39); anonymous directory access adds a warning line (O47); a start that applied the file ends '· from the terminal (devhost caddy start)'; a save that changes nothing that runs prints 'Applied config.toml: nothing changed'. Agent output prints the same facts on one line (WORD-9, FB-11). The Configuration window shows 'Applied config.toml: moved the URLs of 3 stacks to port 4443 · 1.4 s', focus on its sentence (FB-2, FB-9). There is no Undo: saving the old value reports its own move (UNDO-6). Resolves the outcome slice of proxy-settings-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/shared_caddy.go",
-          "line": 80,
-          "end_line": 83,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 710,
+          "end_line": 714,
           "label": "Replaces: Applied line, then every URL again"
         },
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 719,
-          "end_line": 734,
-          "label": "Replaces: URLs from httpsPort, no HTTP URL"
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 2052,
+          "end_line": 2073,
+          "label": "Replaces: every service URL logged again"
         }
       ]
     },
@@ -290,49 +290,25 @@
       "sublabel": "devhost moved to port 4443",
       "tag": "proxy-settings-03",
       "yOffset": 50,
-      "explanation": "On listeners-moving a page shows 'Apply config.toml · moving to port 4443 · 1 s' (FB-1) and hands its unsent chat text, pasted images and page context to the draft record under the new address (UNDO-2). When its stream closes it connects its status stream to the same hostname on the new port; until that answers, every service keeps its last state as unknown, 'last seen 14:02', never down (ACT-5, CC-26). Then notices-and-feedback's notice reads 'devhost moved to port 4443' with 'This page still uses port 443, which closed when config.toml changed.' and Open, which opens this page at port 4443 in the same tab with path, query and fragment kept (HOLD-2, SURF-15, FB-5). Every write on the old page reads 'This page still uses port 443. Open it at port 4443 to make changes.' (HOLD-1, MENU-3). The notice never takes focus, is announced once, ranks with the lost connection, fits every acceptance viewport, and Escape never dismisses it; Dismiss leaves 'moved' on the stack name (KEY-6, FB-8, FB-9, SURF-8, SURF-9). Hold Reloads holds nothing here: Open is the person's navigation. Resolves this flow's slice of proxy-settings-03.",
+      "explanation": "On listeners-moving a page shows '◐ Apply config.toml · moving to port 4443 · 1 s' (FB-1) and hands its unsent chat text, pasted images and page context to the draft record under the new address (UNDO-2). When its stream closes it connects its status stream to the same hostname on the new port; until that answers, every service keeps its last state as unknown, 'last seen 14:02', never down (ACT-5, CC-26). Then notices-and-feedback's notice reads '? devhost moved to port 4443' with 'This page still uses port 443, which closed when config.toml changed.' and Open, which opens this page at port 4443 in the same tab with path, query and fragment kept (HOLD-2, SURF-15, FB-5). Every write on the old page reads 'This page still uses port 443. Open it at port 4443 to make changes.' (HOLD-1, MENU-3). The notice never takes focus, is announced once, ranks with the lost connection, fits every acceptance viewport and the 320 px phone layout (O8); Dismiss leaves 'moved' on the stack name (KEY-6, FB-8, FB-9, SURF-8, SURF-9). Resolves this flow's slice of proxy-settings-03.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
-          "line": 73,
+          "line": 70,
           "end_line": 92,
           "label": "Replaces: all down, retrying the old origin"
         },
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts",
-          "line": 3,
-          "end_line": 27,
+          "line": 1,
+          "end_line": 28,
           "label": "Replaces: every service marked failed"
         },
         {
-          "path": "apps/devhost/internal/devtools/server.go",
-          "line": 691,
-          "end_line": 704,
+          "path": "apps/devhost/src/devtools/streams.rs",
+          "line": 138,
+          "end_line": 169,
           "label": "Reuses: health stream that only reads"
-        }
-      ]
-    },
-    {
-      "id": "publicUrl",
-      "lane": "backend",
-      "col": 5,
-      "type": "backend",
-      "label": "Restart publicUrl users",
-      "sublabel": "every other service runs",
-      "tag": "proxy-settings-06",
-      "explanation": "Service references gain publicUrl: the service's first public URL as devhost prints it, 'https://shop.localhost:4443', without the port on 443 and with the service's path when it has one ('https://shop.localhost:4443/api'). A manifest uses it in env or command as it uses url, for example APP_URL set to the reference services.web.publicUrl (a [discuss] contract change with no CC-n yet). devhost never adds it to every service's environment by itself, because a port change would then restart every routed service of every stack. When the record changes, every running manifest's references resolve again, and only services whose command or environment changed restart through the stack's reload, each named 'restarted web (uses services.web.publicUrl)' beside Save and in the outcome (REV-10, FB-3, SEL-11); its row shows restarting with that reason, then running, and every other service keeps its state (ACT-2, ACT-3). A reference to a service without a hostname fails at start, as url does for a service without a port. Resolves proxy-settings-06: with any HTTPS port but 443, a service could not learn its public URL.",
-      "sources": [
-        {
-          "path": "apps/devhost/internal/services/ports.go",
-          "line": 272,
-          "end_line": 294,
-          "label": "Reuses: references resolve port, host and url"
-        },
-        {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 672,
-          "end_line": 700,
-          "label": "Replaces: env without the public port"
         }
       ]
     },
@@ -344,12 +320,12 @@
       "label": "Not applied: file:line",
       "sublabel": "says what keeps running",
       "tag": "proxy-settings-04",
-      "explanation": "Nothing moves. Each running stack prints one line led by the file, line, column and key, then the cause, the fix and what keeps running, the offending line under it: '~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 is in use by nc (PID 77959) on 127.0.0.1. Choose another port or stop that program. Every stack still runs the running shared Caddy settings: HTTPS on port 443, every interface.' It blocks nothing (FAIL-2, MENU-4, HOLD-6). The same form names an out-of-range value, a loopback listener below 1024 on macOS and a directory hostname by stack and service; a save while Caddy is stopped reads 'config.toml not applied yet: devhost's proxy is not running. devhost caddy start applies it.' (proxy-settings-07). Every open page shows 'devhost config file not applied: config.toml line 3, column 13, …' led by Edit (Open in Editor with the editor off), then Copy Error (MENU-5, ACT-7, FB-6); the Configuration window marks the lines that differ from what runs, with Show Differences and Restore Running Version (UNDO-6). A repeat counts '2 times, last at 14:05' (FAIL-4); agent output keeps one ERR: line (WORD-9). Resolves the rejection words of proxy-settings-04.",
+      "explanation": "Nothing moves. Each running stack prints one line led by the file, line, column and key, then the cause, the fix and what keeps running, the offending line under it: '~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 is in use by nc (PID 77959) on 127.0.0.1. Choose another port or stop that program. Every stack keeps the running shared Caddy settings: HTTPS on port 443, every interface.' It blocks nothing (FAIL-2, MENU-4, HOLD-6). The same form names an out-of-range value and a directory hostname by stack and service; a save while Caddy is stopped reads 'config.toml not applied yet: devhost's proxy is not running. devhost caddy start applies it.' (proxy-settings-07). Every open page shows '◆ devhost config file not applied: config.toml line 3, column 13, …' led by Edit, then Copy Error; with the editor off Copy Error leads and devhost opens no editor (O51); an unsigned browser elsewhere gets no status stream (HOLD-7, O38). The window marks lines that differ from what runs, with Show Differences and Restore Running Version (UNDO-6). A repeat counts '2 times, last at 14:05' (FAIL-4). Resolves the rejection words of proxy-settings-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 611,
-          "end_line": 616,
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 189,
+          "end_line": 197,
           "label": "Replaces: rejection logged; a fix logs nothing"
         },
         {
@@ -357,12 +333,6 @@
           "line": 12,
           "end_line": 15,
           "label": "Replaces: devhost config change not applied"
-        },
-        {
-          "path": "apps/devhost/internal/services/runtime.go",
-          "line": 108,
-          "end_line": 124,
-          "label": "Reuses: a repeated rejection printed once"
         }
       ]
     },
@@ -374,24 +344,63 @@
       "label": "Uncertified: restored",
       "sublabel": "port 443 answers again",
       "tag": "proxy-settings-02",
-      "explanation": "When the handshake fails, for example because a program took 127.0.0.1:4443 after the probe, devhost reloads Caddy to the running settings and writes no record, and the change is not applied with its cause (FB-5, REV-11): '~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 answered on 127.0.0.1 but not through Caddy; another program holds it for IPv4. Restored the running shared Caddy settings: HTTPS on port 443, every interface.' This is devhost's own rollback (UNDO-1), and its outcome names what it restored, the running shared Caddy settings. A page that received listeners-moving reconnects to the old address, which answers again within 5 s, and its activity line gives way to the not-applied notice, never to 'devhost moved to port 4443' (REV-13; proxy-settings-03). A reload Caddy refuses keeps Caddy on the settings it runs and renders its files back for them, as today. Never 'Applied config.toml' for a listener that does not answer through Caddy on both 127.0.0.1 and [::1]. Resolves the certification half of proxy-settings-02.",
+      "explanation": "When the handshake fails, for example because a program took 127.0.0.1:4443 after the probe, devhost reloads Caddy to the running settings and writes no record, and the change is not applied with its cause (FB-5, REV-11): '~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 answered on 127.0.0.1 but not through Caddy; another program holds it for IPv4. Restored the running shared Caddy settings: HTTPS on port 443, every interface.' This is devhost's own rollback (UNDO-1), and its outcome names what it restored, the running shared Caddy settings. A page that received listeners-moving reconnects to the old address, which answers again within 5 s, and its activity line gives way to the not-applied notice, never to 'devhost moved to port 4443' (REV-13; proxy-settings-03). A reload Caddy refuses keeps Caddy on the settings it runs and renders its files back for them, as today. Never 'Applied config.toml' for a listener that does not answer through Caddy on every address its bind host resolves to. Resolves the certification half of proxy-settings-02.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/settings.go",
-          "line": 103,
-          "end_line": 108,
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 524,
+          "end_line": 532,
           "label": "Reuses: a refused reload renders running back"
         }
       ]
     },
     {
-      "id": "partial",
+      "id": "relay",
+      "lane": "backend",
+      "col": 5,
+      "type": "backend",
+      "label": "Relay follows the record",
+      "sublabel": "public port 443, any Caddy port",
+      "tag": "relay-previews-01",
+      "sources": [
+        {
+          "path": "apps/devhost/src/caddy/devtools_origin.rs",
+          "line": 36,
+          "end_line": 55,
+          "label": "Replaces: guard expects Caddy's local port"
+        },
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 2017,
+          "end_line": 2029,
+          "label": "Replaces: lease captures the port at start"
+        },
+        {
+          "path": "apps/devhost/src/remote/proxy.rs",
+          "line": 39,
+          "end_line": 47,
+          "label": "Replaces: machine-wide lock per request"
+        }
+      ],
+      "explanation": "A remote stack's public port is 443: the control server's origin check and every helper that rebuilds a stack URL match a relayed page against it, never Caddy's local httpsPort, so on a machine whose Caddy uses 4443 a relayed page's toolbar shows 6 of 6 running and a signed-in browser's Restart, Restart Stack, Start, switches and chat pass as on 443 (O36, relay-previews-01); a start whose own public origin is refused fails with a named cause. The relay connector takes Caddy's address from the record whenever it changes, never from the port a lease captured at start, so a move by a save, another project's start or a serve session leaves every preview answering; when it cannot reach Caddy, the remote stack prints 'Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with devhost caddy start' (relay-previews-08). It keeps the lease table in memory, reloaded within 250 ms, and reuses keep-alive TLS connections (relay-previews-07). Services read their public URL from X-Forwarded-Proto and X-Forwarded-Host; the docs teach it (O45, proxy-settings-06)."
+    },
+    {
+      "id": "waiting",
       "lane": "recovery",
       "col": 5,
       "type": "security",
-      "label": "Partial: 5 of 6 running",
-      "sublabel": "Restart · Logs · Edit",
-      "explanation": "When a service restarted for its public URL exits, the move still stands, because Caddy already runs the new settings, and that stack's outcome is a partial result with the failed service's evidence and its lead action, never a plain success (FAIL-1, FAIL-3, MENU-5): 'Applied config.toml: HTTPS port 443 → 4443 · 5 of 6 running · web exited with code 1 at 14:02 after its restart (uses services.web.publicUrl)', with web's last output lines, then Restart first, Logs and Edit. Every other service and stack is unaffected, and the failure stays on web's row until it is dismissed or web runs again (FB-6, ACT-2)."
+      "label": "Waits for its next start",
+      "sublabel": "domainSuffix or [remote]",
+      "tag": "proxy-settings-08",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 658,
+          "end_line": 669,
+          "label": "Replaces: routing change refuses whole save"
+        }
+      ],
+      "explanation": "A domainSuffix change waits only for the stacks it changes: a running local stack waits for its next start only when a hostname of its accepted manifest comes from a short host label; a stack whose hostnames are full names records the new suffix for later reloads and shows no rejection. A remote stack waits for a [remote] change the same way. A waiting stack still applies or follows the save's [caddy] part, so Caddy never stays on the old port, and prints 'config.toml's domainSuffix waits for Blog's next start: blog.localhost → blog--devbox.example.com' with devhost stack restart on its own line; its pages show '◆ domainSuffix waits for a restart' with Copy Command (HOLD-6, WORD-8, ACT-7). A later save while it waits is applied and reported, never refused in silence (FAIL-4). Restart Stack keeps the hostnames the stack started with. Resolves proxy-settings-08, and with the relay, relay-previews-08."
     }
   ],
   "edges": [
@@ -462,20 +471,6 @@
       "variant": "dashed"
     },
     {
-      "id": "record-publicUrl",
-      "from": "record",
-      "to": "publicUrl",
-      "label": "uses publicUrl",
-      "role": "branch"
-    },
-    {
-      "id": "publicUrl-partial",
-      "from": "publicUrl",
-      "to": "partial",
-      "label": "restart fails",
-      "role": "error"
-    },
-    {
       "id": "check-notApplied",
       "from": "check",
       "to": "notApplied",
@@ -503,6 +498,21 @@
       "label": "fix or restore, save",
       "role": "return",
       "fromSide": "left"
+    },
+    {
+      "id": "record-relay",
+      "from": "record",
+      "to": "relay",
+      "label": "connector follows",
+      "role": "branch"
+    },
+    {
+      "id": "record-waiting",
+      "from": "record",
+      "to": "waiting",
+      "label": "routing change waits",
+      "role": "branch",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -510,11 +520,11 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: bindHost = \"127.0.0.1\" silently widened to every interface on macOS (replaced by a loopback listener from port 1024 and a refusal below it); 'Applied the shared Caddy settings from <path>.' followed by every URL again (replaced by one outcome line and the moved URLs); 'shared Caddy settings rejected: <Go error chain>' (replaced by the not-applied line); the title 'devhost config change not applied' (now 'devhost config file not applied'); 'managed caddy does not need privileged-port setup on macOS.'; every service drawn down on a page whose port moved, retrying the closed address forever; the directory collision that names only a PID",
-        "Merged: applied, rejected and 'not applied' become one event, applied or not applied (WORD-1); each stack's private copy of the shared Caddy settings and the record of what Caddy runs become one record that every URL, link, list and the stack directory read",
-        "New: config.toml's path in devhost caddy --help; the proxy line at caddy start, start and status; each setting's reach beside Save; checks before the move (a held port with its holder, a loopback listener macOS cannot give, a directory hostname in use); the certified move and its restore; listeners-moving and pages that follow their stack with Open; the change summary with old and new values; HTTP URLs while http = true; the remote-access warning; the restore line and the repeat count; the publicUrl service reference; privileged-ports' help, its download and password notices, its AGENT=1 refusal and the re-run line after a download on Linux",
-        "Changed: on macOS a loopback bindHost listens on loopback from port 1024 and is refused below it; a service that uses publicUrl restarts when a change moves its URL, the one exception to services keeping running; running stacks follow a change a start applies; a held port is refused before the move, as the docs promise; a rejection clears whenever config.toml matches what runs",
-        "Kept: config.toml's location (DEVHOST_CONFIG_DIR, else XDG_CONFIG_HOME/devhost, else ~/.config/devhost) and defaults for a missing file; every running stack watches it with the manifest's debounce and applies one save at a time without restarting services, routes, terminals or chat sessions; one Caddy reload under the shared route lock, adminAddress included, never twice for settings already applied, with caddy stop and trust finding Caddy at its admin address; an invalid file, a claimed directory hostname or a refused reload keeps the running settings and renders the files back; validation names each bad key; a repeated rejection prints once; the config editor off by default, saving only from this machine after validating the file; the stack directory local-only unless stackDirectoryAllowRemote, read-only with same-origin checks; every interface by default and loopback-only bindHost on Linux; privileged-ports' setcap on Linux; caddy start and every starting stack apply the file; only a person changes certificate trust (REV-8)"
+        "Removed: bindHost = \"127.0.0.1\" silently widened to every interface on macOS (now loopback from port 1024, a warning below it); 'Applied the shared Caddy settings from <path>.' followed by every URL again; 'shared Caddy settings rejected: <error chain>'; the title 'devhost config change not applied'; 'managed caddy does not need privileged-port setup on macOS.'; every service drawn down on a page whose port moved; the directory collision that names only a PID; a routing change refusing the whole save; relayed pages refused when Caddy is not on 443",
+        "Merged: applied, rejected and 'change not applied' become one event; each stack's copy of the settings, each relay lease's captured address and the record of what Caddy runs become one record every surface and the relay read",
+        "New: the config file's path in caddy --help; the proxy line and its macOS warning; reach stated beside Save; checks, certification and restore; listeners-moving and pages that follow with Open; the change summary; waiting-suffix and waiting-relay lines and notice; the connector's unreachable line and start self-check; privileged-ports' lines and AGENT=1 refusal",
+        "Changed: on macOS a loopback bindHost listens on loopback from port 1024; running stacks and relay previews follow a change a start applied; a held port is refused before the move; a rejection clears whenever config.toml matches what runs; a routing change waits only for the stacks it changes",
+        "Kept: file location and defaults; every interface by default (owner rule); hot reload with no question and no service restart (O45); one reload under the route lock, never applied twice; refused changes keep the running settings; config editor off by default; strict TLS for configured hostnames (O63); only a person changes trust (REV-8)"
       ]
     },
     {
@@ -527,9 +537,10 @@
         "One record that every stack follows: proxy-settings-07",
         "Open pages follow the move: proxy-settings-03",
         "Not applied and restored: proxy-settings-04, proxy-settings-02, proxy-settings-07",
-        "A service's public URL: proxy-settings-06",
+        "Relay previews on any port and following moves: relay-previews-01 (P1), relay-previews-08, relay-previews-07",
+        "Routing settings per stack: proxy-settings-08; public URL from the request (O45): proxy-settings-06",
         "Slices here, the rest elsewhere: proxy-settings-03 (notices-and-feedback: a lost connection is never an outage); proxy-settings-04 (stack-run-stop: the directory URL with the service URLs; manifest-hot-reload: clearing a rejection prints a line)",
-        "Related, not covered: network-exposure-01 (P0, its own stopgap admits only loopback clients to chat; agent-chat owns the control-API rule; when it ships is the owner's); stack-directory-06 (stack-run-stop and stack-directory)"
+        "Related, not covered: network-exposure-01 (agent-chat's O36 check, shipping with O39); stack-directory-06 (stack-run-stop, stack-directory)"
       ]
     },
     {
@@ -537,17 +548,13 @@
       "title": "Backend work",
       "items": [
         "Structured issues for config.toml: file, line, column, key, the offending line and a close key (MENU-4)",
-        "One check before every move: listener ports probed on 127.0.0.1, ::1 and the bind host naming the holder; on macOS a loopback bindHost below 1024 refused; stackDirectoryHost checked against running stacks and reserved at start (REV-11)",
-        "A loopback listener on macOS: default_bind 127.0.0.1 [::1] as on Linux, with the start failure's macOS hint giving the same fixes",
-        "Pages told before the move: listeners-moving through each stack's loopback control port to every page whose origin changes, at most 1 s per stack; drafts kept under the new origin (CC-26, UNDO-2)",
-        "[discuss]: the health stream accepted from a page on the port served before the last move; it takes no commands, every write keeps today's cross-origin check, and the backend owners confirm it against the control API's security model",
-        "The move certified by a TLS handshake through 127.0.0.1 and [::1] within 5 s, else Caddy restored; only a certified move writes the record (FB-5)",
-        "One record of what Caddy runs, with operation ID, origin, time and config.toml text, followed by every running stack; URLs, toolbar links and reloads read their ports from it (ACT-1)",
-        "The outcome line and change summary in cliout, with the restore and repeat lines from manifest-hot-reload's result kinds (CC-22)",
-        "The plan for a config.toml draft from /__devhost__/config/validate and devhost reload --dry-run (CC-37, CC-23)",
-        "[discuss]: the publicUrl service reference, resolved from the record; only services that use it restart; it needs a CC-n",
-        "The proxy line from the record at caddy start, start, status and every bindHost or port change (CC-22, CC-23)",
-        "Help lines and privileged-ports' notices; [discuss]: privileged-ports refuses under AGENT=1, a REV-8 extension the reference's author decides"
+        "One check before every move: listener ports probed on 127.0.0.1, ::1 and the bind host naming the holder; stackDirectoryHost checked against running stacks and reserved at start (REV-11)",
+        "macOS loopback listener: default_bind 127.0.0.1 [::1] when every port is 1024 or above, every interface and a warning below (O39)",
+        "Pages told before the move: listeners-moving through each stack's loopback control port, at most 1 s per stack; drafts kept under the new origin; the status stream readable from the old address",
+        "The move certified with the stack directory's hostname and restored when it fails; every configured route, stopped stacks' included, on the new port (O63)",
+        "One record of what Caddy runs, with origin, time, listeners and text, followed by every stack and the relay connector",
+        "The outcome line, the plan for a draft, the proxy line, privileged-ports' lines and AGENT=1 refusal",
+        "Routing settings decided per stack; a remote stack's public port; the connector following the record with an in-memory lease table and pooled connections"
       ]
     },
     {
@@ -555,21 +562,20 @@
       "title": "Contract changes",
       "items": [
         "CC-22: one outcome line for every operation on a running stack; URLs print at the first start and on request, not after each action (stack-run-stop lands it)",
-        "CC-23: devhost status carries the proxy line; devhost reload --dry-run prints the plan for config.toml",
+        "CC-23 (with O62): devhost status carries the proxy line; devhost reload --dry-run prints the plan for config.toml",
         "CC-26: a lost connection is unknown, never down; a page whose port moved draws unknown until the new address answers",
+        "CC-27 (with O63, O15): configured-hosts-only TLS stays; stopped stacks' 24 h routes move with the port",
         "CC-37: /__devhost__/config/validate returns what saving would do, the URLs it moves included; config/save takes an operationId",
-        "[discuss], no CC-n yet: the macOS bullet and the bindHost row of guides/shared-managed-caddy-settings.md",
-        "[discuss], no CC-n yet: that page's reprinted URLs, keep-running, rejection and start sentences",
-        "[discuss], no CC-n yet: publicUrl in guides/service-references.md and guides/environment-variables.md",
-        "[discuss], no CC-n yet: privileged-ports in reference/cli.md and guides/managed-caddy.md, with the REV-8 extension"
+        "CC-39 (with O61): machineName names devbox in the reach lines",
+        "No CC-n yet (reference author adds them): shared-managed-caddy-settings.md macOS bullet (O39), its move, rejection and routing sentences; remote-previews.md any Caddy port; service-references.md and environment-variables.md public URL from the request (O45); cli.md and managed-caddy.md privileged-ports, with the REV-8 extension"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
-        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Drawn from the current diagram (frozen at the pre-Rust baseline) and the written proposal; sources cite only existing Rust and devtools UI code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }
   ]
