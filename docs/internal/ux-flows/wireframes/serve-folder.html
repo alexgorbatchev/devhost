@@ -45,19 +45,21 @@
 <div class="win">
 <div class="bar"><b>Terminal › ~/acme</b><span>folder, --no-chat, --port, and command starts; macOS O39 warning below port 1024</span></div>
 <pre class="term">$ devhost serve --dir docs --domain notes.acme.test
-devhost | Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat on (pass --no-chat to turn it off) <span class="n">1</span><span class="n">2</span>
+devhost | Serving ~/acme/docs · chat on (pass --no-chat to turn it off) <span class="n">1</span><span class="n">2</span>
+devhost | Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml
 
 $ devhost serve --dir docs --domain notes.acme.test --no-chat
-devhost | Serving ~/acme/docs · Caddy listens on all interfaces, port 443 · chat off <span class="n">3</span>
+devhost | Serving ~/acme/docs · chat off <span class="n">3</span>
 
 $ devhost serve --port 3000 --domain app.acme.test
-devhost | Routing to 127.0.0.1:3000 · Caddy listens on all interfaces, port 443 · chat off <span class="n">4</span>
+devhost | Routing to 127.0.0.1:3000 · chat off <span class="n">4</span>
 
 $ devhost serve --name demoapp -- bun run dev
-devhost | Running bun run dev in ~/acme · Caddy listens on all interfaces, port 443 · chat on (pass --no-chat to turn it off) <span class="n">5</span>
+devhost | Running bun run dev in ~/acme · chat on (pass --no-chat to turn it off) <span class="n">5</span>
 
 <span class="muted"># macOS with bindHost = "127.0.0.1" and httpsPort = 443 (below 1024):</span>
-devhost | WARN: macOS cannot bind 127.0.0.1 on privileged port 443; listening on all interfaces. Set httpsPort = 4443 or use a privileged launcher to restrict to loopback. <span class="n">6</span></pre>
+devhost | Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml
+devhost | Warning: on macOS, bindHost = "127.0.0.1" needs every port at 1024 or above, so Caddy listens on every interface on port 443, reachable from your network. Set httpsPort = 4443, or start Caddy from a privileged launcher. <span class="n">6</span></pre>
 </div>
 <div class="win">
 <div class="bar"><b>Terminal › ~/acme</b><span>Caddy auto-start trust step, and taken-hostname refusals (exit 1)</span></div>
@@ -107,7 +109,7 @@ $ devhost serve --help   <span class="muted"># Quickstart includes command-mode 
 <li><span class="n">3</span> <code>--no-chat</code> turns chat off for the session: <code>/__devhost__/config.json</code> answers <code>chatEnabled: false</code> and chat routes return 404 (<code>SEL-11</code>, <code>O40</code>).</li>
 <li><span class="n">4</span> A <code>--port</code> session routes an external server devhost never starts or stops (<code>ACT-9</code>) and always keeps chat off with empty <code>projectRootPath</code> — it never hands an agent the shell's current folder (<code>O40</code>, <code>serve-folder-04</code>).</li>
 <li><span class="n">5</span> Command mode (<code>devhost serve "&lt;cmd&gt;"</code> or <code>devhost serve -- &lt;cmd&gt;</code>, with optional <code>--name</code>, <code>--detach</code>, and <code>-s</code>/<code>--startup-timeout</code>) names the command and working directory directly on line 1.</li>
-<li><span class="n">6</span> Under <code>O39</code>, macOS honors <code>bindHost = "127.0.0.1"</code> from port 1024 upward; below 1024 (including default 443), Caddy keeps listening on all interfaces without failing startup and prints this explicit warning naming <code>httpsPort = 4443</code> or a privileged launcher.</li>
+<li><span class="n">6</span> Every start prints proxy-settings' proxy line after its first line, "Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml", or on a loopback listener "Proxy: HTTPS on 127.0.0.1:4443 and [::1]:4443, direct connections from this machine only; relay previews and SSH forwards still reach it · …" (<code>WORD-12</code>). Under <code>O39</code>, macOS honors <code>bindHost = "127.0.0.1"</code> from port 1024 upward; below 1024 (including default 443), Caddy keeps listening on every interface without failing startup and prints proxy-settings' macOS warning after the proxy line, naming <code>httpsPort = 4443</code> or a privileged launcher.</li>
 <li><span class="n">7</span> Before the trust password prompt, one line explains what trust does; under <code>AGENT=1</code> or non-TTY stdin the prompt never runs and one warning points to <code>devhost caddy trust</code> (<code>REV-8</code>, <code>CC-13</code>, <code>UNDO-5</code>).</li>
 <li><span class="n">8</span> A taken hostname exits 1 before routing, naming the holding serve session's folder/port/command, PID, start time, and stop command (never "from .") (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
 <li><span class="n">9</span> A stack holder names the stack, its worktree label, and its root manifest with <code>devhost stop --manifest</code> (<code>SEL-4</code>, <code>WORD-11</code>).</li>
@@ -303,8 +305,8 @@ $ echo $?
 <div class="win">
 <div class="bar"><b>https://notes.acme.test/guides/</b><span>tab title: docs/guides · devhost</span></div>
 <div class="work">
-<div class="banner info" style="margin-top:0">ⓘ Local HTTPS is not yet trusted on devbox · Run <code>devhost caddy trust</code> in a terminal to remove browser warnings <span class="n">1</span></div>
-<div class="hp"><a>docs</a> / guides <span class="n">2</span></div>
+<div class="hp"><a>docs</a> / guides <span class="n">1</span></div>
+<div class="banner" style="margin:4px 0">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there. <span class="n">2</span></div>
 <div class="muted small">3 folders · 12 files <span class="n">3</span></div>
 <div class="row" style="margin:6px 0"><span class="in" style="flex:1"><span class="muted">Filter guides</span></span><span class="n">4</span></div>
 <table class="t"><thead><tr><th>Name <span class="n">5</span></th><th style="width:16%;text-align:right">Size</th><th style="width:24%">Modified</th></tr></thead><tbody>
@@ -354,8 +356,8 @@ $ echo $?
 <h2>4. Open the folder</h2>
 <p>Files are still read on every request, reads stay confined to the served folder (hidden files and <code>../</code> escapes answer 404), and a folder holding <code>index.html</code> still serves it unchanged as a site. What changes is that the page shows the folder itself, named, ordered, and described, with its README below the listing instead of replacing it. Keys: standard document keys only, no extra shortcuts (<code>KEY-1</code>); Tab moves through the heading path, filter, and rows; Escape clears the filter.</p>
 <ol>
-<li><span class="n">1</span> When the machine does not yet trust devhost's local CA, full file-browser pages render <code>first-run-setup</code>'s shared untrusted-CA trust-line component before the heading, naming the machine (<code>SURF-14</code>, <code>O61</code>).</li>
-<li><span class="n">2</span> The page's one heading is the path from the served folder's name (never absolute path, never "Directory listing", never rooted at <code>devhost</code>), with each ancestor a same-tab link and the shown folder <code>aria-current="page"</code> (<code>WORD-1</code>).</li>
+<li><span class="n">1</span> The page's one heading is the path from the served folder's name (never absolute path, never "Directory listing", never rooted at <code>devhost</code>), with each ancestor a same-tab link and the shown folder <code>aria-current="page"</code> (<code>WORD-1</code>).</li>
+<li><span class="n">2</span> When the machine does not yet trust devhost's local certificate authority, full file-browser pages render <code>first-run-setup</code>'s shared trust line under the heading as a condition, in its one sentence naming the machine (<code>FB-9</code>, <code>WORD-12</code>, <code>SURF-14</code>, <code>O61</code>).</li>
 <li><span class="n">3</span> One line counts what the folder holds (<code>WORD-5</code>).</li>
 <li><span class="n">4</span> A filter labelled with the folder's name sits above every non-empty listing (<code>SEL-10</code>).</li>
 <li><span class="n">5</span> Name, Size, and Modified columns: folders first, then files, each group in natural, case-insensitive order (<code>file2</code> before <code>file10</code>, <code>alpha</code> before <code>UPPER.TXT</code>); folders end in "/" beside a folder icon, files sit beside a kind icon; binary sizes with one decimal under 10, local 24-hour dates, compact rows at least 24 CSS px tall (<code>ACT-13</code>, <code>WORD-8</code>, <code>SURF-9</code>).</li>
