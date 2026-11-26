@@ -315,7 +315,7 @@
       "label": "Roll back per service",
       "sublabel": "Restored: 6 of 6 running",
       "tag": "journey-crash-to-fix-03",
-      "explanation": "When a restarted service exits or its routes fail, devhost restores the accepted manifest service by service: every service that ran before runs again, one that was failing before keeps failing with its recovery page, and the set is never stopped as one unit (UNDO-1, FAIL-1, ACT-3). While it restores, the activity line and rows read 'Restoring the accepted manifest · 1 of 2 started · 12 s' (worktrees off). The terminal then prints 'devhost.toml not applied: api exited with code 1 at 14:02 before its health check', api's last output lines frozen at its exit, 'Ran bun run src/server.ts in api/ · devhost.toml:14', then 'Restored the accepted manifest: 6 of 6 running · 21 s', or '5 of 6 running · api still fails' (FAIL-3, WORD-8). The notice keeps api's lines however much other services print, with Logs opening the log panel filtered to api at its exit (SURF-13). Resolves journey-crash-to-fix-03. The per-service rollback ships first as the error-pages-01 stopgap, with journey-crash-to-fix-07 and stack-directory-01 (related).",
+      "explanation": "When a restarted service exits or its routes fail, devhost restores the accepted manifest service by service: every service that ran before runs again, one that was failing before keeps failing with its recovery page, and the set is never stopped as one unit (UNDO-1, FAIL-1, ACT-3). While it restores, the activity line and rows read 'Restoring the accepted manifest · 1 of 2 started · 12 s' (worktrees off). The terminal then prints 'devhost.toml not applied: api exited with code 1 at 14:02 before its health check', api's last output lines frozen at its exit, 'Ran bun run src/server.ts in api/ · devhost.toml:14', then 'Restored the accepted manifest: 6 of 6 running · 21 s', or '5 of 6 running · api still fails' (FAIL-3, WORD-8). The notice is a condition, like every rejection, and keeps api's lines however much other services print; Logs leads its actions and opens the log panel filtered to api at its exit, then Edit and Copy Error (SURF-13, MENU-5, FB-8). Resolves journey-crash-to-fix-03. The per-service rollback ships first as the error-pages-01 stopgap, with journey-crash-to-fix-07 and stack-directory-01 (related).",
       "sources": [
         {
           "path": "apps/devhost/src/services/stack/runtime.rs",
@@ -513,7 +513,7 @@
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference revision 6",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing Rust and UI code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }
