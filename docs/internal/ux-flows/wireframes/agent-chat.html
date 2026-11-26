@@ -138,9 +138,8 @@
               <div class="corner">
                 <div class="dock chat">
                   <div class="hd">
-                    <b>New conversation</b><span class="btn">☰</span><span class="btn">New Conversation</span
-                    ><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span
-                    ><span class="n">2</span>
+                    <span class="btn">✳</span><b>Agent Chat</b><span class="btn">☰</span><span class="btn">⤢</span
+                    ><span class="btn">✕</span><span class="n">2</span>
                   </div>
                   <div class="tr">
                     <div class="muted">
@@ -153,7 +152,10 @@
                   <div class="row">
                     <span class="chip acc">Claude Code · Haiku 4.5</span
                     ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                    ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                    ><span class="acts"
+                      ><span class="btn">Attach Image</span><span class="btn">✎</span><span class="btn">⧉</span
+                      ><span class="btn pri">Send</span></span
+                    >
                   </div>
                 </div>
                 <div class="toastrow" style="padding: 0; align-items: center; gap: 4px">
@@ -176,8 +178,7 @@
               <div class="corner">
                 <div class="dock chat">
                   <div class="hd">
-                    <b>Fix the nav header</b><span class="muted">Claude Code · idle</span><span class="btn">☰</span
-                    ><span class="btn">New Conversation</span><span class="btn">⤡</span><span class="btn">✥</span
+                    <span class="btn">✳</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">⤡</span
                     ><span class="btn">✕</span>
                   </div>
                   <div class="tr">
@@ -190,7 +191,10 @@
                   <div class="row">
                     <span class="chip acc">Claude Code · Haiku 4.5</span
                     ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                    ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                    ><span class="acts"
+                      ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                      ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                    >
                   </div>
                 </div>
                 <div class="tbar">
@@ -210,8 +214,8 @@
               <div class="lab">640×400 CSS px: 1280×800 at 200% zoom</div>
               <div class="dock chat wide">
                 <div class="hd">
-                  <b>Fix the nav header</b><span class="muted">Claude Code · idle</span><span class="btn">☰</span
-                  ><span class="btn">✕</span><span class="n">5</span>
+                  <span class="btn">✳</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">✕</span
+                  ><span class="n">5</span>
                 </div>
                 <div class="muted">To: Fix the nav header · Claude Code · Haiku 4.5</div>
                 <span class="in tx"><span class="muted">Write a message</span></span>
@@ -233,7 +237,7 @@
               <div class="phone">
                 <div class="dock chat">
                   <div class="hd">
-                    <b>Fix the nav header</b><span class="btn">☰</span><span class="btn">✕</span
+                    <span class="btn">◆</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">✕</span
                     ><span class="n">6</span>
                   </div>
                   <div class="card">
@@ -277,17 +281,25 @@
           </p>
           <ol>
             <li>
-              <span class="n">1</span> Chat opens compact at the toolbar's edge beside the notice stack, never over it:
-              no devhost surface covers a notice, the dock and chat shift inward past the minimap strip and the pinned
-              log panel (step 4), and an open toolbar panel, the running agents list included, paints above chat
+              <span class="n">1</span> Chat opens at the toolbar's edge beside the notice stack, never over it, compact
+              on a first visit and afterwards compact or expanded as the person left it (<code>O64</code>): no devhost
+              surface covers a notice, the dock and chat shift inward past the minimap strip and the pinned log panel
+              (step 4), and an open toolbar panel, the running agents list included, paints above chat
               (<code>SURF-1</code>, <code>SURF-5</code>, <code>CC-1</code>).
             </li>
             <li>
-              <span class="n">2</span> The header names the conversation the composer writes to by its title, the first
-              line of its first message, with its agent and state word, or "New conversation" before the first
-              <b>Send</b>; then the conversation list control (step 8), <b>New Conversation</b> as a text button, never
-              a second + icon, <b>Expand Chat</b>, <b>Move Chat Panel</b> and <b>Close</b>, which hides the panel and
-              stops nothing (<code>SEL-8</code>, <code>WORD-1</code>, <code>WORD-2</code>, <code>WORD-6</code>).
+              <span class="n">2</span> The header names only the agent (<code>O64</code>): <b>Move Chat Panel</b>
+              carries the agent's logo (✳) while it is idle, the working spinner (◐) while it works and the waiting
+              shape (◆) while it waits for you, then the agent's display name, or "Agent Chat" before the first
+              conversation; the state word stays in a visually hidden status, spelled out only after an error or while
+              reconnecting ("Claude Code · reconnecting"); then the conversation list control (step 8),
+              <b>Expand Chat</b> and <b>Close</b>, which hides the panel and stops nothing. The waiting shape and the
+              display name are this design's additions to the shipped agent-only header. The conversation's title shows
+              in the recipient line above the composer and in the list. The composer row keeps <code>main</code>'s
+              shipped icon buttons beside <b>Send</b>: <b>Close Conversation</b> (␡, once a conversation is open),
+              <b>New Conversation</b> (✎, distinct from <b>Attach Image</b>) and page-context's <b>Share Tab</b> (⧉),
+              each named by its tooltip (<code>O64</code>, <code>SEL-8</code>, <code>WORD-1</code>, <code>WORD-2</code>,
+              <code>WORD-6</code>, <code>ACT-13</code>).
             </li>
             <li>
               <span class="n">3</span> A stack with no conversation yet says so and how to start one. Opening reads the
@@ -310,11 +322,11 @@
               card, composer (<code>O8</code>). Below 900 px docked chat and the pinned log panel never sit side by
               side: when the log panel opens later, chat folds to <b>Chat</b>, which keeps showing the turn's state, and
               returns as it was, draft and scroll kept, when the panel closes; folding never closes chat
-              (<code>SURF-5</code>, <code>KEY-6</code>). Whether chat was open, its side, the conversation, the agent,
-              the model and the unsent text come back per stack and page origin, never per worktree; its dragged
-              position is saved per manifest on the control server through toolbar-shell's layout route, never in
-              browser storage (<code>SEL-11</code>, <code>CC-9</code>, <code>SURF-7</code>, <code>CC-5</code>,
-              <code>WORD-11</code>).
+              (<code>SURF-5</code>, <code>KEY-6</code>). Whether chat was open, whether it was expanded
+              (<code>O64</code>), its side, the conversation, the agent, the model and the unsent text come back per
+              stack and page origin, never per worktree; its dragged position is saved per manifest on the control
+              server through toolbar-shell's layout route, never in browser storage (<code>SEL-11</code>,
+              <code>CC-9</code>, <code>SURF-7</code>, <code>CC-5</code>, <code>WORD-11</code>).
             </li>
             <li>
               <span class="n">6</span> At the 320 CSS px phone layout (<code>O8</code>), docked chat, pinned decision
@@ -364,7 +376,10 @@
                 <div class="row">
                   <span class="chip acc open" id="t-chip">Claude Code · Haiku 4.5</span
                   ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                  ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                  ><span class="acts"
+                    ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                    ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                  >
                 </div>
               </div>
             </div>
@@ -396,7 +411,10 @@
                     ><span class="chip open" id="t-mode"
                       >This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
                     ></span
-                  ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                  ><span class="acts"
+                    ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                    ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                  >
                 </div>
                 <div class="muted">
                   Asks before commands and edits (your Claude Code configuration) <span class="n">4</span>
@@ -440,7 +458,10 @@
                 <div class="row">
                   <span class="chip acc">Claude Code · Haiku 4.5</span
                   ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                  ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                  ><span class="acts"
+                    ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                    ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                  >
                 </div>
                 <div class="muted">Asks before commands and edits (your Claude Code configuration)</div>
                 <div class="muted">▸ Added by devhost</div>
@@ -553,8 +574,7 @@
             <div class="work small">
               <div class="dock chat">
                 <div class="hd">
-                  <b>Fix the nav header</b><span class="muted">Claude Code · working</span><span class="btn">☰</span
-                  ><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span
+                  <span class="btn">◐</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">⤢</span
                   ><span class="btn">✕</span>
                 </div>
                 <div class="tr">
@@ -567,7 +587,10 @@
                 <div class="row">
                   <span class="chip acc">Claude Code · Haiku 4.5</span
                   ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                  ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                  ><span class="acts"
+                    ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                    ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                  >
                 </div>
               </div>
               <div class="lab">The same message before the acknowledgement</div>
@@ -596,7 +619,10 @@
                 <div class="row">
                   <span class="chip acc">Claude Code · Haiku 4.5</span
                   ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                  ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                  ><span class="acts"
+                    ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                    ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                  >
                 </div>
               </div>
               <div class="lab">After Cancel or Escape</div>
@@ -719,8 +745,7 @@
               <div class="corner">
                 <div class="dock chat">
                   <div class="hd">
-                    <b>Fix the nav header</b><span class="muted">Claude Code · working</span><span class="btn">☰</span
-                    ><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span
+                    <span class="btn">◐</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">⤢</span
                     ><span class="btn">✕</span>
                   </div>
                   <div class="tr" aria-busy="true">
@@ -884,9 +909,8 @@
               <div class="corner">
                 <div class="dock chat">
                   <div class="hd">
-                    <b>Fix the nav header</b><span class="muted">Claude Code · waiting for you</span
-                    ><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">⤢</span
-                    ><span class="btn">✥</span><span class="btn">✕</span>
+                    <span class="btn">◆</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">⤢</span
+                    ><span class="btn">✕</span>
                   </div>
                   <div class="tr"><div class="meta">Edited src/nav.css</div></div>
                   <div class="card">
@@ -1116,8 +1140,7 @@
               <div class="corner">
                 <div class="dock chat">
                   <div class="hd">
-                    <b>Fix the nav header</b><span class="muted">Claude Code · idle</span><span class="btn">☰</span
-                    ><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span
+                    <span class="btn">✳</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">⤢</span
                     ><span class="btn">✕</span>
                   </div>
                   <div class="tr">
@@ -1145,7 +1168,10 @@
                   <div class="row">
                     <span class="chip acc">Claude Code · Haiku 4.5</span
                     ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
-                    ><span class="acts"><span class="btn">Attach Image</span><span class="btn pri">Send</span></span>
+                    ><span class="acts"
+                      ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                      ><span class="btn">⧉</span><span class="btn pri">Send</span></span
+                    >
                   </div>
                 </div>
                 <div class="tbar">
@@ -1305,8 +1331,7 @@
             <div class="work small">
               <div class="dock chat">
                 <div class="hd">
-                  <b>Fix the nav header</b><span class="muted">Claude Code · idle</span><span class="btn">☰</span
-                  ><span class="btn">New Conversation</span><span class="btn">⤢</span><span class="btn">✥</span
+                  <span class="btn">✳</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">⤢</span
                   ><span class="btn">✕</span>
                 </div>
                 <div class="tr">
@@ -1324,8 +1349,8 @@
                   <span class="chip acc">Claude Code · Haiku 4.5</span
                   ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
                   ><span class="acts"
-                    ><span class="btn">Attach Image</span><span class="btn pri">Send</span
-                    ><span class="n">4</span></span
+                    ><span class="btn">Attach Image</span><span class="btn">␡</span><span class="btn">✎</span
+                    ><span class="btn">⧉</span><span class="btn pri">Send</span><span class="n">4</span></span
                   >
                 </div>
               </div>
@@ -1349,8 +1374,8 @@
             <div class="work small">
               <div class="dock chat">
                 <div class="hd">
-                  <b>Fix the nav header</b><span class="muted">closed · Claude Code exited</span
-                  ><span class="btn">☰</span><span class="btn">New Conversation</span><span class="btn">✕</span>
+                  <span class="btn">✳</span><b>Claude Code · exited</b><span class="btn">☰</span
+                  ><span class="btn">✕</span>
                 </div>
                 <div class="tr">
                   <div>The header now uses NavLink, and the spacing</div>
@@ -1406,10 +1431,10 @@
             </li>
             <li>
               <span class="n">6</span> When the agent's process dies, the cut-off reply ends with a plain cause and what
-              was kept, never as a finished reply; the header reads "closed · Claude Code exited", <b>Resume</b> leads,
-              <b>Copy Error</b> holds the CLI's last diagnostic lines, and the recipient line says that
-              <b>Send</b> resumes the conversation. On macOS an idle Claude Code conversation that a stack stop ends
-              reads "closed · Acme Shop stopped", never a failed process (<code>FAIL-3</code>, <code>FAIL-2</code>,
+              was kept, never as a finished reply; the header reads "Claude Code · exited" (<code>O64</code>),
+              <b>Resume</b> leads, <b>Copy Error</b> holds the CLI's last diagnostic lines, and the recipient line says
+              that <b>Send</b> resumes the conversation. On macOS an idle Claude Code conversation that a stack stop
+              ends reads "closed · Acme Shop stopped", never a failed process (<code>FAIL-3</code>, <code>FAIL-2</code>,
               <code>MENU-5</code>, <code>UNDO-4</code>).
             </li>
           </ol>
@@ -1429,14 +1454,14 @@
             <div class="work small">
               <div class="dock chat wide">
                 <div class="hd">
-                  <b>Fix the nav header</b><span class="muted">Claude Code · waiting for you</span
+                  <span class="btn">◆</span><b>Claude Code</b
                   ><span class="row" style="flex-wrap: nowrap; gap: 4px; margin-left: auto"
-                    ><span class="btn open" id="t-conv">☰</span><span class="btn">New Conversation</span
-                    ><span class="btn">⤢</span><span class="btn">✥</span><span class="btn">✕</span></span
+                    ><span class="btn open" id="t-conv">☰</span><span class="btn">⤢</span
+                    ><span class="btn">✕</span></span
                   >
                 </div>
                 <div class="popover" data-for="t-conv">
-                  <i class="caret-up" style="right: 240.6px"></i>
+                  <i class="caret-up" style="right: 70.2px"></i>
                   <div class="from">
                     Conversation list, opened from its control in the header <span class="n">1</span>
                   </div>
@@ -1483,8 +1508,17 @@
           <div class="win">
             <div class="bar"><b>devhost › docked chat › Close Conversation</b></div>
             <div class="work small">
+              <div class="lab">The composer row's ␡ pressed: the question, in place above the composer (O64)</div>
+              <div class="box" style="margin: 0">
+                Close Fix the nav header? This ends Claude Code's process and its turn; Resume in the conversation list
+                continues it. <span class="n">4</span>
+                <div class="row" style="margin-top: 4px">
+                  <span class="sp"></span><span class="btn">Close Conversation</span
+                  ><span class="btn focusring">Cancel</span>
+                </div>
+              </div>
               <div class="lab">Closed: the transcript stays, read-only</div>
-              <div class="meta">Closed by you · 14:10 <span class="n">4</span></div>
+              <div class="meta">Closed by you · 14:10</div>
               <div class="lab">After a stack restart, the close request fails</div>
               <div class="banner bad" style="margin: 0">
                 ✕ Could not close Fix the nav header: devhost did not answer. Its agent may still be running.
@@ -1499,8 +1533,7 @@
             <div class="work small">
               <div class="dock chat">
                 <div class="hd">
-                  <b>Cart page spacing</b><span class="muted">Claude Code · working</span><span class="btn">☰</span
-                  ><span class="btn">New Conversation</span><span class="btn">✕</span>
+                  <span class="btn">◐</span><b>Claude Code</b><span class="btn">☰</span><span class="btn">✕</span>
                 </div>
                 <div class="tr"><div class="meta">Edited src/cart.css</div></div>
                 <div class="stl">
@@ -1604,10 +1637,16 @@
               (<code>UNDO-4</code>, <code>O15</code>, <code>O23</code>, <code>CC-38</code>).
             </li>
             <li>
-              <span class="n">4</span> <b>Close Conversation</b> never asks: it ends the agent's process and turn, keeps
-              the transcript, read-only, and leaves a line. A close that fails says so in words where it was pressed,
-              with <b>Copy Error</b> holding the server's text and <b>Close Conversation</b> still available, never a
-              raw response body (<code>REV-1</code>, <code>REV-3</code>, <code>FAIL-2</code>).
+              <span class="n">4</span> <b>Close Conversation</b>, from a row or the composer row's ␡, asks first: the
+              product owner's exception to <code>REV-1</code> and <code>UNDO-4</code> (<code>O64</code>). The question
+              appears in place, above the composer or in the row, with <b>Cancel</b> focused, which Enter takes;
+              <b>Cancel</b> and Escape leave the conversation as it was (<code>REV-4</code>, <code>SURF-2</code>).
+              <code>main</code> asks it in a modal dialog that points at Chat Settings; this design asks in place and
+              names the conversation list, and the product owner settles which form stands. Once confirmed, it ends the
+              agent's process and turn, keeps the transcript, read-only, and leaves a line. A close that fails says so
+              in words where it was pressed, with <b>Copy Error</b> holding the server's text and
+              <b>Close Conversation</b> still available, never a raw response body (<code>REV-3</code>,
+              <code>FAIL-2</code>).
             </li>
             <li>
               <span class="n">5</span> A conversation of another worktree, after a switch or picked from the list, shows
@@ -1801,7 +1840,7 @@ Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all
               (<code>O1</code>)
             </li>
             <li>Unauthenticated network and relay access to chat and gated control routes (<code>O36</code>)</li>
-            <li>The gear's Chat Settings dialog, its Conversation picker and the icon-only New Conversation button</li>
+            <li>The gear's Chat Settings dialog and its Conversation picker</li>
             <li>Escape stopping a turn, Stop Generating and Send moving into its place</li>
             <li>
               "Waiting for your response…" with raw JSON above the answers; "Denied by the user." sent for the person
@@ -1819,7 +1858,8 @@ Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all
           <h3>Merged</h3>
           <ul>
             <li>
-              The Conversation picker and the composer row's Close Conversation icon become one list in the header
+              The Conversation picker becomes one list in the header with New Conversation, Close Conversation and
+              Resume; the composer row keeps its Close Conversation and New Conversation icons, as main ships them
             </li>
             <li>Stop Generating, Escape and the card's Stop Turn become one Stop Turn with Alt+Ctrl+.</li>
             <li>
@@ -1873,6 +1913,11 @@ Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all
             </li>
             <li>Close keeps the transcript and Resume continues the same conversation (<code>CC-38</code>)</li>
             <li>
+              The agent-only header names the agent by its display name and shows the waiting shape on its badge; Close
+              Conversation's question asks in place instead of in a modal dialog (<code>O64</code>,
+              <code>ACT-13</code>, <code>REV-4</code>)
+            </li>
+            <li>
               Chat off keeps running conversations reachable (<code>CC-18</code>); Deny carries the person's note and
               cards offer CLI standing approval (<code>CC-16</code>, <code>O12</code>)
             </li>
@@ -1890,6 +1935,11 @@ Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all
             <li>Local loopback browsers and CLI agents keep working without signing in (<code>O36</code>)</li>
             <li>Delivery unconfirmed and no resend; the draft stays until the acknowledgement</li>
             <li>A reload or a closed tab never stops a turn; the page reconnects with the history</li>
+            <li>
+              Chat remembers whether it was expanded; the header names only the agent; Close Conversation asks first
+              (<code>O64</code>); Close Conversation, New Conversation and Share Tab stay icon buttons in the composer
+              row, as main ships them
+            </li>
             <li>
               The page never names a directory; send goes only into the page's worktree; the control guard and size
               limits stay
