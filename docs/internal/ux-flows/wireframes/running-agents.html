@@ -1,506 +1,1490 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>See the agents working in this worktree · proposed flow wireframe</title>
-<link rel="stylesheet" href="wireframe.css">
-<style>
-/* The running agents list and Watch Live Activity, scoped to this page's mockups. */
-/* The list: its status line, a row per agent with its second line and its action, the heading over other worktrees, and the footer outside the scrolling rows */
-.mock .ra-st{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;color:var(--mute);border-bottom:1px solid var(--line);padding:2px 2px 4px}
-.mock .ra-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:start;padding:3px 2px;border-bottom:1px solid var(--rule)}
-.mock .ra-row > :last-child{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-items:center}
-.mock .ra-row .sub,.mock .ra-agent .sub{display:block;color:var(--mute);font-size:11px;font-weight:400}
-.mock .ra-row.dim > :first-child{color:var(--mute)}
-.mock .ra-oth{padding:6px 2px 2px;font-weight:600;font-size:11px;border-bottom:1px solid var(--line)}
-.mock .ra-ft{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
-/* Watch Live Activity: the heading line, a heading per agent, and one line per entry: time, label, what it touched */
-.mock .ra-head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:2px}
-.mock .ra-agent{margin-top:8px;padding:2px;border-bottom:1px solid var(--line);font-weight:600}
-.mock .ra-ent{display:grid;grid-template-columns:4.6rem 5.4rem minmax(0,1fr);gap:6px;padding:2px;border-bottom:1px solid var(--rule);font-size:11.5px}
-.mock .ra-ent > :first-child{color:var(--mute)}
-/* The record table: its values wrap instead of clipping, so a long address stays whole */
-.mock .ra-rec td{white-space:normal;overflow-wrap:anywhere}
-</style>
-</head>
-<body>
-<header class="page">
-<nav class="top"><a href="index.html">← All flows</a><a href="../running-agents-current.html">Today's flow diagram</a><a href="../running-agents-proposed.html">Proposed flow diagram</a><a href="../proposals/running-agents.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
-<h1>See the agents working in this worktree</h1>
-<p><b>TLDR:</b> The trigger stays on the bar and marks a waiting agent, its list opens above docked chat in plain words with <b>Answer</b>, and Watch Live Activity shows what each tool touched, says why it ended, and opens for a signed-in browser elsewhere on the stack directory's hostname.</p>
-<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
-</header>
-<div class="key"><div>
-<div class="legend"><b style="color:var(--ink)">How to read:</b>
-<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
-<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
-<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
-<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
-<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
-<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
-<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
-<span><span class="n">1</span>Callout, explained on the right</span></div>
-</div></div>
-<main>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>See the agents working in this worktree · proposed flow wireframe</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      /* The running agents list and Watch Live Activity, scoped to this page's mockups. */
+      /* The list: its status line, a row per agent with its second line and its action, the heading over other worktrees, and the footer outside the scrolling rows */
+      .mock .ra-st {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 6px;
+        align-items: center;
+        color: var(--mute);
+        border-bottom: 1px solid var(--line);
+        padding: 2px 2px 4px;
+      }
+      .mock .ra-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 8px;
+        align-items: start;
+        padding: 3px 2px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .mock .ra-row > :last-child {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+        align-items: center;
+      }
+      .mock .ra-row .sub,
+      .mock .ra-agent .sub {
+        display: block;
+        color: var(--mute);
+        font-size: 11px;
+        font-weight: 400;
+      }
+      .mock .ra-row.dim > :first-child {
+        color: var(--mute);
+      }
+      .mock .ra-oth {
+        padding: 6px 2px 2px;
+        font-weight: 600;
+        font-size: 11px;
+        border-bottom: 1px solid var(--line);
+      }
+      .mock .ra-ft {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        border-top: 1px solid var(--line);
+        margin-top: 6px;
+        padding-top: 6px;
+      }
+      /* Watch Live Activity: the heading line, a heading per agent, and one line per entry: time, label, what it touched */
+      .mock .ra-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 4px;
+        margin-bottom: 2px;
+      }
+      .mock .ra-agent {
+        margin-top: 8px;
+        padding: 2px;
+        border-bottom: 1px solid var(--line);
+        font-weight: 600;
+      }
+      .mock .ra-ent {
+        display: grid;
+        grid-template-columns: 4.6rem 5.4rem minmax(0, 1fr);
+        gap: 6px;
+        padding: 2px;
+        border-bottom: 1px solid var(--rule);
+        font-size: 11.5px;
+      }
+      .mock .ra-ent > :first-child {
+        color: var(--mute);
+      }
+      /* The record table: its values wrap instead of clipping, so a long address stays whole */
+      .mock .ra-rec td {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top">
+        <a href="index.html">← All flows</a><a href="../running-agents-current.html">Today's flow diagram</a
+        ><a href="../running-agents-proposed.html">Proposed flow diagram</a
+        ><a href="../proposals/running-agents.md">Written proposal</a
+        ><span class="muted">Redesign ticket: tracked privately</span>
+      </nav>
+      <h1>See the agents working in this worktree</h1>
+      <p>
+        <b>TLDR:</b> The trigger stays on the bar and marks a waiting agent, its list opens above docked chat in plain
+        words with <b>Answer</b>, and Watch Live Activity shows what each tool touched, says why it ended, and opens for
+        a signed-in browser elsewhere on the stack directory's hostname.
+      </p>
+      <p class="muted small">
+        Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
+        are authoritative.
+      </p>
+    </header>
+    <div class="key">
+      <div>
+        <div class="legend">
+          <b style="color: var(--ink)">How to read:</b>
+          <span
+            ><i class="k" style="background: var(--toast); border-color: var(--toast)"></i>Toast: passing status message
+            in a corner, links only, no decisions</span
+          >
+          <span
+            ><i class="k" style="background: var(--raised); border-color: var(--edge); box-shadow: 0 2px 6px #0009"></i
+            >Popover or menu: opens from the outlined control its arrow points at</span
+          >
+          <span
+            ><i class="k" style="background: var(--panel); box-shadow: inset 3px 0 var(--line)"></i>Panel: docked beside
+            the table, stays open</span
+          >
+          <span><i class="k" style="background: var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+          <span><i class="k" style="background: var(--accbg)"></i>Selected rows</span>
+          <span><i class="k" style="background: var(--chgbg)"></i>Just changed</span>
+          <span><i class="k" style="background: var(--card); box-shadow: inset 3px 0 var(--acc)"></i>Row cursor</span>
+          <span><span class="n">1</span>Callout, explained on the right</span><span class="lg-states"></span
+          ><span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section class="step" id="read-the-trigger">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>1280×800; Claude Code, started from chat, waits for an approval; Codex works in a terminal</span>
+            </div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme Shop · Products · Running shoes …</div>
+              <div class="corner">
+                <div class="banner" style="margin: 0">
+                  ◆ Claude Code is waiting for you · Fix the nav header <span class="btn">Answer</span>
+                </div>
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">1</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span
+                    ><span class="seg">◆ Agents 2 · 1 waiting</span><span class="seg">☐ Hold Reloads ▾</span
+                    ><span class="seg">◆ Chat</span>
+                  </div>
+                </div>
+                <div class="muted small">
+                  named "Running agents: 2 agents · 1 waiting for you", described "this worktree"
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › the running agents trigger in other states</b><span>the rest of the bar unchanged</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">Claude Code and Codex in this worktree, Codex working</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">main ~/acme ▾</span><span class="seg">◐ Agents 2</span
+                  ><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted">named "Running agents: 2 agents · 1 working"</span>
+              </div>
+              <div class="vlab">no agent in this worktree</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">main ~/acme ▾</span><span class="seg">Agents 0</span
+                  ><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted">named "Running agents: no agents in this worktree"</span><span class="n">2</span>
+              </div>
+              <div class="vlab">fix-nav's page after a switch, while Claude Code still waits in main</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">◆ Agents 0 · 1 waiting</span><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted"
+                  >named "Running agents: no agents in this worktree · 1 waiting for you in main ~/acme"</span
+                ><span class="n">3</span>
+              </div>
+              <div class="vlab">Codex's session folder cannot be read; Claude Code is listed</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">main ~/acme ▾</span><span class="seg">◌ Agents 1</span
+                  ><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted">named "Running agents: at least 1 agent · Codex agents could not be listed"</span
+                ><span class="n">4</span>
+              </div>
+              <div class="vlab">the scan failed for every agent CLI</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">main ~/acme ▾</span><span class="seg">◌ Agents</span
+                  ><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted">named "Running agents: could not be listed"</span>
+              </div>
+              <div class="vlab">chat is off in devhost.toml</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">main ~/acme ▾</span><span class="seg off">Agents</span
+                  ><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted">dimmed, still opens the list; named "Running agents: shown while chat is on"</span
+                ><span class="n">5</span>
+              </div>
+              <div class="vlab">the page lost its status stream at 14:02</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">main ~/acme ▾</span><span class="seg">? Agents 2</span
+                  ><span class="seg">☐ Hold Reloads ▾</span></span
+                ><span class="muted">named "Running agents: 2 agents when last seen at 14:02"</span
+                ><span class="n">6</span>
+              </div>
+              <div class="vlab">a browser in another environment that neither signed in nor paired</div>
+              <div class="row">
+                <div class="tbar">
+                  <span class="seg"><span class="muted">dh</span> <b>Acme Shop</b></span
+                  ><span class="seg muted" style="white-space: normal"
+                    >Sign in with passkey or pair this browser to use devhost here</span
+                  ><span class="seg"><span class="btn pri">Sign In with Passkey</span></span>
+                </div>
+                <span class="n">7</span>
+              </div>
+              <div class="muted">
+                or pair it: run devhost pair on devbox and open its link here · no running agents trigger, no agents
+                request
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>Claude Code, started in a terminal, waits for an approval</span>
+            </div>
+            <div class="row" style="align-items: flex-end; padding: 0 10px">
+              <div class="tabs" style="margin: 6px 0 0">
+                <span class="on">(1) waiting · Acme Shop</span><span>Pull requests · acme</span>
+              </div>
+              <span class="n">8</span>
+            </div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">9</span>
+                  <div class="banner" style="margin: 0">
+                    ◆ Claude Code is waiting for you in its terminal · main ~/acme · since 14:10
+                    <span class="btn">Dismiss</span>
+                  </div>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">◆ Agents 1 · 1 waiting</span><span class="seg">☐ Hold Reloads ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › the toolbar collapsed</b><span>the same terminal agent waits</span>
+            </div>
+            <div class="work small">
+              <div class="row" style="justify-content: flex-end">
+                <span class="n">10</span
+                ><span class="banner" style="margin: 0"
+                  >◆ Claude Code is waiting for you in its terminal · main ~/acme · since 14:10
+                  <span class="btn">Dismiss</span></span
+                ><span class="tbar oneline"
+                  ><span class="seg">◆ <b>dh</b> · 1 waiting for you ▴</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>1. Read the trigger</h2>
+          <p>
+            The trigger still sits among the bar's items, still reads the agents record every 10 s while chat is on and
+            the page is visible, still counts the agents in this worktree and still spins while one works. What changes:
+            it never leaves the bar, shows an agent waiting for the person apart from a working one, also in the app's
+            tab title, and says when devhost could not look. Keys: Alt+Ctrl+B reaches the bar; the trigger is one arrow
+            stop (ArrowLeft, ArrowRight, Home, End); Enter, Space or the arrow that points toward the panel opens the
+            list (<code>KEY-3</code>, <code>KEY-4</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The trigger shows the bot icon, drawn here as "Agents", with the count of agents
+              in this worktree, spins ◐ while any works, and while any listed agent waits for the person takes the
+              waiting look ◆ with "1 waiting", distinct from working in its shape, its text and its accessible name,
+              also in forced colors. Its name counts in words and its description names its scope, "this worktree"
+              (<code>SURF-8</code>, <code>ACT-7</code>, <code>ACT-13</code>, <code>WORD-5</code>, <code>WORD-6</code>,
+              <code>WORD-11</code>). The waiting notice with <b>Answer</b> above the bar is agent-chat's, for the agent
+              chat started.
+            </li>
+            <li>
+              <span class="n">2</span> With no agent it stays in its place showing "0", so no bar item moves when the
+              first agent starts or the last one stops; toolbar-shell keeps the segment's place (<code>STATE-2</code>,
+              <code>CC-33</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Agents of the stack's other worktrees are counted only in the list; one that
+              waits still gives the trigger its waiting look, and the accessible name names its worktree.
+            </li>
+            <li>
+              <span class="n">4</span> The incomplete mark ◌: some agent CLI could not be listed, so the count is "at
+              least"; when the scan failed for every CLI the mark shows without a count. Its accessible description is
+              the list's sentence naming those agents and the way forward (step 2) (<code>MENU-3</code>,
+              <code>HOLD-1</code>).
+            </li>
+            <li>
+              <span class="n">5</span> With chat off the trigger stays, dimmed but operable, without a count, and opens
+              the list that says why; the page makes no agents request while chat is off (<code>STATE-2</code>,
+              <code>CC-33</code>, <code>MENU-3</code>).
+            </li>
+            <li>
+              <span class="n">6</span> When the page loses its status stream, the trigger keeps its last count drawn as
+              unknown ? with its age, never "0" or a hidden trigger (<code>ACT-5</code>, <code>STATE-3</code>).
+            </li>
+            <li>
+              <span class="n">7</span> A browser in another environment that has neither signed in with the devhost
+              passkey nor paired gets toolbar-shell's unauthenticated state instead of the bar: the stack name and one
+              sentence with <b>Sign In with Passkey</b> and how to pair the browser with a
+              <code>devhost pair</code> link, no running agents trigger, and no agents request, which would answer
+              <code>403</code>. A browser that signed in or paired sees the bar as this machine does
+              (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>).
+            </li>
+            <li>
+              <span class="n">8</span> While any listed agent waits for the person, devhost prefixes the app page's tab
+              title, "(1) waiting · Acme Shop", for an agent started in a terminal as for one chat started, and restores
+              the app's own title when the wait ends; notices-and-feedback owns the prefix (<code>ACT-7</code>,
+              <code>O16</code>).
+            </li>
+            <li>
+              <span class="n">9</span> An agent started in a terminal that waits for the person raises a condition
+              notice in the notice stack's first group, announced once, with <b>Dismiss</b> alone, the form
+              notices-and-feedback gives a condition whose target lives outside the browser, and no answer of devhost's
+              own; it clears by itself, announced once, when the agent's state leaves waiting, and <b>Dismiss</b> leaves
+              the waiting look on the trigger until then. An agent chat started raises agent-chat's notice with
+              <b>Answer</b> instead, never both (<code>ACT-7</code>, <code>FB-8</code>, <code>FB-9</code>,
+              <code>SURF-8</code>).
+            </li>
+            <li>
+              <span class="n">10</span> Collapsed, the badge reads the same waiting state in <code>ACT-7</code>'s order
+              and the notice stays beside it in its one-line form, so collapsing never hides a waiting agent
+              (<code>SURF-8</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes reload-and-agents-05, reload-and-agents-09 · Backend: the agents record (Backend 1), the scan's
+            completeness (Backend 2) and terminal agents' waits on the status stream (Backend 7); the unauthenticated
+            bar is toolbar-shell's and the check agent-chat's (<code>O36</code>)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="read-the-trigger">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>1280×800; Claude Code, started from chat, waits for an approval; Codex works in a terminal</span></div>
-<div class="pg" style="min-height:120px">
-<div class="apptxt">Acme Shop · Products · Running shoes …</div>
-<div class="corner">
-<div class="banner" style="margin:0">◆ Claude Code is waiting for you · Fix the nav header <span class="btn">Answer</span></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">1</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">◆ Agents 2 · 1 waiting</span><span class="seg">Hold Reloads</span><span class="seg">◆ Chat</span></div></div>
-<div class="muted small">named "Running agents: 2 agents · 1 waiting for you", described "this worktree"</div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the running agents trigger in other states</b><span>the rest of the bar unchanged</span></div>
-<div class="work small">
-<div class="vlab">Claude Code and Codex in this worktree, Codex working</div>
-<div class="row"><span class="tbar oneline"><span class="seg">main ~/acme ▾</span><span class="seg">◐ Agents 2</span><span class="seg">Hold Reloads</span></span><span class="muted">named "Running agents: 2 agents · 1 working"</span></div>
-<div class="vlab">no agent in this worktree</div>
-<div class="row"><span class="tbar oneline"><span class="seg">main ~/acme ▾</span><span class="seg">Agents 0</span><span class="seg">Hold Reloads</span></span><span class="muted">named "Running agents: no agents in this worktree"</span><span class="n">2</span></div>
-<div class="vlab">fix-nav's page after a switch, while Claude Code still waits in main</div>
-<div class="row"><span class="tbar oneline"><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">◆ Agents 0 · 1 waiting</span><span class="seg">Hold Reloads</span></span><span class="muted">named "Running agents: no agents in this worktree · 1 waiting for you in main ~/acme"</span><span class="n">3</span></div>
-<div class="vlab">Codex's session folder cannot be read; Claude Code is listed</div>
-<div class="row"><span class="tbar oneline"><span class="seg">main ~/acme ▾</span><span class="seg">◌ Agents 1</span><span class="seg">Hold Reloads</span></span><span class="muted">named "Running agents: at least 1 agent · Codex agents could not be listed"</span><span class="n">4</span></div>
-<div class="vlab">the scan failed for every agent CLI</div>
-<div class="row"><span class="tbar oneline"><span class="seg">main ~/acme ▾</span><span class="seg">◌ Agents</span><span class="seg">Hold Reloads</span></span><span class="muted">named "Running agents: could not be listed"</span></div>
-<div class="vlab">chat is off in devhost.toml</div>
-<div class="row"><span class="tbar oneline"><span class="seg">main ~/acme ▾</span><span class="seg muted">Agents</span><span class="seg">Hold Reloads</span></span><span class="muted">dimmed, still opens the list; named "Running agents: shown while chat is on"</span><span class="n">5</span></div>
-<div class="vlab">the page lost its status stream at 14:02</div>
-<div class="row"><span class="tbar oneline"><span class="seg">main ~/acme ▾</span><span class="seg">? Agents 2</span><span class="seg">Hold Reloads</span></span><span class="muted">named "Running agents: 2 agents when last seen at 14:02"</span><span class="n">6</span></div>
-<div class="vlab">a browser in another environment that neither signed in nor paired</div>
-<div class="row"><div class="tbar"><span class="seg"><span class="muted">dh</span> <b>Acme Shop</b></span><span class="seg muted" style="white-space:normal">Sign in with passkey or pair this browser to use devhost here</span><span class="seg"><span class="btn pri">Sign In with Passkey</span></span></div> <span class="n">7</span></div>
-<div class="muted">or pair it: run devhost pair on devbox and open its link here · no running agents trigger, no agents request</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>Claude Code, started in a terminal, waits for an approval</span></div>
-<div class="row" style="align-items:flex-end;padding:0 10px"><div class="tabs" style="margin:6px 0 0"><span class="on">(1) waiting · Acme Shop</span><span>Pull requests · acme</span></div><span class="n">8</span></div>
-<div class="pg" style="min-height:120px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">9</span><div class="banner" style="margin:0">◆ Claude Code is waiting for you in its terminal · main ~/acme · since 14:10 <span class="btn">Dismiss</span></div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">◆ Agents 1 · 1 waiting</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › the toolbar collapsed</b><span>the same terminal agent waits</span></div>
-<div class="work small">
-<div class="row" style="justify-content:flex-end"><span class="n">10</span><span class="banner" style="margin:0">◆ Claude Code is waiting for you in its terminal · main ~/acme · since 14:10 <span class="btn">Dismiss</span></span><span class="tbar oneline"><span class="seg">◆ <b>dh</b> · 1 waiting for you ▴</span></span></div>
-</div>
-</div>
-</div>
-<div class="cap"><h2>1. Read the trigger</h2>
-<p>The trigger still sits among the bar's items, still reads the agents record every 10 s while chat is on and the page is visible, still counts the agents in this worktree and still spins while one works. What changes: it never leaves the bar, shows an agent waiting for the person apart from a working one, also in the app's tab title, and says when devhost could not look. Keys: Alt+Ctrl+B reaches the bar; the trigger is one arrow stop (ArrowLeft, ArrowRight, Home, End); Enter, Space or the arrow that points toward the panel opens the list (<code>KEY-3</code>, <code>KEY-4</code>).</p>
-<ol><li><span class="n">1</span> The trigger shows the bot icon, drawn here as "Agents", with the count of agents in this worktree, spins ◐ while any works, and while any listed agent waits for the person takes the waiting look ◆ with "1 waiting", distinct from working in its shape, its text and its accessible name, also in forced colors. Its name counts in words and its description names its scope, "this worktree" (<code>SURF-8</code>, <code>ACT-7</code>, <code>ACT-13</code>, <code>WORD-5</code>, <code>WORD-6</code>, <code>WORD-11</code>). The waiting notice with <b>Answer</b> above the bar is agent-chat's, for the agent chat started.</li>
-<li><span class="n">2</span> With no agent it stays in its place showing "0", so no bar item moves when the first agent starts or the last one stops; toolbar-shell keeps the segment's place (<code>STATE-2</code>, <code>CC-33</code>).</li>
-<li><span class="n">3</span> Agents of the stack's other worktrees are counted only in the list; one that waits still gives the trigger its waiting look, and the accessible name names its worktree.</li>
-<li><span class="n">4</span> The incomplete mark ◌: some agent CLI could not be listed, so the count is "at least"; when the scan failed for every CLI the mark shows without a count. Its accessible description is the list's sentence naming those agents and the way forward (step 2) (<code>MENU-3</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">5</span> With chat off the trigger stays, dimmed but operable, without a count, and opens the list that says why; the page makes no agents request while chat is off (<code>STATE-2</code>, <code>CC-33</code>, <code>MENU-3</code>).</li>
-<li><span class="n">6</span> When the page loses its status stream, the trigger keeps its last count drawn as unknown ? with its age, never "0" or a hidden trigger (<code>ACT-5</code>, <code>STATE-3</code>).</li>
-<li><span class="n">7</span> A browser in another environment that has neither signed in with the devhost passkey nor paired gets toolbar-shell's unauthenticated state instead of the bar: the stack name and one sentence with <b>Sign In with Passkey</b> and how to pair the browser with a <code>devhost pair</code> link, no running agents trigger, and no agents request, which would answer <code>403</code>. A browser that signed in or paired sees the bar as this machine does (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>).</li>
-<li><span class="n">8</span> While any listed agent waits for the person, devhost prefixes the app page's tab title, "(1) waiting · Acme Shop", for an agent started in a terminal as for one chat started, and restores the app's own title when the wait ends; notices-and-feedback owns the prefix (<code>ACT-7</code>, <code>O16</code>).</li>
-<li><span class="n">9</span> An agent started in a terminal that waits for the person raises a condition notice in the notice stack's first group, announced once, with <b>Dismiss</b> alone, the form notices-and-feedback gives a condition whose target lives outside the browser, and no answer of devhost's own; it clears by itself, announced once, when the agent's state leaves waiting, and <b>Dismiss</b> leaves the waiting look on the trigger until then. An agent chat started raises agent-chat's notice with <b>Answer</b> instead, never both (<code>ACT-7</code>, <code>FB-8</code>, <code>FB-9</code>, <code>SURF-8</code>).</li>
-<li><span class="n">10</span> Collapsed, the badge reads the same waiting state in <code>ACT-7</code>'s order and the notice stays beside it in its one-line form, so collapsing never hides a waiting agent (<code>SURF-8</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-05, reload-and-agents-09 · Backend: the agents record (Backend 1), the scan's completeness (Backend 2) and terminal agents' waits on the status stream (Backend 7); the unauthenticated bar is toolbar-shell's and the check agent-chat's (<code>O36</code>)</p></div>
-</section>
+      <section class="step" id="open-the-list">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>1280×800, chat docked compact, the list opened with Enter</span>
+            </div>
+            <div class="pg" style="min-height: 420px">
+              <div class="apptxt">Acme Shop · Products · Running shoes …</div>
+              <div class="corner">
+                <div
+                  class="dock"
+                  style="width: min(100%, 25rem); min-height: 8rem; border: 1px solid var(--line); border-radius: 8px"
+                >
+                  <h3>Chat · Fix the nav header</h3>
+                  <div class="muted">Claude Code · This worktree (live) · waiting for you</div>
+                  <div class="muted">… the conversation …</div>
+                </div>
+                <div class="popover" data-for="ra-t2" style="width: min(100%, 38rem); margin-top: -3.6rem; z-index: 1">
+                  <i class="caret-dn" style="right: 249.8px"></i>
+                  <div class="from">Opened from Running agents with Enter</div>
+                  <div class="row"><b>Agents in this worktree</b><span class="n">1</span></div>
+                  <div class="ra-st">
+                    main ~/acme · 3 agents · 1 waiting for you · checked 14:10:12 <span class="n">2</span>
+                  </div>
+                  <div class="ra-row">
+                    <span
+                      >Claude Code · Fix the nav header · This worktree (live)<span class="sub"
+                        >◆ waiting for you since 14:10 · worktree root</span
+                      ></span
+                    ><span><span class="btn focusring">Answer</span><span class="n">3</span></span>
+                  </div>
+                  <div class="ra-row">
+                    <span
+                      >Codex in a terminal · PID 83275 <span class="n">4</span
+                      ><span class="sub">◐ working · packages/ui · active 1 min ago</span></span
+                    ><span></span>
+                  </div>
+                  <div class="ra-row">
+                    <span
+                      >Pi in a terminal · PID 9120<span class="sub"
+                        >state not reported · worktree root · active 3 min ago <span class="n">5</span></span
+                      ></span
+                    ><span></span>
+                  </div>
+                  <div class="ra-oth">Other worktrees of Acme Shop <span class="n">6</span></div>
+                  <div class="ra-row">
+                    <span
+                      >Claude Code · Footer links · This worktree (live) · fix-nav<span class="sub"
+                        >◐ working · in fix-nav ~/acme/.worktrees/fix-nav · worktree root</span
+                      ></span
+                    ><span><span class="btn">Open Conversation</span></span>
+                  </div>
+                  <div class="ra-row">
+                    <span
+                      >Codex in a terminal · PID 90211<span class="sub"
+                        >idle · in fix-nav ~/acme/.worktrees/fix-nav · packages/api · active 12 min ago · named
+                        project-37</span
+                      ></span
+                    ><span></span>
+                  </div>
+                  <div class="ra-ft"><span class="btn">Watch Live Activity</span><span class="n">7</span></div>
+                </div>
+                <div class="row" style="flex-direction: row-reverse; flex-wrap: wrap; gap: 6px; align-items: center">
+                  <div class="tbar" style="margin: 0">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span
+                    ><span class="seg open" id="ra-t2">◆ Agents 3 · 1 waiting</span
+                    ><span class="seg">☐ Hold Reloads ▾</span><span class="seg">◆ Chat</span>
+                  </div>
+                  <div class="row" style="flex-wrap: nowrap">
+                    <span class="n">8</span>
+                    <div class="banner" style="margin: 0">
+                      ◆ Claude Code is waiting for you · Fix the nav header <span class="btn">Answer</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › the dock moved to the top edge</b
+              ><span>the list opens toward the page, downward</span>
+            </div>
+            <div class="pg" style="min-height: 0">
+              <div class="corner at-top">
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg open" id="ra-t2top">◐ Agents 1</span><span class="seg">☐ Hold Reloads ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+                <div class="popover" data-for="ra-t2top" style="width: min(100%, 30rem)">
+                  <i class="caret-up" style="right: 197.1px"></i>
+                  <div class="from">Opened from Running agents with ArrowDown</div>
+                  <div class="row"><b>Agents in this worktree</b></div>
+                  <div class="ra-st">main ~/acme · 1 agent · checked 14:10:12</div>
+                  <div class="ra-row">
+                    <span
+                      >Codex in a terminal · PID 83275<span class="sub"
+                        >◐ working · packages/ui · active 1 min ago</span
+                      ></span
+                    ><span></span>
+                  </div>
+                  <div class="ra-ft"><span class="btn">Watch Live Activity</span><span class="n">9</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › the list when it is loading, empty or off</b></div>
+            <div class="work small">
+              <div class="vlab">before the first answer</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="muted">Loading agents…</div>
+              </div>
+              <div class="vlab">no agent in this worktree</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="ra-st">No agents in this worktree <span class="n">10</span></div>
+                <div class="ra-ft" style="border: 0"><span class="btn focusring">Watch Live Activity</span></div>
+              </div>
+              <div class="vlab">chat is off in devhost.toml</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="row">
+                  Running agents are shown while chat is on. Chat is off in devhost.toml line 31.<span class="btn"
+                    >Edit</span
+                  ><span class="n">11</span>
+                </div>
+                <div class="row muted" style="margin-top: 4px">
+                  with the config editor off: devhost.toml line 31<span class="btn">Copy</span>
+                </div>
+              </div>
+              <div class="vlab">a save turned chat off at 14:02 while Claude Code works</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div>
+                  Chat turned off at 14:02. Running agents keep running; devhost no longer lists them. Conversations
+                  chat started stay answerable in chat until they end. <span class="n">12</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › the list when devhost could not look</b></div>
+            <div class="work small">
+              <div class="vlab">Codex's session folder cannot be read; Claude Code is listed</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="ra-st">
+                  Codex agents could not be listed: devhost cannot read Codex's session folder. Details are in the
+                  stack's log.<span class="btn">Check Again</span><span class="btn">Logs</span><span class="n">13</span>
+                </div>
+                <div class="ra-row">
+                  <span
+                    >Claude Code · Fix the nav header · This worktree (live)<span class="sub"
+                      >◐ working · worktree root</span
+                    ></span
+                  ><span><span class="btn">Open Conversation</span></span>
+                </div>
+              </div>
+              <div class="vlab">Check Again pressed</div>
+              <div class="row">
+                <span class="btn focusring">Checking…</span><span class="muted">busy, keeps focus</span
+                ><span class="n">14</span>
+              </div>
+              <div class="vlab">the scan failed for every agent CLI</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="ra-st">
+                  Running agents could not be listed: the scan did not finish within 10 s. devhost tries again every 10
+                  s.<span class="btn">Check Again</span><span class="btn">Logs</span><span class="n">15</span>
+                </div>
+                <div class="ra-row dim">
+                  <span
+                    >? Claude Code · Fix the nav header · This worktree (live)<span class="sub"
+                      >unknown · last seen 14:02</span
+                    ></span
+                  ><span><span class="btn">Open Conversation</span></span>
+                </div>
+              </div>
+              <div class="vlab">the page's status stream closed after devhost stop</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="ra-st">
+                  Stopped from the terminal at 14:32. Start it with devhost start in ~/acme <span class="n">16</span>
+                </div>
+                <div class="ra-row dim">
+                  <span
+                    >? Claude Code · Fix the nav header · This worktree (live)<span class="sub"
+                      >unknown · last seen 14:32</span
+                    ></span
+                  ><span><span class="btn">Open Conversation</span></span>
+                </div>
+                <div class="ra-row dim">
+                  <span>? Codex in a terminal · PID 83275<span class="sub">unknown · last seen 14:32</span></span
+                  ><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the list after a switch, and with many agents</b></div>
+            <div class="work small">
+              <div class="vlab">fix-nav's page after Switch and Restart Stack from main</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="ra-st">No agents in this worktree</div>
+                <div class="ra-oth">Other worktrees of Acme Shop</div>
+                <div class="ra-row">
+                  <span
+                    >Claude Code · Fix the nav header · This worktree (live) · main<span class="sub"
+                      >◆ waiting for you since 14:10 · in main ~/acme · worktree root</span
+                    ></span
+                  ><span><span class="btn">Answer</span><span class="n">17</span></span>
+                </div>
+                <div class="ra-row">
+                  <span
+                    >Codex in a terminal · PID 83275<span class="sub"
+                      >◐ working · in main ~/acme · worktree root</span
+                    ></span
+                  ><span></span>
+                </div>
+              </div>
+              <div class="vlab">Acme Platform with 40 agents: the rows overflow the panel</div>
+              <div class="box" style="margin: 0">
+                <b>Agents in this worktree</b>
+                <div class="row" style="margin: 4px 0">
+                  <span class="in focusring" style="flex: 1">nav</span><span class="n">18</span>
+                </div>
+                <div class="ra-st">main ~/platform · 40 agents · 2 waiting for you · checked 14:10:12</div>
+                <div class="ra-row">
+                  <span
+                    >Claude Code · Fix the <b>nav</b> header · This worktree (live)<span class="sub"
+                      >◐ working · packages/web · active 2 min ago</span
+                    ></span
+                  ><span><span class="btn">Open Conversation</span></span>
+                </div>
+                <div class="ra-ft"><span class="btn">Watch Live Activity</span></div>
+              </div>
+              <div class="vlab">the filter reads "zzz"</div>
+              <div class="row">
+                <span class="muted">No agent matches "zzz"</span><span class="btn">Clear Filter</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>the page's own dialog opened while the list was open</span>
+            </div>
+            <div class="pg" style="min-height: 0">
+              <div class="scrim" style="min-height: 0">
+                <div class="dlg">
+                  <div class="hd"><h3>Edit shipping address</h3></div>
+                  <div class="body">
+                    <span class="muted">The app's own dialog: street, city, postcode …</span>
+                    <div class="corner" style="margin-top: 10px">
+                      <div class="muted">Paused while this page's dialog is open <span class="n">19</span></div>
+                      <div class="banner" style="margin: 0">
+                        ◆ Claude Code is waiting for you in its terminal · main ~/acme · since 14:10
+                        <span class="btn">Dismiss</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div>
+                </div>
+              </div>
+              <div class="corner">
+                <div class="popover" data-for="ra-t2p" style="width: min(100%, 30rem); opacity: 0.45">
+                  <i class="caret-dn" style="right: 236.6px"></i>
+                  <div class="from">Opened from Running agents before the dialog opened</div>
+                  <div class="row"><b>Agents in this worktree</b></div>
+                  <div class="ra-st">main ~/acme · 1 agent · 1 waiting for you · checked 14:10:02</div>
+                  <div class="ra-row">
+                    <span
+                      >Claude Code in a terminal · PID 15210<span class="sub"
+                        >◆ waiting for you since 14:10 · answer it in its terminal</span
+                      ></span
+                    ><span></span>
+                  </div>
+                  <div class="ra-ft"><span class="btn">Watch Live Activity</span></div>
+                </div>
+                <div class="tbar paused">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg open" id="ra-t2p">◆ Agents 1 · 1 waiting</span
+                  ><span class="seg">☐ Hold Reloads ▾</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>2. Open the list</h2>
+          <p>
+            The list still opens from the trigger, still lists agents devhost did not start, from chat or a terminal,
+            still counts agents working in a subdirectory, folds subagents into the session that started them and sorts
+            waiting agents first, and it still only reports: it sends nothing to an agent. What changes: it opens above
+            docked chat, names every agent in words people use with its worktree, hands a chat agent to its conversation
+            from its row, and says when it is empty, off or could not look. Keys: focus lands in the filter when there
+            is one, else on the first row action, else on <b>Watch Live Activity</b>; Tab and Shift+Tab move through the
+            filter, each row's actions and <b>Watch Live Activity</b> in visual order; Tab past the last control or
+            Shift+Tab before the first closes the list and returns focus to the trigger; Escape or a click outside
+            closes it and returns focus to the trigger, or, when it was opened with the pointer, to the page element
+            that had focus before; keys typed into the filter never reach the page (<code>KEY-5</code>,
+            <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>, <code>KEY-10</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> An anchored toolbar panel titled "Agents in this worktree". It opens toward the
+              page from the dock's corner and paints above docked chat, compact or expanded, never over the notice
+              stack, so every row action and <b>Watch Live Activity</b> answer hit testing with chat docked;
+              toolbar-shell lands that layering. At every acceptance viewport (1600×1000, 1280×800 and 900×900 in both
+              themes, 1280×800 at 200% zoom) it fits with its status line, every row action and
+              <b>Watch Live Activity</b> reachable, only the rows scrolling, no text clipped and every action at least
+              24 by 24 CSS pixels; a long folder or worktree path is shortened in the middle, with the full path in its
+              accessible name (<code>SURF-1</code>, <code>SURF-2</code>, <code>SURF-9</code>, <code>CC-1</code>,
+              <code>WORD-8</code>).
+            </li>
+            <li>
+              <span class="n">2</span> One status line: the worktree by its one label, the count and when devhost last
+              looked. Until the first answer the frame reads "Loading agents…" (<code>SEL-4</code>, <code>ACT-12</code>,
+              <code>WORD-8</code>, <code>STATE-1</code>).
+            </li>
+            <li>
+              <span class="n">3</span> An agent chat started: the product name, its conversation's title and mode (<b
+                >This worktree (live)</b
+              >
+              or <b>Make tickets</b>, <code>O1</code>), then its state and folder, and <b>Answer</b> while it waits for
+              the person, <b>Open Conversation</b> otherwise (step 3). Row actions are Tab stops in row order whose
+              accessible names name their target, "Answer Claude Code · Fix the nav header" (<code>SEL-8</code>,
+              <code>WORD-10</code>, <code>REV-9</code>, <code>KEY-10</code>).
+            </li>
+            <li>
+              <span class="n">4</span> An agent started in a terminal: the product name, "in a terminal" and its PID,
+              then its state, folder and last activity, and no action, because devhost never answers for an agent it did
+              not start; while it waits it reads "waiting for you since 14:10 · answer it in its terminal". Codex in a
+              terminal records no pending approval, so it reads "working", as documented (<code>REV-9</code>,
+              <code>MENU-3</code>, <code>WORD-1</code>, <code>WORD-4</code>).
+            </li>
+            <li>
+              <span class="n">5</span> States use one word each, working, waiting for you, idle, and "state not
+              reported" for a CLI that records none (Pi, OpenCode); the folder is the path inside the worktree,
+              "worktree root" for its top folder, never "." (<code>WORD-11</code>); times are local and 24-hour with a
+              relative age, outside every live region. Order: waiting, working, state not reported, idle, newest
+              activity first within each (<code>SEL-4</code>, <code>WORD-3</code>, <code>WORD-6</code>,
+              <code>WORD-7</code>, <code>WORD-8</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Agents of the stack's other worktrees follow this worktree's rows after a
+              separator, each naming its worktree, under "Other worktrees of Acme Shop" when two or more agents of other
+              worktrees are listed; a chat agent's mode there carries that worktree's branch, "This worktree (live) ·
+              fix-nav" (<code>WORD-10</code>). A name the CLI gave its session shows as a detail, "named project-37"
+              (<code>SEL-5</code>, <code>MENU-2</code>, <code>CC-38</code>).
+            </li>
+            <li>
+              <span class="n">7</span> <b>Watch Live Activity</b> sits under the rows, outside the scrolling area, and
+              opens the address the agents record gives this browser (<code>SURF-10</code>); step 4 shows where it
+              leads.
+            </li>
+            <li>
+              <span class="n">8</span> The notice stack stays beside the bar, uncovered by the list and by chat
+              (<code>SURF-1</code>, <code>FB-8</code>).
+            </li>
+            <li>
+              <span class="n">9</span> With the dock moved to the top edge, the list opens downward from it, in the same
+              form (<code>SURF-2</code>, <code>SURF-7</code>).
+            </li>
+            <li>
+              <span class="n">10</span> With no agent, "No agents in this worktree" takes the status line's place, and
+              agents of the stack's other worktrees still follow; it never shows while the scan is incomplete or the
+              last request failed (<code>STATE-2</code>, <code>STATE-3</code>, <code>CC-33</code>).
+            </li>
+            <li>
+              <span class="n">11</span> With chat off, the list says why and how to turn it on: <b>Edit</b> opens the
+              Configuration window at that line, and with the config editor off the file and line show with <b>Copy</b>;
+              editor integration is removed (<code>STATE-2</code>, <code>MENU-3</code>, <code>MENU-4</code>,
+              <code>SURF-15</code>, <code>CC-33</code>, <code>O51</code>).
+            </li>
+            <li>
+              <span class="n">12</span> When a save turns chat off, the open list and the trigger's accessible
+              description say what happens to running agents; agent-chat's notice names each conversation chat keeps
+              with its state, and the <code>[devtools.chat]</code> setting's description names the running agents list
+              and Watch Live Activity among what it turns off (<code>SEL-11</code>, <code>HOLD-5</code>,
+              <code>CC-18</code>).
+            </li>
+            <li>
+              <span class="n">13</span> When one CLI cannot be listed, the list keeps what the others found and its
+              status line names the agents and the kind of failure without a path, because page scripts can read this
+              record; the path stays in the log line. <b>Check Again</b> leads; <b>Logs</b> opens the pinned log panel
+              on devhost's own lines. The same sentence is the trigger's accessible description. devhost logs one line
+              when a CLI starts failing and one when it recovers, never one per request (<code>MENU-3</code>,
+              <code>MENU-5</code>, <code>HOLD-1</code>, <code>FAIL-2</code>, <code>FAIL-4</code>, <code>FB-7</code>,
+              <code>WORD-7</code>, <code>SURF-13</code>).
+            </li>
+            <li>
+              <span class="n">14</span> <b>Check Again</b> asks for one fresh scan at once, past the 5 s shared scan;
+              while it runs the button keeps focus, busy, reading "Checking…", and the line clears by itself, announced
+              once, when every CLI can be listed again (<code>HOLD-1</code>, <code>KEY-11</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">15</span> When the scan fails for every CLI, the list keeps the rows it last had, drawn as
+              unknown with "last seen 14:02", under one sentence with <b>Check Again</b> and
+              <b>Logs</b> (<code>STATE-3</code>, <code>STATE-4</code>, <code>HOLD-1</code>).
+            </li>
+            <li>
+              <span class="n">16</span> When the page's status stream closes, the rows stay drawn as unknown with their
+              age, and the status line carries the one reason the backend sent: after a stop, the stack, when and the
+              command that starts it, otherwise "Lost connection to devhost; retrying". Notices-and-feedback owns that
+              notice and <b>Retry Now</b>; <b>Answer</b> and <b>Open Conversation</b> still open chat, which names its
+              own block (<code>ACT-5</code>, <code>HOLD-2</code>, <code>STATE-3</code>).
+            </li>
+            <li>
+              <span class="n">17</span> After a switch, the agents still working or waiting in the worktree the stack
+              left stay listed with that worktree; a waiting one keeps <b>Answer</b> and the trigger's waiting look
+              (<code>SEL-5</code>, <code>CC-38</code>).
+            </li>
+            <li>
+              <span class="n">18</span> When the rows overflow the panel's height (a fit test, never an agent count),
+              the list gains a filter, focused on open, that matches product name, conversation title, worktree label
+              and folder as the person types and highlights the match (drawn bold here); a filter that matches nothing
+              names the query with <b>Clear Filter</b>; the status line and <b>Watch Live Activity</b> stay outside the
+              scroll (<code>SEL-10</code>, <code>SURF-10</code>, <code>STATE-2</code>).
+            </li>
+            <li>
+              <span class="n">19</span> While the page's own modal dialog is open, the bar shows its paused state and an
+              open list stays anchored and paused, inert, its rows kept; the notice stack moves into the dialog with the
+              line "Paused while this page's dialog is open", and a terminal agent's waiting notice shows there,
+              announced once; the list is live again when the dialog closes (<code>SURF-11</code>, <code>KEY-7</code>,
+              <code>FB-9</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes reload-and-agents-05, reload-and-agents-09 · Backend: the agents record (Backend 1), the scan's
+            completeness, <code>fresh=1</code> and one log line per change (Backend 2), every worktree of the stack
+            (Backend 3); the layer above docked chat is toolbar-shell's (<code>CC-1</code>)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="open-the-list">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>1280×800, chat docked compact, the list opened with Enter</span></div>
-<div class="pg" style="min-height:420px">
-<div class="apptxt">Acme Shop · Products · Running shoes …</div>
-<div class="corner">
-<div class="dock" style="width:min(100%,25rem);min-height:8rem;border:1px solid var(--line);border-radius:8px"><h3>Chat · Fix the nav header</h3>
-<div class="muted">Claude Code · This worktree (live) · waiting for you</div>
-<div class="muted">… the conversation …</div>
-</div>
-<div class="popover" data-for="ra-t2" style="width:min(100%,38rem);margin-top:-3.6rem;z-index:1"><i class="caret-dn" style="right:223.4px"></i>
-<div class="from">Opened from Running agents with Enter</div>
-<div class="row"><b>Agents in this worktree</b><span class="n">1</span></div>
-<div class="ra-st">main ~/acme · 3 agents · 1 waiting for you · checked 14:10:12 <span class="n">2</span></div>
-<div class="ra-row"><span>Claude Code · Fix the nav header · This worktree (live)<span class="sub">◆ waiting for you since 14:10 · worktree root</span></span><span><span class="btn focusring">Answer</span><span class="n">3</span></span></div>
-<div class="ra-row"><span>Codex in a terminal · PID 83275 <span class="n">4</span><span class="sub">◐ working · packages/ui · active 1 min ago</span></span><span></span></div>
-<div class="ra-row"><span>Pi in a terminal · PID 9120<span class="sub">state not reported · worktree root · active 3 min ago <span class="n">5</span></span></span><span></span></div>
-<div class="ra-oth">Other worktrees of Acme Shop <span class="n">6</span></div>
-<div class="ra-row"><span>Claude Code · Footer links · This worktree (live) · fix-nav<span class="sub">◐ working · in fix-nav ~/acme/.worktrees/fix-nav · worktree root</span></span><span><span class="btn">Open Conversation</span></span></div>
-<div class="ra-row"><span>Codex in a terminal · PID 90211<span class="sub">idle · in fix-nav ~/acme/.worktrees/fix-nav · packages/api · active 12 min ago · named project-37</span></span><span></span></div>
-<div class="ra-ft"><span class="btn">Watch Live Activity</span><span class="n">7</span></div>
-</div>
-<div class="row" style="flex-direction:row-reverse;flex-wrap:wrap;gap:6px;align-items:center"><div class="tbar" style="margin:0"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open" id="ra-t2">◆ Agents 3 · 1 waiting</span><span class="seg">Hold Reloads</span><span class="seg">◆ Chat</span></div><div class="row" style="flex-wrap:nowrap"><span class="n">8</span><div class="banner" style="margin:0">◆ Claude Code is waiting for you · Fix the nav header <span class="btn">Answer</span></div></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › the dock moved to the top edge</b><span>the list opens toward the page, downward</span></div>
-<div class="pg" style="min-height:0">
-<div class="corner at-top">
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open" id="ra-t2top">◐ Agents 1</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
-<div class="popover" data-for="ra-t2top" style="width:min(100%,30rem)"><i class="caret-up" style="right:170.6px"></i>
-<div class="from">Opened from Running agents with ArrowDown</div>
-<div class="row"><b>Agents in this worktree</b></div>
-<div class="ra-st">main ~/acme · 1 agent · checked 14:10:12</div>
-<div class="ra-row"><span>Codex in a terminal · PID 83275<span class="sub">◐ working · packages/ui · active 1 min ago</span></span><span></span></div>
-<div class="ra-ft"><span class="btn">Watch Live Activity</span><span class="n">9</span></div>
-</div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › the list when it is loading, empty or off</b></div>
-<div class="work small">
-<div class="vlab">before the first answer</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b><div class="muted">Loading agents…</div></div>
-<div class="vlab">no agent in this worktree</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b><div class="ra-st">No agents in this worktree <span class="n">10</span></div><div class="ra-ft" style="border:0"><span class="btn focusring">Watch Live Activity</span></div></div>
-<div class="vlab">chat is off in devhost.toml</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b><div class="row">Running agents are shown while chat is on. Chat is off in devhost.toml line 31.<span class="btn">Edit</span><span class="n">11</span></div>
-<div class="row muted" style="margin-top:4px">with the config editor off: devhost.toml line 31<span class="btn">Copy</span></div></div>
-<div class="vlab">a save turned chat off at 14:02 while Claude Code works</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b><div>Chat turned off at 14:02. Running agents keep running; devhost no longer lists them. Conversations chat started stay answerable in chat until they end. <span class="n">12</span></div></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › the list when devhost could not look</b></div>
-<div class="work small">
-<div class="vlab">Codex's session folder cannot be read; Claude Code is listed</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b>
-<div class="ra-st">Codex agents could not be listed: devhost cannot read Codex's session folder. Details are in the stack's log.<span class="btn">Check Again</span><span class="btn">Logs</span><span class="n">13</span></div>
-<div class="ra-row"><span>Claude Code · Fix the nav header · This worktree (live)<span class="sub">◐ working · worktree root</span></span><span><span class="btn">Open Conversation</span></span></div></div>
-<div class="vlab">Check Again pressed</div>
-<div class="row"><span class="btn focusring">Checking…</span><span class="muted">busy, keeps focus</span><span class="n">14</span></div>
-<div class="vlab">the scan failed for every agent CLI</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b>
-<div class="ra-st">Running agents could not be listed: the scan did not finish within 10 s. devhost tries again every 10 s.<span class="btn">Check Again</span><span class="btn">Logs</span><span class="n">15</span></div>
-<div class="ra-row dim"><span>? Claude Code · Fix the nav header · This worktree (live)<span class="sub">unknown · last seen 14:02</span></span><span><span class="btn">Open Conversation</span></span></div></div>
-<div class="vlab">the page's status stream closed after devhost stop</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b>
-<div class="ra-st">Stopped from the terminal at 14:32. Start it with devhost start in ~/acme <span class="n">16</span></div>
-<div class="ra-row dim"><span>? Claude Code · Fix the nav header · This worktree (live)<span class="sub">unknown · last seen 14:32</span></span><span><span class="btn">Open Conversation</span></span></div>
-<div class="ra-row dim"><span>? Codex in a terminal · PID 83275<span class="sub">unknown · last seen 14:32</span></span><span></span></div></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the list after a switch, and with many agents</b></div>
-<div class="work small">
-<div class="vlab">fix-nav's page after Switch and Restart Stack from main</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b>
-<div class="ra-st">No agents in this worktree</div>
-<div class="ra-oth">Other worktrees of Acme Shop</div>
-<div class="ra-row"><span>Claude Code · Fix the nav header · This worktree (live) · main<span class="sub">◆ waiting for you since 14:10 · in main ~/acme · worktree root</span></span><span><span class="btn">Answer</span><span class="n">17</span></span></div>
-<div class="ra-row"><span>Codex in a terminal · PID 83275<span class="sub">◐ working · in main ~/acme · worktree root</span></span><span></span></div></div>
-<div class="vlab">Acme Platform with 40 agents: the rows overflow the panel</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b>
-<div class="row" style="margin:4px 0"><span class="in focusring" style="flex:1">nav</span><span class="n">18</span></div>
-<div class="ra-st">main ~/platform · 40 agents · 2 waiting for you · checked 14:10:12</div>
-<div class="ra-row"><span>Claude Code · Fix the <b>nav</b> header · This worktree (live)<span class="sub">◐ working · packages/web · active 2 min ago</span></span><span><span class="btn">Open Conversation</span></span></div>
-<div class="ra-ft"><span class="btn">Watch Live Activity</span></div></div>
-<div class="vlab">the filter reads "zzz"</div>
-<div class="row"><span class="muted">No agent matches "zzz"</span><span class="btn">Clear Filter</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the page's own dialog opened while the list was open</span></div>
-<div class="pg" style="min-height:0">
-<div class="scrim" style="min-height:0">
-<div class="dlg"><div class="hd"><h3>Edit shipping address</h3></div>
-<div class="body"><span class="muted">The app's own dialog: street, city, postcode …</span>
-<div class="corner" style="margin-top:10px">
-<div class="muted">Paused while this page's dialog is open <span class="n">19</span></div>
-<div class="banner" style="margin:0">◆ Claude Code is waiting for you in its terminal · main ~/acme · since 14:10 <span class="btn">Dismiss</span></div>
-</div></div>
-<div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div></div>
-</div>
-<div class="corner">
-<div class="popover" data-for="ra-t2p" style="width:min(100%,30rem);opacity:.45"><i class="caret-dn" style="right:210.2px"></i>
-<div class="from">Opened from Running agents before the dialog opened</div>
-<div class="row"><b>Agents in this worktree</b></div>
-<div class="ra-st">main ~/acme · 1 agent · 1 waiting for you · checked 14:10:02</div>
-<div class="ra-row"><span>Claude Code in a terminal · PID 15210<span class="sub">◆ waiting for you since 14:10 · answer it in its terminal</span></span><span></span></div>
-<div class="ra-ft"><span class="btn">Watch Live Activity</span></div>
-</div>
-<div class="tbar paused"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open" id="ra-t2p">◆ Agents 1 · 1 waiting</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-</div>
-<div class="cap">
+      <section class="step" id="go-to-the-conversation">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b><span>one activation of Answer on Claude Code's row</span>
+            </div>
+            <div class="pg" style="min-height: 280px">
+              <div class="apptxt">Acme Shop · Products · Running shoes …</div>
+              <div class="corner">
+                <div class="dock" style="width: min(100%, 30rem); border: 1px solid var(--line); border-radius: 8px">
+                  <h3>Chat · Fix the nav header <span class="n">1</span></h3>
+                  <div class="muted">
+                    Claude Code · This worktree (live) · main ~/acme · waiting for you since 14:10
+                  </div>
+                  <div class="muted">… I'll tighten the header's padding on small screens.</div>
+                  <div class="box">
+                    <b class="focusring">Edit src/header.tsx?</b> <span class="n">2</span>
+                    <div class="muted">src/header.tsx · +3 −1</div>
+                    <div class="row" style="margin-top: 4px">
+                      <span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span
+                      ><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span
+                      ><span class="btn">Stop Turn</span>
+                    </div>
+                  </div>
+                  <div class="muted">… the composer, agent-chat's</div>
+                </div>
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">3</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span
+                    ><span class="seg">◆ Agents 3 · 1 waiting</span><span class="seg">☐ Hold Reloads ▾</span
+                    ><span class="seg">◆ Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › after the answer, and the other hand-offs</b></div>
+            <div class="work small">
+              <div class="vlab">the person pressed Allow Once on agent-chat's card</div>
+              <div class="row">
+                <span class="muted">You allowed: Edit src/header.tsx · 14:11</span><span class="sp"></span
+                ><span class="tbar oneline"
+                  ><span class="seg">◐ Agents 3</span><span class="seg">☐ Hold Reloads ▾</span
+                  ><span class="seg">◐ Chat</span></span
+                ><span class="n">4</span>
+              </div>
+              <div class="vlab">later, Open Conversation on the same row while Claude Code works</div>
+              <div class="box" style="margin: 0">
+                <b>Chat · Fix the nav header</b> <span class="muted">Claude Code · This worktree (live) · working</span>
+                <div class="row" style="margin-top: 4px">
+                  <span class="in focusring" style="flex: 1">&nbsp;</span><span class="btn pri">Send</span
+                  ><span class="n">5</span>
+                </div>
+              </div>
+              <div class="vlab">Open Conversation on Footer links, a conversation of fix-nav, from main's page</div>
+              <div class="box" style="margin: 0">
+                <b>Chat · Footer links</b>
+                <span class="muted">Claude Code · This worktree (live) · fix-nav · working</span>
+                <div class="focusring muted" style="margin-top: 4px; padding: 2px 4px">
+                  … its transcript, which takes no message from this page
+                </div>
+                <div class="row" style="margin-top: 4px">
+                  <span class="muted">in place of Send, agent-chat's composer names that conversation's worktree</span
+                  ><span class="sp"></span><span class="btn">New Conversation</span><span class="n">6</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>3. Go to a chat agent's conversation</h2>
+          <p>
+            The list still sends nothing and answers nothing: the person's own answer on agent-chat's decision card
+            stays the one way to act on a chat agent, as the owner settled, and an agent started in a terminal is still
+            answered in its terminal. What changes: the row's action replaces "this chat" and lands on the card or the
+            conversation in one activation. Nothing in this flow writes, so there is no Undo: its outcome is the wait
+            clearing in place after the person's own answer. Keys: Enter or Space on <b>Answer</b> or
+            <b>Open Conversation</b>; from the card, agent-chat's keys apply (<code>KEY-9</code>, <code>KEY-10</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> <b>Answer</b> opens docked chat on that conversation in one activation, also for
+              a conversation of another worktree of the stack, which agent-chat makes answerable from this page; the
+              list closes and focus lands in chat, where the person asked to go. With chat already docked on another
+              conversation, the hand-off switches it to this one and keeps the other conversation's draft (agent-chat's
+              <code>UNDO-2</code>) (<code>REV-9</code>, <code>SEL-8</code>, <code>CC-38</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Focus lands on the decision card's question. The card, with <b>Deny</b>,
+              <b>Allow Once</b>, the CLI's own <b>Allow for This Session</b> when it offers one, and <b>Stop Turn</b>,
+              is agent-chat's, and no answer is a default (<code>REV-9</code>, <code>KEY-6</code>).
+            </li>
+            <li>
+              <span class="n">3</span> The trigger and <b>Chat</b> keep the waiting look until the wait ends
+              (<code>SURF-8</code>, <code>ACT-7</code>).
+            </li>
+            <li>
+              <span class="n">4</span> After the person's own answer, agent-chat's one write, the trigger turns to
+              working and the wait's end is announced once; the list only reported, so there is no Undo here
+              (<code>ACT-7</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">5</span> <b>Open Conversation</b> on a working chat agent opens docked chat on that
+              conversation with focus in its composer (<code>SEL-8</code>, <code>KEY-6</code>).
+            </li>
+            <li>
+              <span class="n">6</span> For a conversation of another worktree, focus lands on its transcript, which
+              takes no message from this page; agent-chat's composer names that conversation's worktree and offers
+              <b>New Conversation</b> (<code>SEL-8</code>, <code>CC-38</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes reload-and-agents-05 · Backend: the conversation's ID, title, mode and state on the agents record
+            (Backend 1); answering a conversation of another worktree is agent-chat's (<code>CC-38</code>)
+          </p>
+        </div>
+      </section>
 
-<h2>2. Open the list</h2>
-<p>The list still opens from the trigger, still lists agents devhost did not start, from chat or a terminal, still counts agents working in a subdirectory, folds subagents into the session that started them and sorts waiting agents first, and it still only reports: it sends nothing to an agent. What changes: it opens above docked chat, names every agent in words people use with its worktree, hands a chat agent to its conversation from its row, and says when it is empty, off or could not look. Keys: focus lands in the filter when there is one, else on the first row action, else on <b>Watch Live Activity</b>; Tab and Shift+Tab move through the filter, each row's actions and <b>Watch Live Activity</b> in visual order; Tab past the last control or Shift+Tab before the first closes the list and returns focus to the trigger; Escape or a click outside closes it and returns focus to the trigger, or, when it was opened with the pointer, to the page element that had focus before; keys typed into the filter never reach the page (<code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>, <code>KEY-10</code>).</p>
-<ol><li><span class="n">1</span> An anchored toolbar panel titled "Agents in this worktree". It opens toward the page from the dock's corner and paints above docked chat, compact or expanded, never over the notice stack, so every row action and <b>Watch Live Activity</b> answer hit testing with chat docked; toolbar-shell lands that layering. At every acceptance viewport (1600×1000, 1280×800 and 900×900 in both themes, 1280×800 at 200% zoom) it fits with its status line, every row action and <b>Watch Live Activity</b> reachable, only the rows scrolling, no text clipped and every action at least 24 by 24 CSS pixels; a long folder or worktree path is shortened in the middle, with the full path in its accessible name (<code>SURF-1</code>, <code>SURF-2</code>, <code>SURF-9</code>, <code>CC-1</code>, <code>WORD-8</code>).</li>
-<li><span class="n">2</span> One status line: the worktree by its one label, the count and when devhost last looked. Until the first answer the frame reads "Loading agents…" (<code>SEL-4</code>, <code>ACT-12</code>, <code>WORD-8</code>, <code>STATE-1</code>).</li>
-<li><span class="n">3</span> An agent chat started: the product name, its conversation's title and mode (<b>This worktree (live)</b> or <b>Make tickets</b>, <code>O1</code>), then its state and folder, and <b>Answer</b> while it waits for the person, <b>Open Conversation</b> otherwise (step 3). Row actions are Tab stops in row order whose accessible names name their target, "Answer Claude Code · Fix the nav header" (<code>SEL-8</code>, <code>WORD-10</code>, <code>REV-9</code>, <code>KEY-10</code>).</li>
-<li><span class="n">4</span> An agent started in a terminal: the product name, "in a terminal" and its PID, then its state, folder and last activity, and no action, because devhost never answers for an agent it did not start; while it waits it reads "waiting for you since 14:10 · answer it in its terminal". Codex in a terminal records no pending approval, so it reads "working", as documented (<code>REV-9</code>, <code>MENU-3</code>, <code>WORD-1</code>, <code>WORD-4</code>).</li>
-<li><span class="n">5</span> States use one word each, working, waiting for you, idle, and "state not reported" for a CLI that records none (Pi, OpenCode); the folder is the path inside the worktree, "worktree root" for its top folder, never "." (<code>WORD-11</code>); times are local and 24-hour with a relative age, outside every live region. Order: waiting, working, state not reported, idle, newest activity first within each (<code>SEL-4</code>, <code>WORD-3</code>, <code>WORD-6</code>, <code>WORD-7</code>, <code>WORD-8</code>, <code>FB-9</code>).</li>
-<li><span class="n">6</span> Agents of the stack's other worktrees follow this worktree's rows after a separator, each naming its worktree, under "Other worktrees of Acme Shop" when two or more agents of other worktrees are listed; a chat agent's mode there carries that worktree's branch, "This worktree (live) · fix-nav" (<code>WORD-10</code>). A name the CLI gave its session shows as a detail, "named project-37" (<code>SEL-5</code>, <code>MENU-2</code>, <code>CC-38</code>).</li>
-<li><span class="n">7</span> <b>Watch Live Activity</b> sits under the rows, outside the scrolling area, and opens the address the agents record gives this browser (<code>SURF-10</code>); step 4 shows where it leads.</li>
-<li><span class="n">8</span> The notice stack stays beside the bar, uncovered by the list and by chat (<code>SURF-1</code>, <code>FB-8</code>).</li>
-<li><span class="n">9</span> With the dock moved to the top edge, the list opens downward from it, in the same form (<code>SURF-2</code>, <code>SURF-7</code>).</li>
-<li><span class="n">10</span> With no agent, "No agents in this worktree" takes the status line's place, and agents of the stack's other worktrees still follow; it never shows while the scan is incomplete or the last request failed (<code>STATE-2</code>, <code>STATE-3</code>, <code>CC-33</code>).</li>
-<li><span class="n">11</span> With chat off, the list says why and how to turn it on: <b>Edit</b> opens the Configuration window at that line, and with the config editor off the file and line show with <b>Copy</b>; editor integration is removed (<code>STATE-2</code>, <code>MENU-3</code>, <code>MENU-4</code>, <code>SURF-15</code>, <code>CC-33</code>, <code>O51</code>).</li>
-<li><span class="n">12</span> When a save turns chat off, the open list and the trigger's accessible description say what happens to running agents; agent-chat's notice names each conversation chat keeps with its state, and the <code>[devtools.chat]</code> setting's description names the running agents list and Watch Live Activity among what it turns off (<code>SEL-11</code>, <code>HOLD-5</code>, <code>CC-18</code>).</li>
-<li><span class="n">13</span> When one CLI cannot be listed, the list keeps what the others found and its status line names the agents and the kind of failure without a path, because page scripts can read this record; the path stays in the log line. <b>Check Again</b> leads; <b>Logs</b> opens the pinned log panel on devhost's own lines. The same sentence is the trigger's accessible description. devhost logs one line when a CLI starts failing and one when it recovers, never one per request (<code>MENU-3</code>, <code>MENU-5</code>, <code>HOLD-1</code>, <code>FAIL-2</code>, <code>FAIL-4</code>, <code>FB-7</code>, <code>WORD-7</code>, <code>SURF-13</code>).</li>
-<li><span class="n">14</span> <b>Check Again</b> asks for one fresh scan at once, past the 5 s shared scan; while it runs the button keeps focus, busy, reading "Checking…", and the line clears by itself, announced once, when every CLI can be listed again (<code>HOLD-1</code>, <code>KEY-11</code>, <code>FB-9</code>).</li>
-<li><span class="n">15</span> When the scan fails for every CLI, the list keeps the rows it last had, drawn as unknown with "last seen 14:02", under one sentence with <b>Check Again</b> and <b>Logs</b> (<code>STATE-3</code>, <code>STATE-4</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">16</span> When the page's status stream closes, the rows stay drawn as unknown with their age, and the status line carries the one reason the backend sent: after a stop, the stack, when and the command that starts it, otherwise "Lost connection to devhost; retrying". Notices-and-feedback owns that notice and <b>Retry Now</b>; <b>Answer</b> and <b>Open Conversation</b> still open chat, which names its own block (<code>ACT-5</code>, <code>HOLD-2</code>, <code>STATE-3</code>).</li>
-<li><span class="n">17</span> After a switch, the agents still working or waiting in the worktree the stack left stay listed with that worktree; a waiting one keeps <b>Answer</b> and the trigger's waiting look (<code>SEL-5</code>, <code>CC-38</code>).</li>
-<li><span class="n">18</span> When the rows overflow the panel's height (a fit test, never an agent count), the list gains a filter, focused on open, that matches product name, conversation title, worktree label and folder as the person types and highlights the match (drawn bold here); a filter that matches nothing names the query with <b>Clear Filter</b>; the status line and <b>Watch Live Activity</b> stay outside the scroll (<code>SEL-10</code>, <code>SURF-10</code>, <code>STATE-2</code>).</li>
-<li><span class="n">19</span> While the page's own modal dialog is open, the bar shows its paused state and an open list stays anchored and paused, inert, its rows kept; the notice stack moves into the dialog with the line "Paused while this page's dialog is open", and a terminal agent's waiting notice shows there, announced once; the list is live again when the dialog closes (<code>SURF-11</code>, <code>KEY-7</code>, <code>FB-9</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-05, reload-and-agents-09 · Backend: the agents record (Backend 1), the scan's completeness, <code>fresh=1</code> and one log line per change (Backend 2), every worktree of the stack (Backend 3); the layer above docked chat is toolbar-shell's (<code>CC-1</code>)</p></div>
-</section>
+      <section class="step" id="watch-live-activity">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Agent activity · Acme Shop</b
+              ><span
+                >its own tab on the stack directory's hostname, on the stack's machine and in a signed-in browser
+                elsewhere</span
+              >
+            </div>
+            <div class="work">
+              <div class="row" style="align-items: flex-end">
+                <div class="tabs" style="margin: 6px 0 0">
+                  <span class="on">(1) waiting · Agent activity · Acme Shop</span><span>Acme Shop · Products</span>
+                </div>
+                <span class="n">1</span>
+              </div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span>
+                <span class="n">2</span>
+              </div>
+              <div class="muted small">
+                What the agents in this worktree do from now on, including agents devhost did not start.
+              </div>
+              <div class="ra-agent">
+                Claude Code · Fix the nav header · PID 14625 <span class="n">3</span
+                ><span class="sub">◆ waiting for you since 14:10 · answer in the page's chat</span>
+              </div>
+              <div class="ra-ent">
+                <span>14:10:47</span><span>Tool call</span
+                ><span>Edit · src/header.tsx · +3 −1 <span class="n">4</span></span>
+              </div>
+              <div class="ra-ent">
+                <span>14:10:31</span><span>Reply</span
+                ><span>I'll tighten the header's <b>padding</b> on small screens.</span>
+              </div>
+              <div class="ra-ent"><span>14:10:12</span><span>Result</span><span>bun test · 42 pass, 0 fail</span></div>
+              <div class="ra-ent"><span>14:10:05</span><span>Tool call</span><span>Bash · bun test</span></div>
+              <div class="ra-ent"><span>14:09:58</span><span>Denied</span><span>Bash · git push</span></div>
+              <div class="ra-ent">
+                <span>14:09:40</span><span>Prompt</span><span>Fix the nav header's padding on phones</span>
+              </div>
+              <div class="ra-agent">Codex in a terminal · PID 83275<span class="sub">◐ working</span></div>
+              <div class="ra-ent">
+                <span>14:10:40</span><span>Tool call</span><span>Read · packages/ui/src/Button.tsx</span>
+              </div>
+              <div class="ra-ent">
+                <span>14:10:36</span><span>Reply</span><span>Checking the button's focus styles.</span>
+              </div>
+              <div class="muted small" style="margin-top: 6px">
+                Newest first · at most 500 entries · a text longer than 4 KiB ends with "cut at 4 KiB"
+                <span class="n">5</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the running agents list's footer, where Watch Live Activity starts</b></div>
+            <div class="work small">
+              <div class="vlab">a browser on the machine that runs Acme Shop</div>
+              <div class="row">
+                <span class="btn">Watch Live Activity</span
+                ><span class="muted"
+                  >opens devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab</span
+                ><span class="n">6</span>
+              </div>
+              <div class="vlab">
+                a browser in another environment, over the network or through a remote preview, signed in with the
+                devhost passkey or paired
+              </div>
+              <div class="row">
+                <span class="btn">Watch Live Activity</span
+                ><span class="muted"
+                  >opens devhost--devbox.devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab
+                  (through a remote preview)</span
+                ><span class="n">7</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>Agent activity · Acme Shop</b><span>the page in other states</span></div>
+            <div class="work small">
+              <div class="vlab">opened before any agent did anything</div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span>
+              </div>
+              <div class="muted">
+                No activity yet. Agents in this worktree appear here when they start. History is not shown.
+                <span class="n">8</span>
+              </div>
+              <div class="vlab">devhost stop stopped Acme Shop at 14:32</div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span>
+              </div>
+              <div>
+                Stopped from the terminal at 14:32. Start it with devhost start in ~/acme, then open Watch Live Activity
+                from the running agents list on its pages. <span class="n">9</span>
+              </div>
+              <div class="ra-oth">From the run that ended at 14:32</div>
+              <div class="ra-ent">
+                <span>14:31:55</span><span>Reply</span><span class="muted">… the entries already shown stay</span>
+              </div>
+              <div class="vlab">other ends, in the same form</div>
+              <div>Stopped after 1 h idle · Stopped with Ctrl-C at 14:32 <span class="n">10</span></div>
+              <div class="vlab">
+                devhost stack restart replaced Acme Shop at 14:32: the page on the stack directory's hostname
+              </div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span>
+              </div>
+              <div>Replaced by devhost stack restart at 14:32 · watching the new run <span class="n">11</span></div>
+              <div class="vlab">
+                the same replacement: the unlinked page at the loopback address, opened by typing it
+              </div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span>
+              </div>
+              <div>
+                Replaced by devhost stack restart at 14:32. <a>Open Watch Live Activity on devhost.acme.test</a>
+                <span class="n">12</span>
+              </div>
+              <div class="vlab">a save turned chat off at 14:02</div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span>
+              </div>
+              <div>Chat turned off at 14:02. Agent activity is shown while chat is on. <span class="n">13</span></div>
+              <div class="vlab">
+                the watcher could not start; the tab reads "(1) failed · Watch Live Activity · Acme Shop"
+              </div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip bad">Could not start</span>
+              </div>
+              <div class="row">
+                Watch Live Activity could not start: devhost could not create its watcher's files.<span class="btn"
+                  >Retry Now</span
+                ><span class="n">14</span>
+              </div>
+              <div class="vlab">the connection dropped without a close message</div>
+              <div class="ra-head">
+                <b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">? Lost connection</span>
+              </div>
+              <div class="row">
+                Lost connection to devhost; retrying · next attempt in 8 s<span class="btn">Retry Now</span
+                ><span class="n">15</span>
+              </div>
+              <div class="vlab">a chat turn the person stopped</div>
+              <div class="ra-ent">
+                <span>14:12:03</span><span>Stopped</span
+                ><span>Stopped by you after 29 s <span class="n">16</span></span>
+              </div>
+              <div class="vlab">two Claude Code agents started in terminals</div>
+              <div class="ra-agent">
+                Claude Code in a terminal · PID 15210 <span class="n">17</span><span class="sub">◐ working</span>
+              </div>
+              <div class="ra-agent">Claude Code in a terminal · PID 15002<span class="sub">idle</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>4. Watch Live Activity</h2>
+          <p>
+            Watch Live Activity still opens in its own tab, never on an app's hostname, sends no-store and no-referrer,
+            shows no history, cuts long text at 4 KiB, keeps at most 500 entries, stops watching when the tab closes and
+            cannot answer an agent, as the owner settled; Restart Stack, a switch and a hot reload keep its connection.
+            What changes: it names what it watches, groups entries under each agent with its state, labels each entry
+            with what a tool call touches, shows an agent waiting for the person, says why it ended instead of
+            reconnecting forever, and opens on the stack directory's hostname, on this machine and in a browser
+            elsewhere that signed in with the devhost passkey or paired; the loopback address still answers a direct
+            request from this machine, but nothing links it. Keys: the page uses the document's standard keys and has no
+            shortcuts of its own; <b>Retry Now</b> is an ordinary button (<code>KEY-1</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> It opens in its own tab, the one devhost link that does (<code>SURF-15</code>).
+              Its document title reads "Watch Live Activity · Acme Shop", so tabs of two stacks differ, prefixed "(1)
+              waiting · " while an agent waits for the person and "(1) failed · " while its stream cannot start
+              (<code>ACT-7</code>, <code>O16</code>, <code>WORD-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The heading names the stack and the worktree it watches, with one state beside
+              it: Live, Lost connection, Stopped or Could not start. The lead line under it says "this worktree" where
+              the page says "this checkout" today (<code>SEL-4</code>, <code>HOLD-2</code>, <code>WORD-11</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Entries group under each agent's heading, named as in the list with the PID added
+              and the mode left out, with its state and since when from the agents record: "answer in the page's chat"
+              for an agent chat started, "answer it in its terminal" for another. The page shows the wait and cannot
+              answer it. An agent starting to wait, and the wait ending, are each announced once in the polite region;
+              entries, elapsed times and streaming text sit outside every live region (<code>SURF-8</code>,
+              <code>ACT-6</code>, <code>ACT-7</code>, <code>REV-9</code>, <code>WORD-6</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Each entry is labelled: Tool call with the command a shell tool runs, the path a
+              file tool reads or writes and the lines an edit adds and removes; Result with the tool's output; Denied
+              for a refused call, never "user"; Reply rendered as Markdown with raw HTML shown as text; Prompt for the
+              person's message. Tool inputs travel only on this stream, which no app hostname serves
+              (<code>WORD-1</code>, <code>WORD-4</code>, <code>WORD-10</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Newest first and at most 500 entries, as today; a text longer than 4 KiB says
+              where it was cut (<code>FAIL-2</code>).
+            </li>
+            <li>
+              <span class="n">6</span> On the stack's machine the list's link opens this page on the stack directory's
+              hostname in its own tab, because this machine's browser there counts as this machine; the loopback address
+              keeps answering a direct loopback request, but nothing links it. The list renders only the address the
+              agents record gives this browser and never builds one itself (<code>SURF-15</code>).
+            </li>
+            <li>
+              <span class="n">7</span> In a browser in another environment, over the network or through a remote preview
+              relay, that signed in with the devhost passkey or paired, the link opens the same page on the stack
+              directory's hostname, one path per stack, which the relay forwards; no app hostname ever serves it, and no
+              page opened elsewhere carries a loopback address. A browser that has done neither sees toolbar-shell's
+              sign-in state, with no list (step 1), and the path answers <code>403</code> (<code>SURF-15</code>,
+              <code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>O55</code>).
+            </li>
+            <li>
+              <span class="n">8</span> Until an entry arrives, the page says why it is empty and that it shows no
+              history (<code>STATE-2</code>).
+            </li>
+            <li>
+              <span class="n">9</span> Before closing the stream with 1001 after a stop, the server sends why: the page
+              stops reconnecting, reads "Stopped" with <code>ACT-10</code>'s sentence for the reason and the command
+              that starts the stack again, and keeps the entries already shown under "From the run that ended at 14:32"
+              (<code>ACT-10</code>, <code>HOLD-2</code>, <code>STATE-3</code>, <code>SURF-15</code>).
+            </li>
+            <li>
+              <span class="n">10</span> The idle timeout and Ctrl-C in the stack's terminal read in the same form, never
+              Reconnecting (<code>ACT-10</code>, <code>WORD-7</code>, <code>FAIL-5</code>).
+            </li>
+            <li>
+              <span class="n">11</span> When <code>devhost stack restart</code>, <code>devhost restart-all</code> or
+              <code>devhost upgrade</code> replaces the stack, the page on the stack directory's hostname reaches the
+              new run through the same path, reconnects and says so once, naming the command, its entries kept under the
+              run that ended (<code>ACT-10</code>, <code>O18</code>, <code>O55</code>).
+            </li>
+            <li>
+              <span class="n">12</span> The unlinked page at the loopback address belongs to the replaced run's port and
+              cannot learn the new one, so it shows the run ended with a link to the page on the stack directory's
+              hostname, never Reconnecting: <code>ACT-10</code>'s one exception (<code>ACT-10</code>, <code>O55</code>,
+              <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">13</span> When a save turns chat off, the page reads Stopped, says why, stops reconnecting
+              and keeps its entries; the stream closes with 1000, because what it served is over (<code>SEL-11</code>,
+              <code>HOLD-5</code>).
+            </li>
+            <li>
+              <span class="n">14</span> When the watcher cannot start, the server sends the cause before closing the
+              stream, and the page offers <b>Retry Now</b>, never Reconnecting (<code>FAIL-2</code>,
+              <code>STATE-4</code>, <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">15</span> When the control server dies without closing the stream, the page keeps its
+              entries and retries after 1, 2, 4 and 8 s and then every 10 s, as today; <b>Retry Now</b> tries at once
+              (<code>HOLD-2</code>, <code>ACT-5</code>, <code>STATE-3</code>).
+            </li>
+            <li>
+              <span class="n">16</span> A turn the person stopped reads "Stopped by you after 29 s" in the neutral
+              style, never as a failure; Stopped and Prompt are <code>WORD-10</code> labels (<code>FAIL-5</code>,
+              <code>WORD-7</code>, <code>WORD-10</code>).
+            </li>
+            <li>
+              <span class="n">17</span> Two agents of one CLI keep separate headings by PID, so their entries never
+              interleave unnamed (<code>WORD-4</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes reload-and-agents-06, reload-and-agents-10, reload-and-agents-13 · Backend: where Watch Live Activity
+            opens, per browser and on the stack directory's hostname (Backend 4), readable entries and state messages on
+            the activity stream (Backend 5), why a stream ends (Backend 6)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="go-to-the-conversation">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>one activation of Answer on Claude Code's row</span></div>
-<div class="pg" style="min-height:280px">
-<div class="apptxt">Acme Shop · Products · Running shoes …</div>
-<div class="corner">
-<div class="dock" style="width:min(100%,30rem);border:1px solid var(--line);border-radius:8px"><h3>Chat · Fix the nav header <span class="n">1</span></h3>
-<div class="muted">Claude Code · This worktree (live) · main ~/acme · waiting for you since 14:10</div>
-<div class="muted">… I'll tighten the header's padding on small screens.</div>
-<div class="box"><b class="focusring">Edit src/header.tsx?</b> <span class="n">2</span>
-<div class="muted">src/header.tsx · +3 −1</div>
-<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span></div></div>
-<div class="muted">… the composer, agent-chat's</div>
-</div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">3</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">●●●●●● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">◆ Agents 3 · 1 waiting</span><span class="seg">Hold Reloads</span><span class="seg">◆ Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › after the answer, and the other hand-offs</b></div>
-<div class="work small">
-<div class="vlab">the person pressed Allow Once on agent-chat's card</div>
-<div class="row"><span class="muted">You allowed: Edit src/header.tsx · 14:11</span><span class="sp"></span><span class="tbar oneline"><span class="seg">◐ Agents 3</span><span class="seg">Hold Reloads</span><span class="seg">◐ Chat</span></span><span class="n">4</span></div>
-<div class="vlab">later, Open Conversation on the same row while Claude Code works</div>
-<div class="box" style="margin:0"><b>Chat · Fix the nav header</b> <span class="muted">Claude Code · This worktree (live) · working</span>
-<div class="row" style="margin-top:4px"><span class="in focusring" style="flex:1">&nbsp;</span><span class="btn pri">Send</span><span class="n">5</span></div></div>
-<div class="vlab">Open Conversation on Footer links, a conversation of fix-nav, from main's page</div>
-<div class="box" style="margin:0"><b>Chat · Footer links</b> <span class="muted">Claude Code · This worktree (live) · fix-nav · working</span>
-<div class="focusring muted" style="margin-top:4px;padding:2px 4px">… its transcript, which takes no message from this page</div>
-<div class="row" style="margin-top:4px"><span class="muted">in place of Send, agent-chat's composer names that conversation's worktree</span><span class="sp"></span><span class="btn">New Conversation</span><span class="n">6</span></div></div>
-</div>
-</div>
-</div>
-<div class="cap"><h2>3. Go to a chat agent's conversation</h2>
-<p>The list still sends nothing and answers nothing: the person's own answer on agent-chat's decision card stays the one way to act on a chat agent, as the owner settled, and an agent started in a terminal is still answered in its terminal. What changes: the row's action replaces "this chat" and lands on the card or the conversation in one activation. Nothing in this flow writes, so there is no Undo: its outcome is the wait clearing in place after the person's own answer. Keys: Enter or Space on <b>Answer</b> or <b>Open Conversation</b>; from the card, agent-chat's keys apply (<code>KEY-9</code>, <code>KEY-10</code>).</p>
-<ol><li><span class="n">1</span> <b>Answer</b> opens docked chat on that conversation in one activation, also for a conversation of another worktree of the stack, which agent-chat makes answerable from this page; the list closes and focus lands in chat, where the person asked to go. With chat already docked on another conversation, the hand-off switches it to this one and keeps the other conversation's draft (agent-chat's <code>UNDO-2</code>) (<code>REV-9</code>, <code>SEL-8</code>, <code>CC-38</code>).</li>
-<li><span class="n">2</span> Focus lands on the decision card's question. The card, with <b>Deny</b>, <b>Allow Once</b>, the CLI's own <b>Allow for This Session</b> when it offers one, and <b>Stop Turn</b>, is agent-chat's, and no answer is a default (<code>REV-9</code>, <code>KEY-6</code>).</li>
-<li><span class="n">3</span> The trigger and <b>Chat</b> keep the waiting look until the wait ends (<code>SURF-8</code>, <code>ACT-7</code>).</li>
-<li><span class="n">4</span> After the person's own answer, agent-chat's one write, the trigger turns to working and the wait's end is announced once; the list only reported, so there is no Undo here (<code>ACT-7</code>, <code>FB-9</code>).</li>
-<li><span class="n">5</span> <b>Open Conversation</b> on a working chat agent opens docked chat on that conversation with focus in its composer (<code>SEL-8</code>, <code>KEY-6</code>).</li>
-<li><span class="n">6</span> For a conversation of another worktree, focus lands on its transcript, which takes no message from this page; agent-chat's composer names that conversation's worktree and offers <b>New Conversation</b> (<code>SEL-8</code>, <code>CC-38</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-05 · Backend: the conversation's ID, title, mode and state on the agents record (Backend 1); answering a conversation of another worktree is agent-chat's (<code>CC-38</code>)</p></div>
-</section>
-
-<section class="step" id="watch-live-activity">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>Agent activity · Acme Shop</b><span>its own tab on the stack directory's hostname, on the stack's machine and in a signed-in browser elsewhere</span></div>
-<div class="work">
-<div class="row" style="align-items:flex-end"><div class="tabs" style="margin:6px 0 0"><span class="on">(1) waiting · Agent activity · Acme Shop</span><span>Acme Shop · Products</span></div><span class="n">1</span></div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span> <span class="n">2</span></div>
-<div class="muted small">What the agents in this worktree do from now on, including agents devhost did not start.</div>
-<div class="ra-agent">Claude Code · Fix the nav header · PID 14625 <span class="n">3</span><span class="sub">◆ waiting for you since 14:10 · answer in the page's chat</span></div>
-<div class="ra-ent"><span>14:10:47</span><span>Tool call</span><span>Edit · src/header.tsx · +3 −1 <span class="n">4</span></span></div>
-<div class="ra-ent"><span>14:10:31</span><span>Reply</span><span>I'll tighten the header's <b>padding</b> on small screens.</span></div>
-<div class="ra-ent"><span>14:10:12</span><span>Result</span><span>bun test · 42 pass, 0 fail</span></div>
-<div class="ra-ent"><span>14:10:05</span><span>Tool call</span><span>Bash · bun test</span></div>
-<div class="ra-ent"><span>14:09:58</span><span>Denied</span><span>Bash · git push</span></div>
-<div class="ra-ent"><span>14:09:40</span><span>Prompt</span><span>Fix the nav header's padding on phones</span></div>
-<div class="ra-agent">Codex in a terminal · PID 83275<span class="sub">◐ working</span></div>
-<div class="ra-ent"><span>14:10:40</span><span>Tool call</span><span>Read · packages/ui/src/Button.tsx</span></div>
-<div class="ra-ent"><span>14:10:36</span><span>Reply</span><span>Checking the button's focus styles.</span></div>
-<div class="muted small" style="margin-top:6px">Newest first · at most 500 entries · a text longer than 4 KiB ends with "cut at 4 KiB" <span class="n">5</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the running agents list's footer, where Watch Live Activity starts</b></div>
-<div class="work small">
-<div class="vlab">a browser on the machine that runs Acme Shop</div>
-<div class="row"><span class="btn">Watch Live Activity</span><span class="muted">opens devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab</span><span class="n">6</span></div>
-<div class="vlab">a browser in another environment, over the network or through a remote preview, signed in with the devhost passkey or paired</div>
-<div class="row"><span class="btn">Watch Live Activity</span><span class="muted">opens devhost--devbox--preview.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab (through a remote preview)</span><span class="n">7</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Agent activity · Acme Shop</b><span>the page in other states</span></div>
-<div class="work small">
-<div class="vlab">opened before any agent did anything</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span></div>
-<div class="muted">No activity yet. Agents in this worktree appear here when they start. History is not shown. <span class="n">8</span></div>
-<div class="vlab">devhost stop stopped Acme Shop at 14:32</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span></div>
-<div>Stopped from the terminal at 14:32. Start it with devhost start in ~/acme, then open Watch Live Activity from the running agents list on its pages. <span class="n">9</span></div>
-<div class="ra-oth">From the run that ended at 14:32</div>
-<div class="ra-ent"><span>14:31:55</span><span>Reply</span><span class="muted">… the entries already shown stay</span></div>
-<div class="vlab">other ends, in the same form</div>
-<div>Stopped after 1 h idle · Stopped with Ctrl-C at 14:32 <span class="n">10</span></div>
-<div class="vlab">devhost stack restart replaced Acme Shop at 14:32: the page on the stack directory's hostname</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span></div>
-<div>Replaced by devhost stack restart at 14:32 · watching the new run <span class="n">11</span></div>
-<div class="vlab">the same replacement: the unlinked page at the loopback address, opened by typing it</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span></div>
-<div>Replaced by devhost stack restart at 14:32. <a>Open Watch Live Activity on devhost.acme.test</a> <span class="n">12</span></div>
-<div class="vlab">a save turned chat off at 14:02</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span></div>
-<div>Chat turned off at 14:02. Agent activity is shown while chat is on. <span class="n">13</span></div>
-<div class="vlab">the watcher could not start; the tab reads "(1) failed · Watch Live Activity · Acme Shop"</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip bad">Could not start</span></div>
-<div class="row">Watch Live Activity could not start: devhost could not create its watcher's files.<span class="btn">Retry Now</span><span class="n">14</span></div>
-<div class="vlab">the connection dropped without a close message</div>
-<div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">? Lost connection</span></div>
-<div class="row">Lost connection to devhost; retrying · next attempt in 8 s<span class="btn">Retry Now</span><span class="n">15</span></div>
-<div class="vlab">a chat turn the person stopped</div>
-<div class="ra-ent"><span>14:12:03</span><span>Stopped</span><span>Stopped by you after 29 s <span class="n">16</span></span></div>
-<div class="vlab">two Claude Code agents started in terminals</div>
-<div class="ra-agent">Claude Code in a terminal · PID 15210 <span class="n">17</span><span class="sub">◐ working</span></div>
-<div class="ra-agent">Claude Code in a terminal · PID 15002<span class="sub">idle</span></div>
-</div>
-</div>
-</div>
-<div class="cap">
-
-<h2>4. Watch Live Activity</h2>
-<p>Watch Live Activity still opens in its own tab, never on an app's hostname, sends no-store and no-referrer, shows no history, cuts long text at 4 KiB, keeps at most 500 entries, stops watching when the tab closes and cannot answer an agent, as the owner settled; Restart Stack, a switch and a hot reload keep its connection. What changes: it names what it watches, groups entries under each agent with its state, labels each entry with what a tool call touches, shows an agent waiting for the person, says why it ended instead of reconnecting forever, and opens on the stack directory's hostname, on this machine and in a browser elsewhere that signed in with the devhost passkey or paired; the loopback address still answers a direct request from this machine, but nothing links it. Keys: the page uses the document's standard keys and has no shortcuts of its own; <b>Retry Now</b> is an ordinary button (<code>KEY-1</code>).</p>
-<ol><li><span class="n">1</span> It opens in its own tab, the one devhost link that does (<code>SURF-15</code>). Its document title reads "Watch Live Activity · Acme Shop", so tabs of two stacks differ, prefixed "(1) waiting · " while an agent waits for the person and "(1) failed · " while its stream cannot start (<code>ACT-7</code>, <code>O16</code>, <code>WORD-1</code>).</li>
-<li><span class="n">2</span> The heading names the stack and the worktree it watches, with one state beside it: Live, Lost connection, Stopped or Could not start. The lead line under it says "this worktree" where the page says "this checkout" today (<code>SEL-4</code>, <code>HOLD-2</code>, <code>WORD-11</code>).</li>
-<li><span class="n">3</span> Entries group under each agent's heading, named as in the list with the PID added and the mode left out, with its state and since when from the agents record: "answer in the page's chat" for an agent chat started, "answer it in its terminal" for another. The page shows the wait and cannot answer it. An agent starting to wait, and the wait ending, are each announced once in the polite region; entries, elapsed times and streaming text sit outside every live region (<code>SURF-8</code>, <code>ACT-6</code>, <code>ACT-7</code>, <code>REV-9</code>, <code>WORD-6</code>, <code>FB-9</code>).</li>
-<li><span class="n">4</span> Each entry is labelled: Tool call with the command a shell tool runs, the path a file tool reads or writes and the lines an edit adds and removes; Result with the tool's output; Denied for a refused call, never "user"; Reply rendered as Markdown with raw HTML shown as text; Prompt for the person's message. Tool inputs travel only on this stream, which no app hostname serves (<code>WORD-1</code>, <code>WORD-4</code>, <code>WORD-10</code>).</li>
-<li><span class="n">5</span> Newest first and at most 500 entries, as today; a text longer than 4 KiB says where it was cut (<code>FAIL-2</code>).</li>
-<li><span class="n">6</span> On the stack's machine the list's link opens this page on the stack directory's hostname in its own tab, because this machine's browser there counts as this machine; the loopback address keeps answering a direct loopback request, but nothing links it. The list renders only the address the agents record gives this browser and never builds one itself (<code>SURF-15</code>).</li>
-<li><span class="n">7</span> In a browser in another environment, over the network or through a remote preview relay, that signed in with the devhost passkey or paired, the link opens the same page on the stack directory's hostname, one path per stack, which the relay forwards; no app hostname ever serves it, and no page opened elsewhere carries a loopback address. A browser that has done neither sees toolbar-shell's sign-in state, with no list (step 1), and the path answers <code>403</code> (<code>SURF-15</code>, <code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>O55</code>).</li>
-<li><span class="n">8</span> Until an entry arrives, the page says why it is empty and that it shows no history (<code>STATE-2</code>).</li>
-<li><span class="n">9</span> Before closing the stream with 1001 after a stop, the server sends why: the page stops reconnecting, reads "Stopped" with <code>ACT-10</code>'s sentence for the reason and the command that starts the stack again, and keeps the entries already shown under "From the run that ended at 14:32" (<code>ACT-10</code>, <code>HOLD-2</code>, <code>STATE-3</code>, <code>SURF-15</code>).</li>
-<li><span class="n">10</span> The idle timeout and Ctrl-C in the stack's terminal read in the same form, never Reconnecting (<code>ACT-10</code>, <code>WORD-7</code>, <code>FAIL-5</code>).</li>
-<li><span class="n">11</span> When <code>devhost stack restart</code>, <code>devhost restart-all</code> or <code>devhost upgrade</code> replaces the stack, the page on the stack directory's hostname reaches the new run through the same path, reconnects and says so once, naming the command, its entries kept under the run that ended (<code>ACT-10</code>, <code>O18</code>, <code>O55</code>).</li>
-<li><span class="n">12</span> The unlinked page at the loopback address belongs to the replaced run's port and cannot learn the new one, so it shows the run ended with a link to the page on the stack directory's hostname, never Reconnecting: <code>ACT-10</code>'s one exception (<code>ACT-10</code>, <code>O55</code>, <code>WORD-7</code>).</li>
-<li><span class="n">13</span> When a save turns chat off, the page reads Stopped, says why, stops reconnecting and keeps its entries; the stream closes with 1000, because what it served is over (<code>SEL-11</code>, <code>HOLD-5</code>).</li>
-<li><span class="n">14</span> When the watcher cannot start, the server sends the cause before closing the stream, and the page offers <b>Retry Now</b>, never Reconnecting (<code>FAIL-2</code>, <code>STATE-4</code>, <code>WORD-7</code>).</li>
-<li><span class="n">15</span> When the control server dies without closing the stream, the page keeps its entries and retries after 1, 2, 4 and 8 s and then every 10 s, as today; <b>Retry Now</b> tries at once (<code>HOLD-2</code>, <code>ACT-5</code>, <code>STATE-3</code>).</li>
-<li><span class="n">16</span> A turn the person stopped reads "Stopped by you after 29 s" in the neutral style, never as a failure; Stopped and Prompt are <code>WORD-10</code> labels (<code>FAIL-5</code>, <code>WORD-7</code>, <code>WORD-10</code>).</li>
-<li><span class="n">17</span> Two agents of one CLI keep separate headings by PID, so their entries never interleave unnamed (<code>WORD-4</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-06, reload-and-agents-10, reload-and-agents-13 · Backend: where Watch Live Activity opens, per browser and on the stack directory's hostname (Backend 4), readable entries and state messages on the activity stream (Backend 5), why a stream ends (Backend 6)</p></div>
-</section>
-
-<section class="step" id="one-record">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › the agents record, read by every surface that names an agent</b></div>
-<div class="work">
-<table class="t ra-rec"><thead><tr><th style="width:30%">Field</th><th>Claude Code's entry, as the list reads it</th></tr></thead><tbody>
-<tr><td>agent</td><td>Claude Code · Fix the nav header · PID 14625</td></tr>
-<tr><td>state</td><td>waiting for you since 14:10</td></tr>
-<tr><td>worktree and folder</td><td>main ~/acme · worktree root</td></tr>
-<tr><td>conversation</td><td>Fix the nav header · This worktree (live)</td></tr>
-<tr><td>scan</td><td>incomplete: Codex agents could not be listed · checked 14:10:12</td></tr>
-<tr><td>activity, this machine</td><td>devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity</td></tr>
-<tr><td>activity, signed in elsewhere</td><td>devhost--devbox--preview.acme.test/__devhost__/stacks/acme-shop/agents/activity</td></tr>
-</tbody></table>
-<div class="muted small" style="margin-top:4px"><span class="n">1</span> never a transcript path, a native session ID or message text</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › Worktrees panel footer</b><span>worktree-switch's question, switching main to fix-nav</span></div>
-<div class="work small">
-<div class="box" style="margin:0">Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main? <span class="n">2</span>
-<ul style="margin:4px 0;padding-left:18px">
-<li>Codex in a terminal · working: it keeps working in main, listed with its worktree on fix-nav's pages</li>
-</ul>
-<div class="row"><span class="sp"></span><span class="btn">Switch Anyway</span><span class="btn focusring">Cancel</span></div></div>
-<div class="vlab">the reach line while Codex agents could not be listed</div>
-<div class="muted">Restarts all 6 services of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav (repository acme) with new automatic ports · Codex agents could not be checked in main <span class="n">3</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › docked chat</b><span>agent-chat's second-agent question, a message in This worktree (live)</span></div>
-<div class="work small">
-<div class="box" style="margin:0">Start a second agent in main ~/acme? Claude Code, which chat did not start, is working there, and both would edit the same files. <span class="n">4</span>
-<div class="row"><span class="sp"></span><span class="btn">Start Second Agent</span><span class="btn focusring">Cancel</span></div></div>
-<div class="vlab">while Codex agents could not be listed, it asks too</div>
-<div class="box" style="margin:0">Start a second agent in main ~/acme? Codex agents could not be checked there, so one may be working, and both would edit the same files.
-<div class="row"><span class="sp"></span><span class="btn">Start Second Agent</span><span class="btn focusring">Cancel</span></div></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>stack-run-stop's multi-stack command reads each stack's record</span></div>
-<pre class="term">$ devhost stop --worktrees
+      <section class="step" id="one-record">
+        <div class="mock">
+          <div class="win">
+            <div class="bar"><b>devhost › the agents record, read by every surface that names an agent</b></div>
+            <div class="work">
+              <table class="t ra-rec">
+                <thead>
+                  <tr>
+                    <th style="width: 30%">Field</th>
+                    <th>Claude Code's entry, as the list reads it</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>agent</td>
+                    <td>Claude Code · Fix the nav header · PID 14625</td>
+                  </tr>
+                  <tr>
+                    <td>state</td>
+                    <td>waiting for you since 14:10</td>
+                  </tr>
+                  <tr>
+                    <td>worktree and folder</td>
+                    <td>main ~/acme · worktree root</td>
+                  </tr>
+                  <tr>
+                    <td>conversation</td>
+                    <td>Fix the nav header · This worktree (live)</td>
+                  </tr>
+                  <tr>
+                    <td>scan</td>
+                    <td>incomplete: Codex agents could not be listed · checked 14:10:12</td>
+                  </tr>
+                  <tr>
+                    <td>activity, this machine</td>
+                    <td>devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity</td>
+                  </tr>
+                  <tr>
+                    <td>activity, signed in elsewhere</td>
+                    <td>devhost--devbox.devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="muted small" style="margin-top: 4px">
+                <span class="n">1</span> never a transcript path, a native session ID or message text
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › Worktrees panel footer</b
+              ><span>worktree-switch's question, switching main to fix-nav</span>
+            </div>
+            <div class="work small">
+              <div class="box" style="margin: 0">
+                Switch Acme Shop to fix-nav ~/acme/.worktrees/fix-nav and leave this work in main?
+                <span class="n">2</span>
+                <ul style="margin: 4px 0; padding-left: 18px">
+                  <li>
+                    Codex in a terminal · working: it keeps working in main, listed with its worktree on fix-nav's pages
+                  </li>
+                </ul>
+                <div class="row">
+                  <span class="sp"></span><span class="btn">Switch Anyway</span
+                  ><span class="btn focusring">Cancel</span>
+                </div>
+              </div>
+              <div class="vlab">the reach line while Codex agents could not be listed</div>
+              <div class="muted">
+                Restarts all 6 services of Acme Shop from fix-nav ~/acme/.worktrees/fix-nav (repository acme) with new
+                automatic ports · Codex agents could not be checked in main <span class="n">3</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b
+              ><span>agent-chat's second-agent question, a message in This worktree (live)</span>
+            </div>
+            <div class="work small">
+              <div class="box" style="margin: 0">
+                Start a second agent in main ~/acme? Claude Code, which chat did not start, is working there, and both
+                would edit the same files. <span class="n">4</span>
+                <div class="row">
+                  <span class="sp"></span><span class="btn">Start Second Agent</span
+                  ><span class="btn focusring">Cancel</span>
+                </div>
+              </div>
+              <div class="vlab">while Codex agents could not be listed, it asks too</div>
+              <div class="box" style="margin: 0">
+                Start a second agent in main ~/acme? Codex agents could not be checked there, so one may be working, and
+                both would edit the same files.
+                <div class="row">
+                  <span class="sp"></span><span class="btn">Start Second Agent</span
+                  ><span class="btn focusring">Cancel</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>stack-run-stop's multi-stack command reads each stack's record</span>
+            </div>
+            <pre class="term">$ devhost stop --worktrees
 2 stacks of the acme repository run: <span class="n">5</span>
   Acme Shop  main ~/acme                        PID 84244 · detached
              Claude Code waiting for you: "Fix the nav header"
   Acme Shop  fix-nav ~/acme/.worktrees/fix-nav  PID 85102 · foreground
 Stop 2 stacks and end Claude Code's waiting turn in main? [y/N]</pre>
-</div>
-</div>
-<div class="cap">
-<h2>5. Hand the same record to the questions that name agents</h2>
-<p>Each question keeps its owner and its own rule for when it asks: worktree-switch's switch question, agent-chat's second-agent question and stack-run-stop's multi-stack commands. What changes: every agent they name comes from the list's one record, so no surface scans agents on its own, every surface names an agent the same way, and an incomplete scan is never read as "no agents" (<code>REV-3</code>, <code>REV-6</code>, <code>REV-7</code>, <code>FB-4</code>).</p>
-<ol><li><span class="n">1</span> The record answers each agent's product name, PID, state and since when, worktree label, folder and, for an agent chat started, its conversation's ID, title and mode, plus whether the scan was complete, which agents it could not list and where Watch Live Activity opens for this browser; it carries no transcript path, native session ID or message text beyond the conversation title chat already shows.</li>
-<li><span class="n">2</span> worktree-switch's question and its outcome name the agents of the worktree the switch moves the page away from, and the agents it leaves working or waiting there (<code>SEL-5</code>, <code>REV-3</code>, <code>FB-4</code>).</li>
-<li><span class="n">3</span> While the scan is incomplete, worktree-switch's reach line names the agents that could not be checked, never that none work there (<code>REV-3</code>, <code>STATE-2</code>).</li>
-<li><span class="n">4</span> agent-chat's second-agent question names the agent already at work and, while the scan is incomplete, asks too, naming what devhost could not check. Stop Turn and Close Conversation never ask; their outcome names the agent they stop, and the list drops a closed conversation's agent in its next update (<code>REV-3</code>, <code>REV-6</code>, <code>CC-14</code>, <code>UNDO-4</code>).</li>
-<li><span class="n">5</span> stack-run-stop's multi-stack commands read each stack's agents chat started from the same record, over the stack's loopback control port without a page URL, so their printed set names the conversations each stack would end (<code>REV-7</code>, <code>SEL-6</code>).</li></ol>
-<p class="fixes">Fixes reload-and-agents-09 · Backend: the scan's completeness (Backend 2); every worktree of the stack and a read without a page URL (Backend 3)</p></div>
-</section>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>5. Hand the same record to the questions that name agents</h2>
+          <p>
+            Each question keeps its owner and its own rule for when it asks: worktree-switch's switch question,
+            agent-chat's second-agent question and stack-run-stop's multi-stack commands. What changes: every agent they
+            name comes from the list's one record, so no surface scans agents on its own, every surface names an agent
+            the same way, and an incomplete scan is never read as "no agents" (<code>REV-3</code>, <code>REV-6</code>,
+            <code>REV-7</code>, <code>FB-4</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The record answers each agent's product name, PID, state and since when, worktree
+              label, folder and, for an agent chat started, its conversation's ID, title and mode, plus whether the scan
+              was complete, which agents it could not list and where Watch Live Activity opens for this browser; it
+              carries no transcript path, native session ID or message text beyond the conversation title chat already
+              shows.
+            </li>
+            <li>
+              <span class="n">2</span> worktree-switch's question and its outcome name the agents of the worktree the
+              switch moves the page away from, and the agents it leaves working or waiting there (<code>SEL-5</code>,
+              <code>REV-3</code>, <code>FB-4</code>).
+            </li>
+            <li>
+              <span class="n">3</span> While the scan is incomplete, worktree-switch's reach line names the agents that
+              could not be checked, never that none work there (<code>REV-3</code>, <code>STATE-2</code>).
+            </li>
+            <li>
+              <span class="n">4</span> agent-chat's second-agent question names the agent already at work and, while the
+              scan is incomplete, asks too, naming what devhost could not check. Stop Turn and Close Conversation never
+              ask; their outcome names the agent they stop, and the list drops a closed conversation's agent in its next
+              update (<code>REV-3</code>, <code>REV-6</code>, <code>CC-14</code>, <code>UNDO-4</code>).
+            </li>
+            <li>
+              <span class="n">5</span> stack-run-stop's multi-stack commands read each stack's agents chat started from
+              the same record, over the stack's loopback control port without a page URL, so their printed set names the
+              conversations each stack would end (<code>REV-7</code>, <code>SEL-6</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes reload-and-agents-09 · Backend: the scan's completeness (Backend 2); every worktree of the stack and a
+            read without a page URL (Backend 3)
+          </p>
+        </div>
+      </section>
 
-<section class="changes">
-<div><h3>Removed</h3><ul>
-<li>The control vanishing at zero, with chat off and when a scan misses every agent, and the bar's sideways jump it caused</li>
-<li>Raw CLI IDs ("claude-code"), "." and the CLI's session name as an agent's name; "this chat" as the only link to chat</li>
-<li>"Waiting for approval" and "Running, state unknown" as state words</li>
-<li>Watch Live Activity's raw event tokens, tool output labelled "user", unrendered replies, "this checkout" in its lead line and Reconnecting forever after a stop</li>
-<li>A loopback link built for every browser, including one on another machine</li>
-<li>The scan failure logged again on every request</li>
-</ul></div>
-<div><h3>Merged</h3><ul>
-<li>The trigger, the list, Watch Live Activity's headings and the questions of worktree-switch, agent-chat and stack-run-stop read one agents record with one state per agent</li>
-<li>An agent chat started takes its conversation's state, which knows a pending approval for every CLI</li>
-</ul></div>
-<div><h3>New</h3><ul>
-<li><b>Answer</b> and <b>Open Conversation</b>; a chat agent's conversation and mode; "in a terminal" and the PID for other agents</li>
-<li>Agents of the stack's other worktrees after a separator; the waiting look; the incomplete mark with <b>Check Again</b> and <b>Logs</b></li>
-<li>"No agents in this worktree", the chat-off sentence with <b>Edit</b> or <b>Copy</b>, the status line and a filter when the rows overflow</li>
-<li>A condition notice for an agent waiting for you in its terminal</li>
-<li>Watch Live Activity's stack and worktree, agent headings with their state, entry labels with what a tool touched, and its stopped, could-not-start and lost-connection states</li>
-<li>Watch Live Activity on the stack directory's hostname for a browser elsewhere that signed in or paired, and the address each browser gets from the agents record</li>
-<li>"(1) waiting · " in the app's tab title while a terminal agent waits</li>
-</ul></div>
-<div><h3>Changed</h3><ul>
-<li>The control stays on the bar at zero and with chat off (<code>CC-33</code>); its accessible name counts in words</li>
-<li>Tool inputs reach the activity stream, never the app's origin</li>
-<li>A stream closed after devhost's <code>ended</code> message ends the page instead of reconnecting</li>
-<li>The record lists the stack's other worktrees and answers the CLI without a page URL</li>
-<li>A failed scan shows instead of being dropped by the page's schema</li>
-<li>Watch Live Activity is linked on the stack directory's hostname, on this machine too, and never to a loopback address</li>
-<li>A replaced stack: the page on the stack directory's hostname follows the new run; the unlinked page at the loopback address says the run ended</li>
-</ul></div>
-<div><h3>Kept</h3><ul>
-<li>Agents devhost did not start are listed, from chat or a terminal; subdirectories count, subagents fold into their session; waiting agents sort first</li>
-<li>One machine-wide scan per 5 s with a 10 s limit, read every 10 s while chat is on and the page is visible; a CLI that fails never hides what the others found</li>
-<li>Transcript paths and native session IDs never reach the app's origin</li>
-<li>Watch Live Activity at the loopback address, now unlinked, answers only a direct loopback request; no app hostname serves it; it sends no-store and no-referrer, shows no history, cuts long text, keeps 500 entries and stops watching when its tab closes (owner rule)</li>
-<li>The list and the page never send to an agent or answer its approvals (owner rule); the agents routes answer 404 while chat is off, and running agents keep running when it turns off</li>
-<li>Restart Stack, switches and hot reloads keep the control server, so an open activity tab stays live</li>
-</ul></div>
-<div><h3>Backend work</h3><ul>
-<li>The agents record: product name, PID, state and since when, worktree, folder and conversation (Backend 1)</li>
-<li>Scan completeness, <code>fresh=1</code> and one log line per change (Backend 2)</li>
-<li>Every worktree of the stack, and a read without a page URL (Backend 3)</li>
-<li>The Watch Live Activity address per browser from <code>O36</code>'s check, and the page on the stack directory's hostname (Backend 4)</li>
-<li>Readable entries, <code>state</code>, <code>ended</code> and <code>failed</code> messages on the activity stream (Backend 5, 6)</li>
-<li>Terminal agents' waits on the status stream (Backend 7)</li>
-</ul></div>
-</section>
-</main>
-</body>
+      <section class="changes">
+        <div>
+          <h3>Removed</h3>
+          <ul>
+            <li>
+              The control vanishing at zero, with chat off and when a scan misses every agent, and the bar's sideways
+              jump it caused
+            </li>
+            <li>
+              Raw CLI IDs ("claude-code"), "." and the CLI's session name as an agent's name; "this chat" as the only
+              link to chat
+            </li>
+            <li>"Waiting for approval" and "Running, state unknown" as state words</li>
+            <li>
+              Watch Live Activity's raw event tokens, tool output labelled "user", unrendered replies, "this checkout"
+              in its lead line and Reconnecting forever after a stop
+            </li>
+            <li>A loopback link built for every browser, including one on another machine</li>
+            <li>The scan failure logged again on every request</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Merged</h3>
+          <ul>
+            <li>
+              The trigger, the list, Watch Live Activity's headings and the questions of worktree-switch, agent-chat and
+              stack-run-stop read one agents record with one state per agent
+            </li>
+            <li>An agent chat started takes its conversation's state, which knows a pending approval for every CLI</li>
+          </ul>
+        </div>
+        <div>
+          <h3>New</h3>
+          <ul>
+            <li>
+              <b>Answer</b> and <b>Open Conversation</b>; a chat agent's conversation and mode; "in a terminal" and the
+              PID for other agents
+            </li>
+            <li>
+              Agents of the stack's other worktrees after a separator; the waiting look; the incomplete mark with
+              <b>Check Again</b> and <b>Logs</b>
+            </li>
+            <li>
+              "No agents in this worktree", the chat-off sentence with <b>Edit</b> or <b>Copy</b>, the status line and a
+              filter when the rows overflow
+            </li>
+            <li>A condition notice for an agent waiting for you in its terminal</li>
+            <li>
+              Watch Live Activity's stack and worktree, agent headings with their state, entry labels with what a tool
+              touched, and its stopped, could-not-start and lost-connection states
+            </li>
+            <li>
+              Watch Live Activity on the stack directory's hostname for a browser elsewhere that signed in or paired,
+              and the address each browser gets from the agents record
+            </li>
+            <li>"(1) waiting · " in the app's tab title while a terminal agent waits</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Changed</h3>
+          <ul>
+            <li>
+              The control stays on the bar at zero and with chat off (<code>CC-33</code>); its accessible name counts in
+              words
+            </li>
+            <li>Tool inputs reach the activity stream, never the app's origin</li>
+            <li>A stream closed after devhost's <code>ended</code> message ends the page instead of reconnecting</li>
+            <li>The record lists the stack's other worktrees and answers the CLI without a page URL</li>
+            <li>A failed scan shows instead of being dropped by the page's schema</li>
+            <li>
+              Watch Live Activity is linked on the stack directory's hostname, on this machine too, and never to a
+              loopback address
+            </li>
+            <li>
+              A replaced stack: the page on the stack directory's hostname follows the new run; the unlinked page at the
+              loopback address says the run ended
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>
+              Agents devhost did not start are listed, from chat or a terminal; subdirectories count, subagents fold
+              into their session; waiting agents sort first
+            </li>
+            <li>
+              One machine-wide scan per 5 s with a 10 s limit, read every 10 s while chat is on and the page is visible;
+              a CLI that fails never hides what the others found
+            </li>
+            <li>Transcript paths and native session IDs never reach the app's origin</li>
+            <li>
+              Watch Live Activity at the loopback address, now unlinked, answers only a direct loopback request; no app
+              hostname serves it; it sends no-store and no-referrer, shows no history, cuts long text, keeps 500 entries
+              and stops watching when its tab closes (owner rule)
+            </li>
+            <li>
+              The list and the page never send to an agent or answer its approvals (owner rule); the agents routes
+              answer 404 while chat is off, and running agents keep running when it turns off
+            </li>
+            <li>Restart Stack, switches and hot reloads keep the control server, so an open activity tab stays live</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend work</h3>
+          <ul>
+            <li>
+              The agents record: product name, PID, state and since when, worktree, folder and conversation (Backend 1)
+            </li>
+            <li>Scan completeness, <code>fresh=1</code> and one log line per change (Backend 2)</li>
+            <li>Every worktree of the stack, and a read without a page URL (Backend 3)</li>
+            <li>
+              The Watch Live Activity address per browser from <code>O36</code>'s check, and the page on the stack
+              directory's hostname (Backend 4)
+            </li>
+            <li>
+              Readable entries, <code>state</code>, <code>ended</code> and <code>failed</code> messages on the activity
+              stream (Backend 5, 6)
+            </li>
+            <li>Terminal agents' waits on the status stream (Backend 7)</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
 </html>
