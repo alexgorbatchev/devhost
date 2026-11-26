@@ -821,14 +821,14 @@
                       </tr>
                       <tr>
                         <td class="muted">admin</td>
-                        <td class="muted">not started · admin.acme.test</td>
+                        <td class="muted">not started · admin.shop.acme.test</td>
                         <td style="text-align: right">
                           <span class="btn">Start</span> <span class="muted">+ db</span>
                         </td>
                       </tr>
                       <tr>
                         <td class="muted">reports</td>
-                        <td class="muted">not started · reports.acme.test</td>
+                        <td class="muted">not started · reports.shop.acme.test</td>
                         <td style="text-align: right"><span class="btn">Start</span></td>
                       </tr>
                       <tr>
@@ -846,7 +846,7 @@
                   <span class="seg"><b>Acme Shop</b></span
                   ><span class="seg open">3/7 · 3 not started ▾</span
                   ><span class="seg">↻ Restart 2 Changed <span class="n">1</span></span
-                  ><span class="seg">fix-nav ~/wt/fix-nav ▾ <span class="n">2</span></span>
+                  ><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾ <span class="n">2</span></span>
                 </div>
               </div>
             </div>
@@ -857,8 +857,8 @@
               <div class="box">Fix the nav overflow on #1</div>
               <div class="row">
                 <span class="muted">To: Fix nav overflow</span><span class="chip acc">Claude Code · Haiku ▾</span
-                ><span class="chip">This worktree (live) · fix-nav ~/wt/fix-nav ▾</span><span class="n">4</span
-                ><span class="sp"></span><span class="btn pri">Send</span>
+                ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                ><span class="n">4</span><span class="sp"></span><span class="btn pri">Send</span>
               </div>
             </div>
           </div>
@@ -866,8 +866,8 @@
             <div class="bar"><b>Terminal › ~/acme</b></div>
             <pre class="term">$ devhost stop --worktrees --dry-run <span class="n">5</span>
 Would stop 2 stacks:
-  Acme Shop   main ~/acme             detached
-  Acme Shop   fix-nav ~/wt/fix-nav    foreground</pre>
+  Acme Shop   main ~/acme                         detached
+  Acme Shop   fix-nav ~/acme/.worktrees/fix-nav   foreground</pre>
           </div>
         </div>
         <div class="cap">
@@ -1116,7 +1116,7 @@ Would stop 2 stacks:
               </div>
               <div class="row" style="margin-top: 6px">
                 <span class="btn off">Restart Stack</span
-                ><span class="muted">Unavailable: a worktree switch of acme-web is running</span
+                ><span class="muted">Unavailable: a worktree switch of Acme Shop is running</span
                 ><span class="n">4</span>
               </div>
               <div class="muted" style="margin-top: 6px">
@@ -1459,8 +1459,8 @@ Would stop 2 stacks:
             <div class="bar"><b>Terminal › ~/acme</b></div>
             <pre class="term">$ devhost stop --worktrees
 Stopping 2 stacks:
-  Acme Shop   main ~/acme             detached
-  Acme Shop   fix-nav ~/wt/fix-nav    foreground
+  Acme Shop   main ~/acme                         detached
+  Acme Shop   fix-nav ~/acme/.worktrees/fix-nav   foreground
 This ends Claude Code's turn in fix-nav (working).
 Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
           </div>
@@ -1620,7 +1620,7 @@ Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
                   <span class="caret-dn" style="right: 77px"></span>
                   <div class="from">Opened from the worktree control in the toolbar</div>
                   <div class="banner bad">
-                    The worktree ~/wt/fix-nav was deleted; acme-web's services still run from it.
+                    The worktree ~/acme/.worktrees/fix-nav was deleted; Acme Shop's services still run from it.
                     <span class="n">3</span>
                   </div>
                   <table class="t">
@@ -1630,11 +1630,11 @@ Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
                         <td>configured</td>
                       </tr>
                       <tr>
-                        <td class="muted">fix-nav ~/wt/fix-nav · 9f8e7d6</td>
+                        <td class="muted">fix-nav ~/acme/.worktrees/fix-nav · 9f8e7d6</td>
                         <td class="muted">selected · deleted</td>
                       </tr>
                       <tr>
-                        <td>ui-polish ~/wt/ui-polish · 4c5d6e7</td>
+                        <td>hotfix-shop ~/acme/.worktrees/hotfix-shop · 4c5d6e7</td>
                         <td>available</td>
                       </tr>
                     </tbody>
@@ -1645,8 +1645,8 @@ Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
                 </div>
                 <div class="tbar">
                   <span class="seg"><b>Acme Shop</b></span
-                  ><span class="seg">4/6 · 2 blocked ▾</span><span class="seg open">fix-nav ~/wt/fix-nav ▾</span
-                  ><span class="seg">Chat</span>
+                  ><span class="seg">4/6 · 2 blocked ▾</span
+                  ><span class="seg open">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span>
                 </div>
               </div>
             </div>
@@ -1807,8 +1807,8 @@ Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b></div>
             <pre class="term">$ devhost start
-  https://shop.acme.test/     web, api
-  https://admin.acme.test/    admin
+  https://shop.acme.test/        web, api
+  https://admin.shop.acme.test/  admin
 Ready in 8.2 s · https://shop.acme.test/ · all stacks: https://devhost.acme.test/ <span class="n">4</span>
 14:02:40 Applied devhost.toml: restarted api (changed) · 6 of 6 running · 3.1 s
 $ devhost status; echo $?
@@ -2408,11 +2408,11 @@ $ echo $?
                   <table class="t">
                     <tbody>
                       <tr class="focus">
-                        <td style="width: 66%">fix-nav ~/wt/fix-nav · 9f8e7d6</td>
+                        <td style="width: 66%">fix-nav ~/acme/.worktrees/fix-nav · 9f8e7d6</td>
                         <td>unavailable</td>
                       </tr>
                       <tr>
-                        <td>fix-cart ~/wt/fix-cart · 3a2b1c0</td>
+                        <td>hotfix-shop ~/acme/.worktrees/hotfix-shop · 3a2b1c0</td>
                         <td>available</td>
                       </tr>
                     </tbody>
@@ -2731,9 +2731,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                   ><br /><code>cd ~/acme &amp;&amp; devhost start</code> <span class="btn">Copy</span>
                 </div>
                 <div class="box small">
-                  <b>Acme Docs</b> · main ~/acme-docs<br /><span class="muted">stopped by you at 23:40</span><br /><code
-                    >cd ~/acme-docs &amp;&amp; devhost start</code
-                  >
+                  <b>Acme Admin</b> · main ~/acme-admin<br /><span class="muted">stopped by you at 23:40</span
+                  ><br /><code>cd ~/acme-admin &amp;&amp; devhost start</code>
                   <span class="btn">Copy</span>
                 </div>
               </div>
@@ -2757,7 +2756,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                         <td class="muted">as of 14:02</td>
                       </tr>
                       <tr>
-                        <td class="muted">fix-nav ~/wt/fix-nav · 9f8e7d6</td>
+                        <td class="muted">fix-nav ~/acme/.worktrees/fix-nav · 9f8e7d6</td>
                         <td class="muted">as of 14:02</td>
                       </tr>
                     </tbody>

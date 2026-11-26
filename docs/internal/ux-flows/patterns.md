@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-17 00:06
-last_modified: 2026-11-26 12:00
+last_modified: 2026-11-26 02:53
 status: current
 ---
 
@@ -47,7 +47,7 @@ Terms used below:
 - **Operation**: a write the backend runs on a stack or on the machine (a start, stop or restart, Restart Stack, a switch, a reload or save, the Disable Reloads request, a Caddy start or stop), from any origin: this page, another page, the terminal, an agent, or a change to a file on disk that the stack applies (`ACT-1` says what the backend can tell apart). Its **outcome** is how it ended for each target; 2.7 says how both are reported.
 - **Condition**: a state that lasts until something changes it (a rejected configuration, a held or blocked reload, an agent waiting for the person, a lost connection, a blocked repository). A **condition notice** reports one, where an outcome notice reports an operation. A stack's **attention state** is every service state and condition that needs the person (`ACT-7`).
 - **The page's modal dialog**: a native modal dialog of the page (`:modal`), a visible page element with `role="dialog"` or `role="alertdialog"` and `aria-modal="true"`, or any change by the page that makes the devtools host `inert` or `aria-hidden`; every rule treats the three alike.
-- **Examples** (revision 7): one fixture set for every proposal, wireframe and example here (`WF-1`): the machine devbox; the stacks Acme Shop (services web, api, worker, admin and docs), Acme Admin and Acme Platform; the serve sessions notes and demoapp; the worktrees main, fix-nav and hotfix-shop. Proposals and this reference write the product's default local suffix (`shop.localhost`, `admin.shop.localhost`, the stack directory at `devhost.localhost`); wireframes write the same labels under `.acme.test` (`shop.acme.test`, `devhost.acme.test`); the relay form is the label under `[remote].domainSuffix = "--devbox.devhost.acme.test"` in both (`shop--devbox.devhost.acme.test`), inside `devhost.acme.test`, the subdomain the shared passkey belongs to (`O36`, `R7-91`). `hotfix-shpo` is the deliberate typo of `O46`'s examples.
+- **Examples** (revision 7): one fixture set for every proposal, wireframe and example here (`WF-1`): the machine devbox; the stacks Acme Shop (services web, api, worker, admin, docs and mail), Acme Admin and Acme Platform; the serve sessions notes and demoapp; the worktrees main, fix-nav and hotfix-shop. Proposals and this reference write the product's default local suffix (`shop.localhost`, `admin.shop.localhost`, the stack directory at `devhost.localhost`); wireframes write the same labels under `.acme.test` (`shop.acme.test`, `devhost.acme.test`); the relay form is the label under `[remote].domainSuffix = "--devbox.devhost.acme.test"` in both (`shop--devbox.devhost.acme.test`), inside `devhost.acme.test`, the subdomain the shared passkey belongs to (`O36`, `R7-91`). `hotfix-shpo` is the deliberate typo of `O46`'s examples.
 
 ## 2. Canonical patterns
 
