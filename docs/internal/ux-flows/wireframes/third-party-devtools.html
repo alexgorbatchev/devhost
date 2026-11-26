@@ -75,7 +75,7 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: toolbar-shell's fit sequence still draws today's labels, "Redux" and "TanStack", folding into "Devtools"; <code>WORD-3</code> names launchers by the library's product name, which this page follows. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>1. Find the launcher</h2>
 <p>The launchers keep their place in the bar's order, in the order devhost finds the libraries, and each still opens the library's own panel through the library's own control. What changes is what they say: each names the library whose panel it opens, so nothing needs a hover to tell them apart. Today the same bar reads Router, Query, TanStack, Form 1, Jotai 1 and Redux. A page with no integration shows no launcher. Keys: Alt+Ctrl+B focuses the bar; each launcher is an arrow stop; Enter or Space toggles it; Tab leaves the bar (<code>KEY-3</code>, <code>KEY-4</code>).</p>
 <ol><li><span class="n">1</span> Each launcher's tooltip and accessible description say what it opens and that it acts on this page, as toolbar-shell words the reach of the other bar items; the Vue launcher's tooltip keeps Vue DevTools' connection status after it (<code>SEL-3</code>).</li>
@@ -83,7 +83,7 @@
 <li><span class="n">3</span> While pressed, the launcher reads open by shape as well as color (an inset border and ☑, toolbar-shell's pressed look), so it holds in forced colors (<code>ACT-13</code>).</li>
 <li><span class="n">4</span> A lone panel has no number. When the launchers would wrap the bar's one row, they fold into <b>Devtools</b> (step 5).</li>
 <li><span class="n">5</span> A number appears only with two or more panels of one library, counted from the panels on the page each time: React Hook Form's panel does not expose its <code>DevTool</code>'s <code>id</code> prop, and devhost collects no atom data, so neither library gives a name to show.</li>
-<li><span class="n">6</span> devhost binds none of the libraries' keys, and <code>guides/devtools.md</code>'s Keyboard section lists them. It has no row for TanStack Devtools' held source-inspector key, which opens an editor: devhost offers no editor path (<code>KEY-2</code>, <code>CC-29</code>, <code>O51</code>). The reference's keyboard table still lists that key, which is open for the reference.</li></ol>
+<li><span class="n">6</span> devhost binds none of the libraries' keys, and <code>guides/devtools.md</code>'s Keyboard section lists them. It has no row for TanStack Devtools' held source-inspector key, which opens an editor: devhost offers no editor path (<code>KEY-2</code>, <code>CC-29</code>, <code>O51</code>). The reference's keyboard table no longer lists that key.</li></ol>
 <p class="fixes">Fixes third-party-devtools-06 · Backend: each adapter reports its library's product name and its number among several panels, or none (Backend 2, 4)</p></div>
 </section>
 
@@ -113,30 +113,36 @@
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>React Hook Form's column on the right, TanStack Query at the bottom; the dock's place beside the column is not drawn</span></div>
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>React Hook Form's column on the right, TanStack Query at the bottom: the dock sits on Query's top edge, inward of the column</span></div>
 <div class="pg" style="min-height:150px">
 <div class="tpd-split">
 <div>
 <div class="apptxt">Acme Shop · Contact us · [ Name ] [ Email ] [ Send ]</div>
-<div class="tpd-lib" style="margin-top:auto;margin-right:0"><b>TanStack Query devtools</b> · bottom edge</div>
+<div class="row" style="margin-top:auto;justify-content:flex-end;flex-wrap:nowrap"><span class="n">5</span><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg tpd-on">☑ TanStack Query</span><span class="seg tpd-on">☑ React Hook Form</span><span class="seg">Chat</span></span></div>
+<div class="tpd-lib" style="margin-right:0"><b>TanStack Query devtools</b> · bottom edge</div>
 </div>
 <div class="tpd-col"><b>React Hook Form DevTool</b> · the library's own full-height column at the right edge · ✕ its own close <span class="n">4</span><br>name: valid · email: invalid</div>
 </div>
 </div>
-<div class="work small">
-<div class="vlab">The bar, wherever the dock sits</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg tpd-on">☑ TanStack Query</span><span class="seg tpd-on">☑ React Hook Form</span><span class="seg">Chat</span></span><span class="n">5</span></div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the app docks TanStack Query to the top edge; the person placed the dock in the top-right corner</span></div>
+<div class="pg" style="min-height:110px">
+<div class="tpd-lib" style="border-top:0;border-bottom:1px solid var(--line);margin:-8px -10px 6px"><b>TanStack Query devtools</b> · top edge, from the app's own position setting</div>
+<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">6</span><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg tpd-on">☑ TanStack Query</span><span class="seg">Chat</span></span></div>
+<div class="apptxt">Acme Shop · Products …</div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>SURF-1</code> and <code>SURF-5</code> move devhost's dock only for a library panel at the bottom edge; no rule places the dock and docked chat beside a React Hook Form column at the right edge, or beside a panel an app docks to the top, so this page does not draw it.</div>
+<div class="cap">
 <h2>2. Open a library panel</h2>
-<p>Pressing a launcher still clicks the library's own open control, and the panel is still the library's, where the library docks it; devhost never moves, resizes or restyles a panel. What changes: panels docked to the same window edge take turns, the launcher says so before the press, and devhost's dock steps off a panel at the bottom edge. Opening a panel is a read: no notice, no log line and no announcement. Focus stays on the pressed launcher, and devhost moves no focus into a library's panel; after a pointer press the page's keys keep working (<code>KEY-5</code>, <code>KEY-6</code>, <code>CC-28</code>).</p>
+<p>Pressing a launcher still clicks the library's own open control, and the panel is still the library's, where the library docks it; devhost never moves, resizes or restyles a panel. What changes: panels docked to the same window edge take turns, the launcher says so before the press, and devhost's dock steps off a panel at the bottom edge, inward of one at the right and below one at the top. Opening a panel is a read: no notice, no log line and no announcement. Focus stays on the pressed launcher, and devhost moves no focus into a library's panel; after a pointer press the page's keys keep working (<code>KEY-5</code>, <code>KEY-6</code>, <code>CC-28</code>).</p>
 <ol><li><span class="n">1</span> Before the press, the launcher's tooltip and accessible description name its reach: the open panel on the same edge it will close (<code>SEL-1</code>).</li>
 <li><span class="n">2</span> While a panel docks to the bottom edge, toolbar-shell moves the dock onto the panel's top edge, or to the top of the window when the panel is taller than half of it, and follows the panel's resize handle. This flow supplies the seam: each adapter reports its open panel's element and edge (<code>SURF-1</code>, <code>SURF-7</code>, <code>SURF-5</code>).</li>
 <li><span class="n">3</span> Enter closes TanStack Router through its own close control, then opens TanStack Query, so at most one launcher per edge reads pressed and it is the panel on screen. When that close fails, nothing opens on top and the failure is reported (step 7). Today Query opens over Router and both read pressed (<code>SEL-11</code>, <code>SEL-1</code>).</li>
-<li><span class="n">4</span> A panel's edge is read from its own rectangle: it docks to an edge it touches and spans more than half of. A React Hook Form panel opens a full-height column on the right, where it meets the dock and docked chat; whether they step inward of it or may cover it is open for the reference and toolbar-shell.</li>
-<li><span class="n">5</span> Panels on different edges stay open together, both launchers pressed, each closing on its own. An app that docks TanStack Query to the top gets the same turn-taking on that edge.</li></ol>
+<li><span class="n">4</span> A panel's edge is read from its own rectangle: it docks to an edge it touches and spans more than half of. A React Hook Form panel opens a full-height column on the right, where the dock and docked chat shift inward by its width, as they do for the minimap strip, and return when it closes (<code>SURF-1</code>, <code>SURF-5</code>).</li>
+<li><span class="n">5</span> Panels on different edges stay open together, both launchers pressed, each closing on its own; with Query at the bottom and the column at the right, the dock sits on Query's top edge, inward of the column.</li>
+<li><span class="n">6</span> An app that docks TanStack Query to the top edge gets the same turn-taking on that edge, and a dock the person placed in a top corner sits below the panel; the person's placement returns when it closes, and the move is never saved (<code>SURF-1</code>, <code>SURF-7</code>).</li></ol>
 <p class="fixes">Fixes third-party-devtools-01 (this redesign's slice: panels on one edge take turns; the dock's move is toolbar-shell's) · Backend: toggleLauncher closes the open panels on the chosen edge before it opens the chosen one; adapters report each open panel's element and edge to toolbar-shell's dock (Backend 2, 3)</p></div>
 </section>
 
@@ -312,7 +318,7 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: toolbar-shell's fit sequence still folds today's labels, "Redux" and "TanStack", into "Devtools"; <code>WORD-3</code> names the rows by the library's product name, which this page follows. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>5. Fold the launchers when they would wrap the bar</h2>
 <p>Inline launchers stay bar toggles while they fit on the bar's one row. What is new is the folded form: by the bar's fit test, second in toolbar-shell's sequence after the Services summary, the launchers fold into one <b>Devtools</b> control, never by a count (<code>SURF-10</code>, <code>SEL-10</code>). It is the third-party launchers' panel that <code>SURF-2</code> lists among the anchored popovers. Keys: on open, focus goes to the filter when there is one, else the first row; Tab past the last control or Escape closes it and returns focus to <b>Devtools</b> (<code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
 <ol><li><span class="n">1</span> The anchored panel lists every launcher as a row in the bar's order, the toggle named by its library with its state in words, an unavailable row with its reason sentence (step 6). It stays open while rows toggle, never overlaps the notice stack and paints above docked chat (<code>SURF-2</code>, <code>SURF-1</code>).</li>
@@ -375,7 +381,7 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>HOLD-1</code> asks for a blocked action's sentence once in its surface's status line, the notice stack on the bar; for a library's own condition this page shows a short state beside the launcher's name instead, with the sentence in its tooltip, its accessible description and its <b>Devtools</b> row, a proposed exception for the reference.</div>
+<div class="cap">
 <h2>6. A launcher that cannot act now says why</h2>
 <p>Launchers still appear and disappear as libraries mount and unmount, without a page reload, and Vue is still offered only from a trusted, visible dock with one Vue entry. What changes: an installed library whose panel the toolbar cannot open or close right now keeps its launcher in place, <code>aria-disabled</code>, with a short state after its name and one reason sentence as its tooltip (also on focus), its accessible description and its <b>Devtools</b> row, never removed and never live-looking (<code>MENU-3</code>). It raises no notice: the condition comes from the library, its version or the person's choice and lasts until the person acts there. It becomes available again by itself, and a focused launcher keeps focus (<code>KEY-11</code>).</p>
 <ol><li><span class="n">1</span> The unified shell detached into its own window reads "TanStack Devtools · detached". Today the entry disappears.</li>
@@ -436,7 +442,7 @@
 </div>
 </div>
 <div class="cap"><h2>7. Report failures in words where they started</h2>
-<p>devhost still never weakens popup blockers, a page's Content Security Policy or its opener policy, and a press that succeeds still raises nothing. What changes: a launcher press that fails says so as a failure notice in the notice stack, announced once in the assertive region and kept until the person dismisses it or the same launcher succeeds (<code>FAIL-2</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-7</code>). These are page actions, not operations of the stack, so they get no line in the stack's log (<code>FB-7</code>), and a page reload ends them with the page. Today the press ends in silence.</p>
+<p>devhost still never weakens popup blockers, a page's Content Security Policy or its opener policy, and a press that succeeds still raises nothing. What changes: a launcher press that fails says so as a failure notice in the notice stack, announced once in the assertive region and kept until the person dismisses it or the same launcher succeeds (<code>FAIL-2</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-7</code>). These are page actions, not operations of the stack, so they have no operation record: each failure writes one line to the stack's log (<code>FB-7</code>), which keeps it after a page reload clears the notice with the page, <code>FB-6</code>'s one exception. Today the press ends in silence.</p>
 <ol><li><span class="n">1</span> A popup the browser blocks leaves the launcher unpressed, and the notice gives the way out; a store's setup problem never masks it.</li>
 <li><span class="n">2</span> When the panel's state still differs 60 frames (about a second) after the press, the library ignored it. Each notice links its integration page of devhost's docs, with the tested versions and the key that turns the integration off (<code>MENU-5</code>).</li>
 <li><span class="n">3</span> Pressing again with the same result updates that notice with a count (<code>FAIL-4</code>). Focus stays on the launcher, whose description becomes the failure sentence (<code>KEY-11</code>).</li>
