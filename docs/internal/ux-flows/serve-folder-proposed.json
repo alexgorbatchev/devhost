@@ -102,7 +102,7 @@
       "label": "Start serve session",
       "sublabel": "claim, route, O40/O36",
       "tag": "serve-folder-04",
-      "explanation": "One write: claims the hostname, routes it, starts devhost's file server or command, and starts Caddy on demand (Kept). The session record stores sessionKind ('dir', 'port', or 'command'), real identity (folder, target address, or session name + command string), hostname(s), PID, and start time; access logs key by hostname so two sessions serving one folder keep separate logs (WORD-1). Under O40, folder and command sessions keep chat ON by default unless --no-chat is passed (answering chatEnabled: false and 404 on chat routes, with toolbar reason 'Chat is off in this serve session (started with --no-chat).'), while --port always disables chat with empty projectRootPath and never uses the shell's current folder (SEL-11, HOLD-5, serve-folder-04). Remote chat and control access share O36's passkey (with phone support) or devhost pair check and 30-day idle session cookie (O59). Resolves serve-folder-04.",
+      "explanation": "One write: claims the hostname, routes it, starts devhost's file server or command, and starts Caddy on demand (Kept). The session record stores sessionKind ('dir', 'port', or 'command'), real identity (folder, target address, or session name + command string), hostname(s), the name --session takes (--name, or the hostname for a folder or port session), the run's stack ID, and start time, never a PID, which is the shared supervisor's; access logs key by hostname so two sessions serving one folder keep separate logs (WORD-1). Under O40, folder and command sessions keep chat ON by default unless --no-chat is passed (answering chatEnabled: false and 404 on chat routes, with toolbar reason 'Chat is off in this serve session (started with --no-chat).'), while --port always disables chat with empty projectRootPath and never uses the shell's current folder (SEL-11, HOLD-5, serve-folder-04). Remote chat and control access share O36's passkey (with phone support) or devhost pair check and 30-day idle session cookie (O59). Resolves serve-folder-04.",
       "sources": [
         {
           "path": "apps/devhost/src/services/serve.rs",
@@ -130,15 +130,15 @@
       "col": 1,
       "type": "security",
       "label": "Refusal / launch err",
-      "sublabel": "holder PID or OS error",
+      "sublabel": "holder · stop or OS error",
       "tag": "serve-folder-03",
-      "explanation": "Handles start failures before readiness with exit status 1 and nothing left running. A taken hostname names the holder: a serve session's folder/port/command, PID, start time, and stop command (never 'from .'), or a manifest stack's name, worktree label, root manifest, and devhost stop --manifest (FAIL-2, WORD-7, WORD-11, serve-folder-03). Command spawn failures surface the OS error directly on [ERROR]/ERR: instead of 'command process is unavailable'; HTTP readiness timeouts name the HEAD / probe and suggest --startup-timeout; and detached serve startup failures preserve Failure.hint ('[INFO] Read the full log in ...') and say 'the serve session' rather than 'the stack' (serve-command-07). Resolves serve-folder-03 and serve-command-07.",
+      "explanation": "Handles start failures before readiness with exit status 1 and nothing left running. A taken hostname names the holder and the command that frees it, never a PID: today's refusal prints the shared supervisor's PID, which kill would end with every stack and serve session. A serve session is named by its name and folder with devhost stop --session <name>; a stack by its name and worktree with devhost stop in its folder or devhost stop --manifest (FAIL-2, WORD-7, WORD-11, SEL-4, O18, serve-folder-03). Command spawn failures surface the OS error directly on [ERROR]/ERR: instead of 'command process is unavailable'; HTTP readiness timeouts name the HEAD / probe and suggest --startup-timeout; and detached serve startup failures preserve Failure.hint ('[INFO] Read the full log in ...') and say 'the serve session' rather than 'the stack' (serve-command-07). Resolves serve-folder-03 and serve-command-07.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/routes.rs",
-          "line": 910,
-          "end_line": 925,
-          "label": "Replaces: raw PID and 'from .' refusal"
+          "line": 505,
+          "end_line": 516,
+          "label": "Replaces: supervisor PID and 'from .' refusal"
         },
         {
           "path": "apps/devhost/src/services/stack/command.rs",
@@ -192,7 +192,7 @@
       "label": "Ready · CLI & bar",
       "sublabel": "URL · Ctrl-C or Stop:",
       "tag": "serve-command-03",
-      "explanation": "Prints the ready summary only once the route or first HTTP port answers: 'Ready in 0.3 s: https://notes.localhost/ · Ctrl-C stops this session' for folders, 'Ready in 14.1 s: https://app.localhost/ · Ctrl-C stops this session' for --port, and for command mode either the foreground ready summary with session name and Ctrl-C cue or detached Started / URL / Log: / 'Stop: devhost stop --session <name>' in both human and AGENT=1 modes (FB-5, FB-10, FB-11, KEY-14, CC-22, CC-30, serve-command-03). Caddy outages print one line on stop and one on recovery (ACT-10). devhost restart and devhost upgrade list serve sessions and keep them running (O18, O31, CC-36). Resolves serve-command-03 and the ready line of serve-folder-02.",
+      "explanation": "Prints the ready summary only once the route or first HTTP port answers: 'Ready in 0.3 s: https://notes.localhost/ · Ctrl-C stops this session' for folders, 'Ready in 14.1 s: https://app.localhost/ · Ctrl-C stops this session' for --port, and for command mode either the foreground ready summary with session name and Ctrl-C cue or detached Started / URL / Log: / 'Stop: devhost stop --session <name>' in both human and AGENT=1 modes (FB-5, FB-10, FB-11, KEY-14, CC-22, CC-30, serve-command-03). Caddy outages print one line on stop and one on recovery (ACT-10). devhost restart and devhost upgrade start a new run of each serve session in the new supervisor; a replaced foreground session names the command that replaced it and devhost stop --session <name>, then exits 0; a folder session whose folder cannot be opened stays in the old supervisor and is reported (O18, O31, FAIL-5, CC-36). Resolves serve-command-03 and the ready line of serve-folder-02.",
       "sources": [
         {
           "path": "apps/devhost/src/services/detach.rs",
@@ -205,6 +205,12 @@
           "line": 12,
           "end_line": 46,
           "label": "Reuses: serve session registry and stop"
+        },
+        {
+          "path": "apps/devhost/src/services/restart.rs",
+          "line": 430,
+          "end_line": 495,
+          "label": "Reuses: restart relaunches serve sessions"
         }
       ]
     },
@@ -270,7 +276,7 @@
       "label": "Directory & CLI",
       "sublabel": "1/1 · stack info · dir",
       "tag": "serve-command-06",
-      "explanation": "Unifies serve-session inspection across the toolbar, CLI, and Stack Directory (All Stacks on devbox, O61). Command sessions model first-class as 1/1 with command string and discovered URLs/ports attached directly (no fake external port-<port>, no Restart Changed, working Restart Command) in both the toolbar and devhost stack info --session / devhost status --session (O62, serve-command-02). devhost stop, stack info, stack find, and interactive stack list surface running serve sessions or point to devhost stack list --sessions and --session <name> (serve-command-04). statuspage::Stack carries sessionKind ('manifest'|'command'|'dir'|'port') and command so Stack Directory cards title by folder, target address, or session name + command, count serve sessions separately, use singular '1 file', omit launch folders on --port cards, and never print External on devhost-run servers/commands or 'Manifest-free file or port session' (serve-folder-11, serve-command-06). Toolbar layout saves per served folder (CC-5).",
+      "explanation": "Unifies serve-session inspection across the toolbar, CLI, and Stack Directory (All Stacks on devbox, O61). Command sessions model first-class as 1/1 with command string and discovered URLs/ports attached directly (no fake external port-<port>, no Restart Changed, working Restart Command) in both the toolbar and devhost stack info --session / devhost status --session (O62, serve-command-02). devhost stop, stack info, stack find, and interactive stack list surface running serve sessions or point to devhost stack list --sessions and --session <name> (serve-command-04). statuspage::Stack carries sessionKind ('manifest'|'command'|'dir'|'port') and command so Stack Directory cards title by folder, target address, or session name + command, count serve sessions separately, show no PID (today's badge is the shared supervisor's), use singular '1 file', omit launch folders on --port cards, and never print External on devhost-run servers/commands or 'Manifest-free file or port session' (serve-folder-11, serve-command-06). Toolbar layout saves per served folder (CC-5).",
       "sources": [
         {
           "path": "apps/devhost/src/devtools/directory.rs",
@@ -401,7 +407,7 @@
       "label": "Stopped cleanly",
       "sublabel": "O30 · routes freed",
       "tag": "serve-folder-02",
-      "explanation": "Ctrl-C (exit 130), SIGTERM (exit 143), devhost stop --session <name>, or foreground command exit removes routes, closed-port status routes, hostname claims, and the session record, stops the file server or verified command process tree (ACT-14) within O30's configurable stopTimeout (5s..10m, default 30s, slow-stop progress line, second Ctrl-C/stop force), keeps Caddy and any --port server running, prints one outcome line plus the start-again command (and prints clear stop confirmation with session name and PID for devhost stop --session in both human and AGENT=1 modes), and sends open tabs the lost-connection stop reason (KEY-14, FB-10, UNDO-5, FAIL-5, HOLD-2, O30, CC-35). Resolves serve-folder-02 stop and serve-command-03 stop confirmation.",
+      "explanation": "Ctrl-C (exit 130), SIGTERM (exit 143), devhost stop --session <name>, or foreground command exit removes routes, closed-port status routes, hostname claims, and the session record, stops the file server or verified command process tree (ACT-14) within O30's configurable stopTimeout (5s..10m, default 30s, slow-stop progress line, second Ctrl-C/stop force), keeps Caddy and any --port server running, prints one outcome line plus the start-again command (and prints clear stop confirmation with session name and folder, plus the stack ID under AGENT=1 and no PID, for devhost stop --session in both human and AGENT=1 modes), and sends open tabs the lost-connection stop reason (KEY-14, FB-10, UNDO-5, FAIL-5, HOLD-2, O30, CC-35). Resolves serve-folder-02 stop and serve-command-03 stop confirmation.",
       "sources": [
         {
           "path": "apps/devhost/src/services/stack.rs",
@@ -497,10 +503,10 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: serve-<domain> prefixes, serve (primary), 'shutting down the stack', over-padded devhost labels, pre-startup Stop: lines, silent stop --session; foreground command hang ('waiting for a restart') and detached crashes breaking TLS; synthetic external port-* services and Restart Changed in command sessions; 'command process is unavailable'; --port ready before listening; README hiding listing, 'Directory listing', devhost root, byte order, row arrows, localStorage source toggle, recovery page on 404, Open in Editor (O51), refusal 'from .', External on folder/command cards, launch folder on --port cards, 'Manifest-free file or port session', '1 files', and --port handing cwd to chat",
+        "Removed: serve-<domain> prefixes, serve (primary), 'shutting down the stack', over-padded devhost labels, pre-startup Stop: lines, silent stop --session; foreground command hang ('waiting for a restart') and detached crashes breaking TLS; synthetic external port-* services and Restart Changed in command sessions; 'command process is unavailable'; --port ready before listening; README hiding listing, 'Directory listing', devhost root, byte order, row arrows, localStorage source toggle, recovery page on 404, Open in Editor (O51), refusal 'from .' and its supervisor PID to kill, session PIDs on stop lines and cards, External on folder/command cards, launch folder on --port cards, 'Manifest-free file or port session', '1 files', and --port handing cwd to chat",
         "Merged: folder listing and Markdown index on one page (listing first); breadcrumb and heading as one heading path; CLI and manifest serve 404 into one file-browser 404; command and discovered HTTP ports into one 1/1 entry across toolbar, stack info --session, and Stack Directory",
         "New: header with chat state (O40) and the shared proxy line with the resolved listener (O39, WORD-12) plus --no-chat; ready, waiting, reachability, detached Stop:, and stop confirmation lines; foreground exit propagation and detached valid-HTTPS crash recovery with working Restart Command; labeled multi-port route logs, WebSocket port-closed notice, and 410 reload page; CLI serve-session discoverability; OS launch & HEAD / timeout diagnostics, Quickstart command examples, and negative --startup-timeout handling; holder refusals; listing metadata, filter, shared CA trust line, and ./ hrefs; per-file ?view=source, source links, front matter errors, GitHub alerts, file-browser 404/500, and sessionKind/command directory cards",
-        "Changed: Markdown index renders below listing; Rendered/Source is per file in URL preserving flushSync/<noscript> first paint; --port waits until port answers; foreground command mode exits with command exit code; devhost restart and devhost upgrade keep serve sessions running (O18, O31, CC-36); unified O30 stopTimeout shutdown; access logs key by hostname",
+        "Changed: Markdown index renders below listing; Rendered/Source is per file in URL preserving flushSync/<noscript> first paint; --port waits until port answers; foreground command mode exits with command exit code; devhost restart and devhost upgrade restart serve sessions in the new supervisor and a replaced foreground session says so (O18, O31, CC-36, FAIL-5); unified O30 stopTimeout shutdown; access logs key by hostname",
         "Kept: one command, no manifest, Caddy started on demand and kept running; no devhost.toml read, nothing written in served folder; chat on by default for folder/command sessions (O40) with O36 remote passkey/pairing auth; --port server never started or stopped; reads confined on every request; GFM, GET/HEAD/ranges, index.html unchanged, no-JS fallback; taken host refused exit 1; exit 130/143; interactive-only trust prompt; manifest serve on same pages; Stack Directory lists serve sessions"
       ]
     },
@@ -520,7 +526,7 @@
       "title": "Backend work",
       "items": [
         "Session identity & sessionKind ('dir'|'port'|'command') with real name, command string, and per-hostname access logs in apps/devhost/src/services/{serve,serve_command,stack}.rs",
-        "Structured claim refusal {host, holderKind, holderName, folder/manifest/command, worktree, pid, startedAt} in apps/devhost/src/caddy/routes.rs and apps/devhost/src/cliout.rs",
+        "Structured claim refusal {host, holderKind, holderName, sessionName, folder/manifest/command, worktree, stackId, startedAt} with devhost stop --session or devhost stop as next step in apps/devhost/src/caddy/routes.rs and apps/devhost/src/cliout.rs",
         "Foreground --port wait via wait_for_startup_health plus single-line reachability transitions in apps/devhost/src/services/stack.rs",
         "First-class file-server and 1/1 command service model plus manifest-free Restart Command (operationId, 202) and stack_info.rs --session alignment (CC-25, CC-37)",
         "P0 foreground exit teardown + exit-code propagation and detached crash valid-HTTPS recovery (O63) in apps/devhost/src/services/stack/runtime.rs and caddy/routes.rs",
@@ -535,7 +541,7 @@
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-36 & CC-31 (stack-run-stop): devhost restart and devhost upgrade list serve sessions and keep them running (O18, O31)",
+        "CC-36 & CC-31 (stack-run-stop): devhost restart and devhost upgrade restart serve sessions in the new supervisor; a replaced foreground session names the command and devhost stop --session (O18, O31)",
         "CC-35: unified O30 configurable stopTimeout (5s..10m, 30s default) with verified process-tree containment (ACT-14)",
         "CC-30 & CC-22: human/agent parity, devhost label, ready/outcome lines, detached Stop:, stop --session confirmation, labeled multi-port logs",
         "CC-13: trust prompt only for interactive terminals; AGENT=1 warning names devhost caddy trust",

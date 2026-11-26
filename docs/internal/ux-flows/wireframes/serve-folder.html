@@ -136,14 +136,16 @@ devhost | Trusted Caddy Local Authority - 2026 ECC Root from ~/.local/state/devh
 devhost | SHA-256 17:35:2E:25:00:A4:82:A9:…:06:B5:35:D5 · Remove later: devhost caddy untrust
 
 $ devhost serve --dir docs --domain notes.acme.test
-devhost | notes.acme.test is already used by the serve session for ~/acme/docs (PID 49514, started 15:50) <span class="n">8</span>
+devhost | notes.acme.test is already used by the serve session for ~/acme/docs (started 15:50) <span class="n">8</span>
 devhost | Stop it with Ctrl-C in its terminal, or run:
-devhost | kill 49514
+devhost | devhost stop --session notes.acme.test
 devhost | Or choose another --domain.
 
 $ devhost serve --dir site --domain shop.acme.test
-devhost | shop.acme.test is already used by Acme Shop (main ~/acme · ~/acme/devhost.toml, PID 50112) <span class="n">9</span>
-devhost | devhost stop --manifest ~/acme/devhost.toml</pre>
+devhost | shop.acme.test is already used by Acme Shop (main ~/acme) <span class="n">9</span>
+devhost | Stop it with devhost stop in ~/acme, or run:
+devhost | devhost stop --manifest ~/acme/devhost.toml
+devhost | Or choose another --domain.</pre>
           </div>
           <div class="win">
             <div class="bar">
@@ -177,9 +179,9 @@ $ devhost serve --help   <span class="muted"># Quickstart includes command-mode 
             no <code>devhost.toml</code>, writing nothing in the served folder and starting Caddy on demand. Keys:
             <kbd>Ctrl-C</kbd> at any point during start cancels it, removes what it claimed, stops any spawned command,
             and reports a cancellation rather than an error (<code>KEY-14</code>, <code>FAIL-5</code>). Agent output
-            (<code>AGENT=1</code>) carries the same facts as <code>devhost:</code> lines with absolute paths and PIDs,
-            and errors as <code>devhost: ERR:</code> / <code>devhost: INFO:</code> lines (<code>WORD-9</code>,
-            <code>FB-11</code>, <code>CC-30</code>).
+            (<code>AGENT=1</code>) carries the same facts as <code>devhost:</code> lines with absolute paths and the
+            session's stack ID, never a PID, and errors as <code>devhost: ERR:</code> /
+            <code>devhost: INFO:</code> lines (<code>WORD-9</code>, <code>FB-11</code>, <code>CC-30</code>).
           </p>
           <ol>
             <li>
@@ -224,13 +226,16 @@ $ devhost serve --help   <span class="muted"># Quickstart includes command-mode 
               <code>devhost caddy trust</code> (<code>REV-8</code>, <code>CC-13</code>, <code>UNDO-5</code>).
             </li>
             <li>
-              <span class="n">8</span> A taken hostname exits 1 before routing, naming the holding serve session's
-              folder/port/command, PID, start time, and stop command (never "from .") (<code>FAIL-2</code>,
-              <code>WORD-7</code>, <code>WORD-8</code>).
+              <span class="n">8</span> A taken hostname exits 1 before routing, naming the holding serve session by its
+              folder, port or name and command, its start time, and <code>devhost stop --session &lt;name&gt;</code> (a
+              folder or port session's name is its hostname). It never offers a PID to <code>kill</code>: today's
+              refusal names the shared devhost supervisor's PID, and killing it would end every stack and serve session
+              (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>, <code>O18</code>).
             </li>
             <li>
-              <span class="n">9</span> A stack holder names the stack, its worktree label, and its root manifest with
-              <code>devhost stop --manifest</code> (<code>SEL-4</code>, <code>WORD-11</code>).
+              <span class="n">9</span> A stack holder names the stack and its worktree label, then
+              <code>devhost stop</code> in its folder or <code>devhost stop --manifest</code> with its root manifest
+              (<code>SEL-4</code>, <code>WORD-11</code>).
             </li>
             <li>
               <span class="n">10</span> Spawn failures surface the OS launch error directly on
@@ -309,13 +314,13 @@ devhost | Ready in 1.1 s: https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001) · s
 
 <span class="muted"># Detached command ready (human &amp; AGENT=1 both include Stop:):</span>
 $ devhost serve --detach --name demoapp -- bun run dev
-devhost | Started serve session demoapp (PID 48820) · 1.1 s <span class="n">4</span>
+devhost | Started serve session demoapp (bun run dev in ~/acme) · 1.1 s <span class="n">4</span>
 devhost | URL:  https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001)
 devhost | Log:  ~/.local/state/devhost/logs/serve-demoapp.log
 devhost | Stop: devhost stop --session demoapp
 
 $ devhost stack info --session demoapp   <span class="muted"># alias: devhost status --session demoapp</span>
-Session: demoapp (Serve session · command · PID 48820 · running) <span class="n">5</span>
+Session: demoapp (Serve session · command · ~/acme · running) <span class="n">5</span>
 Command: bun run dev
 Routes:  https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001)
          https://demoapp-4002.acme.test/ (-&gt; 127.0.0.1:4002)
@@ -402,7 +407,7 @@ devhost | devhost stack list --sessions</pre>
                 <div class="fld">
                   <span>Manifest files</span><span>None: the serve session for ~/acme/docs reads no devhost.toml</span>
                 </div>
-                <div class="muted">Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50</div>
+                <div class="muted">Stop it with Ctrl-C in its terminal · started 15:50</div>
               </div>
               <div class="box">
                 <div class="row"><b>127.0.0.1:3000</b><span class="chip">Serve session · port</span></div>
@@ -413,13 +418,13 @@ devhost | devhost stack list --sessions</pre>
                   <span>Manifest files</span
                   ><span>None: the serve session for 127.0.0.1:3000 reads no devhost.toml</span>
                 </div>
-                <div class="muted">Stop it with Ctrl-C in its terminal · PID 48812 · started 15:51</div>
+                <div class="muted">Stop it with Ctrl-C in its terminal · started 15:51</div>
               </div>
               <div class="box">
                 <div class="row">
                   <b>demoapp</b><span class="chip">Serve session · command</span><span class="n">12</span>
                 </div>
-                <div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
+                <div>Command: <code>bun run dev</code> in ~/acme · ● running</div>
                 <div><a>https://demoapp.acme.test/</a> (4001) · <a>https://demoapp-4002.acme.test/</a> (4002)</div>
                 <div class="fld">
                   <span>Manifest files</span><span>None: command session (reads no devhost.toml)</span>
@@ -457,21 +462,26 @@ devhost | devhost stack list --sessions</pre>
               <code>Ctrl-C</code> cue once ready (<code>serve-command-03</code>).
             </li>
             <li>
-              <span class="n">4</span> Detached command mode prints <code>Started</code>, URL(s), <code>Log:</code>, and
-              <code>Stop: devhost stop --session &lt;name&gt;</code> in both human and <code>AGENT=1</code> output
-              (<code>serve-command-03</code>).
+              <span class="n">4</span> Detached command mode prints <code>Started</code> with the session's name,
+              command and folder, URL(s), <code>Log:</code>, and
+              <code>Stop: devhost stop --session &lt;name&gt;</code> in both human and <code>AGENT=1</code> output, with
+              no PID: the only one devhost holds is the shared supervisor's (<code>serve-command-03</code>,
+              <code>O18</code>).
             </li>
             <li>
               <span class="n">5</span> <code>devhost stack info --session &lt;name&gt;</code> (alias
-              <code>devhost status --session</code>, <code>O62</code>) shows the command string and discovered
-              URLs/ports directly under the command with no synthetic <code>external</code>
-              <code>port-&lt;port&gt;</code> rows (<code>serve-command-02</code>).
+              <code>devhost status --session</code>, <code>O62</code>) names the session by its name and folder and
+              shows the command string and discovered URLs/ports directly under the command with no synthetic
+              <code>external</code> <code>port-&lt;port&gt;</code> rows; agent output adds the session's stack ID
+              instead of today's supervisor PID (<code>serve-command-02</code>, <code>O18</code>).
             </li>
             <li>
               <span class="n">6</span> <code>devhost stop</code>, <code>stack info</code>/<code>status</code>,
               <code>stack find</code>, and interactive <code>stack list</code> surface running serve sessions or point
               to <code>devhost stack list --sessions</code> and <code>--session &lt;name&gt;</code>, while scripted
-              <code>stack list</code> keeps its manifest-only format (<code>serve-command-04</code>).
+              <code>stack list</code> keeps its manifest-only format and piped <code>--sessions</code> keeps main's
+              <code>&lt;PID&gt;&lt;TAB&gt;&lt;session name&gt;</code>, whose PID is the shared supervisor's
+              (<code>serve-command-04</code>, <code>O18</code>).
             </li>
             <li>
               <span class="n">7</span> In the browser toolbar (matching <code>services-panel</code>'s seam), a command
@@ -502,7 +512,9 @@ devhost | devhost stack list --sessions</pre>
             <li>
               <span class="n">11</span> Folder and port cards title by folder or target address (never
               <code>serve-&lt;domain&gt;</code>), omit Directory lines, never mark a folder's file server
-              <code>External</code>, and drop "Manifest-free file or port session" (<code>serve-folder-11</code>).
+              <code>External</code>, drop "Manifest-free file or port session", and show no PID, since today's card
+              badge is the shared supervisor's, the same on every card (<code>serve-folder-11</code>,
+              <code>CC-27</code>).
             </li>
             <li>
               <span class="n">12</span> Command cards read <code>sessionKind: "command"</code> and
@@ -1175,19 +1187,37 @@ devhost | Stopping demoapp (bun run dev) · 18 s left before force · press Ctrl
               ><span>devhost stop --session confirmation (human &amp; AGENT=1), and restart / upgrade (O18, O31)</span>
             </div>
             <pre class="term">$ devhost stop --session demoapp
-devhost | Stopped serve session demoapp (PID 48820) · removed https://demoapp.acme.test/ · Caddy keeps running · 0.4 s <span class="n">5</span>
+devhost | Stopped the serve session demoapp (bun run dev in ~/acme) · removed https://demoapp.acme.test/ · Caddy keeps running · 0.4 s <span class="n">5</span>
 
 $ AGENT=1 devhost stop --session demoapp
-devhost: stopped serve session demoapp (PID 48820) · removed https://demoapp.acme.test/ · Caddy keeps running
+devhost: stopped serve session demoapp (stack stk-4f0c9a2e81b7d356, /home/dev/acme) · removed https://demoapp.acme.test/ · Caddy keeps running
 
-$ devhost restart --yes   <span class="muted"># same for devhost upgrade: serve sessions keep running</span>
+$ devhost restart --yes   <span class="muted"># devhost upgrade ends with the same step</span>
 1 stack and 2 serve sessions run in this state directory:
-  Acme Shop                  main ~/acme   PID 84244 · detached
-  serve session ~/acme/docs                PID 48800 · keeps running <span class="n">6</span>
-  serve session demoapp                    PID 48820 · keeps running
-Replaced Acme Shop's devhost process: PID 84244 → 85102 · 11 s · devhost 0.0.22
-serve session ~/acme/docs (devhost 0.0.21) left running — press Ctrl-C and re-run to upgrade (or stop and re-run it if detached)
-serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run to upgrade (or stop and re-run it if detached)</pre>
+  Acme Shop                   main ~/acme · detached
+  serve session ~/acme/docs   foreground <span class="n">6</span>
+  serve session demoapp       detached
+Restarted Acme Shop (main ~/acme) · 11 s
+Restarted the serve session for ~/acme/docs · 0.3 s
+Restarted the serve session demoapp · 1.2 s
+Every stack and serve session now runs in a new devhost 0.0.22 supervisor
+
+<span class="muted"># a folder session whose served folder was deleted (exit 1):</span>
+Not restarted: the serve session for ~/acme/old-docs, because ~/acme/old-docs cannot be opened: no such file or directory. It keeps running in the previous devhost 0.0.21 supervisor. <span class="n">7</span>
+Stop it with:
+devhost stop --session old-docs.acme.test</pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>the folder session's own terminal after devhost restart (exit 0)</span>
+            </div>
+            <pre class="term">$ devhost serve --dir docs --domain notes.acme.test
+devhost | Ready in 0.3 s: https://notes.acme.test/ · Ctrl-C stops this session
+devhost | Replaced by devhost restart at 14:02. The serve session for ~/acme/docs keeps running in the new devhost supervisor without this terminal. <span class="n">8</span>
+devhost | Stop it with:
+devhost | devhost stop --session notes.acme.test
+$ echo $?
+0</pre>
           </div>
           <div class="win">
             <div class="bar">
@@ -1201,7 +1231,7 @@ serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run 
                   <span class="banner" style="margin: 0; min-width: 0"
                     >? The serve session for ~/acme/docs stopped at 14:05. Start it again with devhost serve in ~/acme
                     <span class="btn">Copy</span></span
-                  ><span class="n">7</span>
+                  ><span class="n">9</span>
                 </div>
                 <div class="tbar oneline">
                   <span class="seg"><b>~/acme/docs ▾</b></span
@@ -1254,16 +1284,30 @@ serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run 
             </li>
             <li>
               <span class="n">5</span> <code>devhost stop --session &lt;name&gt;</code> prints a clear stop confirmation
-              naming the session, PID, removed URL(s), and what keeps running in both human and
-              <code>AGENT=1</code> output instead of exiting silently (<code>serve-command-03</code>).
+              naming the session by its name and folder, removed URL(s), and what keeps running in both human and
+              <code>AGENT=1</code> output, where it adds the session's stack ID, instead of exiting silently; no line
+              names a PID, since every session reports the shared supervisor's (<code>serve-command-03</code>,
+              <code>O18</code>).
             </li>
             <li>
               <span class="n">6</span> <code>devhost restart</code> and <code>devhost upgrade</code> list serve sessions
-              by their <code>WORD-1</code> names and keep them running (<code>O18</code>, <code>O31</code>,
-              <code>CC-36</code>).
+              by their <code>WORD-1</code> names with foreground or detached, never a PID, and start a new run of each
+              in the new devhost supervisor, as they do of every stack (<code>SEL-6</code>, <code>O18</code>,
+              <code>O31</code>, <code>CC-36</code>).
             </li>
             <li>
-              <span class="n">7</span> A page left open shows the lost-connection notice with the stop reason (and the
+              <span class="n">7</span> The one exception: a folder session whose served folder cannot be opened keeps
+              running in the previous supervisor until it stops, is reported as not restarted with
+              <code>devhost stop --session &lt;name&gt;</code>, and makes the command exit 1 (<code>O31</code>,
+              <code>FAIL-2</code>).
+            </li>
+            <li>
+              <span class="n">8</span> A replaced foreground session says in its own terminal which command replaced it
+              and when, that it keeps running without this terminal, and how to stop it, then exits 0
+              (<code>FAIL-5</code>, <code>CC-24</code>).
+            </li>
+            <li>
+              <span class="n">9</span> A page left open shows the lost-connection notice with the stop reason (and the
               collapsed badge shows <code>? dh · lost connection ▴</code>, or
               <code>■ dh · ~/acme/docs stopped at 14:05 ▴</code> on a known stop), disabling every write with that
               reason (<code>HOLD-2</code>, <code>ACT-5</code>).
@@ -1302,7 +1346,8 @@ serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run 
             <li>
               README replacing the folder listing; "Directory listing", <code>devhost</code> breadcrumb root, byte
               order, row arrows, hostname-wide <code>localStorage</code> source toggle, recovery page on file 404,
-              <b>Open in Editor</b> (<code>O51</code>), refusal "from ."
+              <b>Open in Editor</b> (<code>O51</code>), refusal "from ." and its supervisor PID to kill; the PID on
+              serve-session stop lines and cards
             </li>
             <li>
               <code>External</code> on folder/command cards, launch folder on <code>--port</code> cards, "Manifest-free
@@ -1364,8 +1409,9 @@ serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run 
               command's exit code
             </li>
             <li>
-              <code>devhost restart</code> and <code>devhost upgrade</code> list serve sessions and leave them running
-              (<code>O18</code>, <code>O31</code>, <code>CC-36</code>)
+              <code>devhost restart</code> and <code>devhost upgrade</code> restart serve sessions in the new
+              supervisor, and a replaced foreground session says so and exits 0 (<code>O18</code>, <code>O31</code>,
+              <code>CC-36</code>, <code>FAIL-5</code>)
             </li>
             <li>
               Shutdown uses unified <code>O30</code> configurable <code>stopTimeout</code> with verified process-tree
