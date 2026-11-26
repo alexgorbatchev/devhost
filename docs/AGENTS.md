@@ -16,7 +16,7 @@ Local rules for the repository-level documentation in `docs/`.
 ## File Conventions
 
 - **Naming:** All markdown filenames under `docs/` must use lowercase `kebab-case` naming (e.g. `on-demand-assets-dev-loop.md`).
-- **File Extensions:** Use `.md` for documentation prose. Archify specifications and generated standalone diagrams in `internal/architecture/` use `.json` and `.html`; its `justfile` owns regeneration.
+- **File Extensions:** Use `.md` for documentation prose. Archify specifications and generated standalone diagrams in `internal/architecture/` and `internal/ux-flows/` use `.json` and `.html`; `internal/architecture/`'s `justfile` owns its regeneration. The UX flow wireframes in `internal/ux-flows/wireframes/` are hand-written `.html` pages that share one `wireframe.css`.
 
 ## Shared boundaries
 
