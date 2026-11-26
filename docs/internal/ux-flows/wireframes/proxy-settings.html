@@ -213,9 +213,9 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
                     <span class="chip acc">File: ~/.config/devhost/config.toml ▾</span><span class="btn">Revert</span
                     ><span class="btn pri">Save</span
                     ><span style="flex: 1 1 16rem; min-width: 0"
-                      >Saving moves the URLs of 3 stacks to port 4443: Acme Shop, Docs and Blog; no service restarts
-                      <span class="n">2</span><br />This page moves to port 4443; its unsent chat text and page context
-                      come along <span class="n">3</span></span
+                      >Saving moves the URLs of 3 stacks to port 4443: Acme Shop, Acme Platform and Acme Admin; no
+                      service restarts <span class="n">2</span><br />This page moves to port 4443; its unsent chat text
+                      and page context come along <span class="n">3</span></span
                     ><span class="btn">Close</span>
                   </div>
                   <div class="ce-code">
@@ -236,16 +236,17 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
             </div>
             <div class="work small">
               <div class="vlab">http = true, httpPort = 8080; then http = false</div>
-              <div>Saving adds plain HTTP on port 8080 to 3 stacks: Acme Shop, Docs and Blog</div>
+              <div>Saving adds plain HTTP on port 8080 to 3 stacks: Acme Shop, Acme Platform and Acme Admin</div>
               <div>Saving removes plain HTTP from 3 stacks</div>
               <div class="vlab">bindHost = "127.0.0.1", with HTTPS on port 4443</div>
               <div>
-                Saving makes 3 stacks reachable only from devbox: Acme Shop, Docs and Blog; relay previews and SSH
-                forwards still reach them <span class="n">4</span>
+                Saving makes 3 stacks reachable only from devbox: Acme Shop, Acme Platform and Acme Admin; relay
+                previews and SSH forwards still reach them <span class="n">4</span>
               </div>
               <div class="vlab">bindHost back to every interface, in the warning style</div>
               <div class="banner" style="margin: 0">
-                Saving makes 3 stacks reachable from devbox's network: Acme Shop, Docs and Blog <span class="n">5</span>
+                Saving makes 3 stacks reachable from devbox's network: Acme Shop, Acme Platform and Acme Admin
+                <span class="n">5</span>
               </div>
               <div class="vlab">on macOS, bindHost = "127.0.0.1" with HTTPS on port 443, in the warning style</div>
               <div class="banner" style="margin: 0">
@@ -268,10 +269,12 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
               </div>
               <div class="vlab">adminAddress = "127.0.0.1:2019"</div>
               <div>Saving moves Caddy's admin API to 127.0.0.1:2019; no URL changes</div>
-              <div class="vlab">domainSuffix = "--devbox.example.com", where only Blog uses a short host label</div>
+              <div class="vlab">
+                domainSuffix = "--devbox.devhost.acme.test", where only Acme Admin uses a short host label
+              </div>
               <div>
-                Saving changes Blog's hostnames after its next start: blog.acme.test → blog--devbox.example.com; Acme
-                Shop and Docs keep theirs <span class="n">8</span>
+                Saving changes Acme Admin's hostnames after its next start: admin.acme.test →
+                admin--devbox.devhost.acme.test; Acme Shop and Acme Platform keep theirs <span class="n">8</span>
               </div>
               <div class="vlab">a [remote] value, while Acme Shop runs in remote mode</div>
               <div>Saving changes Acme Shop's relay settings after its next start; the rest applies now</div>
@@ -392,7 +395,7 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
           <div class="win">
             <div class="bar">
               <b>devhost › one save of httpsPort = 4443, in order</b
-              ><span>Acme Shop, Docs and Blog running; 5 pages open</span>
+              ><span>Acme Shop, Acme Platform and Acme Admin running; 5 pages open</span>
             </div>
             <div class="work">
               <table class="t wrap">
@@ -408,8 +411,8 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
                     <td>0.0 s</td>
                     <td>
                       Every running stack's watcher sees the save. Acme Shop takes the route lock every devhost process
-                      shares and applies the change once for the machine; Docs and Blog find it applied and do not apply
-                      it again. <span class="n">1</span>
+                      shares and applies the change once for the machine; Acme Platform and Acme Admin find it applied
+                      and do not apply it again. <span class="n">1</span>
                     </td>
                     <td>Nothing yet</td>
                   </tr>
@@ -426,8 +429,9 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
                   <tr>
                     <td>0.2 s</td>
                     <td>
-                      Tells Acme Shop, Docs and Blog through their control servers; each sends listeners-moving to each
-                      open page whose address changes. A stack that does not answer within 1 s never holds the move up.
+                      Tells Acme Shop, Acme Platform and Acme Admin through their control servers; each sends
+                      listeners-moving to each open page whose address changes. A stack that does not answer within 1 s
+                      never holds the move up.
                       <span class="n">3</span>
                     </td>
                     <td>
@@ -545,10 +549,12 @@ All stacks on devbox: https://devhost.acme.test:4443/ <span class="n">3</span>
 Proxy: HTTPS on port 4443, every interface, reachable from your network · ~/.config/devhost/config.toml <span class="n">4</span></pre>
           </div>
           <div class="win">
-            <div class="bar"><b>Terminal · Blog · ~/blog</b><span>the same save, in another stack</span></div>
+            <div class="bar">
+              <b>Terminal · Acme Admin · ~/acme-admin</b><span>the same save, in another stack</span>
+            </div>
             <pre class="term">
 Applied config.toml: HTTPS port 443 → 4443 · 1.3 s · after config.toml changed on disk
-blog   https://blog.acme.test:4443/
+web    https://admin.acme.test:4443/
 All stacks on devbox: https://devhost.acme.test:4443/
 Proxy: HTTPS on port 4443, every interface, reachable from your network · ~/.config/devhost/config.toml</pre
             >
@@ -582,7 +588,7 @@ Anyone on your network can now read https://devhost.acme.test:4443/ without sign
 Applied config.toml: nothing changed <span class="n">9</span>
 
 <span class="muted">applied by a start, after a save that was not applied</span>
-Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost start in ~/blog) <span class="n">10</span>
+Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost start in ~/acme-admin) <span class="n">10</span>
 Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost caddy start)</pre>
           </div>
         </div>
@@ -1157,39 +1163,39 @@ devhost.toml:14:8 not started: services.web.host: shop.acme.test is the stack di
         <div class="mock">
           <div class="win">
             <div class="bar">
-              <b>Terminal · Acme Shop and Blog</b
-              ><span>one save of domainSuffix = "--devbox.example.com" and httpsPort = 4443</span>
+              <b>Terminal · Acme Shop and Acme Admin</b
+              ><span>one save of domainSuffix = "--devbox.devhost.acme.test" and httpsPort = 4443</span>
             </div>
             <pre class="term"><span class="muted">Acme Shop · ~/acme (full hostnames such as shop.acme.test)</span>
 Applied config.toml: HTTPS port 443 → 4443 · 1.4 s · after config.toml changed on disk <span class="n">1</span>
 web    https://shop.acme.test:4443/
 api    https://shop.acme.test:4443/api/
 
-<span class="muted">Blog · ~/blog (host = "blog")</span>
+<span class="muted">Acme Admin · ~/acme-admin (host = "admin")</span>
 Applied config.toml: HTTPS port 443 → 4443 · 1.3 s · after config.toml changed on disk
-blog   https://blog.acme.test:4443/
-config.toml's domainSuffix waits for Blog's next start: blog.acme.test → blog--devbox.example.com <span class="n">2</span>
-Run in ~/blog:
+web    https://admin.acme.test:4443/
+config.toml's domainSuffix waits for Acme Admin's next start: admin.acme.test → admin--devbox.devhost.acme.test <span class="n">2</span>
+Run in ~/acme-admin:
 devhost stack restart</pre>
           </div>
           <div class="win">
             <div class="bar">
-              <b>devhost › Blog › https://blog.acme.test:4443/</b><span>after Open on the moved notice</span>
+              <b>devhost › Acme Admin › https://admin.acme.test:4443/</b><span>after Open on the moved notice</span>
             </div>
             <div class="pg" style="min-height: 96px">
-              <div class="apptxt">Blog · Latest posts …</div>
+              <div class="apptxt">Acme Admin · Orders …</div>
               <div class="corner">
                 <div class="banner">
-                  ◆ domainSuffix waits for a restart · blog.acme.test → blog--devbox.example.com
+                  ◆ domainSuffix waits for a restart · admin.acme.test → admin--devbox.devhost.acme.test
                   <span class="n">3</span>
                   <div class="row" style="margin-top: 4px">
                     <span class="btn">Copy Command</span><span class="btn">Dismiss</span>
                   </div>
                 </div>
                 <div class="tbar">
-                  <span class="seg"><b>Blog ▾</b></span
-                  ><span class="seg">● ▾</span><span class="seg">main ~/blog ▾</span><span class="seg">Config</span
-                  ><span class="seg">Chat</span>
+                  <span class="seg"><b>Acme Admin ▾</b></span
+                  ><span class="seg">● ● ● ▾</span><span class="seg">main ~/acme-admin ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
                 </div>
               </div>
             </div>
@@ -1197,7 +1203,7 @@ devhost stack restart</pre>
           <div class="win">
             <div class="bar">
               <b>Terminal · Acme Shop · ~/acme, in remote mode</b
-              ><span>one save of [remote] and httpsPort = 4443; Docs runs locally</span>
+              ><span>one save of [remote] and httpsPort = 4443; Acme Platform runs locally</span>
             </div>
             <pre class="term">Applied config.toml: HTTPS port 443 → 4443 · 1.4 s · after config.toml changed on disk
 config.toml's [remote] settings wait for Acme Shop's next start <span class="n">4</span>
