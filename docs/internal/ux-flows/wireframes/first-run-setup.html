@@ -117,16 +117,16 @@ devhost caddy start</pre
               <p>
                 A release archive installed in a folder you can write, such as ~/.local/bin, updates with
                 <code>devhost upgrade</code>, which downloads the latest release, checks it against SHA256SUMS, replaces
-                the binary and restarts your running stacks onto it.
+                the binary and restarts every running stack and serve session in a new devhost supervisor running it.
               </p>
               <p>
                 When dotfiles, a package manager or your own build installed devhost, or the folder needs sudo, such as
                 /usr/local/bin, update it the way you installed it, then run <code>devhost restart</code>, which
-                restarts every running stack onto the new binary.
+                restarts every running stack and serve session in a new devhost supervisor running the new binary.
               </p>
               <p>
-                Both leave serve sessions running until you restart them. Neither updates Caddy: run
-                <code>devhost caddy download</code> again for that. <span class="n">8</span>
+                Neither updates Caddy: run <code>devhost caddy download</code> again for that.
+                <span class="n">8</span>
               </p>
             </div>
           </div>
@@ -175,10 +175,13 @@ devhost caddy start</pre
             <li>
               <span class="n">7</span> New: the Install page says how devhost itself updates. A release archive in a
               folder the person can write updates with <code>devhost upgrade</code>; dotfiles, package managers, local
-              builds and folders that need sudo update their own way, then run <code>devhost restart</code>.
-              stack-run-stop owns both commands' behavior and output; the "Download the binary" section adds that
-              <code>devhost upgrade</code> can replace the binary only in a folder writable without sudo
-              (<code>O18</code>).
+              builds and folders that need sudo update their own way, then run <code>devhost restart</code>. Both
+              restart every stack and serve session in a new devhost supervisor running the new binary. stack-run-stop
+              owns both commands' behavior and output; the "Download the binary" section adds that
+              <code>devhost upgrade</code> can replace the binary only in a folder writable without sudo (<code
+                >O18</code
+              >
+              revision 7, <code>O31</code>).
             </li>
             <li>
               <span class="n">8</span> Neither command updates Caddy, which keeps its own update:
@@ -953,8 +956,8 @@ devhost: ERR: devhost caddy untrust changes this machine's certificate trust, so
             </div>
             <pre class="term">$ devhost caddy stop
 Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running: <span class="n">1</span>
-Acme Shop · main ~/acme · PID 81234 · detached · shop.acme.test, docs.acme.test, +3 <span class="n">2</span>
-Blog · main ~/blog · PID 82001 · foreground · blog.acme.test
+Acme Shop · main ~/acme · detached · shop.acme.test, docs.acme.test, +3 <span class="n">2</span>
+Blog · main ~/blog · foreground · blog.acme.test
 serve session ~/notes · notes.acme.test
 Stopped Caddy · 2 stacks and 1 serve session offline until devhost caddy start · 0.4 s <span class="n">3</span>
 
@@ -966,7 +969,7 @@ Dry run: Caddy keeps running; nothing changed <span class="n">4</span>
 <span class="muted">an agent on a Linux machine</span>
 $ AGENT=1 devhost caddy stop
 devhost: Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running:
-devhost: Acme Shop · /home/dev/acme/devhost.toml · PID 81234 · detached · shop.acme.test, docs.acme.test, admin.acme.test, mail.acme.test, api.acme.test <span class="n">5</span>
+devhost: Acme Shop · /home/dev/acme/devhost.toml · stk-8c41e07d2a9b5f36 · detached · shop.acme.test, docs.acme.test, admin.acme.test, mail.acme.test, api.acme.test <span class="n">5</span>
 <span class="muted">…</span>
 
 <span class="muted">a stack that does not answer the stop's notice within 1 s: its own line, after the set</span>
@@ -1024,9 +1027,10 @@ Acme Shop lost its proxy at 14:10 (Caddy exited without devhost caddy stop); its
               their services keep running (<code>SEL-6</code>, <code>BAR-2</code>, <code>WORD-5</code>).
             </li>
             <li>
-              <span class="n">2</span> One line per stack and session: the stack's name, its worktree label, PID,
-              foreground or detached, and its hostnames, a long list collapsed to "+3" (<code>SEL-4</code>,
-              <code>SEL-6</code>, <code>WORD-1</code>, <code>WORD-11</code>).
+              <span class="n">2</span> One line per stack and session: the stack's name, its worktree label, foreground
+              or detached, and its hostnames, a long list collapsed to "+3"; never a PID, because every stack shares the
+              devhost supervisor's (<code>SEL-4</code>, <code>SEL-6</code>, <code>WORD-1</code>, <code>WORD-11</code>,
+              <code>O18</code> revision 7).
             </li>
             <li>
               <span class="n">3</span> Before Caddy stops, devhost writes a stop record beside Caddy's PID file (by
@@ -1039,8 +1043,8 @@ Acme Shop lost its proxy at 14:10 (Caddy exited without devhost caddy stop); its
               <code>CC-12</code>).
             </li>
             <li>
-              <span class="n">5</span> Agent output lists the same set with each manifest's absolute path, the PID and
-              every hostname (<code>WORD-9</code>).
+              <span class="n">5</span> Agent output lists the same set with each manifest's absolute path, the stack ID
+              and every hostname (<code>WORD-9</code>, <code>R7-97</code>).
             </li>
             <li>
               <span class="n">6</span> The stop tells every stack at once and waits at most 1 s in total, however many
