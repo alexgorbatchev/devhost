@@ -123,7 +123,7 @@
       "type": "backend",
       "label": "Who may read it",
       "sublabel": "O36 check · relay forwards",
-      "explanation": "From another environment the directory opens on its hostname under the remote or relay suffix, which the relay forwards (agent-chat's work under O36, O47, O55). Every request goes through O36's check, agent-chat's classifier: this machine and browsers signed in with the devhost passkey or paired read the page and press Check Again; a reader that stackDirectoryAllowRemote alone admits reads it without signing in, with Check Again unavailable and waiting agents counted only; any other client gets 403 with 'Sign in with passkey or pair this browser to use devhost here' and Sign In with Passkey. A relay visitor never counts as this machine; whether this machine's browser counts as this machine on the directory's hostname, which is no stack's hostname, is a proposed reading of O36 for the reference's author. The directory hostname also serves agent-chat's passkey routes and cookie hop. While no stack answers, Caddy cannot check a session, so its static page answers this machine, or everyone with the setting on (HOLD-7, HOLD-8, O36, O47; Backend 11).",
+      "explanation": "From another environment the directory opens on its hostname under the remote or relay suffix, which the relay forwards (agent-chat's work under O36, O47, O55). Every request goes through O36's check, agent-chat's classifier: this machine and browsers signed in with the devhost passkey or paired read the page and press Check Again; a reader that stackDirectoryAllowRemote alone admits reads it without signing in, with Check Again unavailable and waiting agents counted only; any other client gets 403 with 'Sign in with passkey or pair this browser to use devhost here' and Sign In with Passkey. A relay visitor never counts as this machine; on the directory's hostname under the local suffix, this machine's browser counts as this machine, as on a stack's hostname (O36). The directory hostname also serves agent-chat's passkey routes and cookie hop. While no stack answers, Caddy cannot check a session, so its static page answers this machine, or everyone with the setting on (HOLD-7, HOLD-8, O36, O47; Backend 11).",
       "sources": [
         {
           "path": "apps/devhost/src/devtools/directory.rs",
@@ -195,7 +195,7 @@
       "label": "Configuration applied?",
       "sublabel": "running and on-disk version",
       "tag": "stack-directory-05",
-      "explanation": "Configuration · 2 files expands the stack's manifest files, named by kind: 'Root manifest · devhost.toml'; one file reads '1 file'. Each says whether the stack runs it: 'Applied 17:03', or 'Not applied · rejected at 17:12 · line 42: expected ]' with 'the stack runs the accepted manifest' (UNDO-6, HOLD-6, MENU-4). A file that was not applied opens on 'Running version' with 'Version on disk' beside it and the rejected line marked; files show line numbers. Each file shows its path and line, 'devhost.toml:42', with Copy; devhost opens no editor (O51, SURF-15). The toggle has a 3:1 boundary and is 24 px tall (SURF-9, serve-command-10). The devhost config file is listed once, at the foot of the page (WORD-1). The label keeps 'Configuration' for manifest files only, a proposed WORD-1 exception. The caveat printed on every card today goes. Resolves stack-directory-05.",
+      "explanation": "Manifest files · 2 expands the stack's manifest files, named by kind: 'Root manifest · devhost.toml'; one file reads 'Manifest files · 1'. Each says whether the stack runs it: 'Applied 17:03', or 'Not applied · rejected at 17:12 · line 42: expected ]' with 'the stack runs the accepted manifest' (UNDO-6, HOLD-6, MENU-4). A file that was not applied opens on 'Running version' with 'Version on disk' beside it and the rejected line marked; files show line numbers. Each file shows its path and line, 'devhost.toml:42', with Copy; devhost opens no editor (O51, SURF-15). The toggle has a 3:1 boundary and is 24 px tall (SURF-9, serve-command-10). The devhost config file is listed once, at the foot of the page (WORD-1). The label is 'Manifest files' (WORD-1). The caveat printed on every card today goes. Resolves stack-directory-05.",
       "sources": [
         {
           "path": "apps/devhost/src/devtools/directory.rs",
@@ -581,14 +581,14 @@
       "items": [
         "CC-27: stopped stacks stay listed with when, why and the start command; cards count running services and update while the page is open; close hostnames on the plain-HTTP 404 and in the directory (O46, O63)",
         "Read, unchanged here: CC-25 (published service state), CC-38 (sessions across worktrees, chat/open), CC-11 (devhost service commands), CC-23 (devhost stack info), CC-37 (Check Again routes), CC-39 (machineName)",
-        "No CC-n yet: stack-lifecycle.md's counts, Configuration, Refresh / filter, Clear filter, remote readers, serving and unavailable-page sentences, for the reference's author beside CC-27 and CC-31"
+        "CC-50: stack-lifecycle.md's counts, Configuration, Refresh / filter, Clear filter, remote readers, serving and unavailable-page sentences, for the reference's author beside CC-27 and CC-31"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }

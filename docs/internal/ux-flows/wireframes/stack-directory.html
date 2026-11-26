@@ -63,7 +63,7 @@
 <div class="row">Reset to Manifest Default</div>
 <div class="row">All Stacks on devbox <span class="n">1</span></div>
 </div>
-<div class="tbar oneline"><span class="seg open" id="sd-stackname"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar oneline"><span class="seg open" id="sd-stackname"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -78,7 +78,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
 </div>
 <div class="cap"><h2>1. Reach the directory from where you are</h2>
 <p>The directory keeps its address, devhost.acme.test here, and a link saved with <code>?q=search</code> still opens it with that query in the filter. What changes is that every surface that knows about stacks leads there, because devhost never opens a browser; today nothing does, and the address comes from the docs (<code>SURF-15</code>, <code>MENU-1</code>).</p>
-<ol><li><span class="n">1</span> <b>All Stacks on devbox</b> sits in the stack name menu's one group of toolbar items, after <b>Reset to Manifest Default</b> with no separator, and opens the directory in the same tab, with no <code>target</code>; "devbox" is the machine name, <code>machineName</code> in the devhost config file, else the host name up to its first dot. toolbar-shell draws the menu and its keys; this flow defines where the item leads: the directory's current address from the applied shared Caddy settings, read when the menu opens, so after proxy-settings moves the directory to stacks.acme.test on port 4443 the item links https://stacks.acme.test:4443/, never the old address; on a page opened through the remote or relay suffix it links the directory under that suffix (<code>MENU-1</code>, <code>MENU-2</code>, <code>WORD-2</code>, <code>SURF-15</code>, <code>O61</code>).</li>
+<ol><li><span class="n">1</span> <b>All Stacks on devbox</b> sits in the stack name menu's one group of toolbar items, after <b>Reset to Manifest Default</b> with no separator, and opens the directory in the same tab, with no <code>target</code>; "devbox" is the machine name, <code>machineName</code> in the devhost config file, else the host name up to its first dot. toolbar-shell draws the menu and its keys; this flow defines where the item leads: the directory's current address from the applied shared Caddy settings, read when the menu opens, so after proxy-settings moves the directory to port 4443 the item links https://devhost.acme.test:4443/, never the old address; on a page opened through the remote or relay suffix it links the directory under that suffix (<code>MENU-1</code>, <code>MENU-2</code>, <code>WORD-2</code>, <code>SURF-15</code>, <code>O61</code>).</li>
 <li><span class="n">2</span> <code>devhost start</code> prints the directory's URL after its ready line with the page's own words, and <code>devhost stack list</code> on a terminal and <code>devhost stack info</code> (<code>devhost status</code>) print it too (stack-run-stop's slice). The plain-HTTP 404 (step 8), stack-run-stop's stopped-stack page and startup-and-recovery's status pages carry the same link (<code>SURF-15</code>, <code>O61</code>, <code>O62</code>).</li></ol>
 <p class="fixes">Fixes stack-directory-06 · Backend: the directory's current URL, hostname, port and machine name, given to the toolbar and the status pages (Backend 9)</p></div>
 </section>
@@ -287,7 +287,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
 <div class="banner" style="margin:0 0 4px">◆ Not updated since 17:15:02: no running stack answered within 2 s · retrying every 2 s · last try 17:15:06 <span class="n">4</span></div>
 <div class="tb"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn">Refresh Stacks</span></div>
 <div class="vlab">After the directory moved</div>
-<div class="banner" style="margin:0">◆ Not updated since 17:15:02: the stack directory moved to <a>https://stacks.acme.test:4443/</a></div>
+<div class="banner" style="margin:0">◆ Not updated since 17:15:02: the stack directory moved to <a>https://devhost.acme.test:4443/</a></div>
 </div>
 </div>
 <div class="win">
@@ -418,7 +418,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the directory stays read-only with links (<code>O10</code>, decided), so this proposal records an exception to <code>MENU-5</code>: each state's lead action is a link to the page that performs it plus the same action's terminal command with <b>Copy</b>, and only <b>Check Again</b> runs in place; <code>MENU-5</code> has a recovery surface offer the action itself and has no row for a stack whose devhost process does not answer, nor for the exited row's Edit and logs, which the linked status page holds. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>6. Open a service, or the page that fixes it</h2>
 <p>Route links still open in the same tab, and the directory still starts, restarts, stops and switches nothing, so no control on it asks or waits for another operation (<code>O10</code>, <code>REV-1</code>). What changes is that every state it draws has its way forward one step away. Being read-only, it never acts on what it shows: a link reaches the hostname, which answers with its current state, and <b>Copy</b> copies the command from the latest read (<code>REV-13</code>).</p>
 <ol><li><span class="n">1</span> A route of a service that is not running opens devhost's status page for it, which leads with that cause's action, here <b>Restart reports</b>; a route of a running service opens the app (<code>SURF-15</code>, <code>MENU-5</code>).</li>
@@ -434,13 +434,13 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <section class="step" id="config">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>https://devhost.acme.test/</b><span>Acme Shop's Configuration expanded, after a save dropped the ] of [services.worker</span></div>
+<div class="bar"><b>https://devhost.acme.test/</b><span>Acme Shop's Manifest files expanded, after a save dropped the ] of [services.worker</span></div>
 <div class="sd-pg">
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div>● running · 6 of 6 running</div>
 <div class="banner" style="margin:4px 0">devhost.toml not applied · rejected at 17:12 · line 42: expected ']' · the stack runs the accepted manifest <span class="n">1</span></div>
-<div class="sd-act"><span class="btn">Configuration · 2 files ▾</span> <span class="n">2</span></div>
+<div class="sd-act"><span class="btn">Manifest files · 2 ▾</span> <span class="n">2</span></div>
 <div class="box">
 <div class="sd-act"><b>Root manifest · devhost.toml</b><span>Not applied · rejected at 17:12 · line 42: expected ']' · the stack runs the accepted manifest</span><span class="n">3</span></div>
 <div class="sd-act">◉ Running version ○ Version on disk <span class="n">4</span></div>
@@ -493,7 +493,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <li><span class="n">4</span> A file that was not applied opens on "Running version", what the stack runs, with "Version on disk" the other of two choices; the lines that differ are marked in both (≠ in this drawing) and the rejected line in the version on disk; the text shows with line numbers (<code>UNDO-6</code>).</li>
 <li><span class="n">5</span> Each file shows its path with the line and <b>Copy</b>, which copies exactly "devhost.toml:42"; devhost opens no editor (<code>O51</code>, <code>MENU-4</code>, <code>SURF-15</code>).</li>
 <li><span class="n">6</span> The devhost config file, which every stack shares, is listed once at the foot of the page, never on every card; when not applied, it shows its rejection there (<code>WORD-1</code>, <code>HOLD-6</code>).</li>
-<li><span class="n">7</span> A serve session uses serve-folder's card: titled by its folder, target address or session name, its kind beside the title, a command session's command with its discovered URLs and ports under it, and Configuration reading that it reads no devhost.toml; no serve card reads <code>External</code> for a server devhost runs, a Directory line or "Manifest-free file or port session". A detached session reads "Stop: devhost stop --session demoapp" with <b>Copy</b>, a foreground one "Stop it with Ctrl-C in its terminal" (<code>WORD-1</code>, <code>MENU-6</code>, <code>ACT-9</code>).</li></ol>
+<li><span class="n">7</span> A serve session uses serve-folder's card: titled by its folder, target address or session name, its kind beside the title, a command session's command with its discovered URLs and ports under it, and Manifest files reading that it reads no devhost.toml; no serve card reads <code>External</code> for a server devhost runs, a Directory line or "Manifest-free file or port session". A detached session reads "Stop: devhost stop --session demoapp" with <b>Copy</b>, a foreground one "Stop it with Ctrl-C in its terminal" (<code>WORD-1</code>, <code>MENU-6</code>, <code>ACT-9</code>).</li></ol>
 <p class="fixes">Fixes stack-directory-05, serve-command-06, serve-command-10 · Backend: each file's applied state, the accepted text while it differs and the structured error (Backend 4); serve-folder's <code>sessionKind</code> and <code>command</code> in each snapshot (Backend 2)</p></div>
 </section>
 
@@ -523,8 +523,8 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <div class="sd-h">No stacks are running on devbox. Start one with devhost start in its folder. <span class="n">6</span></div>
 <div class="sd-line"><a>All Stacks on devbox</a></div>
 <div class="vlab">While this machine does not trust devhost's certificate authority</div>
-<div class="banner">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run <code>devhost caddy trust</code> in a terminal, then reload; on another Mac, run <code>devhost caddy trust-remote</code> with devbox's SSH name there. <span class="n">7</span></div>
 <div class="sd-h">No devhost route for hotfix-shpo.shop.acme.test/checkout</div>
+<div class="banner">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run <code>devhost caddy trust</code> in a terminal, then reload; on another Mac, run <code>devhost caddy trust-remote</code> with devbox's SSH name there. <span class="n">7</span></div>
 <div class="vlab">The same typo over HTTPS</div>
 <div class="sd-line muted">https://hotfix-shpo.shop.acme.test/ · the browser's own connection error: Caddy issues no certificate for a hostname nobody configured <span class="n">8</span></div>
 <div class="vlab">http://blog.acme.test/ two hours after Blog stopped: only its HTTPS route is kept</div>
@@ -549,7 +549,7 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
 <li><span class="n">4</span> One sentence gives the next step instead of Caddy's wording; "managed devhost Caddy instance" appears nowhere (<code>WORD-7</code>, <code>STATE-2</code>).</li>
 <li><span class="n">5</span> "Hostnames on devbox" groups every routed hostname by stack and worktree, each with its service and its path routes, each a link to its route. It draws no state, because Caddy rewrites this page only when routes change and a state on it would go stale; the directory's live states are one link away (<code>SEL-10</code>, <code>SEL-4</code>, <code>ACT-12</code>, <code>O61</code>).</li>
 <li><span class="n">6</span> With no route on the machine, the page reads one sentence with <b>All Stacks on devbox</b>, which lists what stopped recently (<code>STATE-2</code>).</li>
-<li><span class="n">7</span> While this machine does not trust devhost's local certificate authority, first-run-setup's one line, naming the machine, sits at the top of this page and of the directory, before the heading, with the commands that fix it; every link still works once the person passes the browser's warning (<code>O61</code>; first-run-setup's).</li>
+<li><span class="n">7</span> While this machine does not trust devhost's local certificate authority, first-run-setup's one line, naming the machine, sits under the heading of this page and of the directory, in its one sentence with the commands that fix it (<code>FB-9</code>, <code>WORD-12</code>); every link still works once the person passes the browser's warning (<code>O61</code>; first-run-setup's).</li>
 <li><span class="n">8</span> Over HTTPS a hostname nobody configured gets no certificate, so the browser shows its own connection error, as intended; the directory's filter offers the same close hostnames (step 5) (<code>O63</code>).</li>
 <li><span class="n">9</span> On plain HTTP a stopped stack's hostname reaches this page, because stack-run-stop keeps only its HTTPS route, and the page names that stack before any matching, with its start command and <b>Copy</b> (<code>O46</code>, <code>O15</code>, <code>MENU-5</code>, <code>ACT-10</code>).</li>
 <li><span class="n">10</span> A request that is not a page load (a <code>fetch</code>, an API client, an agent's <code>curl</code>) gets 404 with a body under 2 KB instead of the page: one text line naming the hostname and the directory, or the same facts as JSON. Caddy writes it from the request's hostname, so it offers no close hostname and says no "yet": the fallback cannot tell a hostname a starting stack is about to route from a mistype, and this is the answer startup-and-recovery's no-route state hands off for that moment (<code>FB-11</code>, <code>SURF-16</code>, <code>CC-4</code>).</li></ol>
@@ -559,7 +559,7 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
 <section class="step" id="remote">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>https://devhost.preview.acme.test/</b><span>a browser in another environment, not signed in, stackDirectoryAllowRemote off: status 403</span></div>
+<div class="bar"><b>https://devhost--devbox--preview.acme.test/</b><span>a browser in another environment, not signed in, stackDirectoryAllowRemote off: status 403</span></div>
 <div class="sd-pg">
 <div class="sd-h">Sign in with passkey or pair this browser to use devhost here <span class="n">1</span></div>
 <div class="sd-act"><span class="btn pri">Sign In with Passkey</span></div>
@@ -567,7 +567,7 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://devhost.preview.acme.test/</b><span>the same browser after Sign In with Passkey</span></div>
+<div class="bar"><b>https://devhost--devbox--preview.acme.test/</b><span>the same browser after Sign In with Passkey</span></div>
 <div class="sd-pg">
 <div class="sd-h">Stacks on devbox <span class="n">2</span></div>
 <div class="sd-line"><b>3 stacks · 1 serve session · 2 failed · 1 with an agent waiting for you · 1 stopped recently</b></div>
@@ -576,7 +576,7 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://devhost.preview.acme.test/</b><span>a laptop on the network, not signed in, stackDirectoryAllowRemote on</span></div>
+<div class="bar"><b>https://devhost--devbox--preview.acme.test/</b><span>a laptop on the network, not signed in, stackDirectoryAllowRemote on</span></div>
 <div class="sd-pg">
 <div class="sd-h">Stacks on devbox</div>
 <div class="sd-line muted">This page is read-only: restart and start services on their status pages or in the toolbar, and stop them in the toolbar or the terminal · updates every 2 s while open · readable from your network without signing in <span class="n">3</span></div>
@@ -584,21 +584,21 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://devhost.preview.acme.test/__devhost__/stacks/acme-shop/agents/activity</b><span>Watch Live Activity for Acme Shop, opened from the running agents list</span><span class="n">4</span></div>
+<div class="bar"><b>https://devhost--devbox--preview.acme.test/__devhost__/stacks/acme-shop/agents/activity</b><span>Watch Live Activity for Acme Shop, opened from the running agents list</span><span class="n">4</span></div>
 <div class="sd-pg">
 <div class="sd-h">Agent activity · Acme Shop · main ~/acme</div>
 <div class="muted">… running-agents draws this page; this flow routes its path to Acme Shop's current control server</div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://devhost.preview.acme.test/</b><span>not on devbox, while no stack answers: status 503</span></div>
+<div class="bar"><b>https://devhost--devbox--preview.acme.test/</b><span>not on devbox, while no stack answers: status 503</span></div>
 <div class="sd-pg">
 <div class="sd-line">No stack on devbox answers, so devhost cannot check this browser's sign-in. Try again once a stack runs. <span class="n">5</span></div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>9. Use the directory from another environment</h2>
-<p>The directory still answers this machine by default, and <code>stackDirectoryAllowRemote</code> still lets anyone read it without signing in. What changes is that a browser in another environment that signed in with the devhost passkey or paired uses it as this machine does, through the directory's hostname under the remote or relay suffix, which the relay forwards (agent-chat's work), and that the same hostname serves each stack's Watch Live Activity. Every request goes through <code>O36</code>'s check, which agent-chat owns; a request through the relay never counts as this machine, and this proposal reads the directory's hostname, which is no stack's hostname, as a name under which this machine's own browser still counts as this machine, an <code>O36</code> reading for the reference's author. In this drawing devhost.preview.acme.test stands for the directory under the remote or relay suffix (<code>O36</code>, <code>O47</code>, <code>O55</code>, <code>HOLD-8</code>).</p>
+<p>The directory still answers this machine by default, and <code>stackDirectoryAllowRemote</code> still lets anyone read it without signing in. What changes is that a browser in another environment that signed in with the devhost passkey or paired uses it as this machine does, through the directory's hostname under the remote or relay suffix, which the relay forwards (agent-chat's work), and that the same hostname serves each stack's Watch Live Activity. Every request goes through <code>O36</code>'s check, which agent-chat owns; a request through the relay never counts as this machine, and the directory's hostname under the local suffix counts like a stack's hostname, so this machine's own browser counts as this machine there, while its relay form, drawn here as devhost--devbox--preview.acme.test, never does (<code>O36</code>, <code>O47</code>, <code>O55</code>, <code>HOLD-8</code>).</p>
 <ol><li><span class="n">1</span> A browser that is neither this machine, signed in nor admitted by <code>stackDirectoryAllowRemote</code> gets devhost's own page with status 403 and <code>HOLD-7</code>'s sentence, <b>Sign In with Passkey</b> when the passkey is set up for this domain and how to pair; it names no stack, and <code>/stacks.json</code> answers 403 with that sentence. The passkey routes and the cookie hop that carries the session to each stack's hostname are agent-chat's, served on this hostname (<code>HOLD-7</code>, <code>O36</code>).</li>
 <li><span class="n">2</span> Signed in or paired, the browser reads the directory, presses <b>Check Again</b> and follows waiting agents' links, as on devbox; the pages name the machine, never "this machine" (<code>O47</code>, <code>O61</code>).</li>
 <li><span class="n">3</span> A reader that <code>stackDirectoryAllowRemote</code> alone admits reads without signing in, as today; the reach line says so, <b>Check Again</b> is unavailable and waiting agents are counted only (<code>O47</code>, <code>HOLD-7</code>).</li>
