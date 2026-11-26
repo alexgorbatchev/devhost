@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
+      "revision": "bc33e2f113255f6323f5a5fac311734cddec4a2a"
     },
     "legend": {
       "entries": {
@@ -107,7 +107,7 @@
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
           "line": 37,
           "end_line": 50,
-          "label": "Replaces: title is the stack name; path; PID"
+          "label": "Replaces: name, path, the supervisor's PID"
         }
       ]
     },
@@ -153,13 +153,13 @@
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
           "line": 53,
-          "end_line": 67,
+          "end_line": 75,
           "label": "Replaces: GET form; Refresh / filter button"
         },
         {
           "path": "apps/devhost/src/devtools/directory.rs",
-          "line": 205,
-          "end_line": 216,
+          "line": 210,
+          "end_line": 221,
           "label": "Replaces: server filter on file paths"
         }
       ]
@@ -177,7 +177,7 @@
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
           "line": 78,
-          "end_line": 104,
+          "end_line": 106,
           "label": "Replaces: green only for Running, gray rest"
         }
       ]
@@ -200,8 +200,8 @@
         },
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
-          "line": 121,
-          "end_line": 178,
+          "line": 115,
+          "end_line": 172,
           "label": "Replaces: collapsible files, fixed caveat"
         }
       ]
@@ -219,7 +219,7 @@
         {
           "path": "apps/devhost/src/devtools/directory.rs",
           "line": 156,
-          "end_line": 203,
+          "end_line": 208,
           "label": "Reuses: one read per stack, 2 s deadline"
         },
         {
@@ -269,8 +269,8 @@
       "sources": [
         {
           "path": "apps/devhost/src/statuspage.rs",
-          "line": 136,
-          "end_line": 145,
+          "line": 138,
+          "end_line": 147,
           "label": "Replaces: 404 title and Caddy wording"
         },
         {
@@ -299,7 +299,7 @@
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
           "line": 88,
-          "end_line": 106,
+          "end_line": 107,
           "label": "Reuses: service URLs as same-tab links"
         }
       ]
@@ -329,7 +329,7 @@
       "label": "Stopped recently",
       "sublabel": "why · when · start command",
       "tag": "stack-directory-07",
-      "explanation": "A stack that stopped within O15's 24 hours after a run of at least a minute keeps a card in 'Stopped recently', read from stack-run-stop's stopped-stack record, with when and why it stopped, 'stopped at 02:14 after 30 min without requests (idleTimeout)' or 'killed at 09:02; its devhost process ended without cleaning up', and devhost start in its folder with Copy (ACT-10, STATE-2, STATE-3, UNDO-5, O15, CC-27). Its hostnames are links: they keep their configured HTTPS routes and answer the stopped-stack page (O63). A killed stack names each service it left running, 'api still runs from the killed stack (PID 8123, port 4001)', with devhost stop in its folder (ACT-11). An open page moves a stack that stops here within 4 s and says so once (FB-9). With nothing running, Caddy's static page lists these too. Resolves the empty state of stack-directory-07; reads the record of stack-run-stop-11 (owned by stack-run-stop).",
+      "explanation": "A stack that stopped within O15's 24 hours after a run of at least a minute keeps a card in 'Stopped recently', read from stack-run-stop's stopped-stack record, with when and why it stopped, 'stopped at 02:14 after 30 min without requests (idleTimeout)' or 'killed at 09:02; the devhost supervisor ended without cleaning up', and devhost start in its folder with Copy (ACT-10, STATE-2, STATE-3, UNDO-5, O15, CC-27). Its hostnames are links: they keep their configured HTTPS routes and answer the stopped-stack page (O63). A killed stack names each service it left running, 'api still runs from the killed stack (PID 8123, port 4001)', with devhost stop in its folder (ACT-11). An open page moves a stack that stops here within 4 s and says so once (FB-9). With nothing running, Caddy's static page lists these too. Resolves the empty state of stack-directory-07; reads the record of stack-run-stop-11 (owned by stack-run-stop).",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/files.rs",
@@ -339,8 +339,8 @@
         },
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
-          "line": 74,
-          "end_line": 98,
+          "line": 88,
+          "end_line": 105,
           "label": "Replaces: empty-state copy"
         }
       ]
@@ -353,7 +353,7 @@
       "label": "No stack answers",
       "sublabel": "503 page · retries · commands",
       "tag": "stack-directory-10",
-      "explanation": "When no stack answers within 2 s, after a crash or a kill from outside devhost or with every stack's devhost paused, a page load still gets devhost's directory page, with status 503: Caddy's error handler serves the static page devhost last wrote, listing the stacks registered then, each drawn unknown, 'unknown · did not answer within 2 s · last seen 17:03 · PID 4121', never stopped, with 'If its devhost process is paused, run fg in its terminal' and devhost start and devhost stop in its folder with Copy (STATE-4, STATE-3, ACT-5, FAIL-2, O16). It retries every 2 s while visible, Refresh Stacks asks at once, and the live directory returns in place, announced once (ACT-12, FB-9, KEY-11). A request that is not a page load gets one short 503 line (FB-11). A stack record devhost cannot read is named in one condition line, with Copy Error holding the original error and its path, while every readable stack stays listed (FAIL-2, WORD-7). Resolves stack-directory-10.",
+      "explanation": "When no stack answers within 2 s, because the one devhost supervisor that runs every stack ended or stopped answering, Caddy answers the directory hostname itself: its error handler serves the static page devhost last wrote, with status 503, listing the stacks registered then, each drawn unknown, 'unknown · did not answer within 2 s · last seen 17:03', never stopped, with devhost start and devhost stop in its folder with Copy for a stack that ended, and once that devhost stack list shows what still runs; no live devhost page can draw a stalled supervisor (STATE-4, STATE-3, ACT-5, FAIL-2, O16, R7-100). It retries every 2 s while visible, Refresh Stacks asks at once, and the live directory returns in place, announced once (ACT-12, FB-9, KEY-11). A request that is not a page load gets one short 503 line (FB-11). A stack record devhost cannot read is named in one condition line, with Copy Error holding the original error and its path, while every readable stack stays listed (FAIL-2, WORD-7). Resolves stack-directory-10.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/files.rs",
@@ -363,14 +363,14 @@
         },
         {
           "path": "apps/devhost/src/devtools/directory.rs",
-          "line": 277,
-          "end_line": 278,
+          "line": 282,
+          "end_line": 283,
           "label": "Replaces: record error as plain 503"
         },
         {
           "path": "apps/devhost/src/caddy/stacks.rs",
-          "line": 219,
-          "end_line": 247,
+          "line": 258,
+          "end_line": 297,
           "label": "Replaces: one bad record fails the list"
         }
       ]
@@ -381,15 +381,15 @@
       "col": 2,
       "type": "security",
       "label": "A stack does not answer",
-      "sublabel": "skipped · unknown · run fg",
+      "sublabel": "skipped · unknown · stack restart",
       "tag": "stack-directory-11",
-      "explanation": "When one stack's devhost process does not answer, paused by Ctrl-Z in its terminal, kill -STOP or a debugger, it never holds the page: Caddy's health checks, every 2 s with a 1 s timeout, skip it within about 3 s and another running stack serves the directory; a load that reached it before a check moves on after a 4 s response timeout, longer than the 2 s per-stack wait, so a healthy stack waiting on it is never cut off (Backend 12 (e)). Its card keeps its last known rows drawn as unknown, 'unknown · did not answer within 2 s · last seen 17:15:02', never stopped or failed, with 'Its devhost process (PID 4121) is running but did not answer within 2 s. If you pressed Ctrl-Z in its terminal, run fg there; a debugger may also have paused it.' and Copy Error holding the original error; the totals count it, '1 unknown' (ACT-5, STATE-3, STATE-4, WORD-6, FAIL-2, MENU-5). After fg, the next passing check and read draw it live again, announced once (ACT-12, FB-9). Resolves stack-directory-11.",
+      "explanation": "Every stack runs in one devhost supervisor with its own control port, and Caddy tries each port in turn. When one stack's control server stops answering while the others answer, it never holds the page: Caddy's health checks, every 2 s with a 1 s timeout, skip it within about 3 s and another stack serves the directory; a load that reached it moves on after a 4 s response timeout, longer than the 2 s per-stack wait (Backend 12 (e)). Its card keeps its last rows as unknown, 'unknown · did not answer within 2 s · last seen 17:15:02', never stopped or failed, offers cd ~/acme && devhost stack restart with Copy and Copy Error, and names no PID; the totals count it, '1 unknown' (ACT-5, STATE-3, STATE-4, WORD-6, FAIL-2, MENU-5, R7-100). Ctrl-Z in a foreground terminal suspends only that terminal, so no page says to run fg. When it answers again, or its new run takes over the card, it reads live, announced once (ACT-12, FB-9). Resolves stack-directory-11.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/files.rs",
-          "line": 342,
+          "line": 337,
           "end_line": 351,
-          "label": "Replaces: first stack, no health checks"
+          "label": "Replaces: first port, no health checks"
         },
         {
           "path": "apps/devhost/src/devtools/directory.rs",
@@ -531,7 +531,7 @@
         "Removed: the combined Refresh / filter button and the form that reloaded the page through every stack; server-side filtering on file paths; Show all stacks; the URL count; the caveat on every card; the raw UTC Registered time and the folder under every row; Running as a default and one gray badge for six states; Active hostnames and Caddy's wording on the 404; the plain-text 503 and the raw record error; 'Stack details unavailable' on a silent stack's card; External, Directory and 'Manifest-free file or port session' on serve session cards",
         "Merged: the directory's status words and the toolbar's become one published state drawn by one shared indicator, in the words devhost stack info prints; Clear filter and Show all stacks become Clear Filter; an HTTPS typo recovers in the filter",
         "New: worktree labels; Needs you, Running and Stopped recently; the title's attention prefix; updates every 2 s; filtering as you type with close hostnames; Refresh Stacks; causes and times on rows; lead actions as links and commands with Copy; Check Again; waiting agents as links; applied or not applied with both versions; the plain-HTTP 404's asked-for hostname and close match with the path kept; the 503 page listing the stacks devhost last knew; short answers for requests that are not page loads; health checks that hand the page to another stack; O36's check with a sign-in page; each stack's Watch Live Activity path; serve-folder's serve session cards",
-        "Changed: statuses update while the page is open and stopped stacks stay listed for 24 hours (CC-27); the filter keeps only matching rows; one unreadable stack record no longer hides the other stacks; a paused stack no longer holds the page; signed-in or paired browsers read the directory and press Check Again (O47)",
+        "Changed: statuses update while the page is open and stopped stacks stay listed for 24 hours (CC-27); the filter keeps only matching rows; one unreadable stack record no longer hides the other stacks; a stack that stops answering no longer holds the page; cards are keyed by stack ID and show no PID; signed-in or paired browsers read the directory and press Check Again (O47)",
         "Kept: one page for every stack on the machine, any live stack serving it with a 2 s deadline per stack; this machine by default, stackDirectoryAllowRemote still meaning anyone may read it, GET and HEAD only, loopback snapshots, no-store and no-referrer; the reserved hostname; configured-hosts-only TLS; read-only, no writes, no browser or editor opened; same-tab links; ?q= links; devhost start still refuses while a stack record cannot be read"
       ]
     },
@@ -566,7 +566,7 @@
         "Check Again: GET /stacks.json?check=<stack>, for this machine and signed-in or paired browsers",
         "O36's check in the directory guard; the static page refuses relayed and remote clients unless stackDirectoryAllowRemote; agent-chat's passkey routes on the directory hostname",
         "handle_errors serves the static page and data with 503, one short line otherwise; a reader that names unreadable stack records; the re-render after a dead devhost drops its control port",
-        "Health checks on the proxy hop, a response timeout longer than the 2 s per-stack wait and a retry count; a silent stack reported unknown with its PID",
+        "Health checks on the proxy hop, a response timeout longer than the 2 s per-stack wait and a retry count; a silent stack reported unknown with its stack ID, never a PID",
         "Per-stack routes for /__devhost__/stacks/<stack>/agents/activity to each stack's current control server"
       ]
     },
@@ -583,7 +583,7 @@
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
+        "Designed against alexgorbatchev/devhost at bc33e2f113255f6323f5a5fac311734cddec4a2a (Rust main, one shared devhost supervisor, a stack ID per run) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }

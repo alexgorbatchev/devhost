@@ -111,9 +111,9 @@
       <p>
         <b>TLDR:</b> The toolbar, the terminal and the plain-HTTP 404 link the stack directory, which leads with what
         needs you, labels each worktree, draws every service in the toolbar's own state words with its way forward,
-        updates itself, filters as you type and offers the close hostname for a typo, never waits on a paused stack and
-        still opens when no stack answers; a browser elsewhere reads it once signed in, and the same hostname serves
-        each stack's Watch Live Activity.
+        updates itself, filters as you type and offers the close hostname for a typo, never waits on a stack that stops
+        answering and still opens when no stack answers; a browser elsewhere reads it once signed in, and the same
+        hostname serves each stack's Watch Live Activity.
       </p>
       <p class="muted small">
         Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
@@ -389,7 +389,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               <div class="sd-card">
                 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span><span class="n">1</span></div>
                 <div>▲ failed · 4 of 6 running · 1 exited · 1 not started <span class="n">2</span></div>
-                <div class="muted">PID 84244 · detached · started 17:03 · 17 min ago <span class="n">3</span></div>
+                <div class="muted">detached · started 17:03 · 17 min ago <span class="n">3</span></div>
                 <div>
                   <a>Claude Code is waiting for you · Fix the nav · fix-nav ~/acme/.worktrees/fix-nav · since 17:18</a>
                   <span class="n">4</span>
@@ -521,10 +521,10 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 <div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
                 <div><a>https://blog.acme.test/ ↗</a> · stopped-stack page</div>
               </div>
-              <div class="vlab">Another morning: Acme Shop's devhost process was killed at 09:02</div>
+              <div class="vlab">Another morning: the devhost supervisor running Acme Shop was killed at 09:02</div>
               <div class="sd-card">
                 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
-                <div>killed at 09:02; its devhost process ended without cleaning up <span class="n">14</span></div>
+                <div>killed at 09:02; the devhost supervisor ended without cleaning up <span class="n">14</span></div>
                 <div>api still runs from the killed stack (PID 8123, port 4001)</div>
                 <div class="sd-act">
                   Stop it: <code>cd ~/acme &amp;&amp; devhost stop</code><span class="btn">Copy</span>
@@ -590,8 +590,11 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               (<code>ACT-6</code>, <code>WORD-5</code>, <code>WORD-6</code>).
             </li>
             <li>
-              <span class="n">3</span> The PID and how the stack runs are details; times are local and 24-hour, and the
-              ISO time is only in copyable details (<code>WORD-8</code>).
+              <span class="n">3</span> How the stack runs, detached or foreground, is a detail, and no PID shows: every
+              stack runs in one devhost supervisor, whose PID would read the same on every card. The card is keyed by
+              its run's stack ID and labelled by the stack's name and worktree; times are local and 24-hour, and the ISO
+              time and the stack ID are only in copyable details (<code>WORD-8</code>, <code>SEL-4</code>,
+              <code>SEL-6</code>, <code>O18</code>).
             </li>
             <li>
               <span class="n">4</span> One line per condition that needs the person, in <code>ACT-7</code>'s order: a
@@ -714,8 +717,8 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
             <div class="bar"><b>https://devhost.acme.test/</b><span>when reads fail while the page is open</span></div>
             <div class="sd-pg">
               <div class="vlab">
-                One stack's devhost process does not answer within 2 s, here paused by Ctrl-Z; another stack serves the
-                page and the others keep updating
+                One stack's control server does not answer within 2 s while the others do; another stack serves the page
+                and the others keep updating
               </div>
               <div class="sd-line"><b>3 stacks · 1 unknown</b></div>
               <div class="sd-card">
@@ -730,8 +733,11 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 </div>
                 <div class="muted">… 4 more, unknown</div>
                 <div class="sd-act">
-                  Its devhost process (PID 4121) is running but did not answer within 2 s. If you pressed Ctrl-Z in its
-                  terminal, run fg there; a debugger may also have paused it.
+                  Acme Shop did not answer within 2 s; other stacks did. Start a new run of it with devhost stack
+                  restart in ~/acme.
+                </div>
+                <div class="sd-act">
+                  <code>cd ~/acme &amp;&amp; devhost stack restart</code><span class="btn">Copy</span>
                 </div>
               </div>
               <div class="muted">… Blog and Docs, updating as usual</div>
@@ -762,16 +768,20 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 ◆ Not updated since 17:03: no running stack answered within 2 s · retrying every 2 s
                 <span class="n">6</span>
               </div>
+              <div class="muted small" style="margin: 0 0 4px">
+                devhost stack list shows which stacks still run; devhost stack restart in a listed stack's folder starts
+                a new run of it.
+              </div>
               <div class="tb">
                 <span class="in" style="flex: 1"><span class="muted">Filter stacks and services</span></span
                 ><span class="btn">Refresh Stacks</span>
               </div>
               <div class="sd-card">
                 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
-                <div>? unknown · did not answer within 2 s · last seen 17:03 · PID 4121</div>
+                <div>? unknown · did not answer within 2 s · last seen 17:03</div>
                 <div class="sd-act">
-                  If its devhost process is paused, run fg in its terminal; if it ended, devhost start in ~/acme starts
-                  it again and devhost stop there stops what it left running.
+                  If it ended, devhost start in ~/acme starts it again and devhost stop there stops what it left
+                  running.
                 </div>
                 <div class="sd-act">
                   <code>cd ~/acme &amp;&amp; devhost start</code><span class="btn">Copy</span
@@ -815,10 +825,13 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
             others up. What changes is that the page keeps asking while it is visible, through
             <code>GET /stacks.json</code> on the directory hostname, and updates every card, row, summary, total and the
             title in place, without a reload. A stack that starts appears in its group, one that stops moves to "Stopped
-            recently" with its reason, one that <code>devhost stack restart</code>, <code>devhost restart</code> or
-            <code>devhost upgrade</code> replaced keeps its card with the new PID and "replaced by devhost stack restart
-            at 14:12", each announced once (<code>ACT-12</code>, <code>ACT-3</code>, <code>ACT-10</code>,
-            <code>O18</code>).
+            recently" with its reason, and each change is announced once (<code>ACT-12</code>, <code>ACT-3</code>,
+            <code>ACT-10</code>). A run that <code>devhost stack restart</code>, <code>devhost restart</code> or
+            <code>devhost upgrade</code> replaced continues in a new run with a new stack ID: the new run takes over the
+            old card's place, matched by the replaced run's end record, which names the command, the time and the new
+            stack ID, or else by its root manifest; the card keeps its name, worktree label and any focus, its details
+            line reads "detached · restarted by devhost stack restart at 14:12 · 1 min ago", and the replaced run is not
+            listed under "Stopped recently" (<code>O18</code>, <code>R7-99</code>, <code>KEY-6</code>).
           </p>
           <ol>
             <li>
@@ -839,13 +852,15 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
             <li>
               <span class="n">3</span> A stack that does not answer within 2 s keeps its last known rows drawn as
               unknown, never stopped or failed, with <b>Copy Error</b> holding the original error, never the raw error
-              text on the card, and the totals count it, "1 unknown". The directory lists a stack only while its devhost
-              process runs, so the card says how to resume a paused one: <code>fg</code> in its terminal, or the
-              debugger. Such a stack never holds the page: Caddy's health checks skip it within about 3 s and another
-              running stack serves the page. After <code>fg</code> it is live again at the next read; the announcer says
-              once that it stopped answering and once that it answers again (<code>ACT-5</code>, <code>STATE-3</code>,
-              <code>STATE-4</code>, <code>ACT-11</code>, <code>WORD-6</code>, <code>FB-9</code>; the
-              <code>MENU-5</code> exception of step 6).
+              text on the card, and the totals count it, "1 unknown". Every stack runs in one devhost supervisor, so one
+              stack that does not answer while the others do has a busy or stuck control server, and the card offers
+              <code>devhost stack restart</code> in its folder with <b>Copy</b>. Ctrl-Z in a foreground terminal pauses
+              only that terminal, never the stack, so no page says to run <code>fg</code>. Such a stack never holds the
+              page: Caddy tries each stack's control port in turn, its health checks skip this one within about 3 s and
+              another running stack serves the page. When it answers again, or its new run takes over the card, it is
+              live at the next read; the announcer says once that it stopped answering and once that it answers again
+              (<code>ACT-5</code>, <code>STATE-3</code>, <code>STATE-4</code>, <code>ACT-11</code>, <code>WORD-6</code>,
+              <code>FB-9</code>, <code>R7-100</code>; the <code>MENU-5</code> exception of step 6).
             </li>
             <li>
               <span class="n">4</span> When no read succeeds, one status sentence gives the age of what the page shows
@@ -860,15 +875,17 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
               status code in reading order (<code>O16</code>, <code>FB-9</code>).
             </li>
             <li>
-              <span class="n">6</span> A page load while no stack answers, after a crash, a kill or with every stack's
-              devhost process paused, gets devhost's directory with status 503, never one line of plain text: Caddy's
-              error handler serves the page devhost last wrote, with the stacks registered then, each unknown with when
-              it was last seen, its PID, how to resume a paused devhost process and its two commands, and the stacks
-              that stopped recently. It retries as above and draws the live directory within 4 s after a stack answers.
-              The next devhost command that finds a stack's devhost process gone,
-              <code>devhost stack list</code> included, writes its stopped-stack record and rewrites the directory
-              without its control port, so later loads answer at once with it under "Stopped recently"
-              (<code>STATE-4</code>, <code>FAIL-2</code>, <code>ACT-10</code>, <code>ACT-11</code>, <code>O15</code>).
+              <span class="n">6</span> No stack answers when the devhost supervisor that runs every stack ended, by a
+              crash or a kill, or stopped answering, which stalls every stack at once. Caddy then answers the directory
+              hostname itself, within about 3 s of its health checks, and no live devhost page can draw that state: its
+              error handler serves the page devhost last wrote, with status 503, never one line of plain text. It lists
+              the stacks registered then, each unknown with when it was last seen and the two commands for a stack that
+              ended, the stacks that stopped recently, and once that <code>devhost stack list</code> shows what still
+              runs. It retries as above and draws the live directory within 4 s after a stack answers. The next devhost
+              command that finds the supervisor gone, <code>devhost stack list</code> included, writes its stopped-stack
+              record and rewrites the directory without its control port, so later loads answer at once with it under
+              "Stopped recently" (<code>STATE-4</code>, <code>FAIL-2</code>, <code>ACT-10</code>, <code>ACT-11</code>,
+              <code>O15</code>).
             </li>
             <li>
               <span class="n">7</span> A <code>fetch</code>, a script or an agent's <code>curl</code> gets 503 with
@@ -889,7 +906,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
             data with each registered stack, Caddy's 503 error handler, a reader that names the records it cannot read,
             the re-render that drops a dead stack's control port, health checks on the proxy hop with a response timeout
             longer than the 2 s per-stack wait and a retry on the next stack, and a stack that does not answer reported
-            as unknown with its PID (Backend 12)
+            as unknown with its stack ID and folder, never a PID (Backend 12)
           </p>
         </div>
       </section>
@@ -1218,7 +1235,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
                 <div class="fld">
                   <span>Configuration</span><span>None: the serve session for ~/acme/docs reads no devhost.toml</span>
                 </div>
-                <div class="muted">Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50</div>
+                <div class="muted">Stop it with Ctrl-C in its terminal · started 15:50</div>
               </div>
               <div class="box">
                 <div class="row"><b>127.0.0.1:3000</b><span class="chip">Serve session · port</span></div>
@@ -1230,7 +1247,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
                   <span>Configuration</span
                   ><span>None: the serve session for 127.0.0.1:3000 reads no devhost.toml</span>
                 </div>
-                <div class="muted">Stop it with Ctrl-C in its terminal · PID 48812 · started 15:51</div>
+                <div class="muted">Stop it with Ctrl-C in its terminal · started 15:51</div>
               </div>
               <div class="box">
                 <div class="row"><b>demoapp</b><span class="chip">Serve session · command</span></div>
@@ -1629,7 +1646,9 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
             </li>
             <li>What needs you sorts first; the main worktree before its linked worktrees</li>
             <li>One unreadable stack record no longer hides the others</li>
-            <li>A paused stack's devhost no longer holds every load of the page</li>
+            <li>
+              A stack that stops answering, or a stalled devhost supervisor, no longer holds every load of the page
+            </li>
             <li>Signed-in or paired browsers read it and press <b>Check Again</b> (<code>O47</code>)</li>
           </ul>
         </div>
