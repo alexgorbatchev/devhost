@@ -1170,12 +1170,12 @@ Not found: no file named on-cal.md in docs/guides <span class="n">8</span></pre>
               ><span>Ctrl-C in folder &amp; --port sessions (130), SIGTERM (143), and O30 slow-stop progress</span>
             </div>
             <pre class="term">^C
-devhost | Stopped the serve session for ~/acme/docs · removed https://notes.acme.test/ · Caddy keeps running · 0.2 s <span class="n">1</span>
+devhost | Stopped the serve session for ~/acme/docs · removed https://notes.acme.test/ · Caddy keeps running <span style="white-space: nowrap">· 0.2 s</span> <span class="n">1</span>
 devhost | Start it again with:
 devhost | devhost serve --dir ~/acme/docs --domain notes.acme.test <span class="n">2</span>
 
 <span class="muted"># --port session (Ctrl-C, exit 130) and SIGTERM (exit 143):</span>
-devhost | Stopped the serve session for 127.0.0.1:3000 · removed https://app.acme.test/ · your server on 127.0.0.1:3000 and Caddy keep running · 0.2 s <span class="n">3</span>
+devhost | Stopped the serve session for 127.0.0.1:3000 · removed https://app.acme.test/ · your server on 127.0.0.1:3000 and Caddy keep running <span style="white-space: nowrap">· 0.2 s</span> <span class="n">3</span>
 devhost | Stopped by SIGTERM (143) at 15:52:10 · removed https://notes.acme.test/ · Caddy keeps running
 
 <span class="muted"># Slow command stop (unified O30 stopTimeout 30 s default, 5s..10m configurable):</span>
@@ -1187,23 +1187,23 @@ devhost | Stopping demoapp (bun run dev) · 18 s left before force · press Ctrl
               ><span>devhost stop --session confirmation (human &amp; AGENT=1), and restart / upgrade (O18, O31)</span>
             </div>
             <pre class="term">$ devhost stop --session demoapp
-devhost | Stopped the serve session demoapp (bun run dev in ~/acme) · removed https://demoapp.acme.test/ · Caddy keeps running · 0.4 s <span class="n">5</span>
+devhost | Stopped the serve session demoapp (bun run dev in ~/acme) · removed https://demoapp.acme.test/ · Caddy keeps running <span style="white-space: nowrap">· 0.4 s</span> <span class="n">5</span>
 
 $ AGENT=1 devhost stop --session demoapp
-devhost: stopped serve session demoapp (stack stk-4f0c9a2e81b7d356, /home/dev/acme) · removed https://demoapp.acme.test/ · Caddy keeps running
+devhost: Stopped the serve session demoapp (stack stk-4f0c9a2e81b7d356, /work/acme) · removed https://demoapp.acme.test/ · Caddy keeps running
 
 $ devhost restart --yes   <span class="muted"># devhost upgrade ends with the same step</span>
 1 stack and 2 serve sessions run in this state directory:
-  Acme Shop                   main ~/acme · detached
-  serve session ~/acme/docs   foreground <span class="n">6</span>
-  serve session demoapp       detached
+  Acme Shop                       main ~/acme   detached
+  serve session for ~/acme/docs                 foreground <span class="n">6</span>
+  serve session demoapp                         detached
 Restarted Acme Shop (main ~/acme) · 11 s
-Restarted the serve session for ~/acme/docs · 0.3 s
-Restarted the serve session demoapp · 1.2 s
-Every stack and serve session now runs in a new devhost 0.0.22 supervisor
+Restarted the serve session for ~/acme/docs · 1 s
+Restarted the serve session demoapp · 1 s
+Every stack and serve session now runs in a new devhost 0.0.22 supervisor (PID 85502)
 
 <span class="muted"># a folder session whose served folder was deleted (exit 1):</span>
-Not restarted: the serve session for ~/acme/old-docs, because ~/acme/old-docs cannot be opened: no such file or directory. It keeps running in the previous devhost 0.0.21 supervisor. <span class="n">7</span>
+Not restarted: the serve session for ~/acme/old-docs; ~/acme/old-docs cannot be opened, so it keeps running devhost 0.0.21 in the previous supervisor <span class="n">7</span>
 Stop it with:
 devhost stop --session old-docs.acme.test</pre>
           </div>
@@ -1213,7 +1213,7 @@ devhost stop --session old-docs.acme.test</pre>
             </div>
             <pre class="term">$ devhost serve --dir docs --domain notes.acme.test
 devhost | Ready in 0.3 s: https://notes.acme.test/ · Ctrl-C stops this session
-devhost | Replaced by devhost restart at 14:02. The serve session for ~/acme/docs keeps running in the new devhost supervisor without this terminal. <span class="n">8</span>
+devhost | Replaced by devhost restart at 14:02. The serve session for ~/acme/docs keeps running without this terminal. <span class="n">8</span>
 devhost | Stop it with:
 devhost | devhost stop --session notes.acme.test
 $ echo $?
@@ -1292,8 +1292,9 @@ $ echo $?
             <li>
               <span class="n">6</span> <code>devhost restart</code> and <code>devhost upgrade</code> list serve sessions
               by their <code>WORD-1</code> names with foreground or detached, never a PID, and start a new run of each
-              in the new devhost supervisor, as they do of every stack (<code>SEL-6</code>, <code>O18</code>,
-              <code>O31</code>, <code>CC-36</code>).
+              in the new devhost supervisor, as they do of every stack; the closing line names the new supervisor's PID
+              once, the only PID in the run (<code>SEL-6</code>, <code>O18</code>, <code>O31</code>,
+              <code>CC-36</code>).
             </li>
             <li>
               <span class="n">7</span> The one exception: a folder session whose served folder cannot be opened keeps
@@ -1303,8 +1304,9 @@ $ echo $?
             </li>
             <li>
               <span class="n">8</span> A replaced foreground session says in its own terminal which command replaced it
-              and when, that it keeps running without this terminal, and how to stop it, then exits 0
-              (<code>FAIL-5</code>, <code>CC-24</code>).
+              and when, that it keeps running without this terminal, and how to stop it, with no
+              <code>devhost logs</code> line because a serve session has none, then exits 0 (<code>FAIL-5</code>,
+              <code>CC-24</code>).
             </li>
             <li>
               <span class="n">9</span> A page left open shows the lost-connection notice with the stop reason (and the
