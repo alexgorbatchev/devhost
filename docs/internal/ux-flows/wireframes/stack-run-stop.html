@@ -93,10 +93,10 @@
             <pre class="term">$ devhost start
 Starting Acme Shop from main ~/acme · 6 services <span class="n">1</span>
 web     https://shop.acme.test/ (local) · https://shop--devbox.devhost.acme.test/ (preview) <span class="n">2</span>
-docs    https://docs.acme.test/ (local) · https://docs--devbox.devhost.acme.test/ (preview · DNS not configured)
+docs    https://docs.shop.acme.test/ (local) · https://docs.shop--devbox.devhost.acme.test/ (preview · DNS not configured)
 api     https://shop.acme.test/api/ (local) · https://shop--devbox.devhost.acme.test/api/ (preview)
-admin   https://admin.acme.test/ (local)
-mail    https://mail.acme.test/ (local)
+admin   https://admin.shop.acme.test/ (local)
+mail    https://mail.shop.acme.test/ (local)
 Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running <span class="n">3</span>
 All stacks on devbox: https://devhost.acme.test/
 Proxy: HTTPS on all interfaces, port 443
@@ -299,7 +299,7 @@ $ echo $?
               ><span>Acme Shop already runs storefront (web, api, docs); repeat start marks offline preview</span>
             </div>
             <pre class="term">$ devhost start --detach admin
-Started admin and mail in Acme Shop · https://admin.acme.test/ · 3.1 s <span class="n">7</span>
+Started admin and mail in Acme Shop · https://admin.shop.acme.test/ · 3.1 s <span class="n">7</span>
 $ devhost start --detach web
 Already running in Acme Shop: web · https://shop.acme.test/ (local) · https://shop--devbox.devhost.acme.test/ (preview offline) <span class="n">8</span>
 $ devhost start --detach admin   <span class="muted"># during Restart Stack</span>
@@ -311,7 +311,7 @@ $ echo $?
             <div class="bar"><b>Terminal › 80 columns</b><span>a URL longer than the line</span></div>
             <pre class="term" style="max-width: 82ch">api
 https://acme-storefront-api-gateway.internal-preview.shop.acme.test/v2/ <span class="n">10</span>
-admin   https://admin.acme.test/</pre>
+admin   https://admin.shop.acme.test/</pre>
           </div>
         </div>
         <div class="cap">
@@ -396,10 +396,10 @@ admin   https://admin.acme.test/</pre>
 Acme Shop · main ~/acme · detached · failed · 4 of 6 running · 1 exited · 1 not started · as of 14:02:31 <span class="n">1</span>
 api     exited with code 1 at 14:01 · devhost service restart api <span class="n">2</span>
 admin   not started · left out of this run · devhost service start admin
-docs    running · changed: docs/astro.config.mjs · https://docs.acme.test/
+docs    running · changed: docs/astro.config.mjs · https://docs.shop.acme.test/
 web     running since 13:58 · https://shop.acme.test/ (local) · https://shop--devbox.devhost.acme.test/ (preview offline)
 worker  running since 13:58
-mail    running since 13:58 · https://mail.acme.test/
+mail    running since 13:58 · https://mail.shop.acme.test/
 search  not reachable · GET search.acme.test/health · checked 14:02 · runs outside devhost <span class="n">3</span>
 Manifest: devhost.toml line 12 is not applied: services.api.port expected a number (running accepted manifest) <span class="n">4</span>
 Remote preview: offline since 14:12 · relay.acme.test disconnected · local URLs keep running
@@ -458,13 +458,13 @@ Acme Shop  main ~/acme  detached · 4 of 6 running <span class="n">10</span>
 $ devhost stack list
 Acme Shop  main ~/acme                         detached · 4 of 6 running · preview offline
 Acme Shop  fix-nav ~/acme/.worktrees/fix-nav   foreground · 6 of 6 running
-Blog       main ~/blog                         detached · 2 of 2 running
+Acme Admin main ~/acme-admin                   detached · 3 of 3 running
 1 serve session running (~/acme/docs) · devhost stack list --sessions
 All stacks on devbox: https://devhost.acme.test/ <span class="n">11</span>
 $ devhost stack list | cat
 84244	/work/acme/devhost.toml
 84244	/work/acme/.worktrees/fix-nav/devhost.toml
-84244	/work/blog/devhost.toml <span class="n">12</span>
+84244	/work/acme-admin/devhost.toml <span class="n">12</span>
 $ devhost stack find notes
 No manifest stack matches "notes", but serve session "notes.acme.test" is running
 devhost stack info --session notes.acme.test
@@ -829,7 +829,7 @@ devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Clau
           <div class="win">
             <div class="bar">
               <b>Terminal › ~/acme</b
-              ><span>3 stacks of the acme repository run; Blog runs from another repository</span>
+              ><span>3 stacks of the acme repository run; Acme Admin runs from another repository</span>
             </div>
             <pre class="term">$ devhost stop --worktrees
 3 stacks of the acme repository run: <span class="n">1</span>
@@ -1044,12 +1044,12 @@ Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <
             <pre class="term">$ devhost upgrade
 Downloading devhost 0.0.22 (verified SHA256SUMS) · replacing ~/.local/bin/devhost <span class="n">1</span>
 2 stacks and 1 serve session run in this state directory: <span class="n">2</span>
-  Acme Shop                       main ~/acme   detached
-  Blog                            main ~/blog   foreground
-  serve session for ~/acme/docs                 detached
+  Acme Shop                       main ~/acme         detached
+  Acme Admin                      main ~/acme-admin   foreground
+  serve session for ~/acme/docs                       detached
 Stopping every stack in the devhost supervisor · 2 of 3 stopped · forced in 24 s
 Restarted Acme Shop (main ~/acme) · 11 s <span class="n">3</span>
-Restarted Blog (main ~/blog) · 4 s
+Restarted Acme Admin (main ~/acme-admin) · 4 s
 Restarted the serve session for ~/acme/docs · 1 s <span class="n">4</span>
 Every stack and serve session now runs in a new devhost 0.0.22 supervisor (PID 85502)
 <span class="muted">when binary is externally managed or read-only:</span>
@@ -1070,10 +1070,10 @@ devhost: Restarted Acme Shop (main /work/acme) · stack stk-9b04e7d2a61c3f85 · 
 devhost: Every stack and serve session now runs in a new devhost 0.0.22 supervisor (PID 85502)</pre>
           </div>
           <div class="win">
-            <div class="bar"><b>Terminal › ~/blog</b><span>Blog's own foreground terminal</span></div>
+            <div class="bar"><b>Terminal › ~/acme-admin</b><span>Acme Admin's own foreground terminal</span></div>
             <pre
               class="term"
-            >Replaced by devhost upgrade at 14:02. Blog keeps running without this terminal. <span class="n">5</span>
+            >Replaced by devhost upgrade at 14:02. Acme Admin keeps running without this terminal. <span class="n">5</span>
 devhost logs -f
 devhost stop
 $ echo $?
@@ -1082,18 +1082,18 @@ $ echo $?
           <div class="win">
             <div class="bar">
               <b>Terminal › ~/acme</b
-              ><span>devhost stack restart after a local rebuild, while Blog shares the supervisor</span>
+              ><span>devhost stack restart after a local rebuild, while Acme Admin shares the supervisor</span>
             </div>
             <pre class="term">$ devhost stack restart
 Restarting Acme Shop (main ~/acme) inside the devhost supervisor
-Still running devhost 0.0.21: Blog shares the devhost supervisor (PID 84244); <span style="white-space: nowrap">devhost restart</span> switches every stack to this executable <span class="n">6</span>
+Still running devhost 0.0.21: Acme Admin shares the devhost supervisor (PID 84244); <span style="white-space: nowrap">devhost restart</span> switches every stack to this executable <span class="n">6</span>
 Restarted Acme Shop (main ~/acme) · 6 of 6 running · 9 s</pre>
           </div>
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b><span>a foreground Acme Shop reports each change once</span></div>
             <pre
               class="term"
-            >14:05:12 Started admin · https://admin.acme.test/ · 1.2 s · from a page on shop.acme.test <span class="n">7</span>
+            >14:05:12 Started admin · https://admin.shop.acme.test/ · 1.2 s · from a page on shop.acme.test <span class="n">7</span>
 14:06:40 Restarted Acme Shop · 6 of 6 running · new automatic ports for api and docs · 14 s · from a page on shop.acme.test
 14:09:03 worker was terminated by SIGTERM (143) at 14:09:03, not sent by devhost <span class="n">8</span>
 14:11:20 mail stopped responding at 14:11: GET http://127.0.0.1:4100/ refused the connection; its status command reports it is not running <span class="n">9</span>
