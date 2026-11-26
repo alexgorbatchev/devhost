@@ -92,7 +92,7 @@
       "sublabel": "names config.toml + path",
       "tag": "proxy-settings-05",
       "yOffset": -50,
-      "explanation": "Find where the shared Caddy settings live (read only). devhost caddy --help ends with 'Ports, listeners and the stack directory hostname are shared Caddy settings in the devhost config file: ~/.config/devhost/config.toml', the path resolved from DEVHOST_CONFIG_DIR, else XDG_CONFIG_HOME, else ~/.config/devhost, as today, shortened with ~ (WORD-1, WORD-8, SURF-15). privileged-ports' help reads 'Let Caddy listen on ports below 1024 without root (Linux; downloads Caddy if needed and asks for your password)'; on Linux it names the download before it starts and the size once known, says before sudo that it may ask for a password, and a download that replaces a binary holding the grant ends with 'Run devhost caddy privileged-ports again' (WORD-9). On macOS it says bindHost 127.0.0.1 applies only from port 1024 (O39). Under AGENT=1 it refuses before any sudo with 'Ask the person to run devhost caddy privileged-ports in a terminal', an extension of REV-8 proposed for the reference. Keys: none; terminal output only. Resolves proxy-settings-05.",
+      "explanation": "Find where the shared Caddy settings live (read only). devhost caddy --help ends with 'Ports, listeners and the stack directory hostname are shared Caddy settings in the devhost config file: ~/.config/devhost/config.toml', the path resolved from DEVHOST_CONFIG_DIR, else XDG_CONFIG_HOME, else ~/.config/devhost, as today, shortened with ~ (WORD-1, WORD-8, SURF-15). privileged-ports' help reads 'Let Caddy listen on ports below 1024 without root (Linux; downloads Caddy if needed and asks for your password)'; on Linux it names the download before it starts and the size once known, says before sudo that it may ask for a password, and a download that replaces a binary holding the grant ends with 'Run devhost caddy privileged-ports again' (WORD-9). On macOS it says bindHost 127.0.0.1 applies only from port 1024 (O39). Under AGENT=1 it refuses before any sudo with 'Ask the person to run devhost caddy privileged-ports in a terminal', as REV-8 requires of every step that asks for a password. Keys: none; terminal output only. Resolves proxy-settings-05.",
       "sources": [
         {
           "path": "apps/devhost/src/main.rs",
@@ -287,10 +287,10 @@
       "col": 4,
       "type": "frontend",
       "label": "Pages follow: Open",
-      "sublabel": "devhost moved to port 4443",
+      "sublabel": "Moved to https://shop.localhost:4443/",
       "tag": "proxy-settings-03",
       "yOffset": 50,
-      "explanation": "On listeners-moving a page shows '◐ Apply config.toml · moving to port 4443 · 1 s' (FB-1) and hands its unsent chat text, pasted images and page context to the draft record under the new address (UNDO-2). When its stream closes it connects its status stream to the same hostname on the new port; until that answers, every service keeps its last state as unknown, 'last seen 14:02', never down (ACT-5, CC-26). Then notices-and-feedback's notice reads '? devhost moved to port 4443' with 'This page still uses port 443, which closed when config.toml changed.' and Open, which opens this page at port 4443 in the same tab with path, query and fragment kept (HOLD-2, SURF-15, FB-5). Every write on the old page reads 'This page still uses port 443. Open it at port 4443 to make changes.' (HOLD-1, MENU-3). The notice never takes focus, is announced once, ranks with the lost connection, fits every acceptance viewport and the 320 px phone layout (O8); Dismiss leaves 'moved' on the stack name (KEY-6, FB-8, FB-9, SURF-8, SURF-9). Resolves this flow's slice of proxy-settings-03.",
+      "explanation": "On listeners-moving a page keeps working on the old address, shows '◐ Moving to port 4443' (FB-13, FB-1) and hands its unsent chat text, pasted images and page context to the draft record under the new address (UNDO-2). When its stream closes it connects its status stream to the same hostname on the new port; until that answers, every service keeps its last state as unknown, 'last seen 14:02', never down (ACT-5, CC-26). Once every listener confirms (listeners-moved), notices-and-feedback's success notice reads '✓ Moved to https://shop.localhost:4443/' with 'This page still uses port 443, which closed when config.toml changed.' and Open, which opens this page at port 4443 in the same tab with path, query and fragment kept (HOLD-2, SURF-15, FB-5). Every write on the old page reads 'This page still uses port 443. Open it at port 4443 to make changes.' (HOLD-1, MENU-3). The notice never takes focus, is announced once, stays until Open or Dismiss, fits every acceptance viewport and the 320 px phone layout (O8); Dismiss leaves 'moved' on the stack name (KEY-6, FB-8, FB-9, SURF-8, SURF-9). Resolves this flow's slice of proxy-settings-03.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
@@ -344,7 +344,7 @@
       "label": "Uncertified: restored",
       "sublabel": "port 443 answers again",
       "tag": "proxy-settings-02",
-      "explanation": "When the handshake fails, for example because a program took 127.0.0.1:4443 after the probe, devhost reloads Caddy to the running settings and writes no record, and the change is not applied with its cause (FB-5, REV-11): '~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 answered on 127.0.0.1 but not through Caddy; another program holds it for IPv4. Restored the running shared Caddy settings: HTTPS on port 443, every interface.' This is devhost's own rollback (UNDO-1), and its outcome names what it restored, the running shared Caddy settings. A page that received listeners-moving reconnects to the old address, which answers again within 5 s, and its activity line gives way to the not-applied notice, never to 'devhost moved to port 4443' (REV-13; proxy-settings-03). A reload Caddy refuses keeps Caddy on the settings it runs and renders its files back for them, as today. Never 'Applied config.toml' for a listener that does not answer through Caddy on every address its bind host resolves to. Resolves the certification half of proxy-settings-02.",
+      "explanation": "When the handshake fails, for example because a program took 127.0.0.1:4443 after the probe, devhost reloads Caddy to the running settings and writes no record, and the change is not applied with its cause (FB-5, REV-11): '~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 answered on 127.0.0.1 but not through Caddy; another program holds it for IPv4. Restored the running shared Caddy settings: HTTPS on port 443, every interface.' This is devhost's own rollback (UNDO-1), and its outcome names what it restored, the running shared Caddy settings. A page that received listeners-moving reconnects to the old address, which answers again within 5 s, and its activity line gives way to the not-applied notice, never to 'Moved to https://shop.localhost:4443/' (REV-13, FB-13; proxy-settings-03). A reload Caddy refuses keeps Caddy on the settings it runs and renders its files back for them, as today. Never 'Applied config.toml' for a listener that does not answer through Caddy on every address its bind host resolves to. Resolves the certification half of proxy-settings-02.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/routes.rs",
@@ -567,14 +567,14 @@
         "CC-27 (with O63, O15): configured-hosts-only TLS stays; stopped stacks' 24 h routes move with the port",
         "CC-37: /__devhost__/config/validate returns what saving would do, the URLs it moves included; config/save takes an operationId",
         "CC-39 (with O61): machineName names devbox in the reach lines",
-        "No CC-n yet (reference author adds them): shared-managed-caddy-settings.md macOS bullet (O39), its move, rejection and routing sentences; remote-previews.md any Caddy port; service-references.md and environment-variables.md public URL from the request (O45); cli.md and managed-caddy.md privileged-ports, with the REV-8 extension"
+        "CC-43: shared-managed-caddy-settings.md macOS bullet (O39), its move, rejection and routing sentences; remote-previews.md any Caddy port; service-references.md and environment-variables.md public URL from the request (O45); cli.md and managed-caddy.md privileged-ports, with the REV-8 refusal"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram (frozen at the pre-Rust baseline) and the written proposal; sources cite only existing Rust and devtools UI code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }

@@ -136,8 +136,8 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
 <div class="banner" style="margin:0">Saving makes 3 stacks reachable from devbox's network: Acme Shop, Docs and Blog <span class="n">5</span></div>
 <div class="vlab">on macOS, bindHost = "127.0.0.1" with HTTPS on port 443, in the warning style</div>
 <div class="banner" style="margin:0">Saving keeps 3 stacks reachable from devbox's network: on macOS, bindHost 127.0.0.1 needs every port at 1024 or above, such as httpsPort 4443 <span class="n">6</span></div>
-<div class="vlab">stackDirectoryHost = "stacks.acme.test", with HTTPS on port 4443</div>
-<div>Saving moves the stack directory to https://stacks.acme.test:4443/</div>
+<div class="vlab">a custom stackDirectoryHost removed, with HTTPS on port 4443</div>
+<div>Saving moves the stack directory to https://devhost.acme.test:4443/</div>
 <div class="vlab">stackDirectoryAllowRemote = true, in the warning style; then the same draft while Caddy listens on loopback only</div>
 <div class="banner" style="margin:0">Saving lets anyone on devbox's network read the stack directory without signing in, with every stack's URLs and raw configuration files; signed-in browsers read it already <span class="n">7</span></div>
 <div>Saving changes nothing while Caddy listens only on 127.0.0.1 and [::1]: other devices cannot reach the stack directory directly</div>
@@ -189,9 +189,9 @@ Ask the person to run devhost caddy privileged-ports in a terminal <span class="
 <table class="t wrap"><thead><tr><th style="width:10%">When</th><th style="width:52%">devhost</th><th>What people see</th></tr></thead><tbody>
 <tr><td>0.0 s</td><td>Every running stack's watcher sees the save. Acme Shop takes the route lock every devhost process shares and applies the change once for the machine; Docs and Blog find it applied and do not apply it again. <span class="n">1</span></td><td>Nothing yet</td></tr>
 <tr><td>0.1 s</td><td>Checks before anything moves: the file's validation, each problem with its file, line, column and key; port 4443 probed on 127.0.0.1, ::1 and the bind host, naming any program that holds it, Caddy's own listeners excluded; a stackDirectoryHost that a running stack's service uses. <span class="n">2</span></td><td>A failed check refuses the change with nothing moved (step 6)</td></tr>
-<tr><td>0.2 s</td><td>Tells Acme Shop, Docs and Blog through their control servers; each sends listeners-moving to each open page whose address changes. A stack that does not answer within 1 s never holds the move up. <span class="n">3</span></td><td>"Apply config.toml · moving to port 4443 · 1 s" on each page whose address changes; pages opened through a relay preview keep their address (step 7)</td></tr>
+<tr><td>0.2 s</td><td>Tells Acme Shop, Docs and Blog through their control servers; each sends listeners-moving to each open page whose address changes. A stack that does not answer within 1 s never holds the move up. <span class="n">3</span></td><td>"Moving to port 4443" on each page whose address changes, which keeps working on the old address while it answers; pages opened through a relay preview keep their address (step 7)</td></tr>
 <tr><td>0.4 s</td><td>Reloads Caddy once, under the route lock, adminAddress included, with every configured route on port 4443, the routes of stacks that stopped in the last 24 hours included; a loopback bindHost from port 1024 listens on 127.0.0.1 and [::1] only, on macOS as on Linux. <span class="n">4</span></td><td>Port 443 closes; pages keep their services' last known states, drawn as unknown (step 5)</td></tr>
-<tr><td>1.4 s</td><td>Certifies the move on every address the bind host resolves to, here 127.0.0.1 and [::1]: a TLS handshake on port 4443, naming the stack directory's hostname, reaches Caddy's certificate within 5 s (a plain request on the HTTP port while http = true). Only then does it write the record of what Caddy runs: the settings, the resolved listeners, the operation ID, the origin, the time and the config.toml text. <span class="n">5</span></td><td>Each stack's outcome line (step 4); "devhost moved to port 4443" with <b>Open</b> on each page (step 5)</td></tr>
+<tr><td>1.4 s</td><td>Certifies the move on every address the bind host resolves to, here 127.0.0.1 and [::1]: a TLS handshake on port 4443, naming the stack directory's hostname, reaches Caddy's certificate within 5 s (a plain request on the HTTP port while http = true). Only then does it write the record of what Caddy runs: the settings, the resolved listeners, the operation ID, the origin, the time and the config.toml text. <span class="n">5</span></td><td>Each stack's outcome line (step 4); once every listener confirms, "Moved to https://shop.acme.test:4443/" with <b>Open</b> on each page (step 5)</td></tr>
 <tr><td>or</td><td>The handshake fails: Caddy reloads back to the running settings, and the change is not applied, with its cause. <span class="n">6</span></td><td>Step 6's "Restored the running shared Caddy settings" line; the pages reconnect at port 443</td></tr>
 </tbody></table>
 <div class="muted" style="margin-top:6px">Services, routes, terminals and chat sessions keep running throughout; no service restarts, and every service keeps its state. <span class="n">7</span></div>
@@ -245,8 +245,8 @@ web    http://shop.acme.test:8080/
 api    https://shop.acme.test:4443/api/
 api    http://shop.acme.test:8080/api/
 
-<span class="muted">stackDirectoryHost = "stacks.acme.test"</span>
-Applied config.toml: stack directory moved to https://stacks.acme.test:4443/ · 1.1 s · after config.toml changed on disk
+<span class="muted">a custom stackDirectoryHost removed</span>
+Applied config.toml: stack directory moved to https://devhost.acme.test:4443/ · 1.1 s · after config.toml changed on disk
 
 <span class="muted">stackDirectoryAllowRemote = true</span>
 Applied config.toml: stack directory readable from your network without signing in · 1.1 s · after config.toml changed on disk
@@ -282,8 +282,8 @@ Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost caddy
 <div class="pg" style="min-height:96px">
 <div class="apptxt">Acme admin · Orders …</div>
 <div class="corner">
-<div class="banner info">◐ Apply config.toml · moving to port 4443 · 1 s <span class="n">1</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="banner info">◐ Moving to port 4443 <span class="n">1</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -292,8 +292,8 @@ Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost caddy
 <div class="pg" style="min-height:96px">
 <div class="apptxt">Acme admin · Orders …</div>
 <div class="corner">
-<div class="banner info">◐ Apply config.toml · moving to port 4443 · 1 s</div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">? lost connection ▾</span><span class="n">2</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="banner info">◐ Moving to port 4443</div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">? lost connection ▾</span><span class="n">2</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -302,10 +302,10 @@ Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost caddy
 <div class="pg" style="min-height:120px">
 <div class="apptxt">Acme admin · Orders …</div>
 <div class="corner">
-<div class="banner">? devhost moved to port 4443 <span class="n">3</span>
+<div class="banner ok">✓ Moved to https://shop.acme.test:4443/ <span class="n">3</span>
 <div>This page still uses port 443, which closed when config.toml changed.</div>
 <div class="row" style="margin-top:4px"><span class="btn">Open</span><span class="btn">Dismiss</span></div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="n">4</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="n">4</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -335,7 +335,7 @@ Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost caddy
 <div class="box small" style="margin:0"><b>Chat</b>
 <div class="row" style="margin-top:4px"><span class="in" style="flex:1">check the cart</span><span class="chip">Page context: 2 marks</span><span class="n">7</span></div></div>
 <div class="corner">
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -362,10 +362,10 @@ Applied config.toml: HTTPS port 443 → 4443 · from the terminal (devhost caddy
 </div>
 </div>
 <div class="cap"><h2>5. Open pages follow the move</h2>
-<p>The app keeps running, and devhost still reloads no page by itself: <b>Open</b> is a navigation the person chooses, never held by <b>Hold Reloads</b> (<code>UNDO-2</code>). What changes is that a page whose address moved is told before its port closes, keeps its services' last known states instead of drawing them down, and offers the new address once it answers, while its toolbar follows its stack there. notices-and-feedback draws the notice and the lost connection; this flow supplies the move's cause and makes the new address readable. A reload the page's dev server asks for meanwhile is a detail of this notice, never a <b>Reload blocked</b> whose <b>Reload</b> loads the closed port. While the page's own modal dialog is open, the notice moves into it and <b>Open</b> works from there (<code>SURF-11</code>). Pages opened directly from another device on the network lose their connection when <code>bindHost</code> becomes a loopback address, as the line beside <b>Save</b> said; pages opened through a relay preview keep working (<code>O39</code>). Keys: <b>Open</b> and <b>Dismiss</b> are ordinary buttons in the notice's Tab order, activated by Enter or Space; the notice never takes focus, and Escape never dismisses it (<code>KEY-4</code>, <code>KEY-6</code>, <code>KEY-8</code>, <code>KEY-9</code>).</p>
+<p>The app keeps running, and devhost still reloads no page by itself: <b>Open</b> is a navigation the person chooses, never held by <b>Hold Reloads</b> (<code>UNDO-2</code>). What changes is that a page whose address moved is told before its port closes, keeps its services' last known states instead of drawing them down, and offers the new address once it answers, while its toolbar follows its stack there. notices-and-feedback draws the notice and the lost connection; this flow supplies the move's cause and makes the new address readable. A reload the page's dev server asks for meanwhile is a detail of this notice, never a <b>Reload blocked</b> whose <b>Reload Now</b> loads the closed port. While the page's own modal dialog is open, the notice moves into it and <b>Open</b> works from there (<code>SURF-11</code>). Pages opened directly from another device on the network lose their connection when <code>bindHost</code> becomes a loopback address, as the line beside <b>Save</b> said; pages opened through a relay preview keep working (<code>O39</code>). Keys: <b>Open</b> and <b>Dismiss</b> are ordinary buttons in the notice's Tab order, activated by Enter or Space; the notice never takes focus, and Escape never dismisses it (<code>KEY-4</code>, <code>KEY-6</code>, <code>KEY-8</code>, <code>KEY-9</code>).</p>
 <ol><li><span class="n">1</span> <code>listeners-moving</code> arrives before port 443 closes, and the page shows the move's progress as an activity line in the notice stack (<code>FB-1</code>, <code>WORD-4</code>).</li>
 <li><span class="n">2</span> When its status stream closes with the move, the trigger shows the connection's state; the page connects its status stream to the same hostname on port 4443, and stops retrying port 443 once that answers (<code>ACT-5</code>, <code>HOLD-2</code>).</li>
-<li><span class="n">3</span> Once port 4443 answers with the move's record, the activity line gives way to the condition notice "devhost moved to port 4443". <b>Open</b> opens this page at port 4443 in the same tab with its path, query and fragment kept, and its accessible name is "Open this page at port 4443". The notice ranks with the lost connection, above activity lines and successes, is read once in the polite region, and fits every acceptance viewport and the 320 CSS pixel phone layout, a long address wrapping with the full URL in its tooltip and accessible name; it ends when the person opens the new address or the move is undone (<code>HOLD-2</code>, <code>SURF-15</code>, <code>FB-5</code>, <code>FB-8</code>, <code>FB-9</code>, <code>SURF-9</code>, <code>WORD-8</code>, <code>O8</code>).</li>
+<li><span class="n">3</span> Only once every listener confirms (<code>listeners-moved</code>, read with the move's record from port 4443) does the activity line give way to the success notice "Moved to https://shop.acme.test:4443/", naming any listener that did not move (<code>FB-13</code>). <b>Open</b> opens this page at port 4443 in the same tab with its path, query and fragment kept, and its accessible name is "Open this page at port 4443". The notice is the move's outcome, a success that stays until <b>Open</b> or <b>Dismiss</b> because the old page can no longer make changes, ranked below conditions, is read once in the polite region, and fits every acceptance viewport and the 320 CSS pixel phone layout, a long address wrapping with the full URL in its tooltip and accessible name; it ends when the person opens the new address or the move is undone (<code>HOLD-2</code>, <code>SURF-15</code>, <code>FB-5</code>, <code>FB-8</code>, <code>FB-9</code>, <code>FB-13</code>, <code>SURF-9</code>, <code>WORD-8</code>, <code>O8</code>).</li>
 <li><span class="n">4</span> The toolbar is live again from port 4443, and its service links name port 4443 (<code>ACT-12</code>, <code>ACT-2</code>).</li>
 <li><span class="n">5</span> Between the close and the new address answering, every service keeps its last known state, drawn as unknown with the time it was last seen, never down or failed, and the panel's status line says why changes wait (<code>ACT-5</code>, <code>CC-26</code>, <code>HOLD-2</code>).</li>
 <li><span class="n">6</span> Every write on the old page (Restart, Restart Changed and its key, Start, Restart Stack, switches, Save, Send) is unavailable with one reason, said once in the notice and in each open panel's status line and given to each blocked control as its accessible description, because a write from the old address comes from another origin, which the control server refuses; reads, page context and chat drafts stay (<code>HOLD-1</code>, <code>HOLD-2</code>, <code>MENU-3</code>).</li>
@@ -392,7 +392,7 @@ devhost: ERR: /home/dev/.config/devhost/config.toml:3:13 not applied: caddy.http
 ~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: must be an integer between 1 and 65535. Every stack keeps the running shared Caddy settings: HTTPS on port 443, every interface.
 
 <span class="muted">a stack directory hostname a stack uses</span>
-~/.config/devhost/config.toml:4:22 not applied: caddy.stackDirectoryHost: stacks.acme.test is a hostname of web in Acme Shop (~/acme/devhost.toml line 14). Choose another hostname or change web's host. Every stack keeps the running shared Caddy settings: HTTPS on port 443, every interface. <span class="n">3</span>
+~/.config/devhost/config.toml:4:22 not applied: caddy.stackDirectoryHost: shop.acme.test is a hostname of web in Acme Shop (~/acme/devhost.toml line 14). Choose another hostname or change web's host. Every stack keeps the running shared Caddy settings: HTTPS on port 443, every interface. <span class="n">3</span>
 
 <span class="muted">a move devhost could not certify</span>
 ~/.config/devhost/config.toml:3:13 not applied: caddy.httpsPort: port 4443 answered on 127.0.0.1 but not through Caddy; another program holds it for IPv4. Restored the running shared Caddy settings: HTTPS on port 443, every interface. <span class="n">4</span>
@@ -405,7 +405,7 @@ config.toml not applied again: same error as 14:02 · 2 times, last at 14:05 <sp
 Configuration restored: config.toml matches the running shared Caddy settings · nothing changed
 
 <span class="muted">devhost start, with web's host reserved by the stack directory</span>
-devhost.toml:14:8 not started: services.web.host: stacks.acme.test is the stack directory's hostname, set by caddy.stackDirectoryHost in ~/.config/devhost/config.toml line 4. Change web's host or the stack directory's hostname. <span class="n">7</span></pre>
+devhost.toml:14:8 not started: services.web.host: shop.acme.test is the stack directory's hostname, set by caddy.stackDirectoryHost in ~/.config/devhost/config.toml line 4. Change web's host or the stack directory's hostname. <span class="n">7</span></pre>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › docs page</b><span>every open page of every stack</span></div>
@@ -415,7 +415,7 @@ devhost.toml:14:8 not started: services.web.host: stacks.acme.test is the stack 
 <div class="banner">◆ devhost config file not applied: config.toml line 3, column 13, caddy.httpsPort: port 4443 is in use by nc (PID 77959) on 127.0.0.1. Every stack keeps the running shared Caddy settings: HTTPS on port 443, every interface. <span class="n">8</span>
 <div class="box small" style="margin:4px 0">3 │ httpsPort = 4443</div>
 <div class="row"><span class="btn">Edit</span><span class="btn">Copy Error</span><span class="btn">Dismiss</span><span class="n">9</span></div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -458,7 +458,7 @@ devhost.toml:14:8 not started: services.web.host: stacks.acme.test is the stack 
 <li><span class="n">5</span> A save while Caddy is stopped says it is not applied yet and what applies it; <code>devhost caddy start</code> then applies it, and every running stack follows within 2 s (<code>ACT-10</code>).</li>
 <li><span class="n">6</span> A repeated rejection updates its report with its count and last time; a save back to the running values prints manifest-hot-reload's restore line and clears the rejection on every page. The announcer reads the start once in the assertive region and the end once in the polite region (<code>FAIL-4</code>, <code>FB-9</code>, <code>UNDO-1</code>).</li>
 <li><span class="n">7</span> A <code>devhost start</code> whose service hostname the stack directory reserves is refused naming both places; stack-run-stop prints it among its start refusals (<code>MENU-4</code>, <code>FAIL-2</code>).</li>
-<li><span class="n">8</span> Every open page of every stack shows one condition notice, ranked with failures, with the offending line under it; its title "devhost config file not applied" replaces today's "devhost config change not applied": one event name, with "applied", and devhost kept lowercase (<code>ACT-7</code>, <code>FB-8</code>, <code>WORD-1</code>, <code>WORD-9</code>).</li>
+<li><span class="n">8</span> Every open page of every stack shows one condition notice, ranked right after a failed, exited or blocked service (<code>ACT-7</code>), with the offending line under it; its title "devhost config file not applied" replaces today's "devhost config change not applied": one event name, with "applied", and devhost kept lowercase (<code>ACT-7</code>, <code>FB-8</code>, <code>WORD-1</code>, <code>WORD-9</code>).</li>
 <li><span class="n">9</span> <b>Edit</b> leads, because a problem in the file is fixed in the file: it opens the Configuration window on <code>config.toml</code> at line 3 with the rejection in its banner. <b>Copy Error</b> copies text that starts with "~/.config/devhost/config.toml:3:13" (<code>MENU-5</code>, <code>MENU-4</code>, <code>SURF-4</code>).</li>
 <li><span class="n">10</span> The same rejection saved again keeps one report on each page, with its count and last time (<code>FAIL-4</code>).</li>
 <li><span class="n">11</span> With the config editor off, the notice shows the file and line and <b>Copy Error</b> leads; devhost opens no editor (<code>SURF-15</code>, <code>O51</code>, <code>MENU-3</code>).</li>
@@ -491,7 +491,7 @@ devhost stack restart</pre>
 <div class="corner">
 <div class="banner">◆ domainSuffix waits for a restart · blog.acme.test → blog--devbox.example.com <span class="n">3</span>
 <div class="row" style="margin-top:4px"><span class="btn">Copy Command</span><span class="btn">Dismiss</span></div></div>
-<div class="tbar"><span class="seg"><b>Blog ▾</b></span><span class="seg">● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/blog ▾</span></div>
+<div class="tbar"><span class="seg"><b>Blog ▾</b></span><span class="seg">● ▾</span><span class="seg">main ~/blog ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -510,7 +510,7 @@ Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with d
 <div class="pg" style="min-height:96px">
 <div class="apptxt">Acme Shop · Storefront …</div>
 <div class="corner">
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">CPU 42%</span><span class="seg">RAM 61%</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">CPU 42%</span><span class="seg">RAM 61%</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 <div class="work small muted">6 of 6 running; Restart, Restart Stack, Start, switches and chat work as on a machine whose Caddy uses port 443. <span class="n">6</span></div>
