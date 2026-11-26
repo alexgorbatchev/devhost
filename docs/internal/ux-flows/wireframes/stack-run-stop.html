@@ -280,7 +280,7 @@ Stops after 30 min without requests (idleTimeout) <span class="n">4</span></pre>
               <b>Terminal › an agent's shell</b><span>AGENT=1, output not a terminal: one line per change</span>
             </div>
             <pre class="term">$ AGENT=1 devhost start --detach
-devhost: Starting Acme Shop in the background from main /work/acme · 6 services · stack stk-3f2a9c41d7e05b68
+devhost: Starting Acme Shop in the background from main /work/acme · stack stk-3f2a9c41d7e05b68 · 6 services
 devhost: Starting Acme Shop · 2 of 6 running · waiting for api · health check 1 s of 30 s
 devhost: Starting Acme Shop · 5 of 6 running · waiting for worker · health check 3 s of 30 s
 devhost: Ready in 8.4 s: https://shop.acme.test/ · 6 of 6 running <span class="n">5</span></pre>
@@ -444,9 +444,9 @@ $ devhost status   <span class="muted"># the morning after an idle shutdown</spa
 Acme Shop is not running · stopped at 02:14 after 30 min without requests (idleTimeout)
 Start it again in ~/acme with:
 devhost start
-$ devhost status   <span class="muted"># in a folder with no stack while serve session docs.acme.test runs</span>
+$ devhost status   <span class="muted"># in a folder with no stack while serve session notes.acme.test runs</span>
 No devhost.toml in ~/scratch or any parent folder · 1 serve session running (~/acme/docs)
-devhost stack info --session docs.acme.test <span class="n">9</span></pre>
+devhost stack info --session notes.acme.test <span class="n">9</span></pre>
           </div>
           <div class="win">
             <div class="bar">
@@ -465,9 +465,9 @@ $ devhost stack list | cat
 84244	/work/acme/devhost.toml
 84244	/work/acme/.worktrees/fix-nav/devhost.toml
 84244	/work/blog/devhost.toml <span class="n">12</span>
-$ devhost stack find docs
-No manifest stack matches "docs", but serve session "docs.acme.test" is running
-devhost stack info --session docs.acme.test
+$ devhost stack find notes
+No manifest stack matches "notes", but serve session "notes.acme.test" is running
+devhost stack info --session notes.acme.test
 $ devhost stack find shopp
 No stack matches "shopp" · devhost stack list lists them all</pre>
           </div>
@@ -612,11 +612,11 @@ Applied devhost.toml: restarted api (command changed) and worker (depends on api
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b><span>the stack's one log, whatever started it</span></div>
             <pre class="term">$ devhost logs -f api
-Run: devhost start --detach · stack stk-3f2a9c41d7e05b68 · main ~/acme · 13:58:02 <span class="n">6</span>
+Run: devhost start --detach · main ~/acme · stack stk-3f2a9c41d7e05b68 · 13:58:02 <span class="n">6</span>
 14:01:10 api        Error: Cannot find module './db'
 14:01:12 Acme Shop  ERR: api exited with code 1 at 14:01
 14:02:40 Acme Shop  Restarted api · 2.6 s · from a page on shop.acme.test
-Run: devhost restart · stack stk-9b04e7d2a61c3f85 · main ~/acme · 14:20:11
+Run: devhost restart · main ~/acme · stack stk-9b04e7d2a61c3f85 · 14:20:11
 14:20:15 api        listening on :4000
 $ devhost logs --path
 ~/.local/state/devhost/logs/stack-&lt;sha256&gt;.log <span class="n">7</span></pre>
@@ -698,7 +698,7 @@ $ devhost logs --path
               >
             </div>
             <pre class="term">$ devhost stop
-Stopping Acme Shop (main ~/acme) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working) <span class="n">1</span>
+Stopping Acme Shop (main ~/acme) · 6 services · <span style="white-space: nowrap">closes 1 conversation: "Fix the nav" (Claude Code, working)</span> <span class="n">1</span>
 Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s · Ctrl-C forces them now <span class="n">2</span>
 Force-stopped mail and worker after 10 s: they ignored SIGTERM <span class="n">3</span>
 Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Claude Code, was working) <span class="n">4</span>
@@ -724,18 +724,18 @@ Acme Shop stopped at 14:10: Ctrl-C in this terminal</pre>
           <div class="win">
             <div class="bar">
               <b>Terminal › ~/scratch</b
-              ><span>no manifest stack running, while serve session docs.acme.test runs (serve-command-04)</span>
+              ><span>no manifest stack running, while serve session notes.acme.test runs (serve-command-04)</span>
             </div>
             <pre class="term">$ devhost stop
 No devhost.toml in ~/scratch or any parent folder · 1 serve session running (~/acme/docs)
-devhost stop --session docs.acme.test <span class="n">7</span></pre>
+devhost stop --session notes.acme.test <span class="n">7</span></pre>
           </div>
           <div class="win">
             <div class="bar">
               <b>Terminal › an agent's shell</b><span>AGENT=1: the same facts, one line per change</span>
             </div>
             <pre class="term">$ AGENT=1 devhost stop --timeout 45s
-devhost: Stopping Acme Shop (main /work/acme, stack stk-3f2a9c41d7e05b68) · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working)
+devhost: Stopping Acme Shop (main /work/acme) · stack stk-3f2a9c41d7e05b68 · 6 services · closes 1 conversation: "Fix the nav" (Claude Code, working)
 devhost: Stopping Acme Shop · 4 of 6 stopped · mail and worker still stopping · forced in 6 s
 devhost: Force-stopped mail and worker after 10 s: they ignored SIGTERM
 devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Claude Code, was working) <span class="n">8</span></pre>
@@ -839,7 +839,7 @@ devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Clau
 Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N] y <span class="n">2</span>
 Stopped Acme Shop (main ~/acme) · 4.1 s
 Stopped Acme Shop (fix-nav ~/acme/.worktrees/fix-nav) · 3.8 s
-Acme Shop (Detached 3f9c2a1 ~/review/acme) was not stopped: worker (PID 8830, port 4310) still runs after 30 s <span class="n">3</span>
+Acme Shop (Detached 3f9c2a1 ~/review/acme) is not fully stopped: worker (PID 8830, port 4310) still runs <span class="n">3</span>
 $ echo $?
 1</pre>
           </div>
@@ -1044,19 +1044,20 @@ Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <
             <pre class="term">$ devhost upgrade
 Downloading devhost 0.0.22 (verified SHA256SUMS) · replacing ~/.local/bin/devhost <span class="n">1</span>
 2 stacks and 1 serve session run in this state directory: <span class="n">2</span>
-  Acme Shop  main ~/acme   detached
-  Blog       main ~/blog   foreground
-  serve session for ~/acme/docs   detached
+  Acme Shop                       main ~/acme   detached
+  Blog                            main ~/blog   foreground
+  serve session for ~/acme/docs                 detached
 Stopping every stack in the devhost supervisor · 2 of 3 stopped · forced in 24 s
 Restarted Acme Shop (main ~/acme) · 11 s <span class="n">3</span>
 Restarted Blog (main ~/blog) · 4 s
-Restarted the serve session for ~/acme/docs · 0.3 s <span class="n">5</span>
-Every stack now runs in a new devhost 0.0.22 supervisor (PID 85502)
+Restarted the serve session for ~/acme/docs · 1 s <span class="n">4</span>
+Every stack and serve session now runs in a new devhost 0.0.22 supervisor (PID 85502)
 <span class="muted">when binary is externally managed or read-only:</span>
-Cannot swap /usr/local/bin/devhost (managed by Homebrew): upgrade with brew upgrade devhost, then run devhost restart
+Cannot swap /usr/local/bin/devhost (managed by Homebrew): upgrade with brew upgrade devhost, then run <span style="white-space: nowrap">devhost restart</span>
 <span class="muted">when a stack's folder is gone, or a serve session's folder cannot be opened:</span>
 Stopped Acme Shop (Detached 3f9c2a1 ~/review/acme): its folder ~/review/acme no longer exists
-Not restarted: the serve session for ~/acme/old-docs, because ~/acme/old-docs cannot be opened: no such file or directory. It keeps running in the previous devhost 0.0.21 supervisor.
+Not restarted: the serve session for ~/acme/old-docs; ~/acme/old-docs cannot be opened, so it keeps running devhost 0.0.21 in the previous supervisor
+Stop it with:
 devhost stop --session old-docs.acme.test
 <span class="muted">when Acme Shop's shutdown outlasts stopTimeout (30 s default):</span>
 Acme Shop was not restarted: worker (PID 8820) is still stopping after 30 s; nothing was started
@@ -1066,7 +1067,17 @@ devhost start
 $ AGENT=1 devhost restart --yes
 devhost: Restarted Acme Shop (main /work/acme) · stack stk-9b04e7d2a61c3f85 · 11 s · /work/acme/devhost.toml
 <span class="muted">…</span>
-devhost: Every stack now runs in a new devhost 0.0.22 supervisor (PID 85502)</pre>
+devhost: Every stack and serve session now runs in a new devhost 0.0.22 supervisor (PID 85502)</pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>Terminal › ~/blog</b><span>Blog's own foreground terminal</span></div>
+            <pre
+              class="term"
+            >Replaced by devhost upgrade at 14:02. Blog keeps running without this terminal. <span class="n">5</span>
+devhost logs -f
+devhost stop
+$ echo $?
+0</pre>
           </div>
           <div class="win">
             <div class="bar">
@@ -1075,19 +1086,8 @@ devhost: Every stack now runs in a new devhost 0.0.22 supervisor (PID 85502)</pr
             </div>
             <pre class="term">$ devhost stack restart
 Restarting Acme Shop (main ~/acme) inside the devhost supervisor
-Still running devhost 0.0.21: Blog shares the devhost supervisor (PID 84244); devhost restart switches every stack to this executable <span class="n">4</span>
+Still running devhost 0.0.21: Blog shares the devhost supervisor (PID 84244); <span style="white-space: nowrap">devhost restart</span> switches every stack to this executable <span class="n">6</span>
 Restarted Acme Shop (main ~/acme) · 6 of 6 running · 9 s</pre>
-          </div>
-          <div class="win">
-            <div class="bar"><b>Terminal › ~/blog</b><span>Blog's own foreground terminal</span></div>
-            <pre
-              class="term"
-            >Replaced by devhost upgrade at 14:02. Blog keeps running in the new devhost supervisor without this terminal. <span class="n">6</span>
-Follow and stop it with:
-devhost logs -f
-devhost stop
-$ echo $?
-0</pre>
           </div>
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b><span>a foreground Acme Shop reports each change once</span></div>
@@ -1107,7 +1107,7 @@ $ echo $?
 - Are the services up? devhost status / devhost stack info (exit 3 names what is not running)
 - Restart one service: devhost service restart &lt;service&gt; · every service: devhost service restart --all
 - Follow output: devhost logs -f · apply a manifest edit: devhost reload
-- Restart this stack: devhost stack restart · every stack on a new binary: devhost upgrade or devhost restart <span class="n">11</span></pre>
+- Restart this stack: devhost stack restart · <span style="white-space: nowrap">every stack on a new binary: devhost upgrade or devhost restart</span> <span class="n">11</span></pre>
           </div>
         </div>
         <div class="cap">
@@ -1159,25 +1159,28 @@ $ echo $?
               <code>FAIL-1</code>, <code>FAIL-5</code>, <code>UNDO-5</code>, <code>CC-35</code>).
             </li>
             <li>
-              <span class="n">4</span> <code>devhost stack restart</code> ends this project's run and starts a new one,
+              <span class="n">4</span> Serve sessions restart in the new supervisor too, each with one line naming its
+              folder. A file serve session whose folder cannot be opened keeps running the previous devhost in the
+              previous supervisor until it is stopped, reads "Not restarted: …" with "Stop it with:" and
+              <code>devhost stop --session &lt;name&gt;</code> on its own line, and the command exits 1
+              (<code>O31</code>, <code>FAIL-1</code>, <code>CC-36</code>).
+            </li>
+            <li>
+              <span class="n">5</span> A replaced foreground stack prints the same sentence whichever command replaced
+              it (<code>devhost upgrade</code>, <code>devhost restart</code>, or <code>devhost stack restart</code>),
+              changing only the command name: when, and that it keeps running without this terminal; then
+              <code>devhost logs -f</code> and <code>devhost stop</code> on their own lines. A serve session, which has
+              no <code>devhost logs</code>, prints "Stop it with:" and
+              <code>devhost stop --session &lt;name&gt;</code> instead. It exits 0, never 143, and prints no PID. Open
+              pages reconnect to the new run and say so once (<code>FAIL-5</code>, <code>ACT-10</code>,
+              <code>O18</code>, <code>CC-24</code>).
+            </li>
+            <li>
+              <span class="n">6</span> <code>devhost stack restart</code> ends this project's run and starts a new one,
               with a new stack ID, inside the shared supervisor, leaving its other stacks running. After a rebuild it
               moves to this executable only when no other stack shares the supervisor; otherwise it keeps the running
               one and says so once, naming the supervisor's PID and <code>devhost restart</code> (<code>O18</code>,
               <code>MENU-6</code>, <code>WORD-2</code>).
-            </li>
-            <li>
-              <span class="n">5</span> Serve sessions restart in the new supervisor too. A file serve session whose
-              folder cannot be opened keeps running in the previous supervisor until it is stopped, is reported "Not
-              restarted" with <code>devhost stop --session &lt;name&gt;</code> on its own line, and the command exits 1
-              (<code>O31</code>, <code>FAIL-1</code>, <code>CC-36</code>).
-            </li>
-            <li>
-              <span class="n">6</span> A replaced foreground stack or serve session prints which command replaced it
-              (<code>devhost upgrade</code>, <code>devhost restart</code>, or <code>devhost stack restart</code>) and
-              when, that its new run keeps running in the devhost supervisor without this terminal, and on their own
-              lines the commands that follow and stop it (<code>devhost stop --session &lt;name&gt;</code> for a serve
-              session); it exits 0, never 143, and prints no PID. Open pages reconnect to the new run and say so once
-              (<code>FAIL-5</code>, <code>ACT-10</code>, <code>O18</code>, <code>CC-24</code>).
             </li>
             <li>
               <span class="n">7</span> Every operation on a running stack, from any origin, prints one outcome line with
