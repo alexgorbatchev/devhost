@@ -263,7 +263,7 @@
       "label": "Answer by state",
       "sublabel": "503 for API calls",
       "tag": "agent-cli-journey-04",
-      "explanation": "The document injection answers from the published service state, which status pages read live from the stack's health stream instead of polling every second (ACT-2, ACT-12, CC-25); without the stream a page backs off to checks at 1, 2, 5 and 10 s, then every 30 s, says when it last checked and checks nothing while hidden (STATE-4). A page load gets the page for its service's state, and a running app's answers pass through (SURF-16, CC-4). A request that is not a page load (an API call, a fetch, curl) gets the app's own response while the app answers; while the service is not running, Caddy hands it to devhost, which answers 503 with Retry-After and a short body naming the service and its phase, never an empty 502: as JSON under Accept: application/json, {\"service\":\"api\",\"stack\":\"Acme Shop\",\"phase\":\"starting\",\"retryAfter\":1}, otherwise one line, 'devhost: api is starting in Acme Shop; retry in 1 s' (FB-11). On plain HTTP, an API call to a hostname with no route yet gets a body under 2 KB from stack-directory's route-not-found site, never its 750 KB page; over HTTPS an unconfigured hostname gets no certificate (O63). Resolves agent-cli-journey-04.",
+      "explanation": "The document injection answers from the published service state, which status pages read live from the stack's health stream instead of polling every second (ACT-2, ACT-12, CC-25); without the stream a page backs off to checks at 1, 2, 5 and 10 s, then every 30 s, says when it last checked and checks nothing while hidden (STATE-4). A page load gets the page for its service's state, and a running app's answers pass through (SURF-16, CC-4). A request that is not a page load (an API call, a fetch, curl) gets the app's own response while the app answers; while the service is not running, Caddy hands it to devhost, which answers 503 with Retry-After and a short body naming the service and its phase, never an empty 502: as JSON under Accept: application/json, {\"service\":\"api\",\"stack\":\"Acme Shop\",\"phase\":\"starting\",\"retryAfter\":1}, otherwise one line, 'devhost: api is starting in Acme Shop; retry in 1 s' (FB-11). On plain HTTP, an API call to a hostname with no route gets stack-directory's short 404 naming the hostname and the directory's URL, never its 750 KB page (CC-50); over HTTPS an unconfigured hostname gets no certificate (O63). Resolves agent-cli-journey-04.",
       "sources": [
         {
           "path": "apps/devhost/src/devtools/document_injection.rs",
@@ -339,7 +339,7 @@
       "type": "backend",
       "label": "Restart Stack",
       "sublabel": "one press, all 6",
-      "explanation": "Restart Stack, in the crash view and on recovery pages, keeps its operation's name and, as the remedy on offer where the page's service is already down, runs on one press with its reach in a line beside it, 'Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time', the 6 names in its tooltip and accessible description (REV-1, REV-2, BAR-2, SEL-1, CC-17). While a manifest edit is rejected the line adds 'uses the accepted manifest; devhost.toml line 12 is not applied' (HOLD-6); while another operation runs it is unavailable and the route answers 409 naming it (HOLD-3, CC-37). POST /__devhost__/restart-stack takes an operationId; the busy button keeps focus, 'Restarting Stack · 2 of 6 started' (FB-1, KEY-11). No command restarts services inside the running stack (devhost stack restart, restart-all and upgrade replace the supervisor, O18), so this flow proposes a MENU-6 exception, as services-panel does. Healthy services keep running when one fails through the error-pages-01 stopgap, which ships first (related, with journey-crash-to-fix-07).",
+      "explanation": "Restart Stack, in the crash view and on recovery pages, keeps its operation's name and, as the remedy on offer where the page's service is already down, runs on one press with its reach in a line beside it, 'Restarts all 6 services with new automatic ports · main ~/acme · took 14 s last time', the 6 names and 'In a terminal: devhost service restart --all' in its tooltip and accessible description (REV-1, REV-2, BAR-2, SEL-1, MENU-6, CC-11, CC-17). While a manifest edit is rejected the line adds 'uses the accepted manifest; devhost.toml line 12 is not applied' (HOLD-6); while another operation runs it is unavailable and the route answers 409 naming it (HOLD-3, CC-37). POST /__devhost__/restart-stack takes an operationId; the busy button keeps focus, 'Restarting Stack · 2 of 6 started' (FB-1, KEY-11). Its terminal form is devhost service restart --all, whose help says 'Restart Stack in the browser'; devhost stack restart, restart-all and upgrade replace the supervisor instead (MENU-6, CC-11, O18; applied default of owner item q86). Healthy services keep running when one fails through the error-pages-01 stopgap, which ships first (related, with journey-crash-to-fix-07).",
       "sources": [
         {
           "path": "apps/devhost/src/services/stack/runtime.rs",
@@ -609,12 +609,12 @@
       "items": [
         "Stop replacing the app's 404 and 5xx answers: inject the toolbar, say who answered, wrap an empty or non-HTML answer, leave devhost's file server alone, remove the 1 s probe (CC-4)",
         "Proxy errors in words: a refused, closed or reset connection and a body cut off, with the client's error behind Copy Error",
-        "A short 503 with Retry-After for requests that are not page loads, through each host route's error handling (CC-4); [discuss]: on plain HTTP, a body under 2 KB from stack-directory's route-not-found site",
+        "A short 503 with Retry-After for requests that are not page loads, through each host route's error handling (CC-4); on plain HTTP, stack-directory's short 404 body under 2 KB from its route-not-found site (CC-50)",
         "Status pages read the health stream and reload by sign, backing off without it (CC-25)",
         "Per-service output and attempts, never evicted by other services, and services-panel's exit record (CC-24, CC-25)",
         "What devhost ran and the health check's progress in the published state, with one structured error for Edit (CC-25)",
         "A daemon's status command run once when its health check starts failing; lifecycle.log optional later",
-        "States of their own: not started with Start (recommended, O10), external with services-panel's Check Again route ([discuss]: not in CC-37 yet), blocked (CC-25)",
+        "States of their own: not started with Start (recommended, O10), external with services-panel's Check Again route (CC-37), blocked (CC-25)",
         "The crash view keeps an operation's failure, published as the operation's outcome, never a worktree block (CC-37)",
         "Recommended: the terminal's crash line names devhost service restart (CC-11)",
         "The recovery entry point applies O36's client check: 403 with one sentence for a browser not signed in or paired (O37)",
@@ -633,15 +633,15 @@
         "CC-25: the health stream publishes each service's state with its cause, and every operation's progress and outcome",
         "CC-31: status pages offer Switch and Restart Stack and Refresh Worktrees",
         "CC-27: configured-hosts-only TLS, stopped stacks' HTTPS routes kept 24 h, close names on plain HTTP (O63)",
-        "CC-37: operationId and 202 Accepted for restarts, 409 naming the running operation; [discuss]: the check-service route is not listed yet",
-        "[discuss]: stacks/recovery.md's starting, daemon, crash view and reload sentences follow SURF-3, SURF-16 and O5 but have no CC-n in revision 6; the reference adds them beside CC-2 and CC-4"
+        "CC-37: operationId and 202 Accepted for restarts, 409 naming the running operation, and the check-service route",
+        "CC-42: stacks/recovery.md's starting, daemon, crash view and reload sentences follow SURF-3, SURF-16 and O5, and its crash view text names devhost service restart <service> and devhost service restart --all"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }

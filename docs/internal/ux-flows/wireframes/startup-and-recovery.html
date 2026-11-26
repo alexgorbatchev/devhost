@@ -215,13 +215,12 @@ warn: retrying db connection ×16</pre>
 <div class="apptxt">Acme Shop · Search products <span class="in focusring">running sho</span></div>
 <div class="corner">
 <div class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Expand</span><span class="n">7</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">▲ ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">▲ ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference's labels (<code>WORD-2</code>) name <b>Minimize</b> but no label for reopening the minimized crash view from its notice; this proposal uses <b>Expand</b>, paired with <b>Minimize</b> (<code>SURF-3</code>); notices-and-feedback, which draws the notice, carries it. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: this view folds a line over 2,000 characters and selects a service's lines by that service's source; log-minimap renders the crash view's log with one renderer that wraps every line in full and files devhost's failure line under the source "devhost", which that selection would leave out. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap"><div class="banner">Open conflict: this view folds a line over 2,000 characters and selects a service's lines by that service's source; log-minimap renders the crash view's log with one renderer that wraps every line in full and files devhost's failure line under the source "devhost", which that selection would leave out. <a href="index.html#conflicts">See conflicts</a></div>
 <h2>3. Read the failure on the recovery page</h2>
 <p>A failed service still leaves the rest of the stack running, and its hostname, every alias and path route, still shows what went wrong with its logs and a restart, as the recovery contract says. What changes is that the status page and the toolbar's crash view are one shared recovery view, rendered in both stylesheets with the same words, actions and log, and shown once: on devhost's own page the crash view never opens over it for the same failure (<code>SURF-14</code>, <code>SURF-3</code>, <code>CC-2</code>). Keys: Tab order is the cause, the lead action, the other actions, the log, then the worktree list's disclosure; every action is a button (<code>KEY-10</code>).</p>
 <ol><li><span class="n">1</span> One cause sentence in plain words follows the heading. A failed health check of a running process reads failed, an ended process exited; no page shows markup, a raw Rust error chain or the proxy client's raw error (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>, <code>ACT-2</code>).</li>
@@ -267,7 +266,7 @@ $ bun run src/server.ts</pre>
 <div class="apptxt">Acme Shop API explorer …</div>
 <div class="corner">
 <div class="toastrow"><div class="toast focusring">✓ Restarted api · 2.6 s</div><span class="n">5</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -371,10 +370,10 @@ $ bun run src/server.ts</pre>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: no terminal command restarts every managed service inside the running stack, so this proposal, like services-panel, proposes an exception to <code>MENU-6</code>, which asks for a terminal command for every lifecycle action a page offers; <code>devhost stack restart</code>, <code>devhost restart-all</code> and <code>devhost upgrade</code> replace the devhost supervisor instead (<code>O18</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>6. Restart the whole stack from the crash view</h2>
-<p><b>Restart Stack</b> still stops every managed service and starts them again with new automatic ports, keeping fixed ports, the selected worktrees, external services, every page's status stream and chat sessions, and still uses the accepted manifest, as today; it is the same control on a recovery page. What changes is that its reach is named beside it, its progress and its outcome stay in the view, and a failure is never silent. Healthy services keep running when one fails: the <code>error-pages-01</code> stopgap ships first, and the rollback builds on it (<code>UNDO-1</code>, <code>REV-11</code>). It restarts services inside the running stack, the same operation as the Services panel's. Keys: Enter or Space presses it once; there is no question here (<code>REV-1</code>).</p>
-<ol><li><span class="n">1</span> Where the page's service is already down and Restart Stack is the remedy on offer, it runs on one press. Its label keeps the operation's name, and the line beside it states the reach: the count, that automatic ports change, the worktree and how long it took last time; its tooltip and accessible description list the 6 services by name (<code>REV-2</code>, <code>BAR-2</code>, <code>SEL-1</code>, <code>CC-17</code>).</li>
+<p><b>Restart Stack</b> still stops every managed service and starts them again with new automatic ports, keeping fixed ports, the selected worktrees, external services, every page's status stream and chat sessions, and still uses the accepted manifest, as today; it is the same control on a recovery page. What changes is that its reach is named beside it, its progress and its outcome stay in the view, and a failure is never silent. Healthy services keep running when one fails: the <code>error-pages-01</code> stopgap ships first, and the rollback builds on it (<code>UNDO-1</code>, <code>REV-11</code>). It restarts services inside the running stack, the same operation as the Services panel's, and its terminal form is <code>devhost service restart --all</code> (<code>MENU-6</code>, <code>CC-11</code>; applied default of owner item q86). Keys: Enter or Space presses it once; there is no question here (<code>REV-1</code>).</p>
+<ol><li><span class="n">1</span> Where the page's service is already down and Restart Stack is the remedy on offer, it runs on one press. Its label keeps the operation's name, and the line beside it states the reach: the count, that automatic ports change, the worktree and how long it took last time; its tooltip and accessible description list the 6 services by name and its terminal form, "In a terminal: devhost service restart --all" (<code>REV-2</code>, <code>BAR-2</code>, <code>SEL-1</code>, <code>MENU-6</code>, <code>CC-11</code>, <code>CC-17</code>).</li>
 <li><span class="n">2</span> Pressed, it stays in place as the busy control and keeps focus, and the view lists each service with its step; the other actions wait with that operation and its progress as their reason (<code>FB-1</code>, <code>REV-4</code>, <code>KEY-11</code>, <code>HOLD-3</code>).</li>
 <li><span class="n">3</span> When one service cannot start, the view stays open and the outcome replaces the progress in it, counting what runs and naming the failure with its lead actions; focus moves to the outcome's sentence, never to an action (<code>FAIL-1</code>, <code>FB-2</code>, <code>FB-9</code>, <code>SURF-3</code>).</li>
 <li><span class="n">4</span> The rollback restores what ran before, service by service with their previous automatic ports, and says so in its own words; while it restores, the view reads "Restoring the services as they ran before Restart Stack". The Worktrees trigger reports no attention for it (<code>UNDO-1</code>).</li>
@@ -394,7 +393,7 @@ $ bun run src/server.ts</pre>
 <div class="banner" style="margin:0;max-width:34rem">web answered 500 for GET / · main ~/acme <span class="n">2</span>
 <div class="act" style="margin-top:4px"><span class="btn pri">Retry</span><span class="btn">Restart web</span><a>shop.acme.test/</a></div>
 <div class="muted">Reloads when web restarts or a watched file changes <span class="n">3</span></div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -407,7 +406,7 @@ Not Found</pre><span class="n">4</span></div>
 <div class="banner" style="margin:0;max-width:34rem">api answered 404 for GET /api/v1/products · main ~/acme
 <div class="act" style="margin-top:4px"><span class="btn pri">Retry</span><span class="btn">Restart api</span><a>shop.acme.test/api/</a></div>
 <div class="muted">▸ Is this route in another worktree? <span class="n">5</span></div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -420,7 +419,7 @@ Not Found</pre><span class="n">4</span></div>
 </div></div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference does not say what shows when the app answers a page load with an empty or non-HTML body, which the toolbar cannot be injected into; this proposal wraps it in a devhost document showing the status and the body verbatim (<code>SURF-16</code>). <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>7. See the app's own error with devhost's notice</h2>
 <p>A request the app answers still gets the app's own response, and the toolbar is still injected into its pages. What changes is that devhost stops replacing the app's own 404 and 5xx documents with "Page not found" and "<i>service</i> could not load", so a framework's own error overlay shows with its file, line and code frame, and devhost stops requesting the broken URL every second. devhost's file server keeps its own 404 inside the file browser, untouched by this rule (<code>SURF-16</code>, <code>O5</code>, <code>CC-4</code>). Keys: the notice's <b>Retry</b>, <b>Restart web</b> and link are Tab stops in the notice stack (<code>KEY-4</code>).</p>
 <ol><li><span class="n">1</span> The app's own document, here Bun's "Build Failed" overlay with the file, line and code frame, with the toolbar injected; the framework's overlay keeps its own reload when the fix is saved, as it does without devhost (<code>SURF-16</code>, <code>O5</code>).</li>
@@ -440,7 +439,7 @@ Not Found</pre><span class="n">4</span></div>
 <div class="apptxt">Acme Shop · Search products <span class="in focusring">running sho</span> <span class="n">2</span></div>
 <div class="corner">
 <div class="muted small">Announced once, politely: "api is running again" <span class="n">1</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -451,7 +450,7 @@ Not Found</pre><span class="n">4</span></div>
 <div class="corner">
 <div class="box" style="margin:0;max-width:30rem">Chat · your unsent text, the pasted image and page context came back after the reload; a mark whose element is gone is named in the outcome <span class="n">3</span></div>
 <div class="toastrow"><div class="toast">✓ Restarted api · 2.6 s</div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -489,7 +488,7 @@ Not Found</pre><span class="n">4</span></div>
 <li>The app's own 404 or 5xx passes through (<code>O5</code>, <code>CC-4</code>)</li>
 <li>Busy buttons keep focus with <code>aria-disabled</code>; a failure is announced once</li>
 <li>Status pages reload by sign and back off instead of probing every second</li>
-<li>The terminal's crash line names <code>devhost service restart api</code> (<code>CC-11</code>)</li>
+<li>The terminal's crash line names <code>devhost service restart api</code>, and Restart Stack's tooltip names <code>devhost service restart --all</code> (<code>CC-11</code>)</li>
 </ul></div>
 <div><h3>Kept</h3><ul>
 <li>A failed service leaves the rest running, and its hostname says what went wrong</li>
