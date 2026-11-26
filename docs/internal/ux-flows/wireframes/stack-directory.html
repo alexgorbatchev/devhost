@@ -242,13 +242,12 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               <div class="sd-grp">Needs you · 2 <span class="n">5</span></div>
               <div class="sd-card">
                 <div class="sd-ch">
-                  <b>Acme Admin</b><span>· ui-polish ~/acme-admin/.workspaces/ui-polish · deleted</span
-                  ><span class="n">6</span>
+                  <b>Acme Admin</b><span>· old ~/acme-admin/.worktrees/old · deleted</span><span class="n">6</span>
                 </div>
                 <div>▲ failed · 0 of 3 running · 3 blocked</div>
                 <div class="banner bad" style="margin: 4px 0">
-                  ✕ The saved worktree ~/acme-admin/.workspaces/ui-polish was deleted; devhost started none of its 3
-                  services. Return to the configured worktree or choose another on its <a>status page</a>.
+                  ✕ The saved worktree ~/acme-admin/.worktrees/old was deleted; devhost started none of its 3 services.
+                  Return to the configured worktree or choose another on its <a>status page</a>.
                   <span class="btn">Check Again</span>
                 </div>
                 <div class="muted">… 3 service rows, each blocked (step 3)</div>
@@ -264,9 +263,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               </div>
               <div class="sd-grp">Running · 2</div>
               <div class="sd-card">
-                <div class="sd-ch">
-                  <b>Acme Shop</b><span>· Detached 1de9d7a ~/acme/.workspaces/hotfix-detached</span>
-                </div>
+                <div class="sd-ch"><b>Acme Shop</b><span>· Detached c521449 ~/acme/.worktrees/bisect</span></div>
                 <div>◐ starting · 4 of 6 running · 2 starting</div>
                 <div class="muted">… 6 service rows</div>
               </div>
@@ -279,11 +276,16 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               </div>
               <div class="sd-grp" style="margin-top: 8px">Stopped recently · 2</div>
               <div class="sd-card">
-                <div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div>
+                <div class="sd-ch"><b>Acme Platform</b><span>· main ~/platform</span></div>
                 <div>stopped at 14:10 by devhost stop</div>
-                <div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
+                <div class="sd-act">
+                  <code>cd ~/platform &amp;&amp; devhost start</code><span class="btn">Copy</span>
+                </div>
               </div>
-              <div class="muted">… Docs, stopped at 02:14 after 30 min without requests (idleTimeout)</div>
+              <div class="muted">
+                … Acme Shop · fix-nav ~/acme/.worktrees/fix-nav, stopped at 02:14 after 30 min without requests
+                (idleTimeout)
+              </div>
             </div>
           </div>
           <div class="win">
@@ -296,15 +298,17 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 No stacks are running on devbox. Start one with devhost start in its folder. <span class="n">9</span>
               </div>
               <div class="vlab">
-                No stack running, Blog stopped at 14:10 after an hour's run: the group, no empty sentence
+                No stack running, Acme Platform stopped at 14:10 after an hour's run: the group, no empty sentence
               </div>
               <div class="sd-h">Stacks on devbox</div>
               <div class="sd-line"><b>0 stacks · 1 stopped recently</b></div>
               <div class="sd-grp">Stopped recently · 1</div>
               <div class="sd-card">
-                <div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div>
+                <div class="sd-ch"><b>Acme Platform</b><span>· main ~/platform</span></div>
                 <div>stopped at 14:10 by devhost stop</div>
-                <div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
+                <div class="sd-act">
+                  <code>cd ~/platform &amp;&amp; devhost start</code><span class="btn">Copy</span>
+                </div>
               </div>
             </div>
           </div>
@@ -369,7 +373,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
               page reads one sentence and nothing else; with stacks stopped recently and none running, it lists them
               under its heading and totals with no empty sentence, as <code>STATE-2</code> gives that sentence only when
               nothing stopped recently. A stack whose run lasted under a minute is not listed; <b>Copy</b> copies
-              <code>cd ~/blog &amp;&amp; devhost start</code>, which works from any folder (<code>STATE-2</code>,
+              <code>cd ~/platform &amp;&amp; devhost start</code>, which works from any folder (<code>STATE-2</code>,
               <code>ACT-10</code>, <code>O15</code>, <code>O61</code>).
             </li>
           </ol>
@@ -492,13 +496,11 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 </div>
               </div>
               <div class="sd-card">
-                <div class="sd-ch">
-                  <b>Acme Admin</b><span>· ui-polish ~/acme-admin/.workspaces/ui-polish · deleted</span>
-                </div>
+                <div class="sd-ch"><b>Acme Admin</b><span>· old ~/acme-admin/.worktrees/old · deleted</span></div>
                 <div>▲ failed · 0 of 3 running · 3 blocked</div>
                 <div class="banner bad" style="margin: 4px 0">
-                  ✕ The saved worktree ~/acme-admin/.workspaces/ui-polish was deleted; devhost started none of its 3
-                  services. Return to the configured worktree or choose another on its <a>status page</a>.
+                  ✕ The saved worktree ~/acme-admin/.worktrees/old was deleted; devhost started none of its 3 services.
+                  Return to the configured worktree or choose another on its <a>status page</a>.
                   <span style="white-space: nowrap"
                     ><span class="btn">Check Again</span> <span class="n">12</span></span
                   >
@@ -516,10 +518,12 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
             </div>
             <div class="sd-pg">
               <div class="sd-card">
-                <div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div>
+                <div class="sd-ch"><b>Acme Platform</b><span>· main ~/platform</span></div>
                 <div>stopped at 14:10 by devhost stop <span class="n">13</span></div>
-                <div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
-                <div><a>https://blog.acme.test/ ↗</a> · stopped-stack page</div>
+                <div class="sd-act">
+                  <code>cd ~/platform &amp;&amp; devhost start</code><span class="btn">Copy</span>
+                </div>
+                <div><a>https://platform.acme.test/ ↗</a> · stopped-stack page</div>
               </div>
               <div class="vlab">Another morning: the devhost supervisor running Acme Shop was killed at 09:02</div>
               <div class="sd-card">
@@ -710,7 +714,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 <div class="muted">… 5 more, running</div>
               </div>
               <div class="sd-grp">Running · 1</div>
-              <div class="muted">… Blog · main ~/blog</div>
+              <div class="muted">… Acme Platform · main ~/platform</div>
             </div>
           </div>
           <div class="win">
@@ -740,7 +744,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                   <code>cd ~/acme &amp;&amp; devhost stack restart</code><span class="btn">Copy</span>
                 </div>
               </div>
-              <div class="muted">… Blog and Docs, updating as usual</div>
+              <div class="muted">… Acme Platform and Acme Admin, updating as usual</div>
               <div class="vlab">No stack answers, or devhost's proxy is gone: every card is drawn unknown</div>
               <div class="banner" style="margin: 0 0 4px">
                 ◆ Not updated since 17:15:02: no running stack answered within 2 s · retrying every 2 s · last try
@@ -789,7 +793,7 @@ All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
                 </div>
               </div>
               <div class="sd-grp">Stopped recently · 1</div>
-              <div class="muted">… Blog, as step 3 draws it</div>
+              <div class="muted">… Acme Platform, as step 3 draws it</div>
             </div>
           </div>
           <div class="win">
@@ -814,7 +818,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
                 <span class="n">8</span>
               </div>
               <div class="sd-grp">Running · 2</div>
-              <div class="muted">… Acme Shop and Blog, listed as usual</div>
+              <div class="muted">… Acme Shop and Acme Platform, listed as usual</div>
             </div>
           </div>
         </div>
@@ -1343,7 +1347,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
               <div class="sd-line"><b>Acme Shop · main ~/acme</b></div>
               <div class="sd-line"><a>shop.acme.test</a> · web</div>
               <div class="sd-line"><a>shop.acme.test/api</a> · api</div>
-              <div class="sd-line"><b>Acme Shop · Detached 1de9d7a ~/acme/.workspaces/hotfix-detached</b></div>
+              <div class="sd-line"><b>Acme Shop · Detached c521449 ~/acme/.worktrees/bisect</b></div>
               <div class="sd-line"><a>hotfix-shop.shop.acme.test</a> · web</div>
               <div class="sd-line"><a>hotfix-shop.shop.acme.test/api</a> · api</div>
             </div>
@@ -1371,12 +1375,14 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
                 https://hotfix-shpo.shop.acme.test/ · the browser's own connection error: Caddy issues no certificate
                 for a hostname nobody configured <span class="n">8</span>
               </div>
-              <div class="vlab">http://blog.acme.test/ two hours after Blog stopped: only its HTTPS route is kept</div>
+              <div class="vlab">
+                http://platform.acme.test/ two hours after Acme Platform stopped: only its HTTPS route is kept
+              </div>
               <div class="sd-h">
-                blog.acme.test belongs to Blog, stopped at 14:10 by devhost stop <span class="n">9</span>
+                platform.acme.test belongs to Acme Platform, stopped at 14:10 by devhost stop <span class="n">9</span>
               </div>
               <div class="sd-act">
-                Start it again in ~/blog with <code>cd ~/blog &amp;&amp; devhost start</code
+                Start it again in ~/platform with <code>cd ~/platform &amp;&amp; devhost start</code
                 ><span class="btn">Copy</span>
               </div>
               <div class="sd-line"><a>All Stacks on devbox</a></div>
