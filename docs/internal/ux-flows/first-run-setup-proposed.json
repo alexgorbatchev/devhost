@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -91,19 +91,19 @@
       "label": "One setup recipe",
       "sublabel": "help, docs, README, skill",
       "tag": "first-run-setup-01",
-      "explanation": "devhost --help's Quickstart, devhost caddy --help, the Install page, the managed-Caddy guide, the README and the skill teach one order: devhost caddy download (skipped when Caddy is on the PATH), devhost caddy privileged-ports on Linux, then devhost caddy start, and each says beforehand which step downloads and which asks for a password (MENU-6, WORD-9). devhost caddy trust leaves the Quickstart and becomes the repair command, because the first start already trusts the authority, so no help screen teaches a step that fails on a new machine (first-run-setup-01). Help lines name 'the shared Caddy', never 'managed caddy' (WORD-1, WORD-3). stack-run-stop adds the step that creates a devhost.toml before devhost start (stack-run-stop-12, owned there). Today: 5 steps, one a dead end and the last a guess. Proposed: 3 steps, each ending in a stated outcome: download (or skip it), start, open the printed URL.",
+      "explanation": "devhost --help gains a Quickstart (Rust main has none) and, with devhost caddy --help, the Install page, the managed-Caddy guide, the README and the skill, teaches one order: devhost caddy download (skipped when Caddy is on the PATH), devhost caddy privileged-ports on Linux, then devhost caddy start, each saying beforehand which step downloads and which asks for a password (MENU-6, WORD-9). Caddy's steps come before stack-run-stop's devhost init (O52). devhost caddy trust leaves the recipe and becomes the repair command; today devhost caddy --help says 'Download and trust it once, then start it', and that trust fails (first-run-setup-01). Help lines name 'the shared Caddy', never 'managed caddy' (WORD-1, WORD-3). The Install page gains 'Update devhost': devhost upgrade for a release archive in a folder the person can write, the installer plus devhost restart-all otherwise; neither updates Caddy (O18). Today: 5 steps, one a dead end and the last a guess. Proposed: 3 steps.",
       "sources": [
         {
-          "path": "apps/devhost/internal/cli/help.go",
-          "line": 59,
-          "end_line": 67,
-          "label": "Replaces: Quickstart: download, trust, start"
+          "path": "apps/devhost/src/main.rs",
+          "line": 804,
+          "end_line": 819,
+          "label": "Replaces: caddy help: download and trust first"
         },
         {
-          "path": "apps/devhost/internal/cli/parse.go",
-          "line": 305,
-          "end_line": 307,
-          "label": "Replaces: caddy help: download and trust first"
+          "path": "apps/devhost/src/main.rs",
+          "line": 41,
+          "end_line": 61,
+          "label": "Replaces: no Quickstart in devhost --help"
         },
         {
           "path": "packages/docs/src/content/docs/start/install.md",
@@ -124,9 +124,9 @@
       "explanation": "The first line names what downloads and from where, 'Downloading Caddy for macOS arm64 from caddyserver.com…' (WORD-9); on a terminal one status line updates in place, 'Downloading Caddy · 12 MiB · 3 s', and without one a line every 10 MiB (FB-10, STATE-1). caddyserver.com sends no length, so the size shows as it arrives and in the outcome, an exception to WORD-9 the proposal records. The outcome is one line, verb first: 'Installed Caddy 2.11.9 at ~/.local/state/devhost/caddy/caddy · 48 MiB · 9.4 s' (FB-3, WORD-4, WORD-8), plus the caddy on the PATH it now overrides. A rerun reads 'The download matches the installed Caddy 2.11.9 · nothing changed' or 'Updated Caddy 2.11.8 → 2.11.9 …', and while Caddy runs from that file adds that the running Caddy keeps 2.11.8 until devhost caddy stop && devhost caddy start (UNDO-5). Ctrl-C cancels: 'Download cancelled · the installed Caddy 2.11.9 is unchanged', exit 130, no error tag (KEY-14, FAIL-5). Agent output: the same facts, absolute paths, no progress line (FB-11). Removes first-run-setup-07's download part.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/download.go",
-          "line": 56,
-          "end_line": 59,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 354,
+          "end_line": 359,
           "label": "Replaces: start line naming only the URL"
         }
       ]
@@ -142,15 +142,15 @@
       "explanation": "devhost streams the body into caddy.download-<random> beside the binary, flushes it, makes it executable, runs it once with version (10 s limit) to read its version and prove it is Caddy for this platform, compares its SHA-256 with the installed file's, and only then renames it over caddy (FB-5, REV-11). A rename gives the file a new inode, so a Caddy running from the old file keeps it, macOS checks the new file's signature from scratch, and Linux never fails with 'text file busy'. It also reports whether the managed Caddy runs from the replaced file (its PID file and admin API), so the outcome can say the running version is kept until a restart. devhost never retries a download by itself (REV-12). Removes first-run-setup-08: today the download truncates the binary in place with no running check, so on macOS a rerun leaves a Caddy devhost can no longer stop or reload.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/download.go",
-          "line": 75,
-          "end_line": 92,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 368,
+          "end_line": 406,
           "label": "Replaces: read all, then write over the binary"
         },
         {
-          "path": "apps/devhost/internal/app/run.go",
-          "line": 199,
-          "end_line": 205,
+          "path": "apps/devhost/src/main.rs",
+          "line": 221,
+          "end_line": 226,
           "label": "Replaces: download with no running check"
         }
       ]
@@ -166,9 +166,9 @@
       "explanation": "A failure at any step removes the temporary file, leaves the installed binary byte for byte as it was and says so in one line: 'Download failed: no space left on device after 31 MiB · the installed Caddy 2.11.9 is unchanged', or '… · no Caddy is installed' on a first download. A network failure reads 'Could not download Caddy from caddyserver.com: the connection timed out after 30 s · the installed Caddy 2.11.9 is unchanged. Try again, or install Caddy and put it on your PATH.'; a file that does not run as Caddy reads 'The download from caddyserver.com did not run as Caddy for macOS arm64 · the installed Caddy 2.11.9 is unchanged' (FAIL-2, WORD-7, REV-11). Agent output keeps the original error on one ERR: line. The person reruns the command when ready; devhost never retries by itself (REV-12). Removes first-run-setup-08's partial binary after a failed write.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/download.go",
-          "line": 80,
-          "end_line": 82,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 387,
+          "end_line": 391,
           "label": "Replaces: a failed write over the binary"
         }
       ]
@@ -181,19 +181,25 @@
       "label": "devhost caddy start",
       "sublabel": "names Caddy, URL, next",
       "tag": "first-run-setup-07",
-      "explanation": "Its lines, in order: 'Started Caddy 2.11.9 from ~/.local/state/devhost/caddy/caddy · 1.2 s', or '… from /opt/homebrew/bin/caddy (on your PATH) · 1.2 s', printed only once Caddy listens (FB-5, FB-3, WORD-4); proxy-settings' line 'Caddy runs HTTPS on port 443 on every interface, reachable from your network · settings: ~/.config/devhost/config.toml · stop it with devhost caddy stop' (FB-10); the trust step; and last 'Stack directory: https://devhost.localhost/ · next: devhost start in your project's folder', because devhost never opens a browser and the terminal hands off by printing URLs (SURF-15). The Caddyfile's path leaves human output and stays in agent output (WORD-9). While Caddy runs: 'Caddy 2.11.9 already runs (PID 9076) · nothing started', the proxy line, and after a download replaced the binary, 'The installed Caddy is 2.11.9; restart it to use it:' with devhost caddy stop && devhost caddy start. devhost serve starts Caddy the same way. Removes first-run-setup-07's start part.",
+      "explanation": "Its lines, in order: 'Started Caddy 2.11.9 from ~/.local/state/devhost/caddy/caddy · 1.2 s', printed only once Caddy listens (FB-5, FB-3, WORD-4); proxy-settings' line saying who can reach the proxy: by default 'Caddy runs HTTPS on port 443 on every interface, reachable from your network · settings: ~/.config/devhost/config.toml · stop it with devhost caddy stop', on loopback 'direct connections from this machine only; relay previews and SSH forwards still reach it', and on macOS with bindHost 127.0.0.1 below port 1024 every interface plus a warning naming httpsPort = 4443 or a privileged launcher (FB-10, O39); the trust step; and last 'All stacks on devbox: https://devhost.localhost/ · next: devhost start in the folder with your devhost.toml' (SURF-15, O61). The Caddyfile's path stays in agent output only (WORD-9). While Caddy runs: 'Caddy 2.11.8 already runs (PID 9076) · nothing started', and after a download, the restart command. devhost serve starts Caddy the same way. Removes first-run-setup-07's start part.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 138,
-          "end_line": 168,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 186,
+          "end_line": 191,
           "label": "Replaces: 'managed caddy started with' path"
         },
         {
-          "path": "apps/devhost/internal/services/shared_caddy.go",
-          "line": 13,
-          "end_line": 41,
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 566,
+          "end_line": 579,
           "label": "Reuses: serve starts Caddy; a stack refuses"
+        },
+        {
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 497,
+          "end_line": 533,
+          "label": "Replaces: macOS drops the loopback bind"
         }
       ]
     },
@@ -204,25 +210,25 @@
       "type": "backend",
       "label": "Find, start, certify",
       "sublabel": "admin API + HTTPS accept",
-      "explanation": "Resolves the Caddy executable before it renders anything, the downloaded one before the caddy on the PATH (kept), and stops with 'Caddy is not installed' when there is none (first-run-setup-06). A devhost config file error stops here too, naming file, line, column and key, with no Caddy started (MENU-4, FAIL-2). It renders every route and runs caddy start under the route lock every devhost process shares (kept), then waits until the admin API answers and the HTTPS listener accepts a TCP connection, bounded by Caddy's own start timeout, before the started line prints (FB-5). Then it checks Caddy's root certificate against the system roots, as today: a trusted authority ends the step; an untrusted one goes to the trust step only when a person can answer (a terminal on standard input and AGENT=1 unset), and otherwise straight to the warning, naming that cause. start, stop and trust keep refusing a Caddy devhost did not start.",
+      "explanation": "Resolves the Caddy executable before it renders anything, the downloaded one before the caddy on the PATH (kept), and stops with 'Caddy is not installed' when there is none (first-run-setup-06). A devhost config file error stops here too, naming file, line, column and key (MENU-4, FAIL-2). Under the shared route lock, which still refuses an older devhost and now names devhost upgrade or devhost restart-all (O18), it renders every route with the listener O39 resolves and runs caddy start, then waits until the admin API answers and the HTTPS listener accepts a TCP connection before the started line prints (FB-5); today only the admin API is checked. A newer runtime policy restarts a running Caddy once (kept). Then it checks Caddy's root against the system roots: a trusted authority ends the step; an untrusted one goes to the trust step only when a person can answer (a terminal and AGENT=1 unset), otherwise to the warning with that cause. start, stop and trust keep refusing a Caddy devhost did not start.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 170,
-          "end_line": 189,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 542,
+          "end_line": 572,
           "label": "Reuses: render routes, caddy start, record"
         },
         {
-          "path": "apps/devhost/internal/caddy/command.go",
-          "line": 90,
-          "end_line": 108,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 736,
+          "end_line": 756,
           "label": "Reuses: downloaded Caddy, else caddy on PATH"
         },
         {
-          "path": "apps/devhost/internal/caddy/trust.go",
-          "line": 30,
-          "end_line": 52,
-          "label": "Reuses: trust check against the system roots"
+          "path": "apps/devhost/src/caddy/generation.rs",
+          "line": 43,
+          "end_line": 53,
+          "label": "Reuses: refusal of an older devhost"
         }
       ]
     },
@@ -234,24 +240,24 @@
       "label": "Caddy is not installed",
       "sublabel": "names both places looked",
       "tag": "first-run-setup-06",
-      "explanation": "devhost caddy start and devhost serve stop before starting anything: '[ERROR] Caddy is not installed: devhost looked for ~/.local/state/devhost/caddy/caddy and for caddy on your PATH.', then 'Install it with:' and devhost caddy download on its own line, exit 1. The exec error is devhost's, never printed under the caddy label because Caddy never ran, and no line names a log file, so caddy.stdout.log and caddy.stderr.log keep their earlier content (FAIL-2, MENU-5, WORD-7). Any other start failure names what Caddy said and the log this attempt wrote: 'Caddy did not start: listen tcp :443: bind: address already in use · from ~/.local/state/devhost/caddy/caddy.stderr.log' (FAIL-3); the two port 443 cases keep their next steps (kept). Agent output: one ERR: line with absolute paths. Removes first-run-setup-06's generic failure that pointed at logs the attempt had just emptied.",
+      "explanation": "devhost caddy start and devhost serve stop before starting anything: '[ERROR] Caddy is not installed: devhost looked for ~/.local/state/devhost/caddy/caddy and for caddy on your PATH.', then 'Install it with:' and devhost caddy download on its own line, exit 1. The exec error is devhost's, never printed under the caddy label because Caddy never ran, and no line names a log file, so caddy.stdout.log and caddy.stderr.log keep their earlier content (FAIL-2, MENU-5, WORD-7). Any other start failure names what Caddy said and the log this attempt wrote: 'Caddy did not start: listen tcp :443: bind: address already in use · from ~/.local/state/devhost/caddy/caddy.stderr.log' (FAIL-3). Linux's port 443 case keeps devhost caddy privileged-ports; on macOS bindHost 127.0.0.1 below 1024 no longer fails (O39). Agent output: one ERR: line with absolute paths. Removes first-run-setup-06's generic failure that pointed at logs the attempt had just emptied.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 149,
-          "end_line": 158,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 169,
+          "end_line": 182,
           "label": "Replaces: Caddy's output, then generic failure"
         },
         {
-          "path": "apps/devhost/internal/caddy/background_command.go",
-          "line": 19,
-          "end_line": 30,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 791,
+          "end_line": 856,
           "label": "Replaces: logs truncated before Caddy writes"
         },
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 343,
-          "end_line": 357,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 621,
+          "end_line": 657,
           "label": "Reuses: the port 443 hints"
         }
       ]
@@ -267,15 +273,15 @@
       "explanation": "The repair command the warning and devhost's pages name. At a terminal, with Caddy running and the authority untrusted, it shows the trust step's line and prompt and ends with the same trusted outcome; already trusted reads 'Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost is already trusted · nothing changed' (kept, in words). With Caddy stopped it changes nothing and offers the start that also trusts: 'devhost caddy trust needs Caddy running, because Caddy creates its certificate authority when it starts. Start it, which also trusts the authority:' and devhost caddy start (FAIL-2, MENU-5; first-run-setup-01). Under AGENT=1 it refuses before any sudo, exit 1, with one ERR: line telling the agent to ask the person to run it in a terminal (REV-8, CC-13); without a terminal and without AGENT=1 it runs only when sudo -n true succeeds, so a script never hangs. trust-remote and untrust refuse an agent the same way. Removes first-run-setup-03.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 276,
-          "end_line": 313,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 272,
+          "end_line": 314,
           "label": "Replaces: trust with no agent or terminal check"
         },
         {
-          "path": "apps/devhost/internal/caddy/trust.go",
-          "line": 73,
-          "end_line": 77,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 586,
+          "end_line": 591,
           "label": "Reuses: person check: terminal, no AGENT=1"
         }
       ]
@@ -290,16 +296,22 @@
       "explanation": "The trust step of devhost caddy start, and of devhost caddy trust, asks every time, and only a person at a terminal can answer (REV-1, REV-8). Before sudo's prompt one line says what the step does and that it asks for the password (WORD-9): 'Trusting devhost's local certificate authority adds Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost to the system trust store and asks for your password.' sudo's prompt keeps its caddy | Password: label (kept). Ctrl-C at the prompt skips trust: devhost and Caddy keep running, the warning prints with 'You cancelled the password prompt.', and the start exits 0 because Caddy runs (KEY-14, FAIL-5). For trust-remote, its own question is that line ('Add it to the System keychain? This asks for your password. [y/N]'), and sudo's prompt follows only a y. A declined or failed password goes to the warning with sudo's reason. devhost never answers a password prompt for the person (owner rule).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/trust.go",
-          "line": 79,
-          "end_line": 92,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 603,
+          "end_line": 619,
           "label": "Replaces: 'This may ask for your password.' line"
         },
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 200,
-          "end_line": 213,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 586,
+          "end_line": 591,
           "label": "Reuses: ask only when a person can answer"
+        },
+        {
+          "path": "apps/devhost/src/caddy/trust.rs",
+          "line": 14,
+          "end_line": 47,
+          "label": "Reuses: trust check against the system roots"
         }
       ]
     },
@@ -313,15 +325,15 @@
       "explanation": "One backend operation for every change to this machine's certificate trust. The start's trust step and devhost caddy trust run Caddy's own trust installation into the system trust store (kept); trust-remote runs sudo security add-trusted-cert into the System keychain only after its question; devhost caddy untrust removes each recorded root with its store's own command. Every install appends {subject, sha256, source, store, installedAt} to the trusted-roots record in the state directory, written atomically, and untrust rewrites it (UNDO-5; first-run-setup-05). The fingerprint is the SHA-256 of the DER certificate, in the form openssl x509 -fingerprint -sha256 prints (WORD-8; first-run-setup-04). SIGINT during the trust command ends only that command. A declined or failed sudo goes to the warning with its cause; nothing is retried by itself (REV-12). One local authority per state directory still signs every hostname of every stack (kept).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/trustRemote.go",
-          "line": 105,
-          "end_line": 131,
+          "path": "apps/devhost/src/caddy/trust_remote.rs",
+          "line": 99,
+          "end_line": 115,
           "label": "Reuses: add-trusted-cert into System keychain"
         },
         {
-          "path": "apps/devhost/internal/caddy/paths.go",
-          "line": 99,
-          "end_line": 99,
+          "path": "apps/devhost/src/machine.rs",
+          "line": 9,
+          "end_line": 9,
           "label": "Reuses: one root per state directory"
         }
       ]
@@ -334,12 +346,12 @@
       "label": "Trusted: name, SHA-256",
       "sublabel": "way back: caddy untrust",
       "tag": "first-run-setup-05",
-      "explanation": "Success names what was installed, so the person can find it later among same-named roots of other state directories, and names its way back (UNDO-5, WORD-8): 'Trusted Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost · valid until 2036-09-25', the full SHA-256 fingerprint of the DER certificate on its own line, then 'Remove it later with:' and devhost caddy untrust on its own line. A certificate install cannot be taken back by an Undo, so there is no Undo: the outcome names the command that removes it. The start then ends with its hand-off line, 'Stack directory: https://devhost.localhost/ · next: devhost start in your project's folder' (SURF-15; first-run-setup-07). devhost caddy trust and trust-remote end with the same trusted line, trust-remote naming devbox. Removes first-run-setup-05's nameless 'managed caddy local CA trusted.'",
+      "explanation": "Success names what was installed, so the person can find it later among same-named roots of other state directories, and names its way back (UNDO-5, WORD-8): 'Trusted Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost · valid until 2036-09-25', the full SHA-256 fingerprint of the DER certificate on its own line, then 'Remove it later with:' and devhost caddy untrust on its own line. A certificate install cannot be taken back by an Undo, so there is no Undo: the outcome names the command that removes it. The start then ends with its hand-off line, 'All stacks on devbox: https://devhost.localhost/ · next: devhost start in the folder with your devhost.toml' (SURF-15, O61; first-run-setup-07). devhost caddy trust and trust-remote end with the same trusted line, trust-remote naming devbox. Removes first-run-setup-05's nameless 'managed caddy local CA trusted.'",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 225,
-          "end_line": 231,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 600,
+          "end_line": 600,
           "label": "Replaces: 'managed caddy local CA trusted.'"
         }
       ]
@@ -354,16 +366,16 @@
       "explanation": "With the authority trusted, https://devhost.localhost/ (the stack directory) and every stack's hostname load without a certificate warning, because one local authority signs every hostname of every stack (kept). The person opens the URL the start printed; devhost never opens a browser (owner rule). Read only. The next step, devhost start in a folder with a devhost.toml, belongs to stack-run-stop, which also adds the step that creates the manifest to the Quickstart (stack-run-stop-12, owned there).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/stack_directory.go",
-          "line": 17,
-          "end_line": 25,
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 174,
+          "end_line": 184,
           "label": "Reuses: stack directory at devhost.localhost"
         },
         {
-          "path": "apps/devhost/internal/caddy/caddyfile.go",
-          "line": 72,
-          "end_line": 81,
-          "label": "Reuses: every hostname signed by the local CA"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 539,
+          "end_line": 552,
+          "label": "Reuses: configured hosts signed by local CA"
         }
       ]
     },
@@ -375,18 +387,18 @@
       "label": "Warning with its cause",
       "sublabel": "command on its own line",
       "tag": "first-run-setup-02",
-      "explanation": "When devhost does not ask, or the trust step does not succeed, the start still succeeds and Caddy keeps running (product rule), and one warning stands out: the [WARN] label and its text in the warning color on a terminal that shows color (FAIL-2, WORD-7). It reads 'Browsers will reject devhost's HTTPS certificates: this machine does not trust devhost's local certificate authority.', then its cause: 'devhost did not ask for your password because standard input is not a terminal.', 'The password was not accepted: sudo: 3 incorrect password attempts.', 'You cancelled the password prompt.' or, for a joining stack, 'devhost start never asks for your password.'; then 'Trust it from a terminal:' and devhost caddy trust on its own line, never wrapped (WORD-8). Agent output tells the agent to ask the person, never to run it (REV-8, FB-11; first-run-setup-03). It repeats on every start while untrusted (kept). Removes first-run-setup-02's one plain line for every cause.",
+      "explanation": "When devhost does not ask, or the trust step does not succeed, the start still succeeds and Caddy keeps running (product rule), and one warning stands out: the [WARN] label and its text in the warning color on a terminal that shows color (FAIL-2, WORD-7). It reads 'Browsers will reject devhost's HTTPS certificates: this machine does not trust devhost's local certificate authority.' (terminal text keeps 'this machine', O61), then its cause: 'devhost did not ask for your password because standard input is not a terminal.', 'The password was not accepted: sudo: 3 incorrect password attempts.', 'You cancelled the password prompt.' or, for a joining stack, 'devhost start never asks for your password.'; then 'Trust it from a terminal:' and devhost caddy trust on its own line (WORD-8). Agent output tells the agent to ask the person, never to run it (REV-8, FB-11; first-run-setup-03). It repeats on every start while untrusted (kept). Removes first-run-setup-02's one plain line for every cause.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/trust.go",
-          "line": 16,
-          "end_line": 18,
+          "path": "apps/devhost/src/caddy/trust.rs",
+          "line": 5,
+          "end_line": 5,
           "label": "Replaces: one warning sentence for every cause"
         },
         {
-          "path": "apps/devhost/internal/services/shared_caddy.go",
-          "line": 26,
-          "end_line": 29,
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 589,
+          "end_line": 596,
           "label": "Reuses: a joining stack repeats it once"
         }
       ]
@@ -399,12 +411,12 @@
       "label": "Trust line on pages",
       "sublabel": "Copy devhost caddy trust",
       "tag": "first-run-setup-02",
-      "explanation": "devhost cannot change the browser's 'Your connection is not private' page and never opens a browser, so every page devhost renders says why once the person is past it (MENU-5, STATE-4): the stack directory, the Caddy 404, the status pages and the file listing put one line at the top, before their heading: 'This machine does not trust devhost's local certificate authority, so your browser warns on each devhost hostname and blocks a page's requests to another one. Run devhost caddy trust in a terminal, then reload.' with Copy ('Copy devhost caddy trust'). One shared component in both style entries (SURF-14), rendered by stack-directory, startup-and-recovery and serve-folder. On app pages the toolbar shows the same sentence as a condition notice that never takes focus (FB-8, FB-9, KEY-6), an exception to ACT-7 the proposal records; until it is accepted, full pages and the terminal carry the condition. Removes first-run-setup-02's silent pages.",
+      "explanation": "devhost cannot change the browser's 'Your connection is not private' page and never opens a browser, so every page devhost renders says why once the person is past it (MENU-5, STATE-4): the stack directory, the status pages, the file listing and the plain-HTTP Caddy 404 (O63) put one line at the top, before their heading: 'devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there.' with Copy ('Copy devhost caddy trust'). It names the machine whose store it reports (O61). One shared component in both style entries (SURF-14), rendered by stack-directory, startup-and-recovery and serve-folder. On app pages the toolbar shows the same sentence as a condition notice that never takes focus (FB-8, FB-9, KEY-6), an exception to ACT-7 that revision 6 has not settled; until then, full pages and the terminal carry the condition. Removes first-run-setup-02's silent pages.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/trust.go",
-          "line": 54,
-          "end_line": 67,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 77,
+          "end_line": 86,
           "label": "Replaces: trust state for terminal lines only"
         }
       ]
@@ -420,15 +432,15 @@
       "explanation": "macOS only, as today. Under AGENT=1 it refuses before ssh and sudo (REV-8). Otherwise it names what it runs, 'Fetching devbox's root certificate: ssh devbox devhost caddy print-root-cert', then what it would trust: 'devbox's root certificate: Caddy Local Authority - 2026 ECC Root · valid until 2036-09-25', the full SHA-256 of the DER certificate on its own line, 'Compare it with devhost caddy print-root-cert --fingerprint on devbox.' and 'Trusting it lets anyone who can read devbox's devhost state issue certificates this Mac accepts for any website.' The set comes first and the question last: 'Add it to the System keychain? This asks for your password. [y/N]' (REV-4, SURF-2, WORD-8). Only y or yes goes on to sudo's prompt; an empty answer, end of input or anything else reads 'Not trusted: nothing changed.' and exits 1 with no error tag (FAIL-5); --yes skips the question (CC-13). A failed ssh names the target and the command. Removes first-run-setup-04.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/trustRemote.go",
-          "line": 63,
-          "end_line": 80,
+          "path": "apps/devhost/src/caddy/trust_remote.rs",
+          "line": 89,
+          "end_line": 115,
           "label": "Replaces: PEM-text hash, then install at once"
         },
         {
-          "path": "apps/devhost/internal/caddy/trustRemote.go",
-          "line": 90,
-          "end_line": 103,
+          "path": "apps/devhost/src/caddy/trust_remote.rs",
+          "line": 59,
+          "end_line": 79,
           "label": "Reuses: ssh devbox devhost caddy print-root-cert"
         }
       ]
@@ -444,9 +456,9 @@
       "explanation": "New: the way back for every install. It lists what it will remove before it asks (SEL-1, BAR-2): 'Removing 2 certificate authorities devhost trusted on this Mac:', then one line each with its source, SHA-256 fingerprint and trust store, then 'This asks for your password.' before sudo. The outcome reads 'Removed 2 certificate authorities · browsers warn on devhost's hostnames until devhost caddy trust' (WORD-4). It finds this state directory's own root by its fingerprint even when it was installed before the record existed, and removes only the roots of the state directory it runs in. It removes them through the same trust operation, sudo included. Under AGENT=1 it refuses as devhost caddy trust does (REV-8); with nothing recorded it reads 'devhost has not trusted any certificate authority from ~/.local/state/devhost · nothing changed' and exits 0. The Install page gains an 'Uninstall devhost' section. Removes first-run-setup-05 (UNDO-5).",
       "sources": [
         {
-          "path": "apps/devhost/internal/cli/parse.go",
-          "line": 433,
-          "end_line": 465,
+          "path": "apps/devhost/src/main.rs",
+          "line": 804,
+          "end_line": 819,
           "label": "Replaces: caddy commands with no untrust"
         }
       ]
@@ -459,12 +471,12 @@
       "label": "devhost caddy stop",
       "sublabel": "set first; never asks",
       "tag": "notices-and-feedback-04",
-      "explanation": "It prints its set first, from the state directory's records (SEL-6, BAR-2, WORD-5): 'Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running:', then one line each, 'Acme Shop · main ~/acme · PID 81234 · detached · shop.localhost, docs.shop.localhost, +3' (SEL-4, WORD-1). Then it acts at once, in a terminal and under AGENT=1 alike, because stopping Caddy ends no agent's turn, no service and no conversation (REV-1, REV-7, O33): no question and no --yes, which differs from the slice text 'and asks first', recorded as a cross-flow conflict. --dry-run prints the set and 'Dry run: Caddy keeps running; nothing changed' and exits 0 (SEL-6, CC-12). With Caddy stopped it reads 'Caddy is not running · nothing changed' (kept). Agent output lists each manifest's absolute path, PID and every hostname (WORD-9). Resolves this flow's slice of notices-and-feedback-04; the stacks' own lines are stack-run-stop's.",
+      "explanation": "It prints its set first, from the state directory's records (SEL-6, BAR-2, WORD-5): 'Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running:', then one line each with the stack's name and worktree label, 'Acme Shop · main ~/acme · PID 81234 · detached · shop.localhost, docs.shop.localhost, +3' (SEL-4, WORD-1, WORD-11). Then it acts at once, in a terminal and under AGENT=1 alike, because stopping Caddy ends no agent's turn, no service and no conversation (REV-1, REV-7, O33): no question and no --yes. --dry-run prints the set and 'Dry run: Caddy keeps running; nothing changed' and exits 0 (SEL-6, CC-12). With Caddy stopped it reads 'Caddy is not running · nothing changed' (kept). Agent output lists each manifest's absolute path, PID and every hostname (WORD-9). Today it prints only 'managed caddy stopped.' Resolves this flow's slice of notices-and-feedback-04; the stacks' own lines are stack-run-stop's.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 234,
-          "end_line": 274,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 219,
+          "end_line": 264,
           "label": "Replaces: stop naming no stack it takes offline"
         }
       ]
@@ -475,13 +487,13 @@
       "col": 5,
       "type": "backend",
       "label": "Stop record, tell stacks",
-      "sublabel": "1 s per stack, then stop",
-      "explanation": "Before Caddy stops, devhost writes a stop record beside Caddy's PID file (by devhost caddy stop, when, and the origin, a terminal or an agent, ACT-1) and tells each running stack through its control server, waiting at most 1 s per stack; a stack that does not answer is named in the set (ACT-10, FAIL-5, HOLD-2). Each stack's terminal then prints stack-run-stop's 'Acme Shop lost its proxy at 14:10 (devhost caddy stop); its services keep running', and its pages show notices-and-feedback's 'devhost's proxy is not reachable. Start it with devhost caddy start' over services drawn as unknown, never down (ACT-5, FB-7). The outcome reads 'Stopped Caddy · 2 stacks and 1 serve session offline until devhost caddy start · 0.4 s' (FB-3, WORD-4). There is no Undo: devhost caddy start brings every route back (UNDO-5). A Caddy whose admin API does not answer is never called stopped; the stack-scale-09 patch builds that PID check and this flow words its lines (ACT-11).",
+      "sublabel": "1 s in all, then stop",
+      "explanation": "Before Caddy stops, devhost writes a stop record beside Caddy's PID file (by devhost caddy stop, when, and the origin, a terminal or an agent, ACT-1) and tells every running stack at once through its control server, waiting at most 1 s in total; each stack that does not answer gets its own line after the set (ACT-10, FAIL-5, HOLD-2). Each stack's terminal then prints stack-run-stop's 'Acme Shop lost its proxy at 14:10 (devhost caddy stop); its services keep running', or '(Caddy exited without devhost caddy stop)' when no record exists, and its pages show notices-and-feedback's 'devhost's proxy is not reachable. Start it with devhost caddy start' over services drawn as unknown, never down (ACT-5, FB-7). The outcome reads 'Stopped Caddy · 2 stacks and 1 serve session offline until devhost caddy start · 0.4 s' (FB-3, WORD-4). There is no Undo: devhost caddy start brings every route back (UNDO-5). A Caddy whose admin API does not answer is never called stopped; the stack-scale-09 patch builds that PID check and this flow words its lines (ACT-11).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/lifecycle.go",
-          "line": 258,
-          "end_line": 273,
+          "path": "apps/devhost/src/caddy.rs",
+          "line": 250,
+          "end_line": 263,
           "label": "Replaces: stop, then a bare 'stopped.' line"
         }
       ]
@@ -620,11 +632,11 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: devhost caddy trust as a setup step in both help screens (it stays as the repair command); the hash of the PEM text that trust-remote printed as 'sha256'; every hint that names a log this attempt did not write; the Caddyfile path in human output (kept in agent output); the in-place write of the downloaded binary; the 'managed caddy' sentences, and caddy stop's bare 'managed caddy stopped.'",
-        "Merged: the Install page, the managed-Caddy guide, the README, both help screens and the skill teach one recipe; the warning's one sentence for every cause becomes one sentence plus its cause; one condition sentence serves devhost's full pages and the toolbar",
-        "New: devhost caddy untrust and the trusted-roots record; print-root-cert --fingerprint; trust-remote's fingerprint, expiry, what the trust allows, [y/N] and --yes; the trust commands' refusal under AGENT=1; the download's progress, version, check and atomic replacement; the start's version, binary, stack directory URL and next command; caddy stop's printed set, --dry-run, stop record and notice to each stack; the trust line on devhost's pages and the toolbar's condition notice (an ACT-7 exception); the docs' Uninstall devhost section, update procedure and browser symptoms",
-        "Changed: trust and untrust refuse under AGENT=1 before any sudo; trust-remote asks [y/N] before it installs and prints the DER fingerprint; the download replaces the binary by a rename after a complete, checked download; caddy start reports success only once Caddy listens; caddy stop prints its set before acting and never asks (REV-7)",
-        "Kept: one download and one start set up a machine; the trust step runs only when a person can answer, and without one Caddy runs untrusted with a warning that repeats on every start; trust reports an already trusted authority and needs Caddy running; start, stop and trust refuse a Caddy devhost did not start; one local authority per state directory signs every hostname; the downloaded Caddy before the PATH one, and devhost never downloads on its own; the route lock; the port 443 hints; stopping Caddy leaves every service running; devhost never opens a browser or answers a prompt"
+        "Removed: devhost caddy trust as a setup step in devhost caddy --help (it stays as the repair command); the hash of the PEM text that trust-remote printed as 'sha256'; every hint that names a log this attempt did not write; the Caddyfile path in human output (kept in agent output); the in-place write of the downloaded binary; the 'managed caddy' sentences, and caddy stop's bare 'managed caddy stopped.'",
+        "Merged: the Install page, the managed-Caddy guide, the README, both help screens and the skill teach one recipe; the warning's one sentence for every cause becomes one sentence plus its cause; one condition sentence, naming the machine (O61), serves devhost's full pages and the toolbar",
+        "New: a Quickstart in devhost --help with Caddy's steps first; the Install page's Update devhost section (O18); devhost caddy untrust and the trusted-roots record; print-root-cert --fingerprint; trust-remote's fingerprint, expiry, what the trust allows, [y/N] and --yes; the trust commands' refusal under AGENT=1; the download's progress, version, check and atomic replacement; the start's version, binary, listener reach, stack directory URL and next command; caddy stop's printed set, --dry-run, stop record and notice to each stack; the trust line on devhost's pages and the toolbar's condition notice (an ACT-7 exception); the docs' Uninstall devhost section, update procedure and browser symptoms",
+        "Changed: trust and untrust refuse under AGENT=1 before any sudo; trust-remote asks [y/N] before it installs and prints the DER fingerprint; the download replaces the binary by a rename after a complete, checked download; caddy start reports success only once Caddy listens; on macOS bindHost 127.0.0.1 listens on loopback from port 1024 upward and keeps every interface with a warning below it (O39); caddy stop prints its set before acting and never asks (REV-7, O33); the older-devhost refusal names devhost upgrade and devhost restart-all (O18)",
+        "Kept: one download and one start set up a machine; the trust step runs only when a person can answer, and without one Caddy runs untrusted with a warning that repeats on every start; trust reports an already trusted authority and needs Caddy running; start, stop and trust refuse a Caddy devhost did not start; one local authority per state directory signs every hostname; the downloaded Caddy before the PATH one, and devhost never downloads on its own; the route lock and its refusal of an older devhost; one restart for a newer runtime policy; Linux's port 443 hint; Caddy on every interface by default; stopping Caddy leaves every service running; devhost never opens a browser or answers a prompt"
       ]
     },
     {
@@ -638,8 +650,8 @@
         "Agent refusals: first-run-setup-03",
         "trust-remote's fingerprint and question: first-run-setup-04",
         "untrust and the trusted-roots record: first-run-setup-05",
-        "Slices here, the rest elsewhere: notices-and-feedback-04 (this flow: caddy stop names the stacks and hostnames before acting, without a question per REV-7; stack-run-stop: the stacks' own proxy lines)",
-        "Related, not covered: stack-run-stop-12 (stack-run-stop: the Quickstart's manifest step); stack-scale-09 (its own patch, no redesign: the PID check whose lines this flow words)"
+        "Slices here, the rest elsewhere: notices-and-feedback-04 (this flow: caddy stop names the stacks and hostnames before acting, without a question per REV-7 and O33; stack-run-stop: the stacks' own proxy lines)",
+        "Related, not covered: stack-run-stop-12 (stack-run-stop: devhost init after Caddy's steps in the Quickstart, O52); stack-scale-09 (its own patch, no redesign: the PID check whose lines this flow words)"
       ]
     },
     {
@@ -653,11 +665,13 @@
         "The trust step's lines and causes: subject, expiry and DER SHA-256; a cause with each untrusted result; SIGINT ends only the trust command",
         "Agent refusals of trust, untrust and trust-remote before any ssh, sudo or security; sudo -n true without a terminal (CC-13)",
         "trust-remote parses the PEM, prints subject, expiry and DER SHA-256, states what the trust allows and asks [y/N]; --yes (CC-13)",
-        "[discuss]: print-root-cert --fingerprint, which CC-13 must name beside trust-remote",
+        "print-root-cert --fingerprint in machine.rs; no CC-n covers it yet, so the reference's author adds it beside CC-13",
         "devhost caddy untrust and the trusted-roots record in the state directory, written atomically (CC-13)",
-        "[discuss]: the trust state for pages: the stack directory and Caddy 404 re-rendered under the route lock, status pages reading the check; the toolbar's state on the health stream waits for the ACT-7 exception",
-        "caddy stop's set, --dry-run, stop record and a notice to each stack, at most 1 s per stack (CC-12)",
-        "The PID check of an unresponsive Caddy: built by the stack-scale-09 patch, landing before the stop record; this flow words its lines (ACT-11)"
+        "The trust state for pages: the stack directory and Caddy 404 re-rendered under the route lock with the machine name (O61), status pages reading the check; the toolbar's state on the health stream waits for the ACT-7 exception",
+        "caddy stop's set, --dry-run, stop record and a notice to each stack, at most 1 s in total (CC-12)",
+        "The PID check of an unresponsive Caddy: built by the stack-scale-09 patch, landing before the stop record; this flow words its lines (ACT-11)",
+        "The proxy line and its macOS warning, printed from proxy-settings' listener resolution in files.rs (O39)",
+        "The older-devhost refusal and the one restart, worded with devhost upgrade and devhost restart-all (O18)"
       ]
     },
     {
@@ -667,16 +681,16 @@
         "CC-12 (this flow's half): devhost caddy stop names the running stacks and the hostnames it takes offline first, and takes --dry-run",
         "CC-13: the commands that change certificate trust refuse under AGENT=1; trust-remote shows subject, expiry and SHA-256 fingerprint and asks first (--yes skips it); devhost caddy untrust removes the roots devhost installed; the warning asks for devhost caddy trust in a terminal",
         "CC-30: both outputs report the same outcomes; output for agents asks the agent to have the person act (lands once, with stack-run-stop)",
-        "[discuss], no CC-n yet: print-root-cert --fingerprint; install.md's fingerprint sentence and Uninstall devhost section; managed-caddy.md's trust-remote paragraph and update procedure; cli.md's download row; troubleshooting's browser symptoms; the skill's caddy lines",
-        "[discuss]: exceptions proposed for the reference: ACT-7 gains the untrusted local authority as a condition; WORD-9's size before a download, which caddyserver.com does not send"
+        "No CC-n yet, for the reference's author beside CC-13: print-root-cert --fingerprint; install.md's fingerprint sentence and its Update devhost and Uninstall devhost sections; managed-caddy.md's trust-remote paragraph, update procedure and devhost upgrade sentence; cli.md's download row; troubleshooting's browser symptoms; the skill's caddy lines",
+        "Exceptions proposed for the reference, not settled by revision 6: ACT-7 gains the untrusted local authority as a condition; WORD-9's size before a download, which caddyserver.com does not send"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
-        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Drawn from the current diagram (frozen at the pre-Rust baseline) and the written proposal; sources cite only existing Rust code a step reuses or replaces at that revision, and steps with no code yet have none; devhost upgrade is not on Rust main and is cited as O18's proposed command"
       ]
     }
   ]
