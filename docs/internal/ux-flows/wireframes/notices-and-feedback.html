@@ -1209,10 +1209,13 @@
               <span class="n">11</span> When the stream returns, states update in place, every write becomes available
               again without a page reload and nothing it blocked is replayed; the page says once, politely (without
               "also in the log", <code>O14</code>), "Connected again · 6 of 6 running", or after a replacement
-              "Connected again · Acme Shop was replaced by PID 85102 · 6 of 6 running". The notices the outage raised
-              clear with it: a reload held during the outage clears when the page's service still runs the process it
-              ran when the page loaded, and otherwise stays as <b>Reload blocked</b>; failures the record keeps stay
-              (<code>ACT-5</code>, <code>ACT-7</code>, <code>ACT-10</code>, <code>REV-12</code>, <code>FB-6</code>).
+              "Connected again · Acme Shop was replaced by devhost restart at 14:02 · 6 of 6 running", naming the
+              command that replaced it and never a process ID; the page knows it reached the new run because the stream
+              carries the stack ID the final message's <code>replacedBy</code> named (<code>R7-99</code>). The notices
+              the outage raised clear with it: a reload held during the outage clears when the page's service still runs
+              the process it ran when the page loaded, and otherwise stays as <b>Reload blocked</b>; failures the record
+              keeps stay (<code>ACT-5</code>, <code>ACT-7</code>, <code>ACT-10</code>, <code>REV-12</code>,
+              <code>FB-6</code>).
             </li>
           </ol>
           <p class="fixes">
@@ -1401,6 +1404,10 @@
               <code>port-closed</code>) to its handler
             </li>
             <li>
+              A shutdown keeps the control server up until the services stopped, where today it drops first, so the
+              final message can say what stopped
+            </li>
+            <li>
               Control errors are sentences; <code>restartStack.test.ts</code> and
               <code>restartServices.test.ts</code> change
             </li>
@@ -1421,10 +1428,7 @@
               Progress where the operation started; colliding controls unavailable, now with the running operation as
               their reason; other services' starts queue
             </li>
-            <li>
-              Reconnecting by itself after 1 s, doubling to 10 s; readouts hidden while disconnected; a shutdown stops
-              services before the control server
-            </li>
+            <li>Reconnecting by itself after 1 s, doubling to 10 s; readouts hidden while disconnected</li>
             <li>
               A save reports success only once applied; failures keep their original text, behind <b>Copy Error</b>; a
               configuration not applied leads to <b>Edit</b> and blocks nothing
@@ -1453,8 +1457,9 @@
             </li>
             <li>
               Final messages before streams close (<code>stack-ended</code>, <code>proxy-stopping</code>,
-              <code>listeners-moving</code>, command-mode <code>port-closed</code>) and stopping published first
-              (Backend 3, 4; <code>CC-26</code>)
+              <code>listeners-moving</code>, command-mode <code>port-closed</code>), with a replacement named by its
+              command, time and new stack ID, and stopping published first while the control server stays up (Backend 3,
+              4; <code>CC-26</code>, <code>R7-99</code>)
             </li>
             <li>
               Streams that stay open across Restart Stack and Start, from services-panel; each service's launch time
