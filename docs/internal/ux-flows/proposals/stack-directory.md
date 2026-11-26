@@ -1,6 +1,6 @@
 ---
 created_on: 2026-11-17 00:06
-last_modified: 2026-11-25 20:40
+last_modified: 2026-11-25 23:55
 status: current
 ---
 
@@ -185,7 +185,7 @@ Exceptions this flow proposed, which revision 7 settled:
 **Project contracts** (update the project instructions in the same change as the implementation):
 
 - `guides/stack-lifecycle.md`, "After the last stack stops cleanly, the page shows an empty list until Caddy stops." becomes: "Stacks that stopped recently stay listed as stopped, with when and why and the command that starts them again; with none running or recently stopped, the page shows an empty list until Caddy stops."; "Stacks appear in a single column of compact cards showing their PID, directory, and services." is kept and extended with: "Each card counts its running services of the stack's total and names its failures, and statuses update while the page is open." (`CC-27`).
-- `guides/managed-caddy.md`, "An unknown hostname fails the TLS handshake instead of receiving a certificate or an HTTPS 404 page. When [plain HTTP is enabled](../shared-managed-caddy-settings/), an unknown HTTP hostname still gets a 404 page listing active routes." (already on Rust `main`; `CC-27` still quotes the older sentence) is kept and extended as `CC-27` states for `O63`, with: "The 404 page names the hostname and path you asked for, offers up to three close running hostnames with the same path, and groups the hostnames by stack and worktree; a request that is not a page load gets a short `404` instead. Over HTTPS, type the mistyped address into the stack directory's filter, which offers the same close hostnames." (`CC-27`, `O46`, `O63`).
+- `guides/managed-caddy.md`, "An unknown hostname fails the TLS handshake instead of receiving a certificate or an HTTPS 404 page. When \[plain HTTP is enabled\](../shared-managed-caddy-settings/), an unknown HTTP hostname still gets a 404 page listing active routes." (already on Rust `main`; `CC-27` still quotes the older sentence) is kept and extended as `CC-27` states for `O63`, with: "The 404 page names the hostname and path you asked for, offers up to three close running hostnames with the same path, and groups the hostnames by stack and worktree; a request that is not a page load gets a short `404` instead. Over HTTPS, type the mistyped address into the stack directory's filter, which offers the same close hostnames." (`CC-27`, `O46`, `O63`).
 - This flow reads, and does not change the text of, `CC-25` (the published service state, services-panel's), `CC-38` (sessions across a stack's worktrees and `GET /__devhost__/chat/open`, agent-chat's), `CC-11` (the `devhost service` commands, stack-run-stop's), `CC-23` (`devhost stack info` / `devhost status`, stack-run-stop's), `CC-37` (the Check Again routes, services-panel's) and `CC-39` (`machineName`, stack-run-stop's).
 - `CC-50` covers the following, beside `CC-27` and `CC-31`:
   - `guides/stack-lifecycle.md`, "Counts of the listed stacks and URLs appear above the filter." becomes: "Counts of the stacks and serve sessions, of those that need you and of those that stopped recently appear above the filter, and the page's title starts with what needs you."
