@@ -150,7 +150,7 @@ devhost: Downloading Caddy for Linux amd64 from caddyserver.com…
 devhost: Installed Caddy 2.11.9 at /home/dev/.local/state/devhost/caddy/caddy · 48 MiB · 9.4 s <span class="n">10</span></pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: <code>WORD-9</code> asks both outputs to name a download's size beforehand, but caddyserver.com sends no length, so this page names the size as it arrives and in the outcome. Revision 6 of the reference has not settled this proposed exception; proxy-settings prints these same lines for the download inside <code>devhost caddy privileged-ports</code>. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>2. Download Caddy</h2>
 <p><code>devhost caddy download</code> still fetches the Caddy build for this platform from caddyserver.com into devhost's state directory; devhost still prefers that copy over a <code>caddy</code> on the PATH and never downloads Caddy by itself. What changes is that it says what it fetches, shows its progress, checks the file and only then puts it in place, so a rerun never breaks a running Caddy; today it holds the whole download in memory and writes it over the installed binary in place, ending with "Caddy downloaded to" and a path. One write: the managed Caddy binary. Keys: Ctrl-C cancels and keeps the installed binary (<code>KEY-14</code>).</p>
 <ol><li><span class="n">1</span> Before anything arrives, one line says what downloads and from where (<code>WORD-9</code>; the size is not known yet, see the conflict above).</li>
@@ -310,27 +310,27 @@ devhost: WARN: Browsers will reject devhost's HTTPS certificates: this machine d
 <div class="win">
 <div class="bar"><b>devhost › stack directory · devhost.acme.test</b><span>past the browser's own certificate warning, which devhost cannot change</span></div>
 <div class="work small">
-<div class="banner">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there. <span class="btn">Copy</span> <span class="n">1</span></div>
-<div><b style="font-size:14px">Stacks on devbox</b> <span class="n">2</span></div>
+<div><b style="font-size:14px">Stacks on devbox</b> <span class="n">1</span></div>
+<div class="banner">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there. <span class="btn">Copy</span> <span class="n">2</span></div>
 <div class="muted">stack-directory's totals, filter and stack cards …</div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › the same line on devhost's other full pages</b><span>at every acceptance viewport</span> <span class="n">4</span></div>
+<div class="bar"><b>devhost › the same line on devhost's other full pages</b><span>at every acceptance viewport</span> <span class="n">3</span><span class="n">4</span></div>
 <div class="work small">
 <div class="vlab">The Caddy 404, on plain HTTP with httpEnabled = true</div>
-<div class="banner">◆ devbox does not trust devhost's local certificate authority, … then reload; … <span class="btn">Copy</span> <span class="n">3</span></div>
 <div><b>No devhost route for http://hotfix-shpo.shop.acme.test/checkout</b></div>
+<div class="banner">◆ devbox does not trust devhost's local certificate authority, … then reload; … <span class="btn">Copy</span></div>
 <div class="vlab">A starting service's page, a recovery page and the stopped stack's page</div>
-<div class="banner">◆ devbox does not trust devhost's local certificate authority, … then reload; … <span class="btn">Copy</span></div>
 <div><b>◐ api is starting</b> <span class="muted">· startup-and-recovery's page …</span></div>
-<div class="vlab">A serve session's file listing</div>
 <div class="banner">◆ devbox does not trust devhost's local certificate authority, … then reload; … <span class="btn">Copy</span></div>
-<div class="muted">serve-folder's listing of ~/notes …</div>
+<div class="vlab">A serve session's file listing</div>
+<div class="muted">serve-folder's listing of ~/notes, under its heading …</div>
+<div class="banner">◆ devbox does not trust devhost's local certificate authority, … then reload; … <span class="btn">Copy</span></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Acme Shop › docs page</b><span>an app page, once the reference accepts the condition</span></div>
+<div class="bar"><b>devhost › Acme Shop › docs page</b><span>an app page</span></div>
 <div class="pg" style="min-height:120px">
 <div class="apptxt">Acme docs · Getting started … (its request to api.acme.test failed)</div>
 <div class="corner">
@@ -340,14 +340,14 @@ devhost: WARN: Browsers will reject devhost's HTTPS certificates: this machine d
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference's list of conditions (<code>ACT-7</code>) has no entry for an untrusted certificate authority, and revision 6 has not settled the exception this proposal makes: the toolbar's condition notice on every app page. notices-and-feedback and toolbar-shell must confirm its order and the marker a dismissal leaves. Until it is accepted, the full pages and the terminal carry the condition alone. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>5. Open the stack directory</h2>
 <p>Opening the stack directory's URL is still where setup ends: with the authority trusted, it and every stack's hostname load without a certificate warning, no line shows, and the next step, <code>devhost start</code>, is stack-run-stop's. devhost still never opens a browser and cannot change the browser's own warning page. What changes is that once the person is past that warning, every page devhost renders says why it appeared and how to fix it. Read only: <b>Copy</b> copies text and writes nothing, so a lost connection or a rejected manifest blocks nothing here (<code>HOLD-2</code>, <code>HOLD-6</code>). Keys: full pages use the document's standard keys (<code>KEY-1</code>); <b>Copy</b> is an ordinary button and Tab stop, in the notice stack after the notice's text (<code>KEY-4</code>).</p>
-<ol><li><span class="n">1</span> While devbox's system trust store does not trust the authority, one line sits at the top of every page devhost renders, before its heading in reading order: what is wrong, what it breaks and the command that fixes it, with <b>Copy</b>, whose accessible name is "Copy devhost caddy trust", which copies exactly <code>devhost caddy trust</code> and reports "Copied devhost caddy trust". It names the machine whose trust store it reports, because a reader in another environment would take "this machine" for their own computer, and names <code>devhost caddy trust-remote</code> with devbox's SSH name for a browser on another Mac. With no machine name to read and none set, it starts "The machine that runs this stack does not trust …" (<code>MENU-5</code>, <code>STATE-4</code>, <code>O61</code>).</li>
-<li><span class="n">2</span> Below the line each page is its owner's: stack-directory draws the directory, headed "Stacks on devbox", and the Caddy 404, which exists only on plain HTTP because over HTTPS an unknown hostname gets no certificate (<code>O63</code>); startup-and-recovery the status pages, serve-folder the file listing (<code>O61</code>).</li>
-<li><span class="n">3</span> The same sentence on every full page, from one shared component shipped in the status pages' stylesheet and the devtools stylesheet; stack-directory, startup-and-recovery and serve-folder each render it before their heading (<code>SURF-14</code>).</li>
+<ol><li><span class="n">1</span> Each page is its owner's and leads with its heading: stack-directory draws the directory, headed "Stacks on devbox", and the Caddy 404, which exists only on plain HTTP because over HTTPS an unknown hostname gets no certificate (<code>O63</code>); startup-and-recovery the status pages, serve-folder the file listing (<code>FB-9</code>, <code>O61</code>).</li>
+<li><span class="n">2</span> While devbox's system trust store does not trust the authority, one line sits under the heading of every page devhost renders, as a condition banner: what is wrong, what it breaks and the command that fixes it, with <b>Copy</b>, whose accessible name is "Copy devhost caddy trust", which copies exactly <code>devhost caddy trust</code> and reports "Copied devhost caddy trust". It names the machine whose trust store it reports, because a reader in another environment would take "this machine" for their own computer, and names <code>devhost caddy trust-remote</code> with devbox's SSH name for a browser on another Mac. With no machine name to read and none set, it starts "The machine that runs this stack does not trust …" (<code>MENU-5</code>, <code>STATE-4</code>, <code>WORD-12</code>, <code>O61</code>).</li>
+<li><span class="n">3</span> The same sentence on every full page, from one shared component shipped in the status pages' stylesheet and the devtools stylesheet; stack-directory, startup-and-recovery and serve-folder each render it under their heading (<code>SURF-14</code>, <code>FB-9</code>).</li>
 <li><span class="n">4</span> At every acceptance viewport, in both themes, in forced colors and at 200% zoom, the line and <b>Copy</b> stay visible with no text clipped, <b>Copy</b> is at least 24 by 24 CSS pixels, and each page reflows at 320 CSS pixels (<code>SURF-9</code>).</li>
-<li><span class="n">5</span> On app pages the toolbar shows the same sentence as a condition notice with <b>Copy</b>, ordered with the notice stack's other conditions, announced once politely when the condition starts or ends, never taking focus, and cleared without a reload once <code>devhost caddy trust</code> succeeds; dismissing it follows notices-and-feedback's rules for every condition notice (<code>FB-8</code>, <code>FB-9</code>, <code>KEY-6</code>, <code>SURF-1</code>, <code>SURF-8</code>, <code>UNDO-3</code>).</li></ol>
+<li><span class="n">5</span> On app pages the toolbar shows the same sentence as a condition notice with <b>Copy</b>, ranked right after a rejected configuration in the notice stack and on the collapsed badge (<code>ACT-7</code>, the first group of <code>FB-8</code>), announced once politely when the condition starts or ends, never taking focus, and cleared without a reload once <code>devhost caddy trust</code> succeeds; dismissing it leaves its marker on the stack name until the condition ends (<code>FB-8</code>, <code>FB-9</code>, <code>KEY-6</code>, <code>SURF-1</code>, <code>SURF-8</code>, <code>UNDO-3</code>).</li></ol>
 <p class="fixes">Fixes first-run-setup-02 · Backend: the trust state for pages (Backend 10)</p></div>
 </section>
 
@@ -436,7 +436,7 @@ $ devhost caddy trust-remote devbox
 <li><span class="n">4</span> What the trust allows, in one sentence.</li>
 <li><span class="n">5</span> The set first and the question last, on one line ending in <code>[y/N]</code> (<code>REV-4</code>, <code>SURF-2</code>).</li>
 <li><span class="n">6</span> The outcome names what it trusted and the command that removes it; devhost records the root for step 8. There is no Undo: <code>devhost caddy untrust</code> is the way back (<code>UNDO-5</code>).</li>
-<li><span class="n">7</span> On devbox, <code>--fingerprint</code> prints the name, expiry and the same fingerprint, so the person compares two screens instead of trusting one (<code>WORD-8</code>). <code>CC-13</code> does not name the flag yet; the reference's author adds it beside <code>trust-remote</code>'s row.</li>
+<li><span class="n">7</span> On devbox, <code>--fingerprint</code> prints the name, expiry and the same fingerprint, so the person compares two screens instead of trusting one (<code>WORD-8</code>, <code>CC-48</code>).</li>
 <li><span class="n">8</span> Any answer but y or yes, an empty one and end of input included, changes nothing and exits 1 without an error tag, because a No is not a failure (<code>REV-4</code>, <code>FAIL-5</code>).</li>
 <li><span class="n">9</span> Under <code>AGENT=1</code> it refuses before <code>ssh</code> and <code>sudo</code>, as <code>devhost caddy trust</code> does (<code>REV-8</code>).</li>
 <li><span class="n">10</span> When devbox cannot be reached, it names the target, the command and its exit code, and what to check, with nothing trusted (<code>FAIL-2</code>).</li></ol>
@@ -482,7 +482,7 @@ devhost: ERR: devhost caddy untrust changes this machine's certificate trust, so
 <li><span class="n">3</span> The outcome counts what it removed and says what follows (<code>WORD-4</code>).</li>
 <li><span class="n">4</span> With nothing installed from this state directory, it says so and exits 0.</li>
 <li><span class="n">5</span> Under <code>AGENT=1</code> it refuses as <code>devhost caddy trust</code> does (<code>REV-8</code>).</li>
-<li><span class="n">6</span> The Install page gains an "Uninstall devhost" section with these steps in order; a binary that dotfiles or a package manager installed is removed the same way it came (<code>UNDO-5</code>, <code>O18</code>). No <code>CC-n</code> covers the section or the record yet; the reference's author adds them beside <code>CC-13</code>.</li>
+<li><span class="n">6</span> The Install page gains an "Uninstall devhost" section with these steps in order; a binary that dotfiles or a package manager installed is removed the same way it came (<code>UNDO-5</code>, <code>O18</code>, <code>CC-48</code>).</li>
 <li><span class="n">7</span> A root that <code>trust-remote</code> installed before the record existed is found by hand, by its name and the fingerprint <code>trust-remote</code> printed.</li></ol>
 <p class="fixes">Fixes first-run-setup-05 · Backend: <code>devhost caddy untrust</code> and the record of trusted roots (Backend 9; <code>CC-13</code>)</p></div>
 </section>
@@ -568,7 +568,7 @@ Acme Shop lost its proxy at 14:10 (Caddy exited without devhost caddy stop); its
 <li><code>print-root-cert --fingerprint</code>; <code>trust-remote</code>'s fingerprint, expiry, what the trust allows, <code>[y/N]</code> and <code>--yes</code></li>
 <li>The download's progress, version, check and atomic replacement; the start's version, binary, listener reach, stack directory URL and next command</li>
 <li><code>devhost caddy stop</code>'s printed set, <code>--dry-run</code>, stop record and notice to each stack</li>
-<li>The trust line on devhost's full pages, and the toolbar's condition notice once its exception is accepted</li>
+<li>The trust line under the heading of devhost's full pages, and the toolbar's condition notice ranked right after a rejected configuration (<code>ACT-7</code>)</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li><code>trust</code> and <code>untrust</code> refuse under <code>AGENT=1</code> before any sudo; today <code>trust</code> runs Caddy's sudo trust for an agent (<code>CC-13</code>)</li>
