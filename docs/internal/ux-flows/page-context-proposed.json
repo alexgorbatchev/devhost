@@ -257,7 +257,7 @@
       "type": "frontend",
       "label": "Crop the screenshot",
       "sublabel": "modal; Esc keeps draft",
-      "explanation": "With the tab shared and the camera on, Send takes one screenshot: devhost hides its toolbar, chat and tooltips, keeps the marks and drawings, and waits up to 10 s for a frame that shows them gone, else fails the send with the draft kept. The busy Send keeps focus and says each step: 'Taking screenshot…', 'Crop the screenshot to continue', 'Sending…' (FB-1, KEY-11, STATE-1); meanwhile the tools, rows and Undo are unavailable with 'Sending: page context changes wait until the message is sent' (MENU-3, HOLD-1). The crop preview opens over the page with the frame: drag an area, or set Left, Top, Width and Height, where Enter applies a value and never shares and no key reaches the page (KEY-9, KEY-5). Share Selected Area or Share Whole Tab continues; Escape or Cancel cancels the send with 'Not sent · your draft and page context stay' (KEY-8, FAIL-5). It stays a modal dialog, a proposed exception to SURF-3, and focus returns to Send when it closes (KEY-6). The rows above already showed what goes with the image (page-context-07).",
+      "explanation": "With the tab shared and the camera on, Send takes one screenshot: devhost hides its toolbar, chat and tooltips, keeps the marks and drawings, and waits up to 10 s for a frame that shows them gone, else fails the send with the draft kept. The busy Send keeps focus and says each step: 'Taking screenshot…', 'Crop the screenshot to continue', 'Sending…' (FB-1, KEY-11, STATE-1); meanwhile the tools, rows and Undo are unavailable with 'Sending: page context changes wait until the message is sent' (MENU-3, HOLD-1). The crop preview opens over the page with the frame: drag an area, or set Left, Top, Width and Height, where Enter applies a value and never shares and no key reaches the page (KEY-9, KEY-5). Share Selected Area or Share Whole Tab continues; Escape or Cancel cancels the send with 'Not sent · your draft and page context stay' (KEY-8, FAIL-5). It is SURF-3's one other modal dialog, opened by the person, and focus returns to Send when it closes (KEY-6). The rows above already showed what goes with the image (page-context-07).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/captureAnnotatedTab.ts",
@@ -280,7 +280,7 @@
       "type": "backend",
       "label": "send with page context",
       "sublabel": "one write · pageContext",
-      "explanation": "Send writes once on the chat socket, to the conversation the composer shows, also right after New Conversation (SEL-8). The composer names the agent and the edit mode; with page context it starts at 'This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav', agent-chat's control (O1, REV-6, WORD-11). send carries pageContext as a structured field beside its mode, never JSON appended to the text; the server renders it into the agent's input as a labelled 'Page context' section and journals it as a page-context record (UNDO-8, CC-40; the field itself has no CC-n yet). The agent receives once the page's title, URL, service, worktree label, viewport, scroll offsets and pixel ratio, and the screenshot's size, crop and scale; per mark its element path, role and name, nearby text, bounds, styles once and its source or that none was found; per drawing its anchor, never an ID (SEL-3, SURF-12; page-context-07, page-context-02). The 8 MiB limit and PNG or JPEG images stay. When chat cannot take a message or the connection is lost, Send says why and picks stay (HOLD-5, HOLD-2); a fix then asks on agent-chat's decision card, with the CLI's own standing approval when offered (REV-9, O12).",
+      "explanation": "Send writes once on the chat socket, to the conversation the composer shows, also right after New Conversation (SEL-8). The composer names the agent and the edit mode; with page context it starts at 'This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav', agent-chat's control (O1, REV-6, WORD-11). send carries pageContext as a structured field beside its mode, never JSON appended to the text; the server renders it into the agent's input as a labelled 'Page context' section and journals it as a page-context record (UNDO-8, CC-40, CC-47). The agent receives once the page's title, URL, service, worktree label, viewport, scroll offsets and pixel ratio, and the screenshot's size, crop and scale; per mark its element path, role and name, nearby text, bounds, styles once and its source or that none was found; per drawing its anchor, never an ID (SEL-3, SURF-12; page-context-07, page-context-02). The 8 MiB limit and PNG or JPEG images stay. When chat cannot take a message or the connection is lost, Send says why and picks stay (HOLD-5, HOLD-2); a fix then asks on agent-chat's decision card, with the CLI's own standing approval when offered (REV-9, O12).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/agentChat/preparePageChatSend.ts",
@@ -494,7 +494,7 @@
       "title": "Backend work",
       "items": [
         "The chat draft record: /__devhost__/chat/draft (GET, PUT, DELETE) keeps a conversation's unsent images and page context per stack, page origin and conversation, never a screenshot, capped at 8 MiB, read under O36's check and the Host rule, removed on an acknowledged send or a stopped stack; agent-chat builds the route (CC-19)",
-        "send gains optional pageContext beside agent-chat's mode in apps/devhost/src/devtools/chat/transport.rs; the server renders it as a labelled 'Page context' section, counts it against 8 MiB and journals a page-context record frame (CC-40; the field itself still needs a CC-n)",
+        "send gains optional pageContext beside agent-chat's mode in apps/devhost/src/devtools/chat/transport.rs; the server renders it as a labelled 'Page context' section, counts it against 8 MiB and journals a page-context record frame (CC-40, CC-47)",
         "The injected configuration names the page's service (apps/devhost/src/devtools/configuration.rs, project_context.rs), and the chat target reports the page's worktree label (SEL-3, SEL-4)"
       ]
     },
@@ -507,14 +507,14 @@
         "CC-31: Stop Turn, or Alt+Ctrl+., stops the agent's turn, never Escape",
         "CC-40: the record frame of kind page-context, replayed in snapshot",
         "CC-1: docked chat and its tools paint below an open toolbar panel and never cover the notice stack",
-        "No CC-n yet: guides/annotations.md's shared numbers, payload, the tools' place in chat and how each way into Select Elements ends; the annotations setting's description; computedStyles kept for plugins"
+        "CC-47: send's pageContext field; guides/annotations.md's shared numbers, payload, the tools' place in chat and how each way into Select Elements ends; the annotations setting's description; computedStyles kept for plugins"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }

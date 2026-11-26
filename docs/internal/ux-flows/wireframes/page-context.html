@@ -105,7 +105,7 @@
 <div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn">Share Tab</span><span class="btn pri">Send</span></div>
 </div>
 <div class="pc-gap">the page shows through here: a click picks its element <span class="n">5</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -140,7 +140,7 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: section 4's line for this flow has Select Elements leave focus where it was; this page follows <code>KEY-12</code> and agent-chat: a pointer pick or drawing returns focus to the composer, and a keyboard-latched selection keeps it on the toggle until Escape. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>1. Point at elements</h2>
 <p><b>Chat</b>, holding Alt and Alt + right-click (component-source's source menu) still lead to the page's elements, a click still adds a mark the message carries, and picks still work over the page's own popovers and modal dialogs without closing them, with docked chat and its tools moved into the dialog's top layer (<code>SURF-11</code>). What changes: the tools sit in docked chat, the element is named before the click, the keyboard can pick, Alt chords never start a selection, a toggled selection lasts until the person ends it, and Escape never stops the agent. With <code>[devtools.annotations].enabled = false</code> chat shows no page-context tools, holding Alt starts nothing, and the setting's description says "Element selection, drawings and page context for chat; turning it off removes them, chat stays" (<code>SEL-11</code>). Keys: Enter on <b>Select Elements</b> latches it; in the mode the arrows walk, Enter picks, Shift+F10 or the context-menu key opens the source menu and Escape finishes; after a pointer pick or drawing focus is back in the composer where it was, a keyboard-latched selection keeps it on its toggle until Escape, and no pick ever focuses the page element (<code>KEY-12</code>, <code>KEY-8</code>, <code>KEY-6</code>).</p>
 <ol><li><span class="n">1</span> <b>Select Elements</b> sits first in a row of page-context tools at the top of docked chat, beside <b>Arrow</b>, <b>Line</b>, <b>Box</b>, <b>Undo</b> and <b>Redo</b>, drawn pressed while it is on. The row follows the dock's corner and docked chat's placement, so no tool floats over the app's header at the top centre of the page. Default: Select Elements off (<code>SURF-7</code>, <code>SURF-5</code>, <code>MENU-1</code>).</li>
@@ -177,7 +177,7 @@
 <div class="pc-row"><span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span></div></div>
 <div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn">Attach Image</span><span class="btn">Share Tab</span><span class="btn pri">Send</span></div>
 </div>
-<div class="row"><span class="n">7</span><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></span></div>
+<div class="row"><span class="n">7</span><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></span></div>
 </div>
 </div>
 </div>
@@ -357,7 +357,7 @@
 <div class="pc-row"><span>#3 Box around text $24.00</span><span><span class="btn">✕</span></span></div>
 <div class="pc-row"><span>#4 Line from link Shipping rates to link Free returns</span><span><span class="btn">✕</span></span></div></div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -414,7 +414,7 @@
 <span class="in pc-tx"><span class="muted">Write a message</span></span>
 <div class="row"><span class="chip acc">Claude Code · Haiku 4.5</span><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="sp"></span><span class="btn pri">Send</span></div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">◆ Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">◆ Chat</span></div>
 </div>
 </div>
 </div>
@@ -432,7 +432,7 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: agent-chat asks only "Send with #2 missing? Its element is no longer on this page.", which is false for a number the person removed while its element stays; this page adds "Send with #1 missing? It is not in page context." for that case, and treats <b>Select Again</b> as the one way a cited number is bound again, a clarification of <code>SEL-9</code> proposed to the reference. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>5. Write and Send</h2>
 <p>Enter or <b>Send</b> still sends, the message still goes into the page's own worktree, and a failed, cancelled or oversized send still keeps the draft, the marks and the drawings, as today. What changes: Send asks only when the message cites a mark that is gone, page context goes to the conversation the composer shows, and the mode starts at <b>This worktree (live)</b>. A send whose acknowledgement never arrives reads <b>Delivery unconfirmed</b> and is never resent; its page context stays in the draft record until a send is acknowledged (owner rule; <code>REV-12</code>). Keys: in the question, focus and Enter start on <b>Select Again</b>, and Escape cancels it with the draft kept and focus back on <b>Send</b> (<code>REV-4</code>, <code>KEY-8</code>, <code>KEY-9</code>).</p>
 <ol><li><span class="n">1</span> Send asks nothing, except when the message cites a mark that no longer exists: then the composer asks in place, verb first: "Send with #1 missing? It is not in page context." for a number the person removed or never picked, as drawn, or agent-chat's "Send with #1 missing? Its element is no longer on this page." for a mark whose element left the page. <b>Select Again</b> is focused and enters Select Elements to pick #1 again under the same number, the one way a cited number is bound again; <b>Send Anyway</b> sits beside it; Escape cancels the question and leaves the neutral line "Not sent"; with no gone mark cited, Send never asks (<code>REV-6</code>, <code>REV-4</code>, <code>SEL-9</code>, <code>UNDO-4</code>, <code>WORD-7</code>).</li>
@@ -510,12 +510,12 @@
 <div class="pg" style="min-height:0">
 <div class="corner">
 <div class="toastrow" style="padding:0;align-items:center"><span class="n">11</span><div class="toast">○ Stopped sharing this tab · from the browser's sharing control</div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the crop preview stays a modal dialog over the page, a proposed exception to <code>SURF-3</code>, which calls the crash view devhost's only modal dialog over an app page; the reference's surface rule has no row for it yet. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>6. Attach a screenshot</h2>
 <p><b>Share Tab</b> still opens the browser's picker and accepts only a browser tab; each message still carries one image and never video; devhost still hides its toolbar, chat and tooltips in the screenshot while keeping marks and drawings, waits up to 10 s for a frame that shows them gone, and otherwise fails the send with the draft and page context kept, as today. What changes: the busy <b>Send</b> says each step, a closed picker leaves nothing, a system refusal says what to do, and a share's end reads as an outcome, never a failure. Keys: in a crop field the arrows adjust its value, Enter applies it and never shares, and Escape cancels the send (<code>KEY-9</code>, <code>KEY-8</code>).</p>
 <ol><li><span class="n">1</span> A share that starts reads, in the list's status line, "Shared this tab · each message takes a screenshot while the camera is on", verb first in the past tense; the camera, <b>Include Tab Snapshot</b>, starts on, as today, and the list gains "Screenshot of this tab, taken when you send" (<code>WORD-4</code>, <code>FB-2</code>).</li>
