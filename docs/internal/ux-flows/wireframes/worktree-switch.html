@@ -145,7 +145,7 @@
                         <td></td>
                       </tr>
                       <tr>
-                        <td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td>
+                        <td>hotfix-shop · 3f1e2d0 · ~/acme/.worktrees/hotfix-shop</td>
                         <td><span class="chip warn">◆ in use</span></td>
                       </tr>
                       <tr>
@@ -275,7 +275,7 @@
         <div class="mock">
           <div class="win">
             <div class="bar">
-              <b>devhost › Acme Shop › Worktrees panel</b><span>every worktree of acme; broken highlighted</span>
+              <b>devhost › Acme Shop › Worktrees panel</b><span>every worktree of acme; fix-nav highlighted</span>
             </div>
             <div class="work small">
               <div class="row">
@@ -294,15 +294,11 @@
                     <td><span class="chip ok">● running</span> <span class="chip">⌂ configured</span></td>
                   </tr>
                   <tr class="focus">
-                    <td>broken · 77d1e0a · ~/acme/.worktrees/broken</td>
+                    <td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td>
                     <td><span class="chip bad">△ unavailable</span> <span class="n">3</span></td>
                   </tr>
                   <tr>
-                    <td>fix-nav · 08c92af · ~/acme/.worktrees/fix-nav</td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td>
+                    <td>hotfix-shop · 3f1e2d0 · ~/acme/.worktrees/hotfix-shop</td>
                     <td><span class="chip warn">◆ in use</span></td>
                   </tr>
                   <tr>
@@ -316,7 +312,7 @@
                 </tbody>
               </table>
               <div class="ckdet">
-                <b>broken ~/acme/.worktrees/broken</b> · unavailable: devhost.toml does not parse · line 13,
+                <b>fix-nav ~/acme/.worktrees/fix-nav</b> · unavailable: devhost.toml does not parse · line 13,
                 services.api.port: strings cannot contain newlines <span class="n">4</span>
                 <div class="row">
                   <code>devhost.toml:13</code><span class="btn">Copy</span><span class="btn">Copy Error</span
@@ -1055,7 +1051,7 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
                         <td><span class="chip bad">∅ deleted</span><span class="n">3</span></td>
                       </tr>
                       <tr>
-                        <td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td>
+                        <td>hotfix-shop · 3f1e2d0 · ~/acme/.worktrees/hotfix-shop</td>
                         <td><span class="chip warn">◆ in use</span></td>
                       </tr>
                     </tbody>
@@ -1183,7 +1179,7 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
         <div class="mock">
           <div class="win">
             <div class="bar">
-              <b>devhost › Acme Shop › Worktrees panel</b><span>hotfix highlighted: another stack runs it</span>
+              <b>devhost › Acme Shop › Worktrees panel</b><span>hotfix-shop highlighted: another stack runs it</span>
             </div>
             <div class="work small">
               <table class="t">
@@ -1197,20 +1193,20 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
                     <td></td>
                   </tr>
                   <tr class="focus">
-                    <td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td>
+                    <td>hotfix-shop · 3f1e2d0 · ~/acme/.worktrees/hotfix-shop</td>
                     <td><span class="chip warn">◆ in use</span></td>
                   </tr>
                 </tbody>
               </table>
               <div class="ckdet">
-                In use by Acme Shop (hotfix) · hotfix ~/acme/.worktrees/hotfix · started 14:02 from a
+                In use by Acme Shop (hotfix-shop) · hotfix-shop ~/acme/.worktrees/hotfix-shop · started 14:02 from a
                 <span style="white-space: nowrap">terminal <span class="n">1</span></span>
                 <div class="row">
                   <span class="btn">Open Stack</span><span class="muted">▸ 4 more routes: api, admin, docs, mail</span
                   ><span class="n">2</span>
                 </div>
                 <div class="row">
-                  <code>devhost stop</code><span class="muted">in ~/acme/.worktrees/hotfix</span
+                  <code>devhost stop</code><span class="muted">in ~/acme/.worktrees/hotfix-shop</span
                   ><span class="btn">Copy</span><span class="n">3</span>
                 </div>
                 <div class="row"><span class="btn">Stop Stack</span><span class="n">4</span></div>
@@ -1224,39 +1220,41 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
             </div>
             <div class="work small">
               <div class="box" style="margin: 0">
-                Stop Acme Shop (hotfix) in ~/acme/.worktrees/hotfix? Its 6 services stop: web, api, docs, worker, admin
-                and mail. Claude Code's turn in hotfix ends. <span class="n">5</span>
+                Stop Acme Shop (hotfix-shop) in ~/acme/.worktrees/hotfix-shop? Its 6 services stop: web, api, docs,
+                worker, admin and mail. Claude Code's turn in hotfix-shop ends. <span class="n">5</span>
                 <div class="row" style="margin-top: 4px">
-                  <span class="sp"></span><span class="btn">Stop Acme Shop (hotfix)</span
+                  <span class="sp"></span><span class="btn">Stop Acme Shop (hotfix-shop)</span
                   ><span class="btn focusring">Cancel</span>
                 </div>
               </div>
               <div class="vlab">confirmed</div>
               <div class="row">
-                <span class="btn focusring">Stopping Acme Shop (hotfix) · 3 of 6 stopped · 12 s</span
+                <span class="btn focusring">Stopping Acme Shop (hotfix-shop) · 3 of 6 stopped · 12 s</span
                 ><span class="n">6</span>
               </div>
               <div class="vlab">stopped</div>
               <div class="banner ok focusring" style="margin: 0">
-                ✓ Stopped Acme Shop (hotfix) · hotfix is free · 19 s <span class="n">7</span>
+                ✓ Stopped Acme Shop (hotfix-shop) · hotfix-shop is free · 19 s <span class="n">7</span>
               </div>
               <table class="t">
                 <tbody>
                   <tr class="flash">
-                    <td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td>
+                    <td>hotfix-shop · 3f1e2d0 · ~/acme/.worktrees/hotfix-shop</td>
                     <td></td>
                   </tr>
                 </tbody>
               </table>
               <div class="vlab">a service survives</div>
               <div class="banner bad" style="margin: 0">
-                ✕ Acme Shop (hotfix) is not fully stopped: worker (PID 95120, port 4310) still runs
+                ✕ Acme Shop (hotfix-shop) is not fully stopped: worker (PID 95120, port 4310) still runs
                 <span class="n">8</span>
               </div>
             </div>
           </div>
           <div class="win">
-            <div class="bar"><b>Terminal › ~/acme/.worktrees/hotfix</b><span>the stack that was stopped</span></div>
+            <div class="bar">
+              <b>Terminal › ~/acme/.worktrees/hotfix-shop</b><span>the stack that was stopped</span>
+            </div>
             <pre
               class="term"
             >Stopped from Acme Shop (main ~/acme) at 14:05 · its Worktrees panel  <span class="n">9</span></pre>
@@ -1314,8 +1312,8 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
             <li>
               <span class="n">5</span> The question names the stack, its worktree and its services, and adds the agent
               turns it ends when they work or wait (<code>REV-3</code>). <b>Cancel</b> takes the pressed button's place
-              with focus and Enter, and <b>Stop Acme Shop (hotfix)</b> confirms; Escape, or a click in the panel on no
-              control, cancels it with focus back on <b>Stop Stack</b>, and closing the panel cancels it
+              with focus and Enter, and <b>Stop Acme Shop (hotfix-shop)</b> confirms; Escape, or a click in the panel on
+              no control, cancels it with focus back on <b>Stop Stack</b>, and closing the panel cancels it
               (<code>REV-4</code>, <code>KEY-8</code>, <code>WORD-2</code>).
             </li>
             <li>
@@ -1397,7 +1395,7 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
                     <td><span class="chip bad">∅ deleted</span></td>
                   </tr>
                   <tr>
-                    <td>hotfix · 3f1e2d0 · ~/acme/.worktrees/hotfix</td>
+                    <td>hotfix-shop · 3f1e2d0 · ~/acme/.worktrees/hotfix-shop</td>
                     <td><span class="chip warn">◆ in use</span></td>
                   </tr>
                 </tbody>
