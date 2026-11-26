@@ -1,50 +1,113 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Serve a folder, port or command · proposed flow wireframe</title>
-<link rel="stylesheet" href="wireframe.css">
-<style>
-/* devhost's file browser and command-session controls drawn inside this page's mockups */
-.mock .btn{border-color:var(--edge)}
-.mock .btn.pri{border-color:var(--acc)}
-.mock .btn.danger{border-color:var(--bad)}
-.mock .term, .cap code{font-variant-ligatures:none}
-.mock .hp{font-weight:700;font-size:14px}
-.mock .btn.prs{background:var(--accbg);border-color:var(--acc)}
-.mock .t td.num{text-align:right}
-.mock .svc{display:grid;grid-template-columns:5.6rem minmax(0,1fr) auto;gap:2px 8px;align-items:start;padding:4px 2px;border-bottom:1px solid var(--rule)}
-.mock .svc>:last-child{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-items:center}
-.mock .svc .rt{display:block;color:var(--mute);font-size:11px}
-.mock .pft{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
-</style>
-</head>
-<body>
-<header class="page">
-<nav class="top"><a href="index.html">← All flows</a><a href="../serve-folder-current.html">Today's flow diagram</a><a href="../serve-folder-proposed.html">Proposed flow diagram</a><a href="../proposals/serve-folder.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
-<h1>Serve a folder, port or command</h1>
-<p><b>TLDR:</b> Covers all three <code>devhost serve</code> modes — folder (<code>--dir</code>), running port (<code>--port</code>), and command mode (<code>devhost serve -- &lt;command&gt;</code>, foreground or <code>--detach</code>) — plus manifest <code>serve</code> services. The terminal states what is served, where Caddy listens (honoring macOS <code>bindHost</code> from port 1024 upward), that chat is on by default for folder and command sessions with <code>--no-chat</code> to turn it off (and always off for <code>--port</code>), when it is ready, and how to stop it; command sessions appear first-class (<code>1/1</code> with working <b>Restart Command</b>), handle multi-port changes without false <code>0/3</code> outages, exit with the command's exit code in the foreground, and keep valid HTTPS crash recovery when detached; served folders show the listing first with README below; and mistyped names stay in the file browser.</p>
-<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
-</header>
-<div class="key"><div>
-<div class="legend"><b style="color:var(--ink)">How to read:</b>
-<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
-<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
-<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
-<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
-<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
-<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
-<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
-<span><span class="n">1</span>Callout, explained on the right</span></div>
-</div></div>
-<main>
-
-<section class="step" id="start">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>folder, --no-chat, --port, and command starts; macOS O39 warning below port 1024</span></div>
-<pre class="term">$ devhost serve --dir docs --domain notes.acme.test
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Serve a folder, port or command · proposed flow wireframe</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      /* devhost's file browser and command-session parts drawn inside this page's mockups */
+      .mock .hp {
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .mock .btn.prs {
+        background: var(--accbg);
+        border-color: var(--acc);
+      }
+      .mock .t td.num {
+        text-align: right;
+      }
+      .mock .svc {
+        display: grid;
+        grid-template-columns: 5.6rem minmax(0, 1fr) auto;
+        gap: 2px 8px;
+        align-items: start;
+        padding: 4px 2px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .mock .svc > :last-child {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+        align-items: center;
+      }
+      .mock .svc .rt {
+        display: block;
+        color: var(--mute);
+        font-size: 11px;
+      }
+      .mock .pft {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        border-top: 1px solid var(--line);
+        margin-top: 6px;
+        padding-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top">
+        <a href="index.html">← All flows</a><a href="../serve-folder-current.html">Today's flow diagram</a
+        ><a href="../serve-folder-proposed.html">Proposed flow diagram</a
+        ><a href="../proposals/serve-folder.md">Written proposal</a
+        ><span class="muted">Redesign ticket: tracked privately</span>
+      </nav>
+      <h1>Serve a folder, port or command</h1>
+      <p>
+        <b>TLDR:</b> Covers all three <code>devhost serve</code> modes — folder (<code>--dir</code>), running port
+        (<code>--port</code>), and command mode (<code>devhost serve -- &lt;command&gt;</code>, foreground or
+        <code>--detach</code>) — plus manifest <code>serve</code> services. The terminal states what is served, where
+        Caddy listens (honoring macOS <code>bindHost</code> from port 1024 upward), that chat is on by default for
+        folder and command sessions with <code>--no-chat</code> to turn it off (and always off for <code>--port</code>),
+        when it is ready, and how to stop it; command sessions appear first-class (<code>1/1</code> with working
+        <b>Restart Command</b>), handle multi-port changes without false <code>0/3</code> outages, exit with the
+        command's exit code in the foreground, and keep valid HTTPS crash recovery when detached; served folders show
+        the listing first with README below; and mistyped names stay in the file browser.
+      </p>
+      <p class="muted small">
+        Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
+        are authoritative.
+      </p>
+    </header>
+    <div class="key">
+      <div>
+        <div class="legend">
+          <b style="color: var(--ink)">How to read:</b>
+          <span
+            ><i class="k" style="background: var(--toast); border-color: var(--toast)"></i>Toast: passing status message
+            in a corner, links only, no decisions</span
+          >
+          <span
+            ><i class="k" style="background: var(--raised); border-color: var(--edge); box-shadow: 0 2px 6px #0009"></i
+            >Popover or menu: opens from the outlined control its arrow points at</span
+          >
+          <span
+            ><i class="k" style="background: var(--panel); box-shadow: inset 3px 0 var(--line)"></i>Panel: docked beside
+            the table, stays open</span
+          >
+          <span><i class="k" style="background: var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+          <span><i class="k" style="background: var(--accbg)"></i>Selected rows</span>
+          <span><i class="k" style="background: var(--chgbg)"></i>Just changed</span>
+          <span><i class="k" style="background: var(--card); box-shadow: inset 3px 0 var(--acc)"></i>Row cursor</span>
+          <span><span class="n">1</span>Callout, explained on the right</span><span class="lg-states"></span
+          ><span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section class="step" id="start">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>folder, --no-chat, --port, and command starts; macOS O39 warning below port 1024</span>
+            </div>
+            <pre class="term">$ devhost serve --dir docs --domain notes.acme.test
 devhost | Serving ~/acme/docs · chat on (pass --no-chat to turn it off) <span class="n">1</span><span class="n">2</span>
 devhost | Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml
 
@@ -60,10 +123,14 @@ devhost | Running bun run dev in ~/acme · chat on (pass --no-chat to turn it of
 <span class="muted"># macOS with bindHost = "127.0.0.1" and httpsPort = 443 (below 1024):</span>
 devhost | Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml
 devhost | Warning: on macOS, bindHost = "127.0.0.1" needs every port at 1024 or above, so Caddy listens on every interface on port 443, reachable from your network. Set httpsPort = 4443, or start Caddy from a privileged launcher. <span class="n">6</span></pre>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>Caddy auto-start trust step, and taken-hostname refusals (exit 1)</span></div>
-<pre class="term">devhost | Trusting devhost's local certificate authority adds Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost to the system trust store and asks for your password. <span class="n">7</span>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>Caddy auto-start trust step, and taken-hostname refusals (exit 1)</span>
+            </div>
+            <pre
+              class="term"
+            >devhost | Trusting devhost's local certificate authority adds Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost to the system trust store and asks for your password. <span class="n">7</span>
 caddy   | Password:
 devhost | Trusted Caddy Local Authority - 2026 ECC Root from ~/.local/state/devhost · valid until 2036-09-25
 devhost | SHA-256 17:35:2E:25:00:A4:82:A9:…:06:B5:35:D5 · Remove later: devhost caddy untrust
@@ -77,10 +144,13 @@ devhost | Or choose another --domain.
 $ devhost serve --dir site --domain shop.acme.test
 devhost | shop.acme.test is already used by Acme Shop (main ~/acme · ~/acme/devhost.toml, PID 50112) <span class="n">9</span>
 devhost | devhost stop --manifest ~/acme/devhost.toml</pre>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>command startup diagnostics, detached Failure.hint, CLI help, and flag validation</span></div>
-<pre class="term">$ devhost serve -- nonexistent-binary
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>command startup diagnostics, detached Failure.hint, CLI help, and flag validation</span>
+            </div>
+            <pre class="term">$ devhost serve -- nonexistent-binary
 devhost | [ERROR] Could not launch 'nonexistent-binary': No such file or directory <span class="n">10</span>
 
 $ devhost serve --startup-timeout 5s -- bun slow-boot.ts
@@ -98,36 +168,113 @@ $ devhost serve --help   <span class="muted"># Quickstart includes command-mode 
   devhost serve --port 3000 --domain app.acme.test
   devhost serve -- bun run dev
   devhost serve --detach --name demoapp -s 30s -- bun run dev</pre>
-</div>
-</div>
-<div class="cap">
-<h2>1. Start a serve session</h2>
-<p><code>devhost serve</code> gives a folder, a running port, or a manifest-free command an HTTPS hostname with no <code>devhost.toml</code>, writing nothing in the served folder and starting Caddy on demand. Keys: <kbd>Ctrl-C</kbd> at any point during start cancels it, removes what it claimed, stops any spawned command, and reports a cancellation rather than an error (<code>KEY-14</code>, <code>FAIL-5</code>). Agent output (<code>AGENT=1</code>) carries the same facts as <code>devhost:</code> lines with absolute paths and PIDs, and errors as <code>devhost: ERR:</code> / <code>devhost: INFO:</code> lines (<code>WORD-9</code>, <code>FB-11</code>, <code>CC-30</code>).</p>
-<ol>
-<li><span class="n">1</span> Every devhost line carries the short label <code>devhost</code>, never an invented <code>serve-&lt;domain&gt;</code> prefix, never over-padded <code>devhost | </code> columns, and never calls a serve session a stack or a primary service (<code>WORD-1</code>, <code>WORD-3</code>, <code>WORD-9</code>).</li>
-<li><span class="n">2</span> Under <code>O40</code>, folder and command sessions keep chat ON by default, stated explicitly on line 1 with <code>(pass --no-chat to turn it off)</code> (<code>FB-10</code>, <code>O40</code>).</li>
-<li><span class="n">3</span> <code>--no-chat</code> turns chat off for the session: <code>/__devhost__/config.json</code> answers <code>chatEnabled: false</code> and chat routes return 404 (<code>SEL-11</code>, <code>O40</code>).</li>
-<li><span class="n">4</span> A <code>--port</code> session routes an external server devhost never starts or stops (<code>ACT-9</code>) and always keeps chat off with empty <code>projectRootPath</code> — it never hands an agent the shell's current folder (<code>O40</code>, <code>serve-folder-04</code>).</li>
-<li><span class="n">5</span> Command mode (<code>devhost serve "&lt;cmd&gt;"</code> or <code>devhost serve -- &lt;cmd&gt;</code>, with optional <code>--name</code>, <code>--detach</code>, and <code>-s</code>/<code>--startup-timeout</code>) names the command and working directory directly on line 1.</li>
-<li><span class="n">6</span> Every start prints proxy-settings' proxy line after its first line, "Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml", or on a loopback listener "Proxy: HTTPS on 127.0.0.1:4443 and [::1]:4443, direct connections from this machine only; relay previews and SSH forwards still reach it · …" (<code>WORD-12</code>). Under <code>O39</code>, macOS honors <code>bindHost = "127.0.0.1"</code> from port 1024 upward; below 1024 (including default 443), Caddy keeps listening on every interface without failing startup and prints proxy-settings' macOS warning after the proxy line, naming <code>httpsPort = 4443</code> or a privileged launcher.</li>
-<li><span class="n">7</span> Before the trust password prompt, one line explains what trust does; under <code>AGENT=1</code> or non-TTY stdin the prompt never runs and one warning points to <code>devhost caddy trust</code> (<code>REV-8</code>, <code>CC-13</code>, <code>UNDO-5</code>).</li>
-<li><span class="n">8</span> A taken hostname exits 1 before routing, naming the holding serve session's folder/port/command, PID, start time, and stop command (never "from .") (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
-<li><span class="n">9</span> A stack holder names the stack, its worktree label, and its root manifest with <code>devhost stop --manifest</code> (<code>SEL-4</code>, <code>WORD-11</code>).</li>
-<li><span class="n">10</span> Spawn failures surface the OS launch error directly on <code>[ERROR]</code>/<code>ERR:</code>, never <code>"command process is unavailable"</code> (<code>serve-command-07</code>).</li>
-<li><span class="n">11</span> HTTP probe timeouts state that <code>HEAD /</code> did not receive an HTTP response and suggest <code>--startup-timeout</code> (<code>serve-command-07</code>).</li>
-<li><span class="n">12</span> Detached startup failures preserve <code>Failure.hint</code> (<code>[INFO] Read the full log in …</code>) and say <code>the serve session</code> rather than <code>the stack</code> (<code>serve-command-07</code>).</li>
-<li><span class="n">13</span> <code>--startup-timeout</code> uses <code>.allow_hyphen_values(true)</code> so negative values give a clear duration error; <code>devhost serve --help</code> Quickstart includes command-mode examples and aligns <code>-s</code> short flags with <code>start/serve.md</code> and <code>reference/cli.md</code> (<code>serve-command-08</code>).</li>
-</ol>
-<p class="fixes">Fixes serve-folder-02, serve-folder-03, serve-folder-04, serve-command-07, serve-command-08 · Backend: session identity (Backend 1), structured claim refusal (Backend 2), <code>--no-chat</code> &amp; <code>--port</code> chat isolation (Backend 7; <code>O40</code>), macOS listener resolution (<code>O39</code>), OS launch error / <code>HEAD /</code> timeout / detached hint &amp; CLI Quickstart/flags (Backend 8; <code>CC-13</code>, <code>CC-22</code>, <code>CC-30</code>)</p>
-</div>
-</section>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>1. Start a serve session</h2>
+          <p>
+            <code>devhost serve</code> gives a folder, a running port, or a manifest-free command an HTTPS hostname with
+            no <code>devhost.toml</code>, writing nothing in the served folder and starting Caddy on demand. Keys:
+            <kbd>Ctrl-C</kbd> at any point during start cancels it, removes what it claimed, stops any spawned command,
+            and reports a cancellation rather than an error (<code>KEY-14</code>, <code>FAIL-5</code>). Agent output
+            (<code>AGENT=1</code>) carries the same facts as <code>devhost:</code> lines with absolute paths and PIDs,
+            and errors as <code>devhost: ERR:</code> / <code>devhost: INFO:</code> lines (<code>WORD-9</code>,
+            <code>FB-11</code>, <code>CC-30</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Every devhost line carries the short label <code>devhost</code>, never an
+              invented <code>serve-&lt;domain&gt;</code> prefix, never over-padded <code>devhost | </code> columns, and
+              never calls a serve session a stack or a primary service (<code>WORD-1</code>, <code>WORD-3</code>,
+              <code>WORD-9</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Under <code>O40</code>, folder and command sessions keep chat ON by default,
+              stated explicitly on line 1 with <code>(pass --no-chat to turn it off)</code> (<code>FB-10</code>,
+              <code>O40</code>).
+            </li>
+            <li>
+              <span class="n">3</span> <code>--no-chat</code> turns chat off for the session:
+              <code>/__devhost__/config.json</code> answers <code>chatEnabled: false</code> and chat routes return 404
+              (<code>SEL-11</code>, <code>O40</code>).
+            </li>
+            <li>
+              <span class="n">4</span> A <code>--port</code> session routes an external server devhost never starts or
+              stops (<code>ACT-9</code>) and always keeps chat off with empty <code>projectRootPath</code> — it never
+              hands an agent the shell's current folder (<code>O40</code>, <code>serve-folder-04</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Command mode (<code>devhost serve "&lt;cmd&gt;"</code> or
+              <code>devhost serve -- &lt;cmd&gt;</code>, with optional <code>--name</code>, <code>--detach</code>, and
+              <code>-s</code>/<code>--startup-timeout</code>) names the command and working directory directly on line
+              1.
+            </li>
+            <li>
+              <span class="n">6</span> Every start prints proxy-settings' proxy line after its first line, "Proxy: HTTPS
+              on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml", or on a
+              loopback listener "Proxy: HTTPS on 127.0.0.1:4443 and [::1]:4443, direct connections from this machine
+              only; relay previews and SSH forwards still reach it · …" (<code>WORD-12</code>). Under <code>O39</code>,
+              macOS honors <code>bindHost = "127.0.0.1"</code> from port 1024 upward; below 1024 (including default
+              443), Caddy keeps listening on every interface without failing startup and prints proxy-settings' macOS
+              warning after the proxy line, naming <code>httpsPort = 4443</code> or a privileged launcher.
+            </li>
+            <li>
+              <span class="n">7</span> Before the trust password prompt, one line explains what trust does; under
+              <code>AGENT=1</code> or non-TTY stdin the prompt never runs and one warning points to
+              <code>devhost caddy trust</code> (<code>REV-8</code>, <code>CC-13</code>, <code>UNDO-5</code>).
+            </li>
+            <li>
+              <span class="n">8</span> A taken hostname exits 1 before routing, naming the holding serve session's
+              folder/port/command, PID, start time, and stop command (never "from .") (<code>FAIL-2</code>,
+              <code>WORD-7</code>, <code>WORD-8</code>).
+            </li>
+            <li>
+              <span class="n">9</span> A stack holder names the stack, its worktree label, and its root manifest with
+              <code>devhost stop --manifest</code> (<code>SEL-4</code>, <code>WORD-11</code>).
+            </li>
+            <li>
+              <span class="n">10</span> Spawn failures surface the OS launch error directly on
+              <code>[ERROR]</code>/<code>ERR:</code>, never
+              <code>"command process is unavailable"</code> (<code>serve-command-07</code>).
+            </li>
+            <li>
+              <span class="n">11</span> HTTP probe timeouts state that <code>HEAD /</code> did not receive an HTTP
+              response and suggest <code>--startup-timeout</code> (<code>serve-command-07</code>).
+            </li>
+            <li>
+              <span class="n">12</span> Detached startup failures preserve <code>Failure.hint</code> (<code
+                >[INFO] Read the full log in …</code
+              >) and say <code>the serve session</code> rather than
+              <code>the stack</code> (<code>serve-command-07</code>).
+            </li>
+            <li>
+              <span class="n">13</span> <code>--startup-timeout</code> uses <code>.allow_hyphen_values(true)</code> so
+              negative values give a clear duration error; <code>devhost serve --help</code> Quickstart includes
+              command-mode examples and aligns <code>-s</code> short flags with <code>start/serve.md</code> and
+              <code>reference/cli.md</code> (<code>serve-command-08</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes serve-folder-02, serve-folder-03, serve-folder-04, serve-command-07, serve-command-08 · Backend:
+            session identity (Backend 1), structured claim refusal (Backend 2), <code>--no-chat</code> &amp;
+            <code>--port</code> chat isolation (Backend 7; <code>O40</code>), macOS listener resolution
+            (<code>O39</code>), OS launch error / <code>HEAD /</code> timeout / detached hint &amp; CLI Quickstart/flags
+            (Backend 8; <code>CC-13</code>, <code>CC-22</code>, <code>CC-30</code>)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="ready">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>folder ready &amp; Caddy outage; --port waiting, ready, and reachability transitions</span></div>
-<div class="work small">
-<pre class="term">devhost | Ready in 0.3 s: https://notes.acme.test/ · Ctrl-C stops this session <span class="n">1</span>
+      <section class="step" id="ready">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>folder ready &amp; Caddy outage; --port waiting, ready, and reachability transitions</span>
+            </div>
+            <div class="work small">
+              <pre
+                class="term"
+              >devhost | Ready in 0.3 s: https://notes.acme.test/ · Ctrl-C stops this session <span class="n">1</span>
 <span class="muted"># if devhost caddy stop runs elsewhere:</span>
 devhost | Caddy stopped at 14:10; https://notes.acme.test/ does not answer until Caddy starts again
 
@@ -136,16 +283,28 @@ devhost | Waiting for 127.0.0.1:3000 to accept connections · 12 s · start your
 devhost | Ready in 14.1 s: https://app.acme.test/ · Ctrl-C stops this session
 devhost | 127.0.0.1:3000 stopped accepting connections at 14:05; its page shows it as not reachable until it answers
 devhost | 127.0.0.1:3000 accepts connections again · 14:06</pre>
-<div class="vlab">https://app.acme.test/ while waiting — startup-and-recovery's not-reachable page</div>
-<div class="box" style="margin:0">
-<div class="row"><b>◇ 127.0.0.1:3000 is not reachable</b><span class="sp"></span><span class="btn pri">Check Again</span></div>
-<div class="muted">Reloads into the app once 127.0.0.1:3000 answers. Never shows a disabled Restart or empty log.</div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>command-mode ready (foreground &amp; --detach), stack info --session, and CLI discoverability</span></div>
-<pre class="term"><span class="muted"># Foreground command ready (no pre-startup Stop:, no over-padded prefix):</span>
+              <div class="vlab">https://app.acme.test/ while waiting — startup-and-recovery's not-reachable page</div>
+              <div class="box" style="margin: 0">
+                <div class="row">
+                  <b>◇ 127.0.0.1:3000 is not reachable</b><span class="sp"></span
+                  ><span class="btn pri">Check Again</span>
+                </div>
+                <div class="muted">
+                  Reloads into the app once 127.0.0.1:3000 answers. Never shows a disabled Restart or empty log.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span
+                >command-mode ready (foreground &amp; --detach), stack info --session, and CLI discoverability</span
+              >
+            </div>
+            <pre
+              class="term"
+            ><span class="muted"># Foreground command ready (no pre-startup Stop:, no over-padded prefix):</span>
 devhost | Ready in 1.1 s: https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001) · session demoapp · Ctrl-C stops this session <span class="n">3</span>
 
 <span class="muted"># Detached command ready (human &amp; AGENT=1 both include Stop:):</span>
@@ -166,233 +325,593 @@ devhost | No manifest stack in ~/acme. 1 serve session is running: demoapp (http
 devhost | Stop it or list all serve sessions:
 devhost | devhost stop --session demoapp
 devhost | devhost stack list --sessions</pre>
-</div>
-<div class="win">
-<div class="bar"><b>https://demoapp.acme.test/</b><span>command-mode Services popover (1/1, Restart Command); folder --no-chat &amp; O36 remote bar</span></div>
-<div class="pg" style="min-height:225px">
-<div class="apptxt">demoapp · command-mode app page …</div>
-<div class="corner">
-<div class="popover" style="width:min(100%,40rem)"><span class="caret-dn" style="right:67.5px"></span>
-<div class="from">Opened from the Services trigger</div>
-<div class="row"><b>demoapp · 1 of 1 running</b><span class="muted">Command session · bun run dev</span><span class="n">7</span></div>
-<div class="svc"><span>● <a>command</a></span><span>running · bun run dev<span class="rt"><a>demoapp.acme.test/</a> · port 4001 (primary)</span><span class="rt"><a>demoapp-4002.acme.test/</a> · port 4002</span></span><span><span class="btn">Logs</span></span></div>
-<div class="pft"><span class="muted">No synthetic <code>external</code> port rows · no Restart Changed</span><span class="sp"></span><span class="btn pri">Restart Command</span><span class="n">8</span></div>
-</div>
-<div class="tbar oneline"><span class="seg"><b>demoapp ▾</b></span><span class="seg open">● 1/1 ▾</span><span class="seg">Chat</span></div>
-</div>
-</div>
-<div class="work small" style="border-top:1px solid var(--line)">
-<div class="vlab">Folder session started with --no-chat · and unauthenticated remote client (O36)</div>
-<div class="row" style="justify-content:space-between;align-items:center">
-<span class="muted">Chat is off in this serve session (started with --no-chat).</span>
-<span class="tbar oneline"><span class="seg"><b>~/acme/docs ▾</b></span><span class="seg">● ▾</span><span class="seg muted">Chat</span></span><span class="n">9</span>
-</div>
-<div class="row" style="margin-top:6px"><div class="tbar"><span class="seg"><span class="muted">dh</span> <b>~/acme/docs</b></span><span class="seg muted" style="white-space:normal">Sign in with passkey or pair this browser to use devhost here</span><span class="seg"><span class="btn pri">Sign In with Passkey</span></span></div></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>All Stacks on devbox</b><span>Stack Directory: manifest stacks + folder, port, and command serve sessions</span></div>
-<div class="work small">
-<div class="row"><b>2 stacks · 3 serve sessions</b><span class="n">10</span><span class="sp"></span><span class="in"><span class="muted">Filter</span></span></div>
-<div class="muted" style="margin-top:4px">Acme Shop (Manifest files · 1) and Acme Platform, as stack-directory draws them …</div>
-<div class="box">
-<div class="row"><b>~/acme/docs</b><span class="chip">Serve session · folder</span><span class="n">11</span></div>
-<div><a>https://notes.acme.test/</a> · ● running</div>
-<div class="fld"><span>Manifest files</span><span>None: the serve session for ~/acme/docs reads no devhost.toml</span></div>
-<div class="muted">Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50</div>
-</div>
-<div class="box">
-<div class="row"><b>127.0.0.1:3000</b><span class="chip">Serve session · port</span></div>
-<div><a>https://app.acme.test/</a> · ◇ not reachable · TCP port 3000 · checked 14:05 · runs outside devhost</div>
-<div class="fld"><span>Manifest files</span><span>None: the serve session for 127.0.0.1:3000 reads no devhost.toml</span></div>
-<div class="muted">Stop it with Ctrl-C in its terminal · PID 48812 · started 15:51</div>
-</div>
-<div class="box">
-<div class="row"><b>demoapp</b><span class="chip">Serve session · command</span><span class="n">12</span></div>
-<div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
-<div><a>https://demoapp.acme.test/</a> (4001) · <a>https://demoapp-4002.acme.test/</a> (4002)</div>
-<div class="fld"><span>Manifest files</span><span>None: command session (reads no devhost.toml)</span></div>
-<div class="muted">Stop: <code>devhost stop --session demoapp</code> · started 15:52</div>
-</div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>2. Read that it is ready and inspect running sessions</h2>
-<p>Routes stay active from the start, <code>--port</code> pages reload automatically once their server answers, and the Stack Directory lists every serve session beside manifest stacks. What changes is honest readiness, clean foreground and detached command summaries, first-class command modeling across toolbar and CLI, discoverability in stack commands, and accurate Stack Directory cards.</p>
-<ol>
-<li><span class="n">1</span> A folder session prints its ready line once its route answers, with elapsed time, URL, and <code>Ctrl-C</code> cue; a Caddy outage prints one line when Caddy stops and one when the route answers again (<code>FB-5</code>, <code>FB-10</code>, <code>ACT-10</code>, <code>CC-22</code>).</li>
-<li><span class="n">2</span> A <code>--port</code> session stays waiting in the terminal until its port first accepts a connection (updating once per second on TTY, no timeout), prints the ready line only once the server answers, logs reachability changes once per transition, and shows <code>startup-and-recovery</code>'s not-reachable page with <b>Check Again</b> in the browser (<code>ACT-4</code>, <code>ACT-9</code>, <code>STATE-1</code>, <code>manifest-hot-reload-2-04</code>, <code>serve-folder-01</code>).</li>
-<li><span class="n">3</span> Foreground command mode removes pre-startup <code>Stop:</code> headers and over-padded <code>devhost | </code> prefixes, printing its ready summary with session name and <code>Ctrl-C</code> cue once ready (<code>serve-command-03</code>).</li>
-<li><span class="n">4</span> Detached command mode prints <code>Started</code>, URL(s), <code>Log:</code>, and <code>Stop: devhost stop --session &lt;name&gt;</code> in both human and <code>AGENT=1</code> output (<code>serve-command-03</code>).</li>
-<li><span class="n">5</span> <code>devhost stack info --session &lt;name&gt;</code> (alias <code>devhost status --session</code>, <code>O62</code>) shows the command string and discovered URLs/ports directly under the command with no synthetic <code>external</code> <code>port-&lt;port&gt;</code> rows (<code>serve-command-02</code>).</li>
-<li><span class="n">6</span> <code>devhost stop</code>, <code>stack info</code>/<code>status</code>, <code>stack find</code>, and interactive <code>stack list</code> surface running serve sessions or point to <code>devhost stack list --sessions</code> and <code>--session &lt;name&gt;</code>, while scripted <code>stack list</code> keeps its manifest-only format (<code>serve-command-04</code>).</li>
-<li><span class="n">7</span> In the browser toolbar (matching <code>services-panel</code>'s seam), a command session counts <code>1/1</code>, lists the command string with discovered HTTP URLs and ports directly beneath it, omits <code>external</code> badges on its own ports, and omits repeated <code>Services</code> headings (<code>serve-command-02</code>).</li>
-<li><span class="n">8</span> The footer omits <b>Restart Changed</b> and offers working <b>Restart Command</b> (<code>operationId</code>, <code>202 Accepted</code>, manifest-free restart) instead of failing with "stack restart requires an accepted manifest" (<code>serve-command-02</code>, <code>CC-37</code>).</li>
-<li><span class="n">9</span> Folder and command toolbars carry the stack-name <code>▾</code> chevron (<code>toolbar-shell</code>), show the <code>O40</code> chat-off sentence when started with <code>--no-chat</code>, and show <code>O36</code>'s passkey/pairing prompt to unauthenticated remote browsers (<code>O40</code>, <code>O36</code>, <code>CC-5</code>).</li>
-<li><span class="n">10</span> <b>All Stacks on devbox</b> (<code>O61</code>) counts serve sessions separately from manifest stacks, uses singular <code>1 file</code> for single-file manifests, and filters by folder, port, session name, command, or hostname (<code>WORD-5</code>, <code>SEL-10</code>, <code>serve-folder-11</code>, <code>serve-command-06</code>).</li>
-<li><span class="n">11</span> Folder and port cards title by folder or target address (never <code>serve-&lt;domain&gt;</code>), omit Directory lines, never mark a folder's file server <code>External</code>, and drop "Manifest-free file or port session" (<code>serve-folder-11</code>).</li>
-<li><span class="n">12</span> Command cards read <code>sessionKind: "command"</code> and <code>command</code> from <code>statuspage::Stack</code>, show the command string, discovered URLs/ports without <code>External</code>, and the exact stop command (<code>serve-command-06</code>).</li>
-</ol>
-<p class="fixes">Fixes manifest-hot-reload-2-04, serve-folder-01, serve-folder-02, serve-folder-04, serve-folder-11, serve-command-02, serve-command-03, serve-command-04, serve-command-06 · Backend: <code>--port</code> wait (Backend 3), first-class command &amp; file-server state + manifest-free Restart Command (Backend 4; <code>CC-25</code>, <code>CC-37</code>), CLI ready/discoverability (Backend 8), <code>sessionKind</code>/<code>command</code> Stack Directory snapshots (Backend 11)</p>
-</div>
-</section>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://demoapp.acme.test/</b
+              ><span>command-mode Services popover (1/1, Restart Command); folder --no-chat &amp; O36 remote bar</span>
+            </div>
+            <div class="pg" style="min-height: 225px">
+              <div class="apptxt">demoapp · command-mode app page …</div>
+              <div class="corner">
+                <div class="popover" style="width: min(100%, 40rem)">
+                  <span class="caret-dn" style="right: 67.5px"></span>
+                  <div class="from">Opened from the Services trigger</div>
+                  <div class="row">
+                    <b>demoapp · 1 of 1 running</b><span class="muted">Command session · bun run dev</span
+                    ><span class="n">7</span>
+                  </div>
+                  <div class="svc">
+                    <span>● <a>command</a></span
+                    ><span
+                      >running · bun run dev<span class="rt"><a>demoapp.acme.test/</a> · port 4001 (primary)</span
+                      ><span class="rt"><a>demoapp-4002.acme.test/</a> · port 4002</span></span
+                    ><span><span class="btn">Logs</span></span>
+                  </div>
+                  <div class="pft">
+                    <span class="muted">No synthetic <code>external</code> port rows · no Restart Changed</span
+                    ><span class="sp"></span><span class="btn pri">Restart Command</span><span class="n">8</span>
+                  </div>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>demoapp ▾</b></span
+                  ><span class="seg open">● 1/1 ▾</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+            <div class="work small" style="border-top: 1px solid var(--line)">
+              <div class="vlab">Folder session started with --no-chat · and unauthenticated remote client (O36)</div>
+              <div class="row" style="align-items: center">
+                <span class="muted"
+                  >No Chat on the bar; Disable Reloads' Send: Chat is off in this serve session (started with
+                  --no-chat).</span
+                >
+                <span class="tbar oneline"
+                  ><span class="seg"><b>~/acme/docs ▾</b></span
+                  ><span class="seg">● ▾</span></span
+                ><span class="n">9</span>
+              </div>
+              <div class="row" style="margin-top: 6px">
+                <div class="tbar">
+                  <span class="seg"><span class="muted">dh</span> <b>~/acme/docs</b></span
+                  ><span class="seg muted" style="white-space: normal"
+                    >Sign in with passkey or pair this browser to use devhost here</span
+                  ><span class="seg"><span class="btn pri">Sign In with Passkey</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>All Stacks on devbox</b
+              ><span>Stack Directory: manifest stacks + folder, port, and command serve sessions</span>
+            </div>
+            <div class="work small">
+              <div class="row">
+                <b>2 stacks · 3 serve sessions</b><span class="n">10</span><span class="sp"></span
+                ><span class="in"><span class="muted">Filter</span></span>
+              </div>
+              <div class="muted" style="margin-top: 4px">
+                Acme Shop (Manifest files · 1) and Acme Platform, as stack-directory draws them …
+              </div>
+              <div class="box">
+                <div class="row">
+                  <b>~/acme/docs</b><span class="chip">Serve session · folder</span><span class="n">11</span>
+                </div>
+                <div><a>https://notes.acme.test/</a> · ● running</div>
+                <div class="fld">
+                  <span>Manifest files</span><span>None: the serve session for ~/acme/docs reads no devhost.toml</span>
+                </div>
+                <div class="muted">Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50</div>
+              </div>
+              <div class="box">
+                <div class="row"><b>127.0.0.1:3000</b><span class="chip">Serve session · port</span></div>
+                <div>
+                  <a>https://app.acme.test/</a> · ◇ not reachable · TCP port 3000 · checked 14:05 · runs outside devhost
+                </div>
+                <div class="fld">
+                  <span>Manifest files</span
+                  ><span>None: the serve session for 127.0.0.1:3000 reads no devhost.toml</span>
+                </div>
+                <div class="muted">Stop it with Ctrl-C in its terminal · PID 48812 · started 15:51</div>
+              </div>
+              <div class="box">
+                <div class="row">
+                  <b>demoapp</b><span class="chip">Serve session · command</span><span class="n">12</span>
+                </div>
+                <div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
+                <div><a>https://demoapp.acme.test/</a> (4001) · <a>https://demoapp-4002.acme.test/</a> (4002)</div>
+                <div class="fld">
+                  <span>Manifest files</span><span>None: command session (reads no devhost.toml)</span>
+                </div>
+                <div class="muted">Stop: <code>devhost stop --session demoapp</code> · started 15:52</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>2. Read that it is ready and inspect running sessions</h2>
+          <p>
+            Routes stay active from the start, <code>--port</code> pages reload automatically once their server answers,
+            and the Stack Directory lists every serve session beside manifest stacks. What changes is honest readiness,
+            clean foreground and detached command summaries, first-class command modeling across toolbar and CLI,
+            discoverability in stack commands, and accurate Stack Directory cards.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A folder session prints its ready line once its route answers, with elapsed time,
+              URL, and <code>Ctrl-C</code> cue; a Caddy outage prints one line when Caddy stops and one when the route
+              answers again (<code>FB-5</code>, <code>FB-10</code>, <code>ACT-10</code>, <code>CC-22</code>).
+            </li>
+            <li>
+              <span class="n">2</span> A <code>--port</code> session stays waiting in the terminal until its port first
+              accepts a connection (updating once per second on TTY, no timeout), prints the ready line only once the
+              server answers, logs reachability changes once per transition, and shows
+              <code>startup-and-recovery</code>'s not-reachable page with <b>Check Again</b> in the browser
+              (<code>ACT-4</code>, <code>ACT-9</code>, <code>STATE-1</code>, <code>manifest-hot-reload-2-04</code>,
+              <code>serve-folder-01</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Foreground command mode removes pre-startup <code>Stop:</code> headers and
+              over-padded <code>devhost | </code> prefixes, printing its ready summary with session name and
+              <code>Ctrl-C</code> cue once ready (<code>serve-command-03</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Detached command mode prints <code>Started</code>, URL(s), <code>Log:</code>, and
+              <code>Stop: devhost stop --session &lt;name&gt;</code> in both human and <code>AGENT=1</code> output
+              (<code>serve-command-03</code>).
+            </li>
+            <li>
+              <span class="n">5</span> <code>devhost stack info --session &lt;name&gt;</code> (alias
+              <code>devhost status --session</code>, <code>O62</code>) shows the command string and discovered
+              URLs/ports directly under the command with no synthetic <code>external</code>
+              <code>port-&lt;port&gt;</code> rows (<code>serve-command-02</code>).
+            </li>
+            <li>
+              <span class="n">6</span> <code>devhost stop</code>, <code>stack info</code>/<code>status</code>,
+              <code>stack find</code>, and interactive <code>stack list</code> surface running serve sessions or point
+              to <code>devhost stack list --sessions</code> and <code>--session &lt;name&gt;</code>, while scripted
+              <code>stack list</code> keeps its manifest-only format (<code>serve-command-04</code>).
+            </li>
+            <li>
+              <span class="n">7</span> In the browser toolbar (matching <code>services-panel</code>'s seam), a command
+              session counts <code>1/1</code>, lists the command string with discovered HTTP URLs and ports directly
+              beneath it, omits <code>external</code> badges on its own ports, and omits repeated
+              <code>Services</code> headings (<code>serve-command-02</code>).
+            </li>
+            <li>
+              <span class="n">8</span> The footer omits <b>Restart Changed</b> and offers working
+              <b>Restart Command</b> (<code>operationId</code>, <code>202 Accepted</code>, manifest-free restart)
+              instead of failing with "stack restart requires an accepted manifest" (<code>serve-command-02</code>,
+              <code>CC-37</code>).
+            </li>
+            <li>
+              <span class="n">9</span> Folder and command toolbars carry the stack-name <code>▾</code> chevron
+              (<code>toolbar-shell</code>), leave <b>Chat</b> off the bar when started with <code>--no-chat</code>,
+              because a segment that is off is absent (<code>BAR-5</code>), while the chat entry points that remain,
+              such as Disable Reloads' <b>Send</b>, are unavailable with the <code>O40</code> chat-off sentence
+              (<code>HOLD-5</code>), and show <code>O36</code>'s passkey/pairing prompt to unauthenticated remote
+              browsers (<code>O40</code>, <code>O36</code>, <code>CC-5</code>).
+            </li>
+            <li>
+              <span class="n">10</span> <b>All Stacks on devbox</b> (<code>O61</code>) counts serve sessions separately
+              from manifest stacks, uses singular <code>1 file</code> for single-file manifests, and filters by folder,
+              port, session name, command, or hostname (<code>WORD-5</code>, <code>SEL-10</code>,
+              <code>serve-folder-11</code>, <code>serve-command-06</code>).
+            </li>
+            <li>
+              <span class="n">11</span> Folder and port cards title by folder or target address (never
+              <code>serve-&lt;domain&gt;</code>), omit Directory lines, never mark a folder's file server
+              <code>External</code>, and drop "Manifest-free file or port session" (<code>serve-folder-11</code>).
+            </li>
+            <li>
+              <span class="n">12</span> Command cards read <code>sessionKind: "command"</code> and
+              <code>command</code> from <code>statuspage::Stack</code>, show the command string, discovered URLs/ports
+              without <code>External</code>, and the exact stop command (<code>serve-command-06</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes manifest-hot-reload-2-04, serve-folder-01, serve-folder-02, serve-folder-04, serve-folder-11,
+            serve-command-02, serve-command-03, serve-command-04, serve-command-06 · Backend: <code>--port</code> wait
+            (Backend 3), first-class command &amp; file-server state + manifest-free Restart Command (Backend 4;
+            <code>CC-25</code>, <code>CC-37</code>), CLI ready/discoverability (Backend 8),
+            <code>sessionKind</code>/<code>command</code> Stack Directory snapshots (Backend 11)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="command-lifecycle">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>multi-port route additions, primary alias note, and labeled removal</span></div>
-<pre class="term">devhost | Added route: https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001) · primary URL aliases port 4001 <span class="n">1</span>
+      <section class="step" id="command-lifecycle">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>multi-port route additions, primary alias note, and labeled removal</span>
+            </div>
+            <pre
+              class="term"
+            >devhost | Added route: https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001) · primary URL aliases port 4001 <span class="n">1</span>
 devhost | Added route: https://demoapp-4002.acme.test/ (-&gt; 127.0.0.1:4002)
 <span class="muted"># later, the command closes its secondary listener on port 4002 while port 4001 keeps serving:</span>
 devhost | Removed route: https://demoapp-4002.acme.test/ (port 4002 closed) <span class="n">2</span></pre>
-</div>
-<div class="win">
-<div class="bar"><b>https://demoapp-4002.acme.test/</b><span>open tab on closed secondary port (WebSocket port-closed), then direct reload (410)</span></div>
-<div class="pg" style="min-height:135px">
-<div class="apptxt">demoapp secondary worker page as last rendered …</div>
-<div class="corner">
-<div class="banner" style="margin:0">? Port 4002 closed · demoapp still runs on https://demoapp.acme.test <span class="btn">Open</span> and https://demoapp-4001.acme.test <span class="btn">Open</span> <span class="n">3</span></div>
-<div class="tbar oneline"><span class="seg"><b>demoapp ▾</b></span><span class="seg">? port closed ▾</span><span class="seg muted">Chat</span></div>
-</div>
-</div>
-<div class="work small" style="border-top:1px solid var(--line)">
-<div class="vlab">Reloading https://demoapp-4002.acme.test/ while demoapp still runs (HTTP 410 over valid local HTTPS)</div>
-<div class="box" style="margin:0">
-<div class="row"><b>Port 4002 is no longer listening in serve session demoapp</b><span class="n">4</span></div>
-<div class="row" style="margin-top:4px"><span class="muted">Active URLs:</span><a>https://demoapp.acme.test/</a><a>https://demoapp-4001.acme.test/</a></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>foreground post-readiness exit propagates exit code immediately</span></div>
-<pre class="term">$ devhost serve -- bun run dev
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://demoapp-4002.acme.test/</b
+              ><span>open tab on closed secondary port (WebSocket port-closed), then direct reload (410)</span>
+            </div>
+            <div class="pg" style="min-height: 135px">
+              <div class="apptxt">demoapp secondary worker page as last rendered …</div>
+              <div class="corner">
+                <div class="banner" style="margin: 0">
+                  ? Port 4002 closed · demoapp still runs on https://demoapp.acme.test <span class="btn">Open</span> and
+                  https://demoapp-4001.acme.test <span class="btn">Open</span> <span class="n">3</span>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>demoapp ▾</b></span
+                  ><span class="seg">? port closed ▾</span><span class="seg off">Chat</span>
+                </div>
+              </div>
+            </div>
+            <div class="work small" style="border-top: 1px solid var(--line)">
+              <div class="vlab">
+                Reloading https://demoapp-4002.acme.test/ while demoapp still runs (HTTP 410 over valid local HTTPS)
+              </div>
+              <div class="box" style="margin: 0">
+                <div class="row">
+                  <b>Port 4002 is no longer listening in serve session demoapp</b><span class="n">4</span>
+                </div>
+                <div class="row" style="margin-top: 4px">
+                  <span class="muted">Active URLs:</span><a>https://demoapp.acme.test/</a
+                  ><a>https://demoapp-4001.acme.test/</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>foreground post-readiness exit propagates exit code immediately</span>
+            </div>
+            <pre class="term">$ devhost serve -- bun run dev
 devhost | Ready in 1.1 s: https://demoapp.acme.test/ (-&gt; 127.0.0.1:4001) · session demoapp · Ctrl-C stops this session
 <span class="muted"># command exits with code 42 after serving requests:</span>
 devhost | Command bun run dev exited with code 42 · removed https://demoapp.acme.test/ · Caddy keeps running <span class="n">5</span>
 $ echo $?
 42</pre>
-</div>
-<div class="win">
-<div class="bar"><b>https://demoapp.acme.test/</b><span>detached command post-readiness crash: valid local HTTPS recovery page (never ERR_SSL_PROTOCOL_ERROR)</span></div>
-<div class="work small">
-<div class="row"><b>✕ demoapp exited with code 42 at 15:54</b><span class="chip bad">Serve session · command</span><span class="n">6</span></div>
-<div class="muted" style="margin:4px 0">Ran <code>bun run dev</code> in ~/acme · detached session kept routed so you can inspect or restart</div>
-<pre class="term" style="border:1px solid var(--rule);border-radius:4px">Error: ECONNREFUSED 127.0.0.1:5432 (database not ready)
-    at connect (src/server.ts:48:11)</pre>
-<div class="row" style="margin-top:6px"><span class="btn pri">Restart Command</span><span class="n">7</span><span class="sp"></span><span class="muted">Or remove: <code>devhost stop --session demoapp</code></span></div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>3. Follow multi-port changes and command exits</h2>
-<p>Command-mode sessions can open and close multiple HTTP ports during a run and exit after readiness in either foreground or detached mode. Under <code>O63</code>, Caddy uses strict configured-hosts-only TLS, so deleting a route blindly while a user still holds a tab turns every reload into browser <code>ERR_SSL_PROTOCOL_ERROR</code>. This step handles secondary port closure and post-readiness exits cleanly.</p>
-<ol>
-<li><span class="n">1</span> Newly discovered ports log with an explicit <code>Added route:</code> label, and the first port explains that the primary hostname aliases that port (<code>FB-10</code>, <code>serve-command-05</code>).</li>
-<li><span class="n">2</span> When a secondary port stops listening while the command stays healthy, the terminal logs a labeled <code>Removed route:</code> line rather than dumping unlabeled URLs (<code>serve-command-05</code>).</li>
-<li><span class="n">3</span> Before <code>refresh_command_routes</code> removes port 4002's active proxy route, the server sends <code>{"type": "port-closed", "port": 4002, "session": "demoapp", "activeUrls": […]}</code> over <code>/__devhost__/ws/health</code> and closes that stream normally; <code>openReconnectingWebSocket.ts</code> stops retrying and the open tab shows a targeted notice with <b>Open</b> links to remaining active URLs, never painting sibling ports as a false <code>0/3</code> outage (<code>ACT-5</code>, <code>HOLD-2</code>, <code>CC-26</code>, <code>serve-command-05</code>).</li>
-<li><span class="n">4</span> While the session keeps running, port 4002's hostname keeps a session-scoped <code>410</code> status page over valid local HTTPS listing active URLs so reloading never hits <code>ERR_SSL_PROTOCOL_ERROR</code>; stopping the session removes it (<code>O63</code>, <code>serve-command-05</code>).</li>
-<li><span class="n">5</span> In foreground mode, post-readiness exit (exit <code>0</code> or non-zero) immediately tears down routes, claims, and session record, prints the exit outcome, and exits with the command's own exit code — matching <code>start/serve.md:23</code> and ending the infinite <code>waiting for a restart</code> hang (<code>serve-command-01</code>).</li>
-<li><span class="n">6</span> In detached mode, a post-readiness crash never prints <code>waiting for a restart</code> while deleting routes into <code>ERR_SSL_PROTOCOL_ERROR</code>: devhost keeps the hostname routed over valid local HTTPS to this recovery page with the exit code and frozen recent output lines; a detached clean exit <code>0</code> tears down routes and exits cleanly (<code>O63</code>, <code>serve-command-01</code>).</li>
-<li><span class="n">7</span> <b>Restart Command</b> on the detached recovery page uses the same manifest-free restart operation (<code>operationId</code>, <code>202 Accepted</code>) to relaunch the command and restore routes; <code>devhost stop --session demoapp</code> tears down the crashed session (<code>serve-command-01</code>, <code>serve-command-02</code>).</li>
-</ol>
-<p class="fixes">Fixes serve-command-01, serve-command-05 · Backend: foreground exit teardown &amp; detached crash HTTPS recovery (Backend 5; P0), labeled multi-port logs + WebSocket <code>port-closed</code> + session-scoped 410 status response (Backend 6; <code>CC-26</code>, <code>O63</code>)</p>
-</div>
-</section>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://demoapp.acme.test/</b
+              ><span
+                >detached command post-readiness crash: valid local HTTPS recovery page (never
+                ERR_SSL_PROTOCOL_ERROR)</span
+              >
+            </div>
+            <div class="work small">
+              <div class="row">
+                <b>✕ demoapp exited with code 42 at 15:54</b><span class="chip bad">Serve session · command</span
+                ><span class="n">6</span>
+              </div>
+              <div class="muted" style="margin: 4px 0">
+                Ran <code>bun run dev</code> in ~/acme · detached session kept routed so you can inspect or restart
+              </div>
+              <pre class="term" style="border: 1px solid var(--rule); border-radius: 4px">
+Error: ECONNREFUSED 127.0.0.1:5432 (database not ready)
+    at connect (src/server.ts:48:11)</pre
+              >
+              <div class="row" style="margin-top: 6px">
+                <span class="btn pri">Restart Command</span><span class="n">7</span><span class="sp"></span
+                ><span class="muted">Or remove: <code>devhost stop --session demoapp</code></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>3. Follow multi-port changes and command exits</h2>
+          <p>
+            Command-mode sessions can open and close multiple HTTP ports during a run and exit after readiness in either
+            foreground or detached mode. Under <code>O63</code>, Caddy uses strict configured-hosts-only TLS, so
+            deleting a route blindly while a user still holds a tab turns every reload into browser
+            <code>ERR_SSL_PROTOCOL_ERROR</code>. This step handles secondary port closure and post-readiness exits
+            cleanly.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Newly discovered ports log with an explicit <code>Added route:</code> label, and
+              the first port explains that the primary hostname aliases that port (<code>FB-10</code>,
+              <code>serve-command-05</code>).
+            </li>
+            <li>
+              <span class="n">2</span> When a secondary port stops listening while the command stays healthy, the
+              terminal logs a labeled <code>Removed route:</code> line rather than dumping unlabeled URLs
+              (<code>serve-command-05</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Before <code>refresh_command_routes</code> removes port 4002's active proxy
+              route, the server sends
+              <code>{"type": "port-closed", "port": 4002, "session": "demoapp", "activeUrls": […]}</code> over
+              <code>/__devhost__/ws/health</code> and closes that stream normally;
+              <code>openReconnectingWebSocket.ts</code> stops retrying and the open tab shows a targeted notice with
+              <b>Open</b> links to remaining active URLs, never painting sibling ports as a false
+              <code>0/3</code> outage (<code>ACT-5</code>, <code>HOLD-2</code>, <code>CC-26</code>,
+              <code>serve-command-05</code>).
+            </li>
+            <li>
+              <span class="n">4</span> While the session keeps running, port 4002's hostname keeps a session-scoped
+              <code>410</code> status page over valid local HTTPS listing active URLs so reloading never hits
+              <code>ERR_SSL_PROTOCOL_ERROR</code>; stopping the session removes it (<code>O63</code>,
+              <code>serve-command-05</code>).
+            </li>
+            <li>
+              <span class="n">5</span> In foreground mode, post-readiness exit (exit <code>0</code> or non-zero)
+              immediately tears down routes, claims, and session record, prints the exit outcome, and exits with the
+              command's own exit code — matching <code>start/serve.md:23</code> and ending the infinite
+              <code>waiting for a restart</code> hang (<code>serve-command-01</code>).
+            </li>
+            <li>
+              <span class="n">6</span> In detached mode, a post-readiness crash never prints
+              <code>waiting for a restart</code> while deleting routes into <code>ERR_SSL_PROTOCOL_ERROR</code>: devhost
+              keeps the hostname routed over valid local HTTPS to this recovery page with the exit code and frozen
+              recent output lines; a detached clean exit <code>0</code> tears down routes and exits cleanly
+              (<code>O63</code>, <code>serve-command-01</code>).
+            </li>
+            <li>
+              <span class="n">7</span> <b>Restart Command</b> on the detached recovery page uses the same manifest-free
+              restart operation (<code>operationId</code>, <code>202 Accepted</code>) to relaunch the command and
+              restore routes; <code>devhost stop --session demoapp</code> tears down the crashed session
+              (<code>serve-command-01</code>, <code>serve-command-02</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes serve-command-01, serve-command-05 · Backend: foreground exit teardown &amp; detached crash HTTPS
+            recovery (Backend 5; P0), labeled multi-port logs + WebSocket <code>port-closed</code> + session-scoped 410
+            status response (Backend 6; <code>CC-26</code>, <code>O63</code>)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="folder">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/</b><span>tab title: docs/guides · devhost</span></div>
-<div class="work">
-<div class="hp"><a>docs</a> / guides <span class="n">1</span></div>
-<div class="banner" style="margin:4px 0">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there. <span class="n">2</span></div>
-<div class="muted small">3 folders · 12 files <span class="n">3</span></div>
-<div class="row" style="margin:6px 0"><span class="in" style="flex:1"><span class="muted">Filter guides</span></span><span class="n">4</span></div>
-<table class="t"><thead><tr><th>Name <span class="n">5</span></th><th style="width:16%;text-align:right">Size</th><th style="width:24%">Modified</th></tr></thead><tbody>
-<tr><td>📁 <a>checklists/</a></td><td class="num"></td><td>14:02</td></tr>
-<tr><td>📁 <a>notes:2026/</a> <span class="n">6</span></td><td class="num"></td><td>Nov 15 14:02</td></tr>
-<tr><td>📁 <a>onboarding/</a></td><td class="num"></td><td>Nov 15, 2025</td></tr>
-<tr><td>📄 <a>big.log</a></td><td class="num">1.9 MiB</td><td>09:41</td></tr>
-<tr><td>📝 <a>escalation.md</a></td><td class="num">3.2 KiB</td><td>Nov 12 08:30</td></tr>
-<tr><td>📄 <a>file2.txt</a></td><td class="num">512 B</td><td>Nov 3 10:15</td></tr>
-<tr><td>📄 <a>file10.txt</a></td><td class="num">1.2 KiB</td><td>Nov 3 10:16</td></tr>
-<tr><td>📝 <a>on-call.md</a></td><td class="num">4.1 KiB</td><td>14:02</td></tr>
-<tr><td>📝 <a>postmortem-template.md</a></td><td class="num">2.6 KiB</td><td>Oct 30 17:45</td></tr>
-<tr><td>📝 <a>Re: meeting.md</a></td><td class="num">2.0 KiB</td><td>Nov 15 14:02</td></tr>
-<tr><td>📝 <a>README.md</a></td><td class="num">1.8 KiB</td><td>Nov 12 08:31</td></tr>
-<tr class="dim"><td colspan="3">… 4 more files: release-checklist.md, runbook.md, TODO:list.md, UPPER.TXT</td></tr>
-</tbody></table>
-<div class="box">
-<div class="row"><b><a>README.md</a></b><span class="n">7</span><span class="sp"></span><span class="btn prs">Rendered</span><span class="btn">Source</span></div>
-<div style="margin-top:4px"><b>Guides</b></div>
-<div>Runbooks and checklists for the platform team. Start with <a>on-call.md</a>.</div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/</b><span>"on" typed in the filter, then "xyz"</span></div>
-<div class="work small">
-<div class="row"><span class="in focusring" style="flex:1">on</span></div>
-<div class="muted" style="margin:4px 0">3 of 15 entries match "on" <span class="n">8</span></div>
-<table class="t"><tbody>
-<tr><td>📁 <a><b>on</b>boarding/</a></td><td class="num" style="width:16%"></td><td style="width:24%">Nov 15, 2025</td></tr>
-<tr><td>📝 <a>escalati<b>on</b>.md</a></td><td class="num">3.2 KiB</td><td>Nov 12 08:30</td></tr>
-<tr><td>📝 <a><b>on</b>-call.md</a></td><td class="num">4.1 KiB</td><td>14:02</td></tr>
-</tbody></table>
-<div class="vlab">"xyz" typed instead</div>
-<div class="row">No entry in docs/guides matches "xyz" <span class="btn">Clear Filter</span><span class="n">9</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/drafts/</b><span>an empty folder</span></div>
-<div class="work small">
-<div class="hp"><a>docs</a> / drafts</div>
-<div class="box">docs/drafts is empty. Files added here appear when you reload the page. <span class="n">10</span></div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>4. Open the folder</h2>
-<p>Files are still read on every request, reads stay confined to the served folder (hidden files and <code>../</code> escapes answer 404), and a folder holding <code>index.html</code> still serves it unchanged as a site. What changes is that the page shows the folder itself, named, ordered, and described, with its README below the listing instead of replacing it. Keys: standard document keys only, no extra shortcuts (<code>KEY-1</code>); Tab moves through the heading path, filter, and rows; Escape clears the filter.</p>
-<ol>
-<li><span class="n">1</span> The page's one heading is the path from the served folder's name (never absolute path, never "Directory listing", never rooted at <code>devhost</code>), with each ancestor a same-tab link and the shown folder <code>aria-current="page"</code> (<code>WORD-1</code>).</li>
-<li><span class="n">2</span> When the machine does not yet trust devhost's local certificate authority, full file-browser pages render <code>first-run-setup</code>'s shared trust line under the heading as a condition, in its one sentence naming the machine (<code>FB-9</code>, <code>WORD-12</code>, <code>SURF-14</code>, <code>O61</code>).</li>
-<li><span class="n">3</span> One line counts what the folder holds (<code>WORD-5</code>).</li>
-<li><span class="n">4</span> A filter labelled with the folder's name sits above every non-empty listing (<code>SEL-10</code>).</li>
-<li><span class="n">5</span> Name, Size, and Modified columns: folders first, then files, each group in natural, case-insensitive order (<code>file2</code> before <code>file10</code>, <code>alpha</code> before <code>UPPER.TXT</code>); folders end in "/" beside a folder icon, files sit beside a kind icon; binary sizes with one decimal under 10, local 24-hour dates, compact rows at least 24 CSS px tall (<code>ACT-13</code>, <code>WORD-8</code>, <code>SURF-9</code>).</li>
-<li><span class="n">6</span> Every name is a same-tab link prefixed with <code>./</code> so colon names like <code>notes:2026/</code>, <code>Re: meeting.md</code>, and <code>TODO:list.md</code> open cleanly; rows carry no external-link arrow (<code>SURF-15</code>).</li>
-<li><span class="n">7</span> A folder holding <code>index.md</code>, <code>README.md</code>, or <code>readme.md</code> (in that order) shows its listing first and renders the file below under a heading linking to the file's own page, with step 5's view control (<code>serve-folder-05</code>).</li>
-<li><span class="n">8</span> The filter narrows rows as you type, highlights matched text, keeps folders first, and announces the count politely (<code>SEL-10</code>, <code>WORD-5</code>).</li>
-<li><span class="n">9</span> Zero matches name the folder and query with <b>Clear Filter</b> (<code>SEL-10</code>, <code>STATE-2</code>, <code>WORD-2</code>).</li>
-<li><span class="n">10</span> An empty folder renders the shared empty-state block with no filter (<code>STATE-2</code>, <code>SURF-14</code>).</li>
-</ol>
-<p class="fixes">Fixes serve-folder-05, serve-folder-07, serve-folder-10 · Backend: entry kind/size/mtime, natural sort, <code>./</code> hrefs, folder path root, and Markdown index below listing in <code>apps/devhost/src/files.rs</code> (Backend 9)</p>
-</div>
-</section>
+      <section class="step" id="folder">
+        <div class="mock">
+          <div class="win">
+            <div class="bar"><b>https://notes.acme.test/guides/</b><span>tab title: docs/guides · devhost</span></div>
+            <div class="work">
+              <div class="hp"><a>docs</a> / guides <span class="n">1</span></div>
+              <div class="banner" style="margin: 4px 0">
+                ◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname
+                and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then
+                reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there.
+                <span class="n">2</span>
+              </div>
+              <div class="muted small">3 folders · 12 files <span class="n">3</span></div>
+              <div class="row" style="margin: 6px 0">
+                <span class="in" style="flex: 1"><span class="muted">Filter guides</span></span
+                ><span class="n">4</span>
+              </div>
+              <table class="t">
+                <thead>
+                  <tr>
+                    <th>Name <span class="n">5</span></th>
+                    <th style="width: 16%; text-align: right">Size</th>
+                    <th style="width: 24%">Modified</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>📁 <a>checklists/</a></td>
+                    <td class="num"></td>
+                    <td>14:02</td>
+                  </tr>
+                  <tr>
+                    <td>📁 <a>notes:2026/</a> <span class="n">6</span></td>
+                    <td class="num"></td>
+                    <td>Nov 15 14:02</td>
+                  </tr>
+                  <tr>
+                    <td>📁 <a>onboarding/</a></td>
+                    <td class="num"></td>
+                    <td>Nov 15, 2025</td>
+                  </tr>
+                  <tr>
+                    <td>📄 <a>big.log</a></td>
+                    <td class="num">1.9 MiB</td>
+                    <td>09:41</td>
+                  </tr>
+                  <tr>
+                    <td>📝 <a>escalation.md</a></td>
+                    <td class="num">3.2 KiB</td>
+                    <td>Nov 12 08:30</td>
+                  </tr>
+                  <tr>
+                    <td>📄 <a>file2.txt</a></td>
+                    <td class="num">512 B</td>
+                    <td>Nov 3 10:15</td>
+                  </tr>
+                  <tr>
+                    <td>📄 <a>file10.txt</a></td>
+                    <td class="num">1.2 KiB</td>
+                    <td>Nov 3 10:16</td>
+                  </tr>
+                  <tr>
+                    <td>📝 <a>on-call.md</a></td>
+                    <td class="num">4.1 KiB</td>
+                    <td>14:02</td>
+                  </tr>
+                  <tr>
+                    <td>📝 <a>postmortem-template.md</a></td>
+                    <td class="num">2.6 KiB</td>
+                    <td>Oct 30 17:45</td>
+                  </tr>
+                  <tr>
+                    <td>📝 <a>Re: meeting.md</a></td>
+                    <td class="num">2.0 KiB</td>
+                    <td>Nov 15 14:02</td>
+                  </tr>
+                  <tr>
+                    <td>📝 <a>README.md</a></td>
+                    <td class="num">1.8 KiB</td>
+                    <td>Nov 12 08:31</td>
+                  </tr>
+                  <tr class="dim">
+                    <td colspan="3">… 4 more files: release-checklist.md, runbook.md, TODO:list.md, UPPER.TXT</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="box">
+                <div class="row">
+                  <b><a>README.md</a></b
+                  ><span class="n">7</span><span class="sp"></span><span class="btn prs">Rendered</span
+                  ><span class="btn">Source</span>
+                </div>
+                <div style="margin-top: 4px"><b>Guides</b></div>
+                <div>Runbooks and checklists for the platform team. Start with <a>on-call.md</a>.</div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/</b><span>"on" typed in the filter, then "xyz"</span>
+            </div>
+            <div class="work small">
+              <div class="row"><span class="in focusring" style="flex: 1">on</span></div>
+              <div class="muted" style="margin: 4px 0">3 of 15 entries match "on" <span class="n">8</span></div>
+              <table class="t">
+                <tbody>
+                  <tr>
+                    <td>
+                      📁 <a><b>on</b>boarding/</a>
+                    </td>
+                    <td class="num" style="width: 16%"></td>
+                    <td style="width: 24%">Nov 15, 2025</td>
+                  </tr>
+                  <tr>
+                    <td>📝 <a>escalati<b>on</b>.md</a></td>
+                    <td class="num">3.2 KiB</td>
+                    <td>Nov 12 08:30</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      📝 <a><b>on</b>-call.md</a>
+                    </td>
+                    <td class="num">4.1 KiB</td>
+                    <td>14:02</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="vlab">"xyz" typed instead</div>
+              <div class="row">
+                No entry in docs/guides matches "xyz" <span class="btn">Clear Filter</span><span class="n">9</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>https://notes.acme.test/drafts/</b><span>an empty folder</span></div>
+            <div class="work small">
+              <div class="hp"><a>docs</a> / drafts</div>
+              <div class="box">
+                docs/drafts is empty. Files added here appear when you reload the page. <span class="n">10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>4. Open the folder</h2>
+          <p>
+            Files are still read on every request, reads stay confined to the served folder (hidden files and
+            <code>../</code> escapes answer 404), and a folder holding <code>index.html</code> still serves it unchanged
+            as a site. What changes is that the page shows the folder itself, named, ordered, and described, with its
+            README below the listing instead of replacing it. Keys: standard document keys only, no extra shortcuts
+            (<code>KEY-1</code>); Tab moves through the heading path, filter, and rows; Escape clears the filter.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The page's one heading is the path from the served folder's name (never absolute
+              path, never "Directory listing", never rooted at <code>devhost</code>), with each ancestor a same-tab link
+              and the shown folder <code>aria-current="page"</code> (<code>WORD-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> When the machine does not yet trust devhost's local certificate authority, full
+              file-browser pages render <code>first-run-setup</code>'s shared trust line under the heading as a
+              condition, in its one sentence naming the machine (<code>FB-9</code>, <code>WORD-12</code>,
+              <code>SURF-14</code>, <code>O61</code>).
+            </li>
+            <li><span class="n">3</span> One line counts what the folder holds (<code>WORD-5</code>).</li>
+            <li>
+              <span class="n">4</span> A filter labelled with the folder's name sits above every non-empty listing
+              (<code>SEL-10</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Name, Size, and Modified columns: folders first, then files, each group in
+              natural, case-insensitive order (<code>file2</code> before <code>file10</code>, <code>alpha</code> before
+              <code>UPPER.TXT</code>); folders end in "/" beside a folder icon, files sit beside a kind icon; binary
+              sizes with one decimal under 10, local 24-hour dates, compact rows at least 24 CSS px tall
+              (<code>ACT-13</code>, <code>WORD-8</code>, <code>SURF-9</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Every name is a same-tab link prefixed with <code>./</code> so colon names like
+              <code>notes:2026/</code>, <code>Re: meeting.md</code>, and <code>TODO:list.md</code> open cleanly; rows
+              carry no external-link arrow (<code>SURF-15</code>).
+            </li>
+            <li>
+              <span class="n">7</span> A folder holding <code>index.md</code>, <code>README.md</code>, or
+              <code>readme.md</code> (in that order) shows its listing first and renders the file below under a heading
+              linking to the file's own page, with step 5's view control (<code>serve-folder-05</code>).
+            </li>
+            <li>
+              <span class="n">8</span> The filter narrows rows as you type, highlights matched text, keeps folders
+              first, and announces the count politely (<code>SEL-10</code>, <code>WORD-5</code>).
+            </li>
+            <li>
+              <span class="n">9</span> Zero matches name the folder and query with
+              <b>Clear Filter</b> (<code>SEL-10</code>, <code>STATE-2</code>, <code>WORD-2</code>).
+            </li>
+            <li>
+              <span class="n">10</span> An empty folder renders the shared empty-state block with no filter
+              (<code>STATE-2</code>, <code>SURF-14</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes serve-folder-05, serve-folder-07, serve-folder-10 · Backend: entry kind/size/mtime, natural sort,
+            <code>./</code> hrefs, folder path root, and Markdown index below listing in
+            <code>apps/devhost/src/files.rs</code> (Backend 9)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="markdown">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/release-checklist.md</b><span>tab title: release-checklist.md · docs/guides · devhost</span></div>
-<div class="work">
-<div class="row"><span class="hp"><a>docs</a> / <a>guides</a> / release-checklist.md</span><span class="n">1</span><span class="sp"></span><span class="btn prs">Rendered</span><span class="btn">Source</span><span class="n">2</span></div>
-<div class="box">
-<div class="fld"><span>title</span><span>Release checklist</span></div>
-<div class="fld"><span>owner</span><span>Platform team</span></div>
-<div class="fld"><span>updated</span><span>2026-11-15 <span class="n">3</span></span></div>
-</div>
-<div><b>Release checklist</b></div>
-<div>1. Freeze main · 2. Tag the release · 3. Watch the dashboards for 30 min</div>
-<div class="banner">⚠ <b>Warning</b> · Never deploy on Fridays after 15:00. <span class="n">4</span></div>
-<div class="banner info">ⓘ <b>Note</b> · The on-call engineer approves every rollback.</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/release-checklist.md?view=source</b><span>Source pressed; flushSync + &lt;noscript&gt; prevent flash on load</span></div>
-<div class="work small">
-<div class="row"><span class="hp"><a>docs</a> / <a>guides</a> / release-checklist.md</span><span class="sp"></span><span class="btn">Rendered</span><span class="btn prs">Source</span></div>
-<pre class="term">---
+      <section class="step" id="markdown">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/release-checklist.md</b
+              ><span>tab title: release-checklist.md · docs/guides · devhost</span>
+            </div>
+            <div class="work">
+              <div class="row">
+                <span class="hp"><a>docs</a> / <a>guides</a> / release-checklist.md</span><span class="n">1</span
+                ><span class="sp"></span><span class="btn prs">Rendered</span><span class="btn">Source</span
+                ><span class="n">2</span>
+              </div>
+              <div class="box">
+                <div class="fld"><span>title</span><span>Release checklist</span></div>
+                <div class="fld"><span>owner</span><span>Platform team</span></div>
+                <div class="fld">
+                  <span>updated</span><span>2026-11-15 <span class="n">3</span></span>
+                </div>
+              </div>
+              <div><b>Release checklist</b></div>
+              <div>1. Freeze main · 2. Tag the release · 3. Watch the dashboards for 30 min</div>
+              <div class="banner">⚠ <b>Warning</b> · Never deploy on Fridays after 15:00. <span class="n">4</span></div>
+              <div class="banner info">ⓘ <b>Note</b> · The on-call engineer approves every rollback.</div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/release-checklist.md?view=source</b
+              ><span>Source pressed; flushSync + &lt;noscript&gt; prevent flash on load</span>
+            </div>
+            <div class="work small">
+              <div class="row">
+                <span class="hp"><a>docs</a> / <a>guides</a> / release-checklist.md</span><span class="sp"></span
+                ><span class="btn">Rendered</span><span class="btn prs">Source</span>
+              </div>
+              <pre class="term">---
 title: Release checklist
 owner: Platform team
 ---
@@ -400,98 +919,245 @@ owner: Platform team
 Page the on-call engineer first: [on-call rota](<a>./on-call.md</a>) <span class="n">5</span>
 Dashboards: <a>https://dashboards.acme.test/release</a>
 Old shortcut: [deploy](javascript:deploy())</pre>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/rota.md</b><span>front matter that does not parse</span></div>
-<div class="work small">
-<div class="banner bad" style="margin-top:0">✕ Front matter is not valid YAML: line 1, column 8: flow sequence in block collection must be sufficiently indented and end with a ] <span class="n">6</span></div>
-<pre class="term">title: [unclosed
-owner: Platform team</pre>
-<div class="vlab">Valid YAML that is a list, not a mapping</div>
-<div class="banner bad" style="margin:0">✕ Front matter is a list, not a mapping of keys and values</div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>5. Read a Markdown file</h2>
-<p><code>.md</code> files still render as GitHub Flavored Markdown without raw HTML or unsafe links, with YAML front matter as a table above, and without JavaScript the links and escaped source still work. What changes is a per-file URL view control (no hostname-wide <code>localStorage</code>), clickable sanitized links in source view, explicit broken front matter errors, and rendered GitHub alerts. Keys: Tab reaches <b>Rendered</b> and <b>Source</b>; Enter or Space presses one; no added shortcuts (<code>KEY-1</code>).</p>
-<ol>
-<li><span class="n">1</span> The heading path ends with the file's name and the tab title starts with it (<code>WORD-1</code>).</li>
-<li><span class="n">2</span> Two pressed-state buttons (<code>aria-pressed="true"</code>), <b>Rendered</b> and <b>Source</b>, act on this file only: <b>Source</b> updates the URL to <code>?view=source</code> via <code>history.replaceState</code> so reload, Back, and shared links keep it while other files open rendered and nothing writes to <code>localStorage</code>. First paint preserves synchronous <code>flushSync</code> mounting and <code>&lt;noscript&gt;</code> fallback so <code>?view=source</code> never flashes rendered HTML first (<code>SEL-11</code>, <code>WORD-3</code>).</li>
-<li><span class="n">3</span> Valid YAML front matter renders as a table above the document, as today.</li>
-<li><span class="n">4</span> GitHub's five alerts (<code>[!NOTE]</code>, <code>[!TIP]</code>, <code>[!IMPORTANT]</code>, <code>[!WARNING]</code>, <code>[!CAUTION]</code>) render as titled callouts with icons at 4.5:1 contrast in both themes and distinct in forced colors; the bracketed marker never appears (<code>ACT-13</code>).</li>
-<li><span class="n">5</span> In source view, link targets (<code>[text](target)</code>, <code>&lt;https://…&gt;</code>, bare URLs) are clickable links using the same sanitizer as rendered view, so relative links work and <code>javascript:</code> stays plain text (<code>serve-folder-08</code>).</li>
-<li><span class="n">6</span> Invalid YAML front matter shows the parser's line, column, and error above its raw block in cannot-load style; a valid non-mapping YAML root states that instead (<code>FAIL-2</code>, <code>WORD-7</code>, <code>STATE-4</code>).</li>
-</ol>
-<p class="fixes">Fixes serve-folder-08, serve-folder-09 · Backend: none beyond preserving <code>apps/devhost/src/statuspage.rs</code> first-paint <code>&lt;noscript&gt;</code>; the view control, source-view links, front matter errors, and alerts live in <code>packages/devhost-ui/src/statusPages/</code></p>
-</div>
-</section>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/rota.md</b><span>front matter that does not parse</span>
+            </div>
+            <div class="work small">
+              <div class="banner bad" style="margin-top: 0">
+                ✕ Front matter is not valid YAML: line 1, column 8: flow sequence in block collection must be
+                sufficiently indented and end with a ] <span class="n">6</span>
+              </div>
+              <pre class="term">
+title: [unclosed
+owner: Platform team</pre
+              >
+              <div class="vlab">Valid YAML that is a list, not a mapping</div>
+              <div class="banner bad" style="margin: 0">✕ Front matter is a list, not a mapping of keys and values</div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>5. Read a Markdown file</h2>
+          <p>
+            <code>.md</code> files still render as GitHub Flavored Markdown without raw HTML or unsafe links, with YAML
+            front matter as a table above, and without JavaScript the links and escaped source still work. What changes
+            is a per-file URL view control (no hostname-wide <code>localStorage</code>), clickable sanitized links in
+            source view, explicit broken front matter errors, and rendered GitHub alerts. Keys: Tab reaches
+            <b>Rendered</b> and <b>Source</b>; Enter or Space presses one; no added shortcuts (<code>KEY-1</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The heading path ends with the file's name and the tab title starts with it
+              (<code>WORD-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Two pressed-state buttons (<code>aria-pressed="true"</code>), <b>Rendered</b> and
+              <b>Source</b>, act on this file only: <b>Source</b> updates the URL to <code>?view=source</code> via
+              <code>history.replaceState</code> so reload, Back, and shared links keep it while other files open
+              rendered and nothing writes to <code>localStorage</code>. First paint preserves synchronous
+              <code>flushSync</code> mounting and <code>&lt;noscript&gt;</code> fallback so
+              <code>?view=source</code> never flashes rendered HTML first (<code>SEL-11</code>, <code>WORD-3</code>).
+            </li>
+            <li><span class="n">3</span> Valid YAML front matter renders as a table above the document, as today.</li>
+            <li>
+              <span class="n">4</span> GitHub's five alerts (<code>[!NOTE]</code>, <code>[!TIP]</code>,
+              <code>[!IMPORTANT]</code>, <code>[!WARNING]</code>, <code>[!CAUTION]</code>) render as titled callouts
+              with icons at 4.5:1 contrast in both themes and distinct in forced colors; the bracketed marker never
+              appears (<code>ACT-13</code>).
+            </li>
+            <li>
+              <span class="n">5</span> In source view, link targets (<code>[text](target)</code>,
+              <code>&lt;https://…&gt;</code>, bare URLs) are clickable links using the same sanitizer as rendered view,
+              so relative links work and <code>javascript:</code> stays plain text (<code>serve-folder-08</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Invalid YAML front matter shows the parser's line, column, and error above its
+              raw block in cannot-load style; a valid non-mapping YAML root states that instead (<code>FAIL-2</code>,
+              <code>WORD-7</code>, <code>STATE-4</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes serve-folder-08, serve-folder-09 · Backend: none beyond preserving
+            <code>apps/devhost/src/statuspage.rs</code> first-paint <code>&lt;noscript&gt;</code>; the view control,
+            source-view links, front matter errors, and alerts live in <code>packages/devhost-ui/src/statusPages/</code>
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="missing-file">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/on-cal.md</b><span>status 404 · tab title: Not found: on-cal.md · docs/guides · devhost</span></div>
-<div class="work">
-<div class="hp"><a>docs</a> / <a>guides</a> <span class="n">1</span></div>
-<div class="row" style="margin-top:4px"><b>No file named on-cal.md in docs/guides</b><span class="n">2</span></div>
-<div class="row"><span>Did you mean <a>on-call.md</a>?</span><span class="n">3</span></div>
-<div class="muted small" style="margin-top:6px">3 folders · 12 files</div>
-<table class="t"><thead><tr><th>Name <span class="n">4</span></th><th style="width:16%;text-align:right">Size</th><th style="width:24%">Modified</th></tr></thead><tbody>
-<tr><td>📁 <a>checklists/</a></td><td class="num"></td><td>14:02</td></tr>
-<tr><td>📁 <a>notes:2026/</a></td><td class="num"></td><td>Nov 15 14:02</td></tr>
-<tr><td>📁 <a>onboarding/</a></td><td class="num"></td><td>Nov 15, 2025</td></tr>
-<tr><td>📄 <a>big.log</a></td><td class="num">1.9 MiB</td><td>09:41</td></tr>
-<tr class="dim"><td colspan="3">… 11 more files, the same listing as step 4, and nothing after it <span class="n">5</span></td></tr>
-</tbody></table>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/…</b><span>missing folder, hidden path, curl 404, and manifest serve error (no Open in Editor)</span></div>
-<div class="work small">
-<div class="vlab">/guides/old/x.md: a folder on the way does not exist</div>
-<div class="row"><b>No folder named old in docs/guides</b><span class="muted">… then the listing of docs/guides</span><span class="n">6</span></div>
-<div class="vlab">/guides/.env: a hidden name, or a link that leaves the served folder</div>
-<div class="row"><b>No file named .env in docs/guides</b><span class="muted">… no close names, then the listing, which shows no hidden names</span><span class="n">7</span></div>
-<div class="vlab">A request that is not a page load</div>
-<pre class="term">$ curl https://notes.acme.test/guides/on-cal.md
+      <section class="step" id="missing-file">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/on-cal.md</b
+              ><span>status 404 · tab title: Not found: on-cal.md · docs/guides · devhost</span>
+            </div>
+            <div class="work">
+              <div class="hp"><a>docs</a> / <a>guides</a> <span class="n">1</span></div>
+              <div class="row" style="margin-top: 4px">
+                <b>No file named on-cal.md in docs/guides</b><span class="n">2</span>
+              </div>
+              <div class="row">
+                <span>Did you mean <a>on-call.md</a>?</span><span class="n">3</span>
+              </div>
+              <div class="muted small" style="margin-top: 6px">3 folders · 12 files</div>
+              <table class="t">
+                <thead>
+                  <tr>
+                    <th>Name <span class="n">4</span></th>
+                    <th style="width: 16%; text-align: right">Size</th>
+                    <th style="width: 24%">Modified</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>📁 <a>checklists/</a></td>
+                    <td class="num"></td>
+                    <td>14:02</td>
+                  </tr>
+                  <tr>
+                    <td>📁 <a>notes:2026/</a></td>
+                    <td class="num"></td>
+                    <td>Nov 15 14:02</td>
+                  </tr>
+                  <tr>
+                    <td>📁 <a>onboarding/</a></td>
+                    <td class="num"></td>
+                    <td>Nov 15, 2025</td>
+                  </tr>
+                  <tr>
+                    <td>📄 <a>big.log</a></td>
+                    <td class="num">1.9 MiB</td>
+                    <td>09:41</td>
+                  </tr>
+                  <tr class="dim">
+                    <td colspan="3">
+                      … 11 more files, the same listing as step 4, and nothing after it <span class="n">5</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/…</b
+              ><span>missing folder, hidden path, curl 404, and manifest serve error (no Open in Editor)</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">/guides/old/x.md: a folder on the way does not exist</div>
+              <div class="row">
+                <b>No folder named old in docs/guides</b><span class="muted">… then the listing of docs/guides</span
+                ><span class="n">6</span>
+              </div>
+              <div class="vlab">/guides/.env: a hidden name, or a link that leaves the served folder</div>
+              <div class="row">
+                <b>No file named .env in docs/guides</b
+                ><span class="muted">… no close names, then the listing, which shows no hidden names</span
+                ><span class="n">7</span>
+              </div>
+              <div class="vlab">A request that is not a page load</div>
+              <pre class="term">$ curl https://notes.acme.test/guides/on-cal.md
 Not found: no file named on-cal.md in docs/guides <span class="n">8</span></pre>
-<div class="vlab">Manifest serve service validation error (config editor off: file &amp; line + Copy only, no Open in Editor)</div>
-<div class="row" style="align-items:baseline"><span><code>devhost.toml:14:9</code> — <code>services.design.serve</code>: the folder <code>packages/desing</code> does not exist. Did you mean <code>packages/design</code>?</span><span class="btn">Copy</span><span class="n">9</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/on-call.md</b><span>status 500: a file that exists but cannot be read</span></div>
-<div class="work small">
-<div class="hp"><a>docs</a> / <a>guides</a></div>
-<div class="row" style="margin-top:4px"><b>Could not read docs/guides/on-call.md: permission denied</b><span class="btn">Retry</span><span class="n">10</span></div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>6. Recover from a missing file</h2>
-<p>Missing paths, hidden files, <code>../</code> escapes, and symlinks leaving the folder still answer 404 and reveal nothing. What changes is that devhost's file server keeps the person in the file browser rather than letting document injection swap in a service recovery page with disabled <b>Restart serve</b>, empty logs, internal ports, and a worktree picker. Keys: standard document keys only (<code>KEY-1</code>).</p>
-<ol>
-<li><span class="n">1</span> devhost's file server answers document 404s inside the file browser, headed by the path down to the nearest existing folder, for both CLI serve sessions and manifest <code>serve</code> services; <code>startup-and-recovery</code>'s document injection leaves it untouched (<code>SURF-16</code>, <code>CC-4</code>, <code>O5</code>).</li>
-<li><span class="n">2</span> States the missing name and folder searched in plain words (<code>FAIL-2</code>, <code>WORD-7</code>).</li>
-<li><span class="n">3</span> Offers up to three visible close names (case-insensitive, at most two edits away) as same-tab links (<code>MENU-5</code>).</li>
-<li><span class="n">4</span> Shows that folder's listing directly below so a typo is one click away from recovery (<code>MENU-5</code>).</li>
-<li><span class="n">5</span> Offers no <b>Restart</b>, no worktree list, no internal address, and no logs; tab title starts with the failure (<code>MENU-3</code>, <code>MENU-5</code>, <code>WORD-11</code>, <code>O16</code>).</li>
-<li><span class="n">6</span> A missing folder on the path names that folder and lists the deepest existing parent.</li>
-<li><span class="n">7</span> Hidden names and out-of-root escapes answer identically to missing files and are never suggested.</li>
-<li><span class="n">8</span> Non-document requests receive a single plain-text 404 line.</li>
-<li><span class="n">9</span> Manifest <code>serve</code> configuration errors report file, line, column, and key; when the config editor is off, browser rows show the location with <b>Copy</b> only (<b>Open in Editor</b> removed under <code>O51</code>) (<code>MENU-4</code>, <code>FAIL-2</code>, <code>O51</code>).</li>
-<li><span class="n">10</span> Unreadable files answer status 500 inside the file browser with one sentence, <b>Retry</b>, and the heading path — never plain text or a service recovery page (<code>STATE-4</code>, <code>FAIL-2</code>).</li>
-</ol>
-<p class="fixes">Fixes serve-folder-06 · Backend: file-browser 404 and 500 cannot-read pages in <code>apps/devhost/src/files.rs</code> passed through untouched by <code>apps/devhost/src/devtools/document_injection.rs</code> (Backend 10; <code>CC-4</code>, <code>O5</code>)</p>
-</div>
-</section>
+              <div class="vlab">
+                Manifest serve service validation error (config editor off: file &amp; line + Copy only, no Open in
+                Editor)
+              </div>
+              <div class="row" style="align-items: baseline">
+                <span
+                  ><code>devhost.toml:14:9</code> — <code>services.design.serve</code>: the folder
+                  <code>packages/desing</code> does not exist. Did you mean <code>packages/design</code>?</span
+                ><span class="btn">Copy</span><span class="n">9</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/on-call.md</b
+              ><span>status 500: a file that exists but cannot be read</span>
+            </div>
+            <div class="work small">
+              <div class="hp"><a>docs</a> / <a>guides</a></div>
+              <div class="row" style="margin-top: 4px">
+                <b>Could not read docs/guides/on-call.md: permission denied</b><span class="btn">Retry</span
+                ><span class="n">10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>6. Recover from a missing file</h2>
+          <p>
+            Missing paths, hidden files, <code>../</code> escapes, and symlinks leaving the folder still answer 404 and
+            reveal nothing. What changes is that devhost's file server keeps the person in the file browser rather than
+            letting document injection swap in a service recovery page with disabled <b>Restart serve</b>, empty logs,
+            internal ports, and a worktree picker. Keys: standard document keys only (<code>KEY-1</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> devhost's file server answers document 404s inside the file browser, headed by
+              the path down to the nearest existing folder, for both CLI serve sessions and manifest
+              <code>serve</code> services; <code>startup-and-recovery</code>'s document injection leaves it untouched
+              (<code>SURF-16</code>, <code>CC-4</code>, <code>O5</code>).
+            </li>
+            <li>
+              <span class="n">2</span> States the missing name and folder searched in plain words (<code>FAIL-2</code>,
+              <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Offers up to three visible close names (case-insensitive, at most two edits away)
+              as same-tab links (<code>MENU-5</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Shows that folder's listing directly below so a typo is one click away from
+              recovery (<code>MENU-5</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Offers no <b>Restart</b>, no worktree list, no internal address, and no logs; tab
+              title starts with the failure (<code>MENU-3</code>, <code>MENU-5</code>, <code>WORD-11</code>,
+              <code>O16</code>).
+            </li>
+            <li>
+              <span class="n">6</span> A missing folder on the path names that folder and lists the deepest existing
+              parent.
+            </li>
+            <li>
+              <span class="n">7</span> Hidden names and out-of-root escapes answer identically to missing files and are
+              never suggested.
+            </li>
+            <li><span class="n">8</span> Non-document requests receive a single plain-text 404 line.</li>
+            <li>
+              <span class="n">9</span> Manifest <code>serve</code> configuration errors report file, line, column, and
+              key; when the config editor is off, browser rows show the location with <b>Copy</b> only (<b
+                >Open in Editor</b
+              >
+              removed under <code>O51</code>) (<code>MENU-4</code>, <code>FAIL-2</code>, <code>O51</code>).
+            </li>
+            <li>
+              <span class="n">10</span> Unreadable files answer status 500 inside the file browser with one sentence,
+              <b>Retry</b>, and the heading path — never plain text or a service recovery page (<code>STATE-4</code>,
+              <code>FAIL-2</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes serve-folder-06 · Backend: file-browser 404 and 500 cannot-read pages in
+            <code>apps/devhost/src/files.rs</code> passed through untouched by
+            <code>apps/devhost/src/devtools/document_injection.rs</code> (Backend 10; <code>CC-4</code>,
+            <code>O5</code>)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="stop">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>Ctrl-C in folder &amp; --port sessions (130), SIGTERM (143), and O30 slow-stop progress</span></div>
-<pre class="term">^C
+      <section class="step" id="stop">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>Ctrl-C in folder &amp; --port sessions (130), SIGTERM (143), and O30 slow-stop progress</span>
+            </div>
+            <pre class="term">^C
 devhost | Stopped the serve session for ~/acme/docs · removed https://notes.acme.test/ · Caddy keeps running · 0.2 s <span class="n">1</span>
 devhost | Start it again with:
 devhost | devhost serve --dir ~/acme/docs --domain notes.acme.test <span class="n">2</span>
@@ -502,10 +1168,15 @@ devhost | Stopped by SIGTERM (143) at 15:52:10 · removed https://notes.acme.tes
 
 <span class="muted"># Slow command stop (unified O30 stopTimeout 30 s default, 5s..10m configurable):</span>
 devhost | Stopping demoapp (bun run dev) · 18 s left before force · press Ctrl-C again to force now <span class="n">4</span></pre>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › ~/acme</b><span>devhost stop --session confirmation (human &amp; AGENT=1), and restart-all / upgrade (O18, O31)</span></div>
-<pre class="term">$ devhost stop --session demoapp
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span
+                >devhost stop --session confirmation (human &amp; AGENT=1), and restart-all / upgrade (O18, O31)</span
+              >
+            </div>
+            <pre class="term">$ devhost stop --session demoapp
 devhost | Stopped serve session demoapp (PID 48820) · removed https://demoapp.acme.test/ · Caddy keeps running · 0.4 s <span class="n">5</span>
 
 $ AGENT=1 devhost stop --session demoapp
@@ -519,81 +1190,240 @@ $ devhost restart-all --yes   <span class="muted"># same for devhost upgrade: se
 Replaced Acme Shop's devhost process: PID 84244 → 85102 · 11 s · devhost 0.0.22
 serve session ~/acme/docs (devhost 0.0.21) left running — press Ctrl-C and re-run to upgrade (or stop and re-run it if detached)
 serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run to upgrade (or stop and re-run it if detached)</pre>
-</div>
-<div class="win">
-<div class="bar"><b>https://notes.acme.test/guides/</b><span>page left open after the session stops (collapsed badge below)</span></div>
-<div class="pg" style="min-height:110px">
-<div class="apptxt">docs / guides · the listing as it was loaded …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="banner" style="margin:0;min-width:0">? The serve session for ~/acme/docs stopped at 14:05. Start it again with devhost serve in ~/acme <span class="btn">Copy</span></span><span class="n">7</span></div>
-<div class="tbar oneline"><span class="seg"><b>~/acme/docs ▾</b></span><span class="seg">? lost connection ▾</span><span class="seg muted">Chat</span></div>
-</div>
-</div>
-<div class="work small" style="border-top:1px solid var(--line)">
-<div class="vlab">Collapsed toolbar badge</div>
-<div class="row"><span class="tbar oneline"><span class="seg">? <b>dh</b> · lost connection ▴</span></span><span class="muted">on known stop:</span><span class="tbar oneline"><span class="seg">■ <b>dh</b> · ~/acme/docs stopped at 14:05 ▴</span></span></div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>7. Stop the session</h2>
-<p>Stopping removes routes, closed-port status routes, hostname claims, and the session record, stops the file server or verified command process tree (<code>ACT-14</code>), leaves Caddy and any <code>--port</code> server running, and keeps exit status 130 for <kbd>Ctrl-C</kbd> and 143 for <code>SIGTERM</code>. There is no Undo: the session wrote nothing in the served folder, and the outcome prints the command that starts it again (<code>UNDO-5</code>).</p>
-<ol>
-<li><span class="n">1</span> One outcome line names what the stop removed, what keeps running, and elapsed time (<code>KEY-14</code>, <code>FB-10</code>, <code>WORD-4</code>).</li>
-<li><span class="n">2</span> Prints the start-again command on its own line with the full path so it works from any folder (<code>UNDO-5</code>).</li>
-<li><span class="n">3</span> <code>--port</code> outcomes state that the user's server keeps running (<code>ACT-9</code>); <code>SIGTERM</code> reads as a stop with signal and status 143, never a failure (<code>FAIL-5</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
-<li><span class="n">4</span> Shutdown shares <code>O30</code>'s configurable <code>stopTimeout</code> (<code>5s</code>..<code>10m</code>, default <code>30s</code>), shows a progress line if slow, and lets a second <kbd>Ctrl-C</kbd> or second <code>devhost stop --session</code> force remaining verified process trees within a second while still releasing routes, claims, and records (<code>KEY-14</code>, <code>O30</code>, <code>ACT-14</code>, <code>CC-35</code>).</li>
-<li><span class="n">5</span> <code>devhost stop --session &lt;name&gt;</code> prints a clear stop confirmation naming the session, PID, removed URL(s), and what keeps running in both human and <code>AGENT=1</code> output instead of exiting silently (<code>serve-command-03</code>).</li>
-<li><span class="n">6</span> <code>devhost restart-all</code> and <code>devhost upgrade</code> list serve sessions by their <code>WORD-1</code> names and keep them running (<code>O18</code>, <code>O31</code>, <code>CC-36</code>).</li>
-<li><span class="n">7</span> A page left open shows the lost-connection notice with the stop reason (and the collapsed badge shows <code>? dh · lost connection ▴</code>, or <code>■ dh · ~/acme/docs stopped at 14:05 ▴</code> on a known stop), disabling every write with that reason (<code>HOLD-2</code>, <code>ACT-5</code>).</li>
-</ol>
-<p class="fixes">Fixes serve-folder-02, serve-command-03 · Backend: stop outcome &amp; <code>devhost stop --session</code> confirmation in both outputs (Backend 8; <code>CC-22</code>, <code>CC-30</code>), unified <code>O30</code> shutdown with <code>containment.rs</code> (<code>CC-35</code>), stream stop reason from <code>notices-and-feedback</code></p>
-</div>
-</section>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>https://notes.acme.test/guides/</b
+              ><span>page left open after the session stops (collapsed badge below)</span>
+            </div>
+            <div class="pg" style="min-height: 110px">
+              <div class="apptxt">docs / guides · the listing as it was loaded …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="banner" style="margin: 0; min-width: 0"
+                    >? The serve session for ~/acme/docs stopped at 14:05. Start it again with devhost serve in ~/acme
+                    <span class="btn">Copy</span></span
+                  ><span class="n">7</span>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>~/acme/docs ▾</b></span
+                  ><span class="seg">? lost connection ▾</span><span class="seg off">Chat</span>
+                </div>
+              </div>
+            </div>
+            <div class="work small" style="border-top: 1px solid var(--line)">
+              <div class="vlab">Collapsed toolbar badge</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">? <b>dh</b> · lost connection ▴</span></span
+                ><span class="muted">on known stop:</span
+                ><span class="tbar oneline"
+                  ><span class="seg">■ <b>dh</b> · ~/acme/docs stopped at 14:05 ▴</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>7. Stop the session</h2>
+          <p>
+            Stopping removes routes, closed-port status routes, hostname claims, and the session record, stops the file
+            server or verified command process tree (<code>ACT-14</code>), leaves Caddy and any
+            <code>--port</code> server running, and keeps exit status 130 for <kbd>Ctrl-C</kbd> and 143 for
+            <code>SIGTERM</code>. There is no Undo: the session wrote nothing in the served folder, and the outcome
+            prints the command that starts it again (<code>UNDO-5</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> One outcome line names what the stop removed, what keeps running, and elapsed
+              time (<code>KEY-14</code>, <code>FB-10</code>, <code>WORD-4</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Prints the start-again command on its own line with the full path so it works
+              from any folder (<code>UNDO-5</code>).
+            </li>
+            <li>
+              <span class="n">3</span> <code>--port</code> outcomes state that the user's server keeps running
+              (<code>ACT-9</code>); <code>SIGTERM</code> reads as a stop with signal and status 143, never a failure
+              (<code>FAIL-5</code>, <code>WORD-7</code>, <code>WORD-8</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Shutdown shares <code>O30</code>'s configurable
+              <code>stopTimeout</code> (<code>5s</code>..<code>10m</code>, default <code>30s</code>), shows a progress
+              line if slow, and lets a second <kbd>Ctrl-C</kbd> or second <code>devhost stop --session</code> force
+              remaining verified process trees within a second while still releasing routes, claims, and records
+              (<code>KEY-14</code>, <code>O30</code>, <code>ACT-14</code>, <code>CC-35</code>).
+            </li>
+            <li>
+              <span class="n">5</span> <code>devhost stop --session &lt;name&gt;</code> prints a clear stop confirmation
+              naming the session, PID, removed URL(s), and what keeps running in both human and
+              <code>AGENT=1</code> output instead of exiting silently (<code>serve-command-03</code>).
+            </li>
+            <li>
+              <span class="n">6</span> <code>devhost restart-all</code> and <code>devhost upgrade</code> list serve
+              sessions by their <code>WORD-1</code> names and keep them running (<code>O18</code>, <code>O31</code>,
+              <code>CC-36</code>).
+            </li>
+            <li>
+              <span class="n">7</span> A page left open shows the lost-connection notice with the stop reason (and the
+              collapsed badge shows <code>? dh · lost connection ▴</code>, or
+              <code>■ dh · ~/acme/docs stopped at 14:05 ▴</code> on a known stop), disabling every write with that
+              reason (<code>HOLD-2</code>, <code>ACT-5</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes serve-folder-02, serve-command-03 · Backend: stop outcome &amp;
+            <code>devhost stop --session</code> confirmation in both outputs (Backend 8; <code>CC-22</code>,
+            <code>CC-30</code>), unified <code>O30</code> shutdown with
+            <code>containment.rs</code> (<code>CC-35</code>), stream stop reason from <code>notices-and-feedback</code>
+          </p>
+        </div>
+      </section>
 
-<section class="changes">
-<div><h3>Removed</h3><ul>
-<li>The invented name <code>serve-&lt;domain&gt;</code>, <code>serve (primary)</code>, "shutting down the stack", "Stack stopped.", and "the stack exited before it was ready" for serve sessions</li>
-<li>Foreground command hang (<code>waiting for a restart</code>) after post-readiness exit and detached crashes deleting routes into <code>ERR_SSL_PROTOCOL_ERROR</code></li>
-<li>Fake <code>external</code> <code>port-&lt;port&gt;</code> services, <b>Restart Changed</b> in command sessions, over-padded <code>devhost | </code> prefixes, pre-startup <code>Stop:</code> lines, and silent <code>devhost stop --session</code></li>
-<li><code>"command process is unavailable"</code> hiding OS spawn errors; a <code>--port</code> URL printed ready before anything answers</li>
-<li>README replacing the folder listing; "Directory listing", <code>devhost</code> breadcrumb root, byte order, row arrows, hostname-wide <code>localStorage</code> source toggle, recovery page on file 404, <b>Open in Editor</b> (<code>O51</code>), refusal "from ."</li>
-<li><code>External</code> on folder/command cards, launch folder on <code>--port</code> cards, "Manifest-free file or port session", plural <code>1 files</code>, and <code>--port</code> handing cwd to chat</li>
-</ul></div>
-<div><h3>Merged</h3><ul>
-<li>A folder's listing and its Markdown index become one page, the listing first</li>
-<li>The breadcrumb and heading become one heading path</li>
-<li>CLI serve and manifest <code>serve</code> missing files get one file-browser 404 page</li>
-<li>A command session's command and discovered HTTP ports become one <code>1/1</code> entry across toolbar, <code>stack info --session</code>, and Stack Directory</li>
-</ul></div>
-<div><h3>New</h3><ul>
-<li>Header line with resolved listener (<code>O39</code>) and chat state (<code>O40</code>); <code>--no-chat</code> opt-out; ready, waiting, reachability, and stop outcome lines</li>
-<li>Foreground command exit propagation &amp; detached valid-HTTPS crash recovery with working <b>Restart Command</b></li>
-<li>Labeled multi-port add/alias/remove logs, WebSocket <code>port-closed</code> targeted notice, and session-scoped 410 reload page</li>
-<li>Detached <code>Stop:</code> summary, <code>stop --session</code> confirmation, CLI serve-session discoverability hints, direct OS launch &amp; <code>HEAD /</code> timeout errors, Quickstart examples, and negative <code>--startup-timeout</code> handling</li>
-<li>Holder-naming refusals; listing sizes, times, kind icons, counts, filter, shared CA trust line, and <code>./</code> links</li>
-<li>Per-file <code>?view=source</code>, source-view links, front matter errors, GitHub alerts, file-browser 404/500, and <code>sessionKind</code>/<code>command</code> Stack Directory cards</li>
-</ul></div>
-<div><h3>Changed</h3><ul>
-<li>Markdown index renders below the listing; <b>Rendered</b>/<b>Source</b> applies per file via URL with flash-free first paint</li>
-<li><code>--port</code> reports ready only once its port answers; foreground command mode exits with the command's exit code</li>
-<li><code>devhost restart-all</code> and <code>devhost upgrade</code> list serve sessions and leave them running (<code>O18</code>, <code>O31</code>, <code>CC-36</code>)</li>
-<li>Shutdown uses unified <code>O30</code> configurable <code>stopTimeout</code> with verified process-tree containment (<code>ACT-14</code>); access logs key by hostname</li>
-</ul></div>
-<div><h3>Kept</h3><ul>
-<li>One command gives a folder, running port, or command an HTTPS hostname with no manifest; Caddy starts on demand and stays running</li>
-<li>No <code>devhost.toml</code> read, nothing written in the served folder; chat on by default for folder/command sessions (<code>O40</code>) gated remotely by <code>O36</code>; <code>--port</code> server never started or stopped</li>
-<li>Confinement to served folder; reads on every request; <code>GET</code>, <code>HEAD</code>, byte ranges; <code>index.html</code> unchanged; links and escaped source work without JavaScript</li>
-<li>GFM with front matter table; taken hostname refused exit 1; exit 130 / 143; trust prompt only at an interactive terminal; manifest <code>serve</code> uses the same file browser</li>
-</ul></div>
-<div><h3>Backend work</h3><ul>
-<li>Session identity, <code>sessionKind</code>/<code>command</code> records, per-hostname access logs (Backend 1); structured claim refusals (Backend 2)</li>
-<li><code>--port</code> wait (Backend 3); first-class command &amp; file-server state + manifest-free Restart Command (Backend 4; <code>CC-25</code>, <code>CC-37</code>)</li>
-<li>Foreground exit propagation &amp; detached crash HTTPS recovery (Backend 5; P0); multi-port logs, <code>port-closed</code> WS &amp; 410 response (Backend 6; <code>CC-26</code>, <code>O63</code>)</li>
-<li><code>--no-chat</code>, <code>--port</code> isolation &amp; <code>O36</code> auth (Backend 7); CLI lines, discoverability, launch/probe diagnostics, Quickstart, <code>O39</code> &amp; <code>O30</code> (Backend 8)</li>
-<li><code>files.rs</code> listing/index/404/500 + <code>document_injection.rs</code> pass-through (Backend 9–10; <code>CC-4</code>); <code>directory.rs</code> &amp; <code>StackDirectoryCard.tsx</code> cards (Backend 11)</li>
-</ul></div>
-</section>
-</main>
-</body>
+      <section class="changes">
+        <div>
+          <h3>Removed</h3>
+          <ul>
+            <li>
+              The invented name <code>serve-&lt;domain&gt;</code>, <code>serve (primary)</code>, "shutting down the
+              stack", "Stack stopped.", and "the stack exited before it was ready" for serve sessions
+            </li>
+            <li>
+              Foreground command hang (<code>waiting for a restart</code>) after post-readiness exit and detached
+              crashes deleting routes into <code>ERR_SSL_PROTOCOL_ERROR</code>
+            </li>
+            <li>
+              Fake <code>external</code> <code>port-&lt;port&gt;</code> services, <b>Restart Changed</b> in command
+              sessions, over-padded <code>devhost | </code> prefixes, pre-startup <code>Stop:</code> lines, and silent
+              <code>devhost stop --session</code>
+            </li>
+            <li>
+              <code>"command process is unavailable"</code> hiding OS spawn errors; a <code>--port</code> URL printed
+              ready before anything answers
+            </li>
+            <li>
+              README replacing the folder listing; "Directory listing", <code>devhost</code> breadcrumb root, byte
+              order, row arrows, hostname-wide <code>localStorage</code> source toggle, recovery page on file 404,
+              <b>Open in Editor</b> (<code>O51</code>), refusal "from ."
+            </li>
+            <li>
+              <code>External</code> on folder/command cards, launch folder on <code>--port</code> cards, "Manifest-free
+              file or port session", plural <code>1 files</code>, and <code>--port</code> handing cwd to chat
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Merged</h3>
+          <ul>
+            <li>A folder's listing and its Markdown index become one page, the listing first</li>
+            <li>The breadcrumb and heading become one heading path</li>
+            <li>CLI serve and manifest <code>serve</code> missing files get one file-browser 404 page</li>
+            <li>
+              A command session's command and discovered HTTP ports become one <code>1/1</code> entry across toolbar,
+              <code>stack info --session</code>, and Stack Directory
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>New</h3>
+          <ul>
+            <li>
+              Header line with resolved listener (<code>O39</code>) and chat state (<code>O40</code>);
+              <code>--no-chat</code> opt-out; ready, waiting, reachability, and stop outcome lines
+            </li>
+            <li>
+              Foreground command exit propagation &amp; detached valid-HTTPS crash recovery with working
+              <b>Restart Command</b>
+            </li>
+            <li>
+              Labeled multi-port add/alias/remove logs, WebSocket <code>port-closed</code> targeted notice, and
+              session-scoped 410 reload page
+            </li>
+            <li>
+              Detached <code>Stop:</code> summary, <code>stop --session</code> confirmation, CLI serve-session
+              discoverability hints, direct OS launch &amp; <code>HEAD /</code> timeout errors, Quickstart examples, and
+              negative <code>--startup-timeout</code> handling
+            </li>
+            <li>
+              Holder-naming refusals; listing sizes, times, kind icons, counts, filter, shared CA trust line, and
+              <code>./</code> links
+            </li>
+            <li>
+              Per-file <code>?view=source</code>, source-view links, front matter errors, GitHub alerts, file-browser
+              404/500, and <code>sessionKind</code>/<code>command</code> Stack Directory cards
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Changed</h3>
+          <ul>
+            <li>
+              Markdown index renders below the listing; <b>Rendered</b>/<b>Source</b> applies per file via URL with
+              flash-free first paint
+            </li>
+            <li>
+              <code>--port</code> reports ready only once its port answers; foreground command mode exits with the
+              command's exit code
+            </li>
+            <li>
+              <code>devhost restart-all</code> and <code>devhost upgrade</code> list serve sessions and leave them
+              running (<code>O18</code>, <code>O31</code>, <code>CC-36</code>)
+            </li>
+            <li>
+              Shutdown uses unified <code>O30</code> configurable <code>stopTimeout</code> with verified process-tree
+              containment (<code>ACT-14</code>); access logs key by hostname
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>
+              One command gives a folder, running port, or command an HTTPS hostname with no manifest; Caddy starts on
+              demand and stays running
+            </li>
+            <li>
+              No <code>devhost.toml</code> read, nothing written in the served folder; chat on by default for
+              folder/command sessions (<code>O40</code>) gated remotely by <code>O36</code>; <code>--port</code> server
+              never started or stopped
+            </li>
+            <li>
+              Confinement to served folder; reads on every request; <code>GET</code>, <code>HEAD</code>, byte ranges;
+              <code>index.html</code> unchanged; links and escaped source work without JavaScript
+            </li>
+            <li>
+              GFM with front matter table; taken hostname refused exit 1; exit 130 / 143; trust prompt only at an
+              interactive terminal; manifest <code>serve</code> uses the same file browser
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend work</h3>
+          <ul>
+            <li>
+              Session identity, <code>sessionKind</code>/<code>command</code> records, per-hostname access logs (Backend
+              1); structured claim refusals (Backend 2)
+            </li>
+            <li>
+              <code>--port</code> wait (Backend 3); first-class command &amp; file-server state + manifest-free Restart
+              Command (Backend 4; <code>CC-25</code>, <code>CC-37</code>)
+            </li>
+            <li>
+              Foreground exit propagation &amp; detached crash HTTPS recovery (Backend 5; P0); multi-port logs,
+              <code>port-closed</code> WS &amp; 410 response (Backend 6; <code>CC-26</code>, <code>O63</code>)
+            </li>
+            <li>
+              <code>--no-chat</code>, <code>--port</code> isolation &amp; <code>O36</code> auth (Backend 7); CLI lines,
+              discoverability, launch/probe diagnostics, Quickstart, <code>O39</code> &amp; <code>O30</code> (Backend 8)
+            </li>
+            <li>
+              <code>files.rs</code> listing/index/404/500 + <code>document_injection.rs</code> pass-through (Backend
+              9–10; <code>CC-4</code>); <code>directory.rs</code> &amp; <code>StackDirectoryCard.tsx</code> cards
+              (Backend 11)
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
 </html>
