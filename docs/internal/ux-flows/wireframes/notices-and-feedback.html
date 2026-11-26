@@ -108,7 +108,7 @@
 <div class="apptxt">Acme Shop · Checkout …</div>
 <div class="corner">
 <div class="banner info">◐ Restart api · health check 2 s of 30 s · from the terminal <span class="n">4</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ◐ ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ◐ ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -136,7 +136,7 @@
 <div class="apptxt">Acme docs · Getting started …</div>
 <div class="corner">
 <div class="toastrow"><div class="toast">✓ Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s</div><span class="n">2</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -155,7 +155,7 @@
 <div class="corner">
 <div class="toastrow"><div class="toast focusring">✓ Switched to fix-nav ~/acme/.worktrees/fix-nav from main ~/acme · 6 of 6 running · 9.8 s</div><span class="n">4</span></div>
 <div class="toastrow"><div class="toast">✓ Reloaded to show Claude Code's change</div><span class="n">5</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -194,7 +194,7 @@
 <div class="banner bad">✕ api exited with code 1 at 14:02 before its health check <span class="n">1</span>
 <div class="muted">Error: Cannot find module './db' · at src/server.ts:3:1 · ran bun run src/server.ts · devhost.toml line 14</div>
 <div class="row" style="margin-top:4px"><span class="btn">Restart</span><span class="btn">Logs</span><span class="btn">Edit</span><span class="sp"></span><span class="btn">Dismiss</span><span class="n">2</span></div></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ○ ○ ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ○ ○ ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -204,7 +204,8 @@
 <div class="banner bad">✕ api exited with code 1 · 2 times, last at 14:05 <span class="btn">Edit</span> <span class="btn">Restart</span> <span class="btn">Logs</span> <span class="n">3</span></div>
 <div class="banner">◆ search is not reachable · GET search.acme.test/health · checked 14:02 <span class="btn">Check Again</span></div>
 <div class="banner">◆ The worktree ~/acme/.worktrees/fix-nav was deleted; its services still run from it <span class="btn">Return to Configured Worktree</span> <a>Choose another worktree in Worktrees</a> <span class="btn">Check Again</span></div>
-<div class="banner">◆ Manifest file not applied: devhost.toml:12:8 <span class="btn">Copy</span> <span class="muted">(config editor off)</span> <span class="n">4</span></div>
+<div class="banner">◆ Manifest file not applied: devhost.toml:12:8 <span class="btn">Copy</span> <span class="btn">Copy Error</span> <span class="muted">(config editor off)</span> <span class="n">4</span></div>
+<div class="banner">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run devhost caddy trust in a terminal, then reload; on another Mac, run devhost caddy trust-remote with devbox's SSH name there. <span class="btn">Copy</span></div>
 </div>
 </div>
 <div class="win">
@@ -238,7 +239,7 @@
 <ol><li><span class="n">1</span> A failure leads with the target and what happened, then the cause, the evidence (its last output lines, the probe it failed or the program holding its port) and what devhost ran, each once. It is announced once, in the assertive region, which carries failures only, and prefixes the app page's tab title until cleared (<code>FAIL-2</code>, <code>FAIL-3</code>, <code>WORD-7</code>, <code>FB-9</code>, <code>O16</code>).</li>
 <li><span class="n">2</span> It stays, in its surface and as this failure notice once that surface closes, until <b>Dismiss</b> (named "Dismiss api's failure") or the same operation succeeds on the same target. Status messages, reconnects, closing the surface, switching files and page reloads never remove it, because the record keeps it, and a dismissed failure does not come back on reload or in another tab (<code>FB-6</code>, <code>ACT-1</code>).</li>
 <li><span class="n">3</span> The action for its cause leads, with the others beside it: an exited service leads with <b>Restart</b>, with <b>Logs</b> and <b>Edit</b>, and after a retry fails the same way the one report counts the repeat and <b>Edit</b> leads; an unreachable external service leads with <b>Check Again</b>; a blocked worktree with <b>Return to Configured Worktree</b>, choosing another worktree and <b>Check Again</b>. No failure is drawn without a way forward (<code>MENU-5</code>, <code>FAIL-4</code>, <code>WORD-11</code>).</li>
-<li><span class="n">4</span> A manifest file not applied leads with <b>Edit</b>; while the config editor is off, its file and line come with <b>Copy</b> only (editor integration is removed under <code>O51</code>; <code>MENU-4</code>).</li>
+<li><span class="n">4</span> A manifest file not applied leads with <b>Edit</b>; while the config editor is off, its file and line come with <b>Copy</b> beside <b>Copy Error</b> (editor integration is removed under <code>O51</code>; <code>MENU-4</code>, <code>WORD-2</code>). devbox not trusting devhost's local certificate authority is a condition ranked after a rejected configuration, in the one trust sentence, with <b>Copy</b> for its command (<code>ACT-7</code>, <code>WORD-12</code>).</li>
 <li><span class="n">5</span> A response devhost cannot read never shows: no markup, raw Rust error chain or transport error. The shared request helper, used by every control request and the configuration client, turns each failed request into one sentence: the proxy's HTML means the stack is not running, a request that cannot connect means the proxy is not reachable, a <code>403</code> from an unauthenticated remote browser reads "Sign in with passkey or pair this browser to use devhost here" with <b>Sign In with Passkey</b> and <code>devhost pair</code> fallback (<code>O36</code>, <code>HOLD-7</code>), a JSON error keeps its message, and anything else names the operation and the status. The original text stays behind <b>Copy Error</b>, and no message contains markup; a stopped stack leads with its start command and <b>Copy</b> (<code>FAIL-2</code>, <code>SURF-9</code>, <code>STATE-4</code>, <code>HOLD-2</code>, <code>WORD-7</code>).</li>
 <li><span class="n">6</span> A partial result counts every target and is never a plain success or failure; it takes the failure style and the assertive region with api's lead actions. Restart Stack's rollback, devhost's own undo here, reports its own outcome naming what it put back (<code>FAIL-1</code>, <code>UNDO-1</code>).</li>
 <li><span class="n">7</span> A deliberate stop, cancel or replacement is never a failure: services devhost stops for an operation are its steps, a service a person stopped reads "Stopped by you", and a cancel is reported as one. Both take the neutral style, never the failure look and never the assertive region (<code>FAIL-5</code>, <code>WORD-7</code>, <code>CC-24</code>).</li>
@@ -262,9 +263,9 @@
 </div>
 <div class="banner bad">✕ <a>api exited with code 1 at 14:02</a> <span class="btn">Expand</span> <span class="n">1</span></div>
 <div class="banner info">◐ Restart Stack · 2 of 6 started · 5 s</div>
-<div class="banner">◆ Reload blocked · 1 reload held <span class="btn">Reload</span> <span class="btn">Dismiss</span> <span class="n">4</span></div>
+<div class="banner">◆ Reload blocked · 1 reload held since 14:02 <span class="btn">Reload Now</span> <span class="btn">Dismiss</span> <span class="n">4</span></div>
 <div class="row"><span class="btn">2 More</span><span class="n">2</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg open">✕ ● ◐ ◐ ● ● ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg open">✕ ● ◐ ◐ ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Hold Reloads</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -272,7 +273,7 @@
 <div class="bar"><b>devhost › Acme Shop › docs page · dock at top right</b><span>[devtools.status].position = "top-right"</span></div>
 <div class="pg">
 <div class="corner at-top">
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg open">✕ ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg open">✕ ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div>
 <div class="banner bad">✕ <a>api exited with code 1 at 14:02</a> <span class="btn">Expand</span></div>
 <div class="banner">◆ Manifest file not applied: devhost.toml line 12 <span class="btn">Edit</span> <span class="n">5</span></div>
 <div class="popover" style="width:min(100%,28rem)"><span class="caret-up" style="right:188.1px"></span>
@@ -335,14 +336,16 @@
 <div class="work small">
 <div>◆ The worktree ~/acme/.worktrees/fix-nav was deleted · <span class="btn">Return to Configured Worktree</span></div>
 <div>◆ search is not reachable · <span class="btn">Check Again</span></div>
+<div>◆ devbox does not trust devhost's local certificate authority · <span class="btn">Copy</span></div>
 <div>◆ Claude Code is waiting for you · Fix the nav · <span class="btn">Answer</span></div>
 <div>◆ Claude Code waits for you in its terminal · main ~/acme · <span class="btn">Dismiss</span></div>
 <div>◆ Chat is off · <span class="btn">Fix the nav</span> is still working</div>
-<div>◆ Reload blocked · 1 reload held · <span class="btn">Reload</span></div>
+<div>◆ Reload blocked · 1 reload held · <span class="btn">Reload Now</span></div>
 <div>? Lost connection to devhost; retrying · <span class="btn">Retry Now</span></div>
 <div>? Port 4002 closed · demoapp still runs · <span class="btn">Open</span></div>
 <div>◐ Restart Changed · web · 0 of 1 restarted · 2 s <span class="muted">(running operation)</span> <span class="n">10</span></div>
-<div class="row" style="margin-top:6px"><span class="tbar"><span class="seg">Config · 1 not applied</span><span class="seg">Hold Reloads · 1 held</span></span><span class="muted">markers after dismissing a condition that persists</span><span class="n">11</span></div>
+<div class="row" style="margin-top:6px"><span class="tbar"><span class="seg">◆ Config · 1 not applied</span><span class="seg">Hold Reloads · 1 held</span></span><span class="muted">markers after dismissing a condition that persists</span><span class="n">11</span></div>
+<div class="row"><span class="tbar"><span class="seg"><b>◆ Acme Shop · 1 not applied ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Hold Reloads · 1 held</span></span><span class="muted">with the config editor off, on the stack name, as for a dismissed untrusted authority</span></div>
 </div>
 </div>
 <div class="win">
@@ -361,7 +364,7 @@
 <div class="win">
 <div class="bar"><b>devhost › Configuration window header</b><span>api exits while the window is open</span></div>
 <div class="work small">
-<div class="row"><b>Configuration · devhost.toml</b><span class="sp"></span><span class="muted">api exited with code 1 at 14:02 · its notice waits in the notice stack</span><span class="n">13</span></div>
+<div class="row"><b>Configuration</b><span class="muted">Root manifest · devhost.toml · main ~/acme</span><span class="sp"></span><span class="muted">api exited with code 1 at 14:02 · its notice waits in the notice stack</span><span class="n">13</span></div>
 </div>
 </div>
 </div>
@@ -372,13 +375,13 @@
 <li><span class="n">2</span> At most three notices show; the rest fold into <b>2 More</b>, which expands the stack in place with <code>aria-expanded="true"</code>, reads <b>Show Fewer</b> while expanded, and keeps focus (<code>FB-8</code>, <code>WORD-3</code>).</li>
 <li><span class="n">3</span> The notice stack fills toolbar-shell's notice slot beside the bar, between the bar and every other devhost surface: the Services panel opens beyond it, on its trigger's side, and no panel, docked chat or the Configuration window covers a notice, so every notice button answers native hit testing at 1600×1000, 1280×800 and 900×900 in both themes and at 1280×800 under 200% zoom (<code>SURF-1</code>, <code>CC-1</code>, <code>SURF-9</code>).</li>
 <li><span class="n">4</span> Each notice kind has its own icon and its kind's word in its accessible name, distinct in forced colors: ✕ failure, ◆ condition, ? lost connection, ◐ activity, ✓ success, ○ neutral. A notice carries no live role: it is a group named by its sentence, and only the announcer speaks, once when a condition starts and once when it ends; the project's <code>Alert</code> stops rendering <code>role="alert"</code> (<code>ACT-13</code>, <code>FB-9</code>, <code>WORD-6</code>).</li>
-<li><span class="n">5</span> With the dock at the top, the stack hangs below the bar and the panel opens beyond it; the DOM and Tab order follow the drawn order, so here the bar comes first. A configuration notice names the file's kind ("Devhost config file not applied: config.toml line 3" for the other kind), says the stack still runs the accepted manifest, blocks nothing, and is replaced by its outcome when the stack accepts a configuration (<code>KEY-3</code>, <code>WORD-1</code>, <code>HOLD-6</code>, <code>FAIL-4</code>, <code>MENU-4</code>).</li>
+<li><span class="n">5</span> With the dock at the top, the stack hangs below the bar and the panel opens beyond it; the DOM and Tab order follow the drawn order, so here the bar comes first. A configuration notice names the file's kind ("devhost config file not applied: config.toml line 3" for the other kind), says the stack still runs the accepted manifest, blocks nothing, and is replaced by its outcome when the stack accepts a configuration (<code>KEY-3</code>, <code>WORD-1</code>, <code>HOLD-6</code>, <code>FAIL-4</code>, <code>MENU-4</code>).</li>
 <li><span class="n">6</span> At 320 CSS pixels wide (phone layout, <code>O8</code>), notices span the phone width with 8 px horizontal insets, stack cleanly above or below the compact bar with wrapped text and action rows (every tap target ≥24×24 CSS px, zero horizontal overflow), and stay unobstructed alongside mobile chat and approval prompts so an authenticated phone (<code>O36</code>) can ask, answer and see the change (<code>O8</code>, <code>SURF-9</code>, <code>FB-12</code>).</li>
 <li><span class="n">7</span> The Disable Reloads popover anchors to the hot reload notice, which keeps its place and stays visible beside it at every acceptance viewport; the notice is never the question itself (<code>REV-5</code>, <code>O2</code>, <code>SURF-2</code>, <code>WORD-11</code>).</li>
 <li><span class="n">8</span> After <b>Send</b>, the hot reload notice stays in the third group with its pending request, naming the agent, until the request's turn ends; then it shows the result in place of <b>Disable Reloads</b>, which reload-control words (<code>FB-5</code>, <code>O24</code>, <code>FB-8</code>).</li>
 <li><span class="n">9</span> Collapsed, every condition notice, failure and running operation's activity line keeps a one-line form beside the badge, its first clause and its lead action (where applicable); only successes stay out of sight there and in the log, and a routine restart never changes the badge's look. toolbar-shell places the forms and draws the badge (<code>SURF-8</code>, <code>FB-1</code>, <code>ACT-7</code>, <code>ACT-3</code>).</li>
-<li><span class="n">10</span> The one-line forms of the other notices beside the collapsed badge: a blocked repository, an unreachable external service, a chat agent waiting, a terminal agent waiting (with <b>Dismiss</b> alone), chat off with a running conversation, <b>Reload blocked</b>, the lost connection, a closed command-mode serve port (<code>serve-command-05</code>), and a running operation's activity line. The chat agent-waiting form names the conversation and leads with <b>Answer</b> (<code>WORD-2</code>), opening its decision card in docked chat in one activation; chat off leads with the conversation to answer or stop it (<code>SURF-8</code>, <code>FB-1</code>, <code>HOLD-4</code>, <code>ACT-9</code>, <code>REV-9</code>, <code>HOLD-5</code>, <code>WORD-11</code>).</li>
-<li><span class="n">11</span> Dismissing a condition notice whose condition persists leaves a marker on the control that owns the condition until it ends; activating the marker shows its notice again. The lost-connection and closed-port notices have no <b>Dismiss</b>, because they are the reason every write is unavailable (<code>SURF-8</code>, <code>UNDO-3</code>).</li>
+<li><span class="n">10</span> The one-line forms of the other notices beside the collapsed badge: a blocked repository, an unreachable external service, a chat agent waiting, a terminal agent waiting (with <b>Dismiss</b> alone), an untrusted certificate authority (with <b>Copy</b>), chat off with a running conversation, <b>Reload blocked</b> (with <b>Reload Now</b>), the lost connection, a closed command-mode serve port (<code>serve-command-05</code>), and a running operation's activity line. The chat agent-waiting form names the conversation and leads with <b>Answer</b> (<code>WORD-2</code>), opening its decision card in docked chat in one activation; chat off leads with the conversation to answer or stop it (<code>SURF-8</code>, <code>FB-1</code>, <code>HOLD-4</code>, <code>ACT-9</code>, <code>REV-9</code>, <code>HOLD-5</code>, <code>WORD-11</code>).</li>
+<li><span class="n">11</span> Dismissing a condition notice whose condition persists leaves a marker on the control that owns the condition until it ends, and only then, because while the notice shows it is the one report (<code>FAIL-4</code>): a rejection's on <b>Config</b> while the config editor is on, else on the stack name, which is always on the bar, as is a dismissed untrusted authority's; activating the marker shows its notice again. The lost-connection and closed-port notices have no <b>Dismiss</b>, because they are the reason every write is unavailable (<code>SURF-8</code>, <code>UNDO-3</code>).</li>
 <li><span class="n">12</span> Under the page's own modal dialog, native or scripted, the notice stack and the announcer move into the dialog, so its buttons work and its reports are heard; Alt+Ctrl+R's outcome shows there, and the rest of the toolbar shows its paused state with that one line (<code>SURF-11</code>, <code>FB-9</code>, <code>KEY-7</code>).</li>
 <li><span class="n">13</span> While the Configuration window is open it makes the notice stack inert; the announcer moves into the window, and a report that needs the person shows as one line in its header saying that its notice waits in the notice stack, which config-editor draws. Over the crash view, the notice stack and docked chat stay operable inside its Tab cycle (<code>SURF-4</code>, <code>SURF-3</code>, <code>KEY-7</code>, <code>FB-9</code>).</li></ol>
 <p class="fixes">Fixes keyboard-and-screen-reader-02, notices-and-feedback-03 · Backend: the record and the published state that start and end each condition; the launch time that tells whether a page is current (Backend 1, 7; <code>CC-1</code>, <code>CC-37</code>)</p></div>
@@ -392,7 +395,7 @@
 <div class="apptxt">Acme docs · Getting started …</div>
 <div class="corner">
 <div class="banner info">◐ Stopping Acme Shop · 3 of 6 stopped <span class="n">1</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">◐ stopping · 3 of 6 stopped ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">◐ stopping · 3 of 6 stopped ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -408,10 +411,12 @@
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › the lost-connection notice for its other causes</b></div>
+<div class="bar"><b>devhost › the lost-connection notice for its other causes, and a listener move</b></div>
 <div class="work small">
 <div class="banner">? devhost's proxy is not reachable. Start it with devhost caddy start <span class="btn">Copy</span> <span class="muted">· 1 reload held meanwhile</span> <span class="n">5</span></div>
-<div class="banner">? devhost moved to port 21198 <span class="btn">Open</span> <span class="n">6</span></div>
+<div class="banner info">◐ Apply config.toml · moving to port 4443 · 1 s <span class="muted">(the page keeps working on port 443)</span> <span class="n">6</span></div>
+<div class="banner">? devhost moved to port 4443 <span class="btn">Open</span> <span class="muted">(only once the new listener answers)</span>
+<div class="muted">This page still uses port 443, which closed when config.toml changed.</div></div>
 <div class="banner">? Port 4002 closed · demoapp still runs on https://demoapp.acme.test <span class="btn">Open</span> and https://demoapp-4001.acme.test <span class="btn">Open</span> <span class="muted">(command-mode serve · stops retrying dead port)</span> <span class="n">7</span></div>
 <div class="banner">? Acme Shop stopped at 16:24 by devhost stop, but api still runs (PID 4242, port 5173) <span class="btn">Copy</span> <span class="n">8</span></div>
 <div class="banner">? Lost connection to devhost; retrying at 16:25:10 <span class="btn focusring">Retry Now</span> <span class="n">9</span></div>
@@ -431,7 +436,7 @@
 <div class="pg" style="min-height:90px">
 <div class="corner">
 <div class="toastrow"><div class="toast">✓ Connected again · 6 of 6 running</div><span class="n">11</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">CPU 12%</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">CPU 12%</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -442,8 +447,8 @@
 <li><span class="n">2</span> From the moment the status stream closes, the lost-connection notice names the cause the stack sent before it closed: here its time, how it stopped and the command that starts it again, with <b>Copy</b> for the command and its folder. The other reasons read "after 1 h idle", "by Ctrl-C in its terminal", "from Acme Admin's page", or "replaced by devhost stack restart" / "replaced by devhost restart-all" / "replaced by devhost upgrade" (<code>O18</code>). Stopped is read only from the stack's final message (<code>ACT-10</code>, <code>HOLD-2</code>, <code>ACT-11</code>).</li>
 <li><span class="n">3</span> The conversations the stop ended are named; each stays listed and can be resumed (<code>FB-4</code>, <code>UNDO-4</code>).</li>
 <li><span class="n">4</span> The Services trigger shows the connection's state instead of a count, and no row, dot or notice takes the failed look; failure looks stay for failures the server reported (<code>ACT-5</code>, <code>CC-26</code>).</li>
-<li><span class="n">5</span> After <code>devhost caddy stop</code>, the notice says the proxy is not reachable, with its start command; a reload the dev server asked for meanwhile is a detail of this notice, never a separate <b>Reload blocked</b> whose <b>Reload</b> would load the browser's connection error (<code>ACT-10</code>, <code>HOLD-2</code>).</li>
-<li><span class="n">6</span> When proxy-settings moves the HTTPS port, the notice names the new address with <b>Open</b>, which keeps the path and query, and the page stops retrying the old address (<code>HOLD-2</code>).</li>
+<li><span class="n">5</span> After <code>devhost caddy stop</code>, the notice says the proxy is not reachable, with its start command; a reload the dev server asked for meanwhile is a detail of this notice, never a separate <b>Reload blocked</b> whose <b>Reload Now</b> would load the browser's connection error (<code>ACT-10</code>, <code>HOLD-2</code>).</li>
+<li><span class="n">6</span> A listener move is never a lost connection: while proxy-settings moves the HTTPS port (<code>listeners-moving</code>), the page keeps working on the old address and shows the move's activity line; only once the new listener answers (<code>listeners-moved</code>) does the notice name the new port, and any listener that did not move, with <b>Open</b>, which keeps the path, query and fragment, and the page stops retrying the old address; <code>listeners-failed</code> keeps the old listeners and never shows the moved notice (<code>FB-13</code>, <code>HOLD-2</code>).</li>
 <li><span class="n">7</span> In a multi-port command-mode <code>devhost serve -- &lt;cmd&gt;</code> session, when one secondary port closes while sibling ports and the command remain healthy, the server emits a final WebSocket <code>port-closed</code> message with the remaining active URLs before removing that port's Caddy route. <code>openReconnectingWebSocket.ts</code> delivers it and stops retrying the removed hostname; the tab shows this targeted notice with <b>Open</b> instead of painting healthy sibling ports as a false 0/3 red outage (<code>ACT-5</code>, <code>HOLD-2</code>, <code>CC-26</code>).</li>
 <li><span class="n">8</span> A stop that left a process running past <code>O30</code>'s allowance never reads stopped: the notice names the survivor with stack-run-stop's command that stops it (<code>ACT-11</code>, <code>O30</code>).</li>
 <li><span class="n">9</span> Otherwise, including a stream that closed without the stack's final message, the notice reads "Lost connection to devhost; retrying" with the next attempt's time and <b>Retry Now</b>, which tries at once. No delay hides a disconnect, and none is needed: the routine drop at the end of Restart Stack and at each <b>Start</b> is removed at its source by services-panel (<code>HOLD-2</code>, <code>ACT-5</code>, <code>WORD-1</code>).</li>
@@ -530,7 +535,7 @@
 <li>Progress where the operation started; colliding controls unavailable, now with the running operation as their reason; other services' starts queue</li>
 <li>Reconnecting by itself after 1 s, doubling to 10 s; readouts hidden while disconnected; a shutdown stops services before the control server</li>
 <li>A save reports success only once applied; failures keep their original text, behind <b>Copy Error</b>; a configuration not applied leads to <b>Edit</b> and blocks nothing</li>
-<li><b>Reload</b> on <b>Reload blocked</b>; devhost's own reloads never held; a saved manifest edit applies without a question</li>
+<li><b>Reload Now</b> on <b>Reload blocked</b>; devhost's own reloads never held; a saved manifest edit applies without a question</li>
 <li>devhost never opens a browser or starts a stack from a page; a chat Send never claims an unconfirmed delivery and is never resent</li>
 <li>A failed service leaves the rest running; human and agent output differ by design</li>
 </ul></div>
