@@ -32,9 +32,12 @@
 .mock .ce-grp{font-weight:600;font-size:11px;color:var(--mute);padding:5px 6px 2px;border-bottom:1px solid var(--rule)}
 .mock .ce-diff{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:8px}
 .mock .ce-diff .ce-code{margin:2px 0}
-.mock .lab{color:var(--mute);font-size:11px;margin:8px 0 3px}
-.mock .lab:first-child{margin-top:0}
 .mock .ce-term{border-radius:0 0 8px 8px}
+.mock .btn:not(.pri){border-color:var(--edge)}
+/* Key band heights measured with the gutter legend entry: 79 px at 1440, 102 px at 1100, 32 px at 800 */
+:root{--key-h:5rem}
+@media (max-width:1400px){:root{--key-h:6.4rem}}
+@media (max-width:900px){:root{--key-h:2.1rem}}
 </style>
 </head>
 <body>
@@ -53,6 +56,7 @@
 <span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
 <span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
 <span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
+<span><i class="k" style="background:var(--badbg)"></i>Red: error or failure (✕ line), or the value before a change; ◆ line: differs from what runs</span>
 <span><span class="n">1</span>Callout, explained on the right</span></div>
 </div></div>
 <main>
@@ -68,36 +72,36 @@
 <div class="from">Tooltip of Config</div>
 <div>Edit this stack's configuration: its manifest files and the devhost config file</div>
 </div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open focusring" id="tip-trigger">Config</span><span class="n">1</span><span class="seg">Chat</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg open focusring" id="tip-trigger">Config</span><span class="n">1</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Config in four other situations</b></div>
+<div class="bar"><b>devhost › Config in five other situations</b></div>
 <div class="work small">
-<div class="lab">Drafts in devhost.toml and admin/devhost.toml, the window closed</div>
-<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config · 2 unsaved</span><span class="seg">Chat</span></span><span class="muted">named "Config: 2 files with unsaved changes: devhost.toml, admin/devhost.toml"</span><span class="n">2</span></div>
-<div class="lab">admin/devhost.toml was rejected on its last hot reload</div>
-<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">◆ Config · 1 not applied</span><span class="seg">Chat</span></span><span class="n">3</span></div>
-<div class="lab">The same, with the toolbar collapsed</div>
-<div class="row"><span class="banner" style="margin:0">◆ admin/devhost.toml line 4, services.admin.autostart: unknown key <span class="btn">Edit</span></span><span class="tbar"><span class="seg">◆ Acme Shop · 1 not applied</span></span><span class="n">4</span></div>
-<div class="lab">The config editor is off: the rejection notice</div>
-<div class="row"><span class="banner" style="margin:0">◆ devhost.toml line 14 is not applied <span class="btn">Copy</span> <span class="btn">Open in Editor</span><br><span class="muted">The config editor is off: [devtools.configEditor] enabled = true turns it on.</span></span><span class="n">5</span></div>
-<div class="lab">A page opened from another machine</div>
-<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg muted">Config</span><span class="seg">Chat</span></span><span class="muted">The configuration is available on this machine only</span><span class="n">6</span></div>
+<div class="vlab">Drafts in devhost.toml and admin/devhost.toml, the window closed</div>
+<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config · 2 unsaved</span><span class="seg">Chat</span></span><span class="muted">named "Config: 2 files with unsaved changes: devhost.toml, admin/devhost.toml"</span><span class="n">2</span></div>
+<div class="vlab">admin/devhost.toml was rejected on its last hot reload</div>
+<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">◆ Config · 1 not applied</span><span class="seg">Chat</span></span><span class="n">3</span></div>
+<div class="vlab">The same, with the toolbar collapsed</div>
+<div class="corner" style="position:static"><div class="banner" style="margin:0">◆ Manifest file not applied: admin/devhost.toml line 4 · <span class="btn">Edit</span></div>
+<div class="row" style="justify-content:flex-end"><span class="n">4</span><span class="tbar oneline"><span class="seg">◆ <b>dh</b> · admin/devhost.toml not applied ▴</span></span></div></div>
+<div class="vlab">The config editor is off: the rejection notice</div>
+<div class="row"><span class="banner" style="margin:0">◆ Manifest file not applied: devhost.toml line 14, services.api.autostart: unknown key. The stack still runs the accepted manifest. <span class="btn">Copy</span><br><span class="muted">The config editor is off: [devtools.configEditor] enabled = true turns it on.</span> <span class="n">5</span></span></div>
+<div class="vlab">A page opened from another environment, before this browser signs in or pairs</div>
+<div class="row"><span class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg muted">Config</span><span class="seg">Chat</span></span><span class="muted">Sign in with passkey or pair this browser to use devhost here</span><span class="btn">Sign In with Passkey</span><span class="muted">or open a devhost pair link from devbox</span><span class="n">6</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: refusing every config route to other machines is a proposed exception to <code>HOLD-7</code>, which opens the window there with Save unavailable; the product owner decides it as a contract change (Backend 10). <a href="index.html#conflicts">See conflicts</a></div>
-<h2>1. Turn the editor on</h2>
+<div class="cap"><h2>1. Turn the editor on</h2>
 <p>The editor stays off by default and is turned on by writing <code>[devtools.configEditor] enabled = true</code> in a manifest with any editor, as today; hot reload applies it and every config route answers <code>404</code> while it is off (owner rule). What changes is what <b>Config</b> says while the window is closed and what every problem report offers while the editor is off. Keys: Alt+Ctrl+B focuses the bar; <b>Config</b> is an arrow stop (ArrowLeft, ArrowRight, Home, End); Enter or Space opens the window (<code>KEY-3</code>, <code>KEY-4</code>).</p>
 <ol><li><span class="n">1</span> <b>Config</b> appears on every open page of the stack with the next health message, without a page reload, as today. Its tooltip, toolbar-shell's words, says what it edits: "Edit this stack's configuration: its manifest files and the devhost config file" (<code>WORD-1</code>).</li>
 <li><span class="n">2</span> <b>Config</b> counts the files that hold drafts, "Config · 2 unsaved", and its accessible name lists them, so drafts kept on the control server are never invisible (<code>ACT-7</code>, <code>UNDO-2</code>).</li>
 <li><span class="n">3</span> While a manifest file or the devhost config file is not applied, <b>Config</b> keeps the not-applied look, told by its shape ◆ and the text "1 not applied", the marker notices-and-feedback words, in every tab until a reload of that source is accepted, also while the window is closed (<code>ACT-7</code>, <code>SURF-8</code>, <code>ACT-13</code>).</li>
 <li><span class="n">4</span> Collapsed, toolbar-shell's badge takes the rejected-configuration look in <code>ACT-7</code>'s order, and the rejection's notice stays in one line beside it; its <b>Edit</b> opens the window at the problem (step 3) (<code>SURF-8</code>, <code>MENU-4</code>).</li>
-<li><span class="n">5</span> With the editor off, every surface that reports a manifest or devhost config file problem (the rejection notice, the crash view, a failed Services row) shows the file and line with <b>Copy</b> and <b>Open in Editor</b>, which hands off to the editor that <code>DEVHOST_EDITOR</code>, the devhost config file or the manifest names, at that line, and names the setting that turns the editor on; there is no <b>Edit</b> (<code>MENU-3</code>, <code>MENU-4</code>, <code>SURF-15</code>, <code>SEL-11</code>).</li>
-<li><span class="n">6</span> On a page opened from another machine, <b>Config</b> is unavailable with the reason "The configuration is available on this machine only" as visible text and as its accessible description, and the window does not open (<code>MENU-3</code>, <code>HOLD-1</code>, <code>WORD-7</code>). If the product owner keeps today's remote reads, the window opens there instead, with <b>Save</b> unavailable from the moment it opens and "Saving works only from this machine" (<code>HOLD-7</code>).</li></ol>
-<p class="fixes">Fixes network-exposure-04 · Backend: [discuss] configuration reads only from this machine, with <code>canSave</code> on the files route (Backend 10); drafts counted from the draft route (Backend 7; <code>CC-19</code>)</p></div>
+<li><span class="n">5</span> With the editor off, every surface that reports a manifest or devhost config file problem (the rejection notice, the crash view, a failed Services row) shows the file and line with <b>Copy</b> and names the setting that turns the editor on; there is no <b>Edit</b>, and no <b>Open in Editor</b>, because devhost has no editor integration (<code>MENU-3</code>, <code>MENU-4</code>, <code>SURF-15</code>, <code>O51</code>).</li>
+<li><span class="n">6</span> A browser in another environment that signed in with the shared devhost passkey or was paired with a <code>devhost pair</code> link opens, checks and saves the configuration exactly as this machine does. Until it signs in or pairs, <b>Config</b> is unavailable with the one reason "Sign in with passkey or pair this browser to use devhost here" as visible text and accessible description, with <b>Sign In with Passkey</b> when the shared passkey is configured for the domain and how to get a <code>devhost pair</code> link; the window never opens, and every config route answers that client <code>403</code> (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>O38</code>, <code>O54</code>, <code>MENU-3</code>, <code>HOLD-1</code>).</li></ol>
+<p class="fixes">Fixes network-exposure-04 · Backend: the sign-in check on every config route, with <code>canSave</code> on the files route (Backend 10; <code>O38</code>, <code>O54</code>); drafts counted from the draft route (Backend 7; <code>CC-19</code>)</p></div>
 </section>
 
 <section class="step" id="open-window">
@@ -108,16 +112,16 @@
 <div class="dlg">
 <div class="hd">
 <div class="ce-hd"><h3>Configuration</h3><span class="muted">Root manifest · devhost.toml · main ~/acme</span><span class="n">1</span></div>
-<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn">Revert</span><span class="btn pri">Save</span><span class="muted ce-reach">Saving restarts api (changed) and worker (depends on api)</span><span class="btn">Close</span><span class="n">2</span></div>
+<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn">Revert</span><span class="btn pri">Save</span><span class="ce-reach">Saving restarts api (changed) and worker (depends on api)</span><span class="btn">Close</span><span class="n">2</span></div>
 <div class="ce-sub">2 files have unsaved changes: devhost.toml, admin/devhost.toml <span class="n">3</span></div>
 </div>
 <div class="body">
-<div class="ce-code focusring"><div class="ce-ln"><span>12</span><span>[services.api]</span></div><div class="ce-ln"><span>13</span><span>command = "bun run src/server.ts --watch"▌ <span class="n">4</span></span></div><div class="ce-ln"><span>14</span><span>cwd = "backend"</span></div><div class="ce-ln"><span>15</span><span class="muted">… the text and the problem list scroll; nothing else does</span></div></div>
+<div class="ce-code focusring"><div class="ce-ln"><span>13</span><span>[services.api]</span></div><div class="ce-ln"><span>14</span><span>command = "bun run src/server.ts --watch"▌ <span class="n">4</span></span></div><div class="ce-ln"><span>15</span><span>cwd = "backend"</span></div><div class="ce-ln"><span>16</span><span class="muted">… the text and the problem list scroll; nothing else does</span></div></div>
 <div class="ce-hint">Tab indents · ⌥⇧M Tab moves focus · Esc File list · ⌘S Save <span class="n">5</span></div>
 </div>
 </div>
 <div class="corner"><div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="banner" style="margin:0">◆ Reload blocked <span class="btn">Reload</span> <span class="btn">✕</span></span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config · 2 unsaved</span><span class="seg">Chat</span></div></div>
+<div class="tbar paused"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config · 2 unsaved</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 <div class="win">
@@ -126,6 +130,7 @@
 <div class="dlg">
 <div class="hd">
 <div class="ce-hd"><h3>Configuration</h3><span class="muted">Root manifest · devhost.toml · main ~/acme</span></div>
+<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn off">Revert</span><span class="btn pri off">Save</span><span class="sp"></span><span class="btn">Close</span></div>
 <div class="ce-sub">Apply devhost.toml is running · 3 of 6 started · checks and saves wait for it <span class="n">7</span></div>
 </div>
 <div class="body"><div class="ce-code"><div class="ce-ln"><span></span><span class="muted">Loading devhost.toml… <span class="n">8</span></span></div></div></div>
@@ -149,18 +154,18 @@
 </div>
 </div>
 <div class="cap"><h2>2. Open the Configuration window</h2>
-<p><b>Config</b> still opens the Configuration window over the page, and closing it still keeps every draft. What changes is that the window is a real modal dialog (<code>aria-modal="true"</code>, opened with <code>showModal()</code>): the page, the bar, the notice stack and docked chat are inert behind it and Tab never leaves it, where today focus wanders into the page. It never shows an empty, disabled box. Keys: focus starts in the text, where Tab and Shift+Tab indent and outdent; Escape in the text moves focus to <b>File</b>; outside the text, Tab cycles <b>File</b>, <b>Revert</b>, <b>Save</b>, <b>Close</b> and the banner's actions and back to the text; Escape outside the text, <b>Close</b> or a click on the backdrop closes the window with every draft kept, and focus returns to <b>Config</b>, or, when the window was opened with the pointer, to the page element that had focus before (<code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
-<ol><li><span class="n">1</span> The header names the window, then the selected file's role, short path and the checkout whose manifest it edits; after a switch it reads "fix-nav ~/acme/.worktrees/fix-nav" (<code>SEL-4</code>).</li>
+<p><b>Config</b> still opens the Configuration window over the page, and closing it still keeps every draft. What changes is that the window is a real modal dialog (<code>aria-modal="true"</code>, opened with <code>showModal()</code>): the page, the bar, the notice stack and docked chat are inert behind it and Tab never leaves it, where today focus wanders into the page. It never shows an empty, disabled box. Keys: focus starts in the text, where Tab and Shift+Tab indent and outdent; Escape in the text moves focus to <b>File</b>; outside the text, Tab cycles <b>File</b>, <b>Revert</b>, <b>Save</b>, <b>Close</b> and the banner's actions and back to the text; Escape outside the text, <b>Close</b> or a click on the backdrop closes the window with every draft kept, and focus returns to <b>Config</b>, or, when the window was opened with the pointer, to the page element that had focus before (<code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>). Not drawn here: when the stack's selected worktree is deleted, the header line says so in one sentence with <b>Return to Configured Worktree</b>, and <b>Save</b> is unavailable with that reason while drafts stay (<code>HOLD-4</code>); while the page's own modal dialog is open, <b>Config</b> pauses with the bar and <b>Edit</b> in the moved notice opens this window above that dialog (<code>SURF-11</code>).</p>
+<ol><li><span class="n">1</span> The header names the window, then the selected file's role, short path and the worktree whose manifest it edits; after a switch it reads "fix-nav ~/acme/.worktrees/fix-nav" (<code>SEL-4</code>).</li>
 <li><span class="n">2</span> The header actions <b>File</b>, <b>Revert</b>, <b>Save</b> and <b>Close</b> keep their size and stay in view whatever the body holds, at every acceptance viewport; only the text and the problem list scroll (<code>SURF-9</code>).</li>
 <li><span class="n">3</span> Drafts restored from the control server are named in one line under the header (<code>UNDO-2</code>, <code>CC-19</code>).</li>
 <li><span class="n">4</span> Focus moves to the file's text on open (<code>KEY-6</code>, <code>SURF-4</code>).</li>
 <li><span class="n">5</span> The hint line names the keys in the platform's notation, from each binding's one definition; elsewhere it reads "Tab indents · Ctrl+M Tab moves focus · Esc File list · Ctrl+S Save". Ctrl+M (⌥⇧M on macOS) switches Tab between indenting and moving focus (<code>KEY-13</code>, <code>KEY-7</code>).</li>
 <li><span class="n">6</span> The window's height stops above the notice stack, in either corner placement, so every notice's text stays visible beside it; the notices are inert while the window is open (<code>SURF-1</code>, <code>SURF-4</code>, <code>SURF-9</code>, <code>KEY-7</code>).</li>
 <li><span class="n">7</span> While an operation runs on the stack, one header line names it with its progress, and the text stays readable and editable (<code>HOLD-3</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">8</span> The frame shows at once with "Loading devhost.toml…" where the text goes: the files route answers from a snapshot without waiting for the running reload, restart or switch (<code>STATE-1</code>).</li>
+<li><span class="n">8</span> The frame shows at once with "Loading devhost.toml…" where the text goes: the files route lists the files from the stack's live view without waiting for the running reload, restart or switch (<code>STATE-1</code>).</li>
 <li><span class="n">9</span> A window that cannot load says once what failed and the next step, built from the cause the backend sent, never a response body; <b>Copy Error</b> holds the original text, and the same sentence is the accessible description of the unavailable <b>Revert</b> and <b>Save</b>. The header actions stay inside the window, and focus is inside it, so Escape closes it (<code>STATE-4</code>, <code>FAIL-2</code>, <code>HOLD-2</code>, <code>HOLD-1</code>, <code>SURF-9</code>).</li>
 <li><span class="n">10</span> Drafts and files the window already held stay readable, marked with their age (<code>STATE-3</code>, <code>STATE-4</code>).</li></ol>
-<p class="fixes">Fixes config-editor-10, config-editor-14, notices-and-feedback-01 · Backend: the files route answers from a snapshot outside the operation lock, and the health stream names the running operation (Backend 8); drafts on the control server (Backend 7; <code>CC-19</code>); one JSON error body (<code>CC-37</code>)</p></div>
+<p class="fixes">Fixes config-editor-10, config-editor-14, notices-and-feedback-01 · Backend: the files route keeps listing from the live view outside the operation lock, and the health stream names the running operation (Backend 8); drafts on the control server (Backend 7; <code>CC-19</code>); one JSON error body (<code>CC-37</code>)</p></div>
 </section>
 
 <section class="step" id="open-at-problem">
@@ -195,25 +200,23 @@
 <div class="ce-code focusring"><div class="ce-ln bad"><span>13 ✕</span><span>[services.api]</span></div><div class="ce-ln bad"><span>14 ✕</span><span>▌command = "bun run src/server.ts" <span class="n">5</span></span></div><div class="ce-ln"><span>15</span><span>cwd = "backend"</span></div><div class="ce-ln"><span>16</span><span>health = { http = "/api/hello" }</span></div></div>
 </div>
 </div>
-<div class="corner"><div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div></div>
+<div class="corner"><div class="row" style="justify-content:flex-end"><span class="n">6</span><span class="banner bad" style="margin:0">✕ api exited with code 1 at 14:02 <span class="btn">Expand</span></span></div>
+<div class="tbar paused"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">✕ ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Configuration window header</b><span>api exits while focus is in the text</span></div>
 <div class="work small">
-<div class="row"><b>Configuration</b><span class="muted">Root manifest · devhost.toml · main ~/acme</span><span class="sp"></span><span>api exited with code 1 at 14:02 · its notice waits in the notice stack</span><span class="n">7</span></div>
+<div class="row"><b>Configuration</b><span class="muted">Root manifest · devhost.toml · main ~/acme</span><span class="sp"></span><span class="muted">api exited with code 1 at 14:02 · its notice waits in the notice stack</span><span class="n">7</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: section 4 puts logs in the pinned log panel, not inside the window, while <code>SURF-4</code> has <b>Show All Output</b> expand the exited service's output inside it; this page reads them together, expanding only that service's output (<code>SURF-13</code>). <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: <code>SURF-4</code> lists no Restart in the exited-service banner, while <code>MENU-5</code> leads an exited service with it; this page offers <b>Restart api</b>. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>3. Open the window at a problem</h2>
-<p><b>Edit</b> in the rejection notice still opens the window, and <b>Config</b> still opens it from the bar. What changes is that every entry point to a problem (the rejection notice, the crash view, a failed Services row, <b>Config</b> while a service is exited) opens the file that holds it, at its line, with the context in a banner inside the window, from one structured error: file relative to the root manifest, line, column, key and message (<code>MENU-4</code>, <code>SURF-4</code>). Keys: focus starts in the text at the problem; the banner's actions are Tab stops after the header actions (<code>KEY-6</code>, <code>KEY-7</code>).</p>
+<div class="cap"><h2>3. Open the window at a problem</h2>
+<p><b>Edit</b> in the rejection notice still opens the window, and <b>Config</b> still opens it from the bar. What changes is that every entry point to a problem (the rejection notice, the crash view, a failed Services row, <b>Config</b> while a service is exited) opens the file that holds it, at its line, with the context in a banner inside the window, from one structured error: file relative to the root manifest, line, column, key and message (<code>MENU-4</code>, <code>SURF-4</code>). Keys: focus starts in the text at the problem; the banner's actions are Tab stops after the header actions (<code>KEY-6</code>, <code>KEY-7</code>). Not drawn here: <b>Edit</b> in the worktree list's details line opens a manifest of a worktree the stack does not run, its header ending "fix-nav ~/acme/.worktrees/fix-nav · not running", and saving it writes the file without a reload, "Saved fix-nav's devhost.toml · applies when acme switches to fix-nav" (<code>MENU-4</code>, <code>SEL-4</code>).</p>
 <ol><li><span class="n">1</span> A rejection's banner names the file, line and key, words the cause key first and says the stack still runs the accepted manifest; it stays in the window until a reload of that source is accepted, also after the window closes and opens again. A rejection that no single file holds lists the files involved (<code>FAIL-2</code>, <code>WORD-7</code>, <code>HOLD-6</code>, <code>ACT-7</code>).</li>
 <li><span class="n">2</span> The window opens on admin/devhost.toml, not on the file shown last, scrolled to line 4 with the line marked ✕ in the gutter and the cursor at its column (<code>MENU-4</code>).</li>
 <li><span class="n">3</span> <b>Edit</b> in the crash view, on a failed Services row and <b>Config</b> while api is exited open api's definition with its evidence in the banner: the exit with its time and cause, its own last output lines frozen at the exit, and what devhost ran (<code>FAIL-3</code>, <code>SURF-4</code>).</li>
-<li><span class="n">4</span> <b>Restart api</b>, <code>MENU-5</code>'s lead action for an exited service, hands off to the restart services-panel owns and shows its progress and outcome in the banner; <b>Show All Output</b> expands api's whole output in place. The window has no other log view: other services' output is read in the pinned log panel after the window closes with drafts kept (<code>MENU-5</code>, <code>WORD-2</code>, <code>SURF-13</code>).</li>
+<li><span class="n">4</span> <b>Restart api</b>, <code>MENU-5</code>'s lead action for an exited service, hands off to the restart services-panel owns and shows its progress and outcome in the banner; <b>Show All Output</b> expands api's whole output, the shared recovery view's log, in place. The window has no other log view: other services' output is read in the pinned log panel after the window closes with drafts kept (<code>MENU-5</code>, <code>WORD-2</code>, <code>SURF-4</code>, <code>SURF-14</code>, <code>SURF-13</code>).</li>
 <li><span class="n">5</span> The <code>[services.api]</code> header and its command line are marked in the gutter, and the <b>File</b> list marks devhost.toml "defines api, which exited" (step 4). A save that changes api's definition restarts it anyway, so the banner then reports that save's outcome for api.</li>
 <li><span class="n">6</span> <b>Edit</b> in the crash view first minimizes the crash view to its notice, which stays in the inert notice stack; closing the window returns focus to that notice (<code>SURF-3</code>, <code>KEY-6</code>). The crash view's own actions follow <code>MENU-5</code>, which startup-and-recovery owns, with <b>Edit</b> leading after a retry that failed the same way.</li>
 <li><span class="n">7</span> A report that needs the person while the window is open (a failure, a waiting agent, a rejected configuration) is announced once from inside the window, which holds the announcer, and shows as one line in its header; focus stays in the text, and the crash view opens minimized as its notice (<code>SURF-4</code>, <code>FB-9</code>, <code>KEY-7</code>, <code>SURF-3</code>).</li></ol>
@@ -233,20 +236,20 @@
 <div class="ce-opt cur"><span>Root manifest · devhost.toml</span><span>unsaved · defines api, which exited</span></div>
 <div class="ce-opt"><span>Include · admin/devhost.toml</span><span>not applied <span class="n">2</span></span></div>
 <div class="ce-opt"><span>Include · packages/api/devhost.toml</span><span>applying</span></div>
-<div class="ce-grp">This machine · 1</div>
-<div class="ce-opt"><span>Devhost config file · ~/.config/devhost/config.toml</span><span>shared by every stack on this machine <span class="n">3</span></span></div>
+<div class="ce-grp">devbox · 1</div>
+<div class="ce-opt"><span>Devhost config file · ~/.config/devhost/config.toml</span><span>shared by every stack on devbox <span class="n">3</span></span></div>
 </div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › File list</b><span>Acme Platform, 12 includes: the list gains a find field</span></div>
 <div class="work small">
-<div class="lab">"admin" typed in the find field</div>
+<div class="vlab">The File list open, "admin" typed in its find field</div>
 <div class="row"><span class="in focusring" style="flex:1">admin</span><span class="n">4</span></div>
 <div class="ce-grp">This stack · 2 of 13</div>
 <div class="ce-opt cur"><span>Include · admin/devhost.toml</span><span>applied</span></div>
 <div class="ce-opt"><span>Include · admin/jobs/devhost.toml</span><span>applied</span></div>
-<div class="lab">"zz" typed in the find field</div>
+<div class="vlab">The File list open, "zz" typed in its find field</div>
 <div class="row"><span class="in focusring" style="flex:1">zz</span></div>
 <div class="row" style="margin:6px 0">No file matches "zz" <span class="btn">Clear Filter</span><span class="n">5</span></div>
 </div>
@@ -256,20 +259,20 @@
 <div class="work small">
 <div class="ce-hd"><b>Configuration</b><span class="muted">Devhost config file · ~/Library/…/devhost/config.toml</span></div>
 <div class="ce-act"><span class="chip acc">File: ~/Library/…/devhost/config.toml ▾</span><span class="n">6</span><span class="btn">Revert</span><span class="btn pri">Save</span><span class="sp"></span><span class="btn">Close</span></div>
-<div class="ce-sub">Changes here apply to every stack on this machine <span class="n">7</span></div>
+<div class="ce-sub">Changes here apply to every stack on devbox <span class="n">7</span></div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>4. Pick a file</h2>
 <p><b>File</b> still lists the stack's root manifest, its includes and the devhost config file, and switching files still keeps each file's draft. What changes is that each option says what the file is and what state it is in, the list groups and filters them, and switching files keeps each file's last save outcome too (<code>UNDO-2</code>, <code>UNDO-8</code>). Defaults: the window opens on the file of the problem it was opened for, else the file shown last, else the root manifest. Keys: ArrowUp and ArrowDown move the highlighted file, Enter picks it, Escape closes the list and keeps focus on <b>File</b> (<code>KEY-10</code>, <code>KEY-8</code>).</p>
-<ol><li><span class="n">1</span> <b>File</b> is a combobox whose field and list sit in one shadow tree; its options are grouped by role, "This stack" and "This machine", each header with its count (<code>KEY-10</code>, <code>SEL-10</code>, <code>WORD-1</code>).</li>
+<ol><li><span class="n">1</span> <b>File</b> is a combobox whose field and list sit in one shadow tree; its options are grouped by role, "This stack" and "devbox", the machine that runs the stacks, named by <code>machineName</code> in the devhost config file or else its host name, each header with its count (<code>KEY-10</code>, <code>SEL-10</code>, <code>WORD-1</code>, <code>O61</code>).</li>
 <li><span class="n">2</span> Each option's role, short path and state ("unsaved", "applying", "applied", "not applied", "defines api, which exited") are text in the option and in its accessible description, never only on hover (<code>WORD-8</code>).</li>
-<li><span class="n">3</span> The devhost config file says that every stack on this machine shares it (<code>SEL-11</code>, <code>WORD-1</code>).</li>
+<li><span class="n">3</span> The devhost config file says that every stack on devbox shares it (<code>SEL-11</code>, <code>WORD-1</code>, <code>O61</code>).</li>
 <li><span class="n">4</span> When the files outgrow the list, it gains a find field, focused on open, that filters by path and role as the person types and keeps the group headers with their counts (<code>SEL-10</code>, <code>SURF-10</code>).</li>
 <li><span class="n">5</span> A find with no match names what was searched, with <b>Clear Filter</b> (<code>SEL-10</code>, <code>STATE-2</code>).</li>
 <li><span class="n">6</span> A long path is shortened in the middle, with the full path in the trigger's tooltip and accessible name; the trigger never grows past its slot, so <b>Revert</b>, <b>Save</b> and <b>Close</b> stay in the window at every acceptance viewport (<code>WORD-8</code>, <code>SURF-9</code>).</li>
-<li><span class="n">7</span> With the devhost config file selected, a neutral line under the header says how far its changes reach (<code>SEL-11</code>).</li></ol>
-<p class="fixes">Fixes config-editor-01 · Backend: the files route returns each file's role (contract text for the reference's author, [discuss])</p></div>
+<li><span class="n">7</span> With the devhost config file selected, a neutral line under the header says how far its changes reach. Its completions offer the shared Caddy settings, <code>machineName</code>, <code>stopTimeout</code>, the shared passkey's public key and <code>rpId</code>, and <code>[devtools.shortcuts]</code>, whose bindings override the manifest's binding by binding; neither file offers an editor setting (<code>SEL-11</code>, <code>O61</code>, <code>O17</code>, <code>O30</code>, <code>O36</code>, <code>O51</code>, <code>CC-39</code>).</li></ol>
+<p class="fixes">Fixes config-editor-01 · Backend: the files route returns each file's role, running version and <code>canSave</code> (Backend 6, 10; <code>UNDO-6</code>, <code>O38</code>)</p></div>
 </section>
 
 <section class="step" id="edit">
@@ -288,10 +291,10 @@
 </div></div>
 <div class="ce-ln"><span>31</span><span><span class="open" id="cmp-trigger">he▌</span><span class="n">2</span></span></div></div>
 <div class="ce-probs">
-<div><b>4 problems</b><span class="muted">in line order · checked 14:01:58</span><span class="n">3</span></div>
-<div>services.api.dependsOn (line 9): web already depends on api, which makes a cycle: api → web → api</div>
-<div>services.api.port (line 12): expected a number</div>
-<div>services.web.cwd (line 23): no folder frontend-missing in this checkout</div>
+<div><b>4 problems</b><span class="muted">in line order</span><span class="n">3</span></div>
+<div>Line 9, services.api.dependsOn: web already depends on api, which makes a cycle: api → web → api</div>
+<div>Line 12, services.api.port: expected a number</div>
+<div>Line 23, services.web.cwd: no folder frontend-missing in this worktree</div>
 <div>admin/devhost.toml line 4, services.admin.autostart: unknown key <span class="btn">Open</span><span class="n">4</span></div>
 </div>
 </div>
@@ -306,26 +309,26 @@
 <div class="win">
 <div class="bar"><b>devhost › the line beside Save for other drafts</b></div>
 <div class="work small">
-<div class="lab">A comment-only change</div>
+<div class="vlab">A comment-only change</div>
 <div class="row"><span class="btn pri">Save</span><span>Restarts nothing</span><span class="n">6</span></div>
-<div class="lab">On web's page, worktrees on, web in api's repository</div>
+<div class="vlab">On web's page, worktrees on, web in api's repository</div>
 <div class="row"><span class="btn pri">Save</span><span>Saving restarts web, this page's service (same repository as api), api (changed) and docs (same repository as api)</span></div>
-<div class="lab">The devhost config file, HTTPS port changed</div>
+<div class="vlab">The devhost config file, HTTPS port changed</div>
 <div class="row"><span class="btn pri">Save</span><span>Saving moves the URLs of 3 stacks: Acme Shop, Docs and Blog</span></div>
-<div class="lab">[worktrees] enabled = false while acme runs from fix-nav</div>
+<div class="vlab">[worktrees] enabled = false while acme runs from fix-nav</div>
 <div class="row"><span class="btn pri">Save</span><span>Saving returns acme to main ~/acme and restarts all 6 services</span></div>
-<div class="lab">[devtools.configEditor] enabled = false</div>
+<div class="vlab">[devtools.configEditor] enabled = false</div>
 <div class="row"><span class="btn pri">Save</span><span>Saving turns the config editor off and closes this window</span></div>
-<div class="lab">Typing while Apply devhost.toml runs</div>
+<div class="vlab">Typing while Apply devhost.toml runs</div>
 <div class="ce-probs"><div class="muted">Checking after Apply devhost.toml finishes… <span class="n">7</span></div></div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>5. Edit with every problem and the save's reach in view</h2>
 <p>Checks still run while the person types and never write, and completions still offer tables, keys and fixed-choice values, as today. What changes is that one check lists every problem a reload would find, each on the line where the fix goes and in plain words, and that the window states beside <b>Save</b> what saving will do (<code>POST /__devhost__/config/validate</code>, read only). Keys: Ctrl+Space (⌥I on macOS) lists completions; Enter breaks the line; Mod+S saves; CodeMirror's Alt chords stay inside the text, page-wide chords are suspended while the window is open, and keys typed into the text never reach the page's listeners in any phase (<code>KEY-1</code>, <code>KEY-2</code>, <code>KEY-5</code>, <code>KEY-9</code>, <code>CC-28</code>).</p>
-<ol><li><span class="n">1</span> Beside <b>Save</b>, one line states what saving the draft will do, from the backend's check of it: each service it restarts and why (changed, depends on a changed service, same repository), the page's own service first; services it starts or stops; for the devhost config file, the stacks whose URLs move; a return to the configured checkout; the editor turning itself off (<code>REV-10</code>, <code>SEL-1</code>, <code>SEL-11</code>, <code>O9</code>).</li>
+<ol><li><span class="n">1</span> Beside <b>Save</b>, one line states what saving the draft will do, from the backend's check of it: each service it restarts and why (changed, depends on a changed service, same repository), the page's own service first; services it starts or stops; for the devhost config file, the stacks whose URLs move; a return to the configured worktree; the editor turning itself off (<code>REV-10</code>, <code>SEL-1</code>, <code>SEL-11</code>, <code>O9</code>).</li>
 <li><span class="n">2</span> Completions and problem tooltips open inside the viewport, above the cursor when the room below is short, and are never clipped by the window (<code>SURF-9</code>).</li>
-<li><span class="n">3</span> After each pause in typing, one check returns every problem in one list ordered by line: settings and values, dependency cycles, ports and working directories. Each is marked where the fix goes, worded key first and fix last, with the file relative to the root manifest, never an absolute path, a parser prefix or a Go error chain; a cycle marks the <code>dependsOn</code> line of each service in it. The list never covers the line holding the cursor (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
+<li><span class="n">3</span> After each pause in typing, one check returns every problem in one list ordered by line: settings and values, dependency cycles, ports and working directories. Each is marked where the fix goes, worded key first and fix last, with the file relative to the root manifest, never an absolute path, a parser prefix or an error chain; a cycle marks the <code>dependsOn</code> line of each service in it. The list never covers the line holding the cursor (<code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li>
 <li><span class="n">4</span> A problem in another file is listed with that file and <b>Open</b>, which shows it at its line; a problem with no position is listed without a marker, never on line 1 (<code>MENU-4</code>).</li>
 <li><span class="n">5</span> Only a TOML syntax error stops the later checks: it is marked at the end of the line it belongs to, and the list says the rest of the file waits for it.</li>
 <li><span class="n">6</span> These lines are statements, never a question: <b>Save</b> stays available beside each (<code>REV-10</code>, <code>REV-1</code>).</li>
@@ -340,25 +343,30 @@
 <div class="work small">
 <div class="ce-hd"><b>Configuration</b><span class="muted">Root manifest · devhost.toml · main ~/acme</span></div>
 <div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn">Revert</span><span class="btn pri focusring">Saving devhost.toml…</span><span class="n">1</span><span class="ce-reach">Apply devhost.toml · 1 of 2 restarted · 4 s</span><span class="btn">Close</span></div>
-<div class="ce-rows"><div><span>● api</span><span>running · restarted</span></div><div><span>◐ worker</span><span>health check 2 s of 30 s <span class="n">2</span></span></div></div>
+<div class="ce-rows"><div><span>● api</span><span>running</span></div><div><span>◐ worker</span><span>starting · health check 2 s of 30 s <span class="n">2</span></span></div></div>
 <div class="ce-sub">devhost.toml is being saved · 1 of 2 restarted <span class="n">3</span></div>
 <div class="ce-code"><div class="ce-ln"><span>13</span><span>command = "bun run src/server.ts --watch"</span></div><div class="ce-ln"><span>14</span><span class="muted">… the text stays editable</span></div></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Configuration window, second tab</b><span>devhost.toml saved here while the first tab's reload runs</span></div>
+<div class="bar"><b>devhost › Configuration window, second tab</b><span>devhost.toml saved here while Apply admin/devhost.toml runs</span></div>
 <div class="work small">
-<div class="ce-act"><span class="btn pri focusring">Saving devhost.toml…</span><span class="ce-reach">Waits for Apply devhost.toml · 3 of 6 started · this save applies next <span class="n">4</span></span></div>
+<div class="ce-act"><span class="btn pri focusring">Saving devhost.toml…</span><span class="ce-reach">Waits for Apply admin/devhost.toml · 3 of 6 started · this save applies next <span class="n">4</span></span></div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Configuration window</b><span>Mod+S on enabled = false while admin/devhost.toml holds a draft</span></div>
 <div class="work small">
-<div class="ce-act"><span class="btn">Revert</span>
+<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn">Revert</span>
 <div class="box" style="margin:0;flex:1 1 22rem">Saving turns the config editor off and closes this window. admin/devhost.toml has unsaved changes, kept until the editor is on again. <span class="n">5</span>
 <div class="row" style="margin-top:4px"><span class="btn focusring">Review Drafts</span><span class="btn">Save Anyway</span><span class="n">6</span></div></div>
 <span class="btn">Close</span></div>
 </div>
+</div>
+<div class="win">
+<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>after Save Anyway: the window closed, the page in view</span></div>
+<div class="pg" style="min-height:70px"><div class="apptxt">Acme Shop · Products · Running shoes …</div></div>
+<div class="toastrow"><div class="toast">✓ Applied devhost.toml: turned the config editor off · admin/devhost.toml keeps its unsaved changes until [devtools.configEditor] enabled = true · 0.4 s</div><span class="n">9</span></div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Configuration window</b><span>the status stream closed while the window is open</span></div>
@@ -373,17 +381,16 @@
 <pre class="term ce-term">14:02:31 Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s · from a page on shop.acme.test <span class="n">8</span></pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: section 4 makes <b>Save</b> unavailable while a save applies, while <code>REV-12</code> lets a later save wait and replace it; this page reads the first as that file's own save in this tab and the second as a save from another tab or program. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: <code>WORD-2</code> names no confirming verb for the question <code>REV-3</code> asks here; this page uses <b>Save Anyway</b>, after <b>Switch Anyway</b> and <b>Send Anyway</b>. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>6. Save</h2>
-<p><b>Save</b> or Mod+S still writes the file at once, through every guard it has today: a browser on this machine only, the version the draft was based on (<code>409</code> with the file on disk, draft kept), the reload's own checks (<code>422</code> with the problems, draft kept), and an atomic write that keeps the file's mode and follows a symbolic link; the watcher still applies the write like any other (<code>POST /__devhost__/config/save</code> with an <code>operationId</code>, one write applied through hot reload). What changes is that the save gets its own operation record (<code>202 Accepted</code>) and shows its own progress beside <b>Save</b> (<code>ACT-1</code>, <code>REV-12</code>, <code>CC-37</code>). Keys: the pressed <b>Save</b> keeps focus; in the question, Enter takes <b>Review Drafts</b>; Escape, or a click elsewhere in the window that lands on no control, cancels it and returns focus to <b>Save</b>; a click on another control cancels it and that control acts; closing the window cancels it with the window (<code>KEY-11</code>, <code>REV-4</code>, <code>KEY-8</code>, <code>KEY-6</code>).</p>
+<div class="cap"><h2>6. Save</h2>
+<p><b>Save</b> or Mod+S still writes the file at once, through every guard it has today, with the client check widened to this machine or a browser in another environment that signed in or paired (<code>O54</code>, <code>HOLD-7</code>), the version the draft was based on (<code>409</code> with the file on disk, draft kept), the reload's own checks (<code>422</code> with the problems, draft kept), and an atomic write that keeps the file's mode and follows a symbolic link; the watcher still applies the write like any other (<code>POST /__devhost__/config/save</code> with an <code>operationId</code>, one write applied through hot reload). What changes is that the save gets its own operation record (<code>202 Accepted</code>) and shows its own progress beside <b>Save</b> (<code>ACT-1</code>, <code>REV-12</code>, <code>CC-37</code>). Keys: the pressed <b>Save</b> keeps focus; in the question, Enter takes <b>Review Drafts</b>; Escape, or a click elsewhere in the window that lands on no control, cancels it and returns focus to <b>Save</b>; a click on another control cancels it and that control acts; closing the window cancels it with the window (<code>KEY-11</code>, <code>REV-4</code>, <code>KEY-8</code>, <code>KEY-6</code>).</p>
 <ol><li><span class="n">1</span> A save runs on one press, because a save is reported, never reviewed. The pressed button keeps focus, <code>aria-busy</code> and <code>aria-disabled</code>, never <code>disabled</code>, and names the save; beside it the progress updates at least once a second (<code>REV-1</code>, <code>REV-10</code>, <code>KEY-11</code>, <code>FB-9</code>, <code>FB-1</code>).</li>
-<li><span class="n">2</span> One row per touched service shows its step: stopping, starting, "health check 2 s of 30 s", running (<code>FB-1</code>, <code>ACT-3</code>, <code>WORD-4</code>).</li>
-<li><span class="n">3</span> While that file's save is in progress, its <b>Save</b> is unavailable with this reason as visible text and accessible description; Mod+S then announces the reason and sends nothing (<code>MENU-3</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">2</span> One row per touched service shows its state and step in <code>WORD-6</code>'s words: "restarting · Apply devhost.toml", "starting · health check 2 s of 30 s", "running" (<code>FB-1</code>, <code>ACT-3</code>, <code>WORD-4</code>, <code>WORD-6</code>).</li>
+<li><span class="n">3</span> While this tab's own save of that file is in progress, its <b>Save</b> is unavailable with this reason as visible text and accessible description; Mod+S then announces the reason and sends nothing. A save of the same file from another tab or another program is the later save that waits and, when a reload reads it first, makes this one read "Replaced by your next save" (<code>MENU-3</code>, <code>HOLD-1</code>, <code>REV-12</code>).</li>
 <li><span class="n">4</span> A save made while another reload runs waits for it and says so, then is reported with its own reload, never with the one that was running (<code>REV-12</code>, <code>HOLD-3</code>).</li>
 <li><span class="n">5</span> A save that turns the config editor off while other files hold drafts asks in place: <b>Save</b> expands inside the window into one sentence naming the drafts it puts out of reach, a group labelled by that sentence (<code>REV-3</code>, <code>REV-4</code>, <code>SURF-2</code>). Without other drafts the same save runs on one press.</li>
-<li><span class="n">6</span> <b>Review Drafts</b> takes <b>Save</b>'s place, focused and taking Enter, and shows admin/devhost.toml; the confirming <b>Save Anyway</b> sits beside it (<code>REV-4</code>, <code>WORD-2</code>).</li>
+<li><span class="n">6</span> <b>Review Drafts</b> takes <b>Save</b>'s place, focused and taking Enter, and shows admin/devhost.toml; the confirming <b>Save Anyway</b> sits beside it, after <code>WORD-2</code>'s <b>Switch Anyway</b> and <b>Send Anyway</b> (<code>REV-4</code>, <code>WORD-2</code>).</li>
 <li><span class="n">7</span> From the moment the status stream closes, <b>Save</b> and <b>Restore Running Version</b> are unavailable with the one reason the backend sent, said once in the header with <b>Retry Now</b>, because the window makes the notice stack and its own <b>Retry Now</b> inert; drafts stay and are written to the control server with their revision when the stream returns (<code>HOLD-2</code>, <code>ACT-5</code>, <code>HOLD-1</code>, <code>MENU-3</code>).</li>
+<li><span class="n">9</span> After <b>Save Anyway</b> the window closes, and the outcome notice on the page names the drafts the save put out of reach and the setting that brings them back; they stay on the control server until the editor is on again (<code>FB-4</code>, <code>UNDO-2</code>).</li>
 <li><span class="n">8</span> The stack's terminal and its log print the same one outcome line for this save as for any save of the file, with its origin, in notices-and-feedback's words; a script or an agent that saves through the config route gets the same <code>202</code> record and reads the outcome from the health stream (<code>FB-10</code>, <code>FB-7</code>, <code>FB-11</code>).</li></ol>
 <p class="fixes">Fixes config-editor-12, config-editor-08 · Backend: the save's operation record with <code>operationId</code> and <code>202 Accepted</code>, and reload records naming the file versions they read (Backend 1, 2; <code>CC-37</code>); drafts on the control server, which outlive a save that turns the editor off (Backend 7; <code>CC-19</code>)</p></div>
 </section>
@@ -393,32 +400,34 @@
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › Configuration window</b><span>the reload that read the save ended</span></div>
 <div class="work small">
-<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn">Revert</span><span class="btn pri focusring">Save</span><span class="banner ok ce-reach" style="margin:0">Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s <span class="n">1</span></span></div>
+<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn">Revert</span><span class="btn pri focusring">Save</span><span class="banner ok ce-reach" style="margin:0">✓ Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s <span class="n">1</span></span><span class="btn">Close</span></div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › Configuration window</b><span>worker's new command exits 0.3 s after it starts</span></div>
 <div class="work small">
-<div class="lab">While the reload rolls back</div>
+<div class="vlab">While the reload rolls back</div>
 <div class="ce-act"><span class="btn pri focusring">Saving devhost.toml…</span><span class="ce-reach">Restoring the accepted manifest <span class="n">2</span></span></div>
-<div class="lab">Then</div>
+<div class="vlab">Then</div>
 <div class="ce-act"><span class="btn pri focusring">Save</span>
 <div class="banner bad" style="margin:0;flex:1 1 22rem">devhost.toml not applied: worker exited with code 127 at 14:02, 0.3 s after it started · Restored the accepted manifest: 6 of 6 running · 16 s <span class="n">3</span>
 <pre class="term" style="padding:2px 0;background:transparent">sh: scripts/worker-missing.sh: No such file or directory</pre>
-<div class="muted">Ran sh scripts/worker-missing.sh · devhost.toml line 31</div></div></div>
+<div class="muted">Ran sh scripts/worker-missing.sh · devhost.toml line 31</div>
+<div class="ce-rows"><div><span>✕ worker</span><span>exited with code 127 at 14:02 · restored to its accepted command · running</span></div></div>
+<div class="row"><span class="sp"></span><span class="btn">Dismiss</span></div></div></div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>devhost › Configuration window</b><span>the outcome in four other situations</span></div>
 <div class="work small">
-<div class="lab">admin/devhost.toml picked 0.5 s after Save: devhost.toml's option in the File list</div>
+<div class="vlab">admin/devhost.toml picked 0.5 s after Save: devhost.toml's option in the File list</div>
 <div class="ce-opt"><span>Root manifest · devhost.toml</span><span>applying, then applied <span class="n">4</span></span></div>
-<div class="lab">devhost.toml edited again after the save</div>
+<div class="vlab">devhost.toml edited again after the save</div>
 <div class="row"><span class="btn pri">Save</span><span>Saving restarts api (changed)</span></div>
 <div class="ce-sub">Last save 14:02: Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s <span class="n">5</span></div>
-<div class="lab">Another tab's later version of devhost.toml was read first</div>
+<div class="vlab">Another tab's later version of devhost.toml was read first</div>
 <div class="row"><span class="btn pri">Save</span><span>Replaced by your next save</span><span class="n">6</span></div>
-<div class="lab">No reload read the saved version within 5 s</div>
+<div class="vlab">No reload read the saved version within 5 s while no operation held the stack</div>
 <div class="row"><span class="btn pri">Save</span><span class="banner ce-reach" style="margin:0">devhost did not see this save; the stack still runs the accepted manifest. Apply it with devhost reload in ~/acme <span class="n">7</span></span></div>
 </div>
 </div>
@@ -428,16 +437,15 @@
 <div class="apptxt">Acme Shop · Products · Running shoes …</div>
 <div class="corner">
 <div class="muted small">3 s into the reload</div>
-<div class="banner info" style="margin:0">Apply devhost.toml · 1 of 2 restarted · 3 s</div>
+<div class="banner info" style="margin:0">◐ Apply devhost.toml · 1 of 2 restarted · 3 s</div>
 <div class="muted small">once it ended</div>
-<div class="toastrow" style="padding:0"><div class="toast">Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s</div><span class="n">8</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
+<div class="toastrow" style="padding:0"><div class="toast">✓ Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s</div><span class="n">8</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span><span class="seg">Config</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference has no product decision for how long a save may go unseen before it says so; 5 s from the write is this proposal's recommendation, for Phase 7 to calibrate (Backend 12). <a href="index.html#conflicts">See conflicts</a></div>
-<h2>7. Read the outcome beside Save</h2>
+<div class="cap"><h2>7. Read the outcome beside Save</h2>
 <p>A rejected reload still keeps the stack on the accepted manifest, and the toolbar still shows the rejection, as today. What changes is that the outcome belongs to this save: it replaces the progress beside <b>Save</b> only once the reload that read this saved version ended, names each restart, and stays with its file (the operation record on <code>/__devhost__/ws/health</code>, read only; <code>FB-2</code>, <code>FB-5</code>, <code>REV-12</code>). There is no Undo save: the outcome phase holds devhost's rollback, which restores the accepted manifest by itself, and step 8's way back to what runs (<code>UNDO-1</code>, <code>UNDO-6</code>). Keys: focus stays on <b>Save</b> (<code>KEY-11</code>).</p>
 <ol><li><span class="n">1</span> Success names each restarted service with its reason, the running count and the time, or "Applied devhost.toml: nothing restarted · 0.4 s"; a service with a <code>process</code> health check counts as started only after it stayed up for <code>O28</code>'s 1 s. It is announced once in the polite region and stays while the window is open (<code>FB-3</code>, <code>FB-5</code>, <code>FB-6</code>, <code>WORD-4</code>, <code>O28</code>, <code>O9</code>).</li>
 <li><span class="n">2</span> When a restarted service fails, the reload rolls back and the progress says so (<code>UNDO-1</code>).</li>
@@ -445,9 +453,9 @@
 <li><span class="n">4</span> Switching files, closing the window or reloading the page never drops a save's outcome: the <b>File</b> list shows it on the file's option, and switching back shows it beside <b>Save</b> (<code>UNDO-8</code>, <code>REV-12</code>).</li>
 <li><span class="n">5</span> Once the file has a new draft, the outcome stays as that file's last save, with its time, under the draft's reach line, so it never reads as the state of the new text. A not-applied outcome stays until the same file applies or the person dismisses it (<code>FB-6</code>).</li>
 <li><span class="n">6</span> A save whose version no finished reload read before a later version of the file was read says it was replaced, never another save's result (<code>REV-12</code>).</li>
-<li><span class="n">7</span> When no reload reads the written version within 5 s, the save's line says so and how to apply it, never "applying" forever; the watcher also follows symbolic links to the file a save changes, so a linked manifest reloads on Linux (<code>FB-5</code>, <code>HOLD-1</code>, <code>STATE-1</code>, <code>CC-23</code>).</li>
-<li><span class="n">8</span> With the window closed during a save, the notice stack shows the activity line, then the outcome notice in its place: a success closes 4 s after the pointer and focus leave it, and a failure stays. Opening the window again shows the same outcome beside <b>Save</b>, and the stack's log keeps it (<code>FB-1</code>, <code>FB-2</code>, <code>FB-6</code>, <code>FB-7</code>, <code>FB-8</code>, <code>O14</code>).</li></ol>
-<p class="fixes">Fixes config-editor-05, config-editor-13, manifest-hot-reload-08 · Backend: outcomes resolved by the file versions each reload read (Backend 2; <code>CC-37</code>); a <code>process</code> health check counted after 1 s (Backend 9); a watcher that follows links and the unseen-save record (Backend 11, 12)</p></div>
+<li><span class="n">7</span> When no reload reads the written version within <code>O42</code>'s 5 s, counted only while no operation holds the stack, the save's line says so and how to apply it, never "applying" forever; a version a later save replaced first reads "Replaced by your next save" instead. The watcher also follows symbolic links to the file a save changes and keeps watching a link a tool replaced with a regular file, so a linked manifest reloads on Linux and macOS (<code>FB-5</code>, <code>HOLD-1</code>, <code>STATE-1</code>, <code>CC-23</code>, <code>O42</code>).</li>
+<li><span class="n">8</span> With the window closed during a save, the notice stack shows the activity line, then the outcome notice in its place: a success closes after <code>O14</code>'s reading time, 6.9 s for this 18-word sentence, once the pointer and focus leave it, counting from the next focus of the browser window when it arrived while the window was unfocused (<code>O53</code>), and a failure stays. Opening the window again shows the same outcome beside <b>Save</b>, and the stack's log keeps it (<code>FB-1</code>, <code>FB-2</code>, <code>FB-6</code>, <code>FB-7</code>, <code>FB-8</code>, <code>O14</code>, <code>O53</code>).</li></ol>
+<p class="fixes">Fixes config-editor-05, config-editor-13, manifest-hot-reload-08, manifest-hot-reload-10 · Backend: outcomes resolved by the file versions each reload read (Backend 2; <code>CC-37</code>); a <code>process</code> health check counted after 1 s (Backend 9; <code>O28</code>); a watcher that follows links and the unseen-save record (Backend 11, 12; <code>O42</code>)</p></div>
 </section>
 
 <section class="step" id="recover">
@@ -455,7 +463,7 @@
 <div class="win">
 <div class="bar"><b>devhost › Acme Shop › Configuration window</b><span>devhost.toml not applied: worker exited after the save</span></div>
 <div class="work small">
-<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn off">Revert</span><span class="muted">No unsaved changes in devhost.toml</span><span class="btn pri">Save</span><span class="sp"></span><span class="btn">Close</span></div>
+<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn off">Revert</span><span class="muted">No unsaved changes in devhost.toml</span><span class="n">10</span><span class="btn pri">Save</span><span class="sp"></span><span class="btn">Close</span></div>
 <div class="banner bad">devhost.toml is not applied: worker exited with code 127 at 14:02, 0.3 s after it started. The stack still runs the accepted manifest. <span class="n">1</span>
 <div class="row" style="margin-top:4px"><span class="btn">Show Differences</span><span class="btn">Restore Running Version</span><span class="n">2</span></div></div>
 <div class="ce-code"><div class="ce-ln"><span>30</span><span>[services.worker]</span></div><div class="ce-ln dif"><span>31 ◆</span><span>command = "sh scripts/worker-missing.sh" <span class="n">3</span></span></div><div class="ce-ln"><span>32</span><span>health = { process = true }</span></div></div>
@@ -475,20 +483,21 @@
 <div class="win">
 <div class="bar"><b>devhost › Configuration window</b><span>Restore Running Version pressed; the reload ended</span></div>
 <div class="work small">
-<div class="ce-act"><span class="btn pri focusring">Save</span><span class="banner ok" style="margin:0">Restored the running version of devhost.toml · nothing restarted · 0.4 s</span><span class="n">5</span></div>
+<div class="ce-act"><span class="chip acc">File: devhost.toml ▾</span><span class="btn off">Revert</span><span class="btn pri focusring">Save</span><span class="banner ok" style="margin:0">✓ Restored the running version of devhost.toml · nothing restarted · 0.4 s</span><span class="n">5</span><span class="btn">Close</span></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>devhost › Configuration window</b><span>a draft on line 1, and a shell appends a comment to devhost.toml</span></div>
+<div class="bar"><b>devhost › Configuration window</b><span>a draft on line 1, and a shell changes lines 3 and 7 of devhost.toml</span></div>
 <div class="work small">
 <div class="banner">devhost.toml changed on disk at 14:05 while you were editing <span class="n">6</span>
 <div class="row" style="margin-top:4px"><span class="btn">Compare</span><span class="btn">Keep Mine</span><span class="btn">Use Disk Version</span></div></div>
-<div class="lab">Keep Mine pressed</div>
+<div class="vlab">Keep Mine pressed</div>
 <div class="box" style="margin:0">Overwrite the version on disk with yours? The disk version's changes to lines 3 and 7 are lost. <span class="n">7</span>
+<div class="ce-diff"><div><span class="muted">On disk</span><div class="ce-code"><div class="ce-ln"><span>3</span><span><del>port = 4100</del></span></div><div class="ce-ln"><span>7</span><span><del>dependsOn = ["db"]</del></span></div></div></div><div><span class="muted">Yours</span><div class="ce-code"><div class="ce-ln"><span>3</span><span><ins>port = 4000</ins></span></div><div class="ce-ln"><span>7</span><span><ins>dependsOn = []</ins></span></div></div></div></div>
 <div class="row" style="margin-top:4px"><span class="btn focusring">Cancel</span><span class="btn">Keep Mine</span></div></div>
-<div class="lab">Another tab changed the same draft</div>
+<div class="vlab">Another tab changed the same draft</div>
 <div class="banner" style="margin:0">Changed in another tab <span class="btn">Compare</span> <span class="btn">Keep Mine</span> <span class="btn">Use Other Version</span> <span class="n">8</span></div>
-<div class="lab">No draft when the file changed</div>
+<div class="vlab">No draft when the file changed</div>
 <div class="ce-sub">Updated from disk at 14:05 · after devhost.toml changed on disk <span class="n">9</span></div>
 </div>
 </div>
@@ -497,13 +506,14 @@
 <p>A rejected reload still keeps the accepted manifest running and blocks nothing: <b>Save</b>, <b>Restore Running Version</b> and every toolbar action stay available (<code>HOLD-6</code>). What changes is that the window tells the version on disk apart from the version the stack runs and offers the way back to the second, and that a change on disk or in another tab never replaces a draft without a choice (<b>Show Differences</b>, read only; <b>Restore Running Version</b>, one write applied through hot reload). Keys: the banner's and the question's buttons are Tab stops after the header actions; in the <b>Keep Mine</b> question, Enter takes <b>Cancel</b>, and Escape, or a click elsewhere in the window that lands on no control, cancels it and returns focus to <b>Keep Mine</b> (<code>REV-4</code>, <code>KEY-8</code>).</p>
 <ol><li><span class="n">1</span> A file whose last reload was not applied is a state of its own: the banner says that the file on disk differs from what the stack runs, and the text never reads as saved and applied (<code>UNDO-6</code>, <code>HOLD-6</code>, <code>WORD-7</code>).</li>
 <li><span class="n">2</span> The way back is to what runs: <b>Show Differences</b> and <b>Restore Running Version</b>. devhost never writes the running version back by itself, because the rejected text is the person's work (<code>UNDO-6</code>).</li>
-<li><span class="n">3</span> The lines that differ from the running version are marked ◆ in the gutter. <b>Revert</b> discards a draft and shows the version on disk, read again when it is pressed, never the version the window opened; it never asks, and Mod+Z in the text brings the discarded draft back (<code>O29</code>, <code>UNDO-6</code>).</li>
+<li><span class="n">3</span> The lines that differ from the running version are marked ◆ in the gutter (<code>UNDO-6</code>).</li>
 <li><span class="n">4</span> <b>Show Differences</b> shows the running version beside the version on disk, read only, in the shared diff view.</li>
 <li><span class="n">5</span> <b>Restore Running Version</b> writes the running text back over the current disk version as an ordinary save (version-checked, checked, applied through hot reload, with progress and outcome beside <b>Save</b>) and reports what it restored; the rejection then clears from the window, <b>Config</b> and the toolbar notice, announced once. A repeated rejection with the same error updates its report, "· 2 times, last at 14:05". There is no Undo save: the editor's undo history survives a save, so an applied save is undone by undoing the text and saving again, which reports its own reload (<code>UNDO-6</code>, <code>FAIL-4</code>, <code>ACT-7</code>, <code>REV-10</code>).</li>
 <li><span class="n">6</span> Every reload record names the file versions it read, so the window learns of a change on disk within a second, without polling. With a draft, it says so at once and never replaces or drops the draft: <b>Compare</b> shows the disk version beside the draft, <b>Keep Mine</b> asks, and <b>Use Disk Version</b> loads the disk text (<code>UNDO-3</code>, <code>REV-13</code>). A save refused because the file changed meanwhile keeps the draft and offers the same choices.</li>
-<li><span class="n">7</span> <b>Keep Mine</b> asks in place, naming what it overwrites, with <b>Cancel</b> in its place, focused and taking Enter, and the confirming <b>Keep Mine</b> beside it; it then saves the draft over the disk version through the same checks (<code>UNDO-3</code>, <code>REV-4</code>).</li>
+<li><span class="n">7</span> <b>Keep Mine</b> asks in place, naming what it overwrites and showing those lines of the disk version beside yours in the shared diff view, with <b>Cancel</b> in its place, focused and taking Enter, and the confirming <b>Keep Mine</b> beside it; it then saves the draft over the disk version through the same checks (<code>UNDO-3</code>, <code>REV-4</code>).</li>
 <li><span class="n">8</span> A draft another tab changed meanwhile is never overwritten in either tab: each draft carries a revision, and the window offers <b>Compare</b>, <b>Keep Mine</b>, which asks the same way, and <b>Use Other Version</b> (<code>UNDO-2</code>, <code>CC-19</code>).</li>
-<li><span class="n">9</span> Without a draft, the disk text loads in place and the window says so (<code>UNDO-3</code>, <code>WORD-4</code>).</li></ol>
+<li><span class="n">9</span> Without a draft, the disk text loads in place and the window says so (<code>UNDO-3</code>, <code>WORD-4</code>).</li>
+<li><span class="n">10</span> <b>Revert</b> is unavailable here because the file has no draft. With one, it discards the draft and shows the version on disk, read again when it is pressed, never the version the window opened; it never asks, and Mod+Z in the text brings the discarded draft back (<code>O29</code>, <code>UNDO-6</code>, <code>MENU-3</code>).</li></ol>
 <p class="fixes">Fixes config-editor-06, config-editor-07 · Backend: the running version of every file the last accepted reload read (Backend 6); reload records naming the versions they read (Backend 2); drafts with a revision (Backend 7; <code>CC-19</code>, <code>CC-20</code>)</p></div>
 </section>
 
@@ -514,7 +524,7 @@
 <li><b>Revert</b> to the version the window opened, which is neither on disk nor running (<code>O29</code>)</li>
 <li>Escape in the text closing the window and dropping focus to the page body (<code>KEY-8</code>, <code>KEY-6</code>)</li>
 <li>Drafts kept only in the page's memory; response bodies shown as errors; problems marked on line 1 or in waves</li>
-<li>Reads of the files from other machines (proposed, Backend 10)</li>
+<li>Reads of the files by any client that reaches the stack (<code>O38</code>); <b>Open in Editor</b> where the editor is off (<code>O51</code>)</li>
 </ul></div>
 <div><h3>Merged</h3><ul>
 <li>The window's outcome and the toolbar's outcome notices: one operation record, one sentence builder (<code>ACT-1</code>, <code>WORD-4</code>)</li>
@@ -527,7 +537,7 @@
 <li>The context banner with <b>Restart api</b> and <b>Show All Output</b> (<code>SURF-4</code>, <code>MENU-5</code>)</li>
 <li><b>Show Differences</b> and <b>Restore Running Version</b> (<code>UNDO-6</code>)</li>
 <li>Drafts on the control server; the disk-change view; the in-place question before turning the editor off (<code>UNDO-2</code>, <code>UNDO-3</code>, <code>REV-3</code>)</li>
-<li>The <b>File</b> list's roles, groups, states and find field; the checkout in the header; <b>Config</b>'s draft count (<code>SEL-10</code>, <code>SEL-4</code>, <code>ACT-7</code>)</li>
+<li>The <b>File</b> list's roles, groups, states and find field; the worktree in the header; <b>Config</b>'s draft count (<code>SEL-10</code>, <code>SEL-4</code>, <code>ACT-7</code>)</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li><b>Revert</b> reads the file again and shows the version on disk (<code>O29</code>)</li>
@@ -535,10 +545,11 @@
 <li><b>Edit</b> opens the file and line of the problem (<code>MENU-4</code>)</li>
 <li>The Save hint reads ⌘S on macOS; drafts survive page reloads; a change on disk shows before <b>Save</b> (<code>CC-29</code>, <code>CC-19</code>, <code>CC-20</code>)</li>
 <li>A file's <b>Save</b> is unavailable while that file's save is in progress; a <code>process</code>-health service that exits within 1 s fails the reload (<code>MENU-3</code>, <code>O28</code>)</li>
+<li>Config routes answer this machine and signed-in or paired browsers alike, for reads and saves, and refuse every other client (<code>O38</code>, <code>O54</code>)</li>
 </ul></div>
 <div><h3>Kept</h3><ul>
 <li>Off by default, turned on in a manifest without a page reload; every config route answers <code>404</code> while off (owner rule)</li>
-<li>Saves only from a browser on this machine, now said before the person tries (owner rule; <code>HOLD-7</code>)</li>
+<li>A save from a client devhost cannot trust is refused, now one that has not signed in or paired, and the page says so before the person tries (<code>O54</code>, <code>HOLD-7</code>)</li>
 <li>A save runs the reload's checks again, so nothing invalid reaches disk (<code>422</code>), and a save based on an older version is refused (<code>409</code>), each keeping the draft (<code>REV-13</code>)</li>
 <li>The atomic write that keeps modes and follows links; the watcher applies every write the same way; one reload and one save at a time per stack</li>
 <li>A rejected reload keeps the accepted manifest running, blocks nothing and rolls back when a restarted service fails (<code>HOLD-6</code>, <code>UNDO-1</code>)</li>
@@ -548,9 +559,9 @@
 <li>The save's operation record with <code>operationId</code> and <code>202 Accepted</code>; reload records naming the versions they read (Backend 1, 2; <code>CC-37</code>)</li>
 <li>The plan from the check, every check in one pass, structured problems and rejections (Backend 3, 4, 5; <code>CC-23</code>)</li>
 <li>The running version; drafts on the control server with a revision (Backend 6, 7; <code>CC-19</code>)</li>
-<li>Listing outside the operation lock; a <code>process</code> health check counted after 1 s (Backend 8, 9)</li>
-<li>A watcher that follows links; [discuss] the unseen-save threshold (Backend 11, 12)</li>
-<li>[discuss] configuration reads only from this machine (Backend 10); service context from services-panel's published state (Backend 13)</li>
+<li>Listing kept outside the operation lock; a <code>process</code> health check counted after 1 s (Backend 8, 9; <code>O28</code>)</li>
+<li>A watcher that follows links and survives a replaced link; the unseen-save record after <code>O42</code>'s 5 s (Backend 11, 12)</li>
+<li>The sign-in check on every config route, with <code>canSave</code> (Backend 10; <code>O38</code>, <code>O54</code>); service context from services-panel's published state (Backend 13)</li>
 </ul></div>
 </section>
 </main>
