@@ -249,7 +249,7 @@
       "label": "Restart Stack question",
       "sublabel": "in place, Cancel focused",
       "tag": "services-panel-2-03",
-      "explanation": "Restart Stack sits apart from Restart Changed in another style, lists its 6 services in tooltip/description, and asks in place on first press (BAR-2, REV-2): 'Restart all 6 services with new automatic ports? Took 14 s last time.' with worktree label (SEL-4, WORD-11) and 'web, api, docs, worker, admin and mail' description (REV-4). Cancel takes the button's place with focus and Enter, so a double press cancels (KEY-9). Escape or clicking no control cancels back to Restart Stack with panel open (REV-4, KEY-8); another control cancels and acts; Tab past last or outside click closes both (KEY-7, SURF-2). Rejected edits show in the reach line (HOLD-6); busy stacks disable it naming the active operation (HOLD-3). Crash and recovery pages run it on one press with reach beside it (REV-1, CC-17). Distinct from devhost stack restart, devhost restart-all and devhost upgrade, which replace the supervisor process (O18; CC-11 covers per-service and group devhost service start|stop|restart). In command-mode serve sessions, working Restart Command replaces it (serve-command-02). Resolves services-panel-2-03, serve-command-02.",
+      "explanation": "Restart Stack sits apart from Restart Changed in another style, lists its 6 services in tooltip/description, and asks in place on first press (BAR-2, REV-2): 'Restart all 6 services with new automatic ports? Took 14 s last time.' with worktree label (SEL-4, WORD-11) and 'web, api, docs, worker, admin and mail' description (REV-4). Cancel takes the button's place with focus and Enter, so a double press cancels (KEY-9). Escape or clicking no control cancels back to Restart Stack with panel open (REV-4, KEY-8); another control cancels and acts; Tab past last or outside click closes both (KEY-7, SURF-2). Rejected edits show in the reach line (HOLD-6); busy stacks disable it naming the active operation (HOLD-3). Crash and recovery pages run it on one press with reach beside it (REV-1, CC-17). Distinct from devhost stack restart, devhost restart-all and devhost upgrade, which replace the supervisor process (O18); its terminal form is devhost service restart --all (MENU-6, CC-11). In command-mode serve sessions, working Restart Command replaces it (serve-command-02). Resolves services-panel-2-03, serve-command-02.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
@@ -655,7 +655,7 @@
         "Streams stay open (streams.rs, stack/runtime.rs): kept open through Restart Stack's route swap and Start; stream sends its reason before closing (CC-26)",
         "Routes, codes and one error body (devtools/server.rs): start-service documented, stop-service added, 422 or 409 with {error, service}, never plain-text 500; Rust route-list completeness test fails for undocumented mounted routes including operations/<id>/dismiss (CC-37)",
         "Exit records (stack/live.rs, stack.rs): code, or signal with status, time, sender and frozen last lines, kept after a restart until the stack stops (CC-24)",
-        "Page's own service (document_injection.rs): names the page's service for Restart Changed's fallback (CC-6); devhost service start|stop|restart <service|group>... built by stack-run-stop (CC-11)",
+        "Page's own service (document_injection.rs): names the page's service for Restart Changed's fallback (CC-6); devhost service start|stop|restart <service|group>... and restart --all, built by stack-run-stop (CC-11)",
         "Check Again (stack/live.rs, health.rs, streams.rs): immediate read-only external check route gated by O36/O37 and added to CC-37; a blocked worktree's Check Again uses GET /__devhost__/worktrees (HOLD-4)",
         "Command-mode serve sessions (serve_command.rs, stack/command.rs, stack/runtime.rs): sessionKind 'command' with command string and attached HTTP URLs/ports instead of synthetic external port-<port> rows, plus manifest-free Restart Command (serve-command-02)",
         "Remote auth gating (devtools/server.rs, request_guard.rs): apply O36's shared-domain passkey + devhost pair classifier to ws/health and all service write, operations/<id>/dismiss (notices-and-feedback) and Check Again routes, answering 403 for unauthenticated remote clients (HOLD-7, HOLD-8, O36, O37)"
@@ -668,7 +668,7 @@
         "CC-6: Restart Changed's fallback is the page's own service, named in its label (O4)",
         "CC-7: the run's selection changes while it runs; left-out services are counted and listed (O6)",
         "CC-8: starts and restarts of other services queue, shown on every page with Cancel Restart or Cancel Start",
-        "CC-11, built by stack-run-stop: devhost service start|stop|restart <service|group>... reach the running stack as the toolbar does",
+        "CC-11, built by stack-run-stop: devhost service start|stop|restart <service|group>... and devhost service restart --all (Restart Stack) reach the running stack as the toolbar does",
         "CC-17: Restart Stack asks first in the Services panel; one press in the crash view and on recovery pages, its reach beside the button; distinct from devhost stack restart, devhost restart-all and devhost upgrade (O18)",
         "CC-24: an exit names its signal with its status, time and sender; devhost's own stops are steps of their operation",
         "CC-25: the health stream publishes each service's state with its cause; changed means files differ from launch; watch on external warns once",
@@ -683,7 +683,7 @@
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing Rust and UI code a step reuses or replaces at 190a8bb5, and steps with no code yet have none"
       ]
     }
