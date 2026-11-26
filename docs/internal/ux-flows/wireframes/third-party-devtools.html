@@ -1,523 +1,1368 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Use your framework's devtools from the toolbar · proposed flow wireframe</title>
-<link rel="stylesheet" href="wireframe.css">
-<style>
-/* Page-specific rules, scoped to this page's mockups. */
-/* A library's own devtools panel inside the page: docked at the bottom edge (.tpd-lib), or a full-height
-   column at the right edge (.tpd-col, beside the page's content in .tpd-split) */
-.mock .tpd-lib{border-top:1px solid var(--line);background:var(--card);margin:0 -10px -8px;padding:6px 10px;font-size:11px;color:var(--mute)}
-.mock .tpd-lib b,.mock .tpd-col b{color:var(--ink)}
-.mock .tpd-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem);gap:10px;flex:1}
-.mock .tpd-split > div:first-child{display:flex;flex-direction:column;gap:6px;min-width:0}
-.mock .tpd-col{border-left:1px solid var(--line);background:var(--card);margin:-8px -10px -8px 0;padding:6px 8px;font-size:11px;color:var(--mute)}
-/* A pressed launcher: an inset border with a check mark, the pressed look toolbar-shell draws for bar items */
-.mock .tpd-on{box-shadow:inset 0 0 0 1px var(--ink)}
-/* The Redux DevTools window: devhost's own line above the upstream inspector, then the inspector's two columns */
-.mock .tpd-line{padding:4px 10px;border-bottom:1px solid var(--line);font-size:12px}
-.mock .tpd-insp{display:grid;grid-template-columns:minmax(0,12rem) minmax(0,1fr);font-size:11px;min-height:96px}
-.mock .tpd-insp > div{padding:6px 10px;min-width:0}
-.mock .tpd-insp > div:first-child{border-right:1px solid var(--line)}
-/* The folded Devtools panel: a row (toggle, state in words, actions), a library's group header, a matched text */
-.mock .tpd-row{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;padding:3px 2px;border-bottom:1px solid var(--rule)}
-.mock .tpd-grp{padding:6px 2px 2px;font-weight:600;font-size:11px;border-bottom:1px solid var(--line)}
-.mock .tpd-hit{background:var(--accbg);text-decoration:underline}
-</style>
-</head>
-<body>
-<header class="page">
-<nav class="top"><a href="index.html">← All flows</a><a href="../third-party-devtools-current.html">Today's flow diagram</a><a href="../third-party-devtools-proposed.html">Proposed flow diagram</a><a href="../proposals/third-party-devtools.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
-<h1>Use your framework's devtools from the toolbar</h1>
-<p><b>TLDR:</b> Launchers name their library, panels on one window edge take turns, the Redux window opens on a named store and survives reloads, a launcher that cannot act or fails says why, and each integration turns off on its own.</p>
-<p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
-</header>
-<div class="key"><div>
-<div class="legend"><b style="color:var(--ink)">How to read:</b>
-<span><i class="k" style="background:var(--toast);border-color:var(--toast)"></i>Toast: passing status message in a corner, links only, no decisions</span>
-<span><i class="k" style="background:var(--raised);border-color:var(--edge);box-shadow:0 2px 6px #0009"></i>Popover or menu: opens from the outlined control its arrow points at</span>
-<span><i class="k" style="background:var(--panel);box-shadow:inset 3px 0 var(--line)"></i>Panel: docked beside the table, stays open</span>
-<span><i class="k" style="background:var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
-<span><i class="k" style="background:var(--accbg)"></i>Selected rows</span>
-<span><i class="k" style="background:var(--chgbg)"></i>Just changed</span>
-<span><i class="k" style="background:var(--card);box-shadow:inset 3px 0 var(--acc)"></i>Row cursor</span>
-<span><span class="n">1</span>Callout, explained on the right</span></div>
-</div></div>
-<main>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Use your framework's devtools from the toolbar · proposed flow wireframe</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      /* Page-specific rules, scoped to this page's mockups. */
+      /* A library's own panel as a full-height column at the right edge (wireframe.css's .lib.col) beside the page's content */
+      .mock .tpd-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 12rem);
+        gap: 10px;
+        flex: 1;
+      }
+      .mock .tpd-split > div:first-child {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      /* The Redux DevTools window: devhost's own line above the upstream inspector, then the inspector's two columns */
+      .mock .tpd-line {
+        padding: 4px 10px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .mock .tpd-insp {
+        display: grid;
+        grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+        font-size: 11px;
+        min-height: 96px;
+      }
+      .mock .tpd-insp > div {
+        padding: 6px 10px;
+        min-width: 0;
+      }
+      .mock .tpd-insp > div:first-child {
+        border-right: 1px solid var(--line);
+      }
+      /* The folded Devtools panel: a row (toggle, state in words, actions), a library's group header, a matched text */
+      .mock .tpd-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        align-items: center;
+        padding: 3px 2px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .mock .tpd-grp {
+        padding: 6px 2px 2px;
+        font-weight: 600;
+        font-size: 11px;
+        border-bottom: 1px solid var(--line);
+      }
+      .mock .tpd-hit {
+        background: var(--accbg);
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top">
+        <a href="index.html">← All flows</a><a href="../third-party-devtools-current.html">Today's flow diagram</a
+        ><a href="../third-party-devtools-proposed.html">Proposed flow diagram</a
+        ><a href="../proposals/third-party-devtools.md">Written proposal</a
+        ><span class="muted">Redesign ticket: tracked privately</span>
+      </nav>
+      <h1>Use your framework's devtools from the toolbar</h1>
+      <p>
+        <b>TLDR:</b> Launchers name their library, panels on one window edge take turns, the Redux window opens on a
+        named store and survives reloads, a launcher that cannot act or fails says why, and each integration turns off
+        on its own.
+      </p>
+      <p class="muted small">
+        Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
+        are authoritative.
+      </p>
+    </header>
+    <div class="key">
+      <div>
+        <div class="legend">
+          <b style="color: var(--ink)">How to read:</b>
+          <span
+            ><i class="k" style="background: var(--toast); border-color: var(--toast)"></i>Toast: passing status message
+            in a corner, links only, no decisions</span
+          >
+          <span
+            ><i class="k" style="background: var(--raised); border-color: var(--edge); box-shadow: 0 2px 6px #0009"></i
+            >Popover or menu: opens from the outlined control its arrow points at</span
+          >
+          <span
+            ><i class="k" style="background: var(--panel); box-shadow: inset 3px 0 var(--line)"></i>Panel: docked beside
+            the table, stays open</span
+          >
+          <span><i class="k" style="background: var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+          <span><i class="k" style="background: var(--accbg)"></i>Selected rows</span>
+          <span><i class="k" style="background: var(--chgbg)"></i>Just changed</span>
+          <span><i class="k" style="background: var(--card); box-shadow: inset 3px 0 var(--acc)"></i>Row cursor</span>
+          <span><span class="n">1</span>Callout, explained on the right</span><span class="lg-states"></span
+          ><span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section class="step" id="find-launcher">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span
+                >1280 px wide; the page mounts TanStack Router and Query, a React Hook Form DevTool and a Zustand
+                store</span
+              >
+            </div>
+            <div class="pg">
+              <div class="apptxt">Acme Shop · Products · Running shoes · Trail jackets …</div>
+              <div class="corner">
+                <div class="popover tip" data-for="s1-query" style="width: min(100%, 24rem)">
+                  <i class="caret-dn" style="right: 311px"></i>
+                  <div class="from">Tooltip of TanStack Query, focused with the arrow keys</div>
+                  <div>Open the TanStack Query devtools of this page <span class="n">1</span></div>
+                </div>
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">2</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span
+                    ><span class="seg open focusring" id="s1-query">TanStack Query</span
+                    ><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span
+                    ><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the launchers in other situations</b></div>
+            <div class="work small">
+              <div class="vlab">With TanStack Query's panel open: pressed against unpressed</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">TanStack Router</span><span class="seg on">☑ TanStack Query</span></span
+                ><span class="muted">description: "Close the TanStack Query devtools of this page"</span
+                ><span class="n">3</span>
+              </div>
+              <div class="vlab">Also on a page that mounts every integration: the unified shell and Jotai</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">TanStack Devtools</span><span class="seg">Jotai</span></span
+                ><span class="n">4</span>
+              </div>
+              <div class="vlab">Two React Hook Form panels on one page</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">React Hook Form 1</span><span class="seg">React Hook Form 2</span></span
+                ><span class="n">5</span>
+              </div>
+              <div class="vlab">Keys the libraries keep, as the Keyboard section lists them</div>
+              <div class="row">
+                <kbd>Alt+Shift+D</kbd><span class="muted">Vue DevTools</span><kbd>Ctrl+~</kbd
+                ><span class="muted">TanStack Devtools</span><kbd>Escape</kbd
+                ><span class="muted">each library's own · devhost binds none</span><span class="n">6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>1. Find the launcher</h2>
+          <p>
+            The launchers keep their place in the bar's order, in the order devhost finds the libraries, and each still
+            opens the library's own panel through the library's own control. What changes is what they say: each names
+            the library whose panel it opens, so nothing needs a hover to tell them apart. Today the same bar reads
+            Router, Query, TanStack, Form 1, Jotai 1 and Redux. A page with no integration shows no launcher. Keys:
+            Alt+Ctrl+B focuses the bar; each launcher is an arrow stop; Enter or Space toggles it; Tab leaves the bar
+            (<code>KEY-3</code>, <code>KEY-4</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Each launcher's tooltip and accessible description say what it opens and that it
+              acts on this page, as toolbar-shell words the reach of the other bar items; the Vue launcher's tooltip
+              keeps Vue DevTools' connection status after it (<code>SEL-3</code>).
+            </li>
+            <li>
+              <span class="n">2</span> One toggle per library panel the page mounts, named by the library whose panel it
+              opens; the two that open a tool for several libraries take the tool's name: <b>TanStack Devtools</b> for
+              the unified shell, and <b>Redux DevTools</b> for the Redux Toolkit and Zustand stores the page registers.
+              No label reads "Form" (<code>WORD-3</code>).
+            </li>
+            <li>
+              <span class="n">3</span> While pressed, the launcher reads open by shape as well as color (an inset border
+              and ☑, toolbar-shell's pressed look), so it holds in forced colors (<code>ACT-13</code>).
+            </li>
+            <li>
+              <span class="n">4</span> A lone panel has no number. When the launchers would wrap the bar's one row, they
+              fold into <b>Devtools</b> (step 5).
+            </li>
+            <li>
+              <span class="n">5</span> A number appears only with two or more panels of one library, counted from the
+              panels on the page each time: React Hook Form's panel does not expose its <code>DevTool</code>'s
+              <code>id</code> prop, and devhost collects no atom data, so neither library gives a name to show.
+            </li>
+            <li>
+              <span class="n">6</span> devhost binds none of the libraries' keys, and <code>guides/devtools.md</code>'s
+              Keyboard section lists them. It has no row for TanStack Devtools' held source-inspector key, which opens
+              an editor: devhost offers no editor path (<code>KEY-2</code>, <code>CC-29</code>, <code>O51</code>). The
+              reference's keyboard table no longer lists that key.
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-06 · Backend: each adapter reports its library's product name and its number
+            among several panels, or none (Backend 2, 4)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="find-launcher">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>1280 px wide; the page mounts TanStack Router and Query, a React Hook Form DevTool and a Zustand store</span></div>
-<div class="pg">
-<div class="apptxt">Acme Shop · Products · Running shoes · Trail jackets …</div>
-<div class="corner">
-<div class="popover" data-for="s1-query" style="width:min(100%,24rem)"><i class="caret-dn" style="right:311px"></i>
-<div class="from">Tooltip of TanStack Query, focused with the arrow keys</div>
-<div>Open the TanStack Query devtools of this page <span class="n">1</span></div></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">2</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span><span class="seg open focusring" id="s1-query">TanStack Query</span><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the launchers in other situations</b></div>
-<div class="work small">
-<div class="vlab">With TanStack Query's panel open: pressed against unpressed</div>
-<div class="row"><span class="tbar oneline"><span class="seg">TanStack Router</span><span class="seg tpd-on">☑ TanStack Query</span></span><span class="muted">description: "Close the TanStack Query devtools of this page"</span><span class="n">3</span></div>
-<div class="vlab">Also on a page that mounts every integration: the unified shell and Jotai</div>
-<div class="row"><span class="tbar oneline"><span class="seg">TanStack Devtools</span><span class="seg">Jotai</span></span><span class="n">4</span></div>
-<div class="vlab">Two React Hook Form panels on one page</div>
-<div class="row"><span class="tbar oneline"><span class="seg">React Hook Form 1</span><span class="seg">React Hook Form 2</span></span><span class="n">5</span></div>
-<div class="vlab">Keys the libraries keep, as the Keyboard section lists them</div>
-<div class="row"><kbd>Alt+Shift+D</kbd><span class="muted">Vue DevTools</span><kbd>Ctrl+~</kbd><span class="muted">TanStack Devtools</span><kbd>Escape</kbd><span class="muted">each library's own · devhost binds none</span><span class="n">6</span></div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>1. Find the launcher</h2>
-<p>The launchers keep their place in the bar's order, in the order devhost finds the libraries, and each still opens the library's own panel through the library's own control. What changes is what they say: each names the library whose panel it opens, so nothing needs a hover to tell them apart. Today the same bar reads Router, Query, TanStack, Form 1, Jotai 1 and Redux. A page with no integration shows no launcher. Keys: Alt+Ctrl+B focuses the bar; each launcher is an arrow stop; Enter or Space toggles it; Tab leaves the bar (<code>KEY-3</code>, <code>KEY-4</code>).</p>
-<ol><li><span class="n">1</span> Each launcher's tooltip and accessible description say what it opens and that it acts on this page, as toolbar-shell words the reach of the other bar items; the Vue launcher's tooltip keeps Vue DevTools' connection status after it (<code>SEL-3</code>).</li>
-<li><span class="n">2</span> One toggle per library panel the page mounts, named by the library whose panel it opens; the two that open a tool for several libraries take the tool's name: <b>TanStack Devtools</b> for the unified shell, and <b>Redux DevTools</b> for the Redux Toolkit and Zustand stores the page registers. No label reads "Form" (<code>WORD-3</code>).</li>
-<li><span class="n">3</span> While pressed, the launcher reads open by shape as well as color (an inset border and ☑, toolbar-shell's pressed look), so it holds in forced colors (<code>ACT-13</code>).</li>
-<li><span class="n">4</span> A lone panel has no number. When the launchers would wrap the bar's one row, they fold into <b>Devtools</b> (step 5).</li>
-<li><span class="n">5</span> A number appears only with two or more panels of one library, counted from the panels on the page each time: React Hook Form's panel does not expose its <code>DevTool</code>'s <code>id</code> prop, and devhost collects no atom data, so neither library gives a name to show.</li>
-<li><span class="n">6</span> devhost binds none of the libraries' keys, and <code>guides/devtools.md</code>'s Keyboard section lists them. It has no row for TanStack Devtools' held source-inspector key, which opens an editor: devhost offers no editor path (<code>KEY-2</code>, <code>CC-29</code>, <code>O51</code>). The reference's keyboard table no longer lists that key.</li></ol>
-<p class="fixes">Fixes third-party-devtools-06 · Backend: each adapter reports its library's product name and its number among several panels, or none (Backend 2, 4)</p></div>
-</section>
+      <section class="step" id="open-panel">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>1280×800, TanStack Router open at the bottom, 500 px tall; TanStack Query focused</span>
+            </div>
+            <div class="pg" style="padding-bottom: 8px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="popover tip" data-for="s2-query" style="width: min(100%, 28rem)">
+                  <i class="caret-dn" style="right: 311px"></i>
+                  <div class="from">Tooltip of TanStack Query</div>
+                  <div>
+                    Open the TanStack Query devtools of this page · closes TanStack Router, open on the same edge
+                    <span class="n">1</span>
+                  </div>
+                </div>
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">2</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg on">☑ TanStack Router</span
+                    ><span class="seg open focusring" id="s2-query">TanStack Query</span
+                    ><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span
+                    ><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+              <div class="lib">
+                <b>TanStack Router devtools</b> · the library's own panel, its resize handle on its top edge, with
+                devhost's dock sitting on that edge · ⌄ its own close<br />Routes: __root__ › /products › /products/$id
+                › /cart › /checkout, the last row fully visible at the end of its scroll
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>after Enter on TanStack Query</span></div>
+            <div class="pg" style="min-height: 150px; padding-bottom: 8px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">3</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span
+                    ><span class="seg on focusring">☑ TanStack Query</span><span class="seg">React Hook Form</span
+                    ><span class="seg">Redux DevTools</span><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+              <div class="lib">
+                <b>TanStack Query devtools</b> · the library's own panel, at the same bottom edge; Router's panel is
+                closed, not hidden under it<br />['products'] fresh · ['cart'] stale · ['user'] inactive
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span
+                >React Hook Form's column on the right, TanStack Query at the bottom: the dock sits on Query's top edge,
+                inward of the column</span
+              >
+            </div>
+            <div class="pg" style="min-height: 150px">
+              <div class="tpd-split">
+                <div>
+                  <div class="apptxt">Acme Shop · Contact us · [ Name ] [ Email ] [ Send ]</div>
+                  <div class="row" style="margin-top: auto; justify-content: flex-end; flex-wrap: nowrap">
+                    <span class="n">5</span
+                    ><span class="tbar oneline"
+                      ><span class="seg"><b>Acme Shop ▾</b></span
+                      ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg on">☑ TanStack Query</span
+                      ><span class="seg on">☑ React Hook Form</span><span class="seg">Chat</span></span
+                    >
+                  </div>
+                  <div class="lib" style="margin-right: 0"><b>TanStack Query devtools</b> · bottom edge</div>
+                </div>
+                <div class="lib col">
+                  <b>React Hook Form DevTool</b> · the library's own full-height column at the right edge · ✕ its own
+                  close <span class="n">4</span><br />name: valid · email: invalid
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span
+                >the app docks TanStack Query to the top edge; the person placed the dock in the top-right corner</span
+              >
+            </div>
+            <div class="pg" style="min-height: 110px">
+              <div class="lib" style="border-top: 0; border-bottom: 1px solid var(--line); margin: -8px -10px 6px">
+                <b>TanStack Query devtools</b> · top edge, from the app's own position setting
+              </div>
+              <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                <span class="n">6</span
+                ><span class="tbar oneline"
+                  ><span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg on">☑ TanStack Query</span
+                  ><span class="seg">Chat</span></span
+                >
+              </div>
+              <div class="apptxt">Acme Shop · Products …</div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>2. Open a library panel</h2>
+          <p>
+            Pressing a launcher still clicks the library's own open control, and the panel is still the library's, where
+            the library docks it; devhost never moves, resizes or restyles a panel. What changes: panels docked to the
+            same window edge take turns, the launcher says so before the press, and devhost's dock steps off a panel at
+            the bottom edge, inward of one at the right and below one at the top. Opening a panel is a read: no notice,
+            no log line and no announcement. Focus stays on the pressed launcher, and devhost moves no focus into a
+            library's panel; after a pointer press the page's keys keep working (<code>KEY-5</code>, <code>KEY-6</code>,
+            <code>CC-28</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Before the press, the launcher's tooltip and accessible description name its
+              reach: the open panel on the same edge it will close (<code>SEL-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> While a panel docks to the bottom edge, toolbar-shell moves the dock onto the
+              panel's top edge, or to the top of the window when the panel is taller than half of it, and follows the
+              panel's resize handle. This flow supplies the seam: each adapter reports its open panel's element and edge
+              (<code>SURF-1</code>, <code>SURF-7</code>, <code>SURF-5</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Enter closes TanStack Router through its own close control, then opens TanStack
+              Query, so at most one launcher per edge reads pressed and it is the panel on screen. When that close
+              fails, nothing opens on top and the failure is reported (step 7). Today Query opens over Router and both
+              read pressed (<code>SEL-11</code>, <code>SEL-1</code>).
+            </li>
+            <li>
+              <span class="n">4</span> A panel's edge is read from its own rectangle: it docks to an edge it touches and
+              spans more than half of. A React Hook Form panel opens a full-height column on the right, where the dock
+              and docked chat shift inward by its width, as they do for the minimap strip, and return when it closes
+              (<code>SURF-1</code>, <code>SURF-5</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Panels on different edges stay open together, both launchers pressed, each
+              closing on its own; with Query at the bottom and the column at the right, the dock sits on Query's top
+              edge, inward of the column.
+            </li>
+            <li>
+              <span class="n">6</span> An app that docks TanStack Query to the top edge gets the same turn-taking on
+              that edge, and a dock the person placed in a top corner sits below the panel; the person's placement
+              returns when it closes, and the move is never saved (<code>SURF-1</code>, <code>SURF-7</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-01 (this redesign's slice: panels on one edge take turns; the dock's move is
+            toolbar-shell's) · Backend: toggleLauncher closes the open panels on the chosen edge before it opens the
+            chosen one; adapters report each open panel's element and edge to toolbar-shell's dock (Backend 2, 3)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="open-panel">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>1280×800, TanStack Router open at the bottom, 500 px tall; TanStack Query focused</span></div>
-<div class="pg" style="padding-bottom:8px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="popover" data-for="s2-query" style="width:min(100%,28rem)"><i class="caret-dn" style="right:311px"></i>
-<div class="from">Tooltip of TanStack Query</div>
-<div>Open the TanStack Query devtools of this page · closes TanStack Router, open on the same edge <span class="n">1</span></div></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">2</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg tpd-on">☑ TanStack Router</span><span class="seg open focusring" id="s2-query">TanStack Query</span><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div></div>
-</div>
-<div class="tpd-lib"><b>TanStack Router devtools</b> · the library's own panel, its resize handle on its top edge, with devhost's dock sitting on that edge · ⌄ its own close<br>Routes: __root__ › /products › /products/$id › /cart › /checkout, the last row fully visible at the end of its scroll</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>after Enter on TanStack Query</span></div>
-<div class="pg" style="min-height:150px;padding-bottom:8px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">3</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span><span class="seg tpd-on focusring">☑ TanStack Query</span><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div></div>
-</div>
-<div class="tpd-lib"><b>TanStack Query devtools</b> · the library's own panel, at the same bottom edge; Router's panel is closed, not hidden under it<br>['products'] fresh · ['cart'] stale · ['user'] inactive</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>React Hook Form's column on the right, TanStack Query at the bottom: the dock sits on Query's top edge, inward of the column</span></div>
-<div class="pg" style="min-height:150px">
-<div class="tpd-split">
-<div>
-<div class="apptxt">Acme Shop · Contact us · [ Name ] [ Email ] [ Send ]</div>
-<div class="row" style="margin-top:auto;justify-content:flex-end;flex-wrap:nowrap"><span class="n">5</span><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg tpd-on">☑ TanStack Query</span><span class="seg tpd-on">☑ React Hook Form</span><span class="seg">Chat</span></span></div>
-<div class="tpd-lib" style="margin-right:0"><b>TanStack Query devtools</b> · bottom edge</div>
-</div>
-<div class="tpd-col"><b>React Hook Form DevTool</b> · the library's own full-height column at the right edge · ✕ its own close <span class="n">4</span><br>name: valid · email: invalid</div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the app docks TanStack Query to the top edge; the person placed the dock in the top-right corner</span></div>
-<div class="pg" style="min-height:110px">
-<div class="tpd-lib" style="border-top:0;border-bottom:1px solid var(--line);margin:-8px -10px 6px"><b>TanStack Query devtools</b> · top edge, from the app's own position setting</div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">6</span><span class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg tpd-on">☑ TanStack Query</span><span class="seg">Chat</span></span></div>
-<div class="apptxt">Acme Shop · Products …</div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>2. Open a library panel</h2>
-<p>Pressing a launcher still clicks the library's own open control, and the panel is still the library's, where the library docks it; devhost never moves, resizes or restyles a panel. What changes: panels docked to the same window edge take turns, the launcher says so before the press, and devhost's dock steps off a panel at the bottom edge, inward of one at the right and below one at the top. Opening a panel is a read: no notice, no log line and no announcement. Focus stays on the pressed launcher, and devhost moves no focus into a library's panel; after a pointer press the page's keys keep working (<code>KEY-5</code>, <code>KEY-6</code>, <code>CC-28</code>).</p>
-<ol><li><span class="n">1</span> Before the press, the launcher's tooltip and accessible description name its reach: the open panel on the same edge it will close (<code>SEL-1</code>).</li>
-<li><span class="n">2</span> While a panel docks to the bottom edge, toolbar-shell moves the dock onto the panel's top edge, or to the top of the window when the panel is taller than half of it, and follows the panel's resize handle. This flow supplies the seam: each adapter reports its open panel's element and edge (<code>SURF-1</code>, <code>SURF-7</code>, <code>SURF-5</code>).</li>
-<li><span class="n">3</span> Enter closes TanStack Router through its own close control, then opens TanStack Query, so at most one launcher per edge reads pressed and it is the panel on screen. When that close fails, nothing opens on top and the failure is reported (step 7). Today Query opens over Router and both read pressed (<code>SEL-11</code>, <code>SEL-1</code>).</li>
-<li><span class="n">4</span> A panel's edge is read from its own rectangle: it docks to an edge it touches and spans more than half of. A React Hook Form panel opens a full-height column on the right, where the dock and docked chat shift inward by its width, as they do for the minimap strip, and return when it closes (<code>SURF-1</code>, <code>SURF-5</code>).</li>
-<li><span class="n">5</span> Panels on different edges stay open together, both launchers pressed, each closing on its own; with Query at the bottom and the column at the right, the dock sits on Query's top edge, inward of the column.</li>
-<li><span class="n">6</span> An app that docks TanStack Query to the top edge gets the same turn-taking on that edge, and a dock the person placed in a top corner sits below the panel; the person's placement returns when it closes, and the move is never saved (<code>SURF-1</code>, <code>SURF-7</code>).</li></ol>
-<p class="fixes">Fixes third-party-devtools-01 (this redesign's slice: panels on one edge take turns; the dock's move is toolbar-shell's) · Backend: toggleLauncher closes the open panels on the chosen edge before it opens the chosen one; adapters report each open panel's element and edge to toolbar-shell's dock (Backend 2, 3)</p></div>
-</section>
+      <section class="step" id="close-panel">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b><span>TanStack Query open at the bottom</span>
+            </div>
+            <div class="pg" style="min-height: 150px; padding-bottom: 8px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="tbar oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span
+                  ><span class="seg on">☑ TanStack Query</span><span class="seg">Redux DevTools</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+              <div class="lib">
+                <b>TanStack Query devtools</b> · the library's own panel <span class="btn">⌄</span>
+                <span class="muted">named "Close tanstack query devtools"</span> <span class="n">1</span
+                ><br />['products'] fresh · ['cart'] stale · ['user'] inactive
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>after the panel's own close</span></div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">2</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span
+                    ><span class="seg">TanStack Query</span><span class="seg">Redux DevTools</span
+                    ><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › two more situations</b></div>
+            <div class="work small">
+              <div class="vlab">The toolbar collapsed, the unified shell open</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><b>dh</b> ▴</span></span
+                ><span class="box" style="margin: 0"
+                  >TanStack Devtools · the shell's own panel <span class="btn">✕</span>
+                  <span class="muted">named "Close TanStack Devtools"</span></span
+                ><span class="n">3</span>
+              </div>
+              <div class="vlab">Select Elements active over TanStack Query's open panel</div>
+              <div class="row">
+                <span class="box" style="margin: 0; box-shadow: inset 0 0 0 1px var(--acc)"
+                  >['cart'] stale <span class="chip acc">#1</span></span
+                ><span class="chip">path: TanStack Query devtools › query list › ['cart']</span><span class="n">4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>3. Use the panel and close it</h2>
+          <p>
+            The panel keeps its own keys, Escape and close controls, and devhost adds no Escape to it
+            (<code>KEY-1</code>, <code>KEY-8</code>). Closing a panel by its own control, its pressed launcher, Escape
+            or a library hotkey still unpresses its launcher within one frame. What changes: every panel shows its own
+            close or minimize control, and the dock returns to the person's placement when the panel closes.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> devhost's stylesheet hides only the floating launchers, so TanStack Query's
+              minimize button and the unified shell's close button stay visible, as Router's, React Hook Form's and
+              Jotai's already do. Today devhost hides both.
+            </li>
+            <li>
+              <span class="n">2</span> The panel closes, TanStack Query unpresses within one frame, and the dock returns
+              to the corner the person chose; its temporary move was never saved (<code>SURF-7</code>).
+            </li>
+            <li>
+              <span class="n">3</span> With the toolbar collapsed the launchers are hidden, and an open panel still
+              closes from its own control. An open panel is not a condition, so the collapsed badge does not show it
+              (<code>SURF-8</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Picks reach the panel: an open library panel is part of the page, so Select
+              Elements and Alt + right-click resolve its elements like any other, and the element path starts at the
+              library's root. Alt + right-click copies a path and never opens an editor (<code>SEL-9</code>,
+              <code>SURF-11</code>, <code>O51</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-02 · Backend: the hide selectors keep only floating launchers; Query's minimize
+            button and the shell's close button leave them (Backend 2)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="close-panel">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>TanStack Query open at the bottom</span></div>
-<div class="pg" style="min-height:150px;padding-bottom:8px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span><span class="seg tpd-on">☑ TanStack Query</span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div>
-</div>
-<div class="tpd-lib"><b>TanStack Query devtools</b> · the library's own panel <span class="btn">⌄</span> <span class="muted">named "Close tanstack query devtools"</span> <span class="n">1</span><br>['products'] fresh · ['cart'] stale · ['user'] inactive</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>after the panel's own close</span></div>
-<div class="pg" style="min-height:120px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">2</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Router</span><span class="seg">TanStack Query</span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › two more situations</b></div>
-<div class="work small">
-<div class="vlab">The toolbar collapsed, the unified shell open</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><b>dh</b> ▴</span></span><span class="box" style="margin:0">TanStack Devtools · the shell's own panel <span class="btn">✕</span> <span class="muted">named "Close TanStack Devtools"</span></span><span class="n">3</span></div>
-<div class="vlab">Select Elements active over TanStack Query's open panel</div>
-<div class="row"><span class="box" style="margin:0;box-shadow:inset 0 0 0 1px var(--acc)">['cart'] stale <span class="chip acc">#1</span></span><span class="chip">path: TanStack Query devtools › query list › ['cart']</span><span class="n">4</span></div>
-</div>
-</div>
-</div>
-<div class="cap"><h2>3. Use the panel and close it</h2>
-<p>The panel keeps its own keys, Escape and close controls, and devhost adds no Escape to it (<code>KEY-1</code>, <code>KEY-8</code>). Closing a panel by its own control, its pressed launcher, Escape or a library hotkey still unpresses its launcher within one frame. What changes: every panel shows its own close or minimize control, and the dock returns to the person's placement when the panel closes.</p>
-<ol><li><span class="n">1</span> devhost's stylesheet hides only the floating launchers, so TanStack Query's minimize button and the unified shell's close button stay visible, as Router's, React Hook Form's and Jotai's already do. Today devhost hides both.</li>
-<li><span class="n">2</span> The panel closes, TanStack Query unpresses within one frame, and the dock returns to the corner the person chose; its temporary move was never saved (<code>SURF-7</code>).</li>
-<li><span class="n">3</span> With the toolbar collapsed the launchers are hidden, and an open panel still closes from its own control. An open panel is not a condition, so the collapsed badge does not show it (<code>SURF-8</code>).</li>
-<li><span class="n">4</span> Picks reach the panel: an open library panel is part of the page, so Select Elements and Alt + right-click resolve its elements like any other, and the element path starts at the library's root. Alt + right-click copies a path and never opens an editor (<code>SEL-9</code>, <code>SURF-11</code>, <code>O51</code>).</li></ol>
-<p class="fixes">Fixes third-party-devtools-02 · Backend: the hide selectors keep only floating launchers; Query's minimize button and the shell's close button leave them (Backend 2)</p></div>
-</section>
+      <section class="step" id="redux-open">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>a Redux Toolkit store and a Zustand store registered</span>
+            </div>
+            <div class="pg" style="min-height: 130px">
+              <div class="apptxt">Acme Shop · Cart …</div>
+              <div class="corner">
+                <div class="popover tip" data-for="s4-redux" style="width: min(100%, 30rem)">
+                  <i class="caret-dn" style="right: 91.6px"></i>
+                  <div class="from">Tooltip of Redux DevTools</div>
+                  <div>
+                    Open Redux DevTools for this page's 2 stores: Redux Toolkit counter, Zustand counter
+                    <span class="n">1</span>
+                  </div>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span
+                  ><span class="seg open" id="s4-redux">Redux DevTools</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Redux DevTools · Redux Toolkit counter · Acme Shop (shop.acme.test)</b><span class="n">2</span
+              ><span>the popup window</span>
+            </div>
+            <div class="tpd-line muted">
+              Instance: <span class="chip acc">Redux Toolkit counter ▾</span> <span class="n">3</span> · the inspector's
+              own picker
+            </div>
+            <div class="tpd-insp">
+              <div>@@INIT<br />counter/incremented<br />counter/incremented</div>
+              <div>Action · <b>State</b> · Diff<br />{ value: 2 }</div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Redux DevTools · Zustand counter · Acme Shop (shop.acme.test)</b
+              ><span
+                >Autoselect instances chosen; the Zustand counter changed three times before the window opened</span
+              >
+            </div>
+            <div class="tpd-line">Following the latest change: Zustand counter <span class="n">4</span></div>
+            <div class="tpd-insp">
+              <div>
+                @@INIT<br />zustand/setState<br />zustand/setState<br />zustand/setState <span class="n">5</span>
+              </div>
+              <div>Action · <b>State</b> · Diff<br />{ count: 3 }</div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the window's line in other states</b></div>
+            <div class="work small">
+              <div class="vlab">While it connects; the launcher's description says the same</div>
+              <div class="row">
+                <span class="box" style="margin: 0">Connecting to shop.acme.test… · 2 s</span><span class="n">6</span>
+              </div>
+              <div class="vlab">
+                After the Zustand counter's 60th change; a store of about 1.1 MB whose kept changes reach the 16 MB
+                limit; one too large to keep two changes while the window was closed
+              </div>
+              <div class="row">
+                <span class="n">7</span
+                ><span class="box" style="margin: 0">Zustand counter: showing its latest 50 changes</span
+                ><span class="box" style="margin: 0">Zustand cache: showing its latest 7 changes</span
+                ><span class="box" style="margin: 0">Zustand cache: history starts when this window connects</span>
+              </div>
+              <div class="vlab">Two stacks' windows in the window switcher</div>
+              <div class="row">
+                <span class="n">8</span
+                ><span class="chip">Redux DevTools · Zustand counter · Acme Shop (shop.acme.test)</span
+                ><span class="chip">Redux DevTools · cart · Acme Admin (admin.acme.test)</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>the Redux window open, fallen behind the app's window</span>
+            </div>
+            <div class="pg" style="min-height: 130px">
+              <div class="apptxt">Acme Shop · Cart …</div>
+              <div class="corner">
+                <div class="popover tip" data-for="s4-pressed" style="width: min(100%, 26rem)">
+                  <i class="caret-dn" style="right: 144.8px"></i>
+                  <div class="from">Tooltip of the pressed Redux DevTools</div>
+                  <div>Show the Redux DevTools window · 2 stores connected <span class="n">9</span></div>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span
+                  ><span class="seg on open focusring" id="s4-pressed">☑ Redux DevTools</span
+                  ><span class="seg" style="box-shadow: inset 0 0 0 1px var(--line)">✕</span><span class="n">10</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Redux DevTools · Zustand counter · Acme Shop (shop.acme.test)</b><span>the page is reloading</span>
+            </div>
+            <div class="tpd-line">Waiting for shop.acme.test to load again · 3 s <span class="n">11</span></div>
+            <div class="tpd-insp muted">
+              <div>@@INIT<br />zustand/setState<br />zustand/setState<br />zustand/setState</div>
+              <div>Action · <b>State</b> · Diff<br />{ count: 3 }</div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the window's line after the page changed</b></div>
+            <div class="work small">
+              <div class="vlab">The tab now shows a page of the same origin that registers no store</div>
+              <div class="row">
+                <span class="box" style="margin: 0"
+                  >This page registers no stores; this window connects when one registers</span
+                >
+              </div>
+              <div class="vlab">The tab closed, or left the origin</div>
+              <div class="row">
+                <span class="box" style="margin: 0"
+                  >The page that opened this window is gone <span class="btn">Close Window</span></span
+                ><span class="n">12</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>4. Open the Redux inspector, bring it back, keep it through reloads</h2>
+          <p>
+            Pressing <b>Redux DevTools</b> still opens devhost's own inspector in a popup window with no browser
+            extension, which accepts a connection only from its opener, at the same origin, with the matching session
+            ID. What changes: it opens on a named store, says which store it follows, keeps Zustand changes made before
+            it opened, comes to the front instead of closing, and survives reloads. Keys: <b>Close Redux DevTools</b> is
+            the next arrow stop after the launcher.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The unpressed launcher's tooltip names the stores it will show
+              (<code>SEL-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The window's title names the store, the stack and the page's host, and changes
+              with the chosen store (<code>WORD-3</code>).
+            </li>
+            <li>
+              <span class="n">3</span> The window opens on the first registered store in the inspector's instance
+              picker, never on "Select..."; the person's later choice is kept (<code>STATE-2</code>).
+            </li>
+            <li>
+              <span class="n">4</span> While "Autoselect instances" is chosen, a line devhost draws above the inspector
+              names the store it shows.
+            </li>
+            <li>
+              <span class="n">5</span> Zustand history starts when the store registers: the page keeps each store's
+              latest 50 changes within 16 MB, so changes made before the window opened follow <code>@@INIT</code> and
+              survive a reopen (<code>O49</code>).
+            </li>
+            <li>
+              <span class="n">6</span> While the window connects, its line and the launcher's description say so with
+              the elapsed time (<code>STATE-1</code>).
+            </li>
+            <li>
+              <span class="n">7</span> Whenever the count or the limit dropped older changes, the line names how many it
+              shows; a store too large to keep two changes keeps none while the window is closed, and the line says so
+              (<code>O49</code>).
+            </li>
+            <li>
+              <span class="n">8</span> Each tab keeps its own window session, so two stacks' windows never read alike in
+              the window switcher (<code>WORD-3</code>).
+            </li>
+            <li>
+              <span class="n">9</span> While the window is open, pressing <b>Redux DevTools</b> brings it to the front
+              and never closes it. Today that press closes the window and loses the store choice and the Zustand changes
+              (<code>SEL-11</code>).
+            </li>
+            <li>
+              <span class="n">10</span> <b>Close Redux DevTools</b>, a ✕ of at least 24 by 24 CSS pixels and its own
+              arrow stop, closes the window; so does the window's own close, and either unpresses the launcher within
+              100 ms (<code>SURF-9</code>, <code>KEY-4</code>, <code>WORD-2</code>).
+            </li>
+            <li>
+              <span class="n">11</span> A reload of the page, devhost's own reloads included, keeps the window: it waits
+              with the elapsed time, then reattaches to the next page with the chosen store, and the launcher,
+              <b>Show</b> and <b>Close Redux DevTools</b> act on the same window (<code>STATE-1</code>).
+            </li>
+            <li>
+              <span class="n">12</span> A page that registers no store leaves the window waiting for one
+              (<code>STATE-2</code>); a closed tab or another origin leaves <b>Close Window</b>, with the stores
+              untouched.
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-04, third-party-devtools-03 · Backend: preselection (Backend 7); the window's
+            title from the stack name, host and store (Backend 5); a named window, a leaving message on pagehide and
+            reattachment through sessionStorage (Backend 5); Zustand history from registration with its count, limit,
+            shared string for equal changes and guard (Backend 6)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="redux-open">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>a Redux Toolkit store and a Zustand store registered</span></div>
-<div class="pg" style="min-height:130px">
-<div class="apptxt">Acme Shop · Cart …</div>
-<div class="corner">
-<div class="popover" data-for="s4-redux" style="width:min(100%,30rem)"><i class="caret-dn" style="right:91.6px"></i>
-<div class="from">Tooltip of Redux DevTools</div>
-<div>Open Redux DevTools for this page's 2 stores: Redux Toolkit counter, Zustand counter <span class="n">1</span></div></div>
-<div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span><span class="seg open" id="s4-redux">Redux DevTools</span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Redux DevTools · Redux Toolkit counter · Acme Shop (shop.acme.test)</b><span class="n">2</span><span>the popup window</span></div>
-<div class="tpd-line muted">Instance: <span class="chip acc">Redux Toolkit counter ▾</span> <span class="n">3</span> · the inspector's own picker</div>
-<div class="tpd-insp"><div>@@INIT<br>counter/incremented<br>counter/incremented</div><div>Action · <b>State</b> · Diff<br>{ value: 2 }</div></div>
-</div>
-<div class="win">
-<div class="bar"><b>Redux DevTools · Zustand counter · Acme Shop (shop.acme.test)</b><span>Autoselect instances chosen; the Zustand counter changed three times before the window opened</span></div>
-<div class="tpd-line">Following the latest change: Zustand counter <span class="n">4</span></div>
-<div class="tpd-insp"><div>@@INIT<br>zustand/setState<br>zustand/setState<br>zustand/setState <span class="n">5</span></div><div>Action · <b>State</b> · Diff<br>{ count: 3 }</div></div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the window's line in other states</b></div>
-<div class="work small">
-<div class="vlab">While it connects; the launcher's description says the same</div>
-<div class="row"><span class="box" style="margin:0">Connecting to shop.acme.test… · 2 s</span><span class="n">6</span></div>
-<div class="vlab">After the Zustand counter's 60th change; a store of about 1.1 MB whose kept changes reach the 16 MB limit; one too large to keep two changes while the window was closed</div>
-<div class="row"><span class="n">7</span><span class="box" style="margin:0">Zustand counter: showing its latest 50 changes</span><span class="box" style="margin:0">Zustand cache: showing its latest 7 changes</span><span class="box" style="margin:0">Zustand cache: history starts when this window connects</span></div>
-<div class="vlab">Two stacks' windows in the window switcher</div>
-<div class="row"><span class="n">8</span><span class="chip">Redux DevTools · Zustand counter · Acme Shop (shop.acme.test)</span><span class="chip">Redux DevTools · cart · Acme Admin (admin.acme.test)</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the Redux window open, fallen behind the app's window</span></div>
-<div class="pg" style="min-height:130px">
-<div class="apptxt">Acme Shop · Cart …</div>
-<div class="corner">
-<div class="popover" data-for="s4-pressed" style="width:min(100%,26rem)"><i class="caret-dn" style="right:144.8px"></i>
-<div class="from">Tooltip of the pressed Redux DevTools</div>
-<div>Show the Redux DevTools window · 2 stores connected <span class="n">9</span></div></div>
-<div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span><span class="seg tpd-on open focusring" id="s4-pressed">☑ Redux DevTools</span><span class="seg" style="box-shadow:inset 0 0 0 1px var(--line)">✕</span><span class="n">10</span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Redux DevTools · Zustand counter · Acme Shop (shop.acme.test)</b><span>the page is reloading</span></div>
-<div class="tpd-line">Waiting for shop.acme.test to load again · 3 s <span class="n">11</span></div>
-<div class="tpd-insp muted"><div>@@INIT<br>zustand/setState<br>zustand/setState<br>zustand/setState</div><div>Action · <b>State</b> · Diff<br>{ count: 3 }</div></div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the window's line after the page changed</b></div>
-<div class="work small">
-<div class="vlab">The tab now shows a page of the same origin that registers no store</div>
-<div class="row"><span class="box" style="margin:0">This page registers no stores; this window connects when one registers</span></div>
-<div class="vlab">The tab closed, or left the origin</div>
-<div class="row"><span class="box" style="margin:0">The page that opened this window is gone <span class="btn">Close Window</span></span><span class="n">12</span></div>
-</div>
-</div>
-</div>
-<div class="cap"><h2>4. Open the Redux inspector, bring it back, keep it through reloads</h2>
-<p>Pressing <b>Redux DevTools</b> still opens devhost's own inspector in a popup window with no browser extension, which accepts a connection only from its opener, at the same origin, with the matching session ID. What changes: it opens on a named store, says which store it follows, keeps Zustand changes made before it opened, comes to the front instead of closing, and survives reloads. Keys: <b>Close Redux DevTools</b> is the next arrow stop after the launcher.</p>
-<ol><li><span class="n">1</span> The unpressed launcher's tooltip names the stores it will show (<code>SEL-1</code>).</li>
-<li><span class="n">2</span> The window's title names the store, the stack and the page's host, and changes with the chosen store (<code>WORD-3</code>).</li>
-<li><span class="n">3</span> The window opens on the first registered store in the inspector's instance picker, never on "Select..."; the person's later choice is kept (<code>STATE-2</code>).</li>
-<li><span class="n">4</span> While "Autoselect instances" is chosen, a line devhost draws above the inspector names the store it shows.</li>
-<li><span class="n">5</span> Zustand history starts when the store registers: the page keeps each store's latest 50 changes within 16 MB, so changes made before the window opened follow <code>@@INIT</code> and survive a reopen (<code>O49</code>).</li>
-<li><span class="n">6</span> While the window connects, its line and the launcher's description say so with the elapsed time (<code>STATE-1</code>).</li>
-<li><span class="n">7</span> Whenever the count or the limit dropped older changes, the line names how many it shows; a store too large to keep two changes keeps none while the window is closed, and the line says so (<code>O49</code>).</li>
-<li><span class="n">8</span> Each tab keeps its own window session, so two stacks' windows never read alike in the window switcher (<code>WORD-3</code>).</li>
-<li><span class="n">9</span> While the window is open, pressing <b>Redux DevTools</b> brings it to the front and never closes it. Today that press closes the window and loses the store choice and the Zustand changes (<code>SEL-11</code>).</li>
-<li><span class="n">10</span> <b>Close Redux DevTools</b>, a ✕ of at least 24 by 24 CSS pixels and its own arrow stop, closes the window; so does the window's own close, and either unpresses the launcher within 100 ms (<code>SURF-9</code>, <code>KEY-4</code>, <code>WORD-2</code>).</li>
-<li><span class="n">11</span> A reload of the page, devhost's own reloads included, keeps the window: it waits with the elapsed time, then reattaches to the next page with the chosen store, and the launcher, <b>Show</b> and <b>Close Redux DevTools</b> act on the same window (<code>STATE-1</code>).</li>
-<li><span class="n">12</span> A page that registers no store leaves the window waiting for one (<code>STATE-2</code>); a closed tab or another origin leaves <b>Close Window</b>, with the stores untouched.</li></ol>
-<p class="fixes">Fixes third-party-devtools-04, third-party-devtools-03 · Backend: preselection (Backend 7); the window's title from the stack name, host and store (Backend 5); a named window, a leaving message on pagehide and reattachment through sessionStorage (Backend 5); Zustand history from registration with its count, limit, shared string for equal changes and guard (Backend 6)</p></div>
-</section>
+      <section class="step" id="fold">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>900×900, the fixture page's six launchers; Devtools opened with Enter</span>
+            </div>
+            <div class="pg">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="popover" data-for="s5-dev" style="width: min(100%, 34rem)">
+                  <i class="caret-dn" style="right: 134.1px"></i>
+                  <div class="from">Opened from Devtools with Enter</div>
+                  <div class="tpd-row"><span class="btn focusring">TanStack Router</span><span class="n">1</span></div>
+                  <div class="tpd-row">
+                    <span class="btn tpd-on">☑ TanStack Query</span><span class="muted">open</span>
+                  </div>
+                  <div class="tpd-row">
+                    <span class="btn off">TanStack Devtools · detached</span
+                    ><span class="muted"
+                      >TanStack Devtools is detached in its own window; close that window to dock it again.</span
+                    >
+                  </div>
+                  <div class="tpd-row"><span class="btn">React Hook Form</span></div>
+                  <div class="tpd-row"><span class="btn">Jotai</span></div>
+                  <div class="tpd-row" style="border-bottom: 0"><span class="btn">Redux DevTools</span></div>
+                </div>
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open" id="s5-dev">Devtools · 1 open ▾</span
+                    ><span class="n">2</span><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the Devtools control in other situations</b></div>
+            <div class="work small">
+              <div class="vlab">The Redux window open: its row in the panel</div>
+              <div class="tpd-row" style="border-bottom: 0">
+                <span class="btn tpd-on">☑ Redux DevTools</span><span class="muted">open</span
+                ><span class="btn">Show</span><span class="btn">Close</span><span class="n">3</span>
+              </div>
+              <div class="vlab">A panel open and a store that needs setup</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg">Devtools · 1 open · <span class="chip warn">◆ 1 needs setup</span> ▾</span></span
+                ><span class="n">4</span>
+              </div>
+              <div class="vlab">30 React Hook Form panels: the panel's rows overflow, and the filter has "12"</div>
+              <div class="box" style="margin: 0">
+                <div class="row">
+                  <span class="in focusring">12</span><span class="muted">1 match, announced</span
+                  ><span class="n">5</span>
+                </div>
+                <div class="tpd-grp">Needs you · 1</div>
+                <div class="tpd-row"><span class="btn">Redux DevTools · ◆ 1 needs setup</span></div>
+                <div class="tpd-grp">React Hook Form · 30, 1 matching</div>
+                <div class="tpd-row" style="border-bottom: 0">
+                  <span class="btn">React Hook Form <span class="tpd-hit">12</span></span>
+                </div>
+              </div>
+              <div class="row" style="margin-top: 4px">
+                <span class="in">billing</span><span>No devtools match "billing"</span
+                ><span class="btn">Clear Filter</span>
+              </div>
+              <div class="vlab">By the fit test, at the acceptance viewports</div>
+              <div class="row">
+                <span class="muted">1600×1000, where they fit</span
+                ><span class="tbar oneline"
+                  ><span class="seg">TanStack Router</span><span class="seg">TanStack Query</span
+                  ><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span></span
+                ><span class="muted">and 2 more inline</span>
+              </div>
+              <div class="row" style="margin-top: 4px">
+                <span class="muted">1280×800: inline while the bar's other items leave room, else folded</span>
+              </div>
+              <div class="row" style="margin-top: 4px">
+                <span class="muted">900×900 and 640×400, where they would wrap</span
+                ><span class="tbar oneline"><span class="seg">Devtools · 1 open ▾</span></span
+                ><span class="muted">folded; the bar keeps one row</span><span class="n">6</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the page's own dialog open</span></div>
+            <div class="scrim" style="min-height: 0">
+              <div class="dlg">
+                <div class="hd"><h3>Remove this item?</h3></div>
+                <div class="body">
+                  <span class="muted">The app's own dialog: role="dialog", aria-modal="true"</span>
+                  <div class="corner" style="margin-top: 10px">
+                    <div class="row" style="justify-content: flex-end">
+                      <span class="n">7</span>
+                      <div class="banner info" style="margin: 0">Paused while this page's dialog is open</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Remove</span></div>
+              </div>
+              <div class="corner" style="margin-top: 10px">
+                <div class="tbar paused oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Devtools · 1 open ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>5. Fold the launchers when they would wrap the bar</h2>
+          <p>
+            Inline launchers stay bar toggles while they fit on the bar's one row. What is new is the folded form: by
+            the bar's fit test, second in toolbar-shell's sequence after the Services summary, the launchers fold into
+            one <b>Devtools</b> control, never by a count (<code>SURF-10</code>, <code>SEL-10</code>). It is the
+            third-party launchers' panel that <code>SURF-2</code> lists among the anchored popovers. Keys: on open,
+            focus goes to the filter when there is one, else the first row; Tab past the last control or Escape closes
+            it and returns focus to <b>Devtools</b> (<code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The anchored panel lists every launcher as a row in the bar's order, the toggle
+              named by its library with its state in words, an unavailable row with its reason sentence (step 6). It
+              stays open while rows toggle, never overlaps the notice stack and paints above docked chat
+              (<code>SURF-2</code>, <code>SURF-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The control counts what is open; its accessible name spells it out, "Devtools: 6
+              on this page, TanStack Query open".
+            </li>
+            <li>
+              <span class="n">3</span> While the Redux window is open, its row offers <b>Show</b> and <b>Close</b>,
+              named with their target ("Show Redux DevTools").
+            </li>
+            <li>
+              <span class="n">4</span> With a panel open and a store that needs setup, the control reads both, the
+              problem by shape and text (<code>ACT-13</code>).
+            </li>
+            <li>
+              <span class="n">5</span> When its rows overflow, the panel groups them under each library with a count,
+              pins the rows that need the person above the rest, and gains a filter focused on open that highlights the
+              match and announces the count; an empty result names the query with <b>Clear Filter</b>. It has no
+              panel-level actions, so no footer (<code>SURF-10</code>, <code>SEL-10</code>, <code>STATE-2</code>).
+            </li>
+            <li>
+              <span class="n">6</span> At every acceptance viewport the bar keeps one row, the panel fits with every row
+              reachable, and every target is at least 24 by 24 CSS pixels. Below 640 CSS pixels the panel takes the
+              window's width less 16 px on each side (<code>SURF-9</code>, <code>O8</code>).
+            </li>
+            <li>
+              <span class="n">7</span> While the page shows a modal dialog, the notices move into it and the launchers
+              pause with the bar; library panels and an open Redux window stay as they are (<code>SURF-11</code>,
+              <code>KEY-7</code>, <code>CC-3</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes nothing on its own; the Devtools control is new · Backend: none of its own; the inline and folded
+            forms read one launcher model with state, name, reach and reason (Backend 2)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="fold">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>900×900, the fixture page's six launchers; Devtools opened with Enter</span></div>
-<div class="pg">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="popover" data-for="s5-dev" style="width:min(100%,34rem)"><i class="caret-dn" style="right:134.1px"></i>
-<div class="from">Opened from Devtools with Enter</div>
-<div class="tpd-row"><span class="btn focusring">TanStack Router</span><span class="n">1</span></div>
-<div class="tpd-row"><span class="btn tpd-on">☑ TanStack Query</span><span class="muted">open</span></div>
-<div class="tpd-row"><span class="btn off">TanStack Devtools · detached</span><span class="muted">TanStack Devtools is detached in its own window; close that window to dock it again.</span></div>
-<div class="tpd-row"><span class="btn">React Hook Form</span></div>
-<div class="tpd-row"><span class="btn">Jotai</span></div>
-<div class="tpd-row" style="border-bottom:0"><span class="btn">Redux DevTools</span></div>
-</div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open" id="s5-dev">Devtools · 1 open ▾</span><span class="n">2</span><span class="seg">Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the Devtools control in other situations</b></div>
-<div class="work small">
-<div class="vlab">The Redux window open: its row in the panel</div>
-<div class="tpd-row" style="border-bottom:0"><span class="btn tpd-on">☑ Redux DevTools</span><span class="muted">open</span><span class="btn">Show</span><span class="btn">Close</span><span class="n">3</span></div>
-<div class="vlab">A panel open and a store that needs setup</div>
-<div class="row"><span class="tbar oneline"><span class="seg">Devtools · 1 open · <span class="chip warn">◆ 1 needs setup</span> ▾</span></span><span class="n">4</span></div>
-<div class="vlab">30 React Hook Form panels: the panel's rows overflow, and the filter has "12"</div>
-<div class="box" style="margin:0"><div class="row"><span class="in focusring">12</span><span class="muted">1 match, announced</span><span class="n">5</span></div>
-<div class="tpd-grp">Needs you · 1</div>
-<div class="tpd-row"><span class="btn">Redux DevTools · ◆ 1 needs setup</span></div>
-<div class="tpd-grp">React Hook Form · 30, 1 matching</div>
-<div class="tpd-row" style="border-bottom:0"><span class="btn">React Hook Form <span class="tpd-hit">12</span></span></div></div>
-<div class="row" style="margin-top:4px"><span class="in">billing</span><span>No devtools match "billing"</span><span class="btn">Clear Filter</span></div>
-<div class="vlab">By the fit test, at the acceptance viewports</div>
-<div class="row"><span class="muted">1600×1000, where they fit</span><span class="tbar oneline"><span class="seg">TanStack Router</span><span class="seg">TanStack Query</span><span class="seg">React Hook Form</span><span class="seg">Redux DevTools</span></span><span class="muted">and 2 more inline</span></div>
-<div class="row" style="margin-top:4px"><span class="muted">1280×800: inline while the bar's other items leave room, else folded</span></div>
-<div class="row" style="margin-top:4px"><span class="muted">900×900 and 640×400, where they would wrap</span><span class="tbar oneline"><span class="seg">Devtools · 1 open ▾</span></span><span class="muted">folded; the bar keeps one row</span><span class="n">6</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the page's own dialog open</span></div>
-<div class="scrim" style="min-height:0">
-<div class="dlg"><div class="hd"><h3>Remove this item?</h3></div>
-<div class="body"><span class="muted">The app's own dialog: role="dialog", aria-modal="true"</span>
-<div class="corner" style="margin-top:10px">
-<div class="row" style="justify-content:flex-end"><span class="n">7</span><div class="banner info" style="margin:0">Paused while this page's dialog is open</div></div>
-</div></div>
-<div class="ft"><span class="btn">Cancel</span><span class="btn pri">Remove</span></div></div>
-<div class="corner" style="margin-top:10px"><div class="tbar paused oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Devtools · 1 open ▾</span><span class="seg">Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>5. Fold the launchers when they would wrap the bar</h2>
-<p>Inline launchers stay bar toggles while they fit on the bar's one row. What is new is the folded form: by the bar's fit test, second in toolbar-shell's sequence after the Services summary, the launchers fold into one <b>Devtools</b> control, never by a count (<code>SURF-10</code>, <code>SEL-10</code>). It is the third-party launchers' panel that <code>SURF-2</code> lists among the anchored popovers. Keys: on open, focus goes to the filter when there is one, else the first row; Tab past the last control or Escape closes it and returns focus to <b>Devtools</b> (<code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>).</p>
-<ol><li><span class="n">1</span> The anchored panel lists every launcher as a row in the bar's order, the toggle named by its library with its state in words, an unavailable row with its reason sentence (step 6). It stays open while rows toggle, never overlaps the notice stack and paints above docked chat (<code>SURF-2</code>, <code>SURF-1</code>).</li>
-<li><span class="n">2</span> The control counts what is open; its accessible name spells it out, "Devtools: 6 on this page, TanStack Query open".</li>
-<li><span class="n">3</span> While the Redux window is open, its row offers <b>Show</b> and <b>Close</b>, named with their target ("Show Redux DevTools").</li>
-<li><span class="n">4</span> With a panel open and a store that needs setup, the control reads both, the problem by shape and text (<code>ACT-13</code>).</li>
-<li><span class="n">5</span> When its rows overflow, the panel groups them under each library with a count, pins the rows that need the person above the rest, and gains a filter focused on open that highlights the match and announces the count; an empty result names the query with <b>Clear Filter</b>. It has no panel-level actions, so no footer (<code>SURF-10</code>, <code>SEL-10</code>, <code>STATE-2</code>).</li>
-<li><span class="n">6</span> At every acceptance viewport the bar keeps one row, the panel fits with every row reachable, and every target is at least 24 by 24 CSS pixels. Below 640 CSS pixels the panel takes the window's width less 16 px on each side (<code>SURF-9</code>, <code>O8</code>).</li>
-<li><span class="n">7</span> While the page shows a modal dialog, the notices move into it and the launchers pause with the bar; library panels and an open Redux window stay as they are (<code>SURF-11</code>, <code>KEY-7</code>, <code>CC-3</code>).</li></ol>
-<p class="fixes">Fixes nothing on its own; the Devtools control is new · Backend: none of its own; the inline and folded forms read one launcher model with state, name, reach and reason (Backend 2)</p></div>
-</section>
+      <section class="step" id="unavailable">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b><span>the unified shell detached into its own window</span>
+            </div>
+            <div class="pg" style="min-height: 130px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="popover tip" data-for="s6-shell" style="width: min(100%, 30rem)">
+                  <i class="caret-dn" style="right: 262.6px"></i>
+                  <div class="from">Tooltip of TanStack Devtools, focused</div>
+                  <div>
+                    TanStack Devtools is detached in its own window; close that window to dock it again.
+                    <span class="n">1</span>
+                  </div>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span
+                  ><span class="seg open focusring" id="s6-shell"
+                    ><span class="btn off">TanStack Devtools · detached</span></span
+                  ><span class="seg">Redux DevTools</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › other launchers that cannot act now</b></div>
+            <div class="work small">
+              <div class="vlab">The Vite DevTools dock hidden, not authorized, or with two entries titled Vue</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><span class="btn off">Vue · dock hidden</span></span></span
+                ><span class="n">2</span>
+              </div>
+              <div class="muted" style="margin: 2px 0 6px">
+                Tooltip and description: The Vite DevTools dock is hidden; press Alt+Shift+D to show it, then choose
+                Vue.
+              </div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><span class="btn off">Vue · not authorized</span></span></span
+                >
+              </div>
+              <div class="muted" style="margin: 2px 0 6px">
+                Tooltip and description: The Vite DevTools dock is not authorized; select Unauthorized in the dock and
+                enter the code Vite printed.
+              </div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><span class="btn off">Vue · ambiguous</span></span></span
+                >
+              </div>
+              <div class="muted" style="margin: 2px 0 6px">
+                Tooltip and description: Two Vite DevTools dock entries are titled Vue; devhost opens neither until the
+                title is unique.
+              </div>
+              <div class="vlab">A TanStack Router devtools version whose toggle devhost cannot find</div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><span class="btn off">TanStack Router · not recognized</span></span></span
+                ><span class="n">3</span>
+              </div>
+              <div class="muted" style="margin: 2px 0 6px">
+                Tooltip and description: devhost does not recognize this TanStack Router devtools version; use the
+                library's own button, which devhost now shows.
+              </div>
+              <div class="row" style="margin-top: 4px">
+                <span class="box apptxt" style="margin: 0"
+                  >TanStack Router's own floating button, shown again on the page</span
+                ><span class="n">4</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>the page's status stream lost; the Redux window closed</span>
+            </div>
+            <div class="pg" style="min-height: 110px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="banner" style="margin: 0">
+                  ? Lost connection to devhost; retrying <span class="btn">Retry Now</span>
+                </div>
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">5</span>
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">? lost connection ▾</span><span class="seg">TanStack Query</span
+                    ><span class="seg"><span class="btn off">Redux DevTools</span></span
+                    ><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>opened from a phone in another environment, neither signed in nor paired</span>
+            </div>
+            <div class="pg" style="min-height: 90px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">6</span>
+                  <div class="tbar">
+                    <span class="seg"><span class="muted">dh</span> <b>Acme Shop</b></span
+                    ><span class="seg muted" style="white-space: normal"
+                      >Sign in with passkey or pair this browser to use devhost here</span
+                    ><span class="seg"><span class="btn pri">Sign In with Passkey</span></span
+                    ><span class="seg">TanStack Query</span><span class="seg">Redux DevTools</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>6. A launcher that cannot act now says why</h2>
+          <p>
+            Launchers still appear and disappear as libraries mount and unmount, without a page reload, and Vue is still
+            offered only from a trusted, visible dock with one Vue entry. What changes: an installed library whose panel
+            the toolbar cannot open or close right now keeps its launcher in place, <code>aria-disabled</code>, with a
+            short state after its name and one reason sentence as its tooltip (also on focus), its accessible
+            description and its <b>Devtools</b> row, never removed and never live-looking (<code>MENU-3</code>). It
+            raises no notice: the condition comes from the library, its version or the person's choice and lasts until
+            the person acts there. It becomes available again by itself, and a focused launcher keeps focus
+            (<code>KEY-11</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The unified shell detached into its own window reads "TanStack Devtools ·
+              detached". Today the entry disappears.
+            </li>
+            <li>
+              <span class="n">2</span> Vue reads "dock hidden", "not authorized" or "ambiguous", each sentence naming
+              what to do in the dock. Today the entry disappears.
+            </li>
+            <li>
+              <span class="n">3</span> Detection requires the control the launcher's next press needs, so a version
+              whose controls devhost cannot find reads "not recognized" instead of staying live and doing nothing, as it
+              does today (<code>MENU-3</code>, <code>MENU-5</code>).
+            </li>
+            <li>
+              <span class="n">4</span> While a library's launcher is not recognized, devhost stops hiding that library's
+              own launchers, so its panel still opens from the page.
+            </li>
+            <li>
+              <span class="n">5</span> While the page's status stream is lost, every library launcher keeps working,
+              because it acts in the page; <b>Redux DevTools</b> is unavailable while its window is closed, with the
+              lost connection's notice as its visible reason (<code>MENU-3</code>, <code>HOLD-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> From another environment, the launchers and Redux DevTools work as on this
+              machine beside toolbar-shell's sign-in prompt: they act in the page, so the passkey or pairing check gates
+              none of them (<code>HOLD-8</code>, <code>O36</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-07 · Backend: the adapters report detached, dock hidden, not authorized,
+            ambiguous and not recognized instead of removing the entry; detection checks the control the next press
+            needs; a library's suppression stops while it is not recognized (Backend 8)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="unavailable">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the unified shell detached into its own window</span></div>
-<div class="pg" style="min-height:130px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="popover" data-for="s6-shell" style="width:min(100%,30rem)"><i class="caret-dn" style="right:262.6px"></i>
-<div class="from">Tooltip of TanStack Devtools, focused</div>
-<div>TanStack Devtools is detached in its own window; close that window to dock it again. <span class="n">1</span></div></div>
-<div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open focusring" id="s6-shell"><span class="btn off">TanStack Devtools · detached</span></span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › other launchers that cannot act now</b></div>
-<div class="work small">
-<div class="vlab">The Vite DevTools dock hidden, not authorized, or with two entries titled Vue</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><span class="btn off">Vue · dock hidden</span></span></span><span class="n">2</span></div>
-<div class="muted" style="margin:2px 0 6px">Tooltip and description: The Vite DevTools dock is hidden; press Alt+Shift+D to show it, then choose Vue.</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><span class="btn off">Vue · not authorized</span></span></span></div>
-<div class="muted" style="margin:2px 0 6px">Tooltip and description: The Vite DevTools dock is not authorized; select Unauthorized in the dock and enter the code Vite printed.</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><span class="btn off">Vue · ambiguous</span></span></span></div>
-<div class="muted" style="margin:2px 0 6px">Tooltip and description: Two Vite DevTools dock entries are titled Vue; devhost opens neither until the title is unique.</div>
-<div class="vlab">A TanStack Router devtools version whose toggle devhost cannot find</div>
-<div class="row"><span class="tbar oneline"><span class="seg"><span class="btn off">TanStack Router · not recognized</span></span></span><span class="n">3</span></div>
-<div class="muted" style="margin:2px 0 6px">Tooltip and description: devhost does not recognize this TanStack Router devtools version; use the library's own button, which devhost now shows.</div>
-<div class="row" style="margin-top:4px"><span class="box apptxt" style="margin:0">TanStack Router's own floating button, shown again on the page</span><span class="n">4</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>the page's status stream lost; the Redux window closed</span></div>
-<div class="pg" style="min-height:110px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="banner" style="margin:0">? Lost connection to devhost; retrying <span class="btn">Retry Now</span></div>
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">5</span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">? lost connection ▾</span><span class="seg">TanStack Query</span><span class="seg"><span class="btn off">Redux DevTools</span></span><span class="seg">Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>opened from a phone in another environment, neither signed in nor paired</span></div>
-<div class="pg" style="min-height:90px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">6</span><div class="tbar"><span class="seg"><span class="muted">dh</span> <b>Acme Shop</b></span><span class="seg muted" style="white-space:normal">Sign in with passkey or pair this browser to use devhost here</span><span class="seg"><span class="btn pri">Sign In with Passkey</span></span><span class="seg">TanStack Query</span><span class="seg">Redux DevTools</span></div></div>
-</div>
-</div>
-</div>
-</div>
-<div class="cap">
-<h2>6. A launcher that cannot act now says why</h2>
-<p>Launchers still appear and disappear as libraries mount and unmount, without a page reload, and Vue is still offered only from a trusted, visible dock with one Vue entry. What changes: an installed library whose panel the toolbar cannot open or close right now keeps its launcher in place, <code>aria-disabled</code>, with a short state after its name and one reason sentence as its tooltip (also on focus), its accessible description and its <b>Devtools</b> row, never removed and never live-looking (<code>MENU-3</code>). It raises no notice: the condition comes from the library, its version or the person's choice and lasts until the person acts there. It becomes available again by itself, and a focused launcher keeps focus (<code>KEY-11</code>).</p>
-<ol><li><span class="n">1</span> The unified shell detached into its own window reads "TanStack Devtools · detached". Today the entry disappears.</li>
-<li><span class="n">2</span> Vue reads "dock hidden", "not authorized" or "ambiguous", each sentence naming what to do in the dock. Today the entry disappears.</li>
-<li><span class="n">3</span> Detection requires the control the launcher's next press needs, so a version whose controls devhost cannot find reads "not recognized" instead of staying live and doing nothing, as it does today (<code>MENU-3</code>, <code>MENU-5</code>).</li>
-<li><span class="n">4</span> While a library's launcher is not recognized, devhost stops hiding that library's own launchers, so its panel still opens from the page.</li>
-<li><span class="n">5</span> While the page's status stream is lost, every library launcher keeps working, because it acts in the page; <b>Redux DevTools</b> is unavailable while its window is closed, with the lost connection's notice as its visible reason (<code>MENU-3</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">6</span> From another environment, the launchers and Redux DevTools work as on this machine beside toolbar-shell's sign-in prompt: they act in the page, so the passkey or pairing check gates none of them (<code>HOLD-8</code>, <code>O36</code>).</li></ol>
-<p class="fixes">Fixes third-party-devtools-07 · Backend: the adapters report detached, dock hidden, not authorized, ambiguous and not recognized instead of removing the entry; detection checks the control the next press needs; a library's suppression stops while it is not recognized (Backend 8)</p></div>
-</section>
+      <section class="step" id="failures">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>popups blocked for this site; Redux DevTools pressed with Enter</span>
+            </div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme Shop · Cart …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">1</span>
+                  <div class="banner bad" style="margin: 0">
+                    ✕ Redux DevTools could not open: the browser blocked its window. Allow popups for shop.acme.test,
+                    then choose Redux DevTools again. <span class="btn">Dismiss</span>
+                  </div>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span
+                  ><span class="seg focusring">Redux DevTools</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>TanStack Router pressed twice; its toggle ignored both clicks</span>
+            </div>
+            <div class="pg" style="min-height: 130px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div class="row" style="justify-content: flex-end; flex-wrap: nowrap">
+                  <span class="n">2</span>
+                  <div class="banner bad" style="margin: 0">
+                    ✕ TanStack Router did not open: its open control did not respond. Use the library's own button,
+                    which devhost now shows. <a>TanStack integration</a> · 2 times <span class="n">3</span>
+                    <span class="btn">Dismiss</span>
+                  </div>
+                </div>
+                <div
+                  class="row"
+                  style="align-self: stretch; justify-content: space-between; flex-wrap: nowrap; align-items: flex-end"
+                >
+                  <span class="box apptxt" style="margin: 0"
+                    >TanStack Router's own button <span class="n">4</span></span
+                  >
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg focusring">TanStack Router</span
+                    ><span class="seg">TanStack Query</span><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › the other press failures</b></div>
+            <div class="work small">
+              <div class="banner bad">
+                ✕ TanStack Router did not open: devhost found no open control for it in this devtools version. Use the
+                library's own button, which devhost now shows. <a>TanStack integration</a>
+                <span class="btn">Dismiss</span> <span class="n">5</span>
+              </div>
+              <div class="banner bad">
+                ✕ TanStack Router did not close: its close control did not respond. Close it from the panel itself.
+                <a>TanStack integration</a> <span class="btn">Dismiss</span>
+              </div>
+              <div class="banner bad">
+                ✕ Vue did not open: the Vite DevTools dock refused to switch to it. Use the dock's own Vue entry, which
+                devhost now shows. <a>Vue integration</a> <span class="btn">Copy Error</span>
+                <span class="btn">Dismiss</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b
+              ><span>a Cart store registered without instrument() beside the two working stores</span>
+            </div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme Shop · Cart …</div>
+              <div class="corner">
+                <div class="popover tip" data-for="s7-redux" style="width: min(100%, 28rem)">
+                  <i class="caret-dn" style="right: 159px"></i>
+                  <div class="from">Tooltip of Redux DevTools</div>
+                  <div>Redux DevTools: 2 stores connected; Cart store needs setup <span class="n">6</span></div>
+                </div>
+                <div class="tbar oneline">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span
+                  ><span class="seg open" id="s7-redux"
+                    >Redux DevTools · <span class="chip warn">◆ 1 needs setup</span></span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Redux DevTools · Redux Toolkit counter · Acme Shop (shop.acme.test)</b
+              ><span>the same page's window</span>
+            </div>
+            <div class="tpd-line">
+              <span class="banner" style="margin: 2px 0; display: block"
+                >◆ Cart store cannot connect: it has no Redux DevTools instrumentation. Add instrument() to it once, or
+                register a store already set up for the Redux DevTools extension. <span class="btn">Copy Error</span>
+                <span class="n">7</span></span
+              >
+            </div>
+            <div class="tpd-insp">
+              <div>@@INIT<br />counter/incremented<br />counter/incremented</div>
+              <div>Action · <b>State</b> · Diff<br />{ value: 2 }</div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>7. Report failures in words where they started</h2>
+          <p>
+            devhost still never weakens popup blockers, a page's Content Security Policy or its opener policy, and a
+            press that succeeds still raises nothing. What changes: a launcher press that fails says so as a failure
+            notice in the notice stack, announced once in the assertive region and kept until the person dismisses it or
+            the same launcher succeeds (<code>FAIL-2</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-7</code>).
+            These are page actions, not operations of the stack, so they have no operation record: each failure writes
+            one line to the stack's log (<code>FB-7</code>), which keeps it after a page reload clears the notice with
+            the page, <code>FB-6</code>'s one exception. Today the press ends in silence.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A popup the browser blocks leaves the launcher unpressed, and the notice gives
+              the way out; a store's setup problem never masks it.
+            </li>
+            <li>
+              <span class="n">2</span> When the panel's state still differs 60 frames (about a second) after the press,
+              the library ignored it. Each notice links its integration page of devhost's docs, with the tested versions
+              and the key that turns the integration off (<code>MENU-5</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Pressing again with the same result updates that notice with a count
+              (<code>FAIL-4</code>). Focus stays on the launcher, whose description becomes the failure sentence
+              (<code>KEY-11</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Until a press succeeds, devhost stops hiding the library's own launcher, so the
+              way out is on screen.
+            </li>
+            <li>
+              <span class="n">5</span> A press that finds no control knows it at once, and the launcher turns "not
+              recognized" (step 6). A close that fails reads "did not close"; a dock that refuses the switch keeps its
+              message behind <b>Copy Error</b> (<code>FAIL-2</code>, <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">6</span> A store that cannot connect is a state, not an event: the launcher keeps working
+              for the other stores and shows the problem by shape and text, never "unavailable" (<code>ACT-13</code>,
+              <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">7</span> The window names the store and its fix above the inspector, with
+              <b>Copy Error</b> holding the original message, and opens on that line even when every store fails
+              (<code>FAIL-2</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-04, third-party-devtools-07 · Backend: open() and close() return pressed or no
+            control, the Vue adapter's a promise that rejects with the dock's message; toggleLauncher raises the failure
+            at once or after 60 frames and counts repeats; a library's suppression stops until a press succeeds (Backend
+            2)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="failures">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>popups blocked for this site; Redux DevTools pressed with Enter</span></div>
-<div class="pg" style="min-height:120px">
-<div class="apptxt">Acme Shop · Cart …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">1</span><div class="banner bad" style="margin:0">✕ Redux DevTools could not open: the browser blocked its window. Allow popups for shop.acme.test, then choose Redux DevTools again. <span class="btn">Dismiss</span></div></div>
-<div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span><span class="seg focusring">Redux DevTools</span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>TanStack Router pressed twice; its toggle ignored both clicks</span></div>
-<div class="pg" style="min-height:130px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><span class="n">2</span><div class="banner bad" style="margin:0">✕ TanStack Router did not open: its open control did not respond. Use the library's own button, which devhost now shows. <a>TanStack integration</a> · 2 times <span class="n">3</span> <span class="btn">Dismiss</span></div></div>
-<div class="row" style="align-self:stretch;justify-content:space-between;flex-wrap:nowrap;align-items:flex-end"><span class="box apptxt" style="margin:0">TanStack Router's own button <span class="n">4</span></span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg focusring">TanStack Router</span><span class="seg">TanStack Query</span><span class="seg">Chat</span></div></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › the other press failures</b></div>
-<div class="work small">
-<div class="banner bad">✕ TanStack Router did not open: devhost found no open control for it in this devtools version. Use the library's own button, which devhost now shows. <a>TanStack integration</a> <span class="btn">Dismiss</span> <span class="n">5</span></div>
-<div class="banner bad">✕ TanStack Router did not close: its close control did not respond. Close it from the panel itself. <a>TanStack integration</a> <span class="btn">Dismiss</span></div>
-<div class="banner bad">✕ Vue did not open: the Vite DevTools dock refused to switch to it. Use the dock's own Vue entry, which devhost now shows. <a>Vue integration</a> <span class="btn">Copy Error</span> <span class="btn">Dismiss</span></div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>a Cart store registered without instrument() beside the two working stores</span></div>
-<div class="pg" style="min-height:120px">
-<div class="apptxt">Acme Shop · Cart …</div>
-<div class="corner">
-<div class="popover" data-for="s7-redux" style="width:min(100%,28rem)"><i class="caret-dn" style="right:159px"></i>
-<div class="from">Tooltip of Redux DevTools</div>
-<div>Redux DevTools: 2 stores connected; Cart store needs setup <span class="n">6</span></div></div>
-<div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg open" id="s7-redux">Redux DevTools · <span class="chip warn">◆ 1 needs setup</span></span><span class="seg">Chat</span></div>
-</div>
-</div>
-</div>
-<div class="win">
-<div class="bar"><b>Redux DevTools · Redux Toolkit counter · Acme Shop (shop.acme.test)</b><span>the same page's window</span></div>
-<div class="tpd-line"><span class="banner" style="margin:2px 0;display:block">◆ Cart store cannot connect: it has no Redux DevTools instrumentation. Add instrument() to it once, or register a store already set up for the Redux DevTools extension. <span class="btn">Copy Error</span> <span class="n">7</span></span></div>
-<div class="tpd-insp"><div>@@INIT<br>counter/incremented<br>counter/incremented</div><div>Action · <b>State</b> · Diff<br>{ value: 2 }</div></div>
-</div>
-</div>
-<div class="cap"><h2>7. Report failures in words where they started</h2>
-<p>devhost still never weakens popup blockers, a page's Content Security Policy or its opener policy, and a press that succeeds still raises nothing. What changes: a launcher press that fails says so as a failure notice in the notice stack, announced once in the assertive region and kept until the person dismisses it or the same launcher succeeds (<code>FAIL-2</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-7</code>). These are page actions, not operations of the stack, so they have no operation record: each failure writes one line to the stack's log (<code>FB-7</code>), which keeps it after a page reload clears the notice with the page, <code>FB-6</code>'s one exception. Today the press ends in silence.</p>
-<ol><li><span class="n">1</span> A popup the browser blocks leaves the launcher unpressed, and the notice gives the way out; a store's setup problem never masks it.</li>
-<li><span class="n">2</span> When the panel's state still differs 60 frames (about a second) after the press, the library ignored it. Each notice links its integration page of devhost's docs, with the tested versions and the key that turns the integration off (<code>MENU-5</code>).</li>
-<li><span class="n">3</span> Pressing again with the same result updates that notice with a count (<code>FAIL-4</code>). Focus stays on the launcher, whose description becomes the failure sentence (<code>KEY-11</code>).</li>
-<li><span class="n">4</span> Until a press succeeds, devhost stops hiding the library's own launcher, so the way out is on screen.</li>
-<li><span class="n">5</span> A press that finds no control knows it at once, and the launcher turns "not recognized" (step 6). A close that fails reads "did not close"; a dock that refuses the switch keeps its message behind <b>Copy Error</b> (<code>FAIL-2</code>, <code>WORD-7</code>).</li>
-<li><span class="n">6</span> A store that cannot connect is a state, not an event: the launcher keeps working for the other stores and shows the problem by shape and text, never "unavailable" (<code>ACT-13</code>, <code>WORD-7</code>).</li>
-<li><span class="n">7</span> The window names the store and its fix above the inspector, with <b>Copy Error</b> holding the original message, and opens on that line even when every store fails (<code>FAIL-2</code>).</li></ol>
-<p class="fixes">Fixes third-party-devtools-04, third-party-devtools-07 · Backend: open() and close() return pressed or no control, the Vue adapter's a promise that rejects with the dock's message; toggleLauncher raises the failure at once or after 60 frames and counts repeats; a library's suppression stops until a press succeeds (Backend 2)</p></div>
-</section>
+      <section class="step" id="turn-off">
+        <div class="mock">
+          <div class="win">
+            <div class="bar"><b>devhost.toml</b><span>saved on disk</span></div>
+            <div class="work small">
+              <code>[devtools.externalToolbars]</code><br /><code>enabled = true</code><br /><code>jotai = false</code>
+              <span class="n">1</span>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › devhost start in ~/acme</b><span>the same line in the stack's log</span
+              ><span class="n">2</span>
+            </div>
+            <pre class="term">Applied devhost.toml: turned off the Jotai launchers · nothing restarted</pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop.acme.test</b><span>after the save, without a page reload</span>
+            </div>
+            <div class="pg" style="min-height: 140px; padding-bottom: 8px">
+              <div class="apptxt">Acme Shop · Products …</div>
+              <div class="corner">
+                <div
+                  class="row"
+                  style="align-self: stretch; justify-content: space-between; flex-wrap: nowrap; align-items: flex-end"
+                >
+                  <span class="box apptxt" style="margin: 0"
+                    >Jotai's own launcher, back on the page <span class="n">3</span></span
+                  >
+                  <div class="tbar oneline">
+                    <span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span
+                    ><span class="seg">Redux DevTools</span><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+              <div class="lib">
+                <b>Jotai DevTools</b> · the library's own panel, open before the save and still open
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>8. Turn one integration off</h2>
+          <p>
+            <code>[devtools.externalToolbars]</code> keeps <code>enabled</code> as the master switch, and a save still
+            applies through hot reload without a page reload and asks nothing; open panels stay open, and an unknown key
+            is still reported with its file, line and key (<code>REV-1</code>, <code>REV-10</code>). What changes: the
+            table gains one key per integration, each <code>true</code> by default, so a team that prefers one library's
+            own launcher turns off only that one (<code>SEL-11</code>). This save is the journey's only write, so there
+            is no Undo: saving the key as <code>true</code> again brings the integration back.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The keys <code>tanstack</code>, <code>redux</code>, <code>vue</code>,
+              <code>reactHookForm</code> and <code>jotai</code> sit under the master switch, each described in the
+              example manifest, <code>guides/devtools.md</code> and its integration page; <code>redux = false</code>,
+              like <code>enabled = false</code>, removes <b>Redux DevTools</b>, which has no native launcher
+              (<code>SEL-11</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The stack's terminal and log print the reload's one outcome line, as
+              toolbar-shell words every toolbar change (<code>FB-3</code>, <code>FB-10</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Only the Jotai launcher leaves: Jotai's own launcher comes back, an open Jotai
+              panel stays open, and every other launcher stays. Keeping devhost's dock off a restored launcher is
+              toolbar-shell's per-person placement (toolbar-shell-02, related).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes third-party-devtools-05 · Backend: the manifest's externalToolbars becomes six booleans, each true
+            when omitted, carried by the injected configuration and the health stream; the reload's outcome line names
+            the integrations a save turned on or off (Backend 1)
+          </p>
+        </div>
+      </section>
 
-<section class="step" id="turn-off">
-<div class="mock">
-<div class="win">
-<div class="bar"><b>devhost.toml</b><span>saved on disk</span></div>
-<div class="work small"><code>[devtools.externalToolbars]</code><br><code>enabled = true</code><br><code>jotai = false</code> <span class="n">1</span></div>
-</div>
-<div class="win">
-<div class="bar"><b>Terminal › devhost start in ~/acme</b><span>the same line in the stack's log</span><span class="n">2</span></div>
-<pre class="term">Applied devhost.toml: turned off the Jotai launchers · nothing restarted</pre>
-</div>
-<div class="win">
-<div class="bar"><b>devhost › Acme Shop › shop.acme.test</b><span>after the save, without a page reload</span></div>
-<div class="pg" style="min-height:140px;padding-bottom:8px">
-<div class="apptxt">Acme Shop · Products …</div>
-<div class="corner">
-<div class="row" style="align-self:stretch;justify-content:space-between;flex-wrap:nowrap;align-items:flex-end"><span class="box apptxt" style="margin:0">Jotai's own launcher, back on the page <span class="n">3</span></span><div class="tbar oneline"><span class="seg"><b>Acme Shop ▾</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">TanStack Query</span><span class="seg">Redux DevTools</span><span class="seg">Chat</span></div></div>
-</div>
-<div class="tpd-lib"><b>Jotai DevTools</b> · the library's own panel, open before the save and still open</div>
-</div>
-</div>
-</div>
-<div class="cap"><h2>8. Turn one integration off</h2>
-<p><code>[devtools.externalToolbars]</code> keeps <code>enabled</code> as the master switch, and a save still applies through hot reload without a page reload and asks nothing; open panels stay open, and an unknown key is still reported with its file, line and key (<code>REV-1</code>, <code>REV-10</code>). What changes: the table gains one key per integration, each <code>true</code> by default, so a team that prefers one library's own launcher turns off only that one (<code>SEL-11</code>). This save is the journey's only write, so there is no Undo: saving the key as <code>true</code> again brings the integration back.</p>
-<ol><li><span class="n">1</span> The keys <code>tanstack</code>, <code>redux</code>, <code>vue</code>, <code>reactHookForm</code> and <code>jotai</code> sit under the master switch, each described in the example manifest, <code>guides/devtools.md</code> and its integration page; <code>redux = false</code>, like <code>enabled = false</code>, removes <b>Redux DevTools</b>, which has no native launcher (<code>SEL-11</code>).</li>
-<li><span class="n">2</span> The stack's terminal and log print the reload's one outcome line, as toolbar-shell words every toolbar change (<code>FB-3</code>, <code>FB-10</code>).</li>
-<li><span class="n">3</span> Only the Jotai launcher leaves: Jotai's own launcher comes back, an open Jotai panel stays open, and every other launcher stays. Keeping devhost's dock off a restored launcher is toolbar-shell's per-person placement (toolbar-shell-02, related).</li></ol>
-<p class="fixes">Fixes third-party-devtools-05 · Backend: the manifest's externalToolbars becomes six booleans, each true when omitted, carried by the injected configuration and the health stream; the reload's outcome line names the integrations a save turned on or off (Backend 1)</p></div>
-</section>
-
-<section class="changes">
-<div><h3>Removed</h3><ul>
-<li>Hiding TanStack Query's minimize button and the unified shell's close button</li>
-<li>The pressed Redux entry closing its window, and the window closing on every reload or same-origin navigation</li>
-<li>"Router", "Query", "TanStack", "Form 1", "Jotai 1" and "Redux", and a number on a lone panel</li>
-<li>Two launchers on one edge reading pressed while one panel hides the other</li>
-<li>Entries that vanish while the shell is detached or Vue's dock is hidden; failures and setup errors that live in hover text or in silence</li>
-<li>The all-or-nothing opt-out</li></ul></div>
-<div><h3>Merged</h3><ul>
-<li>The inline launchers and their overflow become one list with two forms, inline and the <b>Devtools</b> panel, read from one launcher model: state, name, reach and reason</li></ul></div>
-<div><h3>New</h3><ul>
-<li>Library names, and "this page" in every launcher's description</li>
-<li>Turn-taking per edge, its reach named before the press; the open panel reported to toolbar-shell's dock</li>
-<li><b>Close Redux DevTools</b>; the window's store line, title, waiting and gone states and setup line; Zustand history from registration</li>
-<li>The <b>Devtools</b> control and panel, with its groups and filter</li>
-<li>Unavailable launchers with reasons, "not recognized" among them, and failure notices for presses that fail</li>
-<li>The <code>tanstack</code>, <code>redux</code>, <code>vue</code>, <code>reactHookForm</code> and <code>jotai</code> keys</li></ul></div>
-<div><h3>Changed</h3><ul>
-<li>Pressing the pressed <b>Redux DevTools</b> shows the window instead of closing it</li>
-<li>Opening a panel on an occupied edge closes the other one through its own control</li>
-<li>Detection requires the control a launcher's next press needs; React Hook Form reads open only while its panel is visible</li>
-<li>The window's title comes from the page it serves, not a fixed "Redux DevTools"</li></ul></div>
-<div><h3>Kept</h3><ul>
-<li>Panels stay the libraries' own, never reparented, moved, resized or restyled; devhost binds none of their keys and adds no Escape</li>
-<li>The pressed state follows the panels through their own close controls, Escape and hotkeys</li>
-<li>The Redux inspector needs no extension and accepts only its opener at the same origin with the matching session ID; devhost never weakens popup blockers, a page's Content Security Policy or its opener policy, and changes no store</li>
-<li>Vue only from a trusted, visible dock with one Vue entry, its authorization never bypassed</li>
-<li>No editor path: devhost opens no file and binds, proxies or documents no library's source-opening feature</li>
-<li>The opt-out applies by hot reload without a page reload and opens or closes no panel</li></ul></div>
-<div><h3>Backend work</h3><ul>
-<li>One key per integration under <code>[devtools.externalToolbars]</code> (Backend 1)</li>
-<li>A launcher model with names, edges, reach and reasons, and presses that report what they did (Backend 2, 8)</li>
-<li>The dock seam: open panels with their elements and edges, for toolbar-shell (Backend 3)</li>
-<li>The Redux window's named session across reloads and its title (Backend 5); preselection (Backend 7)</li>
-<li>React Hook Form numbers without "Form" (Backend 4); Zustand history from registration with <code>O49</code>'s count, limit, shared string and guard (Backend 6)</li></ul></div>
-</section>
-</main>
-</body>
+      <section class="changes">
+        <div>
+          <h3>Removed</h3>
+          <ul>
+            <li>Hiding TanStack Query's minimize button and the unified shell's close button</li>
+            <li>
+              The pressed Redux entry closing its window, and the window closing on every reload or same-origin
+              navigation
+            </li>
+            <li>"Router", "Query", "TanStack", "Form 1", "Jotai 1" and "Redux", and a number on a lone panel</li>
+            <li>Two launchers on one edge reading pressed while one panel hides the other</li>
+            <li>
+              Entries that vanish while the shell is detached or Vue's dock is hidden; failures and setup errors that
+              live in hover text or in silence
+            </li>
+            <li>The all-or-nothing opt-out</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Merged</h3>
+          <ul>
+            <li>
+              The inline launchers and their overflow become one list with two forms, inline and the
+              <b>Devtools</b> panel, read from one launcher model: state, name, reach and reason
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>New</h3>
+          <ul>
+            <li>Library names, and "this page" in every launcher's description</li>
+            <li>
+              Turn-taking per edge, its reach named before the press; the open panel reported to toolbar-shell's dock
+            </li>
+            <li>
+              <b>Close Redux DevTools</b>; the window's store line, title, waiting and gone states and setup line;
+              Zustand history from registration
+            </li>
+            <li>The <b>Devtools</b> control and panel, with its groups and filter</li>
+            <li>
+              Unavailable launchers with reasons, "not recognized" among them, and failure notices for presses that fail
+            </li>
+            <li>
+              The <code>tanstack</code>, <code>redux</code>, <code>vue</code>, <code>reactHookForm</code> and
+              <code>jotai</code> keys
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Changed</h3>
+          <ul>
+            <li>Pressing the pressed <b>Redux DevTools</b> shows the window instead of closing it</li>
+            <li>Opening a panel on an occupied edge closes the other one through its own control</li>
+            <li>
+              Detection requires the control a launcher's next press needs; React Hook Form reads open only while its
+              panel is visible
+            </li>
+            <li>The window's title comes from the page it serves, not a fixed "Redux DevTools"</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>
+              Panels stay the libraries' own, never reparented, moved, resized or restyled; devhost binds none of their
+              keys and adds no Escape
+            </li>
+            <li>The pressed state follows the panels through their own close controls, Escape and hotkeys</li>
+            <li>
+              The Redux inspector needs no extension and accepts only its opener at the same origin with the matching
+              session ID; devhost never weakens popup blockers, a page's Content Security Policy or its opener policy,
+              and changes no store
+            </li>
+            <li>Vue only from a trusted, visible dock with one Vue entry, its authorization never bypassed</li>
+            <li>
+              No editor path: devhost opens no file and binds, proxies or documents no library's source-opening feature
+            </li>
+            <li>The opt-out applies by hot reload without a page reload and opens or closes no panel</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend work</h3>
+          <ul>
+            <li>One key per integration under <code>[devtools.externalToolbars]</code> (Backend 1)</li>
+            <li>
+              A launcher model with names, edges, reach and reasons, and presses that report what they did (Backend 2,
+              8)
+            </li>
+            <li>The dock seam: open panels with their elements and edges, for toolbar-shell (Backend 3)</li>
+            <li>The Redux window's named session across reloads and its title (Backend 5); preselection (Backend 7)</li>
+            <li>
+              React Hook Form numbers without "Form" (Backend 4); Zustand history from registration with
+              <code>O49</code>'s count, limit, shared string and guard (Backend 6)
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
 </html>
