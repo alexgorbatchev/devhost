@@ -1203,8 +1203,8 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
                 </tbody>
               </table>
               <div class="ckdet">
-                In use by Acme Shop (hotfix) · hotfix ~/acme/.worktrees/hotfix · started 14:02 from a terminal ·
-                <span style="white-space: nowrap">PID 95004 <span class="n">1</span></span>
+                In use by Acme Shop (hotfix) · hotfix ~/acme/.worktrees/hotfix · started 14:02 from a
+                <span style="white-space: nowrap">terminal <span class="n">1</span></span>
                 <div class="row">
                   <span class="btn">Open Stack</span><span class="muted">▸ 4 more routes: api, admin, docs, mail</span
                   ><span class="n">2</span>
@@ -1283,19 +1283,20 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
           <h2>8. Read an in-use worktree and stop its stack</h2>
           <p>
             A worktree another stack runs still shows as in use, and <b>Stop Stack</b> still stops that stack so its
-            worktree can be picked, re-checking the other stack's identity before every signal, as today. What changes:
-            the in-use details name whose stack it is and offer one <b>Open Stack</b>, <b>Stop Stack</b> asks, runs
-            through <code>O30</code>'s unified parallel stop routine without killing a live supervisor, leaves a record
-            of who stopped it, and works identically for authenticated remote browsers while gating unauthenticated ones
-            (<code>O36</code>, <code>O37</code>).
+            worktree can be picked, re-checking the other stack's identity before every stop request, as today. What
+            changes: the in-use details name whose stack it is and offer one <b>Open Stack</b>, <b>Stop Stack</b> asks,
+            runs through <code>O30</code>'s unified parallel stop routine without signalling the shared supervisor,
+            leaves a record of who stopped it, and works identically for authenticated remote browsers while gating
+            unauthenticated ones (<code>O36</code>, <code>O37</code>).
           </p>
           <ol>
             <li>
               <span class="n">1</span> Highlighting an <b>in use</b> row fills the details line anchored below the list
               (serving as <code>SURF-2</code>'s in-use details where <code>KEY-10</code> places remedies): the stack is
-              named with its worktree because two stacks share the name, with its start time, origin and PID; its badge
-              and its title use the same words (<code>SURF-2</code>, <code>KEY-10</code>, <code>WORD-1</code>,
-              <code>SEL-4</code>, <code>WORD-11</code>).
+              named with its worktree because two stacks share the name, with when and how it started; it shows no PID,
+              because every stack's PID is the shared devhost supervisor's; the in-use badge's accessible description
+              and the row's title use the same words (<code>SURF-2</code>, <code>KEY-10</code>, <code>WORD-1</code>,
+              <code>SEL-4</code>, <code>WORD-11</code>, <code>O18</code>).
             </li>
             <li>
               <span class="n">2</span> One <b>Open Stack</b> opens that stack's primary page in the same tab, with the
@@ -1318,13 +1319,14 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
             </li>
             <li>
               <span class="n">6</span> Once confirmed, the confirm button stays as the busy control with focus
-              (<code>KEY-11</code>, <code>ACT-3</code>). devhost re-checks the other stack's identity before every
-              signal, records why beside its stack record before it signals it, and stops it through the unified
-              parallel stop routine <code>devhost stop</code> uses (foreground and daemon stops in parallel from
+              (<code>KEY-11</code>, <code>ACT-3</code>). devhost re-checks the other stack's identity (its stack ID,
+              manifest and start time) before every stop request, records why beside its stack record before it asks the
+              shared supervisor to stop that stack by its stack ID, and stops it through the unified parallel stop
+              routine <code>devhost stop</code> uses (foreground and daemon stops in parallel from
               <code>t = 0</code> inside the configurable 30 s default <code>stopTimeout</code>,
               <code>5s</code>..<code>10m</code>, widening for <code>O41</code> daemon overrides &gt; 20 s) and never
-              sends <code>SIGKILL</code> to a supervisor while it still stops services (<code>REV-11</code>,
-              <code>ACT-10</code>, <code>ACT-11</code>, <code>ACT-14</code>, <code>O30</code>, <code>CC-35</code>).
+              signals the shared supervisor, which runs the other stacks too (<code>REV-11</code>, <code>ACT-10</code>,
+              <code>ACT-11</code>, <code>ACT-14</code>, <code>O30</code>, <code>CC-35</code>, <code>O18</code>).
             </li>
             <li>
               <span class="n">7</span> The outcome replaces the question and takes focus on its sentence; the panel
@@ -1344,7 +1346,7 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
               <span class="n">10</span> From another environment, browsers authenticated with the shared-domain WebAuthn
               passkey (with phone support) or a <code>devhost pair</code> link switch and stop identically to this
               machine on both entry points (<code>O36</code>, <code>O37</code>, <code>HOLD-8</code>). An unauthenticated
-              remote browser receives <code>403</code> with no worktree paths, owner PIDs or owner IDs, and sees
+              remote browser receives <code>403</code> with no worktree paths or owner identities, and sees
               <b>Refresh Worktrees</b>, <b>Stop Stack</b>, <b>Return to Configured Worktree</b> and
               <b>Switch and Restart Stack</b> unavailable with "Sign in with passkey or pair this browser to use devhost
               here" alongside <b>Sign In with Passkey</b> and <code>devhost pair</code> fallback guidance
@@ -1585,7 +1587,10 @@ Switch to fix-nav ~/acme/.worktrees/fix-nav, started 14:02, did not finish: devh
             <li>
               One switch at a time; Ctrl-C or devhost stop during a switch cancels it with the previous worktree saved
             </li>
-            <li>Stop Stack re-checks the other stack's verified identity before every signal (<code>ACT-14</code>)</li>
+            <li>
+              Stop Stack re-checks the other stack's identity before it asks the shared supervisor to stop that stack
+              (<code>ACT-14</code>, <code>O18</code>)
+            </li>
             <li>
               Status pages offer the switch and Refresh Worktrees with the toolbar off; devhost runs only read-only Git
               commands
