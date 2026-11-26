@@ -76,14 +76,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "open",
-    "proxy",
-    "starting",
-    "failed",
-    "restart",
-    "app"
-  ],
+  "mainPath": ["open", "proxy", "starting", "failed", "restart", "app"],
   "nodes": [
     {
       "id": "open",

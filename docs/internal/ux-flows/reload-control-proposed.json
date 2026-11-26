@@ -72,13 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "notice",
-    "popover",
-    "send",
-    "pending",
-    "result"
-  ],
+  "mainPath": ["notice", "popover", "send", "pending", "result"],
   "nodes": [
     {
       "id": "notice",

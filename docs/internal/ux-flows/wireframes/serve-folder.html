@@ -1172,9 +1172,7 @@ devhost | Stopping demoapp (bun run dev) · 18 s left before force · press Ctrl
           <div class="win">
             <div class="bar">
               <b>Terminal › ~/acme</b
-              ><span
-                >devhost stop --session confirmation (human &amp; AGENT=1), and restart-all / upgrade (O18, O31)</span
-              >
+              ><span>devhost stop --session confirmation (human &amp; AGENT=1), and restart / upgrade (O18, O31)</span>
             </div>
             <pre class="term">$ devhost stop --session demoapp
 devhost | Stopped serve session demoapp (PID 48820) · removed https://demoapp.acme.test/ · Caddy keeps running · 0.4 s <span class="n">5</span>
@@ -1182,7 +1180,7 @@ devhost | Stopped serve session demoapp (PID 48820) · removed https://demoapp.a
 $ AGENT=1 devhost stop --session demoapp
 devhost: stopped serve session demoapp (PID 48820) · removed https://demoapp.acme.test/ · Caddy keeps running
 
-$ devhost restart-all --yes   <span class="muted"># same for devhost upgrade: serve sessions keep running</span>
+$ devhost restart --yes   <span class="muted"># same for devhost upgrade: serve sessions keep running</span>
 1 stack and 2 serve sessions run in this state directory:
   Acme Shop                  main ~/acme   PID 84244 · detached
   serve session ~/acme/docs                PID 48800 · keeps running <span class="n">6</span>
@@ -1260,8 +1258,8 @@ serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run 
               <code>AGENT=1</code> output instead of exiting silently (<code>serve-command-03</code>).
             </li>
             <li>
-              <span class="n">6</span> <code>devhost restart-all</code> and <code>devhost upgrade</code> list serve
-              sessions by their <code>WORD-1</code> names and keep them running (<code>O18</code>, <code>O31</code>,
+              <span class="n">6</span> <code>devhost restart</code> and <code>devhost upgrade</code> list serve sessions
+              by their <code>WORD-1</code> names and keep them running (<code>O18</code>, <code>O31</code>,
               <code>CC-36</code>).
             </li>
             <li>
@@ -1366,8 +1364,8 @@ serve session demoapp (devhost 0.0.21) left running — press Ctrl-C and re-run 
               command's exit code
             </li>
             <li>
-              <code>devhost restart-all</code> and <code>devhost upgrade</code> list serve sessions and leave them
-              running (<code>O18</code>, <code>O31</code>, <code>CC-36</code>)
+              <code>devhost restart</code> and <code>devhost upgrade</code> list serve sessions and leave them running
+              (<code>O18</code>, <code>O31</code>, <code>CC-36</code>)
             </li>
             <li>
               Shutdown uses unified <code>O30</code> configurable <code>stopTimeout</code> with verified process-tree

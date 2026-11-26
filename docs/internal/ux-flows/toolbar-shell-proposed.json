@@ -72,13 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "open",
-    "dock",
-    "menu",
-    "layout",
-    "placed"
-  ],
+  "mainPath": ["open", "dock", "menu", "layout", "placed"],
   "nodes": [
     {
       "id": "open",

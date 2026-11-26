@@ -72,13 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "open",
-    "pick",
-    "press",
-    "switchOp",
-    "receipt"
-  ],
+  "mainPath": ["open", "pick", "press", "switchOp", "receipt"],
   "nodes": [
     {
       "id": "open",
@@ -291,7 +285,7 @@
           "path": "apps/devhost/src/services/stack/runtime.rs",
           "line": 437,
           "end_line": 475,
-          "label": "Replaces: 10 s SHUTDOWN_GRACE_PERIOD SIGKILL"
+          "label": "Replaces: 10 s SHUTDOWN_GRACE_PERIOD stop RPC"
         },
         {
           "path": "apps/devhost/src/services/worktrees.rs",
@@ -595,7 +589,7 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: external-service worktree-switch blocking and switch warnings (O7, worktrees.rs:137-141); the read that stops services for a deleted worktree (O43/HOLD-4, while rejected running manifests are already fixed on Rust main); Stop Stack's 10 s supervisor SIGKILL (O30 parallel stop replaces it); failing switches on target manifests missing a selected name; the status pages' native select, raw error chains, one Open Stack per route, Open in Editor (O51), 'checkout' as a noun (WORD-11); Restart as deleted-worktree lead and preselected deleted worktree; target=\"_blank\" on Open Stack; saving active.json before services stop",
+        "Removed: external-service worktree-switch blocking and switch warnings (O7, worktrees.rs:137-141); the read that stops services for a deleted worktree (O43/HOLD-4, while rejected running manifests are already fixed on Rust main); Stop Stack's fixed 10 s stop request (O30 parallel stop replaces it); failing switches on target manifests missing a selected name; the status pages' native select, raw error chains, one Open Stack per route, Open in Editor (O51), 'checkout' as a noun (WORD-11); Restart as deleted-worktree lead and preselected deleted worktree; target=\"_blank\" on Open Stack; saving active.json before services stop",
         "Merged: the toolbar picker and status pages' select become one shared worktree list with one label builder (SURF-14, SEL-4, WORD-11); the in-use popover and badge popovers become one details line (KEY-10, SURF-2); Switch worktree and Switch and restart stack become Switch and Restart Stack (WORD-2)",
         "New: the reach line; in-place question for other work with Answer First, Review Drafts or Cancel and Switch Anyway (with held-reload count and tab share); step-by-step progress in panel and activity line; reloaded-page outcome with left-behind work, O14/O53 timing and way back; Retry Switch; deleted state led by Return to Configured Worktree and Check Again; edit not applied on running row; structured reasons with Edit (or Copy when editor off) and Copy Error; commit-prefix find; read time; in-use details; Stop Stack question, progress, survivors and attribution; restored worktree at start; unfinished switch report; O36/O37 remote auth gating; switch operation record (ACT-1)",
         "Changed: external services stay untouched across switches with no block or warning (O7); switches keep the run's selection and report missingNames (SEL-5); reading the list stops nothing even for deleted worktrees (HOLD-4, O43); Stop Stack and Return to Configured Worktree ask in place (REV-1, CC-17); Stop Stack uses O30 parallel shutdown with configurable 30 s default stopTimeout (5s..10m, CC-35); trigger shows SEL-4 worktree label; Find worktree at top matches commit prefix; Open Stack opens same tab; per-service rollback; terminal names both worktrees by label; unfinished switch restores prior worktree at next start (UNDO-1, FB-10)",

@@ -43,9 +43,24 @@
       "sublabel": "strip after the first line",
       "explanation": "The log minimap is injected with the toolbar into every routed page and is on unless [devtools.minimap].enabled is false; like every devtools setting, the switch applies to open pages when the manifest is saved. The page opens the logs stream on load and mounts the strip only once it holds a line, so a stack whose services print nothing shows nothing at the edge. Nothing in the toolbar names or opens it; the docs call it the log minimap and say 'Hover it to read the latest lines'.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 242, "end_line": 242, "label": "Shown when enabled and a line exists" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 377, "end_line": 384, "label": "Minimap mounted at the window edge" },
-        { "path": "apps/devhost/internal/manifest/validate.go", "line": 113, "end_line": 113, "label": "On unless the manifest turns it off" }
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 242,
+          "end_line": 242,
+          "label": "Shown when enabled and a line exists"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 377,
+          "end_line": 384,
+          "label": "Minimap mounted at the window edge"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 113,
+          "end_line": 113,
+          "label": "On unless the manifest turns it off"
+        }
       ]
     },
     {
@@ -57,9 +72,24 @@
       "sublabel": "stdout, stderr, chat",
       "explanation": "devhost publishes each line a managed service prints to the stack's log stream, with its service name and stream (stdout or stderr), as it prints the same line to the terminal. Two other writers share the stream: devhost's own failure message for a service (for example 'Service api exited before passing its health check with code 1') is published as that service's stderr, and chat activity is published as the lines of a service named 'chat'. No line carries a time or a level.",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 849, "end_line": 865, "label": "Each service line published by stream" },
-        { "path": "apps/devhost/internal/services/runtime.go", "line": 356, "end_line": 361, "label": "devhost failure text as the service's stderr" },
-        { "path": "apps/devhost/internal/devtools/chat_log.go", "line": 45, "end_line": 51, "label": "Chat activity published as service chat" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 849,
+          "end_line": 865,
+          "label": "Each service line published by stream"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 356,
+          "end_line": 361,
+          "label": "devhost failure text as the service's stderr"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/chat_log.go",
+          "line": 45,
+          "end_line": 51,
+          "label": "Chat activity published as service chat"
+        }
       ]
     },
     {
@@ -72,9 +102,24 @@
       "tag": "startup-recovery-03",
       "explanation": "The control server keeps one 512-line buffer for the whole stack, drops the oldest line as each new one arrives, and sends a page a snapshot when it connects, then every line as its own message; the page keeps the same 512. A noisy service evicts a quiet service's startup and crash lines within minutes, from the strip, the crash view and the failure page alike, and nothing says lines were pushed out (startup-recovery-03, owned by startup-and-recovery). The page also loses lines that arrive together: it builds each update from the list captured at its last render, so lines arriving before React renders overwrite each other; under a 2,000 lines/s burst about one line in seven survives, with no gap marker (stack-scale-02, a duplicate of startup-recovery-03).",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/server.go", "line": 475, "end_line": 499, "label": "Append, trim to 512, send each line" },
-        { "path": "apps/devhost/internal/devtools/server.go", "line": 706, "end_line": 727, "label": "Snapshot when a page connects" },
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/hooks/useServiceLogs.ts", "line": 8, "end_line": 48, "label": "Updates built from the last render's list" }
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 475,
+          "end_line": 499,
+          "label": "Append, trim to 512, send each line"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 706,
+          "end_line": 727,
+          "label": "Snapshot when a page connects"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/hooks/useServiceLogs.ts",
+          "line": 8,
+          "end_line": 48,
+          "label": "Updates built from the last render's list"
+        }
       ]
     },
     {
@@ -87,9 +132,24 @@
       "tag": "source-and-minimap-05",
       "explanation": "A 12 px strip on the window's right edge draws one 2 px mark per line, newest at the bottom, and widens to 96 px while hovered. Marks say nothing about the service: stdout marks are faint and scale with line length, and every stderr line is a full-width red bar. Warnings, and whole services that log to stderr by default (Go's log package, Python's logging), turn the strip into a wall of red, so a real failure no longer stands out; the preview paints the same rows red, WARN and ERROR alike (source-and-minimap-05).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/createVisibleLogRows.ts", "line": 71, "end_line": 83, "label": "stderr full width; stdout scales with length" },
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx", "line": 78, "end_line": 86, "label": "Mark color from the stream only" },
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx", "line": 196, "end_line": 201, "label": "stderr rows tinted, barred and red" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/createVisibleLogRows.ts",
+          "line": 71,
+          "end_line": 83,
+          "label": "stderr full width; stdout scales with length"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 78,
+          "end_line": 86,
+          "label": "Mark color from the stream only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 196,
+          "end_line": 201,
+          "label": "stderr rows tinted, barred and red"
+        }
       ]
     },
     {
@@ -102,9 +162,24 @@
       "tag": "source-and-minimap-07",
       "explanation": "Hovering widens the strip and opens a preview of at most 15 rows to its left, around the mark nearest the pointer; one pixel of movement is a third of a line. The preview ignores the pointer, so moving onto a line to select or copy it closes it, and rows are cut at the window edge with no wrap or scroll. The stream pauses while the strip is hovered, with no 'paused' or new-lines cue. The strip is aria-hidden with nothing focusable and no shortcut, so keyboard and screen reader users get no logs in the page, and the widened strip covers the toolbar's right end (source-and-minimap-07).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx", "line": 146, "end_line": 167, "label": "aria-hidden strip; leaving closes the preview" },
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx", "line": 176, "end_line": 224, "label": "Preview ignores the pointer; rows cut" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 194, "end_line": 194, "label": "Stream paused while the strip is hovered" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 146,
+          "end_line": 167,
+          "label": "aria-hidden strip; leaving closes the preview"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 176,
+          "end_line": 224,
+          "label": "Preview ignores the pointer; rows cut"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 194,
+          "end_line": 194,
+          "label": "Stream paused while the strip is hovered"
+        }
       ]
     },
     {
@@ -117,9 +192,24 @@
       "tag": "source-and-minimap-06",
       "explanation": "Preview rows keep the service's own ANSI colors and styles, each adjusted to 4.5:1 against the rendered row. In the light theme, adjusting the dark palette's bright green and yellow leaves sRGB, fails, and falls back to black, so INFO, WARN and plain text become one color and only devhost's own stderr red is left. The docs promise 'terminal colors kept readable in both themes' (source-and-minimap-06).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/resolveLogAnsiForeground.ts", "line": 5, "end_line": 16, "label": "AA fix falls back to black or white" },
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/readLogAnsiForeground.ts", "line": 6, "end_line": 36, "label": "Measures each fragment against its row" },
-        { "path": "packages/docs/src/content/docs/guides/devtools.md", "line": 100, "end_line": 102, "label": "Docs: colors readable in both themes" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/resolveLogAnsiForeground.ts",
+          "line": 5,
+          "end_line": 16,
+          "label": "AA fix falls back to black or white"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/readLogAnsiForeground.ts",
+          "line": 6,
+          "end_line": 36,
+          "label": "Measures each fragment against its row"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/devtools.md",
+          "line": 100,
+          "end_line": 102,
+          "label": "Docs: colors readable in both themes"
+        }
       ]
     },
     {
@@ -132,9 +222,24 @@
       "tag": "source-and-minimap-04",
       "explanation": "To find one service's lines a person moves the pointer along the strip and reads 15 rows at a time. The strip stops at its top edge, so it reaches about window height / 3 lines: about 267 of the page's 512 at 800 px. Older lines are held by the page but cannot be reached. Marks have no service color and there is no legend, filter or search, so api's one startup or crash line means hovering through hundreds of worker rows (source-and-minimap-04). Each chat turn adds 13 rows under the service 'chat', full of session IDs and delivery steps, with no mark of their own (chat-conversations-05, owned by agent-chat); in a stack with its own service named 'chat', they pass for that service's output (source-and-minimap-11).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/createVisibleLogRows.ts", "line": 36, "end_line": 40, "label": "Stops at the top: about height / 3 lines" },
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/resolveLogPreviewLayout.ts", "line": 4, "end_line": 5, "label": "At most 15 rows per peek" },
-        { "path": "packages/devhost-ui/src/devtools/shared/constants.ts", "line": 20, "end_line": 20, "label": "The page keeps 512 lines" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/createVisibleLogRows.ts",
+          "line": 36,
+          "end_line": 40,
+          "label": "Stops at the top: about height / 3 lines"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/resolveLogPreviewLayout.ts",
+          "line": 4,
+          "end_line": 5,
+          "label": "At most 15 rows per peek"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/constants.ts",
+          "line": 20,
+          "end_line": 20,
+          "label": "The page keeps 512 lines"
+        }
       ]
     },
     {
@@ -147,9 +252,24 @@
       "tag": "journey-crash-to-fix-03",
       "explanation": "The flow ends when the person reads the line that explains a problem. When a hot reload crashes api, devhost rolls back and the toolbar notice repeats only 'start reloaded service api: Service api exited before passing its health check with code 1'. The line that says why, api's 'Module not found', exists in the browser only as one hover-only minimap row among the worker's lines, and it ages out of the 512-line buffer while the notice stays (journey-crash-to-fix-03, owned by manifest-hot-reload). A line found here can be read, never copied.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx", "line": 190, "end_line": 219, "label": "Preview row: service column, then the line" },
-        { "path": "apps/devhost/internal/services/reload.go", "line": 302, "end_line": 302, "label": "Rejection names the exit, not the output" },
-        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx", "line": 30, "end_line": 37, "label": "Notice prints the rejection as sent" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/components/LogMinimap.tsx",
+          "line": 190,
+          "end_line": 219,
+          "label": "Preview row: service column, then the line"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 302,
+          "end_line": 302,
+          "label": "Rejection names the exit, not the output"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx",
+          "line": 30,
+          "end_line": 37,
+          "label": "Notice prints the rejection as sent"
+        }
       ]
     },
     {
@@ -162,9 +282,24 @@
       "tag": "startup-recovery-03",
       "explanation": "When the page's own service, or one it depends on, exits, the crash view covers the page with that service's retained lines in a scrollable, focusable list next to a Restart button, and the minimap's pause is lifted. It reads the same 512-line buffer, so once a noisy neighbor has evicted them it says only 'No retained logs for this service.', and lines that arrive together can be missing from an open view (startup-recovery-03, owned by startup-and-recovery). It picks lines by service name alone, so a service named 'chat' gets devhost's chat activity lines listed as its own (source-and-minimap-11). A crash of any other service opens nothing; its lines stay in the strip.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 181, "end_line": 194, "label": "Exited page services; minimap un-paused" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 385, "end_line": 387, "label": "Crash view reads the minimap's lines" },
-        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx", "line": 59, "end_line": 90, "label": "One service's lines, or none retained" }
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 181,
+          "end_line": 194,
+          "label": "Exited page services; minimap un-paused"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 385,
+          "end_line": 387,
+          "label": "Crash view reads the minimap's lines"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 59,
+          "end_line": 90,
+          "label": "One service's lines, or none retained"
+        }
       ]
     },
     {
@@ -176,19 +311,38 @@
       "sublabel": "full, selectable lines",
       "explanation": "Every dead end above ends in the terminal running devhost start (or a detached stack's log): it holds each service's full output, prefixed with the service name, selectable and beyond the browser's 512 lines. Reading a failure there means leaving the page, which this flow exists to avoid.",
       "sources": [
-        { "path": "apps/devhost/internal/app/run.go", "line": 159, "end_line": 162, "label": "Service output to the terminal, by name" }
+        {
+          "path": "apps/devhost/internal/app/run.go",
+          "line": 159,
+          "end_line": 162,
+          "label": "Service output to the terminal, by name"
+        }
       ]
     }
   ],
   "edges": [
     { "id": "open-ring", "from": "open", "to": "ring", "label": "connect", "role": "main" },
-    { "id": "capture-ring", "from": "capture", "to": "ring", "label": "each line", "role": "branch", "variant": "dashed" },
+    {
+      "id": "capture-ring",
+      "from": "capture",
+      "to": "ring",
+      "label": "each line",
+      "role": "branch",
+      "variant": "dashed"
+    },
     { "id": "ring-strip", "from": "ring", "to": "strip", "label": "snapshot, then lines", "role": "main" },
     { "id": "strip-hover", "from": "strip", "to": "hover", "label": "hover the edge", "role": "main" },
     { "id": "hover-find", "from": "hover", "to": "find", "label": "move along it", "role": "main" },
     { "id": "find-cause", "from": "find", "to": "cause", "label": "line found", "role": "main" },
     { "id": "hover-colors", "from": "hover", "to": "colors", "label": "light theme", "role": "branch" },
-    { "id": "strip-crash", "from": "strip", "to": "crash", "label": "its service exits", "role": "branch", "variant": "dashed" },
+    {
+      "id": "strip-crash",
+      "from": "strip",
+      "to": "crash",
+      "label": "its service exits",
+      "role": "branch",
+      "variant": "dashed"
+    },
     { "id": "crash-terminal", "from": "crash", "to": "terminal", "label": "none retained", "role": "error" },
     { "id": "cause-terminal", "from": "cause", "to": "terminal", "label": "cut, uncopyable", "role": "error" }
   ],

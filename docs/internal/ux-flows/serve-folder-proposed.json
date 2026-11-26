@@ -44,9 +44,24 @@
       "tag": "serve-command-08",
       "explanation": "devhost serve supports three manifest-free modes: serving a folder (--dir), routing an existing server (--port 3000), and running a command (devhost serve \"<cmd>\" or devhost serve -- <cmd>, with optional --name, --detach, and -s/--startup-timeout). --domain stays required and bare for folder and port sessions; command mode generates a hostname when omitted (Kept). Under O40, folder and command sessions keep chat ON by default with --no-chat to turn it off, while --port never hands an agent the shell's current folder. devhost serve --help Quickstart includes command-mode foreground and --detach examples, --startup-timeout enables .allow_hyphen_values(true) so negative durations return a structured error, and -s short flags align with start/serve.md and reference/cli.md (serve-command-08). Ctrl-C during start cancels cleanly (KEY-14, FAIL-5).",
       "sources": [
-        { "path": "apps/devhost/src/cli.rs", "line": 22, "end_line": 35, "label": "Replaces: serve flags, --no-chat, hyphen values" },
-        { "path": "apps/devhost/src/main.rs", "line": 43, "end_line": 58, "label": "Replaces: Quickstart adds command examples" },
-        { "path": "apps/devhost/src/serve_cli.rs", "line": 5, "end_line": 45, "label": "Reuses: folder, port, and command CLI dispatch" }
+        {
+          "path": "apps/devhost/src/cli.rs",
+          "line": 22,
+          "end_line": 35,
+          "label": "Replaces: serve flags, --no-chat, hyphen values"
+        },
+        {
+          "path": "apps/devhost/src/main.rs",
+          "line": 43,
+          "end_line": 58,
+          "label": "Replaces: Quickstart adds command examples"
+        },
+        {
+          "path": "apps/devhost/src/serve_cli.rs",
+          "line": 5,
+          "end_line": 45,
+          "label": "Reuses: folder, port, and command CLI dispatch"
+        }
       ]
     },
     {
@@ -59,9 +74,24 @@
       "tag": "serve-folder-02",
       "explanation": "The first line names what is served and chat state, then the shared proxy line (WORD-12): 'Serving ~/acme/docs · chat on (pass --no-chat to turn it off)' and 'Proxy: HTTPS on port 443, every interface, reachable from your network · ~/.config/devhost/config.toml' for a folder, 'Running `bun run dev` in ~/acme · … · chat on (pass --no-chat to turn it off)' for a command, and 'Routing to 127.0.0.1:3000 · … · chat off' for --port (FB-10, WORD-8, O40). Lines carry the short label devhost — never serve-<domain> and never over-padded columns — and never call a serve session a stack or primary service (WORD-1, WORD-9, serve-command-03). Under O39, macOS honors bindHost = '127.0.0.1' from port 1024 upward and below 1024 keeps listening on all interfaces while printing an explicit warning naming httpsPort = 4443 or a privileged launcher. When Caddy must start, a line explains the trust prompt before asking for a password; under AGENT=1 or non-TTY stdin it skips the prompt and prints one warning naming devhost caddy trust (REV-8, CC-13).",
       "sources": [
-        { "path": "apps/devhost/src/serve_cli.rs", "line": 143, "end_line": 176, "label": "Replaces: padded label and pre-start Stop:" },
-        { "path": "apps/devhost/src/caddy/files.rs", "line": 497, "end_line": 533, "label": "Replaces: macOS bindHost and <1024 warning" },
-        { "path": "apps/devhost/src/cliout.rs", "line": 1, "end_line": 45, "label": "Reuses: devhost human and AGENT=1 writers" }
+        {
+          "path": "apps/devhost/src/serve_cli.rs",
+          "line": 143,
+          "end_line": 176,
+          "label": "Replaces: padded label and pre-start Stop:"
+        },
+        {
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 497,
+          "end_line": 533,
+          "label": "Replaces: macOS bindHost and <1024 warning"
+        },
+        {
+          "path": "apps/devhost/src/cliout.rs",
+          "line": 1,
+          "end_line": 45,
+          "label": "Reuses: devhost human and AGENT=1 writers"
+        }
       ]
     },
     {
@@ -74,9 +104,24 @@
       "tag": "serve-folder-04",
       "explanation": "One write: claims the hostname, routes it, starts devhost's file server or command, and starts Caddy on demand (Kept). The session record stores sessionKind ('dir', 'port', or 'command'), real identity (folder, target address, or session name + command string), hostname(s), PID, and start time; access logs key by hostname so two sessions serving one folder keep separate logs (WORD-1). Under O40, folder and command sessions keep chat ON by default unless --no-chat is passed (answering chatEnabled: false and 404 on chat routes, with toolbar reason 'Chat is off in this serve session (started with --no-chat).'), while --port always disables chat with empty projectRootPath and never uses the shell's current folder (SEL-11, HOLD-5, serve-folder-04). Remote chat and control access share O36's passkey (with phone support) or devhost pair check and 30-day idle session cookie (O59). Resolves serve-folder-04.",
       "sources": [
-        { "path": "apps/devhost/src/services/serve.rs", "line": 152, "end_line": 219, "label": "Replaces: serve-<domain> and chat wiring" },
-        { "path": "apps/devhost/src/services/serve_command.rs", "line": 16, "end_line": 117, "label": "Replaces: command identity and --no-chat" },
-        { "path": "apps/devhost/src/services/stack.rs", "line": 2190, "end_line": 2210, "label": "Replaces: access log keyed by hostname" }
+        {
+          "path": "apps/devhost/src/services/serve.rs",
+          "line": 152,
+          "end_line": 219,
+          "label": "Replaces: serve-<domain> and chat wiring"
+        },
+        {
+          "path": "apps/devhost/src/services/serve_command.rs",
+          "line": 16,
+          "end_line": 117,
+          "label": "Replaces: command identity and --no-chat"
+        },
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 2190,
+          "end_line": 2210,
+          "label": "Replaces: access log keyed by hostname"
+        }
       ]
     },
     {
@@ -89,9 +134,24 @@
       "tag": "serve-folder-03",
       "explanation": "Handles start failures before readiness with exit status 1 and nothing left running. A taken hostname names the holder: a serve session's folder/port/command, PID, start time, and stop command (never 'from .'), or a manifest stack's name, worktree label, root manifest, and devhost stop --manifest (FAIL-2, WORD-7, WORD-11, serve-folder-03). Command spawn failures surface the OS error directly on [ERROR]/ERR: instead of 'command process is unavailable'; HTTP readiness timeouts name the HEAD / probe and suggest --startup-timeout; and detached serve startup failures preserve Failure.hint ('[INFO] Read the full log in ...') and say 'the serve session' rather than 'the stack' (serve-command-07). Resolves serve-folder-03 and serve-command-07.",
       "sources": [
-        { "path": "apps/devhost/src/caddy/routes.rs", "line": 910, "end_line": 925, "label": "Replaces: raw PID and 'from .' refusal" },
-        { "path": "apps/devhost/src/services/stack/command.rs", "line": 67, "end_line": 82, "label": "Replaces: 'command process is unavailable'" },
-        { "path": "apps/devhost/src/services/detach.rs", "line": 655, "end_line": 665, "label": "Replaces: 'the stack exited before ready'" }
+        {
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 910,
+          "end_line": 925,
+          "label": "Replaces: raw PID and 'from .' refusal"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/command.rs",
+          "line": 67,
+          "end_line": 82,
+          "label": "Replaces: 'command process is unavailable'"
+        },
+        {
+          "path": "apps/devhost/src/services/detach.rs",
+          "line": 655,
+          "end_line": 665,
+          "label": "Replaces: 'the stack exited before ready'"
+        }
       ]
     },
     {
@@ -104,9 +164,24 @@
       "tag": "manifest-hot-reload-2-04",
       "explanation": "A --port session waits until its port first accepts a connection, updating one status line at least once per second on a terminal ('Waiting for 127.0.0.1:3000 to accept connections · 12 s · start your server, or check the port number') with no timeout, routing the hostname immediately so open pages show startup-and-recovery's not-reachable page with Check Again (never a disabled Restart) and reload once it answers (ACT-4, ACT-9, FB-5, STATE-1). After readiness, reachability drops and recoveries log once per transition. A command session probes discovered TCP ports with HEAD / within --startup-timeout (suggesting --startup-timeout on timeout, serve-command-07). Resolves the serve slice of manifest-hot-reload-2-04 with verifier duplicate serve-folder-01.",
       "sources": [
-        { "path": "apps/devhost/src/services/stack.rs", "line": 823, "end_line": 835, "label": "Replaces: --port skipping startup wait" },
-        { "path": "apps/devhost/src/services/stack/command.rs", "line": 13, "end_line": 65, "label": "Reuses: command HTTP port readiness wait" },
-        { "path": "apps/devhost/src/devtools/document_injection.rs", "line": 399, "end_line": 417, "label": "Replaces: recovery page for external port" }
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 823,
+          "end_line": 835,
+          "label": "Replaces: --port skipping startup wait"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/command.rs",
+          "line": 13,
+          "end_line": 65,
+          "label": "Reuses: command HTTP port readiness wait"
+        },
+        {
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 399,
+          "end_line": 417,
+          "label": "Replaces: recovery page for external port"
+        }
       ]
     },
     {
@@ -117,10 +192,20 @@
       "label": "Ready · CLI & bar",
       "sublabel": "URL · Ctrl-C or Stop:",
       "tag": "serve-command-03",
-      "explanation": "Prints the ready summary only once the route or first HTTP port answers: 'Ready in 0.3 s: https://notes.localhost/ · Ctrl-C stops this session' for folders, 'Ready in 14.1 s: https://app.localhost/ · Ctrl-C stops this session' for --port, and for command mode either the foreground ready summary with session name and Ctrl-C cue or detached Started / URL / Log: / 'Stop: devhost stop --session <name>' in both human and AGENT=1 modes (FB-5, FB-10, FB-11, KEY-14, CC-22, CC-30, serve-command-03). Caddy outages print one line on stop and one on recovery (ACT-10). devhost restart-all and devhost upgrade list serve sessions and keep them running (O18, O31, CC-36). Resolves serve-command-03 and the ready line of serve-folder-02.",
+      "explanation": "Prints the ready summary only once the route or first HTTP port answers: 'Ready in 0.3 s: https://notes.localhost/ · Ctrl-C stops this session' for folders, 'Ready in 14.1 s: https://app.localhost/ · Ctrl-C stops this session' for --port, and for command mode either the foreground ready summary with session name and Ctrl-C cue or detached Started / URL / Log: / 'Stop: devhost stop --session <name>' in both human and AGENT=1 modes (FB-5, FB-10, FB-11, KEY-14, CC-22, CC-30, serve-command-03). Caddy outages print one line on stop and one on recovery (ACT-10). devhost restart and devhost upgrade list serve sessions and keep them running (O18, O31, CC-36). Resolves serve-command-03 and the ready line of serve-folder-02.",
       "sources": [
-        { "path": "apps/devhost/src/services/detach.rs", "line": 755, "end_line": 778, "label": "Replaces: detached ready adding Stop: line" },
-        { "path": "apps/devhost/src/services/serve_sessions.rs", "line": 12, "end_line": 46, "label": "Reuses: serve session registry and stop" }
+        {
+          "path": "apps/devhost/src/services/detach.rs",
+          "line": 755,
+          "end_line": 778,
+          "label": "Replaces: detached ready adding Stop: line"
+        },
+        {
+          "path": "apps/devhost/src/services/serve_sessions.rs",
+          "line": 12,
+          "end_line": 46,
+          "label": "Reuses: serve session registry and stop"
+        }
       ]
     },
     {
@@ -133,9 +218,24 @@
       "tag": "serve-command-05",
       "explanation": "Supervises running command sessions across port changes and post-readiness exits. Newly discovered ports log 'Added route:' (with primary hostname alias note on the first port) and closed secondary ports log 'Removed route:' (FB-10, serve-command-05). Before refresh_command_routes removes a closed secondary port while sibling port(s) remain healthy, devhost emits {\"type\": \"port-closed\", \"port\": 4002, \"session\": \"demoapp\", \"activeUrls\": [...]} on /__devhost__/ws/health so open tabs stop retrying and show a targeted notice with Open links (never a false 0/3 outage), and keeps a session-scoped HTTP 410 status page over valid local HTTPS listing active URLs so reloading never hits ERR_SSL_PROTOCOL_ERROR (O63, CC-26, serve-command-05). On foreground post-readiness exit (0 or non-zero), devhost immediately tears down routes, claims, and record and exits with the command's own exit code (serve-command-01, P0). Resolves serve-command-05 and foreground serve-command-01.",
       "sources": [
-        { "path": "apps/devhost/src/services/stack/command.rs", "line": 118, "end_line": 186, "label": "Replaces: fake port-* rows and raw URL logs" },
-        { "path": "apps/devhost/src/services/stack/runtime.rs", "line": 84, "end_line": 115, "label": "Replaces: foreground hang on command exit" },
-        { "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts", "line": 1, "end_line": 30, "label": "Reuses: WS client for port-closed event" }
+        {
+          "path": "apps/devhost/src/services/stack/command.rs",
+          "line": 118,
+          "end_line": 186,
+          "label": "Replaces: fake port-* rows and raw URL logs"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 84,
+          "end_line": 115,
+          "label": "Replaces: foreground hang on command exit"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts",
+          "line": 1,
+          "end_line": 30,
+          "label": "Reuses: WS client for port-closed event"
+        }
       ]
     },
     {
@@ -148,8 +248,18 @@
       "tag": "serve-command-01",
       "explanation": "When a detached command session crashes (exits non-zero) after readiness, devhost never prints 'waiting for a restart' while deleting routes into ERR_SSL_PROTOCOL_ERROR: it keeps the session hostname(s) routed over valid local HTTPS (O63) to a command-session recovery page showing the exit code, frozen recent output lines, working Restart Command (manifest-free operationId, 202 Accepted), and devhost stop --session <name> to remove it (ACT-2, FAIL-3, MENU-5, serve-command-01, serve-command-02). A detached clean exit 0 tears down routes, claims, and session record cleanly so no dead supervisor leaves broken TLS routes. Resolves detached serve-command-01 (P0) and manifest-free Restart Command in serve-command-02.",
       "sources": [
-        { "path": "apps/devhost/src/services/stack/runtime.rs", "line": 373, "end_line": 378, "label": "Replaces: restart requiring manifest" },
-        { "path": "apps/devhost/src/caddy/routes.rs", "line": 454, "end_line": 478, "label": "Replaces: deleting routes on crash" }
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 373,
+          "end_line": 378,
+          "label": "Replaces: restart requiring manifest"
+        },
+        {
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 454,
+          "end_line": 478,
+          "label": "Replaces: deleting routes on crash"
+        }
       ]
     },
     {
@@ -162,9 +272,24 @@
       "tag": "serve-command-06",
       "explanation": "Unifies serve-session inspection across the toolbar, CLI, and Stack Directory (All Stacks on devbox, O61). Command sessions model first-class as 1/1 with command string and discovered URLs/ports attached directly (no fake external port-<port>, no Restart Changed, working Restart Command) in both the toolbar and devhost stack info --session / devhost status --session (O62, serve-command-02). devhost stop, stack info, stack find, and interactive stack list surface running serve sessions or point to devhost stack list --sessions and --session <name> (serve-command-04). statuspage::Stack carries sessionKind ('manifest'|'command'|'dir'|'port') and command so Stack Directory cards title by folder, target address, or session name + command, count serve sessions separately, use singular '1 file', omit launch folders on --port cards, and never print External on devhost-run servers/commands or 'Manifest-free file or port session' (serve-folder-11, serve-command-06). Toolbar layout saves per served folder (CC-5).",
       "sources": [
-        { "path": "apps/devhost/src/devtools/directory.rs", "line": 96, "end_line": 203, "label": "Replaces: External and manifest-free cards" },
-        { "path": "apps/devhost/src/services/stack_info.rs", "line": 26, "end_line": 47, "label": "Replaces: command session info model" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx", "line": 37, "end_line": 50, "label": "Replaces: folder, port, and command cards" }
+        {
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 96,
+          "end_line": 203,
+          "label": "Replaces: External and manifest-free cards"
+        },
+        {
+          "path": "apps/devhost/src/services/stack_info.rs",
+          "line": 26,
+          "end_line": 47,
+          "label": "Replaces: command session info model"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
+          "line": 37,
+          "end_line": 50,
+          "label": "Replaces: folder, port, and command cards"
+        }
       ]
     },
     {
@@ -176,7 +301,12 @@
       "sublabel": "serve = \"docs\" in a stack",
       "explanation": "A stack service with serve = \"<folder>\" runs the same file server under devhost start, so it shows the same listing, Markdown view, and file-browser 404 page with the stack's own toolbar, chat setting, and worktrees (Kept, O5, SURF-16, WORD-11). Invalid manifest serve declarations report file, line, column, and key in structured errors; when the config editor is off, browser rows show the location with Copy only (Open in Editor removed by O51).",
       "sources": [
-        { "path": "apps/devhost/src/services/stack.rs", "line": 1304, "end_line": 1312, "label": "Reuses: manifest serve runs FileServer" }
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 1304,
+          "end_line": 1312,
+          "label": "Reuses: manifest serve runs FileServer"
+        }
       ]
     },
     {
@@ -189,9 +319,24 @@
       "tag": "serve-folder-05",
       "explanation": "Renders the shared trust line under the heading when devbox does not trust devhost's certificate authority (FB-9, WORD-12, SURF-14, O61). One heading path starts from the served folder name ('docs / guides'), followed by counts ('3 folders · 12 files') and a filter; Name, Size, and Modified columns list folders first then files in natural case-insensitive order with kind icons, binary sizes, local 24h times, and ./ relative hrefs so colon names open cleanly with no external-link arrows (ACT-13, WORD-8, SURF-15, serve-folder-07, serve-folder-10). index.md, README.md, or readme.md renders below the listing under its file name so every file stays one click away; index.html still serves unchanged (serve-folder-05). Empty folders show the shared empty-state block with no filter. Resolves serve-folder-05, serve-folder-07, and serve-folder-10.",
       "sources": [
-        { "path": "apps/devhost/src/files.rs", "line": 106, "end_line": 169, "label": "Replaces: index hiding listing & byte sort" },
-        { "path": "apps/devhost/src/files.rs", "line": 227, "end_line": 248, "label": "Replaces: 'devhost' breadcrumb root" },
-        { "path": "packages/devhost-ui/src/statusPages/components/FilePage.tsx", "line": 61, "end_line": 84, "label": "Replaces: heading and row link arrows" }
+        {
+          "path": "apps/devhost/src/files.rs",
+          "line": 106,
+          "end_line": 169,
+          "label": "Replaces: index hiding listing & byte sort"
+        },
+        {
+          "path": "apps/devhost/src/files.rs",
+          "line": 227,
+          "end_line": 248,
+          "label": "Replaces: 'devhost' breadcrumb root"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/FilePage.tsx",
+          "line": 61,
+          "end_line": 84,
+          "label": "Replaces: heading and row link arrows"
+        }
       ]
     },
     {
@@ -204,9 +349,24 @@
       "tag": "serve-folder-08",
       "explanation": "Renders .md files as GitHub Flavored Markdown without raw HTML, YAML front matter as a table (Kept). Rendered and Source are pressed-state buttons applying to this file only via ?view=source and history.replaceState, writing nothing to localStorage and preserving synchronous flushSync and <noscript> first-paint restoration so ?view=source opens without a rendered flash (SEL-11, WORD-3). Source view linkifies targets with the rendered view's sanitizer (serve-folder-08). Invalid YAML front matter shows the parser error above its raw block and non-mapping YAML states that instead; GitHub's five alerts render as titled callouts with icons at 4.5:1 contrast in both themes and distinct in forced colors (FAIL-2, ACT-13, serve-folder-09). Resolves serve-folder-08 and serve-folder-09.",
       "sources": [
-        { "path": "packages/devhost-ui/src/statusPages/hooks/useMarkdownSource.ts", "line": 8, "end_line": 27, "label": "Replaces: host-wide localStorage view pref" },
-        { "path": "packages/devhost-ui/src/statusPages/renderFrontMatter.ts", "line": 17, "end_line": 32, "label": "Replaces: parse error shown as code block" },
-        { "path": "apps/devhost/src/statuspage.rs", "line": 185, "end_line": 193, "label": "Reuses: <noscript> first-paint restoration" }
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useMarkdownSource.ts",
+          "line": 8,
+          "end_line": 27,
+          "label": "Replaces: host-wide localStorage view pref"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/renderFrontMatter.ts",
+          "line": 17,
+          "end_line": 32,
+          "label": "Replaces: parse error shown as code block"
+        },
+        {
+          "path": "apps/devhost/src/statuspage.rs",
+          "line": 185,
+          "end_line": 193,
+          "label": "Reuses: <noscript> first-paint restoration"
+        }
       ]
     },
     {
@@ -219,8 +379,18 @@
       "tag": "serve-folder-06",
       "explanation": "Document requests to missing paths answer 404 inside the file browser: heading path to the nearest existing folder, 'No file named on-cal.md in docs/guides', up to three close visible names as same-tab links, and that folder's listing, with no Restart, worktree list, internal address, or logs (SURF-16, MENU-3, MENU-5, WORD-11, O16). Identical for CLI serve sessions and manifest serve services; document injection leaves file-server 404/500 answers untouched (O5, CC-4). Hidden and out-of-root paths answer identically and are never suggested. Unreadable files answer 500 in place with path, cause, and Retry (STATE-4). Resolves the file-browser slice of serve-folder-06.",
       "sources": [
-        { "path": "apps/devhost/src/devtools/document_injection.rs", "line": 316, "end_line": 342, "label": "Replaces: recovery page replacing file 404" },
-        { "path": "apps/devhost/src/files.rs", "line": 250, "end_line": 260, "label": "Replaces: bare plain-text 404 response" }
+        {
+          "path": "apps/devhost/src/devtools/document_injection.rs",
+          "line": 316,
+          "end_line": 342,
+          "label": "Replaces: recovery page replacing file 404"
+        },
+        {
+          "path": "apps/devhost/src/files.rs",
+          "line": 250,
+          "end_line": 260,
+          "label": "Replaces: bare plain-text 404 response"
+        }
       ]
     },
     {
@@ -233,28 +403,94 @@
       "tag": "serve-folder-02",
       "explanation": "Ctrl-C (exit 130), SIGTERM (exit 143), devhost stop --session <name>, or foreground command exit removes routes, closed-port status routes, hostname claims, and the session record, stops the file server or verified command process tree (ACT-14) within O30's configurable stopTimeout (5s..10m, default 30s, slow-stop progress line, second Ctrl-C/stop force), keeps Caddy and any --port server running, prints one outcome line plus the start-again command (and prints clear stop confirmation with session name and PID for devhost stop --session in both human and AGENT=1 modes), and sends open tabs the lost-connection stop reason (KEY-14, FB-10, UNDO-5, FAIL-5, HOLD-2, O30, CC-35). Resolves serve-folder-02 stop and serve-command-03 stop confirmation.",
       "sources": [
-        { "path": "apps/devhost/src/services/stack.rs", "line": 1070, "end_line": 1120, "label": "Replaces: 'shutting down the stack' text" },
-        { "path": "apps/devhost/src/main.rs", "line": 554, "end_line": 573, "label": "Replaces: silent devhost stop --session" },
-        { "path": "apps/devhost/src/services/stop.rs", "line": 64, "end_line": 85, "label": "Replaces: stop hints and O30 stopTimeout" }
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 1070,
+          "end_line": 1120,
+          "label": "Replaces: 'shutting down the stack' text"
+        },
+        {
+          "path": "apps/devhost/src/main.rs",
+          "line": 554,
+          "end_line": 573,
+          "label": "Replaces: silent devhost stop --session"
+        },
+        {
+          "path": "apps/devhost/src/services/stop.rs",
+          "line": 64,
+          "end_line": 85,
+          "label": "Replaces: stop hints and O30 stopTimeout"
+        }
       ]
     }
   ],
   "edges": [
     { "id": "start-header", "from": "start", "to": "header", "label": "run", "role": "main" },
-    { "id": "header-session", "from": "header", "to": "session", "label": "claim + route", "role": "main", "variant": "emphasis", "fromSide": "right", "toSide": "top" },
-    { "id": "session-taken", "from": "session", "to": "taken", "label": "taken / launch err", "role": "error", "fromSide": "left", "toSide": "top" },
+    {
+      "id": "header-session",
+      "from": "header",
+      "to": "session",
+      "label": "claim + route",
+      "role": "main",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "session-taken",
+      "from": "session",
+      "to": "taken",
+      "label": "taken / launch err",
+      "role": "error",
+      "fromSide": "left",
+      "toSide": "top"
+    },
     { "id": "session-waiting", "from": "session", "to": "waiting", "label": "--port / probe", "role": "branch" },
     { "id": "session-ready", "from": "session", "to": "ready", "label": "route answers", "role": "main" },
-    { "id": "waiting-ready", "from": "waiting", "to": "ready", "label": "port answers", "role": "branch", "variant": "dashed" },
+    {
+      "id": "waiting-ready",
+      "from": "waiting",
+      "to": "ready",
+      "label": "port answers",
+      "role": "branch",
+      "variant": "dashed"
+    },
     { "id": "ready-cmdEvents", "from": "ready", "to": "cmdEvents", "label": "command mode", "role": "branch" },
-    { "id": "cmdEvents-cmdRecovery", "from": "cmdEvents", "to": "cmdRecovery", "label": "detached crash", "role": "error" },
-    { "id": "cmdEvents-stop", "from": "cmdEvents", "to": "stop", "label": "fg exit / clean 0", "role": "branch", "variant": "dashed" },
-    { "id": "ready-directory", "from": "ready", "to": "directory", "label": "toolbar / dir / CLI", "role": "branch", "variant": "dashed" },
+    {
+      "id": "cmdEvents-cmdRecovery",
+      "from": "cmdEvents",
+      "to": "cmdRecovery",
+      "label": "detached crash",
+      "role": "error"
+    },
+    {
+      "id": "cmdEvents-stop",
+      "from": "cmdEvents",
+      "to": "stop",
+      "label": "fg exit / clean 0",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "ready-directory",
+      "from": "ready",
+      "to": "directory",
+      "label": "toolbar / dir / CLI",
+      "role": "branch",
+      "variant": "dashed"
+    },
     { "id": "ready-listing", "from": "ready", "to": "listing", "label": "open folder URL", "role": "main" },
     { "id": "manifest-listing", "from": "manifestSvc", "to": "listing", "label": "same pages", "role": "branch" },
     { "id": "listing-file", "from": "listing", "to": "file", "label": "open a file", "role": "main" },
     { "id": "file-notfound", "from": "file", "to": "notFound", "label": "mistyped name", "role": "error" },
-    { "id": "file-stop", "from": "file", "to": "stop", "label": "Ctrl-C / stop --session", "role": "main", "variant": "emphasis" }
+    {
+      "id": "file-stop",
+      "from": "file",
+      "to": "stop",
+      "label": "Ctrl-C / stop --session",
+      "role": "main",
+      "variant": "emphasis"
+    }
   ],
   "cards": [
     {
@@ -264,7 +500,7 @@
         "Removed: serve-<domain> prefixes, serve (primary), 'shutting down the stack', over-padded devhost labels, pre-startup Stop: lines, silent stop --session; foreground command hang ('waiting for a restart') and detached crashes breaking TLS; synthetic external port-* services and Restart Changed in command sessions; 'command process is unavailable'; --port ready before listening; README hiding listing, 'Directory listing', devhost root, byte order, row arrows, localStorage source toggle, recovery page on 404, Open in Editor (O51), refusal 'from .', External on folder/command cards, launch folder on --port cards, 'Manifest-free file or port session', '1 files', and --port handing cwd to chat",
         "Merged: folder listing and Markdown index on one page (listing first); breadcrumb and heading as one heading path; CLI and manifest serve 404 into one file-browser 404; command and discovered HTTP ports into one 1/1 entry across toolbar, stack info --session, and Stack Directory",
         "New: header with chat state (O40) and the shared proxy line with the resolved listener (O39, WORD-12) plus --no-chat; ready, waiting, reachability, detached Stop:, and stop confirmation lines; foreground exit propagation and detached valid-HTTPS crash recovery with working Restart Command; labeled multi-port route logs, WebSocket port-closed notice, and 410 reload page; CLI serve-session discoverability; OS launch & HEAD / timeout diagnostics, Quickstart command examples, and negative --startup-timeout handling; holder refusals; listing metadata, filter, shared CA trust line, and ./ hrefs; per-file ?view=source, source links, front matter errors, GitHub alerts, file-browser 404/500, and sessionKind/command directory cards",
-        "Changed: Markdown index renders below listing; Rendered/Source is per file in URL preserving flushSync/<noscript> first paint; --port waits until port answers; foreground command mode exits with command exit code; devhost restart-all and devhost upgrade keep serve sessions running (O18, O31, CC-36); unified O30 stopTimeout shutdown; access logs key by hostname",
+        "Changed: Markdown index renders below listing; Rendered/Source is per file in URL preserving flushSync/<noscript> first paint; --port waits until port answers; foreground command mode exits with command exit code; devhost restart and devhost upgrade keep serve sessions running (O18, O31, CC-36); unified O30 stopTimeout shutdown; access logs key by hostname",
         "Kept: one command, no manifest, Caddy started on demand and kept running; no devhost.toml read, nothing written in served folder; chat on by default for folder/command sessions (O40) with O36 remote passkey/pairing auth; --port server never started or stopped; reads confined on every request; GFM, GET/HEAD/ranges, index.html unchanged, no-JS fallback; taken host refused exit 1; exit 130/143; interactive-only trust prompt; manifest serve on same pages; Stack Directory lists serve sessions"
       ]
     },
@@ -299,7 +535,7 @@
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-36 & CC-31 (stack-run-stop): devhost restart-all and devhost upgrade list serve sessions and keep them running (O18, O31)",
+        "CC-36 & CC-31 (stack-run-stop): devhost restart and devhost upgrade list serve sessions and keep them running (O18, O31)",
         "CC-35: unified O30 configurable stopTimeout (5s..10m, 30s default) with verified process-tree containment (ACT-14)",
         "CC-30 & CC-22: human/agent parity, devhost label, ready/outcome lines, detached Stop:, stop --session confirmation, labeled multi-port logs",
         "CC-13: trust prompt only for interactive terminals; AGENT=1 warning names devhost caddy trust",

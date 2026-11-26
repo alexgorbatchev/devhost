@@ -80,17 +80,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "chatbtn",
-    "open",
-    "compose",
-    "send",
-    "session",
-    "prompt",
-    "approval",
-    "answer",
-    "reply"
-  ],
+  "mainPath": ["chatbtn", "open", "compose", "send", "session", "prompt", "approval", "answer", "reply"],
   "nodes": [
     {
       "id": "chatbtn",

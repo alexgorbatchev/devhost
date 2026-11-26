@@ -71,13 +71,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "point",
-    "lookup",
-    "menu",
-    "copy",
-    "copied"
-  ],
+  "mainPath": ["point", "lookup", "menu", "copy", "copied"],
   "nodes": [
     {
       "id": "point",

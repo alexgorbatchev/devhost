@@ -72,14 +72,7 @@
       "toCol": 4
     }
   ],
-  "mainPath": [
-    "strip",
-    "peek",
-    "panel",
-    "filter",
-    "lines",
-    "copied"
-  ],
+  "mainPath": ["strip", "peek", "panel", "filter", "lines", "copied"],
   "nodes": [
     {
       "id": "strip",

@@ -318,10 +318,11 @@
             add built-in <code>devhost upgrade</code> (downloads the latest release excluding <code>media</code>,
             verifies checksums, swaps a user-writable binary or clearly reports read-only/externally managed installs
             without breaking them, and replaces running manifest stacks) and keep shipped
-            <code>devhost restart-all</code> and project-scoped <code>devhost stack restart</code> on one verb for
-            dotfiles, package managers and local rebuilds, withdrawing the <code>devhost stack replace</code> rename
-            while stating clearly in help and output that they replace the running devhost supervisor process
-            (<code>CC-12</code>, <code>CC-31</code>).
+            <code>devhost restart</code> (named <code>devhost restart-all</code> until main renamed it in
+            <code>da28d008</code>) and project-scoped <code>devhost stack restart</code> on one verb for dotfiles,
+            package managers and local rebuilds, withdrawing the <code>devhost stack replace</code> rename while stating
+            clearly in help and output that they replace the running devhost supervisor process (<code>CC-12</code>,
+            <code>CC-31</code>).
           </li>
           <li>
             <b
@@ -400,7 +401,7 @@
           </li>
           <li>
             <b
-              >O30 How long <code>devhost stop</code>, <code>stack restart</code>, <code>restart-all</code> and
+              >O30 How long <code>devhost stop</code>, <code>stack restart</code>, <code>restart</code> and
               <code>upgrade</code> wait for a stack to stop. Decided (product owner, 2026-11-18, q40a3;
               parallel-shutdown design settled 2026-11-25):</b
             >
@@ -415,8 +416,8 @@
           </li>
           <li>
             <b
-              >O31 Whether <code>devhost restart-all</code> and <code>devhost upgrade</code> replace foreground stacks
-              and serve sessions. Decided (product owner, 2026-11-18; names updated by O18):</b
+              >O31 Whether <code>devhost restart</code> and <code>devhost upgrade</code> replace foreground stacks and
+              serve sessions. Decided (product owner, 2026-11-18; names updated by O18):</b
             >
             they replace every manifest stack, each saying in its own terminal that it was replaced and where its
             replacement logs; serve sessions are listed and left running, with the command that restarts each.
@@ -434,8 +435,8 @@
               >O33 Whether multi-stack terminal commands ask. Decided (product owner, 2026-11-18; names updated by
               O18):</b
             >
-            <code>stop --worktrees</code>, <code>restart-all</code> and <code>upgrade</code> print their set and act;
-            only when they would end a working or waiting agent's turn do they ask <code>[y/N]</code> in a terminal, and
+            <code>stop --worktrees</code>, <code>restart</code> and <code>upgrade</code> print their set and act; only
+            when they would end a working or waiting agent's turn do they ask <code>[y/N]</code> in a terminal, and
             without one or under <code>AGENT=1</code> they refuse unless <code>--yes</code>.
           </li>
           <li>
@@ -1152,7 +1153,7 @@ Would stop 2 stacks:
               <b>MENU-6</b> One name, one behavior, on every surface: the toolbar, status pages, the terminal and the
               control API. Every browser lifecycle action has a terminal command: <b>Restart Stack</b>'s is
               <code>devhost service restart --all</code> (revision 7), because <code>devhost stack restart</code>, like
-              <code>devhost restart-all</code> and <code>devhost upgrade</code>, replaces the running devhost supervisor
+              <code>devhost restart</code> and <code>devhost upgrade</code>, replaces the running devhost supervisor
               process (<code>O18</code>, 2.12); the control API answers a mistyped or inapplicable service with
               <code>422</code> and <code>{error, service}</code>.
             </li>
@@ -1454,9 +1455,9 @@ Stop 2 stacks and end 1 agent turn? [y/N] <span class="n">4</span></pre>
             <li>
               <b>REV-1</b> Only these writes ask: Restart Stack in the Services panel and Return to Configured Worktree,
               every time, in place; Stop Stack on another stack's worktree, every time; a worktree switch only for other
-              work; <code>stop --worktrees</code>, <code>restart-all</code> and <code>upgrade</code> only when they
-              would end an agent's turn; Disable Reloads every time; certificate trust every time, answered by a person
-              at a terminal. Every other write runs on one press after naming its reach.
+              work; <code>stop --worktrees</code>, <code>restart</code> and <code>upgrade</code> only when they would
+              end an agent's turn; Disable Reloads every time; certificate trust every time, answered by a person at a
+              terminal. Every other write runs on one press after naming its reach.
             </li>
             <li>
               <b>REV-2</b> <span class="n">1</span> A stack-wide write takes two deliberate steps: the first press
@@ -2303,12 +2304,11 @@ $ echo $?
             </li>
             <li>
               <b>ACT-10</b> <span class="n">6</span> A stack's end is a state with its reason (stopped from a terminal
-              or another stack's page, the idle timeout, replaced by <code>stack restart</code>,
-              <code>restart-all</code> or <code>upgrade</code>, killed, every service gone) and time; its hostnames keep
-              configured HTTPS routes and certificates active for <code>O15</code>'s 24 h window (<code>O63</code>) and
-              answer with a page naming when and why it stopped and the command that starts it in its folder, while
-              unknown HTTPS hostnames keep strict configured-hosts-only TLS. devhost never starts a stack from these
-              pages.
+              or another stack's page, the idle timeout, replaced by <code>stack restart</code>, <code>restart</code> or
+              <code>upgrade</code>, killed, every service gone) and time; its hostnames keep configured HTTPS routes and
+              certificates active for <code>O15</code>'s 24 h window (<code>O63</code>) and answer with a page naming
+              when and why it stopped and the command that starts it in its folder, while unknown HTTPS hostnames keep
+              strict configured-hosts-only TLS. devhost never starts a stack from these pages.
             </li>
             <li>
               <b>ACT-11</b> A reported state matches the processes that run: a stack reads stopped only when no process,
@@ -2597,12 +2597,11 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <b>WORD-1</b> The glossary extends <code>CONTEXT.md</code>: stack, serve session, service, external
               service, manifest, manifest file, accepted manifest, devhost config file, shared Caddy settings,
               configuration, hot reload (applied, not applied), reloads, worktree (main's included,
-              <code>WORD-11</code>), switch, Restart Stack, replace (<code>stack restart</code>,
-              <code>restart-all</code>, <code>upgrade</code>, <code>O18</code>), stop and force-stop, conversation,
-              agent, page context, edit mode (<b>This worktree (live)</b> or <b>Make tickets</b>, <code>O1</code>),
-              notice, lost connection, status page, stack directory, machine name (<code>O61</code>), each with the
-              words never used for it (conversation, never session; worktree, never checkout as a noun or "."; notice,
-              never toast).
+              <code>WORD-11</code>), switch, Restart Stack, replace (<code>stack restart</code>, <code>restart</code>,
+              <code>upgrade</code>, <code>O18</code>), stop and force-stop, conversation, agent, page context, edit mode
+              (<b>This worktree (live)</b> or <b>Make tickets</b>, <code>O1</code>), notice, lost connection, status
+              page, stack directory, machine name (<code>O61</code>), each with the words never used for it
+              (conversation, never session; worktree, never checkout as a noun or "."; notice, never toast).
             </li>
             <li>
               <b>WORD-2</b> <span class="n">1</span> One label per operation on every surface, a verb with its target or
@@ -2613,8 +2612,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               accessible name adding the target ("Cancel Restart of worker"); a question's choices are verbs, and only a
               question's <b>Cancel</b> changes nothing. <b>Open in Editor</b> is removed (<code>O51</code>);
               <code>devhost upgrade</code> downloads, verifies, swaps and replaces stacks while
-              <code>devhost restart-all</code> and <code>devhost stack restart</code> keep one verb and state clearly
-              that they replace the running devhost supervisor process (<code>O18</code>, withdrawing
+              <code>devhost restart</code> and <code>devhost stack restart</code> keep one verb and state clearly that
+              they replace the running devhost supervisor process (<code>O18</code>, withdrawing
               <code>stack replace</code>); <code>devhost stack info</code> and alias <code>devhost status</code> share
               one contract (<code>O62</code>).
             </li>
@@ -3441,7 +3440,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>
                 <span class="muted">Revision 6:</span> <code>devhost service restart|start|stop</code> reaches the
                 running stack, and the crash line, help and skill name it; <code>devhost upgrade</code> downloads,
-                verifies, swaps and replaces stacks while shipped <code>devhost restart-all</code> and project-scoped
+                verifies, swaps and replaces stacks while shipped <code>devhost restart</code> and project-scoped
                 <code>devhost stack restart</code> keep one verb and state clearly that they replace the supervisor
                 process (<code>O18</code>, withdrawing <code>stack replace</code>); every surface leads to the stack
                 directory; restarting one service has one owner, to which the crash view and recovery pages hand off;
@@ -3494,7 +3493,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>
                 <span class="muted">Revision 2:</span> <b>Stop Stack</b> asks in place, shows progress in the open
                 popover, and the stopped stack's terminal names who stopped it. <code>stop --worktrees</code>,
-                <code>restart-all</code>, <code>upgrade</code> and <code>caddy stop</code> print their set and act; only
+                <code>restart</code>, <code>upgrade</code> and <code>caddy stop</code> print their set and act; only
                 when the set would end an agent's turn do they ask in a terminal, or refuse elsewhere, without
                 <code>--yes</code>, the only skip flag (<code>O18</code>, <code>O33</code>). Ended conversations are
                 named and resumable.
@@ -4249,8 +4248,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 <b>Switch and Restart Stack</b> on every surface; a replaced stack says it was replaced; <b>Deny</b>,
                 <b>Allow Once</b> and <b>Stop Turn</b>, Stop Generating becoming <b>Stop Turn</b>; recovery pages hand
                 off to the Services panel's restart; <code>devhost upgrade</code> downloads, verifies, swaps and
-                replaces stacks while <code>devhost restart-all</code> and <code>devhost stack restart</code> keep one
-                verb and state clearly that they replace the running supervisor process (<code>O18</code>, withdrawing
+                replaces stacks while <code>devhost restart</code> and <code>devhost stack restart</code> keep one verb
+                and state clearly that they replace the running supervisor process (<code>O18</code>, withdrawing
                 <code>stack replace</code>).
               </td>
               <td>WORD-2, MENU-6</td>
@@ -4447,7 +4446,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>A failed service inside a stack-wide operation</td>
               <td>
                 One service that cannot start never takes the healthy ones down; a fixed port another program holds is
-                named and stops nothing; <code>devhost stack restart</code>, <code>devhost restart-all</code> and
+                named and stops nothing; <code>devhost stack restart</code>, <code>devhost restart</code> and
                 <code>devhost upgrade</code> never leave a slow stack stopped (<code>O18</code>, <code>O30</code>); the
                 outcome reflects the resulting states; a failed Restart Stack stays where it started.
               </td>
@@ -4604,7 +4603,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
           <code>SRC-03</code> under <code>O51</code>), without renumbering. Revision 6 withdraws the
           <code>devhost stack replace</code> rename in <code>CC-12</code>, <code>CC-24</code>, <code>CC-31</code>,
           <code>CC-35</code> and <code>CC-36</code> under <code>O18</code> (adding <code>devhost upgrade</code> and
-          keeping <code>devhost restart-all</code> / <code>devhost stack restart</code>), extends
+          keeping <code>devhost restart</code> / <code>devhost stack restart</code>), extends
           <code>devhost stack info</code> with the <code>devhost status</code> alias in
           <code>CC-23</code> (<code>O62</code>), settles configured-hosts-only TLS vs 24 h stopped-stack HTTPS routes in
           <code>CC-27</code> (<code>O63</code>), records settled parallel shutdown in
@@ -4763,15 +4762,14 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>CC-12</td>
               <td>REV-1, REV-7, SEL-6; O18, O33</td>
               <td>
-                <code>reference/cli.md</code>: <code>stop --worktrees</code>, <code>restart-all</code> and
+                <code>reference/cli.md</code>: <code>stop --worktrees</code>, <code>restart</code> and
                 <code>upgrade</code> print their stacks first and, when that would end an agent's turn, ask in a
                 terminal and otherwise refuse unless <code>--yes</code>; "<code>devhost caddy stop</code> | Stops the
                 shared Caddy." also names the running stacks and hostnames it takes offline first; the flags table gains
-                <code>--yes</code> and <code>--dry-run</code> (for <code>stop --worktrees</code>,
-                <code>restart-all</code>, <code>upgrade</code> and <code>caddy stop</code>).
-                <code>guides/stack-lifecycle.md</code> names <code>devhost upgrade</code> for self-managed installs and
-                <code>devhost restart-all --yes</code> for dotfiles, package managers and scripts. Roster STK-05,
-                STK-07, SET-04.
+                <code>--yes</code> and <code>--dry-run</code> (for <code>stop --worktrees</code>, <code>restart</code>,
+                <code>upgrade</code> and <code>caddy stop</code>). <code>guides/stack-lifecycle.md</code> names
+                <code>devhost upgrade</code> for self-managed installs and <code>devhost restart --yes</code> for
+                dotfiles, package managers and scripts. Roster STK-05, STK-07, SET-04.
               </td>
             </tr>
             <tr>
@@ -4923,7 +4921,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 a restart. <code>stacks/recovery.md</code>: a signal exit also names the signal, the time and whether
                 devhost sent it, and devhost's own stops are reported as part of their operation.
                 <code>reference/cli.md</code>'s <code>143</code> row: a foreground stack that
-                <code>devhost stack restart</code>, <code>devhost restart-all</code> or
+                <code>devhost stack restart</code>, <code>devhost restart</code> or
                 <code>devhost upgrade</code> replaced prints the new stack's PID and log and exits <code>0</code>.
                 Roster STK-01, STK-07, STK-09, REC-02, REC-03, CHAT-04.
               </td>
@@ -5023,11 +5021,11 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 <b>Agent</b> and <b>Refresh Harnesses</b> <b>Refresh Agents</b>; <code>guides/devtools.md</code>'s "a
                 page served with hot reloading" becomes a page whose dev server reloads it when files change;
                 <code>reference/cli.md</code> withdraws the <code>devhost stack replace</code> rename
-                (<code>O18</code>), keeps shipped <code>devhost restart-all</code> and project-scoped
+                (<code>O18</code>), keeps shipped <code>devhost restart</code> and project-scoped
                 <code>devhost stack restart</code> (stating clearly that they replace the running supervisor process,
-                and <code>restart-all</code> leaves serve sessions running), and adds <code>devhost upgrade</code>;
-                existing docs that say "checkout" for a working copy move to "worktree" (<code>WORD-11</code>). Roster
-                WT-06, CHAT-01, CHAT-04, RLD-01, STK-07.
+                and <code>restart</code> leaves serve sessions running), and adds <code>devhost upgrade</code>; existing
+                docs that say "checkout" for a working copy move to "worktree" (<code>WORD-11</code>). Roster WT-06,
+                CHAT-01, CHAT-04, RLD-01, STK-07.
               </td>
             </tr>
             <tr>
@@ -5072,7 +5070,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 <code>config.toml</code> <code>stopTimeout</code> &gt; <code>30s</code>; daemon overrides &gt; 20 s
                 widen wait unless CLI <code>--timeout</code> caps the run), never killing a stopping supervisor, unified
                 across <code>stop</code>, <code>stop --worktrees</code>, <code>stop --session</code>,
-                <code>stack restart</code>, <code>restart-all</code>, <code>upgrade</code>,
+                <code>stack restart</code>, <code>restart</code>, <code>upgrade</code>,
                 <code>start --detach</code> cleanup, Worktrees <b>Stop Stack</b> and <code>serve</code> sessions; Ctrl-C
                 or a second <code>devhost stop</code> forces remaining process trees and daemon stop groups at once.
                 Roster STK-04, STK-07.
@@ -5083,7 +5081,7 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>FAIL-5, SEL-6; O18, O31</td>
               <td>
                 <code>guides/stack-lifecycle.md</code>: "This includes manifest stacks and standalone
-                <code>serve</code> sessions in the same state directory." becomes: <code>devhost restart-all</code> and
+                <code>serve</code> sessions in the same state directory." becomes: <code>devhost restart</code> and
                 <code>devhost upgrade</code> replace every manifest stack, foreground ones included, each saying in its
                 own terminal that it was replaced and where its replacement logs; <code>serve</code> sessions are listed
                 and keep running, restarted in their own terminal to use the new executable. Roster STK-07, SRV-01.
@@ -5951,8 +5949,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>ACT-10 stop-reason sentences and close codes</td>
               <td>
                 One sentence per reason ("Stopped from the terminal at 14:02", "Stopped with Ctrl-C at 14:02", "Stopped
-                after 30 min idle", "Replaced by devhost restart-all at 14:02", "Chat turned off at 14:02"); a stream
-                closes 1001 when its stack ends and 1000 when a setting turned the feature off.
+                after 30 min idle", "Replaced by devhost restart at 14:02", "Chat turned off at 14:02"); a stream closes
+                1001 when its stack ends and 1000 when a setting turned the feature off.
                 <span class="muted">Raised by running-agents, stack-directory.</span>
               </td>
               <td>ACT-10</td>

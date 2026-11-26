@@ -72,13 +72,7 @@
       "toCol": 4
     }
   ],
-  "mainPath": [
-    "entry",
-    "pick",
-    "rows",
-    "send",
-    "sent"
-  ],
+  "mainPath": ["entry", "pick", "rows", "send", "sent"],
   "nodes": [
     {
       "id": "entry",

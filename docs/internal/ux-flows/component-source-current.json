@@ -75,12 +75,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "alt",
-    "lookup",
-    "menu",
-    "open"
-  ],
+  "mainPath": ["alt", "lookup", "menu", "open"],
   "nodes": [
     {
       "id": "alt",

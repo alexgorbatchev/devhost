@@ -43,8 +43,18 @@
       "sublabel": "or an include, any editor",
       "explanation": "Any program that writes the root manifest or an included one starts this flow: a text editor, the config editor's Save, git, or a coding agent. Adding or deleting a file that an includes pattern matches counts too. devhost watches every manifest directory and include pattern, and reacts only to write, create, remove and rename events of those files.",
       "sources": [
-        { "path": "apps/devhost/internal/services/manifest_watch.go", "line": 107, "end_line": 149, "label": "Watches manifest dirs and include patterns" },
-        { "path": "apps/devhost/internal/services/manifest_watch.go", "line": 151, "end_line": 192, "label": "Only manifest files and pattern members count" }
+        {
+          "path": "apps/devhost/internal/services/manifest_watch.go",
+          "line": 107,
+          "end_line": 149,
+          "label": "Watches manifest dirs and include patterns"
+        },
+        {
+          "path": "apps/devhost/internal/services/manifest_watch.go",
+          "line": 151,
+          "end_line": 192,
+          "label": "Only manifest files and pattern members count"
+        }
       ]
     },
     {
@@ -57,9 +67,24 @@
       "tag": "interrupted-operations-05",
       "explanation": "The watcher waits 200 ms for more saves, then signals the stack's loop. While a reload runs the loop stops listening and the watcher keeps one pending signal, so any burst of saves during a reload becomes exactly one more reload. Nothing says a save is waiting: devhost finishes the replaced edit first, prints its configuration reloaded line and its URLs as live, then restarts every affected service again for the newest save, 30-45 s of churn for a two-step edit (interrupted-operations-05). Every reload also waits on the operation lock that restarts and worktree switches hold, so a daemon's slow stop command holds it up with no deadline (manifest-hot-reload-2-05, owned by services-panel).",
       "sources": [
-        { "path": "apps/devhost/internal/services/manifest_watch.go", "line": 56, "end_line": 105, "label": "200 ms debounce; one pending signal" },
-        { "path": "apps/devhost/internal/services/stack.go", "line": 617, "end_line": 632, "label": "No new reload starts while one runs" },
-        { "path": "apps/devhost/internal/services/reload_disk.go", "line": 24, "end_line": 26, "label": "Reload takes the stack's operation lock" }
+        {
+          "path": "apps/devhost/internal/services/manifest_watch.go",
+          "line": 56,
+          "end_line": 105,
+          "label": "200 ms debounce; one pending signal"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 617,
+          "end_line": 632,
+          "label": "No new reload starts while one runs"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload_disk.go",
+          "line": 24,
+          "end_line": 26,
+          "label": "Reload takes the stack's operation lock"
+        }
       ]
     },
     {
@@ -71,8 +96,18 @@
       "sublabel": "parse, merge includes",
       "explanation": "devhost re-reads the root manifest and every include, keeps watching whatever the save added, and validates the merged result before it changes anything: TOML syntax, unknown keys, types, references and the start order. A failure here restarts nothing, and the accepted manifest keeps running. Turning [worktrees] enabled off while another checkout runs switches the stack back to the root checkout instead of reloading.",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload_disk.go", "line": 24, "end_line": 52, "label": "Re-read and validate every file, then apply" },
-        { "path": "apps/devhost/internal/manifest/validate.go", "line": 41, "end_line": 70, "label": "Schema and validation issues by key path" }
+        {
+          "path": "apps/devhost/internal/services/reload_disk.go",
+          "line": 24,
+          "end_line": 52,
+          "label": "Re-read and validate every file, then apply"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 41,
+          "end_line": 70,
+          "label": "Schema and validation issues by key path"
+        }
       ]
     },
     {
@@ -85,9 +120,24 @@
       "tag": "manifest-hot-reload-01",
       "explanation": "devhost resolves ports, then marks a service affected when its definition or injected environment changed, adds every service that depends on it, and then every service of its Git repository: with worktrees on, the default, every service whose cwd lies in the repository joins one group, so one environment variable on worker restarted all six services in about 16 s. A port change restarts every service, since each receives DEVHOST_PORT_<NAME> of every other. Nothing previews or reports this set (manifest-hot-reload-01). Declaring one external service silently turns off worktree switching for its whole repository (manifest-hot-reload-2-03). New hostnames and fixed ports are claimed here; one that another stack holds rejects the edit before anything stops.",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload_plan.go", "line": 7, "end_line": 54, "label": "Changed, dependents, whole repository" },
-        { "path": "apps/devhost/internal/services/worktrees.go", "line": 67, "end_line": 113, "label": "Every service in a repository joins its group" },
-        { "path": "apps/devhost/internal/services/reload_claims.go", "line": 19, "end_line": 44, "label": "Claims new hostnames and fixed ports" }
+        {
+          "path": "apps/devhost/internal/services/reload_plan.go",
+          "line": 7,
+          "end_line": 54,
+          "label": "Changed, dependents, whole repository"
+        },
+        {
+          "path": "apps/devhost/internal/services/worktrees.go",
+          "line": 67,
+          "end_line": 113,
+          "label": "Every service in a repository joins its group"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload_claims.go",
+          "line": 19,
+          "end_line": 44,
+          "label": "Claims new hostnames and fixed ports"
+        }
       ]
     },
     {
@@ -100,9 +150,24 @@
       "tag": "manifest-hot-reload-05",
       "explanation": "The affected services stop, dependents first, and start again in dependency order, each waiting for its health check while open pages show them restarting. The fixed-port claim reads only devhost's own claim files, so a port another program already listens on passes: devhost stopped the whole stack, started api beside that program's listener, waited the full 30 s health timeout, rolled back, and rejected the edit about 50 s after the save, blaming the health check (manifest-hot-reload-05; the crash view's Restart shares the diagnosis, error-pages-06). A process-health service is checked for an exit only at the instant it starts, so one that exits a moment later passes and the save reads as applied (config-editor-05).",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload.go", "line": 185, "end_line": 227, "label": "Mark restarting, stop, start, roll back" },
-        { "path": "apps/devhost/internal/caddy/routes.go", "line": 170, "end_line": 210, "label": "Port claim reads devhost claim files only" },
-        { "path": "apps/devhost/internal/services/health.go", "line": 63, "end_line": 69, "label": "Process health: one exit check at start" }
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 185,
+          "end_line": 227,
+          "label": "Mark restarting, stop, start, roll back"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/routes.go",
+          "line": 170,
+          "end_line": 210,
+          "label": "Port claim reads devhost claim files only"
+        },
+        {
+          "path": "apps/devhost/internal/services/health.go",
+          "line": 63,
+          "end_line": 69,
+          "label": "Process health: one exit check at start"
+        }
       ]
     },
     {
@@ -114,8 +179,18 @@
       "sublabel": "one Caddy reload; pages",
       "explanation": "With every restarted service healthy, devhost replaces the routes in one Caddy reload, sends the new settings to open pages, records the manifest as accepted, releases retired hostnames and ports, and only then prints the result. A save whose merged manifest equals the accepted one, such as an undo, returns before any of this.",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload.go", "line": 231, "end_line": 269, "label": "Routes, settings, accept, then announce" },
-        { "path": "apps/devhost/internal/services/reload.go", "line": 112, "end_line": 114, "label": "An unchanged manifest returns at once" }
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 231,
+          "end_line": 269,
+          "label": "Routes, settings, accept, then announce"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 112,
+          "end_line": 114,
+          "label": "An unchanged manifest returns at once"
+        }
       ]
     },
     {
@@ -128,9 +203,24 @@
       "tag": "agent-cli-journey-02",
       "explanation": "An accepted reload prints 'configuration reloaded:' with the root manifest and every include, relative to the root manifest's directory, then every service URL: the same lines for zero, one or six restarts, never which services restarted or why (manifest-hot-reload-01; the reload half of config-editor-05). The reload's own stops print 'exited with code 0; devhost is waiting for a restart.' like crashes, and after a fix nothing says the crashed service runs again (journey-crash-to-fix-06). Turning worktree switching off through an external service prints no warning (manifest-hot-reload-2-03). A foreground stack writes no log, so an agent that saved the manifest cannot read the outcome from any devhost command, and the skill treats configuration reloaded as success even when a service crashes right after (agent-cli-journey-02).",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload.go", "line": 29, "end_line": 40, "label": "Message lists every manifest file" },
-        { "path": "apps/devhost/internal/services/stack.go", "line": 719, "end_line": 734, "label": "Every service URL printed again" },
-        { "path": "apps/devhost/internal/services/stack.go", "line": 633, "end_line": 634, "label": "The reload's own stops print as exits" }
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 29,
+          "end_line": 40,
+          "label": "Message lists every manifest file"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 719,
+          "end_line": 734,
+          "label": "Every service URL printed again"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 633,
+          "end_line": 634,
+          "label": "The reload's own stops print as exits"
+        }
       ]
     },
     {
@@ -143,9 +233,24 @@
       "tag": "manifest-hot-reload-01",
       "explanation": "Open pages mark every affected service restarting: the toolbar drops to 0/6 with spinners, and every Restart, Restart Changed and Restart Stack is disabled with no reason and nothing naming a manifest reload (interrupted-operations-05). When the reload is accepted the rows turn green and nothing else changes: no applied message, no list of what restarted (manifest-hot-reload-01). A restarted dev server's reload of the page leaves only 'Reload blocked: Something tried to reload this page.' (journey-crash-to-fix-06). None of these changes reach a screen reader (keyboard-and-screen-reader-02, owned by notices-and-feedback).",
       "sources": [
-        { "path": "apps/devhost/internal/services/runtime.go", "line": 83, "end_line": 87, "label": "A pending reload marks rows restarting" },
-        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx", "line": 87, "end_line": 90, "label": "Any restarting row blocks every restart" },
-        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx", "line": 309, "end_line": 320, "label": "Row Restart disabled while restarting" }
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 83,
+          "end_line": 87,
+          "label": "A pending reload marks rows restarting"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 87,
+          "end_line": 90,
+          "label": "Any restarting row blocks every restart"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 309,
+          "end_line": 320,
+          "label": "Row Restart disabled while restarting"
+        }
       ]
     },
     {
@@ -158,9 +263,24 @@
       "tag": "stack-run-stop-09",
       "explanation": "The terminal prints 'configuration reload rejected:' and the raw error; its reasons follow on unmarked lines styled like service output, where a noisy service scrolls them away within minutes, and nothing repeats them (agent-cli-journey-02). A schema error names a key path, never the file or line, so an unknown key in an include is a hunt; a syntax error names an absolute path and a line but no column, though the docs promise file, line and column (stack-run-stop-09, manifest-hot-reload-03). A failed start reads 'start reloaded service api: Service api exited before passing its health check with code 1.', never what api printed (journey-crash-to-fix-03), and a port another program holds is blamed on the health check (manifest-hot-reload-05).",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 627, "end_line": 632, "label": "Rejection logged as a plain stack line" },
-        { "path": "apps/devhost/internal/manifest/errors.go", "line": 30, "end_line": 46, "label": "Parse: path + parser text; schema: key paths" },
-        { "path": "apps/devhost/internal/manifest/table_keys.go", "line": 51, "end_line": 57, "label": "Unknown key: key path, no file or line" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 627,
+          "end_line": 632,
+          "label": "Rejection logged as a plain stack line"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/errors.go",
+          "line": 30,
+          "end_line": 46,
+          "label": "Parse: path + parser text; schema: key paths"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/table_keys.go",
+          "line": 51,
+          "end_line": 57,
+          "label": "Unknown key: key path, no file or line"
+        }
       ]
     },
     {
@@ -173,9 +293,24 @@
       "tag": "manifest-hot-reload-02",
       "explanation": "Every open page shows 'Manifest change not applied' under the toolbar with the same raw error until a later save is accepted. A long absolute path does not wrap and runs off the right edge; there is no column or snippet, nothing says the previous manifest still runs, and with the config editor off, the default, there is no action at all (manifest-hot-reload-02). With the editor on, Edit opens whichever file was last open, with no mark of the problem (config-editor-09, owned by config-editor). A rejection about a deleted checkout's manifest never clears after switching away, even the next day (worktree-switch-08). Collapsed to its dot, the toolbar hides the notice and stays green (toolbar-shell-01, owned by toolbar-shell).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx", "line": 18, "end_line": 42, "label": "Raw error; Edit only with the editor on" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 276, "end_line": 290, "label": "Notices in the readout; the dot shows health" },
-        { "path": "apps/devhost/internal/services/runtime.go", "line": 106, "end_line": 124, "label": "Kept until that source's reload is accepted" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx",
+          "line": 18,
+          "end_line": 42,
+          "label": "Raw error; Edit only with the editor on"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 276,
+          "end_line": 290,
+          "label": "Notices in the readout; the dot shows health"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 106,
+          "end_line": 124,
+          "label": "Kept until that source's reload is accepted"
+        }
       ]
     },
     {
@@ -188,8 +323,18 @@
       "tag": "manifest-hot-reload-04",
       "explanation": "The person fixes the file, or undoes the edit, and saves; the reload runs from the top. An undo restores the accepted manifest, so the reload returns before printing anything: the page notice disappears, but the terminal prints nothing and still ends on configuration reload rejected (manifest-hot-reload-04). Fixing a rejected config.toml is just as silent; its clearing line follows this one (proxy-settings-04). A save that fails with the same error as the rejection before it, such as a retry after freeing a port or installing a missing tool, or an editor saving again, runs the whole stop, start and rollback once more and then prints nothing, because a rejection is logged only when its text changes (manifest-hot-reload-07).",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload.go", "line": 112, "end_line": 114, "label": "An undo equals the accepted manifest" },
-        { "path": "apps/devhost/internal/services/stack.go", "line": 627, "end_line": 632, "label": "A cleared rejection is never logged" }
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 112,
+          "end_line": 114,
+          "label": "An undo equals the accepted manifest"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 627,
+          "end_line": 632,
+          "label": "A cleared rejection is never logged"
+        }
       ]
     },
     {
@@ -202,9 +347,24 @@
       "tag": "journey-crash-to-fix-03",
       "explanation": "When a restarted service fails to start or the routes fail to apply, devhost stops the new set, reinstalls the previous manifest and starts the previous services again, then rejects the edit: the stack runs what it accepted before, after a second restart of the whole set. The rejection carries only the start error ('Service api exited before passing its health check with code 1.'); what api printed is one row among other services' lines in the minimap, and pages keep only the newest 512 log lines, so it can age out while the notice stays (journey-crash-to-fix-03).",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload.go", "line": 213, "end_line": 227, "label": "Rollback: stop the new set, restore old" },
-        { "path": "apps/devhost/internal/services/reload.go", "line": 330, "end_line": 364, "label": "Start the previous services again" },
-        { "path": "apps/devhost/internal/devtools/server.go", "line": 38, "end_line": 38, "label": "Pages keep the newest 512 log lines" }
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 213,
+          "end_line": 227,
+          "label": "Rollback: stop the new set, restore old"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 330,
+          "end_line": 364,
+          "label": "Start the previous services again"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 38,
+          "end_line": 38,
+          "label": "Pages keep the newest 512 log lines"
+        }
       ]
     },
     {
@@ -217,8 +377,18 @@
       "tag": "stack-directory-01",
       "explanation": "The rollback restarts the previous set the same way, so a service that had already crashed before the save, its definition unchanged, fails again; devhost then stops every service it restarted and blocks each with the error. One crashed service plus any unrelated save leaves the whole stack down: every hostname answers 502 or 503, the toolbar reads 0/6, every per-service Restart is disabled, and the terminal ends 'restore previous services: ...' with no line saying the stack is down. The docs promise the previous services keep running (stack-directory-01; the stopgap error-pages-01 also covers Restart Stack, and journey-crash-to-fix-07 the crash view's Restart Stack).",
       "sources": [
-        { "path": "apps/devhost/internal/services/reload.go", "line": 339, "end_line": 350, "label": "Failed restore stops and blocks each one" },
-        { "path": "packages/docs/src/content/docs/stacks/hot-reload.md", "line": 44, "end_line": 44, "label": "Docs: the previous services are restored" }
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 339,
+          "end_line": 350,
+          "label": "Failed restore stops and blocks each one"
+        },
+        {
+          "path": "packages/docs/src/content/docs/stacks/hot-reload.md",
+          "line": 44,
+          "end_line": 44,
+          "label": "Docs: the previous services are restored"
+        }
       ]
     }
   ],
@@ -232,7 +402,14 @@
     { "id": "validate-rejected", "from": "validate", "to": "rejected", "label": "invalid", "role": "error" },
     { "id": "validate-notice", "from": "validate", "to": "notice", "label": "same reason", "role": "error" },
     { "id": "plan-rejected", "from": "plan", "to": "rejected", "label": "host or port taken", "role": "error" },
-    { "id": "restart-rows", "from": "restart", "to": "rows", "label": "while it runs", "role": "branch", "variant": "dashed" },
+    {
+      "id": "restart-rows",
+      "from": "restart",
+      "to": "rows",
+      "label": "while it runs",
+      "role": "branch",
+      "variant": "dashed"
+    },
     { "id": "restart-rollback", "from": "restart", "to": "rollback", "label": "a start fails", "role": "error" },
     { "id": "rollback-down", "from": "rollback", "to": "down", "label": "old one fails too", "role": "error" },
     { "id": "rollback-notice", "from": "rollback", "to": "notice", "label": "rejected", "role": "error" },

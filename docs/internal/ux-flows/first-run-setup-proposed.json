@@ -72,16 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "recipe",
-    "download",
-    "start",
-    "launch",
-    "announce",
-    "trustOp",
-    "trusted",
-    "directory"
-  ],
+  "mainPath": ["recipe", "download", "start", "launch", "announce", "trustOp", "trusted", "directory"],
   "nodes": [
     {
       "id": "recipe",
@@ -91,7 +82,7 @@
       "label": "One setup recipe",
       "sublabel": "help, docs, README, skill",
       "tag": "first-run-setup-01",
-      "explanation": "devhost --help gains a Quickstart (Rust main has none) and, with devhost caddy --help, the Install page, the managed-Caddy guide, the README and the skill, teaches one order: devhost caddy download (skipped when Caddy is on the PATH), devhost caddy privileged-ports on Linux, then devhost caddy start, each saying beforehand which step downloads and which asks for a password (MENU-6, WORD-9). Caddy's steps come before stack-run-stop's devhost init (O52). devhost caddy trust leaves the recipe and becomes the repair command; today devhost caddy --help says 'Download and trust it once, then start it', and that trust fails (first-run-setup-01). Help lines name 'the shared Caddy', never 'managed caddy' (WORD-1, WORD-3). The Install page gains 'Update devhost': devhost upgrade for a release archive in a folder the person can write, the installer plus devhost restart-all otherwise; neither updates Caddy (O18). Today: 5 steps, one a dead end and the last a guess. Proposed: 3 steps.",
+      "explanation": "devhost --help gains a Quickstart (Rust main has none) and, with devhost caddy --help, the Install page, the managed-Caddy guide, the README and the skill, teaches one order: devhost caddy download (skipped when Caddy is on the PATH), devhost caddy privileged-ports on Linux, then devhost caddy start, each saying beforehand which step downloads and which asks for a password (MENU-6, WORD-9). Caddy's steps come before stack-run-stop's devhost init (O52). devhost caddy trust leaves the recipe and becomes the repair command; today devhost caddy --help says 'Download and trust it once, then start it', and that trust fails (first-run-setup-01). Help lines name 'the shared Caddy', never 'managed caddy' (WORD-1, WORD-3). The Install page gains 'Update devhost': devhost upgrade for a release archive in a folder the person can write, the installer plus devhost restart otherwise; neither updates Caddy (O18). Today: 5 steps, one a dead end and the last a guess. Proposed: 3 steps.",
       "sources": [
         {
           "path": "apps/devhost/src/main.rs",
@@ -210,7 +201,7 @@
       "type": "backend",
       "label": "Find, start, certify",
       "sublabel": "admin API + HTTPS accept",
-      "explanation": "Resolves the Caddy executable before it renders anything, the downloaded one before the caddy on the PATH (kept), and stops with 'Caddy is not installed' when there is none (first-run-setup-06). A devhost config file error stops here too, naming file, line, column and key (MENU-4, FAIL-2). Under the shared route lock, which still refuses an older devhost and now names devhost upgrade or devhost restart-all (O18), it renders every route with the listener O39 resolves and runs caddy start, then waits until the admin API answers and the HTTPS listener accepts a TCP connection before the started line prints (FB-5); today only the admin API is checked. A newer runtime policy restarts a running Caddy once (kept). Then it checks Caddy's root against the system roots: a trusted authority ends the step; an untrusted one goes to the trust step only when a person can answer (a terminal and AGENT=1 unset), otherwise to the warning with that cause. start, stop and trust keep refusing a Caddy devhost did not start.",
+      "explanation": "Resolves the Caddy executable before it renders anything, the downloaded one before the caddy on the PATH (kept), and stops with 'Caddy is not installed' when there is none (first-run-setup-06). A devhost config file error stops here too, naming file, line, column and key (MENU-4, FAIL-2). Under the shared route lock, which still refuses an older devhost and now names devhost upgrade or devhost restart (O18), it renders every route with the listener O39 resolves and runs caddy start, then waits until the admin API answers and the HTTPS listener accepts a TCP connection before the started line prints (FB-5); today only the admin API is checked. A newer runtime policy restarts a running Caddy once (kept). Then it checks Caddy's root against the system roots: a trusted authority ends the step; an untrusted one goes to the trust step only when a person can answer (a terminal and AGENT=1 unset), otherwise to the warning with that cause. start, stop and trust keep refusing a Caddy devhost did not start.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy.rs",
@@ -635,7 +626,7 @@
         "Removed: devhost caddy trust as a setup step in devhost caddy --help (it stays as the repair command); the hash of the PEM text that trust-remote printed as 'sha256'; every hint that names a log this attempt did not write; the Caddyfile path in human output (kept in agent output); the in-place write of the downloaded binary; the 'managed caddy' sentences, and caddy stop's bare 'managed caddy stopped.'",
         "Merged: the Install page, the managed-Caddy guide, the README, both help screens and the skill teach one recipe; the warning's one sentence for every cause becomes one sentence plus its cause; one condition sentence, naming the machine (O61), serves devhost's full pages and the toolbar",
         "New: a Quickstart in devhost --help with Caddy's steps first; the Install page's Update devhost section (O18); devhost caddy untrust and the trusted-roots record; print-root-cert --fingerprint; trust-remote's fingerprint, expiry, what the trust allows, [y/N] and --yes; the trust commands' refusal under AGENT=1; the download's progress, version, check and atomic replacement; the start's version, binary, listener reach, stack directory URL and next command; caddy stop's printed set, --dry-run, stop record and notice to each stack; the trust line under the heading of devhost's pages and the toolbar's condition notice after a rejected configuration (ACT-7); the docs' Uninstall devhost section, update procedure and browser symptoms",
-        "Changed: trust and untrust refuse under AGENT=1 before any sudo; trust-remote asks [y/N] before it installs and prints the DER fingerprint; the download replaces the binary by a rename after a complete, checked download; caddy start reports success only once Caddy listens; on macOS bindHost 127.0.0.1 listens on loopback from port 1024 upward and keeps every interface with a warning below it (O39); caddy stop prints its set before acting and never asks (REV-7, O33); the older-devhost refusal names devhost upgrade and devhost restart-all (O18)",
+        "Changed: trust and untrust refuse under AGENT=1 before any sudo; trust-remote asks [y/N] before it installs and prints the DER fingerprint; the download replaces the binary by a rename after a complete, checked download; caddy start reports success only once Caddy listens; on macOS bindHost 127.0.0.1 listens on loopback from port 1024 upward and keeps every interface with a warning below it (O39); caddy stop prints its set before acting and never asks (REV-7, O33); the older-devhost refusal names devhost upgrade and devhost restart (O18)",
         "Kept: one download and one start set up a machine; the trust step runs only when a person can answer, and without one Caddy runs untrusted with a warning that repeats on every start; trust reports an already trusted authority and needs Caddy running; start, stop and trust refuse a Caddy devhost did not start; one local authority per state directory signs every hostname; the downloaded Caddy before the PATH one, and devhost never downloads on its own; the route lock and its refusal of an older devhost; one restart for a newer runtime policy; Linux's port 443 hint; Caddy on every interface by default; stopping Caddy leaves every service running; devhost never opens a browser or answers a prompt"
       ]
     },
@@ -671,7 +662,7 @@
         "caddy stop's set, --dry-run, stop record and a notice to each stack, at most 1 s in total (CC-12)",
         "The PID check of an unresponsive Caddy: built by the stack-scale-09 patch, landing before the stop record; this flow words its lines (ACT-11)",
         "The proxy line and its macOS warning, printed from proxy-settings' listener resolution in files.rs (O39)",
-        "The older-devhost refusal and the one restart, worded with devhost upgrade and devhost restart-all (O18)"
+        "The older-devhost refusal and the one restart, worded with devhost upgrade and devhost restart (O18)"
       ]
     },
     {

@@ -44,9 +44,24 @@
       "tag": "proxy-settings-05",
       "explanation": "Ports, listeners and the stack directory hostname are machine settings in the [caddy] table of config.toml, found in DEVHOST_CONFIG_DIR, else XDG_CONFIG_HOME/devhost, else ~/.config/devhost. devhost caddy --help says only 'Download and trust it once, then start it before running a stack.'; no help text names config.toml, and devhost start never prints its path, which first appears in 'Applied the shared Caddy settings from <path>.' after the file was already edited. The privileged-ports help line reads 'Let Caddy listen on low ports without root (Linux)', although the command may download Caddy and runs sudo setcap; trust, one line below, says it asks for a password (proxy-settings-05).",
       "sources": [
-        { "path": "apps/devhost/internal/cli/parse.go", "line": 305, "end_line": 307, "label": "caddy help never mentions config.toml" },
-        { "path": "apps/devhost/internal/cli/parse.go", "line": 451, "end_line": 456, "label": "privileged-ports help omits sudo and download" },
-        { "path": "apps/devhost/internal/config/config.go", "line": 44, "end_line": 70, "label": "File path from two env vars, else HOME" }
+        {
+          "path": "apps/devhost/internal/cli/parse.go",
+          "line": 305,
+          "end_line": 307,
+          "label": "caddy help never mentions config.toml"
+        },
+        {
+          "path": "apps/devhost/internal/cli/parse.go",
+          "line": 451,
+          "end_line": 456,
+          "label": "privileged-ports help omits sudo and download"
+        },
+        {
+          "path": "apps/devhost/internal/config/config.go",
+          "line": 44,
+          "end_line": 70,
+          "label": "File path from two env vars, else HOME"
+        }
       ]
     },
     {
@@ -58,8 +73,18 @@
       "sublabel": "editor or config editor",
       "explanation": "The person changes httpsPort, http and httpPort, bindHost, stackDirectoryHost, stackDirectoryAllowRemote or adminAddress and saves the file. The browser config editor (flow config-editor: off by default, saves only from this machine) validates the same file and writes it; every running stack then applies it exactly like a save from an editor.",
       "sources": [
-        { "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md", "line": 25, "end_line": 48, "label": "Docs: the [caddy] keys and their defaults" },
-        { "path": "apps/devhost/internal/devtools/config_files.go", "line": 146, "end_line": 185, "label": "Config editor validates, then writes the file" }
+        {
+          "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md",
+          "line": 25,
+          "end_line": 48,
+          "label": "Docs: the [caddy] keys and their defaults"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/config_files.go",
+          "line": 146,
+          "end_line": 185,
+          "label": "Config editor validates, then writes the file"
+        }
       ]
     },
     {
@@ -71,9 +96,24 @@
       "sublabel": "debounced; validated by key",
       "explanation": "Each running stack watches config.toml with the manifest's debounce and applies one save at a time. It reads and validates the file: unknown keys, ports outside 1 to 65535, an empty adminAddress, an unsupported bindHost and a stackDirectoryHost with a scheme, port or path are each rejected by key. Any error from reading or applying the file comes back to this loop, which logs it as a rejection.",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 599, "end_line": 616, "label": "Watch loop applies each save, logs errors" },
-        { "path": "apps/devhost/internal/config/config.go", "line": 95, "end_line": 169, "label": "Validation names each bad key" },
-        { "path": "apps/devhost/internal/services/shared_caddy.go", "line": 57, "end_line": 71, "label": "Read the file, then apply it to Caddy" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 599,
+          "end_line": 616,
+          "label": "Watch loop applies each save, logs errors"
+        },
+        {
+          "path": "apps/devhost/internal/config/config.go",
+          "line": 95,
+          "end_line": 169,
+          "label": "Validation names each bad key"
+        },
+        {
+          "path": "apps/devhost/internal/services/shared_caddy.go",
+          "line": 57,
+          "end_line": 71,
+          "label": "Read the file, then apply it to Caddy"
+        }
       ]
     },
     {
@@ -86,9 +126,24 @@
       "tag": "proxy-settings-01",
       "explanation": "Under a lock every devhost process shares, Caddy's Caddyfile, routes, 404 site and stack directory site are rendered for the new settings; a directory hostname that a running stack claims fails here. bindHost becomes a default_bind directive, except on macOS, where 127.0.0.1 renders no directive whatever the port, so Caddy listens on every interface even on unprivileged ports such as the docs' httpsPort = 4443. Nothing at Caddy start, stack start or apply states the listener scope; only a docs bullet mentions it, giving a privileged-port reason that does not hold above port 1023, and devhost caddy privileged-ports on macOS prints that no setup is needed (proxy-settings-01).",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/settings.go", "line": 116, "end_line": 145, "label": "Render Caddyfile, routes, 404 and directory" },
-        { "path": "apps/devhost/internal/caddy/bind.go", "line": 19, "end_line": 40, "label": "macOS: no bind for 127.0.0.1 on any port" },
-        { "path": "apps/devhost/internal/caddy/privilegedPorts.go", "line": 25, "end_line": 30, "label": "macOS: no privileged-port setup needed" }
+        {
+          "path": "apps/devhost/internal/caddy/settings.go",
+          "line": 116,
+          "end_line": 145,
+          "label": "Render Caddyfile, routes, 404 and directory"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/bind.go",
+          "line": 19,
+          "end_line": 40,
+          "label": "macOS: no bind for 127.0.0.1 on any port"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/privilegedPorts.go",
+          "line": 25,
+          "end_line": 30,
+          "label": "macOS: no privileged-port setup needed"
+        }
       ]
     },
     {
@@ -101,8 +156,18 @@
       "tag": "proxy-settings-02",
       "explanation": "Caddy reloads through the admin address it runs, and devhost records the new settings in applied.json; when another stack already applied the same settings, nothing reloads twice. devhost never checks the ports itself and relies on Caddy's reload failing. On macOS a wildcard listener binds beside a program that holds the port on 127.0.0.1 only, so the save is reported applied while IPv4 requests reach that program and fail TLS and IPv6 requests reach Caddy; the docs promise a rejection for a held port (proxy-settings-02). A render or reload that fails re-renders the running settings, keeps Caddy on them and returns the error to the watch loop.",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/settings.go", "line": 85, "end_line": 114, "label": "Reload via admin API, then record applied" },
-        { "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md", "line": 71, "end_line": 79, "label": "Docs: a port another program holds is rejected" }
+        {
+          "path": "apps/devhost/internal/caddy/settings.go",
+          "line": 85,
+          "end_line": 114,
+          "label": "Reload via admin API, then record applied"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md",
+          "line": 71,
+          "end_line": 79,
+          "label": "Docs: a port another program holds is rejected"
+        }
       ]
     },
     {
@@ -115,8 +180,18 @@
       "tag": "proxy-settings-04",
       "explanation": "After Caddy moved, each stack whose settings changed publishes its state and prints 'Applied the shared Caddy settings from <path>.' and then every service URL again, whatever changed. URLs are built from httpsPort alone, so with http = true the plain-HTTP address a tunnel needs is never printed. A stackDirectoryHost change moves the directory to a URL printed nowhere while the old one answers 404, and turning on stackDirectoryAllowRemote prints the same lines with no word that stack URLs and raw configuration files are now readable from the network (proxy-settings-04). No devhost output names the directory URL at all (stack-directory-06, owned by stack-run-stop).",
       "sources": [
-        { "path": "apps/devhost/internal/services/shared_caddy.go", "line": 72, "end_line": 83, "label": "Applied line, then every URL again" },
-        { "path": "apps/devhost/internal/services/stack.go", "line": 719, "end_line": 734, "label": "URLs from httpsPort only; no directory" }
+        {
+          "path": "apps/devhost/internal/services/shared_caddy.go",
+          "line": 72,
+          "end_line": 83,
+          "label": "Applied line, then every URL again"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 719,
+          "end_line": 734,
+          "label": "URLs from httpsPort only; no directory"
+        }
       ]
     },
     {
@@ -129,8 +204,18 @@
       "tag": "proxy-settings-06",
       "explanation": "Services, routes, terminals and chat sessions keep running, as the docs promise, and nothing reaches the services. A service is told DEVHOST_HOST and DEVHOST_PATH but never the public port or scheme, and service references offer no public URL, so with any httpsPort but 443 an app that builds https://$DEVHOST_HOST/ for an OAuth redirect, a CORS allowlist or an emailed link gets an address that does not answer. Hard-coding the port in the manifest's env stays wrong after a saved httpsPort change, which restarts nothing (proxy-settings-06).",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 672, "end_line": 700, "label": "Env: host and path, never the public port" },
-        { "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md", "line": 76, "end_line": 77, "label": "Docs: services keep running" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 672,
+          "end_line": 700,
+          "label": "Env: host and path, never the public port"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md",
+          "line": 76,
+          "end_line": 77,
+          "label": "Docs: services keep running"
+        }
       ]
     },
     {
@@ -143,9 +228,24 @@
       "tag": "proxy-settings-03",
       "explanation": "Caddy moves before the stack publishes, so every page open on the old port loses its status stream at the reload. The toolbar draws every service down (0/N), as if all had crashed, and keeps reconnecting to the page's own origin, which no longer answers; minutes later it still names no new port and offers no link to the new URL. Only moving the port back recovers the page. The docs say every stack updates its URLs in devtools, which holds only for pages opened on the new port (proxy-settings-03; drawing any lost connection as an outage is owned by notices-and-feedback).",
       "sources": [
-        { "path": "apps/devhost/internal/services/shared_caddy.go", "line": 69, "end_line": 81, "label": "Caddy moves before open pages are told" },
-        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 73, "end_line": 92, "label": "Disconnect: all down; retry the old origin" },
-        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts", "line": 3, "end_line": 27, "label": "Every service marked failed" }
+        {
+          "path": "apps/devhost/internal/services/shared_caddy.go",
+          "line": 69,
+          "end_line": 81,
+          "label": "Caddy moves before open pages are told"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 73,
+          "end_line": 92,
+          "label": "Disconnect: all down; retry the old origin"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts",
+          "line": 3,
+          "end_line": 27,
+          "label": "Every service marked failed"
+        }
       ]
     },
     {
@@ -158,9 +258,24 @@
       "tag": "proxy-settings-04",
       "explanation": "An invalid file, a directory hostname a running stack claims, or a reload Caddy refuses keeps Caddy on its running settings. Each stack prints 'shared Caddy settings rejected: <reason>' once and never says what keeps running; the toolbar calls it 'devhost config change not applied', a third name. The directory collision names only a PID, often of the stack printing it, while service collisions name the manifest. A later devhost start of a project that uses the reserved hostname is refused without naming config.toml, the key or the service. Fixing the file prints nothing, so every terminal still ends on the rejection (proxy-settings-04). When a refused save, or one made while Caddy was stopped, is applied later by another stack's start or by devhost caddy start, the stacks already running are not told: they keep this notice, and their toolbar links and printed URLs keep the old port while the stack directory lists the new one (proxy-settings-07).",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 611, "end_line": 616, "label": "Rejection logged; a fix logs nothing" },
-        { "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx", "line": 12, "end_line": 15, "label": "Toolbar: devhost config change not applied" },
-        { "path": "apps/devhost/internal/caddy/stack_directory.go", "line": 133, "end_line": 146, "label": "Directory collision names only a PID" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 611,
+          "end_line": 616,
+          "label": "Rejection logged; a fix logs nothing"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx",
+          "line": 12,
+          "end_line": 15,
+          "label": "Toolbar: devhost config change not applied"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/stack_directory.go",
+          "line": 133,
+          "end_line": 146,
+          "label": "Directory collision names only a PID"
+        }
       ]
     },
     {
@@ -173,9 +288,24 @@
       "tag": "network-exposure-01",
       "explanation": "With no bind directive, every stack's pages, APIs and /__devhost__/ control routes answer requests through the Mac's network address, although the person asked for loopback only (proxy-settings-01). Chat trusts the Host and Origin headers any client can set, so another device can start a coding agent in the stack's checkout (network-exposure-01, owned by agent-chat; its stopgap admits only loopback clients). Only the stack directory checks the client address itself, unless stackDirectoryAllowRemote is set.",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/request_guard.go", "line": 22, "end_line": 42, "label": "Control guard checks Host and Origin only" },
-        { "path": "apps/devhost/internal/caddy/stack_directory.go", "line": 183, "end_line": 188, "label": "Only the directory checks the client IP" },
-        { "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md", "line": 60, "end_line": 65, "label": "Docs: macOS keeps all interfaces" }
+        {
+          "path": "apps/devhost/internal/devtools/request_guard.go",
+          "line": 22,
+          "end_line": 42,
+          "label": "Control guard checks Host and Origin only"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/stack_directory.go",
+          "line": 183,
+          "end_line": 188,
+          "label": "Only the directory checks the client IP"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/shared-managed-caddy-settings.md",
+          "line": 60,
+          "end_line": 65,
+          "label": "Docs: macOS keeps all interfaces"
+        }
       ]
     }
   ],

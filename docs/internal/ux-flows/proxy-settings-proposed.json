@@ -72,16 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "find",
-    "edit",
-    "plan",
-    "check",
-    "move",
-    "record",
-    "receipt",
-    "pages"
-  ],
+  "mainPath": ["find", "edit", "plan", "check", "move", "record", "receipt", "pages"],
   "nodes": [
     {
       "id": "find",

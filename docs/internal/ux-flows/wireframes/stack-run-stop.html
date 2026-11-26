@@ -49,7 +49,7 @@
         <b>TLDR:</b> The terminal says when a stack is ready (keeping local URLs alongside remote previews),
         <code>devhost stack info</code> and <code>devhost status</code> report every service and rejection, parallel
         shutdown certifies that nothing remains within 30 s by default, <code>devhost upgrade</code> handles
-        self-managed updates while <code>restart-all</code> and <code>stack restart</code> replace supervisors, and
+        self-managed updates while <code>restart</code> and <code>stack restart</code> replace supervisors, and
         multi-stack commands print their set first and ask only when an agent's turn would end.
       </p>
       <p class="muted small">
@@ -607,7 +607,7 @@ Run: devhost start --detach · PID 84244 · main ~/acme · 13:58:02 <span class=
 14:01:10 api        Error: Cannot find module './db'
 14:01:12 Acme Shop  ERR: api exited with code 1 at 14:01
 14:02:40 Acme Shop  Restarted api · 2.6 s · from a page on shop.acme.test
-Run: devhost restart-all · PID 85502 · main ~/acme · 14:20:11
+Run: devhost restart · PID 85502 · main ~/acme · 14:20:11
 14:20:15 api        listening on :4000
 $ devhost logs --path
 ~/.local/state/devhost/logs/stack-&lt;sha256&gt;.log <span class="n">7</span></pre>
@@ -623,10 +623,9 @@ $ devhost logs --path
             <code>devhost service restart --all</code> is the terminal form of in-process <b>Restart Stack</b>, which
             the toolbar, crash view, recovery pages and control API offer; its help says "Restart Stack in the browser"
             (<code>CC-11</code>, <code>MENU-6</code>, applied default of owner item q86), while
-            <code>devhost stack restart</code>, <code>devhost restart-all</code>, and
-            <code>devhost upgrade</code> replace the running devhost supervisor process (<code>O18</code>). These
-            commands reach the running stack through its control server on the loopback port recorded in the state
-            directory.
+            <code>devhost stack restart</code>, <code>devhost restart</code>, and <code>devhost upgrade</code> replace
+            the running devhost supervisor process (<code>O18</code>). These commands reach the running stack through
+            its control server on the loopback port recorded in the state directory.
           </p>
           <ol>
             <li>
@@ -739,7 +738,7 @@ devhost: Stopped Acme Shop · 6 services · 10.4 s · closed "Fix the nav" (Clau
             the stack's own, and leaves the shared Caddy running (<code>REV-7</code>, <code>ACT-11</code>,
             <code>ACT-14</code>). One unified parallel stop routine serves every stop caller: <code>devhost stop</code>,
             <code>stop --worktrees</code>, <code>stop --session</code>, <code>stack restart</code>,
-            <code>restart-all</code>, <code>upgrade</code>, <code>start --detach</code> cleanup, Worktrees
+            <code>restart</code>, <code>upgrade</code>, <code>start --detach</code> cleanup, Worktrees
             <b>Stop Stack</b>, and <code>serve</code> sessions (<code>O30</code>, <code>O41</code>, <code>CC-35</code>).
             Keys: Ctrl-C while <code>devhost stop</code> waits, or a second <code>devhost stop</code>, forces remaining
             verified service trees and daemon stop groups; in a foreground stack the first Ctrl-C stops gracefully and
@@ -957,7 +956,7 @@ Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <
             <li>
               <span class="n">1</span> However a stack ends, its terminal and its log print one line naming the stack,
               the reason and the time: the idle timeout with its duration, <code>devhost stop</code> from another
-              terminal, another stack's Worktrees panel, <code>devhost restart-all</code> / <code>stack restart</code> /
+              terminal, another stack's Worktrees panel, <code>devhost restart</code> / <code>stack restart</code> /
               <code>upgrade</code>, or every service exited (<code>ACT-10</code>, <code>O18</code>, <code>CC-27</code>).
             </li>
             <li>
@@ -1024,7 +1023,7 @@ Stopped 2 leftover services of Acme Shop's killed run: api and worker · 1.4 s <
           <div class="win">
             <div class="bar">
               <b>Terminal › ~/acme</b
-              ><span>devhost upgrade (self-managed) and devhost restart-all (dotfiles / package managers)</span>
+              ><span>devhost upgrade (self-managed) and devhost restart (dotfiles / package managers)</span>
             </div>
             <pre class="term">$ devhost upgrade
 Downloading devhost 0.0.22 (verified SHA256SUMS) · replacing ~/.local/bin/devhost <span class="n">1</span>
@@ -1036,13 +1035,13 @@ Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0
 Replaced Blog's devhost process: PID 86011 → 85530 · 4 s · devhost 0.0.22
 The serve session ~/acme/docs keeps running devhost 0.0.21; restart it in its terminal (or stop and re-run it if detached) to use devhost 0.0.22 <span class="n">4</span>
 <span class="muted">when binary is externally managed or read-only:</span>
-Cannot swap /usr/local/bin/devhost (managed by Homebrew): upgrade with brew upgrade devhost, then run devhost restart-all
+Cannot swap /usr/local/bin/devhost (managed by Homebrew): upgrade with brew upgrade devhost, then run devhost restart
 <span class="muted">when Acme Shop's shutdown outlasts stopTimeout (30 s default):</span>
 Acme Shop was not replaced: worker (PID 8820) is still stopping after 30 s; nothing was started
 Start it again in ~/acme with:
 devhost start
 
-$ AGENT=1 devhost restart-all --yes
+$ AGENT=1 devhost restart --yes
 devhost: Replaced Acme Shop's devhost process: PID 84244 → 85502 · 11 s · devhost 0.0.22 · /work/acme/devhost.toml
 <span class="muted">…</span></pre>
           </div>
@@ -1074,7 +1073,7 @@ $ echo $?
 - Are the services up? devhost status / devhost stack info (exit 3 names what is not running)
 - Restart one service: devhost service restart &lt;service&gt; · every service: devhost service restart --all
 - Follow output: devhost logs -f · apply a manifest edit: devhost reload
-- Upgrade binary or replace supervisors: devhost upgrade · devhost restart-all · devhost stack restart <span class="n">10</span></pre>
+- Upgrade binary or replace supervisors: devhost upgrade · devhost restart · devhost stack restart <span class="n">10</span></pre>
           </div>
         </div>
         <div class="cap">
@@ -1084,7 +1083,7 @@ $ echo $?
             ancestor, re-checks each stack's identity just before its signal, keeps each stack's flags and worktrees,
             and leaves the shared Caddy running (<code>REV-11</code>, <code>REV-13</code>). Under <code>O18</code>,
             built-in <code>devhost upgrade</code> downloads, verifies and swaps user-writable installs and replaces
-            running stacks, while shipped <code>devhost restart-all</code> (global) and project-scoped
+            running stacks, while shipped <code>devhost restart</code> (global) and project-scoped
             <code>devhost stack restart</code> (one stack, never asks, <code>REV-7</code>) stay on one verb for
             dotfiles, package managers and local rebuilds and state clearly in help and output that they replace the
             running devhost supervisor process (<code>O18</code>, <code>WORD-2</code>, <code>CC-31</code>,
@@ -1100,7 +1099,7 @@ $ echo $?
               <code>999.0.0-dev--…</code> dev builds without modifying them (<code>O18</code>, <code>FAIL-2</code>).
             </li>
             <li>
-              <span class="n">2</span> <code>devhost restart-all</code> and <code>devhost upgrade</code> print their set
+              <span class="n">2</span> <code>devhost restart</code> and <code>devhost upgrade</code> print their set
               first, as in step 6, with each stack's worktree, PID and how it runs, listing the serve sessions of the
               state directory (which keep running). They ask or refuse only when the set would end an agent's turn, with
               <code>--yes</code>, <code>--dry-run</code> and <code>--timeout</code>, and the documented post-upgrade
@@ -1125,7 +1124,7 @@ $ echo $?
             <li>
               <span class="n">5</span> A replaced foreground stack prints which command replaced it (<code
                 >devhost upgrade</code
-              >, <code>devhost restart-all</code>, or <code>devhost stack restart</code>), when, the new PID and the
+              >, <code>devhost restart</code>, or <code>devhost stack restart</code>), when, the new PID and the
               commands that follow and stop the replacement, and exits 0, never 143; open pages reconnect to the
               replacement and say so once (<code>FAIL-5</code>, <code>ACT-10</code>, <code>O18</code>,
               <code>CC-24</code>).
@@ -1157,7 +1156,7 @@ $ echo $?
               <span class="n">10</span> <code>devhost skill</code> prints the agent guidance embedded in this binary,
               for this version and offline, naming <code>devhost stack info</code> / <code>devhost status</code>,
               <code>devhost service</code>, <code>devhost logs</code>, <code>devhost reload</code>,
-              <code>devhost upgrade</code>, <code>devhost restart-all</code> and <code>devhost stack restart</code>;
+              <code>devhost upgrade</code>, <code>devhost restart</code> and <code>devhost stack restart</code>;
               <code>devhost skill --install</code> keeps today's install text, and the Quickstart in
               <code>devhost --help</code> puts <code>devhost init</code> right after first-run-setup's Caddy steps
               (<code>devhost caddy download</code>, <code>devhost caddy privileged-ports</code> on Linux,
@@ -1168,7 +1167,7 @@ $ echo $?
           <p class="fixes">
             Fixes stack-run-stop-13, stack-run-stop-15, stack-run-stop-02, stack-scale-07, worktree-switch-04,
             interrupted-operations-04, manifest-hot-reload-2-02, proxy-settings-04, stack-run-stop-12 · Backend:
-            <code>devhost upgrade</code> plus replacement by identity on <code>restart-all</code> /
+            <code>devhost upgrade</code> plus replacement by identity on <code>restart</code> /
             <code>stack restart</code> with parallel stop routine and current selection, foreground handoff; exit,
             daemon and proxy lines; one outcome line per operation from any origin; offline embedded skill (Backend 5,
             11, 14, 16; <code>CC-24</code>, <code>CC-31</code>, <code>CC-35</code>, <code>CC-36</code>)
@@ -1184,7 +1183,7 @@ $ echo $?
               "Stopping 1 active stack process(es)…", "Sending SIGTERM to process n…" and PIDs as the stop's subject
             </li>
             <li>
-              <code>devhost stop</code>'s SIGKILL of devhost after 15 s, duplicate shutdown signals
+              <code>devhost stop</code> giving up after 15 s with no list of what still runs, duplicate shutdown signals
               (<code>interrupted-operations-06</code>), and <code>stack restart</code>'s fixed 15 s
             </li>
             <li>
@@ -1213,7 +1212,7 @@ $ echo $?
           <ul>
             <li>
               <code>devhost stop</code>, <code>stop --worktrees</code>, <code>stop --session</code>,
-              <code>stack restart</code>, <code>restart-all</code>, <code>upgrade</code>,
+              <code>stack restart</code>, <code>restart</code>, <code>upgrade</code>,
               <code>start --detach</code> cleanup, <b>Stop Stack</b> and <code>serve</code> sessions share one parallel
               stop routine, <code>stopTimeout</code> rule, progress line and certified outcome (<code>O30</code>,
               <code>O41</code>)
@@ -1279,9 +1278,9 @@ $ echo $?
               and certifies its end within <code>stopTimeout</code> (<code>O30</code>, <code>CC-35</code>)
             </li>
             <li>
-              Shipped <code>devhost restart-all</code> and <code>devhost stack restart</code> clearly state supervisor
+              Shipped <code>devhost restart</code> and <code>devhost stack restart</code> clearly state supervisor
               replacement (<code>O18</code>, <code>CC-31</code>); a replaced foreground stack exits 0
-              (<code>CC-24</code>); <code>restart-all</code> / <code>upgrade</code> leave serve sessions running
+              (<code>CC-24</code>); <code>restart</code> / <code>upgrade</code> leave serve sessions running
               (<code>O31</code>, <code>CC-36</code>)
             </li>
             <li>

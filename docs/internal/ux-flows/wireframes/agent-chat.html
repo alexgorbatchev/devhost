@@ -1623,7 +1623,7 @@
               stream sent, said once in the status line and given to each as its accessible description; the draft
               stays. When the stack runs again, the page says "Connected again" once and lists the ended conversations
               with <b>Resume</b>; multi-stack commands (<code>devhost stop --worktrees</code>,
-              <code>devhost restart-all</code>, <code>devhost upgrade</code>) ask only while a turn works or waits
+              <code>devhost restart</code>, <code>devhost upgrade</code>) ask only while a turn works or waits
               (<code>HOLD-1</code>, <code>HOLD-2</code>, <code>ACT-10</code>, <code>ACT-5</code>, <code>O18</code>,
               <code>O33</code>).
             </li>
@@ -1801,7 +1801,7 @@ Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all
               (<code>O1</code>)
             </li>
             <li>Unauthenticated network and relay access to chat and gated control routes (<code>O36</code>)</li>
-            <li>The gear's Chat Settings dialog, its Conversation picker and the second + icon</li>
+            <li>The gear's Chat Settings dialog, its Conversation picker and the icon-only New Conversation button</li>
             <li>Escape stopping a turn, Stop Generating and Send moving into its place</li>
             <li>
               "Waiting for your response…" with raw JSON above the answers; "Denied by the user." sent for the person
@@ -1818,7 +1818,9 @@ Revoke one: devhost pair revoke s_8f2a1c   Revoke all: devhost pair revoke --all
         <div>
           <h3>Merged</h3>
           <ul>
-            <li>The Conversation picker and the footer's Close Conversation become one list in the header</li>
+            <li>
+              The Conversation picker and the composer row's Close Conversation icon become one list in the header
+            </li>
             <li>Stop Generating, Escape and the card's Stop Turn become one Stop Turn with Alt+Ctrl+.</li>
             <li>
               The spinner on Chat, the waiting notice, the collapsed badge, the app tab-title prefix and the running

@@ -815,7 +815,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
             others up. What changes is that the page keeps asking while it is visible, through
             <code>GET /stacks.json</code> on the directory hostname, and updates every card, row, summary, total and the
             title in place, without a reload. A stack that starts appears in its group, one that stops moves to "Stopped
-            recently" with its reason, one that <code>devhost stack restart</code>, <code>devhost restart-all</code> or
+            recently" with its reason, one that <code>devhost stack restart</code>, <code>devhost restart</code> or
             <code>devhost upgrade</code> replaced keeps its card with the new PID and "replaced by devhost stack restart
             at 14:12", each announced once (<code>ACT-12</code>, <code>ACT-3</code>, <code>ACT-10</code>,
             <code>O18</code>).
@@ -1560,10 +1560,10 @@ $ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/it
             <li>
               <span class="n">4</span> <code>/__devhost__/stacks/&lt;stack&gt;/agents/activity</code> and its socket
               reach that stack's current control server, including after <code>devhost stack restart</code>,
-              <code>devhost restart-all</code> or <code>devhost upgrade</code> replaced it.
-              <code>&lt;stack&gt;</code> is the stack's key, "acme-shop", with six hexadecimal characters of its root
-              manifest's path only while two stacks share a name. It answers this machine and signed-in or paired
-              browsers only; <code>stackDirectoryAllowRemote</code> admits no one to it, and no app hostname serves it
+              <code>devhost restart</code> or <code>devhost upgrade</code> replaced it. <code>&lt;stack&gt;</code> is
+              the stack's key, "acme-shop", with six hexadecimal characters of its root manifest's path only while two
+              stacks share a name. It answers this machine and signed-in or paired browsers only;
+              <code>stackDirectoryAllowRemote</code> admits no one to it, and no app hostname serves it
               (<code>O55</code>, <code>O36</code>, <code>O18</code>, <code>SURF-15</code>).
             </li>
             <li>

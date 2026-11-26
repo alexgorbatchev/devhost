@@ -76,12 +76,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "trigger",
-    "list",
-    "card",
-    "cleared"
-  ],
+  "mainPath": ["trigger", "list", "card", "cleared"],
   "nodes": [
     {
       "id": "trigger",
@@ -242,7 +237,7 @@
       "label": "Stream entries + state",
       "sublabel": "input · kind · state",
       "tag": "reload-and-agents-06",
-      "explanation": "Each open page gets its own watcher from the end of every transcript, as today, with no history. Each event message gains its kind (prompt, reply, tool call, result, denied, turn end, stopped), its input (a shell tool's command, a file tool's path, an edit's path with the lines it adds and removes, cut at 4 KiB like the text) and, for an agent chat started, its conversation's title and mode, sent only on this stream, which no app hostname serves (Backend 5). A state message carries each agent's state and since when from the agents record, so a wait the transcripts never record shows (ACT-6, ACT-7). Before closing, the server sends ended, with the stack, the reason (a replacement names devhost stack restart, devhost restart-all or devhost upgrade), the time and the start command, before 1001, or failed with its cause before 1011, and the socket helper passes each close's code and reason (Backend 6, ACT-10, O18). Resolves the commands and waits missing in reload-and-agents-06 and the cause of reload-and-agents-10.",
+      "explanation": "Each open page gets its own watcher from the end of every transcript, as today, with no history. Each event message gains its kind (prompt, reply, tool call, result, denied, turn end, stopped), its input (a shell tool's command, a file tool's path, an edit's path with the lines it adds and removes, cut at 4 KiB like the text) and, for an agent chat started, its conversation's title and mode, sent only on this stream, which no app hostname serves (Backend 5). A state message carries each agent's state and since when from the agents record, so a wait the transcripts never record shows (ACT-6, ACT-7). Before closing, the server sends ended, with the stack, the reason (a replacement names devhost stack restart, devhost restart or devhost upgrade), the time and the start command, before 1001, or failed with its cause before 1011, and the socket helper passes each close's code and reason (Backend 6, ACT-10, O18). Resolves the commands and waits missing in reload-and-agents-06 and the cause of reload-and-agents-10.",
       "sources": [
         {
           "path": "apps/devhost/src/devtools/agent_activity.rs",
@@ -326,7 +321,7 @@
       "label": "Page says Stopped",
       "sublabel": "reason, start command",
       "tag": "reload-and-agents-10",
-      "explanation": "When devhost stop stops the stack with the page open, it reads 'Stopped' and 'Stopped from the terminal at 14:32. Start it with devhost start in ~/acme, then open Watch Live Activity from the running agents list on its pages.', keeps its entries under 'From the run that ended at 14:32' and stops reconnecting (ACT-10, HOLD-2, STATE-3); the idle timeout, Ctrl-C and chat turned off read ACT-10's sentence the same way (1000 after chat off). When devhost stack restart, restart-all or upgrade replaces the stack, the page on the stack directory's hostname reconnects and says so once (ACT-10, O18); the unlinked page on 127.0.0.1 cannot learn the new port, so it shows the run ended with a link to the directory page, ACT-10's one exception. A watcher that cannot start reads 'Watch Live Activity could not start: …' with Retry Now (FAIL-2, STATE-4); a connection dropped without a message reads 'Lost connection to devhost; retrying' with Retry Now (HOLD-2, ACT-5). Resolves reload-and-agents-10.",
+      "explanation": "When devhost stop stops the stack with the page open, it reads 'Stopped' and 'Stopped from the terminal at 14:32. Start it with devhost start in ~/acme, then open Watch Live Activity from the running agents list on its pages.', keeps its entries under 'From the run that ended at 14:32' and stops reconnecting (ACT-10, HOLD-2, STATE-3); the idle timeout, Ctrl-C and chat turned off read ACT-10's sentence the same way (1000 after chat off). When devhost stack restart, restart or upgrade replaces the stack, the page on the stack directory's hostname reconnects and says so once (ACT-10, O18); the unlinked page on 127.0.0.1 cannot learn the new port, so it shows the run ended with a link to the directory page, ACT-10's one exception. A watcher that cannot start reads 'Watch Live Activity could not start: …' with Retry Now (FAIL-2, STATE-4); a connection dropped without a message reads 'Lost connection to devhost; retrying' with Retry Now (HOLD-2, ACT-5). Resolves reload-and-agents-10.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts",

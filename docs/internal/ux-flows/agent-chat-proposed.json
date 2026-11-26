@@ -72,14 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "open",
-    "composer",
-    "send",
-    "card",
-    "respond",
-    "receipt"
-  ],
+  "mainPath": ["open", "composer", "send", "card", "respond", "receipt"],
   "nodes": [
     {
       "id": "open",
@@ -137,7 +130,7 @@
           "path": "packages/devhost-ui/src/devtools/features/agentChat/components/CompactChat.tsx",
           "line": 84,
           "end_line": 101,
-          "label": "Replaces: one + for attaching and for new chat"
+          "label": "Replaces: icon-only New Conversation by Attach"
         }
       ]
     },
@@ -533,7 +526,7 @@
           "path": "packages/devhost-ui/src/devtools/features/agentChat/components/AgentChatPanel.tsx",
           "line": 225,
           "end_line": 230,
-          "label": "Replaces: footer shows only agent and status"
+          "label": "Replaces: header shows only the agent's ID"
         },
         {
           "path": "apps/devhost/src/devtools/chat/process.rs",
@@ -587,7 +580,7 @@
       "label": "Ended by a stack stop",
       "sublabel": "closed · Resume later",
       "tag": "chat-conversations-03",
-      "explanation": "devhost stop ends every conversation of the stack without waiting for a turn, and its output names the conversations it ended (FB-4, REV-7; stack-run-stop owns the command's words and the rest of chat-conversations-03). An open page keeps every conversation listed as 'closed · Acme Shop stopped at 16:24 by devhost stop'; Send, every answer and Stop Turn are unavailable with the one reason the status stream sent, 'Acme Shop stopped. Start it with devhost start in ~/acme', in the composer's status line and as each control's accessible description, and the draft stays (HOLD-1, HOLD-2, ACT-10). When the stack runs again, the page reconnects, says 'Connected again' once, and lists the ended conversations as closed with their cause and Resume, from the metadata-only record O23 keeps without message text for O15's 24-hour window; resuming one continues the CLI's own saved conversation (Backend 9, UNDO-4, CC-38; chat-conversations-03). devhost stop --worktrees, devhost restart-all and devhost upgrade ask, or refuse without a terminal or under AGENT=1 unless --yes, only while a turn works or waits (REV-7, O18, O33).",
+      "explanation": "devhost stop ends every conversation of the stack without waiting for a turn, and its output names the conversations it ended (FB-4, REV-7; stack-run-stop owns the command's words and the rest of chat-conversations-03). An open page keeps every conversation listed as 'closed · Acme Shop stopped at 16:24 by devhost stop'; Send, every answer and Stop Turn are unavailable with the one reason the status stream sent, 'Acme Shop stopped. Start it with devhost start in ~/acme', in the composer's status line and as each control's accessible description, and the draft stays (HOLD-1, HOLD-2, ACT-10). When the stack runs again, the page reconnects, says 'Connected again' once, and lists the ended conversations as closed with their cause and Resume, from the metadata-only record O23 keeps without message text for O15's 24-hour window; resuming one continues the CLI's own saved conversation (Backend 9, UNDO-4, CC-38; chat-conversations-03). devhost stop --worktrees, devhost restart and devhost upgrade ask, or refuse without a terminal or under AGENT=1 unless --yes, only while a turn works or waits (REV-7, O18, O33).",
       "sources": [
         {
           "path": "apps/devhost/src/devtools/chat/mod.rs",

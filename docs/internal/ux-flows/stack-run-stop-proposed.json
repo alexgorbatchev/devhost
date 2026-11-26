@@ -72,13 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "start",
-    "ready",
-    "status",
-    "stopRoutine",
-    "receipt"
-  ],
+  "mainPath": ["start", "ready", "status", "stopRoutine", "receipt"],
   "nodes": [
     {
       "id": "start",
@@ -88,7 +82,7 @@
       "label": "devhost start [names]",
       "sublabel": "or init, help, skill",
       "tag": "stack-run-stop-12",
-      "explanation": "devhost start [names] finds the root manifest upward up to the first .git folder (or --manifest, MAN-01). The first line names the stack, its worktree label and size: 'Starting Acme Shop from main ~/acme · 6 services' (SEL-4, FB-10, WORD-11). Against a running stack, left-out names start into it with their dependencies: 'Started admin in Acme Shop · https://admin.shop.localhost/ · 1.2 s'; when all already run it prints only those URLs; during a stack-wide operation it refuses naming it and exits 1 (SEL-7, O6, CC-7, HOLD-3). With no manifest, the error names the .git repository-root search boundary (stack-run-stop-17), prints devhost init (O52: writes a starter devhost.toml from package.json, Cargo.toml, go.mod or Procfile, refusing overwrite) and the Quickstart URL. devhost --help's Quickstart puts devhost init right after first-run-setup's Caddy steps (devhost caddy download, privileged-ports on Linux, start), and devhost skill prints offline embedded guidance naming devhost stack info / status, service, logs, reload, upgrade, restart-all and stack restart (O18, O52, O62). Resolves stack-run-stop-12, stack-run-stop-17 and stack-run-stop-01.",
+      "explanation": "devhost start [names] finds the root manifest upward up to the first .git folder (or --manifest, MAN-01). The first line names the stack, its worktree label and size: 'Starting Acme Shop from main ~/acme · 6 services' (SEL-4, FB-10, WORD-11). Against a running stack, left-out names start into it with their dependencies: 'Started admin in Acme Shop · https://admin.shop.localhost/ · 1.2 s'; when all already run it prints only those URLs; during a stack-wide operation it refuses naming it and exits 1 (SEL-7, O6, CC-7, HOLD-3). With no manifest, the error names the .git repository-root search boundary (stack-run-stop-17), prints devhost init (O52: writes a starter devhost.toml from package.json, Cargo.toml, go.mod or Procfile, refusing overwrite) and the Quickstart URL. devhost --help's Quickstart puts devhost init right after first-run-setup's Caddy steps (devhost caddy download, privileged-ports on Linux, start), and devhost skill prints offline embedded guidance naming devhost stack info / status, service, logs, reload, upgrade, restart and stack restart (O18, O52, O62). Resolves stack-run-stop-12, stack-run-stop-17 and stack-run-stop-01.",
       "sources": [
         {
           "path": "apps/devhost/src/manifest.rs",
@@ -169,7 +163,7 @@
       "label": "devhost service restart",
       "sublabel": "one service, or queued",
       "tag": "agent-cli-journey-03",
-      "explanation": "devhost service start|stop|restart <service|group>… reach the running stack through its loopback control port, as the toolbar does: each sends an operationId, waits for health checks with a progress line and prints one outcome per target, 'Restarted api · 2.6 s', 'Started admin and mail (admin depends on mail) · 3.1 s', 'Stopped worker · it reads not started, stopped by you'; a lost response is read back from the operation record, never resent (SEL-7, MENU-1, MENU-6, REV-12, ACT-1, CC-11, CC-37). Another service's restart queues, 'worker queued behind Restart api'; during a stack-wide operation it refuses naming that operation and its progress, exit 1 (HOLD-3, HOLD-1, CC-8). An external service refuses: 'search runs outside devhost; devhost checks it but cannot restart it' (MENU-3, ACT-9). Targets are services or groups; devhost service restart --all is in-process Restart Stack's terminal form, whose help says 'Restart Stack in the browser' (CC-11, MENU-6; applied default of owner item q86), while stack restart, restart-all and upgrade replace supervisors (O18). devhost reload [--dry-run] [--stdin] applies or checks the manifest (CC-23). Resolves agent-cli-journey-03.",
+      "explanation": "devhost service start|stop|restart <service|group>… reach the running stack through its loopback control port, as the toolbar does: each sends an operationId, waits for health checks with a progress line and prints one outcome per target, 'Restarted api · 2.6 s', 'Started admin and mail (admin depends on mail) · 3.1 s', 'Stopped worker · it reads not started, stopped by you'; a lost response is read back from the operation record, never resent (SEL-7, MENU-1, MENU-6, REV-12, ACT-1, CC-11, CC-37). Another service's restart queues, 'worker queued behind Restart api'; during a stack-wide operation it refuses naming that operation and its progress, exit 1 (HOLD-3, HOLD-1, CC-8). An external service refuses: 'search runs outside devhost; devhost checks it but cannot restart it' (MENU-3, ACT-9). Targets are services or groups; devhost service restart --all is in-process Restart Stack's terminal form, whose help says 'Restart Stack in the browser' (CC-11, MENU-6; applied default of owner item q86), while stack restart, restart and upgrade replace supervisors (O18). devhost reload [--dry-run] [--stdin] applies or checks the manifest (CC-23). Resolves agent-cli-journey-03.",
       "sources": [
         {
           "path": "apps/devhost/src/main.rs",
@@ -224,7 +218,7 @@
       "label": "Multi-stack set first",
       "sublabel": "asks only if a turn ends",
       "tag": "stack-run-stop-07",
-      "explanation": "devhost stop --worktrees, devhost restart-all and devhost upgrade print their set before acting: each stack's name, worktree label, PID, foreground or detached, and the conversations it would close, 'Acme Shop  fix-nav ~/acme/.worktrees/fix-nav  PID 85102 · foreground · Claude Code working: \"Fix the nav\"' (SEL-6, SEL-4, FB-4, O18, WORD-11). Only when the set would end an agent's turn that works or waits do they ask, on a terminal with CI unset: 'Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N]', where anything but y or yes stops nothing (REV-7, REV-4, O33). Without a terminal, or under AGENT=1, they refuse on one devhost: ERR: line telling the agent to ask the person, and exit 1 (REV-8, WORD-9). --yes acts without the question, and post-upgrade scripts pass it; --dry-run prints the set and exits 0 (CC-12). restart-all and upgrade list serve sessions, which keep running (O31, CC-36). Worktree classification uses git worktree list --porcelain so a deleted worktree is classified without running Git in it, and other repositories are untouched (REV-11). Resolves stack-run-stop-07, stack-run-stop-16 and chat-conversations-03's slice.",
+      "explanation": "devhost stop --worktrees, devhost restart and devhost upgrade print their set before acting: each stack's name, worktree label, PID, foreground or detached, and the conversations it would close, 'Acme Shop  fix-nav ~/acme/.worktrees/fix-nav  PID 85102 · foreground · Claude Code working: \"Fix the nav\"' (SEL-6, SEL-4, FB-4, O18, WORD-11). Only when the set would end an agent's turn that works or waits do they ask, on a terminal with CI unset: 'Stop 3 stacks and end Claude Code's working turn in fix-nav? [y/N]', where anything but y or yes stops nothing (REV-7, REV-4, O33). Without a terminal, or under AGENT=1, they refuse on one devhost: ERR: line telling the agent to ask the person, and exit 1 (REV-8, WORD-9). --yes acts without the question, and post-upgrade scripts pass it; --dry-run prints the set and exits 0 (CC-12). restart and upgrade list serve sessions, which keep running (O31, CC-36). Worktree classification uses git worktree list --porcelain so a deleted worktree is classified without running Git in it, and other repositories are untouched (REV-11). Resolves stack-run-stop-07, stack-run-stop-16 and chat-conversations-03's slice.",
       "sources": [
         {
           "path": "apps/devhost/src/services/stop.rs",
@@ -236,7 +230,7 @@
           "path": "apps/devhost/src/services/restart.rs",
           "line": 56,
           "end_line": 120,
-          "label": "Replaces: restart-all with no set preview"
+          "label": "Replaces: restart with no set preview"
         }
       ]
     },
@@ -278,7 +272,7 @@
       "label": "Parallel stop",
       "sublabel": "FG + daemon from t = 0",
       "tag": "interrupted-operations-03",
-      "explanation": "One unified routine serves devhost stop, stop --worktrees, stop --session, stack restart, restart-all, upgrade, start --detach cleanup, Worktrees Stop Stack and serve sessions (O30, O41, CC-35). It records the stop reason before signalling (ACT-10, HOLD-2), takes one shared process snapshot at t = 0 (containment.rs), sends a single termination signal per managed foreground service (interrupted-operations-06), and runs foreground stops (10 s shared grace + verified SIGKILL + 5 s check + shared 2 s 100 ms port scan = 15 s bound) and daemon status→stop chains (O41 20 s shared per-daemon deadline, whole-group SIGKILL on timeout = 20.12 s bound) in parallel from t = 0: 25.64 s combined worst case fits inside O30's 30 s default stopTimeout (configurable 5s..10m via --timeout > DEVHOST_STOP_TIMEOUT > devhost.toml > config.toml > 30s; widens to max(stopTimeout, max_daemon_override + 10s) when a daemon overrides > 20 s unless CLI --timeout caps). Never SIGKILLs a stopping supervisor; second Ctrl-C or second devhost stop forces remaining trees and groups (KEY-14). Resolves interrupted-operations-03 and interrupted-operations-06.",
+      "explanation": "One unified routine serves devhost stop, stop --worktrees, stop --session, stack restart, restart, upgrade, start --detach cleanup, Worktrees Stop Stack and serve sessions (O30, O41, CC-35). It records the stop reason before signalling (ACT-10, HOLD-2), takes one shared process snapshot at t = 0 (containment.rs), sends a single termination signal per managed foreground service (interrupted-operations-06), and runs foreground stops (10 s shared grace + verified SIGKILL + 5 s check + shared 2 s 100 ms port scan = 15 s bound) and daemon status→stop chains (O41 20 s shared per-daemon deadline, whole-group SIGKILL on timeout = 20.12 s bound) in parallel from t = 0: 25.64 s combined worst case fits inside O30's 30 s default stopTimeout (configurable 5s..10m via --timeout > DEVHOST_STOP_TIMEOUT > devhost.toml > config.toml > 30s; widens to max(stopTimeout, max_daemon_override + 10s) when a daemon overrides > 20 s unless CLI --timeout caps). Never SIGKILLs a stopping supervisor; second Ctrl-C or second devhost stop forces remaining trees and groups (KEY-14). Resolves interrupted-operations-03 and interrupted-operations-06.",
       "sources": [
         {
           "path": "apps/devhost/src/services/stack.rs",
@@ -290,7 +284,7 @@
           "path": "apps/devhost/src/services/stop.rs",
           "line": 260,
           "end_line": 301,
-          "label": "Replaces: 15 s grace then supervisor SIGKILL"
+          "label": "Replaces: fixed 15 s grace, then gives up"
         },
         {
           "path": "apps/devhost/src/services/stack/runtime.rs",
@@ -308,13 +302,13 @@
       "label": "Upgrade or restart",
       "sublabel": "PID 84244 → 85502",
       "tag": "stack-run-stop-13",
-      "explanation": "Under O18, built-in devhost upgrade downloads the latest GitHub Release (skipping media), verifies SHA256SUMS, swaps a user-writable binary (clearly reporting read-only paths, externally managed installs or protected 999.0.0-dev builds without modifying them) and replaces running manifest stacks; shipped devhost restart-all and project-scoped devhost stack restart stay on one verb for dotfiles, package managers and local rebuilds while clearly stating in help and output that they replace the running devhost supervisor process (CC-31, CC-36). Before each signal, identity checks PID, start identity and root manifest (not registration time), so hot-reloaded stacks replace cleanly and already-stopped stacks read 'not replaced' without failing (REV-13, FAIL-5). Waits via the unified parallel stop routine up to O30's stopTimeout, relaunches with the current running service selection, appends to the same log, leaves serve sessions running (O31), and tells replaced foreground stacks which command replaced them so they print logs/stop commands and exit 0 (CC-24). Resolves stack-run-stop-13, stack-run-stop-02 and stack-run-stop-15.",
+      "explanation": "Under O18, built-in devhost upgrade downloads the latest GitHub Release (skipping media), verifies SHA256SUMS, swaps a user-writable binary (clearly reporting read-only paths, externally managed installs or protected 999.0.0-dev builds without modifying them) and replaces running manifest stacks; shipped devhost restart and project-scoped devhost stack restart stay on one verb for dotfiles, package managers and local rebuilds while clearly stating in help and output that they replace the running devhost supervisor process (CC-31, CC-36). Before each signal, identity checks PID, start identity and root manifest (not registration time), so hot-reloaded stacks replace cleanly and already-stopped stacks read 'not replaced' without failing (REV-13, FAIL-5). Waits via the unified parallel stop routine up to O30's stopTimeout, relaunches with the current running service selection, appends to the same log, leaves serve sessions running (O31), and tells replaced foreground stacks which command replaced them so they print logs/stop commands and exit 0 (CC-24). Resolves stack-run-stop-13, stack-run-stop-02 and stack-run-stop-15.",
       "sources": [
         {
           "path": "apps/devhost/src/main.rs",
           "line": 759,
           "end_line": 795,
-          "label": "Extends: stack restart, restart-all, upgrade"
+          "label": "Extends: stack restart, restart, upgrade"
         },
         {
           "path": "apps/devhost/src/services/restart.rs",
@@ -380,7 +374,7 @@
       "label": "Stopped-stack page",
       "sublabel": "24 h HTTPS · command",
       "tag": "stack-run-stop-11",
-      "explanation": "However a stack ends (devhost stop, Ctrl-C, idle timeout, stack restart / restart-all / upgrade, killed, every service exited), its terminal and log print one line with the reason and time: 'Acme Shop stopped at 02:14 after 30 min without requests (idleTimeout)' (ACT-10, CC-27). Under O15 and O63, strict configured-hosts-only TLS stays in place for arbitrary unknown HTTPS hostnames (zero on-demand certs), while each stopped stack keeps its configured Caddy routes and HTTPS certs active for 24 hours (or until another stack claims the hostname or Caddy stops) so revisiting https://shop.localhost/ renders this full page over HTTPS: 'Acme Shop stopped', that sentence, 'Start it again in ~/acme with', devhost start with Copy, and All Stacks on devbox (O61; directory lists stopped stacks whose run lasted >= 1 min). Uses shared status-page components without the toolbar, starts nothing (O10), fits all acceptance viewports and 320 px reflow (SURF-9, O8), Tab reaches Copy then All Stacks on devbox, and Copy keeps focus announcing 'Copied devhost start' once (KEY-11, FB-9). Resolves stack-run-stop-11.",
+      "explanation": "However a stack ends (devhost stop, Ctrl-C, idle timeout, stack restart / restart / upgrade, killed, every service exited), its terminal and log print one line with the reason and time: 'Acme Shop stopped at 02:14 after 30 min without requests (idleTimeout)' (ACT-10, CC-27). Under O15 and O63, strict configured-hosts-only TLS stays in place for arbitrary unknown HTTPS hostnames (zero on-demand certs), while each stopped stack keeps its configured Caddy routes and HTTPS certs active for 24 hours (or until another stack claims the hostname or Caddy stops) so revisiting https://shop.localhost/ renders this full page over HTTPS: 'Acme Shop stopped', that sentence, 'Start it again in ~/acme with', devhost start with Copy, and All Stacks on devbox (O61; directory lists stopped stacks whose run lasted >= 1 min). Uses shared status-page components without the toolbar, starts nothing (O10), fits all acceptance viewports and 320 px reflow (SURF-9, O8), Tab reaches Copy then All Stacks on devbox, and Copy keeps focus announcing 'Copied devhost start' once (KEY-11, FB-9). Resolves stack-run-stop-11.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/files.rs",
@@ -608,10 +602,10 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: devhost stop's 'process(es)', 'Sending SIGTERM' and 'stopped cleanly' lines; its SIGKILL of the supervisor after 15 s; duplicate shutdown signals (interrupted-operations-06); stack restart's fixed 15 s; restart-<random>/<PID>.log folders; 'devhost is waiting for a restart'; generic 404 or TLS error for a stack stopped within 24 h (O15, O63); [remote] removing local hostnames and 45 s silent wait on bad relay credentials; '[ERROR] received SIGINT' for cancelled detached starts; 'stack ownership changed; refresh worktrees'; stop --worktrees ending at its first failure or on a missing folder; mid-token wrapping; reprinted URL lists",
-        "Merged: devhost stop, stop --worktrees, stop --session, stack restart, restart-all, upgrade, start --detach cleanup, Worktrees Stop Stack and serve sessions share one parallel stop routine, stopTimeout precedence, progress line and certified outcome (O30, O41); devhost stack info and short alias devhost status share one code path (O62); stack list, stack find and devhost stop share one resolver (SEL-6)",
+        "Removed: devhost stop's 'process(es)', 'Sending SIGTERM' and 'stopped cleanly' lines; its fixed 15 s give-up with no list of what still runs; duplicate shutdown signals (interrupted-operations-06); stack restart's fixed 15 s; restart-<random>/<PID>.log folders; 'devhost is waiting for a restart'; generic 404 or TLS error for a stack stopped within 24 h (O15, O63); [remote] removing local hostnames and 45 s silent wait on bad relay credentials; '[ERROR] received SIGINT' for cancelled detached starts; 'stack ownership changed; refresh worktrees'; stop --worktrees ending at its first failure or on a missing folder; mid-token wrapping; reprinted URL lists",
+        "Merged: devhost stop, stop --worktrees, stop --session, stack restart, restart, upgrade, start --detach cleanup, Worktrees Stop Stack and serve sessions share one parallel stop routine, stopTimeout precedence, progress line and certified outcome (O30, O41); devhost stack info and short alias devhost status share one code path (O62); stack list, stack find and devhost stop share one resolver (SEL-6)",
         "New: devhost upgrade (O18), devhost status alias for extended devhost stack info [--json] [--wait] (O62), devhost logs [-f] [--path], devhost reload [--dry-run] [--stdin], devhost service start|stop|restart <service|group>… and devhost service restart --all (CC-11), devhost init (O52), offline embedded devhost skill; --timeout, --dry-run, --yes and turn-ending question (O30, O33); stopTimeout and machineName in config.toml (O30, O61); ready line, additive local + preview URLs, 'All stacks on devbox: …', proxy line; active serve-session guidance (serve-command-04); 24 h stopped-stack HTTPS route, page and end line (O63); leftover detection; fail-fast and reconnect relay reporting; probe's last status",
-        "Changed: path uses O44 prefix routing; start <names> starts left-out services into a running stack (O6, CC-7); no-manifest errors name the .git boundary (stack-run-stop-17); stack find treats folders as folders (CC-34); stop runs FG + daemon in parallel from t = 0 with one signal inside 30 s default stopTimeout (O30, CC-35); shipped restart-all and stack restart clearly state supervisor replacement (O18, CC-31); replaced foreground stacks exit 0 (CC-24); restart-all / upgrade leave serve sessions running (O31, CC-36); replacement keeps running services (SEL-7); foreground stacks write the per-manifest log (CC-21); Rust lifecycle tests update to match",
+        "Changed: path uses O44 prefix routing; start <names> starts left-out services into a running stack (O6, CC-7); no-manifest errors name the .git boundary (stack-run-stop-17); stack find treats folders as folders (CC-34); stop runs FG + daemon in parallel from t = 0 with one signal inside 30 s default stopTimeout (O30, CC-35); shipped restart and stack restart clearly state supervisor replacement (O18, CC-31); replaced foreground stacks exit 0 (CC-24); restart / upgrade leave serve sessions running (O31, CC-36); replacement keeps running services (SEL-7); foreground stacks write the per-manifest log (CC-21); Rust lifecycle tests update to match",
         "Kept: manifest discovery upward to .git; validation and claims before any service runs; detached start readiness wait, reuse, lock and cleanup on failure; slow health-check waiting line; failed service leaves rest running; stop releases hostnames/ports/routes and signals only containment.rs-verified processes (ACT-14); shared Caddy keeps running with configured-hosts-only TLS for arbitrary unknown HTTPS hostnames (O63); --worktrees stays within one repo; two output contracts; devhost never opens a browser; idle shutdown as configured"
       ]
     },
@@ -639,7 +633,7 @@
         "Stop reason, stopped-stack record (with the worktree label and the leftover service processes) and 24 h active HTTPS routes in caddy/files.rs keeping configured-hosts-only TLS for arbitrary unknown HTTPS hostnames (O15, O63, CC-27)",
         "Leftover detection building on containment.rs cross-platform start identity (ACT-14); start refuses on port/host holder; stop signals verified leftovers",
         "Multi-stack sets printed first with conversations and turns, --dry-run, question or refusal, --yes; every member attempted; git worktree list classification (CC-12)",
-        "Built-in devhost upgrade (GitHub Release excluding media, SHA256SUMS, writable/managed guard, swap + replace) and identity-checked replacement on restart-all / stack restart with current selection, same log, serve-session preservation and exit-0 foreground handoff (O18, O31, CC-24, CC-31, CC-36)",
+        "Built-in devhost upgrade (GitHub Release excluding media, SHA256SUMS, writable/managed guard, swap + replace) and identity-checked replacement on restart / stack restart with current selection, same log, serve-session preservation and exit-0 foreground handoff (O18, O31, CC-24, CC-31, CC-36)",
         "One log per manifest for foreground and detached stacks with run headers, timestamps and ERR:/WARN:; devhost logs (CC-21, CC-23)",
         "Extended devhost stack info (GET /__devhost__/stack-info) + devhost status short alias with rejection state, changed markers, remote preview status, --json, --wait and exit 3 (O62, CC-23)",
         "devhost service start|stop|restart <service|group>… with operationId; start <names> into running stack (CC-11, CC-37, CC-7)",
@@ -655,10 +649,10 @@
       "title": "Contract changes",
       "items": [
         "CC-35: parallel FG + daemon shutdown from t = 0 within 30 s default stopTimeout (5s..10m, precedence --timeout > DEVHOST_STOP_TIMEOUT > devhost.toml > config.toml > 30s; widens for daemon override > 20 s unless CLI --timeout caps), unified across all callers, never killing stopping supervisor, forcing on second Ctrl-C or second stop",
-        "CC-12: stop --worktrees, restart-all and upgrade print their set, ask only when a turn would end, refuse elsewhere unless --yes, and take --dry-run",
-        "CC-31 (with O18, WORD-11): adds devhost upgrade, keeps shipped devhost restart-all and devhost stack restart stating clearly that they replace the supervisor process, and moves working-copy docs to worktree",
-        "CC-36: restart-all and upgrade replace every manifest stack (foreground included) and list serve sessions while leaving them running",
-        "CC-24: a foreground stack replaced by stack restart, restart-all or upgrade prints the new PID and log and exits 0; exit lines name signal, time and sender",
+        "CC-12: stop --worktrees, restart and upgrade print their set, ask only when a turn would end, refuse elsewhere unless --yes, and take --dry-run",
+        "CC-31 (with O18, WORD-11): adds devhost upgrade, keeps shipped devhost restart and devhost stack restart stating clearly that they replace the supervisor process, and moves working-copy docs to worktree",
+        "CC-36: restart and upgrade replace every manifest stack (foreground included) and list serve sessions while leaving them running",
+        "CC-24: a foreground stack replaced by stack restart, restart or upgrade prints the new PID and log and exits 0; exit lines name signal, time and sender",
         "CC-21: every stack writes its per-manifest log, foreground included",
         "CC-22: shutdown lines name slow and force-stopped services; ready line; one outcome line per operation; URLs printed once",
         "CC-23 (with O62): extended devhost stack info + devhost status alias (exit 3), devhost reload and devhost logs; one ERR: line holding every issue",
@@ -674,7 +668,7 @@
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only verified Rust code under apps/devhost/src/ at that revision"
       ]
     }

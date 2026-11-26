@@ -44,8 +44,18 @@
       "sublabel": "[devtools.*] on/off, corner",
       "explanation": "The toolbar is configured only in the stack's shared manifest: one enabled switch per feature table under [devtools], [devtools.status].position, and [devtools.shortcuts].restartServices. A save hot reloads the manifest; the person never configures the toolbar from the toolbar itself.",
       "sources": [
-        { "path": "apps/devhost/internal/manifest/table_keys.go", "line": 14, "end_line": 24, "label": "Devtools tables the manifest accepts" },
-        { "path": "apps/devhost/devhost.example.toml", "line": 214, "end_line": 233, "label": "Status position and shortcut settings" }
+        {
+          "path": "apps/devhost/internal/manifest/table_keys.go",
+          "line": 14,
+          "end_line": 24,
+          "label": "Devtools tables the manifest accepts"
+        },
+        {
+          "path": "apps/devhost/devhost.example.toml",
+          "line": 214,
+          "end_line": 233,
+          "label": "Status position and shortcut settings"
+        }
       ]
     },
     {
@@ -58,9 +68,24 @@
       "tag": "toolbar-shell-08",
       "explanation": "Go decides per document whether to inject: any of seven features (chat, annotations, config editor, editor, external toolbars, minimap, status) turns injection on; resources alone does not. The resolved settings, including the toolbar position, reach the control server after every accepted reload, and every health-stream message carries the configuration to open pages, which replace the injected configuration in place: features turn on and off and the toolbar changes corner without a page reload. The restart shortcut resolves here too, with no warning either way: a key name the example manifest lists, such as ctrl+shift+enter, passes and is advertised in Services but never fires, because the page matches only letters and digits, and a value written with capitals, such as Alt+Shift+R, silently becomes Alt+Ctrl+R while the terminal prints only 'configuration reloaded' (toolbar-shell-08).",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 1452, "end_line": 1470, "label": "Inject gate; settings sent to control server" },
-        { "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts", "line": 43, "end_line": 53, "label": "Open pages take new config from health" },
-        { "path": "apps/devhost/internal/manifest/validate.go", "line": 197, "end_line": 202, "label": "Invalid shortcut silently becomes alt+ctrl+r" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1452,
+          "end_line": 1470,
+          "label": "Inject gate; settings sent to control server"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 43,
+          "end_line": 53,
+          "label": "Open pages take new config from health"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 197,
+          "end_line": 202,
+          "label": "Invalid shortcut silently becomes alt+ctrl+r"
+        }
       ]
     },
     {
@@ -72,7 +97,12 @@
       "sublabel": "any HTML document",
       "explanation": "Any routed hostname whose service path is root-compatible: the document server checks the running configuration for every HTML document, so injection follows hot reloads without replacing the server.",
       "sources": [
-        { "path": "apps/devhost/internal/services/routes.go", "line": 81, "end_line": 95, "label": "Per-document check of the running config" }
+        {
+          "path": "apps/devhost/internal/services/routes.go",
+          "line": 81,
+          "end_line": 95,
+          "label": "Per-document check of the running config"
+        }
       ]
     },
     {
@@ -84,9 +114,24 @@
       "sublabel": "then fetch config.json",
       "explanation": "The document server rewrites HTML responses: it inserts one module script before the last </body> (or appends it) and drops the page's Content-Security-Policy headers. In the page, the script fetches /__devhost__/config.json with no-store, stores it as the injected configuration and mounts the devtools.",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/document_injection.go", "line": 87, "end_line": 103, "label": "Rewrite HTML responses; drop CSP" },
-        { "path": "apps/devhost/internal/devtools/document_injection.go", "line": 188, "end_line": 198, "label": "Script inserted before </body>" },
-        { "path": "packages/devhost-ui/src/devtools/startDevtools.ts", "line": 6, "end_line": 22, "label": "Fetch config.json, then mount" }
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 87,
+          "end_line": 103,
+          "label": "Rewrite HTML responses; drop CSP"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 188,
+          "end_line": 198,
+          "label": "Script inserted before </body>"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/startDevtools.ts",
+          "line": 6,
+          "end_line": 22,
+          "label": "Fetch config.json, then mount"
+        }
       ]
     },
     {
@@ -99,9 +144,24 @@
       "tag": "toolbar-shell-02",
       "explanation": "renderDevtools appends a Shadow DOM host as the body's last child; DevtoolsTopLayer shows it as a manual popover above host stacking contexts. The bar is fixed to one of two right-hand corners, bottom-right by default or top-right, chosen in the team's shared devhost.toml; there is no left or centered place and no drag. With default features it is about 789 px wide, 88% of a 900 px window, and it covers the app's header or corner buttons, where clicks land on devhost (toolbar-shell-02). It also sits on top of the bottom rows of docked third-party devtools panels it opened itself (third-party-devtools-01, this flow's slice). Placement is one of the personal preferences kept in the shared manifest (source-and-minimap-03, owned by component-source), and with 40 services the bar becomes a strip of 40 dots (stack-scale-04, owned by services-panel).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/renderDevtools.ts", "line": 23, "end_line": 36, "label": "Shadow host appended last in body" },
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 44, "end_line": 57, "label": "Fixed to the top or bottom right" },
-        { "path": "apps/devhost/internal/manifest/schema.go", "line": 11, "end_line": 11, "label": "Two positions, both right-hand" }
+        {
+          "path": "packages/devhost-ui/src/devtools/renderDevtools.ts",
+          "line": 23,
+          "end_line": 36,
+          "label": "Shadow host appended last in body"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 44,
+          "end_line": 57,
+          "label": "Fixed to the top or bottom right"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/schema.go",
+          "line": 11,
+          "end_line": 11,
+          "label": "Two positions, both right-hand"
+        }
       ]
     },
     {
@@ -114,8 +174,18 @@
       "tag": "page-context-03",
       "explanation": "Manifest change not applied, Reload blocked and the hot reload notice render in the toolbar's readout column, 384 px wide, stacked above a bottom-right bar or below a top-right one. The column shares the bar's pointer-events-auto flex container, so while any notice shows that container grows to the notice's height across the bar's whole width: the transparent area beside the notice swallows clicks, and page controls there can be neither used nor selected for chat (page-context-03). The hot reload notice shows by default with chat on, so this strip is there on most pages until the notice is dismissed.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 283, "end_line": 307, "label": "Rejection, Reload blocked, hot reload notice" },
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 95, "end_line": 102, "label": "Readout column in the bar's container" }
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 283,
+          "end_line": 307,
+          "label": "Rejection, Reload blocked, hot reload notice"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 95,
+          "end_line": 102,
+          "label": "Readout column in the bar's container"
+        }
       ]
     },
     {
@@ -127,9 +197,24 @@
       "sublabel": "whole machine; every 2 s",
       "explanation": "devhost samples the whole machine, not the stack: CPU busy since the last reading and memory every 2 seconds, disk every minute, through the manifest's pollInterval defaults. The page reads the resources WebSocket and drops the readouts while the stream is down.",
       "sources": [
-        { "path": "apps/devhost/internal/hostusage/sampler.go", "line": 10, "end_line": 28, "label": "Machine-wide CPU, memory, disk readings" },
-        { "path": "apps/devhost/internal/manifest/resources.go", "line": 8, "end_line": 13, "label": "2 s and 1 min default intervals" },
-        { "path": "packages/devhost-ui/src/devtools/features/resourceUsage/hooks/useResourceUsage.ts", "line": 13, "end_line": 42, "label": "Stream readings; clear when down" }
+        {
+          "path": "apps/devhost/internal/hostusage/sampler.go",
+          "line": 10,
+          "end_line": 28,
+          "label": "Machine-wide CPU, memory, disk readings"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/resources.go",
+          "line": 8,
+          "end_line": 13,
+          "label": "2 s and 1 min default intervals"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/resourceUsage/hooks/useResourceUsage.ts",
+          "line": 13,
+          "end_line": 42,
+          "label": "Stream readings; clear when down"
+        }
       ]
     },
     {
@@ -142,9 +227,24 @@
       "tag": "toolbar-shell-04",
       "explanation": "The bar reads left to right: stack name, Services (dots and count), Worktrees, CPU/RAM/Disk, Config, third-party launchers, running agents, Hold Reloads, Chat. Each readout compares its rounded reading with fixed 70% and 90% cuts, with no smoothing, so CPU and RAM flip between normal, amber and red every 2 seconds; red is the same colour as a down service, nothing says whether the stack causes the load, and the figures sit only in a native title that Tab, touch and recordings never reach (toolbar-shell-04). RAM is divided by 10^9, so a 48 GB machine reads 51.5 GB, and a reading of exactly 70% keeps the normal fill (toolbar-shell-05, a patch). In forced colors every health dot, readout alarm and the Hold Reloads pressed state disappear (keyboard-and-screen-reader-04).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 313, "end_line": 362, "label": "Bar segments in display order" },
-        { "path": "packages/devhost-ui/src/devtools/features/resourceUsage/components/ResourceUsagePanel.tsx", "line": 28, "end_line": 56, "label": "Meters; figures only in a title" },
-        { "path": "packages/devhost-ui/src/devtools/features/resourceUsage/createResourceReadouts.ts", "line": 46, "end_line": 64, "label": "Fixed 70/90 cuts; decimal GB" }
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 313,
+          "end_line": 362,
+          "label": "Bar segments in display order"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/resourceUsage/components/ResourceUsagePanel.tsx",
+          "line": 28,
+          "end_line": 56,
+          "label": "Meters; figures only in a title"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/resourceUsage/createResourceReadouts.ts",
+          "line": 46,
+          "end_line": 64,
+          "label": "Fixed 70/90 cuts; decimal GB"
+        }
       ]
     },
     {
@@ -157,9 +257,24 @@
       "tag": "keyboard-and-screen-reader-05",
       "explanation": "The devtools host is the body's last child, so the toolbar comes after every link and field on the page (the 13th Tab stop on the small fixture page, far later on a real app). Nothing focuses it: the only devhost shortcut is Restart Changed (Alt+Ctrl+R). It sits in an unnamed group rather than a landmark, and the bar declares role=toolbar without roving focus, so arrow keys, Home and End do nothing (keyboard-and-screen-reader-05). That chord also takes keys meant for the page: it matches the physical R key and the Ctrl and Alt flags, never AltGraph, and spares only input, textarea, select and contenteditable targets, so on Windows, where AltGr reports as Ctrl+Alt, typing ® (AltGr+R) into a grid cell or a role=textbox widget restarts services instead of typing, and the default chord is also Magnifier's resize-lens shortcut (toolbar-shell-12).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 58, "end_line": 63, "label": "role=toolbar, no arrow-key handling" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 209, "end_line": 235, "label": "The only shortcut: Restart Changed" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 426, "end_line": 456, "label": "Matcher: key code and flags, never AltGraph" }
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 58,
+          "end_line": 63,
+          "label": "role=toolbar, no arrow-key handling"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 209,
+          "end_line": 235,
+          "label": "The only shortcut: Restart Changed"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 426,
+          "end_line": 456,
+          "label": "Matcher: key code and flags, never AltGraph"
+        }
       ]
     },
     {
@@ -172,9 +287,24 @@
       "tag": "toolbar-shell-01",
       "explanation": "Clicking the stack name toggles plain React state: the bar shrinks to the dh badge and one dot whose colour comes only from service health and the status stream's error. That button's accessible name, Collapse devhost toolbar, leaves out the stack name it shows, so speech-input users who say that name cannot press it (toolbar-shell-09). The notices column renders only while expanded, so a held reload or a rejected manifest change stays hidden behind a green 'stack healthy' dot until the person expands the bar again (toolbar-shell-01). The opposite error comes with every routine restart: the dot has no restarting state, so a restarting service (Restart Changed, Alt+Ctrl+R, a manifest save, a worktree switch) turns it red, 'stack down', for seconds, while the expanded bar draws the same service as an amber restarting spinner (toolbar-shell-10). Collapse is not saved, so every reload, the dev server's included, brings the full bar back (toolbar-shell-02). Once Reload blocked is dismissed, nothing on the toolbar shows the page is out of date, collapsed or not (reload-and-agents-04, owned by reload-control).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 21, "end_line": 23, "label": "Collapse is component state only" },
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx", "line": 84, "end_line": 102, "label": "Collapsed: dot; notices only expanded" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 405, "end_line": 424, "label": "Dot from service health and error" }
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 21,
+          "end_line": 23,
+          "label": "Collapse is component state only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsToolbar.tsx",
+          "line": 84,
+          "end_line": 102,
+          "label": "Collapsed: dot; notices only expanded"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 405,
+          "end_line": 424,
+          "label": "Dot from service health and error"
+        }
       ]
     },
     {
@@ -187,9 +317,24 @@
       "tag": "chat-compose-04",
       "explanation": "Toolbar panels are native auto popovers anchored above (bottom-right) or below (top-right) their trigger, one at a time. Chat docks at the bar's measured edge on the higher edge layer, right over the notices column, so opening chat hides the hot reload notice and its Disable Reloads, and any Reload blocked or rejection notice (chat-compose-04); the Configuration window does the same on laptop-size screens (config-editor-11, its duplicate). An open panel such as Services also covers the notices (notices-and-feedback-03, this flow's slice), and the Running agents list opens underneath docked chat (reload-and-agents-05, this flow's slice).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/shared/components/ToolbarPopover.tsx", "line": 62, "end_line": 99, "label": "Auto popover anchored to its trigger" },
-        { "path": "packages/devhost-ui/src/devtools/features/agentChat/components/AgentChatPanel.tsx", "line": 81, "end_line": 95, "label": "Chat docks at the toolbar edge" },
-        { "path": "packages/devhost-ui/src/devtools/shared/devtools.css", "line": 150, "end_line": 163, "label": "Layers: dock below edge and modal" }
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/ToolbarPopover.tsx",
+          "line": 62,
+          "end_line": 99,
+          "label": "Auto popover anchored to its trigger"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/AgentChatPanel.tsx",
+          "line": 81,
+          "end_line": 95,
+          "label": "Chat docks at the toolbar edge"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/devtools.css",
+          "line": 150,
+          "end_line": 163,
+          "label": "Layers: dock below edge and modal"
+        }
       ]
     },
     {
@@ -202,8 +347,18 @@
       "tag": "toolbar-shell-06",
       "explanation": "Keys typed in devtools stop at the shadow root, after the page's window and document capture listeners have already run and seen the event retargeted to devhost's host element. A page shortcut that focuses its search on '/' unless a field has focus therefore fires: typing feature/login into Find worktree leaves 'feature' in the filter and sends 'login' into the page's search box, although the docs promise keys typed into the toolbar never trigger page shortcuts (toolbar-shell-06). The chat composer sits behind the same boundary. After a mouse click the toolbar keeps the keyboard until the page is clicked, which the docs state.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsTopLayer.tsx", "line": 63, "end_line": 77, "label": "Keys stopped at the shadow root only" },
-        { "path": "packages/docs/src/content/docs/guides/devtools.md", "line": 36, "end_line": 40, "label": "Docs: keys never trigger page shortcuts" }
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsTopLayer.tsx",
+          "line": 63,
+          "end_line": 77,
+          "label": "Keys stopped at the shadow root only"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/devtools.md",
+          "line": 36,
+          "end_line": 40,
+          "label": "Docs: keys never trigger page shortcuts"
+        }
       ]
     },
     {
@@ -216,9 +371,24 @@
       "tag": "toolbar-shell-07",
       "explanation": "After every host toggle the root re-enters the top layer, so the bar paints above a page's modal dialog, but a host modal makes everything outside it inert: Services and the Reload button of a Reload blocked notice do nothing and the keyboard cannot reach them, while the bar looks fully live; only chat's layer moves into the dialog. Re-entry also waits while a devtools panel is open, so a page toast shown while Services is open covers Restart Changed and Restart Stack until the panel closes (toolbar-shell-07). Scripted modals, the role=dialog aria-modal portals that Radix, shadcn/ui and Base UI render, are never recognized, because devhost counts only native :modal and :popover-open: the library sets aria-hidden on devhost's host and its focus trap pulls focus back, so the toolbar, its notices and docked chat leave the accessibility tree and keyboard reach while the bar still looks usable and shows no paused state (toolbar-shell-11). The docs say the toolbar stays above page popovers and modal dialogs and that chat keeps working while a modal is open.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsTopLayer.tsx", "line": 33, "end_line": 45, "label": "Re-enter after each host toggle" },
-        { "path": "packages/devhost-ui/src/devtools/shared/promoteDevtoolsTopLayer.ts", "line": 19, "end_line": 54, "label": "Waits while a devtools panel is open" },
-        { "path": "packages/devhost-ui/src/devtools/shared/constants.ts", "line": 14, "end_line": 15, "label": "Page dialogs: native :modal, :popover-open only" }
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/DevtoolsTopLayer.tsx",
+          "line": 33,
+          "end_line": 45,
+          "label": "Re-enter after each host toggle"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/promoteDevtoolsTopLayer.ts",
+          "line": 19,
+          "end_line": 54,
+          "label": "Waits while a devtools panel is open"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/constants.ts",
+          "line": 14,
+          "end_line": 15,
+          "label": "Page dialogs: native :modal, :popover-open only"
+        }
       ]
     },
     {
@@ -231,9 +401,24 @@
       "tag": "toolbar-shell-03",
       "explanation": "The page renders the bar only while status, external toolbars, chat or the config editor is on, yet the readouts, Worktrees, running agents and Hold Reloads all live inside it and the reload hold runs only while it renders. With chat off, a save that turns off status and external toolbars removes the whole toolbar from open pages: CPU/RAM/Disk and Worktrees vanish, script reloads go through although Hold Reloads is still on, and the terminal prints only 'configuration reloaded'. The docs say the toolbar appears when at least one devtools feature is on (toolbar-shell-03).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 153, "end_line": 154, "label": "Bar renders for four features only" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 179, "end_line": 180, "label": "Reload hold runs only with the bar" },
-        { "path": "packages/docs/src/content/docs/guides/devtools.md", "line": 17, "end_line": 30, "label": "Docs: appears when any feature is on" }
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 153,
+          "end_line": 154,
+          "label": "Bar renders for four features only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 179,
+          "end_line": 180,
+          "label": "Reload hold runs only with the bar"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/devtools.md",
+          "line": 17,
+          "end_line": 30,
+          "label": "Docs: appears when any feature is on"
+        }
       ]
     }
   ],
@@ -249,7 +434,14 @@
     { "id": "usage-read", "from": "usage", "to": "read", "label": "every 2 s", "role": "branch", "variant": "dashed" },
     { "id": "read-panel", "from": "read", "to": "panel", "label": "open a panel", "role": "branch" },
     { "id": "panel-type", "from": "panel", "to": "type", "label": "type", "role": "branch" },
-    { "id": "panel-modal", "from": "panel", "to": "modal", "label": "page dialog opens", "role": "branch", "variant": "dashed" },
+    {
+      "id": "panel-modal",
+      "from": "panel",
+      "to": "modal",
+      "label": "page dialog opens",
+      "role": "branch",
+      "variant": "dashed"
+    },
     { "id": "tab-read", "from": "tab", "to": "read", "label": "Tab: last stop", "role": "branch" }
   ],
   "cards": [

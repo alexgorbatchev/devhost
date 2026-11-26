@@ -75,12 +75,7 @@
       "toCol": 4
     }
   ],
-  "mainPath": [
-    "entry",
-    "page",
-    "card",
-    "open"
-  ],
+  "mainPath": ["entry", "page", "card", "open"],
   "nodes": [
     {
       "id": "entry",
@@ -316,7 +311,7 @@
       "type": "backend",
       "label": "Per-stack activity path",
       "sublabel": "/__devhost__/stacks/<stack>/…",
-      "explanation": "The directory's hostname serves /__devhost__/stacks/<stack>/agents/activity and its socket, the Watch Live Activity page running-agents draws and its agents record links, for this machine and browsers signed in with the passkey or paired; stackDirectoryAllowRemote admits no one to it, any other client gets 403 with O36's sentence, and no app hostname serves it (O55, O36, HOLD-7). <stack> is the stack's key, 'acme-shop', with six hexadecimal characters of its root manifest's path only while two stacks share a name, so it survives devhost stack restart, devhost restart-all and devhost upgrade; the directory site routes each key to that stack's current control server and rewrites the route when a replacing run registers (O18; Backend 13). running-agents owns the page and the record's activity.url; this flow owns the route.",
+      "explanation": "The directory's hostname serves /__devhost__/stacks/<stack>/agents/activity and its socket, the Watch Live Activity page running-agents draws and its agents record links, for this machine and browsers signed in with the passkey or paired; stackDirectoryAllowRemote admits no one to it, any other client gets 403 with O36's sentence, and no app hostname serves it (O55, O36, HOLD-7). <stack> is the stack's key, 'acme-shop', with six hexadecimal characters of its root manifest's path only while two stacks share a name, so it survives devhost stack restart, devhost restart and devhost upgrade; the directory site routes each key to that stack's current control server and rewrites the route when a replacing run registers (O18; Backend 13). running-agents owns the page and the record's activity.url; this flow owns the route.",
       "sources": [
         {
           "path": "apps/devhost/src/caddy/files.rs",

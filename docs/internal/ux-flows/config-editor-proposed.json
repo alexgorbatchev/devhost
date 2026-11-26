@@ -72,14 +72,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "config",
-    "open",
-    "edit",
-    "write",
-    "reload",
-    "receipt"
-  ],
+  "mainPath": ["config", "open", "edit", "write", "reload", "receipt"],
   "nodes": [
     {
       "id": "config",

@@ -45,8 +45,18 @@
       "tag": "stack-directory-06",
       "explanation": "Nothing in devhost leads to the directory. devhost start ends with one URL line per service and never the directory URL; devhost stack list prints only a PID and the manifest path; the toolbar and the Caddy 404 page have no link to it. The hostname appears only in the docs and in the error a service gets for claiming it (stack-directory-06). Changing [caddy].stackDirectoryHost in config.toml prints Applied and the same service URLs, so the directory's new address appears nowhere and the old one answers 404 (proxy-settings-04).",
       "sources": [
-        { "path": "apps/devhost/internal/services/stack.go", "line": 719, "end_line": 734, "label": "Start prints one URL line per service" },
-        { "path": "apps/devhost/internal/app/run.go", "line": 284, "end_line": 292, "label": "stack list prints PID and manifest path" }
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 719,
+          "end_line": 734,
+          "label": "Start prints one URL line per service"
+        },
+        {
+          "path": "apps/devhost/internal/app/run.go",
+          "line": 284,
+          "end_line": 292,
+          "label": "stack list prints PID and manifest path"
+        }
       ]
     },
     {
@@ -59,8 +69,18 @@
       "tag": "first-run-setup-02",
       "explanation": "The directory lives at devhost.localhost, or at [caddy].stackDirectoryHost, plus the port when httpsPort is not 443; people type it from the docs. With the local CA untrusted, the browser shows 'Your connection is not private' first, and the bypass covers one hostname only, so every service hostname opened from the directory warns again. After the bypass the directory, like every devhost page, says nothing about certificate trust or the one command that fixes it (first-run-setup-02).",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/stack_directory.go", "line": 17, "end_line": 31, "label": "Default and configured directory hostname" },
-        { "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md", "line": 269, "end_line": 271, "label": "Docs: the only place that names the URL" }
+        {
+          "path": "apps/devhost/internal/caddy/stack_directory.go",
+          "line": 17,
+          "end_line": 31,
+          "label": "Default and configured directory hostname"
+        },
+        {
+          "path": "packages/docs/src/content/docs/guides/stack-lifecycle.md",
+          "line": 269,
+          "end_line": 271,
+          "label": "Docs: the only place that names the URL"
+        }
       ]
     },
     {
@@ -71,7 +91,12 @@
       "label": "Mistyped or stale hostname",
       "sublabel": "any unrouted hostname",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/caddyfile.go", "line": 72, "end_line": 103, "label": "Fallback site answers unrouted hosts 404" }
+        {
+          "path": "apps/devhost/internal/caddy/caddyfile.go",
+          "line": 72,
+          "end_line": 103,
+          "label": "Fallback site answers unrouted hosts 404"
+        }
       ]
     },
     {
@@ -84,9 +109,24 @@
       "tag": "stack-directory-04",
       "explanation": "Caddy's fallback answers any unrouted hostname with a static page rewritten at every route change: 'No active devhost route matched this hostname.' It never shows the requested host or path, suggests no close match, and lists every routed hostname of every stack A to Z without stack, service or status, including hosts whose services are down. Each link opens the route's root and drops the requested path, and nothing links to the stack directory (stack-directory-04, stack-directory-06). HTTP clients get the same page: about 750 KB of HTML for an API request before routes exist, then empty 502s while a service starts, reloads or has crashed (agent-cli-journey-04).",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/not_found.go", "line": 64, "end_line": 117, "label": "Route list from registrations, A to Z" },
-        { "path": "apps/devhost/internal/statuspage/not_found.go", "line": 10, "end_line": 17, "label": "404 title and Caddy wording" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StatusPage.tsx", "line": 38, "end_line": 60, "label": "Active hostnames as bare host links" }
+        {
+          "path": "apps/devhost/internal/caddy/not_found.go",
+          "line": 64,
+          "end_line": 117,
+          "label": "Route list from registrations, A to Z"
+        },
+        {
+          "path": "apps/devhost/internal/statuspage/not_found.go",
+          "line": 10,
+          "end_line": 17,
+          "label": "404 title and Caddy wording"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StatusPage.tsx",
+          "line": 38,
+          "end_line": 60,
+          "label": "Active hostnames as bare host links"
+        }
       ]
     },
     {
@@ -99,9 +139,24 @@
       "tag": "stack-directory-10",
       "explanation": "The directory hostname is its own Caddy site: local clients only unless stackDirectoryAllowRemote is set, GET and HEAD only, and any other path a plain 'Not found'. It proxies / to the first live stack's control server, trying them for up to 2 s with only a 500 ms dial timeout, no response timeout and no health checks, so while that stack's devhost is suspended (Ctrl-Z in its terminal, kill -STOP, a debugger) every load hangs with no page or error, although another stack could serve it (stack-directory-11). With no live stack it serves a static empty page. When no control server answers, as after devhost stop killed a stack slow to stop or devhost crashed, both skipping the cleanup that withdraws its control port, every load waits 2 s and gets one line of plain text with status 503: 'Stack directory unavailable. Start or restart a devhost stack, then refresh this page.', with no page, retry or word of the stacks devhost last knew. When the answering stack cannot read a stack record, Go's error replaces the whole directory as plain text, naming the record's full path or its parse error, and every readable stack disappears with it (stack-directory-10).",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/stack_directory.go", "line": 177, "end_line": 230, "label": "Directory site; handle_errors plain 503" },
-        { "path": "apps/devhost/internal/devtools/stack_directory.go", "line": 114, "end_line": 121, "label": "Unreadable record: Go error as plain 503" },
-        { "path": "apps/devhost/internal/services/stop.go", "line": 106, "end_line": 118, "label": "Stop kills a slow stack: no cleanup" }
+        {
+          "path": "apps/devhost/internal/caddy/stack_directory.go",
+          "line": 177,
+          "end_line": 230,
+          "label": "Directory site; handle_errors plain 503"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/stack_directory.go",
+          "line": 114,
+          "end_line": 121,
+          "label": "Unreadable record: Go error as plain 503"
+        },
+        {
+          "path": "apps/devhost/internal/services/stop.go",
+          "line": 106,
+          "end_line": 118,
+          "label": "Stop kills a slow stack: no cleanup"
+        }
       ]
     },
     {
@@ -114,9 +169,24 @@
       "tag": "stack-directory-11",
       "explanation": "The serving stack reads every live stack record and asks each control server for its snapshot with a 2-second deadline, so one busy stack cannot hold up the page. A stack that does not answer, such as one whose devhost is suspended, shows Go's raw error, 'Stack details unavailable: Get …/__devhost__/stacks/self: context deadline exceeded', never that its devhost is stopped or that fg in its terminal resumes it (stack-directory-11). A snapshot carries the stack name, its directory, each service with one status word and its URLs, and every configuration file read from disk. A query keeps a whole stack when any of its names, URLs, directories or file paths contains it.",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/stack_directory.go", "line": 114, "end_line": 156, "label": "Fan out to each stack, filter, render" },
-        { "path": "apps/devhost/internal/services/stack_directory.go", "line": 11, "end_line": 53, "label": "One status word per service" },
-        { "path": "apps/devhost/internal/devtools/stack_directory.go", "line": 69, "end_line": 98, "label": "Snapshot reads every config file from disk" }
+        {
+          "path": "apps/devhost/internal/devtools/stack_directory.go",
+          "line": 114,
+          "end_line": 156,
+          "label": "Fan out to each stack, filter, render"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack_directory.go",
+          "line": 11,
+          "end_line": 53,
+          "label": "One status word per service"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/stack_directory.go",
+          "line": 69,
+          "end_line": 98,
+          "label": "Snapshot reads every config file from disk"
+        }
       ]
     },
     {
@@ -129,9 +199,24 @@
       "tag": "stack-directory-02",
       "explanation": "Cards render once, sorted by name and then manifest path. Only Running gets a green badge; Failed, Exited, Starting, Restarting, External and Not started share one gray badge with no exit code, time or reason. Links of down services look live and open a 503 page, and neither the card header nor the totals ('2 stacks · 11 URLs') say a stack is down (stack-directory-02). After a stack's saved checkout is deleted, the services devhost blocks at start are never launched, yet read Starting for as long as the stack runs while the toolbar shows them down (stack-directory-08). No status asks a service's health check: a hung service or a stopped daemon reads Running in green, and an external service reads External whether or not it answers, while the toolbar shows them down (stack-directory-09). Two checkouts of one project are two cards with the same title, told apart only by the tail of a long absolute path and a PID; every row repeats an absolute directory that breaks mid-word, and Registered shows a raw UTC timestamp (stack-directory-03).",
       "sources": [
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx", "line": 37, "end_line": 50, "label": "Card title is the stack name; path; PID" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx", "line": 83, "end_line": 111, "label": "Green only for Running; gray for the rest" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx", "line": 44, "end_line": 51, "label": "Totals count stacks and URLs only" }
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
+          "line": 37,
+          "end_line": 50,
+          "label": "Card title is the stack name; path; PID"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
+          "line": 83,
+          "end_line": 111,
+          "label": "Green only for Running; gray for the rest"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
+          "line": 44,
+          "end_line": 51,
+          "label": "Totals count stacks and URLs only"
+        }
       ]
     },
     {
@@ -144,9 +229,24 @@
       "tag": "stack-directory-07",
       "explanation": "Filter stacks is a GET form: typing does nothing until Enter or Refresh / filter, one button for both jobs, which reloads the whole page through Caddy and every stack. A match keeps the whole stack with nothing marked, and a query that matches the shared config.toml path keeps every stack. Statuses never update on their own; the footer says 'Refresh for the latest status' (stack-directory-07).",
       "sources": [
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx", "line": 53, "end_line": 72, "label": "GET form; one Refresh / filter button" },
-        { "path": "apps/devhost/internal/devtools/stack_directory.go", "line": 189, "end_line": 199, "label": "Any match keeps the whole stack" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx", "line": 99, "end_line": 99, "label": "Footer: refresh for the latest status" }
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
+          "line": 53,
+          "end_line": 72,
+          "label": "GET form; one Refresh / filter button"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/stack_directory.go",
+          "line": 189,
+          "end_line": 199,
+          "label": "Any match keeps the whole stack"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
+          "line": 99,
+          "end_line": 99,
+          "label": "Footer: refresh for the latest status"
+        }
       ]
     },
     {
@@ -159,8 +259,18 @@
       "tag": "stack-directory-05",
       "explanation": "Configuration lists the root manifest, each included manifest and config.toml, read from disk when the page loads. A rejected edit shows as the stack's configuration with no mark, the files have no line numbers, and the caveat 'Current files on disk. Rejected edits can differ from the running configuration.' is printed on every card whether or not anything differs, so nothing shows what the stack actually runs (stack-directory-05).",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/stack_directory.go", "line": 85, "end_line": 96, "label": "Files read from disk; no accepted state" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx", "line": 121, "end_line": 178, "label": "Collapsible files and a fixed caveat" }
+        {
+          "path": "apps/devhost/internal/devtools/stack_directory.go",
+          "line": 85,
+          "end_line": 96,
+          "label": "Files read from disk; no accepted state"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
+          "line": 121,
+          "end_line": 178,
+          "label": "Collapsible files and a fixed caveat"
+        }
       ]
     },
     {
@@ -172,7 +282,12 @@
       "sublabel": "the app, or its 503 page",
       "explanation": "Each service URL, including every alias and path route, is a plain link that opens in the same tab: the app when its service runs, devhost's recovery page when it does not.",
       "sources": [
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx", "line": 88, "end_line": 106, "label": "Service URLs as plain links" }
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
+          "line": 88,
+          "end_line": 106,
+          "label": "Service URLs as plain links"
+        }
       ]
     },
     {
@@ -185,9 +300,24 @@
       "tag": "stack-directory-07",
       "explanation": "With no live stack, Caddy serves a static empty directory: 'No stacks running. Start a project with devhost start, then refresh this page.' It keeps no trace of the stack that just stopped, its folder or how to start it again, says project where the glossary and the 404 page say stack, and never updates when a stack starts (stack-directory-07; the directory side of stack-run-stop-11).",
       "sources": [
-        { "path": "apps/devhost/internal/caddy/stack_directory.go", "line": 122, "end_line": 127, "label": "Static empty directory page written" },
-        { "path": "apps/devhost/internal/caddy/stack_directory.go", "line": 214, "end_line": 216, "label": "Served when no stack has a control port" },
-        { "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx", "line": 80, "end_line": 98, "label": "Empty-state copy" }
+        {
+          "path": "apps/devhost/internal/caddy/stack_directory.go",
+          "line": 122,
+          "end_line": 127,
+          "label": "Static empty directory page written"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/stack_directory.go",
+          "line": 214,
+          "end_line": 216,
+          "label": "Served when no stack has a control port"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
+          "line": 80,
+          "end_line": 98,
+          "label": "Empty-state copy"
+        }
       ]
     }
   ],
@@ -196,13 +326,37 @@
     { "id": "type-route", "from": "type", "to": "route", "label": "GET /", "role": "main" },
     { "id": "route-snapshot", "from": "route", "to": "snapshot", "label": "proxy", "role": "main" },
     { "id": "snapshot-cards", "from": "snapshot", "to": "cards", "label": "render", "role": "main" },
-    { "id": "cards-open", "from": "cards", "to": "open", "label": "click a URL", "role": "main", "fromSide": "bottom", "toSide": "left" },
+    {
+      "id": "cards-open",
+      "from": "cards",
+      "to": "open",
+      "label": "click a URL",
+      "role": "main",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
     { "id": "cards-filter", "from": "cards", "to": "filter", "label": "type a query", "role": "branch" },
     { "id": "filter-route", "from": "filter", "to": "route", "label": "Enter: full reload", "role": "return" },
     { "id": "cards-config", "from": "cards", "to": "config", "label": "expand", "role": "branch" },
-    { "id": "route-empty", "from": "route", "to": "empty", "label": "no live stack", "role": "error", "fromSide": "left", "toSide": "top" },
+    {
+      "id": "route-empty",
+      "from": "route",
+      "to": "empty",
+      "label": "no live stack",
+      "role": "error",
+      "fromSide": "left",
+      "toSide": "top"
+    },
     { "id": "typo-notfound", "from": "typo", "to": "notfound", "label": "no route", "role": "branch" },
-    { "id": "notfound-open", "from": "notfound", "to": "open", "label": "click a host; path lost", "role": "branch", "fromSide": "right", "toSide": "top" }
+    {
+      "id": "notfound-open",
+      "from": "notfound",
+      "to": "open",
+      "label": "click a host; path lost",
+      "role": "branch",
+      "fromSide": "right",
+      "toSide": "top"
+    }
   ],
   "cards": [
     {

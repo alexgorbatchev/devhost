@@ -44,8 +44,18 @@
       "sublabel": "chat or a terminal",
       "explanation": "An agent counts when its working directory is inside this checkout, subdirectories included: the chat's own agent, or Claude Code, Codex, Pi or OpenCode started in a terminal. An agent's subagents fold into the session that started them. The whole feature needs [devtools.chat].enabled; the toolbar polls only while chat is on.",
       "sources": [
-        { "path": "packages/docs/src/content/docs/guides/devtools.md", "line": 72, "end_line": 81, "label": "Docs: which agents count; needs chat on" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 148, "end_line": 148, "label": "List polls only while chat is enabled" }
+        {
+          "path": "packages/docs/src/content/docs/guides/devtools.md",
+          "line": 72,
+          "end_line": 81,
+          "label": "Docs: which agents count; needs chat on"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 148,
+          "end_line": 148,
+          "label": "List polls only while chat is enabled"
+        }
       ]
     },
     {
@@ -58,9 +68,24 @@
       "tag": "reload-and-agents-09",
       "explanation": "While chat is on and the page is visible, the toolbar asks GET /__devhost__/agents every 10 seconds. The control server scans every agent on the machine through agent-watcher (one scan shared for 5 s, 10 s timeout), keeps the top-level sessions whose working directory is inside the page's checkout (the project root of its routed service), and sorts waiting first, then working, unknown and idle. Rows carry the raw harness id, the session name, the path relative to the checkout and the last activity; transcript paths and native session ids stay on the server. When a harness cannot be scanned (a session store devhost cannot read, or the 10 s limit), the server still answers 200 with the agents it found and adds 'Some agents could not be listed.', but the page's schema strips that field and nothing reads it: the partial list replaces the last one and reads as complete, chat's check for another agent before a new conversation trusts it too, and the failure shows only as a 'running agents scan failed' log line repeated on every request (reload-and-agents-09).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/runningAgents/hooks/useRunningAgents.ts", "line": 7, "end_line": 29, "label": "Poll every 10 s while the page is visible" },
-        { "path": "apps/devhost/internal/devtools/agents.go", "line": 79, "end_line": 105, "label": "Keep top-level agents inside the checkout" },
-        { "path": "apps/devhost/internal/devtools/agents.go", "line": 155, "end_line": 173, "label": "Answers the list, plus error on a failed scan" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/hooks/useRunningAgents.ts",
+          "line": 7,
+          "end_line": 29,
+          "label": "Poll every 10 s while the page is visible"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/agents.go",
+          "line": 79,
+          "end_line": 105,
+          "label": "Keep top-level agents inside the checkout"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/agents.go",
+          "line": 155,
+          "end_line": 173,
+          "label": "Answers the list, plus error on a failed scan"
+        }
       ]
     },
     {
@@ -73,8 +98,18 @@
       "tag": "chat-approvals-03",
       "explanation": "With one or more agents in the checkout the toolbar shows a bot icon and the count, with a spinner while any agent works; its accessible name is 'Running agents: N' in every state. An agent waiting for approval gets the same idle bot icon as an idle agent, and with chat collapsed the Chat button shows the same spinner for waiting as for working, so an agent blocked on the person looks busy or idle (chat-approvals-03, owned by agent-chat). Each time the control appears or disappears, the right-anchored toolbar shifts sideways (reload-and-agents-05).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx", "line": 22, "end_line": 37, "label": "Trigger: spinner only for working, count" },
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 342, "end_line": 342, "label": "Control placed in the toolbar" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx",
+          "line": 22,
+          "end_line": 37,
+          "label": "Trigger: spinner only for working, count"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 342,
+          "end_line": 342,
+          "label": "Control placed in the toolbar"
+        }
       ]
     },
     {
@@ -87,8 +122,18 @@
       "tag": "reload-and-agents-05",
       "explanation": "Clicking the count opens the popover 'Agents in this checkout'. Each row reads harness, session name and 'this chat' over state, subdirectory and last activity, for example 'claude-code · project-37 · this chat' over 'Waiting for approval · . · just now': the raw harness id instead of Claude Code, a session name the CLI generated, '.' for the checkout root, and no action, not even Open Chat for this chat's own agent. With chat docked open, the popover opens underneath the chat panel and only fragments stay visible, so neither the rows nor Watch Live Activity can be used without closing chat (reload-and-agents-05; the docked-chat placement is its toolbar-shell slice). The list only reports and sends nothing to an agent.",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx", "line": 39, "end_line": 52, "label": "Rows: raw harness, name, state, subdirectory" },
-        { "path": "apps/devhost/internal/devtools/agents.go", "line": 95, "end_line": 99, "label": "Row data: raw ids, '.' for the root" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx",
+          "line": 39,
+          "end_line": 52,
+          "label": "Rows: raw harness, name, state, subdirectory"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/agents.go",
+          "line": 95,
+          "end_line": 99,
+          "label": "Row data: raw ids, '.' for the root"
+        }
       ]
     },
     {
@@ -101,9 +146,24 @@
       "tag": "reload-and-agents-10",
       "explanation": "The link under the list opens a new tab on the control server's own address, http://127.0.0.1:<port>/__devhost__/agents/activity, with the page URL and chat target in the query. The server answers only a direct request from its own machine (a routed hostname gets 403 'Agent activity opens from the running agents list.'), with no-store and no-referrer, because transcripts can hold secrets. A page opened from another computer still lists the agents and shows the link, which opens that computer's own 127.0.0.1: a connection error, or whatever listens on that port there gets the page URL, and nothing says the page opens only on the stack's machine (reload-and-agents-13). The page shows a Live or Reconnecting badge and, until events arrive, 'Waiting for activity. Events appear here as agents work.' The port is an ephemeral one each run picks, and it closes with that run: after Ctrl-C, devhost stop, the idle timeout or devhost stack restart, the server closes the stream with 1001, the page retries the old port every 10 s without end, the badge reads Reconnecting forever, a restarted stack is never reached, and nothing says the stack stopped (reload-and-agents-10).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/components/App.tsx", "line": 149, "end_line": 152, "label": "Activity URL on the control origin" },
-        { "path": "apps/devhost/internal/devtools/agent_activity.go", "line": 50, "end_line": 82, "label": "Direct local requests only; page render" },
-        { "path": "packages/devhost-ui/src/statusPages/components/AgentActivityPage.tsx", "line": 15, "end_line": 35, "label": "Header, Live badge, empty state" }
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 149,
+          "end_line": 152,
+          "label": "Activity URL on the control origin"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/agent_activity.go",
+          "line": 50,
+          "end_line": 82,
+          "label": "Direct local requests only; page render"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/AgentActivityPage.tsx",
+          "line": 15,
+          "end_line": 35,
+          "label": "Header, Live badge, empty state"
+        }
       ]
     },
     {
@@ -115,8 +175,18 @@
       "sublabel": "from now on; no history",
       "explanation": "Each open page gets its own WebSocket and its own agent-watcher run, with cursors in a temporary directory: it starts at the end of every transcript (no history), rescans every 5 seconds and keeps the top-level agents inside the checkout. Each event becomes harness, PID, event type, time, role, tool name, error flag and the content or tool output cut at 4096 characters; the tool input (the command or file) is not forwarded. Closing the tab ends the run and deletes its cursors.",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/agent_activity.go", "line": 116, "end_line": 177, "label": "Per-page watcher from the end of transcripts" },
-        { "path": "apps/devhost/internal/devtools/agent_activity.go", "line": 84, "end_line": 114, "label": "Event fields; text cut at 4096 characters" }
+        {
+          "path": "apps/devhost/internal/devtools/agent_activity.go",
+          "line": 116,
+          "end_line": 177,
+          "label": "Per-page watcher from the end of transcripts"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/agent_activity.go",
+          "line": 84,
+          "end_line": 114,
+          "label": "Event fields; text cut at 4096 characters"
+        }
       ]
     },
     {
@@ -129,8 +199,18 @@
       "tag": "reload-and-agents-06",
       "explanation": "Events arrive newest first, at most 500. Each line joins time, raw harness id, raw event type, tool name and role, for example '2:10:47 PM · claude-code · tool_call · Edit · assistant': no command, file path or diff, so a harmless read and a destructive command look alike until a later result. Tool output and denials read 'tool_result · user', as if the person wrote them; replies arrive as unrendered Markdown; the PID each event carries is never shown, so two Claude Code agents interleave indistinguishably. An agent blocked on an approval never shows as waiting, although the toolbar list knows it (reload-and-agents-06).",
       "sources": [
-        { "path": "packages/devhost-ui/src/statusPages/components/AgentActivityPage.tsx", "line": 37, "end_line": 54, "label": "Line: time, harness, type, tool, role" },
-        { "path": "packages/devhost-ui/src/statusPages/hooks/useAgentActivity.ts", "line": 24, "end_line": 41, "label": "Newest first, at most 500 events" }
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/AgentActivityPage.tsx",
+          "line": 37,
+          "end_line": 54,
+          "label": "Line: time, harness, type, tool, role"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useAgentActivity.ts",
+          "line": 24,
+          "end_line": 41,
+          "label": "Newest first, at most 500 events"
+        }
       ]
     },
     {
@@ -143,9 +223,24 @@
       "tag": "reload-and-agents-05",
       "explanation": "With no agent in the checkout the control renders nothing: there is no empty state, so 'no agents' and 'agents devhost cannot see' look the same, and because the toolbar is anchored at its right edge, the stack name, service dots and branch move sideways each time the first agent starts or the last one stops (reload-and-agents-05). A scan that fails for the harness of every agent in the checkout ends here too, as if none ran (reload-and-agents-09). Saving [devtools.chat] enabled = false in devhost.toml removes the count, the list and their routes on the next health message, with no notice, while the agent keeps running (chat-approvals-08, owned by agent-chat).",
       "sources": [
-        { "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx", "line": 23, "end_line": 23, "label": "Renders nothing at zero agents" },
-        { "path": "packages/devhost-ui/src/devtools/features/runningAgents/hooks/useRunningAgents.ts", "line": 10, "end_line": 13, "label": "Chat off empties the list" },
-        { "path": "apps/devhost/internal/devtools/server.go", "line": 345, "end_line": 347, "label": "Agent routes answer 404 while chat is off" }
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx",
+          "line": 23,
+          "end_line": 23,
+          "label": "Renders nothing at zero agents"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/hooks/useRunningAgents.ts",
+          "line": 10,
+          "end_line": 13,
+          "label": "Chat off empties the list"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 345,
+          "end_line": 347,
+          "label": "Agent routes answer 404 while chat is off"
+        }
       ]
     },
     {
@@ -158,9 +253,24 @@
       "tag": "chat-checkout-switch-01",
       "explanation": "Worktrees > Switch and restart stack restarts the stack in another checkout with one click and no warning, although this list knows an agent there is working or waiting (chat-checkout-switch-02, owned by worktree-switch). The list then resolves the page's newly selected checkout and keeps only agents inside it, so an agent still working, or waiting for an approval, in the previous checkout drops out of the count and the list while it keeps running; chat hides its conversation the same way, and only switching back shows it again (chat-checkout-switch-01, owned by agent-chat).",
       "sources": [
-        { "path": "apps/devhost/internal/devtools/chat_project.go", "line": 12, "end_line": 19, "label": "Root follows the page's selected checkout" },
-        { "path": "apps/devhost/internal/devtools/agents.go", "line": 87, "end_line": 94, "label": "Agents outside that root are skipped" },
-        { "path": "apps/devhost/internal/services/runtime.go", "line": 390, "end_line": 398, "label": "Switch restarts the stack; names no agents" }
+        {
+          "path": "apps/devhost/internal/devtools/chat_project.go",
+          "line": 12,
+          "end_line": 19,
+          "label": "Root follows the page's selected checkout"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/agents.go",
+          "line": 87,
+          "end_line": 94,
+          "label": "Agents outside that root are skipped"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 390,
+          "end_line": 398,
+          "label": "Switch restarts the stack; names no agents"
+        }
       ]
     }
   ],

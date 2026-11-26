@@ -79,13 +79,7 @@
       "toCol": 5
     }
   ],
-  "mainPath": [
-    "entry",
-    "busy",
-    "record",
-    "progress",
-    "outcome"
-  ],
+  "mainPath": ["entry", "busy", "record", "progress", "outcome"],
   "nodes": [
     {
       "id": "entry",
@@ -345,7 +339,7 @@
       "type": "external",
       "label": "devhost stop, caddy stop",
       "sublabel": "idle, port closed, new port",
-      "explanation": "A page loses its stack's stream when the stack stops (devhost stop from a terminal or an agent, Ctrl-C, the idle timeout, a replacement by devhost stack restart, devhost restart-all or devhost upgrade under O18, or a stop from another stack's page), when devhost caddy stop takes the shared proxy away, when proxy-settings moves the HTTPS port, or when a single secondary HTTP port closes in a multi-port command-mode devhost serve -- <cmd> session while sibling ports stay healthy (serve-command-05). devhost never opens a browser or starts a stack from the page: its notices offer commands to copy or active URLs to open (owner rule, ACT-10)."
+      "explanation": "A page loses its stack's stream when the stack stops (devhost stop from a terminal or an agent, Ctrl-C, the idle timeout, a replacement by devhost stack restart, devhost restart or devhost upgrade under O18, or a stop from another stack's page), when devhost caddy stop takes the shared proxy away, when proxy-settings moves the HTTPS port, or when a single secondary HTTP port closes in a multi-port command-mode devhost serve -- <cmd> session while sibling ports stay healthy (serve-command-05). devhost never opens a browser or starts a stack from the page: its notices offer commands to copy or active URLs to open (owner rule, ACT-10)."
     },
     {
       "id": "ending",
@@ -361,7 +355,7 @@
           "path": "apps/devhost/src/services/stack.rs",
           "line": 1016,
           "end_line": 1033,
-          "label": "Reuses: services stop before control server"
+          "label": "Replaces: control server stops before services"
         },
         {
           "path": "apps/devhost/src/devtools/streams.rs",
