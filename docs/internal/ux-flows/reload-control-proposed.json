@@ -271,9 +271,9 @@
       "col": 4,
       "type": "frontend",
       "label": "Reload blocked · 2 held",
-      "sublabel": "cause · files · Reload",
+      "sublabel": "cause · files · Reload Now",
       "tag": "journey-agent-fix-03",
-      "explanation": "Reload blocked counts every held reload and says what devhost knows: 'Reload blocked · 2 reloads held since 14:02', 'web restarted at 14:05', and the files the published changed mark names under the page's service's watch paths, 'Changed: src/Button.tsx, vite.config.ts', or 'No watched file of web changed' (SEL-3, ACT-8, SEL-2), with Reload and Dismiss; a reverted edit leaves the list. When every named file was applied in place by a hot update the page saw and web has not restarted since the load, it reads 'Already current: Vite applied src/Button.tsx in place' and ends by itself, leaving its log line (ACT-7); services-panel draws the same note beside the changed mark. It never claims more. Reload is devhost's own reload (UNDO-2). It sits in FB-8's third group, and toolbar-shell keeps it visible collapsed, beside docked chat and inside the page's modal dialog (toolbar-shell-01, chat-compose-04, toolbar-shell-07, related). Resolves the reload-control slice of journey-agent-fix-03, with its duplicate stack-scale-08; the content-based changed mark is services-panel's (services-panel-2-01, related).",
+      "explanation": "Reload blocked counts every held reload and says what devhost knows: 'Reload blocked · 2 reloads held since 14:02', 'web restarted at 14:05', and the files the published changed mark names under the page's service's watch paths, 'Changed: src/Button.tsx, vite.config.ts', or 'No watched file of web changed' (SEL-3, ACT-8, SEL-2), with Reload Now and Dismiss; a reverted edit leaves the list. When every named file was applied in place by a hot update the page saw and web has not restarted since the load, it reads 'Already current: Vite applied src/Button.tsx in place' and ends by itself, leaving its log line (ACT-7); services-panel draws the same note beside the changed mark. It never claims more. Reload Now is devhost's own reload (UNDO-2). It sits in FB-8's third group, and toolbar-shell keeps it visible collapsed, beside docked chat and inside the page's modal dialog (toolbar-shell-01, chat-compose-04, toolbar-shell-07, related). Resolves the reload-control slice of journey-agent-fix-03, with its duplicate stack-scale-08; the content-based changed mark is services-panel's (services-panel-2-01, related).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/reloadHold/hooks/useReloadHold.ts",
@@ -297,7 +297,7 @@
       "label": "Reloads are off",
       "sublabel": "Vite: cannot tell",
       "tag": "reload-and-agents-12",
-      "explanation": "Reload, or Reload Now, applies the held reloads: the new page shows 'Reloaded this page: applied 2 held reloads' with focus on its sentence, never at the top of the document, and chat's draft and page context come back (FB-4, KEY-6, UNDO-2). Then the load says what devhost sees after web restarted: for a client that can show its state, 'Reloads are off: Bun's development script is gone from this page', a success that closes after O14's time and stays in the log (FB-6, FB-7); for Vite, which loads /@vite/client whatever server.hmr says, 'Request done · web restarted at 14:05 · Vite's client still loads, so devhost cannot tell whether reloads are off' with Show Changes and Dismiss, never Disable Reloads; after Dismiss, later loads of this stack and origin show no notice for that client until Show Reload Notice (UNDO-3, O24). A client that can show its state and still loads reads 'reloads are still on', with Disable Reloads leading. Per-client wording waits on fixtures (Backend 5). Resolves reload-and-agents-12 (each load said Vite hot reloading was on after server.hmr: false).",
+      "explanation": "Reload Now applies the held reloads: the new page shows 'Reloaded this page: applied 2 held reloads' with focus on its sentence, never at the top of the document, and chat's draft and page context come back (FB-4, KEY-6, UNDO-2). Then the load says what devhost sees after web restarted: for a client that can show its state, 'Reloads are off: Bun's development script is gone from this page', a success that closes after O14's time and stays in the log (FB-6, FB-7); for Vite, which loads /@vite/client whatever server.hmr says, 'Request done · web restarted at 14:05 · Vite's client still loads, so devhost cannot tell whether reloads are off' with Show Changes and Dismiss, never Disable Reloads; after Dismiss, later loads of this stack and origin show no notice for that client until Show Reload Notice (UNDO-3, O24). A client that can show its state and still loads reads 'reloads are still on', with Disable Reloads leading. Per-client wording waits on fixtures (Backend 5). Resolves reload-and-agents-12 (each load said Vite hot reloading was on after server.hmr: false).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/hotReloadNotice/readHotReloadClient.ts",
@@ -371,7 +371,7 @@
       "label": "Hold off: 2 pending",
       "sublabel": "kept for Reload Now",
       "tag": "reload-and-agents-03",
-      "explanation": "Turning Hold Reloads off while reloads are held never reloads the page, because a toggle that reloads would discard a half-typed form: Reload blocked becomes '2 reloads pending' with Reload Now, and later script reloads go through; turning the hold on again holds again, and the pending count stays until a reload (UNDO-3, CC-20). Reload Now reloads once and reports 'Reloaded this page: applied 2 held reloads' (FB-4). The docs' 'Use Reload on the notice, or turn the hold off.' becomes 'after you turn the hold off, it waits for Reload Now' (CC-20). Resolves reload-and-agents-03 (turning the hold off threw the held reload away and left the page stale, with nothing saying so).",
+      "explanation": "Turning Hold Reloads off while reloads are held never reloads the page, because a toggle that reloads would discard a half-typed form: Reload blocked becomes '2 reloads pending' with Reload Now, and later script reloads go through; turning the hold on again holds again, and the pending count stays until a reload (UNDO-3, CC-20). Reload Now reloads once and reports 'Reloaded this page: applied 2 held reloads' (FB-4). The docs' 'Use Reload on the notice, or turn the hold off.' becomes 'Use Reload Now on the notice; after you turn the hold off, the held reload still waits for it.' (CC-20). Resolves reload-and-agents-03 (turning the hold off threw the held reload away and left the page stale, with nothing saying so).",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/reloadHold/hooks/useReloadHold.ts",
@@ -507,7 +507,7 @@
       "id": "blocked-afterLoad",
       "from": "blocked",
       "to": "afterLoad",
-      "label": "Reload",
+      "label": "Reload Now",
       "role": "branch"
     },
     {
@@ -542,7 +542,7 @@
         "Merged: the hot reload notice with the request's progress, waiting state and result in one notice slot; the Hold Reloads toggle, its held count, Reload Now and Show Reload Notice in one bar item with its popover",
         "New: reloads recorded as disabled after a request's result, so later chat turns end with 'Reload to see the change' and Reload Page (O56); a chat turn's end applying this page's held reloads once, or waiting with Reload Now while the person types (O57); the popover with agent, model, conversation choice, approval line, mode line and the request per client; the no-verified-switch state; pending, waiting, stopped, unconfirmed and failed states with Open Conversation and Answer; the result with Restart web, Show Changes, Copy Reverse Patch and Ask to Undo; the request's record on the server, read by every browser of the stack; held counts, times, causes and changed files on Reload blocked; Already current; the held marker; pending reloads with Reload Now; Undo and Show Reload Notice; the outcome of a reload that applied held reloads; per-client knowledge from fixtures",
         "Changed: Disable Reloads opens a popover instead of sending, and the request starts a new conversation unless the person picks one (CC-15, O27); the notice shows the request's state across reloads instead of hiding; a failed request shows its result with Disable Reloads; the request settles from its own conversation in any directory; the request names the client's switch; turning the hold off keeps a held reload pending with Reload Now (CC-20); dismissing Reload blocked leaves the held marker; Dismiss is reversible (CC-20); Hold Reloads becomes a popover trigger; the words say reloads, not hot reloading (CC-31); the choices are kept per stack and page origin (CC-9)",
-        "Kept: Hold Reloads on by default, with no agent and no change to the worktree's files, holding any dev server's location.reload(), server restarts included, without patching the page; the browser's refresh and devhost's own reloads never held, and Reload applying held reloads in one press; hot module replacement never held; detection of Bun, Vite, Next.js and webpack, meaning only that the client loaded, shown only with chat on; no page context in the request; no open conversation receiving it unchosen; a failed or cancelled send bringing back the way to ask again; no second request while one is pending; Delivery unconfirmed and no resend; devhost never answering or pre-approving the agent; the server resolving the worktree from the routed service, checking each send and keeping the 8 MiB limit; the hold also holding the app's own location.reload(), only where the Navigation API exists; devhost restarting nothing by itself"
+        "Kept: Hold Reloads on by default, with no agent and no change to the worktree's files, holding any dev server's location.reload(), server restarts included, without patching the page; the browser's refresh and devhost's own reloads never held, and the notice's reload, now Reload Now, applying held reloads in one press; hot module replacement never held; detection of Bun, Vite, Next.js and webpack, meaning only that the client loaded, shown only with chat on; no page context in the request; no open conversation receiving it unchosen; a failed or cancelled send bringing back the way to ask again; no second request while one is pending; Delivery unconfirmed and no resend; devhost never answering or pre-approving the agent; the server resolving the worktree from the routed service, checking each send and keeping the 8 MiB limit; the hold also holding the app's own location.reload(), only where the Navigation API exists; devhost restarting nothing by itself"
       ]
     },
     {
@@ -579,7 +579,7 @@
         "CC-20: Dismiss is undone with Undo or Show Reload Notice; turning the hold off keeps a held reload pending with Reload Now",
         "CC-31: the docs say a page's dev server reloads it, not that it is served with hot reloading",
         "CC-32: CONTEXT.md gains Reloads",
-        "Texts no CC-n covers yet, cited under REV-5, FB-5, O24, O27 and SEL-11: the docs' Disable Reloads paragraph, its client note, the Hold Reloads storage line, and the O56 sentence on later turns",
+        "CC-45 (REV-5, FB-5, O24, O27, SEL-11): the docs' Disable Reloads paragraph, its client note, the Hold Reloads storage line, and the O56 sentence on later turns",
         "Depends on: CC-9, CC-10, CC-14, CC-38 and CC-40 (agent-chat); CC-6, CC-25 and CC-37 (services-panel); CC-1 and CC-3 (toolbar-shell)"
       ]
     },
@@ -587,7 +587,7 @@
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost Rust main at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference revision 6",
+        "Designed against alexgorbatchev/devhost Rust main at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference revision 7",
         "Drawn from the current diagram (frozen at the pre-Rust revision edb5c0fc) and the written proposal; sources cite only existing code a step reuses or replaces at 190a8bb5, and steps with no code yet have none"
       ]
     }
