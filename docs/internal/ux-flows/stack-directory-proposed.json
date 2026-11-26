@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:alexgorbatchev/devhost.git",
       "link_mode": "local-only",
-      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
     },
     "legend": {
       "entries": {
@@ -43,7 +43,7 @@
     },
     {
       "id": "notfound",
-      "label": "Caddy 404 page"
+      "label": "Plain-HTTP 404 page"
     },
     {
       "id": "outcome",
@@ -64,13 +64,13 @@
     },
     {
       "id": "write_phase",
-      "label": "Review + write",
+      "label": "Review",
       "fromCol": 2,
       "toCol": 3
     },
     {
       "id": "outcome_phase",
-      "label": "Outcome + undo",
+      "label": "Outcome",
       "fromCol": 4,
       "toCol": 4
     }
@@ -90,31 +90,17 @@
       "label": "Follow All Stacks link",
       "sublabel": "toolbar · 404 · terminal",
       "tag": "stack-directory-06",
-      "explanation": "Every surface that knows about stacks leads to the directory, because devhost never opens a browser: All Stacks on This Machine ends the toolbar's stack name menu after a separator, and the Caddy 404, stack-run-stop's stopped-stack page and the status pages carry the same link; devhost start prints 'All stacks on this machine: https://devhost.localhost/' after its ready line, and devhost stack list and devhost status print it too (stack-run-stop's slice). Every link and printed URL is the directory's current address from the applied shared Caddy settings, with the port when httpsPort is not 443, so a directory proxy-settings moved is never linked at its old address (proxy-settings-04, owned by proxy-settings). Links open in the same tab (SURF-15, MENU-1, MENU-2, WORD-2). While the local certificate authority is untrusted, first-run-setup's trust line leads the page (first-run-setup-02, owned by first-run-setup). Resolves stack-directory-06's slice: the toolbar and the Caddy 404 link to the directory.",
-      "sources": [
-        {
-          "path": "apps/devhost/internal/services/stack.go",
-          "line": 719,
-          "end_line": 734,
-          "label": "Replaces: start prints only service URLs"
-        },
-        {
-          "path": "apps/devhost/internal/app/run.go",
-          "line": 284,
-          "end_line": 292,
-          "label": "Replaces: stack list prints PID and path"
-        }
-      ]
+      "explanation": "Every surface that knows about stacks leads to the directory, because devhost never opens a browser: All Stacks on devbox sits in the toolbar's stack name menu with its other toolbar items, and the plain-HTTP 404, stack-run-stop's stopped-stack page and the status pages carry the same link; devhost start prints 'All stacks on devbox: https://devhost.localhost/' after its ready line, and devhost stack list and devhost stack info (devhost status) print it too (stack-run-stop's slice). Links use the directory's current address from the applied shared Caddy settings, under the remote or relay suffix on a page opened through it, and open in the same tab (SURF-15, MENU-1, MENU-2, WORD-2, O61, O62). While the local certificate authority is untrusted, first-run-setup's trust line leads the page (first-run-setup-02, owned by first-run-setup). Resolves stack-directory-06's slice: the toolbar and the 404 link to the directory."
     },
     {
       "id": "page",
       "lane": "ask",
       "col": 1,
       "type": "frontend",
-      "label": "Stacks on this machine",
-      "sublabel": "needs you first · checkouts",
+      "label": "Stacks on devbox",
+      "sublabel": "needs you first · worktrees",
       "tag": "stack-directory-03",
-      "explanation": "GET / on the directory hostname opens the page: the heading 'Stacks on this machine', the totals '3 stacks · 1 failed · 1 with an agent waiting for you · 2 stopped recently' and a document title that starts with what needs the person (ACT-6, WORD-5, O16). Cards sit in one column in 'Needs you', 'Running' and 'Stopped recently', each headed with its count; within a group stacks sort by name, then the main checkout before its worktrees, so two checkouts of one project sit together and read apart: 'Acme Shop · main ~/acme', 'Acme Shop · fix-nav ~/acme/.worktrees/fix-nav' (SEL-4, SEL-6). A serve session reads 'Serve session' with its folder or port (WORD-1). One line says once that the page is read-only and updates every 2 s (MENU-3, MENU-6, O10). With nothing running and nothing stopped recently: 'No stacks are running on this machine. Start one with devhost start in its folder.' (STATE-2). Keys: the document's own; the filter and Refresh Stacks are the first Tab stops (KEY-1, KEY-10). Resolves stack-directory-03 and the totals of stack-directory-02.",
+      "explanation": "GET / on the directory hostname opens the page: the heading 'Stacks on devbox', the totals '3 stacks · 1 serve session · 1 failed · 1 with an agent waiting for you · 2 stopped recently' and a title such as '(2) 1 failed · 1 waiting · Stacks on devbox' (ACT-6, ACT-7, WORD-5, O16, O61). Cards sit in one column in 'Needs you', 'Running' and 'Stopped recently'; within a group stacks sort by name, then the main worktree first, so two worktrees of one project sit together and read apart: 'Acme Shop · main ~/acme', 'Acme Shop · fix-nav ~/acme/.worktrees/fix-nav' (SEL-4, SEL-6, WORD-11). Serve sessions use serve-folder's folder, port and command cards (WORD-1, serve-command-06). One line says the page is read-only and updates every 2 s (MENU-3, MENU-6, O10). Empty: 'No stacks are running on devbox. Start one with devhost start in its folder.' (STATE-2). Keys: the document's own (KEY-1, KEY-10). Resolves stack-directory-03, serve-command-06's slice and the totals of stack-directory-02.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
@@ -131,26 +117,55 @@
       ]
     },
     {
+      "id": "remote",
+      "lane": "backend",
+      "col": 0,
+      "type": "backend",
+      "label": "Who may read it",
+      "sublabel": "O36 check · relay forwards",
+      "explanation": "From another environment the directory opens on its hostname under the remote or relay suffix, which the relay forwards (agent-chat's work under O36, O47, O55). Every request goes through O36's check, agent-chat's classifier: this machine and browsers signed in with the devhost passkey or paired read the page and press Check Again; a reader that stackDirectoryAllowRemote alone admits reads it without signing in, with Check Again unavailable and waiting agents counted only; any other client gets 403 with 'Sign in with passkey or pair this browser to use devhost here' and Sign In with Passkey. A relay visitor never counts as this machine; whether this machine's browser counts as this machine on the directory's hostname, which is no stack's hostname, is a proposed reading of O36 for the reference's author. The directory hostname also serves agent-chat's passkey routes and cookie hop. While no stack answers, Caddy cannot check a session, so its static page answers this machine, or everyone with the setting on (HOLD-7, HOLD-8, O36, O47; Backend 11).",
+      "sources": [
+        {
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 20,
+          "end_line": 93,
+          "label": "Replaces: loopback or stackDirectoryAllowRemote"
+        },
+        {
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 324,
+          "end_line": 330,
+          "label": "Replaces: Caddy refuses every remote client"
+        },
+        {
+          "path": "apps/devhost/src/remote/proxy.rs",
+          "line": 21,
+          "end_line": 71,
+          "label": "Replaces: relay forwards leased hosts only"
+        }
+      ]
+    },
+    {
       "id": "filter",
       "lane": "ask",
       "col": 2,
       "type": "frontend",
       "label": "Filter as you type",
-      "sublabel": "rows narrow · match marked",
+      "sublabel": "rows narrow · close hostnames",
       "tag": "stack-directory-07",
-      "explanation": "The field 'Filter stacks and services' narrows the cards as the person types, with no form and no reload; it matches stack name, checkout label, service names and hostnames, never a manifest file's or the devhost config file's path (SEL-10, KEY-9). A stack whose name or checkout matches keeps every row; another keeps only its matching rows with '4 more services hidden by the filter'; the match is highlighted and each group header counts what it shows (SEL-10, BAR-3, WORD-5). No match reads 'No stack or service matches \"serch\"' with Clear Filter (STATE-2). The query stays in the address as ?q=. Escape clears the field; Enter does nothing more (KEY-9). Refresh Stacks is a button of its own that reads every stack at once and keeps focus while busy (FB-1, KEY-11). Resolves the filter and refresh half of stack-directory-07.",
+      "explanation": "The field 'Filter stacks and services' narrows the cards as the person types, with no form and no reload; it matches stack name, worktree label, service names, hostnames and a serve session's folder, address, name and command, never a manifest file's or the devhost config file's path (SEL-10, KEY-9). Another stack keeps only its matching rows with '5 more services hidden by the filter'; the match is highlighted and group headers count what they show (SEL-10, BAR-3, WORD-5). No match reads 'No stack or service matches \"serch\"' with Clear Filter (STATE-2); a hostname that matches nothing offers up to three close running hostnames with the path kept, O46's rule, which is where a mistype that failed over HTTPS recovers (O46, O63, CC-27). Escape clears; Enter does nothing more. Refresh Stacks is a button of its own (FB-1, KEY-11). Resolves the filter half of stack-directory-07 and the directory half of stack-directory-04.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
           "line": 53,
-          "end_line": 72,
+          "end_line": 67,
           "label": "Replaces: GET form; Refresh / filter button"
         },
         {
-          "path": "apps/devhost/internal/devtools/stack_directory.go",
-          "line": 189,
-          "end_line": 199,
-          "label": "Replaces: any match keeps the whole stack"
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 205,
+          "end_line": 216,
+          "label": "Replaces: server filter on file paths"
         }
       ]
     },
@@ -162,12 +177,12 @@
       "label": "Read a stack's card",
       "sublabel": "state · cause · way forward",
       "tag": "stack-directory-02",
-      "explanation": "Every word on a card comes from the state the stack's services runtime publishes, the one the toolbar and devhost status read, drawn with services-panel's shared state indicator (ACT-2, ACT-13, SURF-14). The header names the stack, its checkout label and its state: 'failed · 4 of 6 running · 1 exited · 1 not started' (ACT-6, SEL-4). Rows give the cause and time: 'exited with code 3 at 17:15' with its last output line, 'failed its health check · since 17:14', 'blocked', 'not started · left out of this run', 'not reachable · checked 17:15:02' (FAIL-3, WORD-8). Each state's lead action is one step away: a link to the service's status page and the same action's terminal command with Copy, since the directory stays read-only (MENU-5, MENU-6, O10; this flow's proposed MENU-5 exception). Conditions say once what needs the person, a waiting agent is a link to its decision card, and the last outcome matches devhost status (ACT-7, REV-9, FB-11). Resolves stack-directory-02, with stack-directory-08 and stack-directory-09 on the rows.",
+      "explanation": "Every word on a card comes from the state the stack's services runtime publishes, the one the toolbar and devhost stack info read, drawn with services-panel's shared state indicator (ACT-2, ACT-13, SURF-14, O62). The header names the stack, its worktree label and its state: 'failed · 4 of 6 running · 1 exited · 1 not started' (ACT-6, SEL-4). Rows give cause and time: 'exited with code 3 at 17:15' with its last output line, 'failed its health check · since 17:14', 'blocked', 'not started · left out of this run' (FAIL-3, WORD-8). Each state's lead action is one step away: a link to the service's status page and the same terminal command with Copy, since the directory stays read-only (MENU-5, MENU-6, O10). A waiting agent links agent-chat's chat/open route (REV-9, CC-38). At 320 px each row keeps its state shape and word (ACT-13, serve-command-10). Resolves stack-directory-02, serve-command-10, with stack-directory-08 and stack-directory-09 on the rows.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
-          "line": 83,
-          "end_line": 111,
+          "line": 78,
+          "end_line": 104,
           "label": "Replaces: green only for Running, gray rest"
         }
       ]
@@ -180,12 +195,12 @@
       "label": "Configuration applied?",
       "sublabel": "running and on-disk version",
       "tag": "stack-directory-05",
-      "explanation": "Configuration · 2 files expands the stack's manifest files, named by kind: 'Root manifest · devhost.toml'. Each says whether the stack runs it: 'Applied 17:03', or 'Not applied · rejected at 17:12 · line 42: expected ]' with 'the stack runs the accepted manifest' (UNDO-6, HOLD-6, MENU-4). A file that was not applied opens on 'Running version' with 'Version on disk' beside it and the rejected line marked; files show line numbers. Open in Editor hands the file and line to the stack's editor through component-source's hand-off, and Copy copies 'devhost.toml:42'; from another machine Open in Editor is unavailable with its reason (MENU-3, HOLD-1). The devhost config file is listed once, at the foot of the page (WORD-1). The caveat printed on every card today goes. Resolves stack-directory-05.",
+      "explanation": "Configuration · 2 files expands the stack's manifest files, named by kind: 'Root manifest · devhost.toml'; one file reads '1 file'. Each says whether the stack runs it: 'Applied 17:03', or 'Not applied · rejected at 17:12 · line 42: expected ]' with 'the stack runs the accepted manifest' (UNDO-6, HOLD-6, MENU-4). A file that was not applied opens on 'Running version' with 'Version on disk' beside it and the rejected line marked; files show line numbers. Each file shows its path and line, 'devhost.toml:42', with Copy; devhost opens no editor (O51, SURF-15). The toggle has a 3:1 boundary and is 24 px tall (SURF-9, serve-command-10). The devhost config file is listed once, at the foot of the page (WORD-1). The label keeps 'Configuration' for manifest files only, a proposed WORD-1 exception. The caveat printed on every card today goes. Resolves stack-directory-05.",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/stack_directory.go",
-          "line": 85,
-          "end_line": 96,
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 127,
+          "end_line": 146,
           "label": "Replaces: files read from disk only"
         },
         {
@@ -204,19 +219,19 @@
       "label": "Published state, live",
       "sublabel": "GET /stacks.json every 2 s",
       "tag": "stack-directory-09",
-      "explanation": "While the page is visible it reads GET /stacks.json on the directory hostname 2 s after the previous read ended, and reads nothing while hidden (ACT-12). A live stack's control server answers with every stack's snapshot, each asked in parallel with a 2 s deadline over loopback, under the same local-only, GET-only guard as / (Backend 5). Each snapshot carries the published service state (CC-25): cause, since when, health and external checks, blocked repositories, changed files; no state defaults to running, and the runtime runs every health check while the directory reads (Backend 1). Updates move cards, totals and the title in place, never focus, and the announcer says once each change that starts or ends a need (FB-9, KEY-6). With no stack running, Caddy serves static stacks.json and stacks.html with the stopped-stack records (CC-27). Resolves stack-directory-09, the live half of stack-directory-07 and stack-directory-08's published blocked state.",
+      "explanation": "While the page is visible it reads GET /stacks.json on the directory hostname 2 s after the previous read ended, and nothing while hidden (ACT-12). A live stack's control server answers with every stack's snapshot, each asked in parallel with a 2 s deadline over loopback, under the same rules as / (Backend 5). Each snapshot carries the published service state (CC-25): cause, since when, health and external checks, blocked repositories, changed files; no state defaults to running, and the runtime runs every health check while the directory reads (Backend 1). Updates move cards, totals and the title in place, never focus, and the announcer says once each change that starts or ends a need (FB-9, KEY-6). With no stack running, Caddy serves static stacks.json and stacks.html with the stopped-stack records (CC-27). Resolves stack-directory-09, the live half of stack-directory-07 and stack-directory-08's published blocked state.",
       "sources": [
         {
-          "path": "apps/devhost/internal/devtools/stack_directory.go",
-          "line": 114,
-          "end_line": 156,
-          "label": "Reuses: fan-out with a 2 s deadline per stack"
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 156,
+          "end_line": 203,
+          "label": "Reuses: one read per stack, 2 s deadline"
         },
         {
-          "path": "apps/devhost/internal/services/stack_directory.go",
-          "line": 11,
-          "end_line": 53,
-          "label": "Replaces: one status word, Running default"
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 96,
+          "end_line": 125,
+          "label": "Replaces: status words, Running default"
         }
       ]
     },
@@ -228,7 +243,7 @@
       "label": "Check Again",
       "sublabel": "one read · stops nothing",
       "tag": "stack-directory-08",
-      "explanation": "A blocked repository's condition line and a service that is not reachable offer Check Again: GET /stacks.json?check=<stack> asks that stack to run its external checks and read its checkout list now, which stops nothing and starts no operation (HOLD-1, HOLD-4, ACT-9; Backend 10, still to be settled). The button keeps focus while busy, 'Checking search…', and its result replaces the row's state and time (KEY-11, FB-9). Blocked services read blocked, never starting or running, under 'The saved checkout ~/acme/.workspaces/ui-polish was deleted; devhost started none of its 6 services', said once with the way back on the status page. Read from another machine, Check Again is unavailable with 'Check Again works only on this machine' beside it (MENU-3). Resolves stack-directory-08; carries stack-directory-09's external checks."
+      "explanation": "A blocked repository's condition line and a service that is not reachable offer Check Again: GET /stacks.json?check=<stack> asks that stack to run its external checks and read its worktree list now, which stops nothing and starts no operation; services-panel documents it in CC-37 beside its own check route (HOLD-1, HOLD-4, ACT-9; Backend 10). The button keeps focus while busy, 'Checking search…', and its result replaces the row's state and time (KEY-11, FB-9). Blocked services read blocked, never starting or running, under 'The saved worktree ~/acme/.workspaces/ui-polish was deleted; devhost started none of its 6 services', said once with the way back on the status page. This machine and signed-in or paired browsers press it; a reader admitted only by stackDirectoryAllowRemote sees it unavailable with 'Sign in with passkey or pair this browser to check stacks from here' (O47, HOLD-7). Resolves stack-directory-08; carries stack-directory-09's external checks."
     },
     {
       "id": "typo",
@@ -237,13 +252,13 @@
       "type": "external",
       "label": "Mistyped hostname",
       "sublabel": "or a stale bookmark",
-      "explanation": "A hostname that no live stack routes, mistyped or from a stale bookmark, reaches Caddy's fallback site, as today.",
+      "explanation": "A hostname that no live stack routes, mistyped or from a stale bookmark. Over HTTPS it gets no certificate, because Caddy issues them only for configured hostnames, so the browser shows its own connection error and the person recovers in the directory's filter (O63). On plain HTTP, with httpEnabled = true, it reaches Caddy's fallback site, as today. A recently stopped stack's hostname never gets here: its configured route stays for O15's 24 hours and answers the stopped-stack page.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/caddyfile.go",
-          "line": 72,
-          "end_line": 103,
-          "label": "Reuses: fallback answers unrouted hosts"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 539,
+          "end_line": 552,
+          "label": "Reuses: fallback; tls internal, no on-demand"
         }
       ]
     },
@@ -253,27 +268,27 @@
       "col": 4,
       "type": "frontend",
       "label": "Did you mean …?",
-      "sublabel": "host asked for · path kept",
+      "sublabel": "plain HTTP · path kept",
       "tag": "stack-directory-04",
-      "explanation": "A page load of an unrouted hostname gets devhost's own page with status 404, leading with what was asked for: 'No devhost route for hotfix-shpo.shop.localhost/checkout', before the status code in reading order (SURF-16, FB-9, WORD-7). Its lead action is the close hostname with the path and query kept, 'Did you mean hotfix-shop.shop.localhost/checkout?', within two edits, at most three, closest first (a threshold for the product owner), then All Stacks on This Machine (MENU-5, SEL-10, SURF-15). 'Hostnames on this machine' groups every routed hostname by stack and checkout with its service and draws no state, since the page changes only when routes do (ACT-12). A request that is not a page load gets 404 with a body under 2 KB, the answer startup-and-recovery asked for (agent-cli-journey-04, owned by startup-and-recovery). A hostname whose stack stopped recently gets stack-run-stop's page instead (stack-run-stop-11). Resolves stack-directory-04 and the 404's link of stack-directory-06.",
+      "explanation": "On plain HTTP a page load of an unrouted hostname gets devhost's own page with status 404, leading with what was asked for: 'No devhost route for hotfix-shpo.shop.localhost/checkout', before the status code in reading order (SURF-16, FB-9, WORD-7, O63). Its lead action is the close hostname with the path and query kept, 'Did you mean hotfix-shop.shop.localhost/checkout?', by O46's rule: a remembered stopped stack named first (its hostname reaches this page on plain HTTP, since only its HTTPS route is kept), then two edits by optimal string alignment, one for names of four characters or fewer, never a renumbered name, at most three, closest first; then All Stacks on devbox (MENU-5, SEL-10, SURF-15, O46, O61). 'Hostnames on devbox' groups every routed hostname by stack and worktree. A request that is not a page load gets a 404 under 2 KB that names the hostname and the directory, the answer startup-and-recovery's no-route state hands off (FB-11, agent-cli-journey-04). Resolves stack-directory-04 and the 404's link of stack-directory-06.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/not_found.go",
-          "line": 64,
-          "end_line": 117,
-          "label": "Replaces: route list A to Z, no stack"
+          "path": "apps/devhost/src/statuspage.rs",
+          "line": 136,
+          "end_line": 145,
+          "label": "Replaces: 404 title and Caddy wording"
         },
         {
           "path": "packages/devhost-ui/src/statusPages/components/StatusPage.tsx",
-          "line": 38,
+          "line": 39,
           "end_line": 60,
           "label": "Replaces: active hostnames as bare links"
         },
         {
-          "path": "apps/devhost/internal/statuspage/not_found.go",
-          "line": 10,
-          "end_line": 17,
-          "label": "Replaces: 404 title and Caddy wording"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 112,
+          "end_line": 141,
+          "label": "Replaces: one page for every request"
         }
       ]
     },
@@ -284,13 +299,30 @@
       "type": "frontend",
       "label": "Service page opens",
       "sublabel": "app or its status page",
-      "explanation": "A route link opens, in the same tab, the app when its service runs, or devhost's status page for a service that is not running, which leads with that cause's action (Restart, Start, the way back to a checkout); the link says so: 'https://reports.shop.localhost/ · status page' (SURF-15, MENU-5). An agent waiting for the person opens its stack's page with docked chat on the decision card in one activation (REV-9, ACT-6). This is the journey's outcome in place: the person reaches the page they chose. There is no Undo: the directory writes nothing, so nothing needs undoing and no rollback applies (UNDO-1); the browser's Back returns to the directory, which keeps its ?q= filter.",
+      "explanation": "A route link opens, in the same tab, the app when its service runs, or devhost's status page for a service that is not running, which leads with that cause's action (Restart, Start, the way back to a worktree); the link says so: 'https://reports.shop.localhost/ · status page' (SURF-15, MENU-5). An agent waiting for the person opens its stack's page through agent-chat's GET /__devhost__/chat/open with docked chat on the decision card in one activation (REV-9, ACT-6, CC-38). This is the journey's outcome in place: the person reaches the page they chose. There is no Undo: the directory writes nothing, so nothing needs undoing and no rollback applies (UNDO-1); the browser's Back returns to the directory, which keeps its ?q= filter.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryCard.tsx",
           "line": 88,
           "end_line": 106,
           "label": "Reuses: service URLs as same-tab links"
+        }
+      ]
+    },
+    {
+      "id": "activity",
+      "lane": "backend",
+      "col": 4,
+      "type": "backend",
+      "label": "Per-stack activity path",
+      "sublabel": "/__devhost__/stacks/<stack>/…",
+      "explanation": "The directory's hostname serves /__devhost__/stacks/<stack>/agents/activity and its socket, the Watch Live Activity page running-agents draws and its agents record links, for this machine and browsers signed in with the passkey or paired; stackDirectoryAllowRemote admits no one to it, any other client gets 403 with O36's sentence, and no app hostname serves it (O55, O36, HOLD-7). <stack> is the stack's key, 'acme-shop', with six hexadecimal characters of its root manifest's path only while two stacks share a name, so it survives devhost stack restart, devhost restart-all and devhost upgrade; the directory site routes each key to that stack's current control server and rewrites the route when a replacing run registers (O18; Backend 13). running-agents owns the page and the record's activity.url; this flow owns the route.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 334,
+          "end_line": 335,
+          "label": "Replaces: every other path answers 404"
         }
       ]
     },
@@ -302,17 +334,17 @@
       "label": "Stopped recently",
       "sublabel": "why · when · start command",
       "tag": "stack-directory-07",
-      "explanation": "A stack that stopped within O15's 24 hours keeps a card in 'Stopped recently', read from stack-run-stop's stopped-stack record, with when and why it stopped, 'stopped at 02:14 after 30 min without requests (idleTimeout)' or 'killed at 09:02; its devhost process ended without cleaning up', and devhost start in its folder with Copy (ACT-10, STATE-2, STATE-3, UNDO-5, CC-27). A killed stack names each service it left running, 'api still runs from the killed stack (PID 8123, port 4001)', with devhost stop in its folder (ACT-11). An open page moves a stack that stops here within 4 s and says so once (FB-9). With nothing running, Caddy's static page lists these too. Resolves the empty state of stack-directory-07, which forgot what stopped; reads the record of stack-run-stop-11 (owned by stack-run-stop).",
+      "explanation": "A stack that stopped within O15's 24 hours after a run of at least a minute keeps a card in 'Stopped recently', read from stack-run-stop's stopped-stack record, with when and why it stopped, 'stopped at 02:14 after 30 min without requests (idleTimeout)' or 'killed at 09:02; its devhost process ended without cleaning up', and devhost start in its folder with Copy (ACT-10, STATE-2, STATE-3, UNDO-5, O15, CC-27). Its hostnames are links: they keep their configured HTTPS routes and answer the stopped-stack page (O63). A killed stack names each service it left running, 'api still runs from the killed stack (PID 8123, port 4001)', with devhost stop in its folder (ACT-11). An open page moves a stack that stops here within 4 s and says so once (FB-9). With nothing running, Caddy's static page lists these too. Resolves the empty state of stack-directory-07; reads the record of stack-run-stop-11 (owned by stack-run-stop).",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/stack_directory.go",
-          "line": 122,
-          "end_line": 127,
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 174,
+          "end_line": 184,
           "label": "Replaces: static empty directory page"
         },
         {
           "path": "packages/devhost-ui/src/statusPages/components/StackDirectoryPage.tsx",
-          "line": 80,
+          "line": 74,
           "end_line": 98,
           "label": "Replaces: empty-state copy"
         }
@@ -326,24 +358,24 @@
       "label": "No stack answers",
       "sublabel": "503 page · retries · commands",
       "tag": "stack-directory-10",
-      "explanation": "When no stack answers within 2 s, after a crash or a kill from outside devhost or with every stack's devhost paused, a page load still gets devhost's directory page, with status 503: Caddy's error handler serves the static page devhost last wrote, listing the stacks registered then, each drawn unknown, 'unknown · did not answer within 2 s · last seen 17:03 · PID 4121', never stopped, with 'If its devhost process is paused, run fg in its terminal' and devhost start and devhost stop in its folder with Copy, under 'Not updated since 17:03: no running stack answered within 2 s · retrying every 2 s' (STATE-4, STATE-3, ACT-5, FAIL-2, O16). It retries every 2 s while visible, Refresh Stacks asks at once, and the live directory returns in place, announced once (ACT-12, FB-9, KEY-11). A request that is not a page load gets one short 503 line (FB-11). A stack record devhost cannot read is named in one condition line, with Copy Error holding Go's error and its path, while every readable stack stays listed (FAIL-2, WORD-7). Resolves stack-directory-10.",
+      "explanation": "When no stack answers within 2 s, after a crash or a kill from outside devhost or with every stack's devhost paused, a page load still gets devhost's directory page, with status 503: Caddy's error handler serves the static page devhost last wrote, listing the stacks registered then, each drawn unknown, 'unknown · did not answer within 2 s · last seen 17:03 · PID 4121', never stopped, with 'If its devhost process is paused, run fg in its terminal' and devhost start and devhost stop in its folder with Copy (STATE-4, STATE-3, ACT-5, FAIL-2, O16). It retries every 2 s while visible, Refresh Stacks asks at once, and the live directory returns in place, announced once (ACT-12, FB-9, KEY-11). A request that is not a page load gets one short 503 line (FB-11). A stack record devhost cannot read is named in one condition line, with Copy Error holding the original error and its path, while every readable stack stays listed (FAIL-2, WORD-7). Resolves stack-directory-10.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/stack_directory.go",
-          "line": 217,
-          "end_line": 222,
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 358,
+          "end_line": 360,
           "label": "Replaces: handle_errors plain-text 503"
         },
         {
-          "path": "apps/devhost/internal/devtools/stack_directory.go",
-          "line": 114,
-          "end_line": 121,
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 277,
+          "end_line": 278,
           "label": "Replaces: record error as plain 503"
         },
         {
-          "path": "apps/devhost/internal/caddy/stack_directory.go",
-          "line": 56,
-          "end_line": 79,
+          "path": "apps/devhost/src/caddy/stacks.rs",
+          "line": 219,
+          "end_line": 247,
           "label": "Replaces: one bad record fails the list"
         }
       ]
@@ -356,19 +388,19 @@
       "label": "A stack does not answer",
       "sublabel": "skipped · unknown · run fg",
       "tag": "stack-directory-11",
-      "explanation": "When one stack's devhost process does not answer, paused by Ctrl-Z in its terminal, kill -STOP or a debugger, it never holds the page: Caddy's health checks, every 2 s with a 1 s timeout, skip it within about 3 s and another running stack serves the directory; a load that reached it before a check moves on after a 4 s response timeout, longer than the 2 s per-stack wait, so a healthy stack waiting on it is never cut off (Backend 12 (e)). Its card keeps its last known rows drawn as unknown, 'unknown · did not answer within 2 s · last seen 17:15:02', never stopped or failed, with 'Its devhost process (PID 4121) is running but did not answer within 2 s. If you pressed Ctrl-Z in its terminal, run fg there; a debugger may also have paused it.' and Copy Error holding Go's original error; the totals count it, '1 unknown' (ACT-5, STATE-3, STATE-4, WORD-6, FAIL-2, MENU-5). After fg, the next passing check and read draw it live again, announced once (ACT-12, FB-9). Resolves stack-directory-11.",
+      "explanation": "When one stack's devhost process does not answer, paused by Ctrl-Z in its terminal, kill -STOP or a debugger, it never holds the page: Caddy's health checks, every 2 s with a 1 s timeout, skip it within about 3 s and another running stack serves the directory; a load that reached it before a check moves on after a 4 s response timeout, longer than the 2 s per-stack wait, so a healthy stack waiting on it is never cut off (Backend 12 (e)). Its card keeps its last known rows drawn as unknown, 'unknown · did not answer within 2 s · last seen 17:15:02', never stopped or failed, with 'Its devhost process (PID 4121) is running but did not answer within 2 s. If you pressed Ctrl-Z in its terminal, run fg there; a debugger may also have paused it.' and Copy Error holding the original error; the totals count it, '1 unknown' (ACT-5, STATE-3, STATE-4, WORD-6, FAIL-2, MENU-5). After fg, the next passing check and read draw it live again, announced once (ACT-12, FB-9). Resolves stack-directory-11.",
       "sources": [
         {
-          "path": "apps/devhost/internal/caddy/stack_directory.go",
-          "line": 204,
-          "end_line": 212,
-          "label": "Replaces: first stack, dial timeout only"
+          "path": "apps/devhost/src/caddy/files.rs",
+          "line": 342,
+          "end_line": 351,
+          "label": "Replaces: first stack, no health checks"
         },
         {
-          "path": "apps/devhost/internal/devtools/stack_directory.go",
-          "line": 128,
-          "end_line": 131,
-          "label": "Replaces: raw Stack details unavailable"
+          "path": "apps/devhost/src/devtools/directory.rs",
+          "line": 182,
+          "end_line": 188,
+          "label": "Replaces: raw 'Stack details unavailable'"
         }
       ]
     }
@@ -396,6 +428,21 @@
       "role": "main",
       "fromSide": "left",
       "toSide": "left"
+    },
+    {
+      "id": "entry-remote",
+      "from": "entry",
+      "to": "remote",
+      "label": "elsewhere",
+      "role": "branch"
+    },
+    {
+      "id": "remote-page",
+      "from": "remote",
+      "to": "page",
+      "label": "signed in",
+      "role": "branch",
+      "toSide": "bottom"
     },
     {
       "id": "page-filter",
@@ -461,7 +508,7 @@
       "id": "typo-notfound",
       "from": "typo",
       "to": "notfound",
-      "label": "no route",
+      "label": "plain HTTP",
       "role": "branch"
     },
     {
@@ -470,6 +517,15 @@
       "to": "open",
       "label": "close match, path kept",
       "role": "branch"
+    },
+    {
+      "id": "entry-activity",
+      "from": "entry",
+      "to": "activity",
+      "label": "Watch Live Activity",
+      "role": "branch",
+      "fromSide": "top",
+      "toSide": "top"
     }
   ],
   "cards": [
@@ -477,23 +533,24 @@
       "dot": "emerald",
       "title": "What changes versus today",
       "items": [
-        "Removed: the combined Refresh / filter button and the form that reloaded the page through every stack; server-side filtering on file paths; Show all stacks; the URL count; the caveat on every card; the raw UTC Registered time and the folder under every row; Running as a default and one gray badge for six states; Active hostnames and Caddy's wording on the 404; the plain-text 503 and Go's raw record error; Go's raw error on a silent stack's card",
-        "Merged: the directory's status words and the toolbar's become one published state drawn by one shared indicator, in the words devhost status prints; Clear filter and Show all stacks become Clear Filter",
-        "New: checkout labels; Needs you, Running and Stopped recently; the title's attention prefix; updates every 2 s; filtering as you type; Refresh Stacks; causes and times on rows; lead actions as links and commands with Copy; Check Again; waiting agents as links; applied or not applied with both versions; the 404's asked-for hostname and close match with the path kept; the 503 page listing the stacks devhost last knew; short answers for requests that are not page loads; health checks that hand the page to another stack when one does not answer, its card unknown with how to resume it",
-        "Changed: statuses update while the page is open and stopped stacks stay listed for 24 hours (CC-27); the filter keeps only matching rows; one unreadable stack record no longer hides the other stacks; a paused stack no longer holds the page",
-        "Kept: one page for every stack on the machine, any live stack serving it with a 2 s deadline per stack; local clients only unless stackDirectoryAllowRemote, GET and HEAD only, loopback snapshots, no-store and no-referrer; the reserved hostname; read-only, no writes and no browser opened; same-tab links; ?q= links; devhost start still refuses while a stack record cannot be read"
+        "Removed: the combined Refresh / filter button and the form that reloaded the page through every stack; server-side filtering on file paths; Show all stacks; the URL count; the caveat on every card; the raw UTC Registered time and the folder under every row; Running as a default and one gray badge for six states; Active hostnames and Caddy's wording on the 404; the plain-text 503 and the raw record error; 'Stack details unavailable' on a silent stack's card; External, Directory and 'Manifest-free file or port session' on serve session cards",
+        "Merged: the directory's status words and the toolbar's become one published state drawn by one shared indicator, in the words devhost stack info prints; Clear filter and Show all stacks become Clear Filter; an HTTPS typo recovers in the filter",
+        "New: worktree labels; Needs you, Running and Stopped recently; the title's attention prefix; updates every 2 s; filtering as you type with close hostnames; Refresh Stacks; causes and times on rows; lead actions as links and commands with Copy; Check Again; waiting agents as links; applied or not applied with both versions; the plain-HTTP 404's asked-for hostname and close match with the path kept; the 503 page listing the stacks devhost last knew; short answers for requests that are not page loads; health checks that hand the page to another stack; O36's check with a sign-in page; each stack's Watch Live Activity path; serve-folder's serve session cards",
+        "Changed: statuses update while the page is open and stopped stacks stay listed for 24 hours (CC-27); the filter keeps only matching rows; one unreadable stack record no longer hides the other stacks; a paused stack no longer holds the page; signed-in or paired browsers read the directory and press Check Again (O47)",
+        "Kept: one page for every stack on the machine, any live stack serving it with a 2 s deadline per stack; this machine by default, stackDirectoryAllowRemote still meaning anyone may read it, GET and HEAD only, loopback snapshots, no-store and no-referrer; the reserved hostname; configured-hosts-only TLS; read-only, no writes, no browser or editor opened; same-tab links; ?q= links; devhost start still refuses while a stack record cannot be read"
       ]
     },
     {
       "dot": "rose",
       "title": "Tickets this journey resolves",
       "items": [
-        "Links to the directory: stack-directory-06 (the toolbar and Caddy 404 slice; the printed URLs: stack-run-stop)",
-        "Page, groups and checkout labels: stack-directory-03",
+        "Links to the directory: stack-directory-06 (the toolbar and 404 slice; the printed URLs: stack-run-stop)",
+        "Page, groups and worktree labels: stack-directory-03",
         "Cards, states and lead actions: stack-directory-02, stack-directory-08, stack-directory-09",
+        "Serve session cards and narrow layout: serve-command-06 (the directory's slice; the rest: serve-folder), serve-command-10",
         "Filter, Refresh Stacks, live updates and Stopped recently: stack-directory-07",
         "Configuration applied or not: stack-directory-05",
-        "Caddy 404: stack-directory-04",
+        "Plain-HTTP 404 and the filter's close hostnames: stack-directory-04",
         "No stack answers, unreadable stack records: stack-directory-10",
         "A stack that does not answer: stack-directory-11",
         "Related, not covered: agent-cli-journey-04 (startup-and-recovery); error-pages-01 with stack-directory-01 (its stopgap ships first); first-run-setup-02 (first-run-setup); proxy-settings-04 (proxy-settings, stack-run-stop, manifest-hot-reload); stack-run-stop-11 (stack-run-stop)"
@@ -504,32 +561,34 @@
       "title": "Backend work",
       "items": [
         "The snapshot reads the published service state (services-panel's); no state is a default; health, daemon and external checks run while the directory reads",
-        "Stack fields: state and summary, checkout labels, foreground or detached, start time, last outcome, blocked reasons, serve session names",
-        "[discuss] Waiting agents with a link to their decision card (agent-chat's route)",
+        "Stack fields: state and summary, worktree labels, foreground or detached, start time, last outcome, blocked reasons, the stack's key, serve-folder's sessionKind and command",
+        "Waiting agents with agent-chat's chat/open link, counted only for readers O36 does not admit",
         "Configuration state: applied or not applied, the structured rejection, the accepted text while it differs",
-        "GET /stacks.json beside /, under the same guard; static stacks.json and stacks.html with stopped-stack records and the registered stacks",
-        "The filter moves to the page; order by need, then name, main checkout first",
-        "[discuss] The 404 embeds routes by stack and checkout; a short 404 for requests that are not page loads",
-        "The directory's URL for the toolbar and the status pages; Open in Editor through component-source's hand-off",
-        "[discuss] Check Again: GET /stacks.json?check=<stack>, this machine only",
+        "GET /stacks.json beside /; static stacks.json and stacks.html with stopped-stack records and the registered stacks",
+        "The filter moves to the page with the shared close-hostname matcher; order by need, then name, main worktree first",
+        "The plain-HTTP 404 embeds routes by stack and worktree; a short 404 for requests that are not page loads",
+        "The directory's URL and machine name for the toolbar and the status pages",
+        "Check Again: GET /stacks.json?check=<stack>, for this machine and signed-in or paired browsers",
+        "O36's check in the directory guard; the static page refuses relayed and remote clients unless stackDirectoryAllowRemote; agent-chat's passkey routes on the directory hostname",
         "handle_errors serves the static page and data with 503, one short line otherwise; a reader that names unreadable stack records; the re-render after a dead devhost drops its control port",
-        "Health checks on the proxy hop, a response timeout longer than the 2 s per-stack wait and a retry count, so another stack serves the page; a silent stack reported unknown with its PID"
+        "Health checks on the proxy hop, a response timeout longer than the 2 s per-stack wait and a retry count; a silent stack reported unknown with its PID",
+        "Per-stack routes for /__devhost__/stacks/<stack>/agents/activity to each stack's current control server"
       ]
     },
     {
       "dot": "cyan",
       "title": "Contract changes",
       "items": [
-        "CC-27: stopped stacks stay listed with when, why and the start command; cards count running services and update while the page is open",
-        "Read, unchanged here: CC-25 (published service state), CC-38 (sessions across checkouts), CC-39 (the person's editor), CC-11 (devhost service commands)",
-        "[discuss]: stack-lifecycle.md's counts, Configuration, Refresh / filter, Clear filter, serving and unavailable-page sentences and managed-caddy.md's 404 sentence need CC-n entries beside CC-27 and CC-31"
+        "CC-27: stopped stacks stay listed with when, why and the start command; cards count running services and update while the page is open; close hostnames on the plain-HTTP 404 and in the directory (O46, O63)",
+        "Read, unchanged here: CC-25 (published service state), CC-38 (sessions across worktrees, chat/open), CC-11 (devhost service commands), CC-23 (devhost stack info), CC-37 (Check Again routes), CC-39 (machineName)",
+        "No CC-n yet: stack-lifecycle.md's counts, Configuration, Refresh / filter, Clear filter, remote readers, serving and unavailable-page sentences, for the reference's author beside CC-27 and CC-31"
       ]
     },
     {
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed and the shared UX pattern reference revision 3",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 6",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
       ]
     }

@@ -6,7 +6,7 @@
 <title>Find running stacks and routes in the browser · proposed flow wireframe</title>
 <link rel="stylesheet" href="wireframe.css">
 <style>
-/* The stack directory and the Caddy 404, devhost's own full pages: page area, stack cards, service rows, group headers, file text */
+/* The stack directory and the plain-HTTP 404, devhost's own full pages: page area, stack cards, service rows, group headers, file text */
 .mock .sd-pg{background:var(--bg);padding:8px 10px;font-size:12px;overflow-wrap:anywhere}
 .mock .sd-h{font-weight:700;font-size:15px;margin:2px 0 4px}
 .mock .sd-line{font-size:12px;margin:2px 0}
@@ -21,13 +21,17 @@
 .mock .sd-hit{text-decoration:underline;font-weight:700}
 .mock .sd-code{margin:4px 0;padding:4px 6px;background:var(--field);border:1px solid var(--line);border-radius:4px;font-size:11.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .mock .sd-land{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,17rem)}
+.mock .sd-phone{max-width:320px}
+.mock .sd-phone .sd-svc{grid-template-columns:minmax(0,1fr)}
+.mock .sd-phone .sd-act{flex-direction:column;align-items:flex-start}
+.mock .btn:not(.pri){border-color:var(--edge)}
 </style>
 </head>
 <body>
 <header class="page">
 <nav class="top"><a href="index.html">← All flows</a><a href="../stack-directory-current.html">Today's flow diagram</a><a href="../stack-directory-proposed.html">Proposed flow diagram</a><a href="../proposals/stack-directory.md">Written proposal</a><span class="muted">Redesign ticket: tracked privately</span></nav>
 <h1>Find running stacks and routes in the browser</h1>
-<p><b>TLDR:</b> The toolbar, the terminal and the Caddy 404 link the stack directory, which leads with what needs you, labels each checkout, draws every service in the toolbar's own state words with its way forward, updates itself, filters as you type, never waits on a paused stack and still opens when no stack answers; a mistyped hostname's page names it and offers the close match, path kept.</p>
+<p><b>TLDR:</b> The toolbar, the terminal and the plain-HTTP 404 link the stack directory, which leads with what needs you, labels each worktree, draws every service in the toolbar's own state words with its way forward, updates itself, filters as you type and offers the close hostname for a typo, never waits on a paused stack and still opens when no stack answers; a browser elsewhere reads it once signed in, and the same hostname serves each stack's Watch Live Activity.</p>
 <p class="muted small">Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria are authoritative.</p>
 </header>
 <div class="key"><div>
@@ -57,8 +61,7 @@
 <div class="row">Move to<span class="sp"></span>›</div>
 <div class="row">Collapse</div>
 <div class="row">Reset to Manifest Default</div>
-<div class="sep"></div>
-<div class="row">All Stacks on This Machine <span class="n">1</span></div>
+<div class="row">All Stacks on devbox <span class="n">1</span></div>
 </div>
 <div class="tbar oneline"><span class="seg open" id="sd-stackname"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">main ~/acme ▾</span></div>
 </div>
@@ -69,79 +72,84 @@
 <div class="bar"><b>Terminal › ~/acme</b><span>devhost start, human output</span></div>
 <pre class="term">$ devhost start
 …
-Ready in 4.2 s: https://shop.acme.test/
-All stacks on this machine: https://devhost.acme.test/ <span class="n">2</span></pre>
+Ready in 4.2 s: https://shop.acme.test/ · 6 of 6 running
+All stacks on devbox: https://devhost.acme.test/ <span class="n">2</span></pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: this proposal, like toolbar-shell's, puts <b>All Stacks on This Machine</b> alone after a separator; <code>MENU-2</code> keeps a lone item after a separator for a destructive last item, and the pattern page draws it in the toolbar group. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: <code>devhost start</code> prints "All stacks on this machine:" before the directory's URL, while first-run-setup's <code>devhost caddy start</code> prints "Stack directory:" before the same URL; the reference should pick one terminal label. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>1. Reach the directory from where you are</h2>
+<div class="cap"><h2>1. Reach the directory from where you are</h2>
 <p>The directory keeps its address, devhost.acme.test here, and a link saved with <code>?q=search</code> still opens it with that query in the filter. What changes is that every surface that knows about stacks leads there, because devhost never opens a browser; today nothing does, and the address comes from the docs (<code>SURF-15</code>, <code>MENU-1</code>).</p>
-<ol><li><span class="n">1</span> <b>All Stacks on This Machine</b> ends the toolbar's stack name menu and opens the directory in the same tab, with no <code>target</code>. toolbar-shell draws the menu and its keys; this flow defines where the item leads: the directory's current address from the applied shared Caddy settings, read when the menu opens, so after proxy-settings moves the directory to stacks.acme.test on port 4443 the item links https://stacks.acme.test:4443/, never the old address (<code>MENU-1</code>, <code>MENU-2</code>, <code>WORD-2</code>, <code>SURF-15</code>).</li>
-<li><span class="n">2</span> <code>devhost start</code> prints the directory's URL after its ready line, and <code>devhost stack list</code> on a terminal and <code>devhost status</code> print it too (stack-run-stop's slice). The Caddy 404 (step 8), stack-run-stop's stopped-stack page and startup-and-recovery's status pages carry the same link (<code>SURF-15</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-06 · Backend: the directory's current URL, hostname and port from the applied shared Caddy settings, given to the toolbar and the status pages (Backend 9)</p></div>
+<ol><li><span class="n">1</span> <b>All Stacks on devbox</b> sits in the stack name menu's one group of toolbar items, after <b>Reset to Manifest Default</b> with no separator, and opens the directory in the same tab, with no <code>target</code>; "devbox" is the machine name, <code>machineName</code> in the devhost config file, else the host name up to its first dot. toolbar-shell draws the menu and its keys; this flow defines where the item leads: the directory's current address from the applied shared Caddy settings, read when the menu opens, so after proxy-settings moves the directory to stacks.acme.test on port 4443 the item links https://stacks.acme.test:4443/, never the old address; on a page opened through the remote or relay suffix it links the directory under that suffix (<code>MENU-1</code>, <code>MENU-2</code>, <code>WORD-2</code>, <code>SURF-15</code>, <code>O61</code>).</li>
+<li><span class="n">2</span> <code>devhost start</code> prints the directory's URL after its ready line with the page's own words, and <code>devhost stack list</code> on a terminal and <code>devhost stack info</code> (<code>devhost status</code>) print it too (stack-run-stop's slice). The plain-HTTP 404 (step 8), stack-run-stop's stopped-stack page and startup-and-recovery's status pages carry the same link (<code>SURF-15</code>, <code>O61</code>, <code>O62</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-06 · Backend: the directory's current URL, hostname, port and machine name, given to the toolbar and the status pages (Backend 9)</p></div>
 </section>
 
 <section class="step" id="glance">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>https://devhost.acme.test/</b><span>tab title: 2 failed · 1 waiting for you · Stacks on this machine</span><span class="n">2</span></div>
+<div class="bar"><b>https://devhost.acme.test/</b><span>tab title: (2) 1 failed · 1 waiting · Stacks on devbox</span><span class="n">1</span></div>
 <div class="sd-pg">
-<div class="sd-h">Stacks on this machine</div>
-<div class="sd-line"><b>3 stacks · 2 failed · 1 with an agent waiting for you · 1 stopped recently</b> <span class="n">1</span></div>
-<div class="sd-line muted">This page is read-only: restart, start and stop services on their status pages, in the toolbar or in the terminal · updates every 2 s while open <span class="n">3</span></div>
-<div class="tb" style="margin-top:6px"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn">Refresh Stacks</span><span class="muted">Updated 17:15:02</span><span class="n">4</span></div>
+<div class="sd-h">Stacks on devbox</div>
+<div class="sd-line"><b>3 stacks · 1 serve session · 1 failed · 1 with an agent waiting for you · 2 stopped recently</b> <span class="n">2</span></div>
+<div class="sd-line muted">This page is read-only: restart and start services on their status pages or in the toolbar, and stop them in the toolbar or the terminal · updates every 2 s while open <span class="n">3</span></div>
+<div class="tb" style="margin-top:6px"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn">Refresh Stacks</span><span class="muted">Updated 17:20:02</span><span class="n">4</span></div>
 <div class="sd-grp">Needs you · 2 <span class="n">5</span></div>
 <div class="sd-card">
-<div class="sd-ch"><b>Acme Admin</b><span>· main ~/acme-admin</span><span class="n">6</span></div>
+<div class="sd-ch"><b>Acme Admin</b><span>· ui-polish ~/acme-admin/.workspaces/ui-polish · deleted</span><span class="n">6</span></div>
 <div>▲ failed · 0 of 3 running · 3 blocked</div>
-<div class="banner" style="margin:4px 0">The saved checkout ~/acme-admin/.workspaces/ui-polish was deleted; devhost started none of its 3 services. Return to the configured checkout or choose another on its <a>status page</a>. <span class="btn">Check Again</span></div>
+<div class="banner bad" style="margin:4px 0">✕ The saved worktree ~/acme-admin/.workspaces/ui-polish was deleted; devhost started none of its 3 services. Return to the configured worktree or choose another on its <a>status page</a>. <span class="btn">Check Again</span></div>
 <div class="muted">… 3 service rows, each blocked (step 3)</div>
 </div>
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
-<div>▲ failed · 4 of 6 running · 1 exited · 1 not started</div>
+<div>● running · 6 of 6 running</div>
 <div><a>Claude Code is waiting for you · Fix the nav · fix-nav ~/acme/.worktrees/fix-nav · since 17:18</a> <span class="n">7</span></div>
-<div class="sd-svc"><span>✕ reports</span><span>exited with code 3 at 17:15<span class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn">Copy</span></span></span></div>
-<div class="muted">… 5 more service rows: step 3 draws them all</div>
+<div class="muted">… 6 service rows: step 3 draws a card's rows</div>
 </div>
-<div class="sd-grp">Running · 1</div>
+<div class="sd-grp">Running · 2</div>
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· Detached 1de9d7a ~/acme/.workspaces/hotfix-detached</span></div>
 <div>◐ starting · 4 of 6 running · 2 starting</div>
 <div class="muted">… 6 service rows</div>
 </div>
-<div class="sd-grp">Stopped recently · 1</div>
+<div class="box">
+<div class="row"><b>demoapp</b><span class="chip">Serve session · command</span><span class="n">8</span></div>
+<div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
+<div class="muted">… its discovered URLs and Configuration line, as step 7 draws them</div>
+</div>
+<div class="sd-grp" style="margin-top:8px">Stopped recently · 2</div>
 <div class="sd-card">
 <div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div>
 <div>stopped at 14:10 by devhost stop</div>
-<div class="sd-act">Start it again in ~/blog with <code>devhost start</code><span class="btn">Copy</span></div>
+<div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
 </div>
+<div class="muted">… Docs, stopped at 02:14 after 30 min without requests (idleTimeout)</div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>https://devhost.acme.test/</b><span>the empty states</span></div>
 <div class="sd-pg">
-<div class="vlab">No stack running and none stopped within 24 hours: one sentence, nothing else</div>
-<div class="sd-h">No stacks are running on this machine. Start one with devhost start in its folder. <span class="n">8</span></div>
-<div class="vlab">No stack running, Blog stopped at 14:10</div>
-<div class="sd-h">No stacks are running on this machine. Start one with devhost start in its folder.</div>
+<div class="vlab">No stack or serve session running and none stopped within 24 hours: one sentence, nothing else</div>
+<div class="sd-h">No stacks are running on devbox. Start one with devhost start in its folder. <span class="n">9</span></div>
+<div class="vlab">No stack running, Blog stopped at 14:10 after an hour's run: the group, no empty sentence</div>
+<div class="sd-h">Stacks on devbox</div>
+<div class="sd-line"><b>0 stacks · 1 stopped recently</b></div>
 <div class="sd-grp">Stopped recently · 1</div>
-<div class="sd-card"><div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div><div>stopped at 14:10 by devhost stop</div><div class="sd-act">Start it again in ~/blog with <code>devhost start</code><span class="btn">Copy</span></div></div>
+<div class="sd-card"><div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div><div>stopped at 14:10 by devhost stop</div><div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div></div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>2. Read every stack at a glance</h2>
-<p>The page still lists every stack on the machine in a single column, works without the toolbar and answers this machine only unless <code>stackDirectoryAllowRemote</code> is set. What changes is that it leads with what needs the person, and that each card reads apart from its neighbours. Keys: the document's standard keys only; the page binds none (<code>KEY-1</code>). Tab goes from the filter to <b>Refresh Stacks</b>, then through each card's links and actions in row order; cards and rows are not Tab stops, and each action's accessible name names its target (<code>KEY-10</code>).</p>
-<ol><li><span class="n">1</span> The heading reads "Stacks on this machine", and one totals line counts what needs the person first; the count of URLs goes (<code>ACT-6</code>, <code>WORD-5</code>, <code>O16</code>).</li>
-<li><span class="n">2</span> The document title starts with the same attention, so a background tab shows a failure or a waiting agent; with nothing that needs the person it reads "Stacks on this machine" (<code>O16</code>).</li>
-<li><span class="n">3</span> One line says once what the page cannot do and where that happens instead; it ends "· readable from your network" while <code>stackDirectoryAllowRemote</code> is on (<code>MENU-3</code>, <code>MENU-6</code>, <code>O10</code>).</li>
-<li><span class="n">4</span> The filter (step 5) and <b>Refresh Stacks</b> (step 4) come first, each a control of its own; "Updated 17:15:02" is the age of what the page shows (<code>SEL-10</code>, <code>ACT-12</code>).</li>
-<li><span class="n">5</span> Three groups, each headed with its count and shown only when it holds a card: "Needs you" (a failed stack or one with an agent waiting for the person), "Running" (every other live stack, starting, changing and stopping ones included) and "Stopped recently" (step 3). Within a group, stacks sort by name, then the main checkout before its worktrees, then by branch, then by start time (<code>ACT-6</code>, <code>SEL-4</code>, <code>SEL-10</code>).</li>
-<li><span class="n">6</span> Each card names its stack, then its checkout label: the branch, or "Detached" with the 7-character commit, then the path shortened with <code>~</code>, so two checkouts of one project read apart. Then the stack state word and its summary; a blocked repository is said once, with its way back on the status page and <b>Check Again</b>, which reads that stack's checkout list again and stops nothing (<code>SEL-4</code>, <code>WORD-1</code>, <code>ACT-6</code>, <code>HOLD-4</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">7</span> An agent waiting for the person is a link on its stack's card, with the agent, the conversation, its checkout and since when; step 6 shows where it leads (<code>ACT-6</code>, <code>REV-9</code>).</li>
-<li><span class="n">8</span> With nothing running and nothing stopped within <code>O15</code>'s 24 hours, the page reads one sentence and nothing else; with stacks stopped recently and none running, that sentence heads the page above "Stopped recently" (<code>STATE-2</code>, <code>ACT-10</code>, <code>O15</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-02, stack-directory-03, stack-directory-07, stack-directory-08 · Backend: each stack's state, summary, checkout label and blocked reason, and the directory's order (Backend 2, 7)</p></div>
+<p>The page still lists every stack and serve session on the machine in a single column and works without the toolbar. What changes is that it leads with what needs the person, and that each card reads apart from its neighbours. Keys: the document's standard keys only; the page binds none (<code>KEY-1</code>). Tab goes from the filter to <b>Refresh Stacks</b>, then through each card's links and actions in row order; cards and rows are not Tab stops, and each action's accessible name names its target (<code>KEY-10</code>).</p>
+<ol><li><span class="n">1</span> The document title starts with <code>ACT-7</code>'s attention prefix, the number of stacks that need the person and what they need, so a background tab shows a failure or a waiting agent; with nothing that needs the person it reads "Stacks on devbox" (<code>ACT-7</code>, <code>O16</code>).</li>
+<li><span class="n">2</span> The heading names the machine, "Stacks on devbox", and one totals line counts what needs the person first, serve sessions apart from stacks; the count of URLs goes (<code>ACT-6</code>, <code>WORD-1</code>, <code>WORD-5</code>, <code>O61</code>).</li>
+<li><span class="n">3</span> One line says once what the page cannot do and where that happens instead; it ends "· readable from your network without signing in" while <code>stackDirectoryAllowRemote</code> is on (step 9) (<code>MENU-3</code>, <code>MENU-6</code>, <code>O10</code>, <code>O47</code>).</li>
+<li><span class="n">4</span> The filter (step 5) and <b>Refresh Stacks</b> (step 4) come first, each a control of its own; "Updated 17:20:02" is the age of what the page shows (<code>SEL-10</code>, <code>ACT-12</code>).</li>
+<li><span class="n">5</span> Three groups, each headed with its count and shown only when it holds a card: "Needs you" (a failed stack or one with an agent waiting for the person), "Running" (every other live stack and serve session, starting, changing and stopping ones included) and "Stopped recently" (step 3). Within a group, stacks sort by name, then the main worktree before its linked worktrees, then by branch, then by start time (<code>ACT-6</code>, <code>SEL-4</code>, <code>SEL-10</code>, <code>WORD-11</code>).</li>
+<li><span class="n">6</span> Each card names its stack, then its worktree label: the branch, or "Detached" with the 7-character commit, then the path shortened with <code>~</code>, so two worktrees of one project read apart. Then the stack state word and its summary; a blocked repository's label names the saved worktree it cannot load, and the block is said once, with its way back on the status page and <b>Check Again</b>, which reads that stack's worktree list again and stops nothing (<code>SEL-4</code>, <code>WORD-1</code>, <code>WORD-11</code>, <code>ACT-6</code>, <code>HOLD-4</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">7</span> An agent waiting for the person is a link on its stack's card, with the agent, the conversation, its worktree and since when; step 6 shows where it leads (<code>ACT-6</code>, <code>REV-9</code>).</li>
+<li><span class="n">8</span> A serve session uses serve-folder's card: titled by its folder, target address or session name, with its kind beside the title and, for a command session, its command; never a stack name devhost invented (<code>WORD-1</code>).</li>
+<li><span class="n">9</span> With nothing running and nothing stopped within <code>O15</code>'s 24 hours, the page reads one sentence and nothing else; with stacks stopped recently and none running, it lists them under its heading and totals with no empty sentence, as <code>STATE-2</code> gives that sentence only when nothing stopped recently. A stack whose run lasted under a minute is not listed; <b>Copy</b> copies <code>cd ~/blog &amp;&amp; devhost start</code>, which works from any folder (<code>STATE-2</code>, <code>ACT-10</code>, <code>O15</code>, <code>O61</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-02, stack-directory-03, stack-directory-07, stack-directory-08, serve-command-06 · Backend: each stack's state, summary, worktree label and blocked reason, and the directory's order (Backend 2, 7)</p></div>
 </section>
 
 <section class="step" id="card">
@@ -152,16 +160,17 @@ All stacks on this machine: https://devhost.acme.test/ <span class="n">2</span><
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span><span class="n">1</span></div>
 <div>▲ failed · 4 of 6 running · 1 exited · 1 not started <span class="n">2</span></div>
-<div class="muted">PID 84244 · detached · started 17:03 · 12 min ago <span class="n">3</span></div>
+<div class="muted">PID 84244 · detached · started 17:03 · 17 min ago <span class="n">3</span></div>
 <div><a>Claude Code is waiting for you · Fix the nav · fix-nav ~/acme/.worktrees/fix-nav · since 17:18</a> <span class="n">4</span></div>
-<div class="muted">Last: Restarted api · 2.6 s · 17:20 · from the toolbar <span class="n">5</span></div>
-<div class="sd-svc"><span>● <a>web</a></span><span>running<span class="sd-rt"><a>https://shop.acme.test/</a></span></span></div>
+<div class="muted">Last: Restarted api · 2.6 s · 17:20 · from a page on shop.acme.test <span class="n">5</span></div>
+<div class="sd-svc"><span>● <a>web</a></span><span>running<span class="sd-rt"><a>https://shop.acme.test/ ↗</a></span></span></div>
 <div class="sd-svc"><span>● api</span><span>running<span class="sd-rt">shop.acme.test/api/*</span></span></div>
-<div class="sd-svc"><span>● <a>docs</a></span><span>running · changed: docs/astro.config.mjs <span class="n">6</span><span class="sd-rt"><a>https://docs.shop.acme.test/</a></span></span></div>
+<div class="sd-svc"><span>● <a>docs</a></span><span>running · changed: docs/astro.config.mjs <span class="n">6</span><span class="sd-rt"><a>https://docs.shop.acme.test/ ↗</a></span></span></div>
 <div class="sd-svc"><span>● worker</span><span>running · backend/<span class="sd-rt">no route</span></span></div>
-<div class="sd-svc"><span>✕ reports</span><span>exited with code 3 at 17:15 <span class="n">7</span><span class="sd-rt">Error: Cannot find module './config'</span><span class="sd-rt"><a>https://reports.shop.acme.test/ · status page</a></span><span class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn">Copy</span></span></span></div>
-<div class="sd-svc dim"><span>○ admin</span><span>not started · left out of this run <span class="n">8</span><span class="sd-rt"><a>https://admin.shop.acme.test/ · status page</a></span><span class="sd-act">Start it on its status page, or run <code>devhost service start admin</code><span class="btn">Copy</span></span></span></div>
-<div class="sd-act muted" style="margin-top:4px">Configuration · 2 files ▸ <span>(step 7)</span></div>
+<div class="sd-svc"><span>✕ reports</span><span>exited with code 3 at 17:15 <span class="n">7</span><span class="sd-rt">Error: Cannot find module './config'</span><span class="sd-rt"><a>https://reports.shop.acme.test/ ↗</a> · status page</span><span class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn">Copy</span></span></span></div>
+<div class="sd-svc dim"><span>○ admin</span><span>not started · left out of this run <span class="n">8</span><span class="sd-rt"><a>https://admin.shop.acme.test/ ↗</a> · status page</span><span class="sd-act">Start it on its status page, or run <code>devhost service start admin</code><span class="btn">Copy</span></span></span></div>
+<div class="sd-act" style="margin-top:4px"><span class="btn">Configuration · 2 files ▸</span></div>
+<div class="muted">… its files: step 7</div>
 </div>
 </div>
 </div>
@@ -177,12 +186,12 @@ All stacks on this machine: https://devhost.acme.test/ <span class="n">2</span><
 <div class="sd-svc"><span>✕ worker</span><span>terminated by SIGTERM (143) at 21:53:34, not sent by devhost<span class="sd-act">Restart it on its status page, or run <code>devhost service restart worker</code><span class="btn">Copy</span></span></span></div>
 <div class="sd-svc"><span>● web</span><span>running · depends on api, which exited</span></div>
 <div class="sd-svc"><span>◇ postgres</span><span>reachable · TCP port 5432 · checked 17:15:02 · runs outside devhost</span></div>
-<div class="sd-svc"><span>◇ search</span><span>not reachable · GET search.acme.test/health · checked 17:15:02 · runs outside devhost <span class="n">11</span><span class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span class="btn">Check Again</span></span></span></div>
+<div class="sd-svc"><span>◇ search</span><span>not reachable · GET search.acme.test/health · checked 17:15:02 · runs outside devhost <span class="n">11</span><span class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span style="white-space:nowrap"><span class="btn">Check Again</span></span></span></span></div>
 </div>
 <div class="sd-card">
-<div class="sd-ch"><b>Acme Admin</b><span>· main ~/acme-admin</span></div>
+<div class="sd-ch"><b>Acme Admin</b><span>· ui-polish ~/acme-admin/.workspaces/ui-polish · deleted</span></div>
 <div>▲ failed · 0 of 3 running · 3 blocked</div>
-<div class="banner" style="margin:4px 0">The saved checkout ~/acme-admin/.workspaces/ui-polish was deleted; devhost started none of its 3 services. Return to the configured checkout or choose another on its <a>status page</a>. <span class="btn">Check Again</span> <span class="n">12</span></div>
+<div class="banner bad" style="margin:4px 0">✕ The saved worktree ~/acme-admin/.workspaces/ui-polish was deleted; devhost started none of its 3 services. Return to the configured worktree or choose another on its <a>status page</a>. <span style="white-space:nowrap"><span class="btn">Check Again</span> <span class="n">12</span></span></div>
 <div class="sd-svc"><span>⊘ web</span><span>blocked</span></div>
 <div class="sd-svc"><span>⊘ api</span><span>blocked</span></div>
 <div class="sd-svc"><span>⊘ jobs</span><span>blocked</span></div>
@@ -195,37 +204,50 @@ All stacks on this machine: https://devhost.acme.test/ <span class="n">2</span><
 <div class="sd-card">
 <div class="sd-ch"><b>Blog</b><span>· main ~/blog</span></div>
 <div>stopped at 14:10 by devhost stop <span class="n">13</span></div>
-<div class="sd-act">Start it again in ~/blog with <code>devhost start</code><span class="btn">Copy</span></div>
-<div class="muted">blog.acme.test</div>
+<div class="sd-act"><code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
+<div><a>https://blog.acme.test/ ↗</a> · stopped-stack page</div>
 </div>
 <div class="vlab">Another morning: Acme Shop's devhost process was killed at 09:02</div>
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div>killed at 09:02; its devhost process ended without cleaning up <span class="n">14</span></div>
 <div>api still runs from the killed stack (PID 8123, port 4001)</div>
-<div class="sd-act">Stop it in ~/acme with <code>devhost stop</code><span class="btn">Copy</span></div>
-<div class="sd-act">Start it again in ~/acme with <code>devhost start</code><span class="btn">Copy</span></div>
+<div class="sd-act">Stop it: <code>cd ~/acme &amp;&amp; devhost stop</code><span class="btn">Copy</span></div>
+<div class="sd-act">Start it again: <code>cd ~/acme &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
+</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://devhost.acme.test/</b><span>the same card at 320 CSS pixels, a phone</span><span class="n">15</span></div>
+<div class="sd-pg">
+<div class="sd-card sd-phone">
+<div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
+<div>▲ failed · 4 of 6 running · 1 exited · 1 not started</div>
+<div class="sd-svc"><span>✕ reports · exited with code 3 at 17:15</span><span class="sd-rt">Error: Cannot find module './config'</span><span class="sd-act"><span><a>https://reports.shop.acme.test/ ↗</a> · status page</span><span>Restart it on its status page, or run <code>devhost service restart reports</code></span><span class="btn">Copy</span></span></div>
+<div class="sd-svc dim"><span>○ admin · not started · left out of this run</span><span class="sd-act"><span><a>https://admin.shop.acme.test/ ↗</a> · status page</span><span>Start it on its status page, or run <code>devhost service start admin</code></span><span class="btn">Copy</span></span></div>
+<div class="sd-act"><span class="btn">Configuration · 2 files ▸</span></div>
 </div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>3. Read a stack's card</h2>
-<p>A card still lists every service with its hostnames, aliases and path routes as links, and services a partial start left out as not started. What changes is where its words come from: every state, word and shape on a card comes from the state the stack's services runtime publishes, the one the toolbar, the status pages and <code>devhost status</code> read; the directory never works out a state of its own, and no state is a default (<code>ACT-2</code>, <code>FB-11</code>).</p>
-<ol><li><span class="n">1</span> The stack's name is the card's heading, then its checkout label. The folder appears once, in the label, shortened in the middle when long, with the full path in its tooltip and accessible name; the raw "Registered" timestamp and the absolute folder under every row go. A stack whose repositories run from more than one checkout names each checkout over its repository's rows (<code>SEL-4</code>, <code>SEL-6</code>, <code>WORD-8</code>).</li>
+<p>A card still lists every service with its hostnames, aliases and path routes as links, and services a partial start left out as not started. What changes is where its words come from: every state, word and shape on a card comes from the state the stack's services runtime publishes, the one the toolbar, the status pages and <code>devhost stack info</code> read; the directory never works out a state of its own, and no state is a default (<code>ACT-2</code>, <code>FB-11</code>, <code>O62</code>).</p>
+<ol><li><span class="n">1</span> The stack's name is the card's heading, then its worktree label. The folder appears once, in the label, shortened in the middle when long, with the full path in its tooltip and accessible name; the raw "Registered" timestamp and the absolute folder under every row go. A stack whose repositories run from more than one worktree names each worktree over its repository's rows (<code>SEL-4</code>, <code>SEL-6</code>, <code>WORD-8</code>, <code>WORD-11</code>).</li>
 <li><span class="n">2</span> The stack state word, then the summary, which counts every service of the manifest with the states that need the person first; a changed service counts as running. One shared summary builder writes it for this card and for the toolbar's Services trigger, so the two never differ (<code>ACT-6</code>, <code>WORD-5</code>, <code>WORD-6</code>).</li>
 <li><span class="n">3</span> The PID and how the stack runs are details; times are local and 24-hour, and the ISO time is only in copyable details (<code>WORD-8</code>).</li>
 <li><span class="n">4</span> One line per condition that needs the person, in <code>ACT-7</code>'s order: a blocked repository, a manifest file not applied (step 7), each agent waiting (step 6). A failed or exited service shows in its row and counts in the summary, never as a second line (<code>ACT-7</code>).</li>
-<li><span class="n">5</span> The last operation's outcome, the sentence <code>devhost status</code> prints for the same record, in a quiet line, or in the failure style while it failed: "Last: Restart Stack: 5 of 6 running · api exited with code 1 before its health check · 17:22" (<code>FB-2</code>, <code>FB-3</code>, <code>FB-11</code>, <code>ACT-1</code>, <code>WORD-4</code>).</li>
-<li><span class="n">6</span> Each row draws services-panel's shared service state indicator, shape, word and accessible name, from the status pages' stylesheet, so ✕ exited never looks like ○ not started, also in forced colors. Changed is a detail of the row, and a service's folder shows only where it differs from the stack's ("backend/"). A route link answers; a path route with no page of its own shows as copyable text, as in the Services panel (<code>SURF-14</code>, <code>ACT-13</code>, <code>ACT-8</code>, <code>SURF-15</code>).</li>
+<li><span class="n">5</span> The last operation's outcome, the sentence <code>devhost stack info</code> prints for the same record, with its origin, in a quiet line, or in the failure style while it failed: "Last: Restart Stack: 5 of 6 running · api exited with code 1 before its health check · 17:22" (<code>FB-2</code>, <code>FB-3</code>, <code>FB-11</code>, <code>ACT-1</code>, <code>WORD-4</code>).</li>
+<li><span class="n">6</span> Each row draws services-panel's shared service state indicator, shape, word and accessible name, from the status pages' stylesheet, so ✕ exited never looks like ○ not started, also in forced colors. Changed is a detail of the row, and a service's folder shows only where it differs from the stack's ("backend/"). A route link answers, its arrow kept beside the address; a path route with no page of its own shows as copyable text, as in the Services panel (<code>SURF-14</code>, <code>ACT-13</code>, <code>ACT-8</code>, <code>SURF-15</code>).</li>
 <li><span class="n">7</span> An exited service shows its code and time with its last output line; its route opens devhost's status page for it, so the link says so, and its way forward is the restart that page offers with the same action's terminal command and <b>Copy</b> (step 6) (<code>FAIL-3</code>, <code>MENU-5</code>, <code>MENU-6</code>, <code>CC-11</code>).</li>
-<li><span class="n">8</span> A service the run left out is counted and listed in its place as not started, with why ("left out of this run" or "stopped by you") and the start it can have; until startup-and-recovery's not-started status page answers its hostname, the hostname shows as text (<code>SEL-7</code>, <code>ACT-2</code>, <code>O10</code>).</li>
+<li><span class="n">8</span> A service the run left out is counted and listed in its place as not started, with why ("left out of this run" or "stopped by you"); its hostname links startup-and-recovery's not-started status page, which offers <b>Start</b> (<code>SEL-7</code>, <code>ACT-2</code>, <code>O10</code>).</li>
 <li><span class="n">9</span> Starting shows its health check with the elapsed time of the timeout, or the dependency it waits for; restarting, stopping and switching show their step and offer no action. A daemon service reads what its status check last found, never running by default (<code>ACT-3</code>, <code>ACT-4</code>, <code>MENU-5</code>).</li>
 <li><span class="n">10</span> A live process that stops answering its health check reads failed, never running in green; a service killed from outside reads terminated by its signal, with its status; one whose dependency failed stays running and names it (<code>ACT-2</code>, <code>FAIL-3</code>, <code>WORD-7</code>).</li>
 <li><span class="n">11</span> An external service reads reachable or not reachable from devhost's own check, with the check and its time, and says once that it runs outside devhost; <b>Check Again</b> runs its check now (<code>ACT-9</code>, <code>MENU-3</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">12</span> A deleted saved checkout blocks its repository: the condition says once why, and each of its services that does not run reads blocked, never starting or running; a service still running from the deleted checkout reads running under that condition (<code>HOLD-4</code>, <code>HOLD-1</code>, <code>ACT-2</code>).</li>
-<li><span class="n">13</span> A stack that stopped within <code>O15</code>'s 24 hours keeps its card with when and why it stopped and the command that starts it again, with <b>Copy</b>; its hostnames are text, because for that time they answer stack-run-stop's stopped-stack page (<code>ACT-10</code>, <code>STATE-2</code>, <code>STATE-3</code>, <code>UNDO-5</code>, <code>CC-27</code>).</li>
-<li><span class="n">14</span> A killed stack names each service process stack-run-stop found still running, with <code>devhost stop</code> in its folder, because a stack reads stopped only when nothing of it remains (<code>ACT-11</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-02, stack-directory-03, stack-directory-07, stack-directory-08, stack-directory-09 · Backend: the snapshot reads the published service state, with no default (Backend 1, <code>CC-25</code>); stack fields and the stopped-stack records (Backend 2, 5)</p></div>
+<li><span class="n">12</span> A deleted saved worktree blocks its repository: the card's label names that worktree as deleted, the condition says once why, as a failure, and each of its services that does not run reads blocked, never starting or running; a service still running from the deleted worktree reads running under that condition (<code>HOLD-4</code>, <code>HOLD-1</code>, <code>ACT-2</code>).</li>
+<li><span class="n">13</span> A stack that stopped within <code>O15</code>'s 24 hours after a run of at least a minute keeps its card with when and why it stopped and the command that starts it again from any folder, with <b>Copy</b>, as the pattern reference draws it; its hostnames stay links, because for that time they keep their HTTPS routes and answer stack-run-stop's stopped-stack page (<code>ACT-10</code>, <code>STATE-2</code>, <code>STATE-3</code>, <code>UNDO-5</code>, <code>O15</code>, <code>O63</code>, <code>CC-27</code>).</li>
+<li><span class="n">14</span> A killed stack names each service process stack-run-stop found still running, with <code>devhost stop</code> in its folder, because a stack reads stopped only when nothing of it remains (<code>ACT-11</code>).</li>
+<li><span class="n">15</span> At 320 CSS pixels each row keeps its state's shape and word beside the service's name and the same content as the wide card, a route's arrow stays beside its address, the lead action, its command and <b>Copy</b> stack one per line instead of truncating, the rows align with the card's header and every control stays at least 24 CSS pixels (<code>ACT-13</code>, <code>SURF-9</code>, <code>O8</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-02, stack-directory-03, stack-directory-07, stack-directory-08, stack-directory-09, serve-command-10 · Backend: the snapshot reads the published service state, with no default (Backend 1, <code>CC-25</code>); stack fields and the stopped-stack records (Backend 2, 5)</p></div>
 </section>
 
 <section class="step" id="live">
@@ -233,14 +255,14 @@ All stacks on this machine: https://devhost.acme.test/ <span class="n">2</span><
 <div class="win">
 <div class="bar"><b>https://devhost.acme.test/</b><span>21:53:37, 3 s after kill -TERM of reports' process; Refresh Stacks pressed</span></div>
 <div class="sd-pg">
-<div class="sd-h">Stacks on this machine</div>
+<div class="sd-h">Stacks on devbox</div>
 <div class="sd-line"><b>2 stacks · 1 failed</b></div>
-<div class="tb" style="margin-top:6px"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn focusring">Refreshing Stacks…</span><span class="n">2</span></div>
+<div class="tb" style="margin-top:6px"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn focusring">Refreshing Stacks…</span><span class="n">1</span></div>
 <div class="sd-grp">Needs you · 1</div>
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div>▲ failed · 5 of 6 running · 1 exited</div>
-<div class="sd-svc"><span>✕ reports</span><span>terminated by SIGTERM (143) at 21:53:34, not sent by devhost <span class="n">1</span><span class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn">Copy</span></span></span></div>
+<div class="sd-svc"><span>✕ reports</span><span>terminated by SIGTERM (143) at 21:53:34, not sent by devhost <span class="n">2</span><span class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn">Copy</span></span></span></div>
 <div class="muted">… 5 more, running</div>
 </div>
 <div class="sd-grp">Running · 1</div>
@@ -262,21 +284,23 @@ All stacks on this machine: https://devhost.acme.test/ <span class="n">2</span><
 </div>
 <div class="muted">… Blog and Docs, updating as usual</div>
 <div class="vlab">No stack answers, or devhost's proxy is gone: every card is drawn unknown</div>
-<div class="tb"><span class="banner" style="margin:0">Not updated since 17:15:02: no running stack answered within 2 s · retrying every 2 s · last try 17:15:06</span><span class="btn">Refresh Stacks</span><span class="n">4</span></div>
+<div class="banner" style="margin:0 0 4px">◆ Not updated since 17:15:02: no running stack answered within 2 s · retrying every 2 s · last try 17:15:06 <span class="n">4</span></div>
+<div class="tb"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn">Refresh Stacks</span></div>
 <div class="vlab">After the directory moved</div>
-<div class="banner" style="margin:0">Not updated since 17:15:02: the stack directory moved to <a>https://stacks.acme.test:4443/</a></div>
+<div class="banner" style="margin:0">◆ Not updated since 17:15:02: the stack directory moved to <a>https://stacks.acme.test:4443/</a></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://devhost.acme.test/</b><span>loaded while no stack answers: status 503 · tab title: No stack answered · Stacks on this machine</span><span class="n">6</span></div>
+<div class="bar"><b>https://devhost.acme.test/</b><span>loaded while no stack answers: status 503 · tab title: No stack answered · Stacks on devbox</span><span class="n">5</span></div>
 <div class="sd-pg">
-<div class="sd-h">Stacks on this machine</div>
-<div class="tb"><span class="banner" style="margin:0">Not updated since 17:03: no running stack answered within 2 s · retrying every 2 s</span><span class="btn">Refresh Stacks</span><span class="n">5</span></div>
+<div class="sd-h">Stacks on devbox</div>
+<div class="banner" style="margin:0 0 4px">◆ Not updated since 17:03: no running stack answered within 2 s · retrying every 2 s <span class="n">6</span></div>
+<div class="tb"><span class="in" style="flex:1"><span class="muted">Filter stacks and services</span></span><span class="btn">Refresh Stacks</span></div>
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div>? unknown · did not answer within 2 s · last seen 17:03 · PID 4121</div>
 <div class="sd-act">If its devhost process is paused, run fg in its terminal; if it ended, devhost start in ~/acme starts it again and devhost stop there stops what it left running.</div>
-<div class="sd-act"><code>devhost start</code><span class="btn">Copy</span><code>devhost stop</code><span class="btn">Copy</span></div>
+<div class="sd-act"><code>cd ~/acme &amp;&amp; devhost start</code><span class="btn">Copy</span><code>cd ~/acme &amp;&amp; devhost stop</code><span class="btn">Copy</span></div>
 </div>
 <div class="sd-grp">Stopped recently · 1</div>
 <div class="muted">… Blog, as step 3 draws it</div>
@@ -293,24 +317,24 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <div class="win">
 <div class="bar"><b>https://devhost.acme.test/</b><span>one file in devhost's stack records does not parse</span></div>
 <div class="sd-pg">
-<div class="sd-h">Stacks on this machine</div>
-<div class="banner bad">The stack record broken.json could not be read: it is not a devhost stack record. Remove it if no stack uses it: devhost start also refuses to run while it is there. <span class="btn">Copy Error</span> <span class="n">8</span></div>
+<div class="sd-h">Stacks on devbox</div>
+<div class="banner bad">✕ The stack record broken.json could not be read: it is not a devhost stack record. Remove it if no stack uses it: devhost start also refuses to run while it is there. <span class="btn">Copy Error</span> <span class="n">8</span></div>
 <div class="sd-grp">Running · 2</div>
 <div class="muted">… Acme Shop and Blog, listed as usual</div>
 </div>
 </div>
 </div>
 <div class="cap"><h2>4. Keep the view current</h2>
-<p>Each stack is still asked over loopback with a 2 s deadline, in parallel, so one busy stack never holds the others up. What changes is that the page keeps asking while it is visible, through <code>GET /stacks.json</code> on the directory hostname, and updates every card, row, summary, total and the title in place, without a reload. A stack that starts appears in its group, one that stops moves to "Stopped recently" with its reason, one that <code>devhost stack replace</code> replaced keeps its card with the new PID and "replaced at 14:12", each announced once (<code>ACT-12</code>, <code>ACT-3</code>, <code>ACT-10</code>).</p>
-<ol><li><span class="n">1</span> Within 4 s of the kill the row reads its signal and status, the summary, totals and title follow, and Acme Shop moves to "Needs you" once focus is outside its card: a focused card keeps its place until focus leaves it. The page reads every 2 s after the previous read ended, never overlapping, nothing while the tab is hidden and at once when it shows. The page's one announcer says "Acme Shop: reports terminated by SIGTERM" once, in its assertive region; changes that start or end a need of the person are announced once per stack, reports within one second merge, and ticking times are never announced (<code>ACT-12</code>, <code>FB-9</code>, <code>KEY-6</code>, <code>ACT-7</code>).</li>
-<li><span class="n">2</span> <b>Refresh Stacks</b> reads every stack at once: it keeps focus while busy, "Refreshing Stacks…" with <code>aria-busy</code>, then the status line reads "Updated 21:53:38"; it is never a side effect of filtering (<code>SEL-10</code>, <code>FB-1</code>, <code>FB-2</code>, <code>KEY-11</code>, <code>WORD-4</code>).</li>
-<li><span class="n">3</span> A stack that does not answer within 2 s keeps its last known rows drawn as unknown, never stopped or failed, with <b>Copy Error</b> holding the original error, never Go's error text on the card, and the totals count it, "1 unknown". The directory lists a stack only while its devhost process runs, so the card says how to resume a paused one: <code>fg</code> in its terminal, or the debugger. Such a stack never holds the page: Caddy's health checks skip it within about 3 s and another running stack serves the page. After <code>fg</code> it is live again at the next read; the announcer says once that it stopped answering and once that it answers again (<code>ACT-5</code>, <code>STATE-3</code>, <code>STATE-4</code>, <code>ACT-11</code>, <code>WORD-6</code>, <code>FB-9</code>; the <code>MENU-5</code> exception of step 6).</li>
+<p>Each stack is still asked over loopback with a 2 s deadline, in parallel, so one busy stack never holds the others up. What changes is that the page keeps asking while it is visible, through <code>GET /stacks.json</code> on the directory hostname, and updates every card, row, summary, total and the title in place, without a reload. A stack that starts appears in its group, one that stops moves to "Stopped recently" with its reason, one that <code>devhost stack restart</code>, <code>devhost restart-all</code> or <code>devhost upgrade</code> replaced keeps its card with the new PID and "replaced by devhost stack restart at 14:12", each announced once (<code>ACT-12</code>, <code>ACT-3</code>, <code>ACT-10</code>, <code>O18</code>).</p>
+<ol><li><span class="n">1</span> <b>Refresh Stacks</b> reads every stack at once: it keeps focus while busy, "Refreshing Stacks…" with <code>aria-busy</code>, then the status line reads "Updated 21:53:38"; it is never a side effect of filtering (<code>SEL-10</code>, <code>FB-1</code>, <code>FB-2</code>, <code>KEY-11</code>, <code>WORD-4</code>).</li>
+<li><span class="n">2</span> Within 4 s of the kill the row reads its signal and status, the summary, totals and title follow, and Acme Shop moves to "Needs you" once focus is outside its card: a focused card keeps its place until focus leaves it. The page reads every 2 s after the previous read ended, never overlapping, nothing while the tab is hidden and at once when it shows. The page's one announcer says "Acme Shop: reports terminated by SIGTERM" once, in its assertive region; changes that start or end a need of the person are announced once per stack, reports within one second merge, and ticking times are never announced (<code>ACT-12</code>, <code>FB-9</code>, <code>KEY-6</code>, <code>ACT-7</code>).</li>
+<li><span class="n">3</span> A stack that does not answer within 2 s keeps its last known rows drawn as unknown, never stopped or failed, with <b>Copy Error</b> holding the original error, never the raw error text on the card, and the totals count it, "1 unknown". The directory lists a stack only while its devhost process runs, so the card says how to resume a paused one: <code>fg</code> in its terminal, or the debugger. Such a stack never holds the page: Caddy's health checks skip it within about 3 s and another running stack serves the page. After <code>fg</code> it is live again at the next read; the announcer says once that it stopped answering and once that it answers again (<code>ACT-5</code>, <code>STATE-3</code>, <code>STATE-4</code>, <code>ACT-11</code>, <code>WORD-6</code>, <code>FB-9</code>; the <code>MENU-5</code> exception of step 6).</li>
 <li><span class="n">4</span> When no read succeeds, one status sentence gives the age of what the page shows and its cause, or that the directory moved, with its new address, which proxy-settings words. The page keeps asking every 2 s while visible, <b>Refresh Stacks</b> asks at once and keeps focus, and the first read that succeeds draws the live directory in place; the announcer says once that the condition started and once that it ended, "Stacks answer again · 2 stacks" (<code>STATE-4</code>, <code>ACT-5</code>, <code>HOLD-2</code>, <code>FB-9</code>).</li>
-<li><span class="n">5</span> A page load while no stack answers, after a crash, a kill or with every stack's devhost process paused, gets devhost's directory with status 503, never one line of plain text: Caddy's error handler serves the page devhost last wrote, with the stacks registered then, each unknown with when it was last seen, its PID, how to resume a paused devhost process and its two commands, and the stacks that stopped recently. It retries as above and draws the live directory within 4 s after a stack answers. The next devhost command that finds a stack's devhost process gone, <code>devhost stack list</code> included, writes its stopped-stack record and rewrites the directory without its control port, so later loads answer at once with it under "Stopped recently" (<code>STATE-4</code>, <code>FAIL-2</code>, <code>ACT-10</code>, <code>ACT-11</code>, <code>O15</code>).</li>
-<li><span class="n">6</span> That page's title starts "No stack answered", and its heading comes before the status code in reading order (<code>O16</code>, <code>FB-9</code>).</li>
+<li><span class="n">5</span> That page's title starts "No stack answered", and its heading comes before the status code in reading order (<code>O16</code>, <code>FB-9</code>).</li>
+<li><span class="n">6</span> A page load while no stack answers, after a crash, a kill or with every stack's devhost process paused, gets devhost's directory with status 503, never one line of plain text: Caddy's error handler serves the page devhost last wrote, with the stacks registered then, each unknown with when it was last seen, its PID, how to resume a paused devhost process and its two commands, and the stacks that stopped recently. It retries as above and draws the live directory within 4 s after a stack answers. The next devhost command that finds a stack's devhost process gone, <code>devhost stack list</code> included, writes its stopped-stack record and rewrites the directory without its control port, so later loads answer at once with it under "Stopped recently" (<code>STATE-4</code>, <code>FAIL-2</code>, <code>ACT-10</code>, <code>ACT-11</code>, <code>O15</code>).</li>
 <li><span class="n">7</span> A <code>fetch</code>, a script or an agent's <code>curl</code> gets 503 with <code>Retry-After: 2</code> and one line under 2 KB, never the page; the page's own <code>/stacks.json</code> gets the static data with 503 (<code>FB-11</code>, <code>SURF-16</code>).</li>
-<li><span class="n">8</span> A stack record devhost cannot read is named in plain words above the groups, and the directory still lists every stack it can read; <b>Copy Error</b> holds Go's error and the file's full path, neither shown on the page, and an unreadable file reads "devhost is not allowed to read it. Make it readable, or remove it if no stack uses it." The condition is announced once when it appears (<code>STATE-4</code>, <code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-07, stack-directory-10, stack-directory-11 · Backend: <code>GET /stacks.json</code> beside <code>/</code>, under the same guard (Backend 5, <code>CC-27</code>); the static page and data with each registered stack, Caddy's 503 error handler, a reader that names the records it cannot read, the re-render that drops a dead stack's control port, health checks on the proxy hop with a response timeout longer than the 2 s per-stack wait and a retry on the next stack, and a stack that does not answer reported as unknown with its PID (Backend 12)</p></div>
+<li><span class="n">8</span> A stack record devhost cannot read is named in plain words above the groups, and the directory still lists every stack it can read; <b>Copy Error</b> holds the original error and the file's full path, neither shown on the page, and an unreadable file reads "devhost is not allowed to read it. Make it readable, or remove it if no stack uses it." The condition is announced once when it appears (<code>STATE-4</code>, <code>FAIL-2</code>, <code>WORD-7</code>, <code>WORD-8</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-07, stack-directory-10, stack-directory-11 · Backend: <code>GET /stacks.json</code> beside <code>/</code> (Backend 5, <code>CC-27</code>); the static page and data with each registered stack, Caddy's 503 error handler, a reader that names the records it cannot read, the re-render that drops a dead stack's control port, health checks on the proxy hop with a response timeout longer than the 2 s per-stack wait and a retry on the next stack, and a stack that does not answer reported as unknown with its PID (Backend 12)</p></div>
 </section>
 
 <section class="step" id="filter">
@@ -318,14 +342,14 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <div class="win">
 <div class="bar"><b>https://devhost.acme.test/?q=search</b><span>"search" typed, no Enter</span></div>
 <div class="sd-pg">
-<div class="sd-h">Stacks on this machine</div>
+<div class="sd-h">Stacks on devbox</div>
 <div class="sd-line"><b>2 stacks</b></div>
-<div class="tb" style="margin-top:6px"><span class="in focusring" style="flex:1">search</span><span class="btn">Refresh Stacks</span><span class="n">1</span></div>
-<div class="sd-grp">Running · 1 of 2 <span class="n">3</span></div>
+<div class="tb" style="margin-top:6px"><span class="in focusring" style="flex:1">search</span><span class="n">1</span><span class="btn">Refresh Stacks</span></div>
+<div class="sd-grp">Running · 1 of 2 <span class="n">2</span></div>
 <div class="sd-card">
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div>● running · 6 of 6 running</div>
-<div class="sd-svc"><span>◇ <span class="sd-hit">search</span></span><span>reachable · GET <span class="sd-hit">search</span>.acme.test/health · checked 17:15:02 · runs outside devhost <span class="n">2</span></span></div>
+<div class="sd-svc"><span>◇ <span class="sd-hit">search</span></span><span>reachable · GET <span class="sd-hit">search</span>.acme.test/health · checked 17:15:02 · runs outside devhost <span class="n">3</span></span></div>
 <div class="muted">5 more services hidden by the filter</div>
 </div>
 </div>
@@ -337,14 +361,22 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <div class="sd-act">No stack or service matches "serch" <span class="btn">Clear Filter</span> <span class="n">4</span></div>
 </div>
 </div>
+<div class="win">
+<div class="bar"><b>https://devhost.acme.test/</b><span>a mistyped hostname pasted after the browser's TLS error</span></div>
+<div class="sd-pg">
+<div class="tb"><span class="in" style="flex:1">hotfix-shpo.shop.acme.test/checkout?step=2</span><span class="btn">Refresh Stacks</span></div>
+<div class="sd-act">No stack or service matches "hotfix-shpo.shop.acme.test/checkout?step=2" · <a>Did you mean hotfix-shop.shop.acme.test/checkout?</a> <span style="white-space:nowrap"><span class="btn">Clear Filter</span> <span class="n">5</span></span></div>
+</div>
+</div>
 </div>
 <div class="cap"><h2>5. Filter as you type</h2>
 <p>The filter keeps its place above the cards, and a saved link with <code>?q=</code> keeps working. What changes is that it filters the cards on the page as the person types, with no form, no reload and no request; today it waits for Enter, reloads the whole page through every stack and returns whole stacks unmarked. Keys: the field keeps its own keys; Escape clears it as a search field does, Enter does nothing more, and no key typed in it reaches anything but the field (<code>KEY-9</code>, <code>KEY-1</code>, <code>KEY-5</code>).</p>
 <ol><li><span class="n">1</span> The field "Filter stacks and services" narrows the cards at once; the query is kept in the page's address as <code>?q=</code> without a reload, so a reload or a shared link keeps it, and once typing pauses the announcer says the number of matches politely, "1 stack matches "search"" (<code>SEL-10</code>, <code>FB-9</code>).</li>
-<li><span class="n">2</span> It matches stack name, checkout label (branch, commit ID prefix and path), service names and hostnames, ignoring case, never a manifest file's or the devhost config file's path. A stack whose name or checkout matches keeps every row; any other stack keeps only its matching rows, with one line for the rest. The matched text is highlighted, underlined in this drawing (<code>SEL-10</code>, <code>BAR-3</code>, <code>WORD-5</code>).</li>
-<li><span class="n">3</span> Each group header counts what it shows, "Running · 1 of 2", while the totals line keeps counting the whole machine (<code>SEL-10</code>, <code>WORD-5</code>).</li>
-<li><span class="n">4</span> No match names the query, with <b>Clear Filter</b>, which empties the field and returns focus to it; it replaces today's "Clear filter" and "Show all stacks" (<code>STATE-2</code>, <code>WORD-2</code>, <code>KEY-6</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-07 · Backend: the server stops filtering; the page reads <code>?q=</code> into its field (Backend 6)</p></div>
+<li><span class="n">2</span> Each group header counts what it shows, "Running · 1 of 2", while the totals line keeps counting the whole machine (<code>SEL-10</code>, <code>WORD-5</code>).</li>
+<li><span class="n">3</span> It matches stack name, worktree label (branch, commit ID prefix and path), service names and hostnames, and a serve session's folder, target address, session name and command, ignoring case, never a manifest file's or the devhost config file's path. A stack whose name or worktree matches keeps every row; any other stack keeps only its matching rows, with one line for the rest. The matched text is highlighted, underlined in this drawing (<code>SEL-10</code>, <code>BAR-3</code>, <code>WORD-5</code>).</li>
+<li><span class="n">4</span> No match names the query, with <b>Clear Filter</b>, which empties the field and returns focus to it; it replaces today's "Clear filter" and "Show all stacks" (<code>STATE-2</code>, <code>WORD-2</code>, <code>KEY-6</code>).</li>
+<li><span class="n">5</span> A query with a dot that matches nothing offers up to three close running hostnames by <code>O46</code>'s rule, each a link that keeps the path and query typed after it. Over HTTPS a mistyped hostname gets no certificate and the browser shows its own error, so this is where that typo recovers; a hostname of a stack that stopped recently matches its card under "Stopped recently" instead of a neighbour (<code>SEL-10</code>, <code>O46</code>, <code>O63</code>, <code>CC-27</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-04, stack-directory-07 · Backend: the server stops filtering; the page reads <code>?q=</code> into its field and runs the shared close-hostname matcher (Backend 6)</p></div>
 </section>
 
 <section class="step" id="open">
@@ -356,46 +388,47 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div class="sd-svc"><span>✕ reports</span><span>exited with code 3 at 17:15<span class="sd-rt"><a>https://reports.shop.acme.test/ · status page</a> <span class="n">1</span></span><span class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn">Copy</span><span class="n">2</span></span></span></div>
 <div class="sd-svc dim"><span>○ admin</span><span>not started · left out of this run<span class="sd-act">Start it on its status page, or run <code>devhost service start admin</code><span class="btn">Copy</span></span></span></div>
-<div class="sd-svc"><span>◇ search</span><span>not reachable · GET search.acme.test/health · checked 17:15:02 · runs outside devhost<span class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span class="btn focusring">Checking search…</span><span class="n">3</span></span></span></div>
+<div class="sd-svc"><span>◇ search</span><span>not reachable · GET search.acme.test/health · checked 17:15:02 · runs outside devhost<span class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span style="white-space:nowrap"><span class="btn focusring">Checking search…</span><span class="n">3</span></span></span></span></div>
 <div class="sd-svc"><span>◐ api</span><span>starting · health check 4 s of 60 s <span class="n">4</span></span></div>
 </div>
 <div class="vlab">Once search answers again</div>
 <div class="sd-svc"><span>◇ search</span><span>reachable · GET search.acme.test/health · checked 17:16:40 · runs outside devhost</span></div>
 <div class="vlab">When the browser refuses the clipboard</div>
-<div class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn focusring">Copy</span><span class="banner bad" style="margin:0">Could not copy: the browser did not allow clipboard access</span><span class="n">5</span></div>
-<div class="vlab">Read from another machine, with stackDirectoryAllowRemote on</div>
-<div class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span class="btn off">Check Again</span><span class="muted">Check Again works only on this machine</span><span class="n">6</span></div>
+<div class="sd-act">Restart it on its status page, or run <code>devhost service restart reports</code><span class="btn focusring">Copy</span><span class="banner bad" style="margin:0">✕ Could not copy: the browser did not allow clipboard access</span><span class="n">5</span></div>
+<div class="vlab">Read by a browser that stackDirectoryAllowRemote alone admits</div>
+<div class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span class="btn off">Check Again</span><span class="muted">Sign in with passkey or pair this browser to check stacks from here</span><span style="white-space:nowrap"><span class="btn">Sign In with Passkey</span><span class="n">6</span></span></div>
+<div class="sd-act muted">1 agent waiting · Sign in with passkey or pair this browser to see which</div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>https://reports.shop.acme.test/</b><span>after the reports link: startup-and-recovery's status page</span></div>
 <div class="sd-pg">
 <div class="sd-h">✕ reports exited with code 3 at 17:15</div>
-<div class="sd-act"><span class="btn">Restart reports</span><a>All Stacks on This Machine</a></div>
+<div class="sd-act"><span class="btn pri">Restart reports</span><a>All Stacks on devbox</a></div>
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://shop.acme.test/</b><span>one activation of the waiting agent's link: a page of Acme Shop, chat docked on the decision card</span></div>
+<div class="bar"><b>https://shop.acme.test/</b><span>one activation of the waiting agent's link, through agent-chat's chat/open: a page of Acme Shop, chat docked on the decision card</span></div>
 <div class="sd-land">
 <div class="pg"><div class="apptxt">Acme Shop · storefront …</div></div>
 <div class="dock"><h3>Fix the nav</h3>
 <div class="box"><b>Edit src/header.tsx?</b>
-<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span><span class="n">7</span></div></div>
+<div class="row" style="margin-top:4px"><span class="muted">▸ Details</span><span class="sp"></span><span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span><span class="n">7</span></div></div>
 </div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the directory stays read-only with links (<code>O10</code>), so this proposal records an exception to <code>MENU-5</code>: each state's lead action is a link to the page that performs it plus the same action's terminal command with <b>Copy</b>, and only <b>Check Again</b> runs in place; <code>MENU-5</code> has a recovery surface offer the action itself. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap"><div class="banner">Open conflict: the directory stays read-only with links (<code>O10</code>, decided), so this proposal records an exception to <code>MENU-5</code>: each state's lead action is a link to the page that performs it plus the same action's terminal command with <b>Copy</b>, and only <b>Check Again</b> runs in place; <code>MENU-5</code> has a recovery surface offer the action itself and has no row for a stack whose devhost process does not answer, nor for the exited row's Edit and logs, which the linked status page holds. <a href="index.html#conflicts">See conflicts</a></div>
 <h2>6. Open a service, or the page that fixes it</h2>
 <p>Route links still open in the same tab, and the directory still starts, restarts, stops and switches nothing, so no control on it asks or waits for another operation (<code>O10</code>, <code>REV-1</code>). What changes is that every state it draws has its way forward one step away. Being read-only, it never acts on what it shows: a link reaches the hostname, which answers with its current state, and <b>Copy</b> copies the command from the latest read (<code>REV-13</code>).</p>
 <ol><li><span class="n">1</span> A route of a service that is not running opens devhost's status page for it, which leads with that cause's action, here <b>Restart reports</b>; a route of a running service opens the app (<code>SURF-15</code>, <code>MENU-5</code>).</li>
 <li><span class="n">2</span> Each state's lead action as text with its terminal command and <b>Copy</b>: exited or failed, "Restart it on its status page, or run …"; not started, "Start it on its status page, or run …"; stopped recently, the start command (step 3); a blocked repository, the way back on its status page with <b>Check Again</b>, and no command, because a switch has none (<code>MENU-5</code>, <code>MENU-6</code>, <code>CC-11</code>, <code>HOLD-4</code>). <b>Copy</b> keeps focus and says "Copied devhost service restart reports" once through the announcer; once reports runs again, the next read removes its command (<code>KEY-11</code>, <code>FB-9</code>).</li>
-<li><span class="n">3</span> <b>Check Again</b> keeps focus while busy, "Checking search…", and its result replaces the row's state and time; on a blocked repository it reads that stack's checkout list again and stops nothing (<code>ACT-9</code>, <code>HOLD-1</code>, <code>HOLD-4</code>, <code>KEY-11</code>).</li>
+<li><span class="n">3</span> <b>Check Again</b> keeps focus while busy, "Checking search…", and its result replaces the row's state and time; on a blocked repository it reads that stack's worktree list again and stops nothing (<code>ACT-9</code>, <code>HOLD-1</code>, <code>HOLD-4</code>, <code>KEY-11</code>).</li>
 <li><span class="n">4</span> Starting, restarting, stopping and switching offer no action: the row shows its progress (<code>MENU-5</code>).</li>
-<li><span class="n">5</span> When the browser refuses the clipboard, the failure stays beside <b>Copy</b> and the command stays as selectable text (<code>FAIL-2</code>, <code>WORD-7</code>).</li>
-<li><span class="n">6</span> Read from another machine, <b>Check Again</b> is unavailable, with its reason beside it and as its accessible description (<code>MENU-3</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">7</span> The waiting agent's link opens a page of its stack in the same tab, with docked chat on that conversation's decision card, in one activation; the app's URL keeps no parameter or fragment of devhost's, and the conversations of every checkout of the stack are listed, the configured checkout first. devhost never answers for the person, and the directory cannot (<code>ACT-6</code>, <code>REV-9</code>, <code>SURF-8</code>, <code>CC-38</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-02, stack-directory-08, stack-directory-09 · Backend: [discuss] Check Again as <code>GET /stacks.json?check=&lt;stack&gt;</code>, from this machine only until decided (Backend 10); [discuss] agent-chat's link to a waiting conversation (Backend 3)</p></div>
+<li><span class="n">5</span> When the browser refuses the clipboard, the failure stays under <b>Copy</b> and the command stays as selectable text (<code>FAIL-2</code>, <code>WORD-7</code>).</li>
+<li><span class="n">6</span> This machine and a browser signed in with the devhost passkey or paired press <b>Check Again</b>. A reader that <code>stackDirectoryAllowRemote</code> alone admits sees it unavailable, with its reason beside it and as its accessible description, and <b>Sign In with Passkey</b> when the passkey is set up for this domain; waiting agents are the agents list's data, so that reader sees only their count (<code>O47</code>, <code>O36</code>, <code>HOLD-7</code>, <code>MENU-3</code>, <code>HOLD-1</code>).</li>
+<li><span class="n">7</span> The waiting agent's link is agent-chat's <code>/__devhost__/chat/open?session=&lt;id&gt;</code> on the stack's hostname: it opens a page of its stack in the same tab, with docked chat on that conversation's decision card, in one activation; the app's URL keeps no parameter or fragment of devhost's, and the conversations of every worktree of the stack are listed, the configured worktree first. devhost never answers for the person, and the directory cannot (<code>ACT-6</code>, <code>REV-9</code>, <code>SURF-8</code>, <code>CC-38</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-02, stack-directory-08, stack-directory-09, stack-directory-11 · Backend: Check Again as <code>GET /stacks.json?check=&lt;stack&gt;</code> beside services-panel's check route in <code>CC-37</code> (Backend 10); waiting agents with agent-chat's link, counted only for readers <code>O36</code> does not admit (Backend 3)</p></div>
 </section>
 
 <section class="step" id="config">
@@ -407,7 +440,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 <div class="sd-ch"><b>Acme Shop</b><span>· main ~/acme</span></div>
 <div>● running · 6 of 6 running</div>
 <div class="banner" style="margin:4px 0">devhost.toml not applied · rejected at 17:12 · line 42: expected ']' · the stack runs the accepted manifest <span class="n">1</span></div>
-<div class="sd-act">Configuration · 2 files ▾ <span class="n">2</span></div>
+<div class="sd-act"><span class="btn">Configuration · 2 files ▾</span> <span class="n">2</span></div>
 <div class="box">
 <div class="sd-act"><b>Root manifest · devhost.toml</b><span>Not applied · rejected at 17:12 · line 42: expected ']' · the stack runs the accepted manifest</span><span class="n">3</span></div>
 <div class="sd-act">◉ Running version ○ Version on disk <span class="n">4</span></div>
@@ -415,7 +448,7 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 41  # background jobs
 42≠ [services.worker]
 43  command = "bun run worker"</pre>
-<div class="sd-act"><span class="btn">Open in Editor</span><span class="btn">Copy</span><span class="n">5</span></div>
+<div class="sd-act"><code>devhost.toml:42</code><span class="btn">Copy</span><span class="n">5</span></div>
 </div>
 <div class="sd-act">▸ <b>Included manifest file · services/api.toml</b><span>Applied 17:03</span></div>
 </div>
@@ -423,42 +456,58 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://devhost.acme.test/</b><span>the same file and other cards</span></div>
+<div class="bar"><b>https://devhost.acme.test/</b><span>the same file, and serve-folder's serve session cards</span></div>
 <div class="sd-pg">
 <div class="vlab">Version on disk chosen</div>
-<pre class="sd-code">42≠ [services.worker    ▲ line 42: expected ']'</pre>
-<div class="vlab">Read from another machine</div>
-<div class="sd-act"><span class="btn off">Open in Editor</span><span class="muted">Open in Editor works only on this machine</span><span class="btn">Copy</span><span class="n">7</span></div>
-<div class="vlab">A serve session</div>
-<div class="sd-card"><div class="sd-ch"><b>Serve session · ~/acme/docs</b></div><div>● running · 1 of 1 running</div><div class="muted">A serve session has no manifest. <span class="n">8</span></div></div>
+<pre class="sd-code">42≠ [services.worker    ← line 42: expected ']'</pre>
+<div class="vlab">A manifest stack with one file</div>
+<div class="sd-act"><span class="btn">Configuration · 1 file ▸</span></div>
+<div class="vlab">Serve sessions, as serve-folder draws them <span class="n">7</span></div>
+<div class="box">
+<div class="row"><b>~/acme/docs</b><span class="chip">Serve session · folder</span></div>
+<div><a>https://notes.acme.test/ ↗</a> · ● running</div>
+<div class="fld"><span>Configuration</span><span>None: the serve session for ~/acme/docs reads no devhost.toml</span></div>
+<div class="muted">Stop it with Ctrl-C in its terminal · PID 48800 · started 15:50</div>
+</div>
+<div class="box">
+<div class="row"><b>127.0.0.1:3000</b><span class="chip">Serve session · port</span></div>
+<div><a>https://app.acme.test/ ↗</a> · ◇ not reachable · TCP port 3000 · checked 14:05 · runs outside devhost</div>
+<div class="fld"><span>Configuration</span><span>None: the serve session for 127.0.0.1:3000 reads no devhost.toml</span></div>
+<div class="muted">Stop it with Ctrl-C in its terminal · PID 48812 · started 15:51</div>
+</div>
+<div class="box">
+<div class="row"><b>demoapp</b><span class="chip">Serve session · command</span></div>
+<div>Command: <code>bun run dev</code> · ● running · PID 48820</div>
+<div><a>https://demoapp.acme.test/ ↗</a> (4001) · <a>https://demoapp-4002.acme.test/ ↗</a> (4002)</div>
+<div class="fld"><span>Configuration</span><span>None: command session (reads no devhost.toml)</span></div>
+<div class="sd-act">Stop: <code>devhost stop --session demoapp</code><span class="btn">Copy</span> <span class="muted">· started 15:52</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: this proposal titles a serve session's card "Serve session · ~/acme/docs" and leaves <b>Configuration</b> out; serve-folder's proposal titles it by its folder with "Serve session · folder" beside it and keeps <b>Configuration</b> for the devhost config file the session reads. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>7. Read a stack's configuration</h2>
+</div>
+<div class="cap"><h2>7. Read a stack's configuration</h2>
 <p>Configuration files stay read-only, and the directory writes nothing. What changes is that each file says whether the stack runs it: today every card shows the files on disk under the caveat "Current files on disk. Rejected edits can differ from the running configuration.", which goes. Keys: the disclosure buttons, the version choice, a radio group, and the file's text, a scrollable region, are reached by Tab in reading order (<code>KEY-10</code>).</p>
 <ol><li><span class="n">1</span> A file not applied is a condition on the card, from the rejection's structured error; the stack keeps running the accepted manifest, and nothing on the page is blocked by it (<code>ACT-7</code>, <code>HOLD-6</code>, <code>UNDO-6</code>).</li>
-<li><span class="n">2</span> <b>Configuration · 2 files</b> lists the stack's manifest files, each named by its kind and its path relative to the root manifest's folder (<code>WORD-1</code>).</li>
+<li><span class="n">2</span> <b>Configuration · 2 files</b> is a button with a visible boundary of at least 3:1, at least 24 CSS pixels tall, and lists the stack's manifest files, each named by its kind and its path relative to the root manifest's folder; one file reads "1 file" (<code>WORD-1</code>, <code>WORD-5</code>, <code>SURF-9</code>).</li>
 <li><span class="n">3</span> Each file states whether the stack runs it: "Applied 17:03", or not applied with when, the line and the message (<code>MENU-4</code>, <code>UNDO-6</code>).</li>
 <li><span class="n">4</span> A file that was not applied opens on "Running version", what the stack runs, with "Version on disk" the other of two choices; the lines that differ are marked in both (≠ in this drawing) and the rejected line in the version on disk; the text shows with line numbers (<code>UNDO-6</code>).</li>
-<li><span class="n">5</span> <b>Open in Editor</b> opens the file at the rejected line through component-source's shared editor hand-off; <b>Copy</b> copies "devhost.toml:42". With no editor set for the stack, <b>Open in Editor</b> is absent and the section says once how to set one (<code>MENU-4</code>, <code>MENU-3</code>, <code>SURF-15</code>).</li>
+<li><span class="n">5</span> Each file shows its path with the line and <b>Copy</b>, which copies exactly "devhost.toml:42"; devhost opens no editor (<code>O51</code>, <code>MENU-4</code>, <code>SURF-15</code>).</li>
 <li><span class="n">6</span> The devhost config file, which every stack shares, is listed once at the foot of the page, never on every card; when not applied, it shows its rejection there (<code>WORD-1</code>, <code>HOLD-6</code>).</li>
-<li><span class="n">7</span> Read from another machine, <b>Open in Editor</b> is unavailable with its reason beside it and as its accessible description, because the editor would open on the reader's machine (<code>MENU-3</code>, <code>HOLD-1</code>).</li>
-<li><span class="n">8</span> A serve session is named by its folder or port, never by a stack name devhost invented; it has no manifest files, so <b>Configuration</b> is absent and the card says so once (<code>WORD-1</code>, <code>MENU-3</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-05 · Backend: each file's applied state, the accepted text while it differs and the structured error (Backend 4); the stack's editor for Open in Editor (Backend 11, <code>CC-39</code>)</p></div>
+<li><span class="n">7</span> A serve session uses serve-folder's card: titled by its folder, target address or session name, its kind beside the title, a command session's command with its discovered URLs and ports under it, and Configuration reading that it reads no devhost.toml; no serve card reads <code>External</code> for a server devhost runs, a Directory line or "Manifest-free file or port session". A detached session reads "Stop: devhost stop --session demoapp" with <b>Copy</b>, a foreground one "Stop it with Ctrl-C in its terminal" (<code>WORD-1</code>, <code>MENU-6</code>, <code>ACT-9</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-05, serve-command-06, serve-command-10 · Backend: each file's applied state, the accepted text while it differs and the structured error (Backend 4); serve-folder's <code>sessionKind</code> and <code>command</code> in each snapshot (Backend 2)</p></div>
 </section>
 
 <section class="step" id="no-route">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>https://hotfix-shpo.shop.acme.test/checkout?step=2</b><span>devhost's own page, status 404</span></div>
+<div class="bar"><b>http://hotfix-shpo.shop.acme.test/checkout?step=2</b><span>plain HTTP on (httpEnabled = true): devhost's own page, status 404</span></div>
 <div class="sd-pg">
 <div class="sd-h">No devhost route for hotfix-shpo.shop.acme.test/checkout <span class="n">1</span></div>
 <div class="muted">404</div>
 <div class="sd-line"><a>Did you mean hotfix-shop.shop.acme.test/checkout?</a> <span class="n">2</span></div>
-<div class="sd-line"><a>All Stacks on This Machine</a> <span class="n">3</span></div>
+<div class="sd-line"><a>All Stacks on devbox</a> <span class="n">3</span></div>
 <div class="sd-line">If it belongs to a stack that is not running, start that stack with devhost start in its folder. <span class="n">4</span></div>
-<div class="sd-grp" style="margin-top:6px">Hostnames on this machine <span class="n">5</span></div>
+<div class="sd-grp" style="margin-top:6px">Hostnames on devbox <span class="n">5</span></div>
 <div class="sd-line"><b>Acme Shop · main ~/acme</b></div>
 <div class="sd-line"><a>shop.acme.test</a> · web</div>
 <div class="sd-line"><a>shop.acme.test/api</a> · api</div>
@@ -468,36 +517,94 @@ No running stack answered within 2 s. Run devhost stack list to see what runs. <
 </div>
 </div>
 <div class="win">
-<div class="bar"><b>https://hotfix-shpo.shop.acme.test/checkout</b><span>other states of the same page</span></div>
+<div class="bar"><b>http://hotfix-shpo.shop.acme.test/checkout</b><span>other states of the same page</span></div>
 <div class="sd-pg">
 <div class="vlab">No route on the machine</div>
-<div class="sd-h">No stack is running on this machine. Start one with devhost start in its folder. <span class="n">6</span></div>
-<div class="sd-line"><a>All Stacks on This Machine</a></div>
+<div class="sd-h">No stacks are running on devbox. Start one with devhost start in its folder. <span class="n">6</span></div>
+<div class="sd-line"><a>All Stacks on devbox</a></div>
 <div class="vlab">While this machine does not trust devhost's certificate authority</div>
-<div class="banner">◆ This machine does not trust devhost's local certificate authority, … then reload. <span class="btn">Copy</span> <span class="n">7</span></div>
+<div class="banner">◆ devbox does not trust devhost's local certificate authority, so browsers warn on each devhost hostname and block a page's requests to another one. On devbox, run <code>devhost caddy trust</code> in a terminal, then reload; on another Mac, run <code>devhost caddy trust-remote</code> with devbox's SSH name there. <span class="n">7</span></div>
 <div class="sd-h">No devhost route for hotfix-shpo.shop.acme.test/checkout</div>
+<div class="vlab">The same typo over HTTPS</div>
+<div class="sd-line muted">https://hotfix-shpo.shop.acme.test/ · the browser's own connection error: Caddy issues no certificate for a hostname nobody configured <span class="n">8</span></div>
+<div class="vlab">http://blog.acme.test/ two hours after Blog stopped: only its HTTPS route is kept</div>
+<div class="sd-h">blog.acme.test belongs to Blog, stopped at 14:10 by devhost stop <span class="n">9</span></div>
+<div class="sd-act">Start it again in ~/blog with <code>cd ~/blog &amp;&amp; devhost start</code><span class="btn">Copy</span></div>
+<div class="sd-line"><a>All Stacks on devbox</a></div>
 </div>
 </div>
 <div class="win">
 <div class="bar"><b>Terminal › ~/acme</b><span>requests that are not page loads, before or after any route exists</span></div>
-<pre class="term">$ curl -s https://hotfix-shpo.shop.acme.test/api/items
-No devhost route for hotfix-shpo.shop.acme.test. Did you mean hotfix-shop.shop.acme.test? <span class="n">8</span>
-$ curl -s -H 'Accept: application/json' https://hotfix-shpo.shop.acme.test/api/items
-{"error":"…","host":"hotfix-shpo.shop.acme.test","closeHostnames":["hotfix-shop.shop.acme.test"]}</pre>
+<pre class="term">$ curl -s http://hotfix-shpo.shop.acme.test/api/items
+No devhost route for hotfix-shpo.shop.acme.test. Every routed hostname: https://devhost.acme.test/ <span class="n">10</span>
+$ curl -s -H 'Accept: application/json' http://hotfix-shpo.shop.acme.test/api/items
+{"error":"no-route","host":"hotfix-shpo.shop.acme.test","directory":"https://devhost.acme.test/"}</pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference has no product decision for what counts as a close hostname; within two edits of a routed hostname, at most three offered, closest first, is this proposal's recommendation, for the product owner to settle. <a href="index.html#conflicts">See conflicts</a></div>
-<h2>8. Recover from a hostname with no route</h2>
-<p>A page load of a hostname no live stack routes still gets devhost's own page with status 404, never an app's, listing only hostnames with a live route, each a working link. What changes is that it names what was asked for and leads with the way there; today it never names the hostname and lists every hostname A to Z under "Active hostnames". A hostname whose stack stopped within <code>O15</code>'s 24 hours never reaches this page: stack-run-stop's stopped-stack page answers it (<code>SURF-16</code>, <code>ACT-10</code>, <code>CC-27</code>). Keys: the document's standard keys (<code>KEY-1</code>).</p>
+<div class="cap"><h2>8. Recover from a hostname with no route</h2>
+<p>A page load of a hostname no live stack routes still gets devhost's own page with status 404 on plain HTTP, never an app's, listing only hostnames with a live route, each a working link. What changes is that it names what was asked for and leads with the way there; today it never names the hostname and lists every hostname A to Z under "Active hostnames". Over HTTPS a hostname whose stack stopped within <code>O15</code>'s 24 hours never reaches this page: its route stays and answers stack-run-stop's stopped-stack page (<code>SURF-16</code>, <code>ACT-10</code>, <code>O63</code>, <code>CC-27</code>). Keys: the document's standard keys (<code>KEY-1</code>).</p>
 <ol><li><span class="n">1</span> The heading names the hostname and path that were asked for, before the status code in reading order (<code>FB-9</code>, <code>WORD-7</code>).</li>
-<li><span class="n">2</span> The lead action is the close hostname with the path and query kept, here to <code>https://hotfix-shop.shop.acme.test/checkout?step=2</code>, a link in the same tab and the first Tab stop after the heading (<code>MENU-5</code>, <code>SEL-10</code>, <code>SURF-15</code>, <code>KEY-10</code>).</li>
-<li><span class="n">3</span> <b>All Stacks on This Machine</b> follows it (<code>MENU-5</code>, <code>SURF-15</code>).</li>
+<li><span class="n">2</span> The lead action is the close hostname with the path and query kept, here to <code>https://hotfix-shop.shop.acme.test/checkout?step=2</code>, a link in the same tab and the first Tab stop after the heading. Close is <code>O46</code>'s rule: a remembered stopped stack's hostname first, otherwise two edits on the name before the shared suffix (a swap counts one), one edit for names of four characters or fewer, never the same name with another number, at most three, closest first, ties alphabetical (<code>MENU-5</code>, <code>SEL-10</code>, <code>SURF-15</code>, <code>KEY-10</code>, <code>O46</code>).</li>
+<li><span class="n">3</span> <b>All Stacks on devbox</b> follows it (<code>MENU-5</code>, <code>SURF-15</code>, <code>O61</code>).</li>
 <li><span class="n">4</span> One sentence gives the next step instead of Caddy's wording; "managed devhost Caddy instance" appears nowhere (<code>WORD-7</code>, <code>STATE-2</code>).</li>
-<li><span class="n">5</span> "Hostnames on this machine" groups every routed hostname by stack and checkout, each with its service and its path routes, each a link to its route. It draws no state, because Caddy rewrites this page only when routes change and a state on it would go stale; the directory's live states are one link away (<code>SEL-10</code>, <code>SEL-4</code>, <code>ACT-12</code>).</li>
-<li><span class="n">6</span> With no route on the machine, the page reads one sentence with <b>All Stacks on This Machine</b>, which lists what stopped recently (<code>STATE-2</code>).</li>
-<li><span class="n">7</span> While this machine does not trust devhost's local certificate authority, first-run-setup's one line sits at the top of this page and of the directory, before the heading, with the command that fixes it; every link still works once the person passes the browser's warning.</li>
-<li><span class="n">8</span> A request that is not a page load (a <code>fetch</code>, an API client, an agent's <code>curl</code>) gets 404 with a body under 2 KB instead of the page: one text line, or the same facts as JSON under <code>Accept: application/json</code>; a page load still gets the page. This answers startup-and-recovery's open item for that response (<code>FB-11</code>, <code>SURF-16</code>).</li></ol>
-<p class="fixes">Fixes stack-directory-04, stack-directory-06 · Backend: [discuss] the unmatched-hostname page embeds every live route grouped by stack and checkout, computes close hostnames on the page, and answers requests that are not page loads with a short 404 (Backend 8)</p></div>
+<li><span class="n">5</span> "Hostnames on devbox" groups every routed hostname by stack and worktree, each with its service and its path routes, each a link to its route. It draws no state, because Caddy rewrites this page only when routes change and a state on it would go stale; the directory's live states are one link away (<code>SEL-10</code>, <code>SEL-4</code>, <code>ACT-12</code>, <code>O61</code>).</li>
+<li><span class="n">6</span> With no route on the machine, the page reads one sentence with <b>All Stacks on devbox</b>, which lists what stopped recently (<code>STATE-2</code>).</li>
+<li><span class="n">7</span> While this machine does not trust devhost's local certificate authority, first-run-setup's one line, naming the machine, sits at the top of this page and of the directory, before the heading, with the commands that fix it; every link still works once the person passes the browser's warning (<code>O61</code>; first-run-setup's).</li>
+<li><span class="n">8</span> Over HTTPS a hostname nobody configured gets no certificate, so the browser shows its own connection error, as intended; the directory's filter offers the same close hostnames (step 5) (<code>O63</code>).</li>
+<li><span class="n">9</span> On plain HTTP a stopped stack's hostname reaches this page, because stack-run-stop keeps only its HTTPS route, and the page names that stack before any matching, with its start command and <b>Copy</b> (<code>O46</code>, <code>O15</code>, <code>MENU-5</code>, <code>ACT-10</code>).</li>
+<li><span class="n">10</span> A request that is not a page load (a <code>fetch</code>, an API client, an agent's <code>curl</code>) gets 404 with a body under 2 KB instead of the page: one text line naming the hostname and the directory, or the same facts as JSON. Caddy writes it from the request's hostname, so it offers no close hostname and says no "yet": the fallback cannot tell a hostname a starting stack is about to route from a mistype, and this is the answer startup-and-recovery's no-route state hands off for that moment (<code>FB-11</code>, <code>SURF-16</code>, <code>CC-4</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-04, stack-directory-06 · Backend: the plain-HTTP page embeds every live route grouped by stack and worktree and computes close hostnames on the page; Caddy answers requests that are not page loads with a short 404; HTTPS keeps configured-hosts-only certificates (Backend 8)</p></div>
+</section>
+
+<section class="step" id="remote">
+<div class="mock">
+<div class="win">
+<div class="bar"><b>https://devhost.preview.acme.test/</b><span>a browser in another environment, not signed in, stackDirectoryAllowRemote off: status 403</span></div>
+<div class="sd-pg">
+<div class="sd-h">Sign in with passkey or pair this browser to use devhost here <span class="n">1</span></div>
+<div class="sd-act"><span class="btn pri">Sign In with Passkey</span></div>
+<div class="muted">Or open a devhost pair link from devbox.</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://devhost.preview.acme.test/</b><span>the same browser after Sign In with Passkey</span></div>
+<div class="sd-pg">
+<div class="sd-h">Stacks on devbox <span class="n">2</span></div>
+<div class="sd-line"><b>3 stacks · 1 serve session · 2 failed · 1 with an agent waiting for you · 1 stopped recently</b></div>
+<div class="sd-act">devhost checks search but cannot restart it: it runs outside devhost. <span class="btn">Check Again</span></div>
+<div class="muted">… every card as on devbox, waiting agents' links included</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://devhost.preview.acme.test/</b><span>a laptop on the network, not signed in, stackDirectoryAllowRemote on</span></div>
+<div class="sd-pg">
+<div class="sd-h">Stacks on devbox</div>
+<div class="sd-line muted">This page is read-only: restart and start services on their status pages or in the toolbar, and stop them in the toolbar or the terminal · updates every 2 s while open · readable from your network without signing in <span class="n">3</span></div>
+<div class="muted">… cards as above, Check Again unavailable and waiting agents counted only (step 6)</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://devhost.preview.acme.test/__devhost__/stacks/acme-shop/agents/activity</b><span>Watch Live Activity for Acme Shop, opened from the running agents list</span><span class="n">4</span></div>
+<div class="sd-pg">
+<div class="sd-h">Agent activity · Acme Shop · main ~/acme</div>
+<div class="muted">… running-agents draws this page; this flow routes its path to Acme Shop's current control server</div>
+</div>
+</div>
+<div class="win">
+<div class="bar"><b>https://devhost.preview.acme.test/</b><span>not on devbox, while no stack answers: status 503</span></div>
+<div class="sd-pg">
+<div class="sd-line">No stack on devbox answers, so devhost cannot check this browser's sign-in. Try again once a stack runs. <span class="n">5</span></div>
+</div>
+</div>
+</div>
+<div class="cap"><h2>9. Use the directory from another environment</h2>
+<p>The directory still answers this machine by default, and <code>stackDirectoryAllowRemote</code> still lets anyone read it without signing in. What changes is that a browser in another environment that signed in with the devhost passkey or paired uses it as this machine does, through the directory's hostname under the remote or relay suffix, which the relay forwards (agent-chat's work), and that the same hostname serves each stack's Watch Live Activity. Every request goes through <code>O36</code>'s check, which agent-chat owns; a request through the relay never counts as this machine, and this proposal reads the directory's hostname, which is no stack's hostname, as a name under which this machine's own browser still counts as this machine, an <code>O36</code> reading for the reference's author. In this drawing devhost.preview.acme.test stands for the directory under the remote or relay suffix (<code>O36</code>, <code>O47</code>, <code>O55</code>, <code>HOLD-8</code>).</p>
+<ol><li><span class="n">1</span> A browser that is neither this machine, signed in nor admitted by <code>stackDirectoryAllowRemote</code> gets devhost's own page with status 403 and <code>HOLD-7</code>'s sentence, <b>Sign In with Passkey</b> when the passkey is set up for this domain and how to pair; it names no stack, and <code>/stacks.json</code> answers 403 with that sentence. The passkey routes and the cookie hop that carries the session to each stack's hostname are agent-chat's, served on this hostname (<code>HOLD-7</code>, <code>O36</code>).</li>
+<li><span class="n">2</span> Signed in or paired, the browser reads the directory, presses <b>Check Again</b> and follows waiting agents' links, as on devbox; the pages name the machine, never "this machine" (<code>O47</code>, <code>O61</code>).</li>
+<li><span class="n">3</span> A reader that <code>stackDirectoryAllowRemote</code> alone admits reads without signing in, as today; the reach line says so, <b>Check Again</b> is unavailable and waiting agents are counted only (<code>O47</code>, <code>HOLD-7</code>).</li>
+<li><span class="n">4</span> <code>/__devhost__/stacks/&lt;stack&gt;/agents/activity</code> and its socket reach that stack's current control server, including after <code>devhost stack restart</code>, <code>devhost restart-all</code> or <code>devhost upgrade</code> replaced it. <code>&lt;stack&gt;</code> is the stack's key, "acme-shop", with six hexadecimal characters of its root manifest's path only while two stacks share a name. It answers this machine and signed-in or paired browsers only; <code>stackDirectoryAllowRemote</code> admits no one to it, and no app hostname serves it (<code>O55</code>, <code>O36</code>, <code>O18</code>, <code>SURF-15</code>).</li>
+<li><span class="n">5</span> While no stack answers, Caddy serves the static page itself and cannot check a session, so it answers this machine, and everyone while <code>stackDirectoryAllowRemote</code> is on; any other client gets 503 with this sentence, a relayed request included (<code>STATE-4</code>, <code>HOLD-7</code>, <code>O61</code>).</li></ol>
+<p class="fixes">Fixes stack-directory-10 · Backend: <code>O36</code>'s check in the directory's guard, the relay-aware static page and agent-chat's passkey routes on this hostname (Backend 11); the per-stack activity routes by the stack's key (Backend 13); the relay's forwarding and mark are agent-chat's</p></div>
 </section>
 
 <section class="changes">
@@ -505,45 +612,47 @@ $ curl -s -H 'Accept: application/json' https://hotfix-shpo.shop.acme.test/api/i
 <li>The combined <b>Refresh / filter</b> form that reloaded the page, and filtering on the server</li>
 <li>One gray badge for six states, and Running as a default</li>
 <li>The caveat, the UTC "Registered" time and the folder under every row</li>
-<li>The plain-text 503, and Go's raw errors in the page's and a card's place</li>
+<li>The plain-text 503, and raw errors in the page's and a card's place</li>
 <li>"Active hostnames" and Caddy's wording on the 404</li>
+<li><code>External</code>, the Directory line and "Manifest-free file or port session" on serve cards</li>
 </ul></div>
 <div><h3>Merged</h3><ul>
 <li>The directory's and the toolbar's status words: one published state</li>
-<li>One shared state indicator and one set of words, also in <code>devhost status</code></li>
+<li>One shared state indicator and one set of words, also in <code>devhost stack info</code></li>
 <li><b>Clear filter</b> and <b>Show all stacks</b>: <b>Clear Filter</b></li>
+<li>An HTTPS typo's recovery and the filter: one place</li>
 </ul></div>
 <div><h3>New</h3><ul>
-<li><b>All Stacks on This Machine</b>, and the URL after <code>devhost start</code></li>
-<li>Checkout labels, "Needs you", "Stopped recently" and the title's attention</li>
-<li>Live updates, filtering as you type, <b>Refresh Stacks</b></li>
+<li><b>All Stacks on devbox</b> and the printed URL; worktree labels, "Needs you", "Stopped recently" and the title's attention</li>
+<li>Live updates, filtering as you type with close hostnames, <b>Refresh Stacks</b></li>
 <li>Each state's way forward with <b>Copy</b>; <b>Check Again</b>; waiting agents' links</li>
-<li>Applied or not applied per file, both versions, <b>Open in Editor</b></li>
-<li>A 503 page when no stack answers; the 404's close hostname and short answers</li>
-<li>Another stack serves the page when one does not answer; its card says how to resume it</li>
+<li>Applied or not applied per file, both versions, file and line with <b>Copy</b></li>
+<li>A 503 page when no stack answers; another stack serves the page when one does not; the 404's close hostname and short answers</li>
+<li>Sign-in on the directory's hostname; each stack's Watch Live Activity path</li>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li>Statuses update in place; stopped stacks stay 24 hours (<code>CC-27</code>, <code>O15</code>)</li>
-<li>The filter matches stack, checkout, service and hostname only (<code>SEL-10</code>)</li>
-<li>What needs you sorts first; the main checkout before its worktrees</li>
+<li>The filter matches stack, worktree, service, hostname and a serve session's folder, address, name and command, never file paths (<code>SEL-10</code>)</li>
+<li>What needs you sorts first; the main worktree before its linked worktrees</li>
 <li>One unreadable stack record no longer hides the others</li>
 <li>A paused stack's devhost no longer holds every load of the page</li>
+<li>Signed-in or paired browsers read it and press <b>Check Again</b> (<code>O47</code>)</li>
 </ul></div>
 <div><h3>Kept</h3><ul>
 <li>One read-only page for every stack, each asked with a 2 s deadline in parallel; it starts, restarts and stops nothing (<code>O10</code>)</li>
-<li>This machine only unless <code>stackDirectoryAllowRemote</code>; GET and HEAD; loopback snapshots; <code>no-store</code>, <code>no-referrer</code></li>
-<li>The reserved directory hostname; a conflicting <code>stackDirectoryHost</code> is rejected</li>
+<li>This machine by default; <code>stackDirectoryAllowRemote</code> still means anyone, read-only; GET and HEAD; loopback snapshots; <code>no-store</code>, <code>no-referrer</code></li>
+<li>The reserved directory hostname; a conflicting <code>stackDirectoryHost</code> is rejected; configured-hosts-only certificates</li>
 <li>Every alias and path route; left-out services listed; live only while devhost runs</li>
-<li>Read-only files; no browser opened; works without the toolbar; <code>devhost start</code> refuses an unreadable record</li>
+<li>Read-only files; no browser or editor opened; works without the toolbar; <code>devhost start</code> refuses an unreadable record</li>
 <li>The 404 lists live routes only, with status 404; same-tab links; saved <code>?q=</code> links</li>
 </ul></div>
 <div><h3>Backend work</h3><ul>
 <li>The snapshot reads the published state, no default (Backend 1, <code>CC-25</code>)</li>
-<li>Stack state, summary, checkout labels, last outcome, order (Backend 2, 7)</li>
-<li><code>GET /stacks.json</code>, stopped-stack records, the filter on the page (Backend 5, 6, <code>CC-27</code>)</li>
-<li>Configuration state and the stack's editor (Backend 4, 11); the directory's URL (Backend 9)</li>
+<li>Stack state, summary, worktree labels, last outcome, serve sessions' kind and command, order (Backend 2, 7)</li>
+<li><code>GET /stacks.json</code>, stopped-stack records, the filter on the page with close hostnames (Backend 5, 6, <code>CC-27</code>)</li>
+<li>Configuration state, the directory's URL and machine name, the plain-HTTP 404 and its short answer, Check Again, waiting agents (Backend 3, 4, 8, 9, 10)</li>
+<li><code>O36</code>'s check on the directory's hostname (Backend 11); per-stack activity routes (Backend 13)</li>
 <li>The 503 page and data, the record reader, the re-render without a dead port, health checks and ordered timeouts on the proxy (Backend 12)</li>
-<li>[discuss] Waiting agents' links, the 404's routes and short answer, Check Again (Backend 3, 8, 10)</li>
 </ul></div>
 </section>
 </main>
