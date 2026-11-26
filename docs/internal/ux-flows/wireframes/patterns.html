@@ -1990,7 +1990,7 @@ Error: Cannot find module './db'
           <div class="win">
             <div class="bar"><b>Terminal › ~/acme</b><span>the foreground stack's own terminal</span></div>
             <pre class="term">14:10:02 Stopping Acme Shop · 5 of 6 stopped · worker force-stopped after 10 s
-14:10:05 Replaced by devhost restart from another terminal; it keeps running without this terminal <span class="n">4</span>
+14:10:05 Replaced by devhost restart at 14:10. Acme Shop keeps running without this terminal. <span class="n">4</span>
 devhost logs -f
 devhost stop
 $ echo $?
@@ -2035,8 +2035,8 @@ $ echo $?
               <b>FAIL-5</b> <span class="n">4</span> A deliberate stop, cancel or replacement is never a failure:
               services devhost stops are steps of the operation; a person's stop reads stopped; one devhost had to force
               reads force-stopped; a replaced foreground stack or serve session prints who replaced it and the commands
-              that follow and stop its new run, never a PID, and exits 0; a stopped chat turn ends with a neutral line
-              (<code>O18</code>, <code>O31</code>).
+              that follow and stop its new run (a serve session only <code>devhost stop --session</code>), never a PID,
+              and exits 0; a stopped chat turn ends with a neutral line (<code>O18</code>, <code>O31</code>).
             </li>
             <li>
               <b>FAIL-6</b> A retired setting warns and is ignored; an unknown one is rejected (revision 7):
@@ -6348,7 +6348,9 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 inside the shared supervisor; <code>devhost restart</code> restarts every stack and serve session in a
                 new supervisor running this executable; <code>devhost upgrade</code> swaps the executable, then does the
                 same. No line names a per-stack PID: name and worktree, the stack ID in agent output, the supervisor's
-                PID once on a line about the supervisor. Serve sessions restart with the stacks.
+                PID once on a line about the supervisor. Serve sessions restart with the stacks; a session's
+                <code>--session</code> name is its <code>--name</code> or its hostname, never
+                <code>serve-&lt;domain&gt;</code>.
                 <span class="muted"
                   >Raised by the re-check of stack-run-stop, stack-directory, serve-folder, worktree-switch,
                   first-run-setup, notices-and-feedback.</span
