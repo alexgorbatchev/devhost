@@ -615,7 +615,7 @@ devhost: WARN: Browsers will reject devhost's HTTPS certificates: this machine d
                 <span class="btn">Copy</span>
               </div>
               <div class="vlab">A serve session's file listing</div>
-              <div class="muted">serve-folder's listing of ~/notes, under its heading …</div>
+              <div class="muted">serve-folder's listing of ~/acme/docs, under its heading …</div>
               <div class="banner">
                 ◆ devbox does not trust devhost's local certificate authority, … then reload; …
                 <span class="btn">Copy</span>
@@ -952,13 +952,13 @@ devhost: ERR: devhost caddy untrust changes this machine's certificate trust, so
         <div class="mock">
           <div class="win">
             <div class="bar">
-              <b>Terminal › ~</b><span>Acme Shop and Blog run, and a serve session of ~/notes</span>
+              <b>Terminal › ~</b><span>Acme Shop and Blog run, and a serve session for ~/acme/docs</span>
             </div>
             <pre class="term">$ devhost caddy stop
 Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running: <span class="n">1</span>
 Acme Shop · main ~/acme · detached · shop.acme.test, docs.acme.test, +3 <span class="n">2</span>
 Blog · main ~/blog · foreground · blog.acme.test
-serve session ~/notes · notes.acme.test
+serve session for ~/acme/docs (notes.acme.test)
 Stopped Caddy · 2 stacks and 1 serve session offline until devhost caddy start · 0.4 s <span class="n">3</span>
 
 $ devhost caddy stop --dry-run
@@ -969,7 +969,7 @@ Dry run: Caddy keeps running; nothing changed <span class="n">4</span>
 <span class="muted">an agent on a Linux machine</span>
 $ AGENT=1 devhost caddy stop
 devhost: Stopping Caddy takes 2 stacks and 1 serve session offline; their services keep running:
-devhost: Acme Shop · /home/dev/acme/devhost.toml · stk-8c41e07d2a9b5f36 · detached · shop.acme.test, docs.acme.test, admin.acme.test, mail.acme.test, api.acme.test <span class="n">5</span>
+devhost: Acme Shop · /work/acme/devhost.toml · stack stk-8c41e07d2a9b5f36 · detached · shop.acme.test, docs.acme.test, admin.acme.test, mail.acme.test, api.acme.test <span class="n">5</span>
 <span class="muted">…</span>
 
 <span class="muted">a stack that does not answer the stop's notice within 1 s: its own line, after the set</span>
