@@ -58,7 +58,7 @@
 <div class="row"><span class="cs-el cs-hl">Devtools playground<span class="cs-tag">heading Devtools playground</span></span><span class="n">1</span></div>
 <div class="row"><span class="muted small">Right-click with Alt still held: the source menu opens at once, step 3</span><span class="n">2</span></div>
 <div class="corner">
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -79,19 +79,19 @@
 <div>The browser's own menu, as today</div>
 <div class="vlab">Alt+Ctrl+R pressed, or Option+L typed, with the pointer over the page</div>
 <div class="row"><span>No outline and no menu</span><span class="n">4</span></div>
-<div class="vlab">A leftover <code>[devtools.editor]</code> table, <code>enabled = false</code> included</div>
-<div class="row"><span class="n">5</span><span>Turns nothing off: Alt + right-click stays on, and the manifest gets a warning, step 5</span></div>
+<div class="vlab"><code>[devtools.componentSource].enabled = false</code> in the manifest, or a leftover <code>[devtools.editor].enabled = false</code></div>
+<div class="row"><span class="n">5</span><span>No outline and no menu: Alt + right-click reaches the browser's menu and Shift+F10 opens nothing; page context still gets each mark's source file; the leftover key also gets a warning, step 5</span></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference removes <code>[devtools.editor]</code> completely (<code>SEL-11</code>, <code>O51</code>), which leaves Alt + right-click, today turned off by <code>[devtools.editor].enabled</code>, with no switch; whether it gets one of its own, and under which key, is for the reference's author. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>1. Point at an element</h2>
 <p>Alt + right-click still opens the source of the element under the pointer, and Select Elements and holding Alt still pick elements as page-context specifies. What changes is that the element is outlined with its role and name before the click, the gesture always answers, and the keyboard reaches the same menu. Keys: Alt + right-click (Option on macOS); with Select Elements latched on, the arrow keys walk the highlight and Shift+F10 or the context-menu key opens the source menu (<code>KEY-12</code>, <code>MENU-1</code>).</p>
 <ol><li><span class="n">1</span> Holding Alt outlines the element under the pointer with its role and name before the click, drawn dashed here, by the one resolver that Select Elements, holding Alt and Alt + right-click share, which page-context owns: the element shown is the element looked up (<code>SEL-9</code>).</li>
 <li><span class="n">2</span> Alt + right-click on the app page, outside devhost's own surfaces, opens the source menu at once, also when there is no source to show (step 3): devhost takes the browser's context menu only for this gesture and always answers it (<code>MENU-3</code>, <code>KEY-2</code>).</li>
 <li><span class="n">3</span> With Select Elements latched on, Shift+F10 or the context-menu key opens the source menu for the highlighted element. The toggle lists Shift+F10 in its tooltip and in <code>aria-keyshortcuts</code>, both drawn from the binding definition its handler reads (<code>KEY-12</code>, <code>KEY-13</code>, <code>BAR-4</code>).</li>
 <li><span class="n">4</span> Alt pressed as part of a chord, or to type a character, never starts selection (<code>KEY-2</code>).</li>
-<li><span class="n">5</span> The feature is on wherever devhost injects its devtools. Today <code>[devtools.editor].enabled = false</code> turns it off; the reference removes <code>[devtools.editor]</code> completely, <code>enabled</code> included, so a leftover table is warned about (step 5) and turns nothing off. Whether Alt + right-click gets a switch of its own is open for the reference's author (<code>SEL-11</code>, <code>O51</code>; Backend 3).</li></ol>
+<li><span class="n">5</span> The feature is on wherever devhost injects its devtools. Its one switch is <code>[devtools.componentSource].enabled</code> in the manifest, on by default, which turns off Alt + right-click and Shift+F10 in Select Elements and nothing else; <code>[devtools].enabled = false</code> removes it with the toolbar. <code>[devtools.editor]</code> is removed completely, but a leftover <code>enabled = false</code> still turns the menu off, with a warning naming the new key (step 5), so no one's off switch turns on with an upgrade (<code>SEL-11</code>, <code>FAIL-6</code>, <code>CC-41</code>, <code>O51</code>; Backend 3).</li></ol>
 <p class="fixes">Fixes page-context-06, source-and-minimap-01 · Backend: none; the element resolver is page-context's and the binding definitions are toolbar-shell's (<code>SEL-9</code>, <code>KEY-13</code>)</p></div>
 </section>
 
@@ -159,7 +159,7 @@
 </div>
 <div class="corner">
 <div class="toastrow"><div class="toast">✓ Restarted api · 2.6 s</div><span class="n">5</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -232,12 +232,12 @@
 </div>
 <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Profile</span></div></div>
 <div class="corner">
-<div class="tbar paused"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div></div>
+<div class="tbar paused"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div></div>
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: the reference returns the menu's focus "to the element it opened on" (<code>KEY-10</code>) and also to the element that had focus before a pointer opening (<code>KEY-5</code>, <code>KEY-6</code>); this proposal follows the second, because the element under an Alt + right-click is often not focusable and devhost never adds a <code>tabindex</code> to the page. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: <code>SURF-11</code> moves only the notice stack and the announcer into the page's modal dialog; this proposal adds the source menu, whose layering toolbar-shell owns. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
+
 <h2>3. Read the source menu</h2>
 <p>The menu still lists the element and the components that render it, each with its non-default props as badges and its path, and still stays inside the window and closes with Escape, a click outside or a worktree switch, as today. What changes is that it names the element and the worktree, offers <b>Copy Path</b> per source instead of opening an editor, answers when it has no source, takes the keyboard, and keeps clear of devhost's other surfaces; no row names or opens an editor (<code>O51</code>). It is a transient layer above the page, at the pointer, or at the highlighted element after Shift+F10. Keys: focus starts on the first item; ArrowUp and ArrowDown move, Home and End jump, a letter jumps to the next item that starts with it, so c moves from one <b>Copy Path</b> item to the next, and Enter or Space copies; Escape, Tab or Shift+Tab closes it and returns focus to the page element that had focus before the right-click, the element itself when the click focused it, or, opened with Shift+F10, to the Select Elements toggle with the highlight kept; a click outside closes it and leaves focus where that click put it; devhost never adds a <code>tabindex</code> to a page element. Inside the open menu devhost keeps every key; once it closes, the page's keys work without a click (<code>KEY-10</code>, <code>KEY-6</code>, <code>KEY-5</code>, <code>KEY-8</code>, <code>KEY-12</code>). A rejected configuration or chat that cannot take a message blocks nothing here (<code>HOLD-6</code>, <code>HOLD-5</code>).</p>
 <ol><li><span class="n">1</span> The first row is the target header, "Source of &lt;h1&gt;", naming the element the menu shows; the menu is named by it (2.3 Accessibility, <code>KEY-10</code>).</li>
@@ -278,7 +278,7 @@
 <div class="row"><span class="cs-el">Devtools playground</span></div>
 <div class="corner">
 <div class="toastrow"><div class="toast">✓ Copied path · frontend/src/components/PlaygroundLayout.tsx:15:7</div><span class="n">2</span></div>
-<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">Chat</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span></div>
+<div class="tbar"><span class="seg"><b>Acme Shop</b></span><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span><span class="seg">Chat</span></div>
 </div>
 </div>
 </div>
@@ -312,7 +312,7 @@
 enabled = false
 ide = "zed"
 
-<span class="n">1</span> devhost.toml:31:1  devtools.editor.enabled  is no longer used: devhost has no editor integration; remove it
+<span class="n">1</span> devhost.toml:31:1  devtools.editor.enabled  is replaced by devtools.componentSource.enabled, which this value turns off for now; move it there
   devhost.toml:32:1  devtools.editor.ide  is no longer used: devhost has no editor integration; remove it</pre>
 </div>
 <div class="win">
@@ -335,11 +335,11 @@ ide = "zed"
 </div>
 <div class="cap"><h2>5. Leftover editor settings and cursor updates</h2>
 <p>Alt + right-click and <b>Copy Path</b> stay, as steps 1 to 4 show. What leaves is everything that existed only to reach an editor: opening a file, the editor choice and highlight from the editor's cursor, as the product owner decided (<code>O50</code>, <code>O51</code>). A manifest written for today keeps running, and an editor plugin built on today's cursor route gets a plain <code>404</code>, so neither fails silently. Nothing here writes, so there is nothing to confirm or undo.</p>
-<ol><li><span class="n">1</span> A manifest that still has a <code>[devtools.editor]</code> table, with <code>ide</code>, <code>enabled</code> or both, keeps loading and running; devhost applies nothing from it, so Alt + right-click stays on, and prints one warning per key naming file, line, column and key, at start and on every hot reload that keeps it; any value warns the same way and none is refused. Warning instead of refusing keeps manifests written for today running; the reference has no rule for retired keys yet (<code>FAIL-2</code>, <code>MENU-4</code>, <code>WORD-7</code>, <code>O51</code>).</li>
+<ol><li><span class="n">1</span> A manifest that still has a <code>[devtools.editor]</code> table, with <code>ide</code>, <code>enabled</code> or both, keeps loading and running and prints one warning per key naming file, line, column, key and what replaced it, at start and on every hot reload that keeps it; any value warns and none is refused. devhost applies nothing from the table except <code>enabled = false</code>, which turns the source menu off as <code>[devtools.componentSource].enabled = false</code> does, so no one's off switch turns on with an upgrade (<code>FAIL-6</code>, <code>FAIL-2</code>, <code>MENU-4</code>, <code>WORD-7</code>, <code>O51</code>).</li>
 <li><span class="n">2</span> <code>POST /__devhost__/react-highlight/cursor</code> and the <code>/__devhost__/ws/react-highlight</code> stream no longer exist and answer <code>404</code> like any unknown control route; no page draws an outline from a cursor (<code>O51</code>).</li>
 <li><span class="n">3</span> Opening a file in an editor is removed everywhere: devhost starts no editor and builds no editor URL, so a missing or unregistered editor can no longer fail without a word; every flow that offered an editor shows the file and line with <b>Copy</b> instead (<code>O50</code>, <code>O51</code>, <code>MENU-4</code>, <code>SURF-15</code>).</li>
 <li><span class="n">4</span> Highlight from the editor leaves with its route, its outline overlay, its event and its guide, which removes the missed elements, the stale start-time root after a switch and the script-only source maps that highlight suffered from (<code>O51</code>).</li></ol>
-<p class="fixes">Fixes source-and-minimap-03, source-and-minimap-08, source-and-minimap-09, source-and-minimap-10 · Backend: remove the editor settings with a warning per leftover key, and remove both highlight routes (Backend 1, 2); a switch of its own for the source menu is under discussion (Backend 3)</p></div>
+<p class="fixes">Fixes source-and-minimap-03, source-and-minimap-08, source-and-minimap-09, source-and-minimap-10 · Backend: remove the editor settings with a warning per leftover key, and remove both highlight routes (Backend 1, 2); <code>[devtools.componentSource].enabled</code> as the source menu's switch (Backend 3; <code>CC-41</code>)</p></div>
 </section>
 
 <section class="changes">
@@ -376,7 +376,7 @@ ide = "zed"
 <div><h3>Backend work</h3><ul>
 <li>Remove the editor settings: the <code>[devtools.editor]</code> table, the four accepted editors and the injected editor go; a leftover key warns with file, line, column and key (Backend 1)</li>
 <li>Remove highlight from the editor: both routes, their handlers and the cursor channel; both answer <code>404</code> (Backend 2)</li>
-<li>Under discussion: whether the source menu gets a switch of its own, and its key (Backend 3)</li>
+<li>The source menu's switch, <code>[devtools.componentSource].enabled</code>, on by default; a leftover <code>[devtools.editor].enabled = false</code> maps onto it with a warning (Backend 3)</li>
 </ul></div>
 </section>
 </main>

@@ -86,7 +86,7 @@
       "type": "external",
       "label": "Alt + right-click",
       "sublabel": "or Shift+F10 in Select Elements",
-      "explanation": "Holding Alt (Option on macOS) and right-clicking an element of the app page, outside devhost's own surfaces, opens its source menu; with Select Elements latched on, the arrow keys walk the highlight and Shift+F10 or the context-menu key opens the menu for the highlighted element (KEY-12, MENU-1). Both resolve the element with the one resolver Select Elements and holding Alt use, page-context's, which outlines it with its role and name before the click (SEL-9). devhost takes the browser's menu only for Alt + right-click and always answers it, also when there is no source (MENU-3, KEY-2); Alt pressed in a chord or to type a character never starts selection. A right-click without Alt stays the page's and closes an open menu; inside devhost's own surfaces Alt + right-click stays the browser's. It is on wherever devhost injects its devtools: [devtools.editor], enabled included, is removed completely (SEL-11, O51), so a leftover table warns and turns nothing off; whether it gets a switch of its own is [discuss] for the reference's author. The gesture also works while the page's repository switches or its worktree is deleted, where today the listener is switched off without a word.",
+      "explanation": "Holding Alt (Option on macOS) and right-clicking an element of the app page, outside devhost's own surfaces, opens its source menu; with Select Elements latched on, the arrow keys walk the highlight and Shift+F10 or the context-menu key opens the menu for the highlighted element (KEY-12, MENU-1). Both resolve the element with the one resolver Select Elements and holding Alt use, page-context's, which outlines it with its role and name before the click (SEL-9). devhost takes the browser's menu only for Alt + right-click and always answers it, also when there is no source (MENU-3, KEY-2); Alt pressed in a chord or to type a character never starts selection. A right-click without Alt stays the page's and closes an open menu; inside devhost's own surfaces Alt + right-click stays the browser's. It is on wherever devhost injects its devtools; its one switch is [devtools.componentSource].enabled (on by default), and a leftover [devtools.editor].enabled = false maps onto it with a warning (SEL-11, FAIL-6, CC-41, O51). The gesture also works while the page's repository switches or its worktree is deleted, where today the listener is switched off without a word.",
       "sources": [
         {
           "path": "packages/devhost-ui/src/devtools/features/componentSourceNavigation/hooks/useComponentSourceNavigation.ts",
@@ -268,7 +268,7 @@
       "type": "external",
       "label": "Manifest has [devtools.editor]",
       "sublabel": "ide, enabled or both",
-      "explanation": "A manifest written for today, with a [devtools.editor] table holding ide (any value) or enabled = false, keeps loading and running: devhost applies nothing from it, because editor settings are removed completely with editor support (O51, SEL-11), so Alt + right-click stays on. Today only four ide values are accepted and any other refuses the manifest when it loads, and enabled = false turns Alt + right-click off; after the change no value is refused, the table, the four-editor list and the editor in the injected configuration are gone, and the configuration editor's schema offers no devtools.editor table.",
+      "explanation": "A manifest written for today, with a [devtools.editor] table holding ide (any value) or enabled = false, keeps loading and running: editor settings are removed completely with editor support (O51, SEL-11), so devhost applies nothing from it except enabled = false, which turns the source menu off as [devtools.componentSource].enabled = false does (FAIL-6, CC-41). Today only four ide values are accepted and any other refuses the manifest when it loads; after the change no value is refused, the table, the four-editor list and the editor in the injected configuration are gone, and the configuration editor's schema offers devtools.componentSource.enabled and no devtools.editor table.",
       "sources": [
         {
           "path": "apps/devhost/src/manifest/validation.rs",
@@ -298,7 +298,7 @@
       "label": "Key is no longer used",
       "sublabel": "file:line · remove it",
       "tag": "source-and-minimap-03",
-      "explanation": "devhost prints one warning per leftover key naming file, line, column and key, 'devhost.toml:32:1  devtools.editor.ide  is no longer used: devhost has no editor integration; remove it', and the same for devtools.editor.enabled, at start and on every hot reload that keeps them; it never refuses the manifest (FAIL-2, MENU-4, WORD-7). Warning instead of refusing keeps manifests written for today running; the reference has no rule for retired keys yet, so this is proposed for it. Removing the editor choice resolves the editor setting kept in the team's shared manifest (O51).",
+      "explanation": "devhost prints one warning per leftover key naming file, line, column, key and what replaced it, 'devhost.toml:32:1  devtools.editor.ide  is no longer used: devhost has no editor integration; remove it', and for enabled 'devhost.toml:31:1  devtools.editor.enabled  is replaced by devtools.componentSource.enabled, which this value turns off for now; move it there', at start and on every hot reload that keeps them; it never refuses the manifest (FAIL-6, FAIL-2, MENU-4, WORD-7). Warning instead of refusing keeps manifests written for today running (O18). Removing the editor choice resolves the editor setting kept in the team's shared manifest (O51).",
       "sources": [
         {
           "path": "apps/devhost/src/manifest/validation.rs",
@@ -482,7 +482,7 @@
       "items": [
         "Remove the editor settings: the [devtools.editor] table, the four accepted editors and the injected componentEditor go; each leftover key warns with file, line, column and key at start and on hot reload",
         "Remove highlight from the editor: both routes, their handlers and the cursor channel; both answer 404",
-        "[discuss]: whether the source menu gets a switch of its own, and its key, once [devtools.editor] is removed; the pattern reference's author settles it beside CC-39"
+        "The source menu's switch: [devtools.componentSource].enabled, default true, turning off Alt + right-click and Shift+F10 in Select Elements only; a leftover [devtools.editor].enabled = false maps onto it (CC-41, FAIL-6)"
       ]
     },
     {
@@ -498,7 +498,7 @@
       "dot": "slate",
       "title": "Evidence",
       "items": [
-        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference, revision 6",
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference, revision 7",
         "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces",
         "Nothing here writes to the stack: copying is a page action, so the Review + copy phase holds no devhost write and nothing needs Undo"
       ]
