@@ -165,7 +165,7 @@
 <div class="box" style="margin:0"><b>Agents in this worktree</b><div class="row">Running agents are shown while chat is on. Chat is off in devhost.toml line 31.<span class="btn">Edit</span><span class="n">11</span></div>
 <div class="row muted" style="margin-top:4px">with the config editor off: devhost.toml line 31<span class="btn">Copy</span></div></div>
 <div class="vlab">a save turned chat off at 14:02 while Claude Code works</div>
-<div class="box" style="margin:0"><b>Agents in this worktree</b><div>Chat was turned off in devhost.toml at 14:02. Running agents keep running; devhost no longer lists them. Conversations chat started stay answerable in chat until they end. <span class="n">12</span></div></div>
+<div class="box" style="margin:0"><b>Agents in this worktree</b><div>Chat turned off at 14:02. Running agents keep running; devhost no longer lists them. Conversations chat started stay answerable in chat until they end. <span class="n">12</span></div></div>
 </div>
 </div>
 <div class="win">
@@ -183,7 +183,7 @@
 <div class="ra-row dim"><span>? Claude Code · Fix the nav header · This worktree (live)<span class="sub">unknown · last seen 14:02</span></span><span><span class="btn">Open Conversation</span></span></div></div>
 <div class="vlab">the page's status stream closed after devhost stop</div>
 <div class="box" style="margin:0"><b>Agents in this worktree</b>
-<div class="ra-st">Acme Shop stopped at 14:32 by devhost stop. Start it with devhost start in ~/acme <span class="n">16</span></div>
+<div class="ra-st">Stopped from the terminal at 14:32. Start it with devhost start in ~/acme <span class="n">16</span></div>
 <div class="ra-row dim"><span>? Claude Code · Fix the nav header · This worktree (live)<span class="sub">unknown · last seen 14:32</span></span><span><span class="btn">Open Conversation</span></span></div>
 <div class="ra-row dim"><span>? Codex in a terminal · PID 83275<span class="sub">unknown · last seen 14:32</span></span><span></span></div></div>
 </div>
@@ -232,8 +232,8 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: an agent whose CLI records no state reads "state not reported", a phrase <code>WORD-6</code>'s state words lack; proposed as an exception to <code>WORD-6</code>. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: <b>Answer</b> and <b>Open Conversation</b> are not in <code>WORD-2</code>'s list of labels yet; they carry the meanings agent-chat's and reload-control's proposals give them and are proposed for the list with them. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
+
 <h2>2. Open the list</h2>
 <p>The list still opens from the trigger, still lists agents devhost did not start, from chat or a terminal, still counts agents working in a subdirectory, folds subagents into the session that started them and sorts waiting agents first, and it still only reports: it sends nothing to an agent. What changes: it opens above docked chat, names every agent in words people use with its worktree, hands a chat agent to its conversation from its row, and says when it is empty, off or could not look. Keys: focus lands in the filter when there is one, else on the first row action, else on <b>Watch Live Activity</b>; Tab and Shift+Tab move through the filter, each row's actions and <b>Watch Live Activity</b> in visual order; Tab past the last control or Shift+Tab before the first closes the list and returns focus to the trigger; Escape or a click outside closes it and returns focus to the trigger, or, when it was opened with the pointer, to the page element that had focus before; keys typed into the filter never reach the page (<code>KEY-5</code>, <code>KEY-6</code>, <code>KEY-7</code>, <code>KEY-8</code>, <code>KEY-10</code>).</p>
 <ol><li><span class="n">1</span> An anchored toolbar panel titled "Agents in this worktree". It opens toward the page from the dock's corner and paints above docked chat, compact or expanded, never over the notice stack, so every row action and <b>Watch Live Activity</b> answer hit testing with chat docked; toolbar-shell lands that layering. At every acceptance viewport (1600×1000, 1280×800 and 900×900 in both themes, 1280×800 at 200% zoom) it fits with its status line, every row action and <b>Watch Live Activity</b> reachable, only the rows scrolling, no text clipped and every action at least 24 by 24 CSS pixels; a long folder or worktree path is shortened in the middle, with the full path in its accessible name (<code>SURF-1</code>, <code>SURF-2</code>, <code>SURF-9</code>, <code>CC-1</code>, <code>WORD-8</code>).</li>
@@ -306,7 +306,7 @@
 <section class="step" id="watch-live-activity">
 <div class="mock">
 <div class="win">
-<div class="bar"><b>Agent activity · Acme Shop</b><span>its own tab: the loopback address on the stack's machine, the stack directory's hostname in a signed-in browser elsewhere</span></div>
+<div class="bar"><b>Agent activity · Acme Shop</b><span>its own tab on the stack directory's hostname, on the stack's machine and in a signed-in browser elsewhere</span></div>
 <div class="work">
 <div class="row" style="align-items:flex-end"><div class="tabs" style="margin:6px 0 0"><span class="on">(1) waiting · Agent activity · Acme Shop</span><span>Acme Shop · Products</span></div><span class="n">1</span></div>
 <div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span> <span class="n">2</span></div>
@@ -328,9 +328,9 @@
 <div class="bar"><b>devhost › the running agents list's footer, where Watch Live Activity starts</b></div>
 <div class="work small">
 <div class="vlab">a browser on the machine that runs Acme Shop</div>
-<div class="row"><span class="btn">Watch Live Activity</span><span class="muted">opens 127.0.0.1:&lt;port&gt;/__devhost__/agents/activity in its own tab</span><span class="n">6</span></div>
+<div class="row"><span class="btn">Watch Live Activity</span><span class="muted">opens devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab</span><span class="n">6</span></div>
 <div class="vlab">a browser in another environment, over the network or through a remote preview, signed in with the devhost passkey or paired</div>
-<div class="row"><span class="btn">Watch Live Activity</span><span class="muted">opens devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab</span><span class="n">7</span></div>
+<div class="row"><span class="btn">Watch Live Activity</span><span class="muted">opens devhost--devbox--preview.acme.test/__devhost__/stacks/acme-shop/agents/activity in its own tab (through a remote preview)</span><span class="n">7</span></div>
 </div>
 </div>
 <div class="win">
@@ -341,21 +341,21 @@
 <div class="muted">No activity yet. Agents in this worktree appear here when they start. History is not shown. <span class="n">8</span></div>
 <div class="vlab">devhost stop stopped Acme Shop at 14:32</div>
 <div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span></div>
-<div>Acme Shop stopped at 14:32 by devhost stop. Start it with devhost start in ~/acme, then open Watch Live Activity from the running agents list on its pages. <span class="n">9</span></div>
+<div>Stopped from the terminal at 14:32. Start it with devhost start in ~/acme, then open Watch Live Activity from the running agents list on its pages. <span class="n">9</span></div>
 <div class="ra-oth">From the run that ended at 14:32</div>
 <div class="ra-ent"><span>14:31:55</span><span>Reply</span><span class="muted">… the entries already shown stay</span></div>
 <div class="vlab">other ends, in the same form</div>
-<div>Acme Shop stopped at 02:14 after 1 h idle · Acme Shop stopped at 14:32 by Ctrl-C in its terminal <span class="n">10</span></div>
+<div>Stopped after 1 h idle · Stopped with Ctrl-C at 14:32 <span class="n">10</span></div>
 <div class="vlab">devhost stack restart replaced Acme Shop at 14:32: the page on the stack directory's hostname</div>
 <div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip acc">Live</span></div>
-<div>Acme Shop was replaced by devhost stack restart at 14:32 · watching the new run <span class="n">11</span></div>
-<div class="vlab">the same replacement: the page at the loopback address</div>
+<div>Replaced by devhost stack restart at 14:32 · watching the new run <span class="n">11</span></div>
+<div class="vlab">the same replacement: the unlinked page at the loopback address, opened by typing it</div>
 <div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span></div>
-<div>Acme Shop was replaced by devhost stack restart at 14:32. Open Watch Live Activity again from the running agents list on its pages. <span class="n">12</span></div>
+<div>Replaced by devhost stack restart at 14:32. <a>Open Watch Live Activity on devhost.acme.test</a> <span class="n">12</span></div>
 <div class="vlab">a save turned chat off at 14:02</div>
 <div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip">■ Stopped</span></div>
-<div>Chat was turned off in devhost.toml at 14:02. Agent activity is shown while chat is on. <span class="n">13</span></div>
-<div class="vlab">the watcher could not start; the tab reads "(1) failed · Agent activity · Acme Shop"</div>
+<div>Chat turned off at 14:02. Agent activity is shown while chat is on. <span class="n">13</span></div>
+<div class="vlab">the watcher could not start; the tab reads "(1) failed · Watch Live Activity · Acme Shop"</div>
 <div class="ra-head"><b>Agent activity · Acme Shop · main ~/acme</b><span class="chip bad">Could not start</span></div>
 <div class="row">Watch Live Activity could not start: devhost could not create its watcher's files.<span class="btn">Retry Now</span><span class="n">14</span></div>
 <div class="vlab">the connection dropped without a close message</div>
@@ -369,26 +369,26 @@
 </div>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: Watch Live Activity labels a person's message Prompt and a turn the person stopped Stopped; <code>WORD-10</code>'s labels (Reply, Tool call, Result, Denied) have neither, so they are proposed as additions to <code>WORD-10</code>. <a href="index.html#conflicts">See conflicts</a></div>
-<div class="banner">Open conflict: <code>ACT-10</code> has a page whose stack was replaced reconnect to the new stack; the page at the loopback address belongs to the replaced run's own port and cannot learn the new one, so there it shows a replaced stack as an ended run, a proposed exception to <code>ACT-10</code>; on the stack directory's hostname it reconnects as <code>ACT-10</code> says. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
+
 <h2>4. Watch Live Activity</h2>
-<p>Watch Live Activity still opens in its own tab on the stack machine's loopback address, where it answers only a direct loopback request, never opens on an app's hostname, sends no-store and no-referrer, shows no history, cuts long text at 4 KiB, keeps at most 500 entries, stops watching when the tab closes and cannot answer an agent, as the owner settled; Restart Stack, a switch and a hot reload keep its connection. What changes: it names what it watches, groups entries under each agent with its state, labels each entry with what a tool call touches, shows an agent waiting for the person, says why it ended instead of reconnecting forever, and opens on the stack directory's hostname in a browser elsewhere that signed in with the devhost passkey or paired. Keys: the page uses the document's standard keys and has no shortcuts of its own; <b>Retry Now</b> is an ordinary button (<code>KEY-1</code>).</p>
-<ol><li><span class="n">1</span> It opens in its own tab, the one devhost link that does (<code>SURF-15</code>). Its document title reads "Agent activity · Acme Shop", so tabs of two stacks differ, prefixed "(1) waiting · " while an agent waits for the person and "(1) failed · " while its stream cannot start (<code>ACT-7</code>, <code>O16</code>, <code>WORD-1</code>).</li>
+<p>Watch Live Activity still opens in its own tab, never on an app's hostname, sends no-store and no-referrer, shows no history, cuts long text at 4 KiB, keeps at most 500 entries, stops watching when the tab closes and cannot answer an agent, as the owner settled; Restart Stack, a switch and a hot reload keep its connection. What changes: it names what it watches, groups entries under each agent with its state, labels each entry with what a tool call touches, shows an agent waiting for the person, says why it ended instead of reconnecting forever, and opens on the stack directory's hostname, on this machine and in a browser elsewhere that signed in with the devhost passkey or paired; the loopback address still answers a direct request from this machine, but nothing links it. Keys: the page uses the document's standard keys and has no shortcuts of its own; <b>Retry Now</b> is an ordinary button (<code>KEY-1</code>).</p>
+<ol><li><span class="n">1</span> It opens in its own tab, the one devhost link that does (<code>SURF-15</code>). Its document title reads "Watch Live Activity · Acme Shop", so tabs of two stacks differ, prefixed "(1) waiting · " while an agent waits for the person and "(1) failed · " while its stream cannot start (<code>ACT-7</code>, <code>O16</code>, <code>WORD-1</code>).</li>
 <li><span class="n">2</span> The heading names the stack and the worktree it watches, with one state beside it: Live, Lost connection, Stopped or Could not start. The lead line under it says "this worktree" where the page says "this checkout" today (<code>SEL-4</code>, <code>HOLD-2</code>, <code>WORD-11</code>).</li>
 <li><span class="n">3</span> Entries group under each agent's heading, named as in the list with the PID added and the mode left out, with its state and since when from the agents record: "answer in the page's chat" for an agent chat started, "answer it in its terminal" for another. The page shows the wait and cannot answer it. An agent starting to wait, and the wait ending, are each announced once in the polite region; entries, elapsed times and streaming text sit outside every live region (<code>SURF-8</code>, <code>ACT-6</code>, <code>ACT-7</code>, <code>REV-9</code>, <code>WORD-6</code>, <code>FB-9</code>).</li>
 <li><span class="n">4</span> Each entry is labelled: Tool call with the command a shell tool runs, the path a file tool reads or writes and the lines an edit adds and removes; Result with the tool's output; Denied for a refused call, never "user"; Reply rendered as Markdown with raw HTML shown as text; Prompt for the person's message. Tool inputs travel only on this stream, which no app hostname serves (<code>WORD-1</code>, <code>WORD-4</code>, <code>WORD-10</code>).</li>
 <li><span class="n">5</span> Newest first and at most 500 entries, as today; a text longer than 4 KiB says where it was cut (<code>FAIL-2</code>).</li>
-<li><span class="n">6</span> On the stack's machine the list's link opens this page at the loopback address in its own tab, as today; that address answers only a direct loopback request. The list renders only the address the agents record gives this browser and never builds one itself (<code>SURF-15</code>).</li>
+<li><span class="n">6</span> On the stack's machine the list's link opens this page on the stack directory's hostname in its own tab, because this machine's browser there counts as this machine; the loopback address keeps answering a direct loopback request, but nothing links it. The list renders only the address the agents record gives this browser and never builds one itself (<code>SURF-15</code>).</li>
 <li><span class="n">7</span> In a browser in another environment, over the network or through a remote preview relay, that signed in with the devhost passkey or paired, the link opens the same page on the stack directory's hostname, one path per stack, which the relay forwards; no app hostname ever serves it, and no page opened elsewhere carries a loopback address. A browser that has done neither sees toolbar-shell's sign-in state, with no list (step 1), and the path answers <code>403</code> (<code>SURF-15</code>, <code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>O55</code>).</li>
 <li><span class="n">8</span> Until an entry arrives, the page says why it is empty and that it shows no history (<code>STATE-2</code>).</li>
-<li><span class="n">9</span> Before closing the stream after a stop, the server sends why: the page stops reconnecting, reads "Stopped" with the reason and the command that starts the stack again, and keeps the entries already shown under "From the run that ended at 14:32" (<code>ACT-10</code>, <code>HOLD-2</code>, <code>STATE-3</code>, <code>SURF-15</code>).</li>
+<li><span class="n">9</span> Before closing the stream with 1001 after a stop, the server sends why: the page stops reconnecting, reads "Stopped" with <code>ACT-10</code>'s sentence for the reason and the command that starts the stack again, and keeps the entries already shown under "From the run that ended at 14:32" (<code>ACT-10</code>, <code>HOLD-2</code>, <code>STATE-3</code>, <code>SURF-15</code>).</li>
 <li><span class="n">10</span> The idle timeout and Ctrl-C in the stack's terminal read in the same form, never Reconnecting (<code>ACT-10</code>, <code>WORD-7</code>, <code>FAIL-5</code>).</li>
 <li><span class="n">11</span> When <code>devhost stack restart</code>, <code>devhost restart-all</code> or <code>devhost upgrade</code> replaces the stack, the page on the stack directory's hostname reaches the new run through the same path, reconnects and says so once, naming the command, its entries kept under the run that ended (<code>ACT-10</code>, <code>O18</code>, <code>O55</code>).</li>
-<li><span class="n">12</span> The page at the loopback address cannot learn the new run's port, so it shows the run ended and how to open the page again, never Reconnecting (<code>ACT-10</code>, <code>WORD-7</code>).</li>
+<li><span class="n">12</span> The unlinked page at the loopback address belongs to the replaced run's port and cannot learn the new one, so it shows the run ended with a link to the page on the stack directory's hostname, never Reconnecting: <code>ACT-10</code>'s one exception (<code>ACT-10</code>, <code>O55</code>, <code>WORD-7</code>).</li>
 <li><span class="n">13</span> When a save turns chat off, the page reads Stopped, says why, stops reconnecting and keeps its entries; the stream closes with 1000, because what it served is over (<code>SEL-11</code>, <code>HOLD-5</code>).</li>
 <li><span class="n">14</span> When the watcher cannot start, the server sends the cause before closing the stream, and the page offers <b>Retry Now</b>, never Reconnecting (<code>FAIL-2</code>, <code>STATE-4</code>, <code>WORD-7</code>).</li>
 <li><span class="n">15</span> When the control server dies without closing the stream, the page keeps its entries and retries after 1, 2, 4 and 8 s and then every 10 s, as today; <b>Retry Now</b> tries at once (<code>HOLD-2</code>, <code>ACT-5</code>, <code>STATE-3</code>).</li>
-<li><span class="n">16</span> A turn the person stopped reads "Stopped by you after 29 s" in the neutral style, never as a failure; Stopped and Prompt are labels <code>WORD-10</code> does not list yet (<code>FAIL-5</code>, <code>WORD-7</code>, <code>WORD-10</code>).</li>
+<li><span class="n">16</span> A turn the person stopped reads "Stopped by you after 29 s" in the neutral style, never as a failure; Stopped and Prompt are <code>WORD-10</code> labels (<code>FAIL-5</code>, <code>WORD-7</code>, <code>WORD-10</code>).</li>
 <li><span class="n">17</span> Two agents of one CLI keep separate headings by PID, so their entries never interleave unnamed (<code>WORD-4</code>).</li></ol>
 <p class="fixes">Fixes reload-and-agents-06, reload-and-agents-10, reload-and-agents-13 · Backend: where Watch Live Activity opens, per browser and on the stack directory's hostname (Backend 4), readable entries and state messages on the activity stream (Backend 5), why a stream ends (Backend 6)</p></div>
 </section>
@@ -404,8 +404,8 @@
 <tr><td>worktree and folder</td><td>main ~/acme · worktree root</td></tr>
 <tr><td>conversation</td><td>Fix the nav header · This worktree (live)</td></tr>
 <tr><td>scan</td><td>incomplete: Codex agents could not be listed · checked 14:10:12</td></tr>
-<tr><td>activity, this machine</td><td>127.0.0.1:&lt;port&gt;/__devhost__/agents/activity</td></tr>
-<tr><td>activity, signed in elsewhere</td><td>devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity</td></tr>
+<tr><td>activity, this machine</td><td>devhost.acme.test/__devhost__/stacks/acme-shop/agents/activity</td></tr>
+<tr><td>activity, signed in elsewhere</td><td>devhost--devbox--preview.acme.test/__devhost__/stacks/acme-shop/agents/activity</td></tr>
 </tbody></table>
 <div class="muted small" style="margin-top:4px"><span class="n">1</span> never a transcript path, a native session ID or message text</div>
 </div>
@@ -442,7 +442,7 @@
 Stop 2 stacks and end Claude Code's waiting turn in main? [y/N]</pre>
 </div>
 </div>
-<div class="cap"><div class="banner">Open conflict: agent-chat's second-agent question asks only when a listed agent works or waits; this proposal has it also ask while the scan is incomplete, naming the agents devhost could not check, instead of sending as if none ran. <a href="index.html#conflicts">See conflicts</a></div>
+<div class="cap">
 <h2>5. Hand the same record to the questions that name agents</h2>
 <p>Each question keeps its owner and its own rule for when it asks: worktree-switch's switch question, agent-chat's second-agent question and stack-run-stop's multi-stack commands. What changes: every agent they name comes from the list's one record, so no surface scans agents on its own, every surface names an agent the same way, and an incomplete scan is never read as "no agents" (<code>REV-3</code>, <code>REV-6</code>, <code>REV-7</code>, <code>FB-4</code>).</p>
 <ol><li><span class="n">1</span> The record answers each agent's product name, PID, state and since when, worktree label, folder and, for an agent chat started, its conversation's ID, title and mode, plus whether the scan was complete, which agents it could not list and where Watch Live Activity opens for this browser; it carries no transcript path, native session ID or message text beyond the conversation title chat already shows.</li>
@@ -477,18 +477,18 @@ Stop 2 stacks and end Claude Code's waiting turn in main? [y/N]</pre>
 </ul></div>
 <div><h3>Changed</h3><ul>
 <li>The control stays on the bar at zero and with chat off (<code>CC-33</code>); its accessible name counts in words</li>
-<li>Tool inputs reach the loopback activity stream, never the app's origin</li>
+<li>Tool inputs reach the activity stream, never the app's origin</li>
 <li>A stream closed after devhost's <code>ended</code> message ends the page instead of reconnecting</li>
 <li>The record lists the stack's other worktrees and answers the CLI without a page URL</li>
 <li>A failed scan shows instead of being dropped by the page's schema</li>
-<li>From another machine, Watch Live Activity no longer links to the viewer's own loopback address</li>
-<li>A replaced stack: the page on the stack directory's hostname follows the new run; the page at the loopback address says the run ended</li>
+<li>Watch Live Activity is linked on the stack directory's hostname, on this machine too, and never to a loopback address</li>
+<li>A replaced stack: the page on the stack directory's hostname follows the new run; the unlinked page at the loopback address says the run ended</li>
 </ul></div>
 <div><h3>Kept</h3><ul>
 <li>Agents devhost did not start are listed, from chat or a terminal; subdirectories count, subagents fold into their session; waiting agents sort first</li>
 <li>One machine-wide scan per 5 s with a 10 s limit, read every 10 s while chat is on and the page is visible; a CLI that fails never hides what the others found</li>
 <li>Transcript paths and native session IDs never reach the app's origin</li>
-<li>Watch Live Activity at the loopback address answers only a direct loopback request; no app hostname serves it; it sends no-store and no-referrer, shows no history, cuts long text, keeps 500 entries and stops watching when its tab closes (owner rule)</li>
+<li>Watch Live Activity at the loopback address, now unlinked, answers only a direct loopback request; no app hostname serves it; it sends no-store and no-referrer, shows no history, cuts long text, keeps 500 entries and stops watching when its tab closes (owner rule)</li>
 <li>The list and the page never send to an agent or answer its approvals (owner rule); the agents routes answer 404 while chat is off, and running agents keep running when it turns off</li>
 <li>Restart Stack, switches and hot reloads keep the control server, so an open activity tab stays live</li>
 </ul></div>
