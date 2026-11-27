@@ -93,6 +93,22 @@ Commands:
                     expiry and SHA-256 fingerprint</pre>
           </div>
           <div class="win">
+            <div class="bar"><b>Docs › Install › Download the binary</b><span>into a folder you can write</span></div>
+            <div class="work small">
+              <pre class="term">
+curl -fsSL "https://github.com/alexgorbatchev/devhost/releases/download/$tag/devhost-$tag-$platform.tar.gz" | tar -xz
+mkdir -p ~/.local/bin
+install "devhost-$tag-$platform/devhost" ~/.local/bin/devhost
+echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; ~/.zprofile  # macOS only
+devhost --version</pre
+              >
+              <p>
+                Any directory on your <code>PATH</code> works in place of ~/.local/bin; <code>devhost upgrade</code> can
+                replace it only in a folder you can write without sudo. <span class="muted">…</span>
+              </p>
+            </div>
+          </div>
+          <div class="win">
             <div class="bar"><b>Docs › Install › Prepare Caddy</b><span>and the README's install block</span></div>
             <div class="work small">
               <pre class="term">
@@ -177,11 +193,11 @@ devhost caddy start</pre
               folder the person can write updates with <code>devhost upgrade</code>; dotfiles, package managers, local
               builds and folders that need sudo update their own way, then run <code>devhost restart</code>. Both
               restart every stack and serve session in a new devhost supervisor running the new binary. stack-run-stop
-              owns both commands' behavior and output; the "Download the binary" section adds that
-              <code>devhost upgrade</code> can replace the binary only in a folder writable without sudo (<code
-                >O18</code
-              >
-              revision 7, <code>O31</code>).
+              owns both commands' behavior and output. The "Download the binary" recipe installs into ~/.local/bin
+              without sudo, with one line on macOS that puts the folder on the PATH, so a person who follows it updates
+              with <code>devhost upgrade</code> and never types a password for it (product owner's decision); the
+              section adds that <code>devhost upgrade</code> can replace the binary only in a folder writable without
+              sudo (<code>O18</code> revision 7, <code>O31</code>).
             </li>
             <li>
               <span class="n">8</span> Neither command updates Caddy, which keeps its own update:
