@@ -1496,14 +1496,14 @@ Error: Cannot find module './db'
             <code>devhost service start|stop|restart &lt;service|group&gt;…</code> via stack-run-stop, and
             <code>devhost service restart --all</code> is Restart Stack's terminal form, whose help says "Restart Stack
             in the browser", owner item q86a1; <code>MENU-6</code>), distinct from shipped
-            <code>devhost stack restart</code> (project-scoped), <code>devhost restart</code> and
-            <code>devhost upgrade</code>, which replace the running devhost supervisor process (<code>O18</code>). What
-            changes in the Services panel is that it sits apart from <b>Restart Changed</b> and asks first, in place; in
-            the crash view and on recovery pages it still runs on one press, with the same reach in a line beside its
-            button; and in manifest-free command-mode serve sessions it gives way to a working <b>Restart Command</b>.
-            While any other operation runs, it is unavailable with that operation and its progress named
-            (<code>HOLD-3</code>). Keys: Enter in the question takes <b>Cancel</b>; Escape cancels (<code>KEY-9</code>,
-            <code>KEY-8</code>).
+            <code>devhost stack restart</code> (project-scoped, a new run of the stack inside the devhost supervisor)
+            and <code>devhost restart</code>, and from the new <code>devhost upgrade</code>; those last two replace the
+            running devhost supervisor process (<code>O18</code>). What changes in the Services panel is that it sits
+            apart from <b>Restart Changed</b> and asks first, in place; in the crash view and on recovery pages it still
+            runs on one press, with the same reach in a line beside its button; and in manifest-free command-mode serve
+            sessions it gives way to a working <b>Restart Command</b>. While any other operation runs, it is unavailable
+            with that operation and its progress named (<code>HOLD-3</code>). Keys: Enter in the question takes
+            <b>Cancel</b>; Escape cancels (<code>KEY-9</code>, <code>KEY-8</code>).
           </p>
           <ol>
             <li>
