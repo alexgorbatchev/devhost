@@ -82,9 +82,25 @@ fn failed_caddy_restart_releases_a_concurrent_route_withdrawal() {
             Instant::now() < deadline,
             "stop never reached the service
 stop: {}
-restart: {}",
+restart: {}
+stack logs: {}",
             fs::read_to_string(stopped_project.join("stop.log")).unwrap_or_default(),
-            fs::read_to_string(runtime.root.path().join("restart.log")).unwrap_or_default()
+            fs::read_to_string(runtime.root.path().join("restart.log")).unwrap_or_default(),
+            fs::read_dir(runtime.state().join("logs"))
+                .map(|entries| entries
+                    .flatten()
+                    .map(|entry| format!(
+                        "{}:
+{}",
+                        entry.path().display(),
+                        fs::read_to_string(entry.path()).unwrap_or_default()
+                    ))
+                    .collect::<Vec<_>>()
+                    .join(
+                        "
+"
+                    ))
+                .unwrap_or_default()
         );
         thread::sleep(Duration::from_millis(20));
     }

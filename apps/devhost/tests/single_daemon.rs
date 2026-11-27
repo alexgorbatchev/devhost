@@ -323,11 +323,10 @@ fn multiple_stacks_and_serve_sessions_share_one_daemon_isolate_env_and_auto_exit
             "cmdsingle",
             "--",
             "python3",
-            "-m",
-            "http.server",
+            "-c",
+            // socketserver.TCPServer listens without HTTPServer's host name lookup, which can outlast startup on macOS.
+            "import http.server, socketserver, sys; socketserver.TCPServer(('127.0.0.1', int(sys.argv[1])), http.server.SimpleHTTPRequestHandler).serve_forever()",
             &cmd_port.to_string(),
-            "--bind",
-            "127.0.0.1",
         ])
         .output()
         .unwrap();
