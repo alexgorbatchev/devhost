@@ -631,11 +631,11 @@ $ devhost logs --path
             <code>devhost service start|stop|restart &lt;service|group&gt;…</code> targets named services or groups, and
             <code>devhost service restart --all</code> is the terminal form of in-process <b>Restart Stack</b>, which
             the toolbar, crash view, recovery pages and control API offer; its help says "Restart Stack in the browser"
-            (<code>CC-11</code>, <code>MENU-6</code>, applied default of owner item q86), while
-            <code>devhost stack restart</code> starts a new run of the stack inside the shared devhost supervisor and
-            <code>devhost restart</code> and <code>devhost upgrade</code> restart every stack and serve session in a new
-            supervisor running this executable (<code>O18</code>). These commands reach the running stack through its
-            control server on the loopback port recorded in the state directory.
+            (<code>CC-11</code>, <code>MENU-6</code>, owner item q86a1), while <code>devhost stack restart</code> starts
+            a new run of the stack inside the shared devhost supervisor and <code>devhost restart</code> and
+            <code>devhost upgrade</code> restart every stack and serve session in a new supervisor running this
+            executable (<code>O18</code>). These commands reach the running stack through its control server on the
+            loopback port recorded in the state directory.
           </p>
           <ol>
             <li>

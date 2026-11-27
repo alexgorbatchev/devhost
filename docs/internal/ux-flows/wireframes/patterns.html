@@ -162,20 +162,20 @@
           <a href="#revision-7">Revision 7 items</a>): one sign-in sentence, a rejected configuration drawn as a
           condition, Restart Stack's terminal command, focus after a pick or a menu, the toolbar's segment order, one
           fixture set, new rules <b>BAR-5</b>, <b>FAIL-6</b>, <b>FB-13</b>, <b>WORD-12</b>, <b>SD-1</b> to
-          <b>SD-7</b> and <b>WF-1</b> to <b>WF-6</b>, and contract changes <code>CC-41</code> to <code>CC-52</code>; its
+          <b>SD-7</b> and <b>WF-1</b> to <b>WF-6</b>, and contract changes <code>CC-41</code> to <code>CC-53</code>; its
           last items (R7-89 to R7-96) add the stopped, blocked and external glyphs to every legend, draw a stopped
           stack's notice as a condition, put relay fixture hostnames under the passkey's own subdomain, settle long log
           lines and move shared wireframe parts into the stylesheet; after the rebase onto Rust
           <code>main</code> (<code>bc33e2f1</code>), R7-97 to R7-100 follow the shared supervisor the product owner
           shipped (one supervisor runs every stack and serve session, no per-stack PID) and <code>O64</code> records
           three shipped Agent Chat behaviors; three product calls (q84, q85 and the form of the Close Conversation
-          confirmation) wait for the product owner. Revision 6 records the product owner's final Phase 7 answers of
-          2026-11-25, settles <code>O30</code>'s parallel-shutdown design, and migrates all backend implementation paths
-          to Rust <code>main</code> (<code>190a8bb5</code>; Go retired, <code>q82a1</code>). Of the 64 entries: 61 are
-          <b>Decided</b> (O1–O49, O52–O59 and O61–O64; O64 records Agent Chat behaviors the product owner shipped on
-          <code>main</code>), 2 are <b>Withdrawn</b> (O50 and O51: editor support dropped completely), 1 is
-          <b>Retired</b> (O60, retired by O51), and <b>0 remain Awaiting owner</b>. Sections 5.1 and 5.2 of the full
-          reference list every owner item's verdict and the product owner's four rules: <code>HOLD-8</code>,
+          confirmation) are decided by the product owner (2026-11-27). Revision 6 records the product owner's final
+          Phase 7 answers of 2026-11-25, settles <code>O30</code>'s parallel-shutdown design, and migrates all backend
+          implementation paths to Rust <code>main</code> (<code>190a8bb5</code>; Go retired, <code>q82a1</code>). Of the
+          64 entries: 61 are <b>Decided</b> (O1–O49, O52–O59 and O61–O64; O64 records Agent Chat behaviors the product
+          owner shipped on <code>main</code>), 2 are <b>Withdrawn</b> (O50 and O51: editor support dropped completely),
+          1 is <b>Retired</b> (O60, retired by O51), and <b>0 remain Awaiting owner</b>. Sections 5.1 and 5.2 of the
+          full reference list every owner item's verdict and the product owner's four rules: <code>HOLD-8</code>,
           <code>ACT-14</code>, <code>FB-12</code> and <code>WORD-11</code>.
         </p>
         <ul class="small">
@@ -5244,8 +5244,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>REV-8, UNDO-5, WORD-12; O18, O52</td>
               <td>
                 <code>start/install.md</code>: the trust sentence gains the authority, fingerprint and
-                <code>devhost caddy untrust</code>; new Update and Uninstall sections; the install folder sentence (its
-                default waits on q85). (revision 7)
+                <code>devhost caddy untrust</code>; new Update and Uninstall sections; the recipe installs into
+                ~/.local/bin without sudo (product owner, q85a1). (revision 7)
               </td>
             </tr>
             <tr>
@@ -5285,6 +5285,16 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
                 launcher failure becomes one line under devhost's own source in the stack's log, for this machine and
                 signed-in or paired browsers only; <code>guides/devtools.md</code>'s third-party section says a reload
                 clears the notice and the log keeps the failure (third-party-devtools Backend 9).
+              </td>
+            </tr>
+            <tr>
+              <td>CC-53</td>
+              <td>HOLD-6, REV-1, MENU-6; O18, O37</td>
+              <td>
+                <code>guides/shared-managed-caddy-settings.md</code>: a waiting stack's pages offer Restart Now, which
+                starts its next run at once and moves the page to its new address;
+                <code>reference/control-api.md</code> gains <code>POST /__devhost__/new-run</code> (product owner,
+                q84a1; proxy-settings).
               </td>
             </tr>
           </tbody>
@@ -5346,8 +5356,8 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
         <h2 class="sec">Revision 7 items</h2>
         <p>
           Section 3.8 of the reference: each gap or disagreement the 19 reconciliation units reported, merged across the
-          flows that raised it, with its decision and the rules that carry it. R7-73 and R7-74 are product calls waiting
-          for the product owner (q85, q84).
+          flows that raised it, with its decision and the rules that carry it. R7-73 and R7-74 are product calls the
+          product owner decided (q85a1, q84a1).
         </p>
         <table class="t ref">
           <colgroup>
@@ -6105,15 +6115,19 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>R7-73</td>
               <td>Install recipe folder</td>
               <td>
-                Owner question q85, asked; not decided here. <span class="muted">Raised by first-run-setup.</span>
+                The recipe puts devhost in ~/.local/bin without sudo, with one PATH line on macOS (product owner,
+                q85a1). <span class="muted">Raised by first-run-setup.</span>
               </td>
-              <td>owner</td>
+              <td>CC-48, first-run-setup</td>
             </tr>
             <tr>
               <td>R7-74</td>
               <td>config.toml routing settings live</td>
-              <td>Owner question q84, asked; not decided here. <span class="muted">Raised by proxy-settings.</span></td>
-              <td>owner</td>
+              <td>
+                Next start, stated, and a waiting stack's pages offer <b>Restart Now</b>, which starts its next run at
+                once (product owner, q84a1). <span class="muted">Raised by proxy-settings.</span>
+              </td>
+              <td>CC-53, proxy-settings</td>
             </tr>
             <tr>
               <td>R7-75</td>
@@ -6363,8 +6377,9 @@ devhost: ERR: certificate trust needs a person. Ask the person to run devhost ca
               <td>
                 Recorded as the product owner's decisions: <b>Close Conversation</b> asks first (exception to
                 <code>REV-1</code> and <code>UNDO-4</code>), the header shows only the agent's name, chat remembers
-                whether it was expanded. Whether the exception covers the shipped dialog form, where <code>SURF-2</code>
-                asks in place, waits for the product owner.
+                whether it was expanded. The question asks in place, as <code>SURF-2</code> asks: <b>Cancel</b> focused,
+                <b>Close Conversation</b>, the conversation list named (product owner, q88a2); the shipped dialog is
+                replaced.
                 <span class="muted">Raised by the re-check of agent-chat.</span>
               </td>
               <td>O64</td>
