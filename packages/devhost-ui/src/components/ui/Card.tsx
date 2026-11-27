@@ -39,7 +39,3 @@ export function CardTitle(props: CardProps): React.ReactElement {
     <div data-slot="card-title" data-testid="CardTitle" className="min-w-0 flex-1 truncate font-bold" {...props} />
   );
 }
-
-export function CardContent(props: CardProps): React.ReactElement {
-  return <div data-slot="card-content" data-testid="CardContent" className="grid gap-1.5 px-2 py-1.5" {...props} />;
-}

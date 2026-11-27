@@ -13,7 +13,6 @@ type ReactFunctionLocationTuple = [string, string, number, number];
 type ReactStackFrameTuple = [string, string, number, number, number, number, boolean];
 
 interface IDevToolsInspectElementPayload {
-  type?: string;
   value?: {
     source?: NormalizedSourceValue;
     stack?: ReactStackFrameTuple[] | null;

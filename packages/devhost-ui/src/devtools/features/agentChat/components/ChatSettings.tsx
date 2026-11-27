@@ -30,6 +30,8 @@ interface IChatSettingsProps {
 interface IChatSettingItem {
   value: string | null;
   label: string;
+  /** The native catalog's description, shown under the label in the open list. */
+  description?: string;
   isDisabled?: boolean;
 }
 
@@ -46,7 +48,8 @@ export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element 
   // A null value is the native default: the harness picks its configured model.
   const modelItems: IChatSettingItem[] = [
     { value: null, label: "Configured default" },
-    ...(harness?.models.map((model) => ({ value: model.id, label: model.label })) ?? []),
+    ...(harness?.models.map((model) => ({ value: model.id, label: model.label, description: model.description })) ??
+      []),
   ];
   const conversationItems: IChatSettingItem[] = [
     { value: null, label: "New conversation" },
@@ -103,11 +106,32 @@ export function ChatSettings({ chat, isBusy }: IChatSettingsProps): JSX.Element 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {modelItems.map((item) => (
-                    <SelectItem key={item.value ?? ""} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
+                  {modelItems.map((item, index) => {
+                    const descriptionId = `${modelId}-description-${index}`;
+                    return (
+                      <SelectItem
+                        key={item.value ?? ""}
+                        value={item.value}
+                        aria-describedby={item.description ? descriptionId : undefined}
+                      >
+                        {item.description ? (
+                          <span className="flex min-w-0 flex-col">
+                            <span>{item.label}</span>
+                            {/* Described by reference, so the option's name stays its label. */}
+                            <span
+                              id={descriptionId}
+                              aria-hidden="true"
+                              className="whitespace-normal text-muted-foreground"
+                            >
+                              {item.description}
+                            </span>
+                          </span>
+                        ) : (
+                          item.label
+                        )}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </Field>

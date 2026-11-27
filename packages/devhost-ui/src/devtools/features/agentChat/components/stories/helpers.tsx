@@ -123,13 +123,14 @@ export function deliverChatReply(sequence: number): void {
 }
 
 /** Reports a new status for the saved conversation, as the server does when a turn starts or ends. */
-export function deliverChatStatus(status: IChatSession["status"]): void {
+/** Delivers a session status, with the reason the server gives when a session fails. */
+export function deliverChatStatus(status: IChatSession["status"], error?: string): void {
   if (!liveChatConnection) throw new Error("The chat stream is not connected.");
   liveChatStatus = status;
   liveChatConnection.send({
     type: "state",
     sessionId: fixture_reloadSession.id,
-    session: { ...fixture_reloadSession, status },
+    session: { ...fixture_reloadSession, status, ...(error === undefined ? {} : { error }) },
     pendingRequestIds: [],
   });
 }

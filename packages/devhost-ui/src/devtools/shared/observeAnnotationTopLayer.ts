@@ -1,5 +1,6 @@
 import { ANNOTATION_LAYER_SELECTOR, DEVTOOLS_ROOT_ATTRIBUTE_NAME, TOP_LAYER_ELEMENT_SELECTOR } from "./constants";
 import { installDevtoolsStyles } from "./devtoolsStyles";
+import type { DomTreeRoot } from "./types";
 import {
   promoteAnnotationTopLayer,
   restackAboveAnnotationTopLayer,
@@ -12,8 +13,7 @@ interface IAnnotationTopLayerOptions extends Omit<IAnnotationTopLayerOrder, "cov
   readCover: () => HTMLElement | null;
 }
 
-type AnnotationTree = Document | ShadowRoot;
-type AnnotationSubtree = Element | AnnotationTree;
+type AnnotationSubtree = Element | DomTreeRoot;
 
 /** Keeps only the owned annotation mount in the active modal/popover's interaction scope. */
 export function observeAnnotationTopLayer({
@@ -25,7 +25,7 @@ export function observeAnnotationTopLayer({
   readCover,
 }: IAnnotationTopLayerOptions): VoidFunction {
   const document = home.ownerDocument;
-  const roots = new Map<AnnotationTree, MutationObserver>();
+  const roots = new Map<DomTreeRoot, MutationObserver>();
   const opened: HTMLElement[] = [];
   let isDisposed = false;
   let isScheduled = false;
@@ -139,7 +139,7 @@ export function observeAnnotationTopLayer({
     }
     schedule();
   };
-  const observe = (root: AnnotationTree): void => {
+  const observe = (root: DomTreeRoot): void => {
     if (roots.has(root) || root === host.shadowRoot) return;
     const observer = new MutationObserver(handleMutations);
     roots.set(root, observer);

@@ -248,7 +248,10 @@ it("retakes every line of one guide and keeps the other guides' takes", async ()
 it("records each take as it is made, so the lines before a failed request are not spoken again", async () => {
   const projectPath = await createProject("failed");
 
-  await expect(generateGuideAudio(projectPath, "all", "keep", createApiFailingAt(3))).rejects.toThrow("quota exceeded");
+  // The failure names the line and the voice by its name in narration.json, beside the opaque ID.
+  await expect(generateGuideAudio(projectPath, "all", "keep", createApiFailingAt(3))).rejects.toThrow(
+    "ElevenLabs could not speak devtools query-1 with voice Narrator (voice-123): quota exceeded",
+  );
 
   expect(await readRecordedLines(projectPath)).toEqual({ devtools: ["intro", "overview-1"] });
   const spokenTexts: string[] = [];

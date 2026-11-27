@@ -174,7 +174,9 @@ stackDirectoryHost = {:?}
         fs::create_dir_all(&dir).unwrap();
         fs::write(
             dir.join("server.py"),
-            r#"import http.server, os, sys
+            r#"import http.server, os, socketserver, sys
+# Startup and readiness lines make a service that never listens diagnosable from the stack log.
+print(f"server.py starting with {sys.executable}", file=sys.stderr, flush=True)
 port = int(os.environ["PORT"])
 tag = os.environ.get("RESOLVED_TAG", "")
 raw = os.environ.get("CUSTOM_TAG", "")
@@ -190,7 +192,15 @@ class H(http.server.BaseHTTPRequestHandler):
         self.end_headers()
     def log_message(self, *args):
         pass
-http.server.ThreadingHTTPServer(("127.0.0.1", port), H).serve_forever()
+class Server(http.server.ThreadingHTTPServer):
+    # HTTPServer.server_bind resolves its host name with socket.getfqdn before it listens; a slow reverse lookup,
+    # as on macOS CI hosts, outlasts the health check.
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+server = Server(("127.0.0.1", port), H)
+print(f"server.py listening on 127.0.0.1:{port}", file=sys.stderr, flush=True)
+server.serve_forever()
 "#,
         )
         .unwrap();
@@ -313,11 +323,10 @@ fn multiple_stacks_and_serve_sessions_share_one_daemon_isolate_env_and_auto_exit
             "cmdsingle",
             "--",
             "python3",
-            "-m",
-            "http.server",
+            "-c",
+            // socketserver.TCPServer listens without HTTPServer's host name lookup, which can outlast startup on macOS.
+            "import http.server, socketserver, sys; socketserver.TCPServer(('127.0.0.1', int(sys.argv[1])), http.server.SimpleHTTPRequestHandler).serve_forever()",
             &cmd_port.to_string(),
-            "--bind",
-            "127.0.0.1",
         ])
         .output()
         .unwrap();

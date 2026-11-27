@@ -4,6 +4,9 @@ import type { StateStorage } from "zustand/middleware";
 
 export type GetSettingsStorage = () => StateStorage;
 
+/** A document or shadow root: a tree that devtools can mount into, style, or observe. */
+export type DomTreeRoot = Document | ShadowRoot;
+
 export interface IChatScrollPosition {
   top: number;
   left: number;
@@ -85,7 +88,6 @@ export type HealthResponse = {
 };
 
 export interface IWorktreeDirectory {
-  name: string;
   cwd: string;
 }
 

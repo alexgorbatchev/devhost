@@ -75,7 +75,35 @@ fn failed_caddy_restart_releases_a_concurrent_route_withdrawal() {
     let mut restarting = logged_command(command, &runtime.root.path().join("restart.log"));
     wait_until(|| directory.join("restart-pending").exists());
     let mut stopping = stop_command(&runtime, &stopped_project);
-    wait_until(|| stopped_project.join("stop-entered").exists());
+    // The stop must reach the service while the restart holds Caddy; on a timeout, both commands' logs say where it waits.
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while !stopped_project.join("stop-entered").exists() {
+        assert!(
+            Instant::now() < deadline,
+            "stop never reached the service
+stop: {}
+restart: {}
+stack logs: {}",
+            fs::read_to_string(stopped_project.join("stop.log")).unwrap_or_default(),
+            fs::read_to_string(runtime.root.path().join("restart.log")).unwrap_or_default(),
+            fs::read_dir(runtime.state().join("logs"))
+                .map(|entries| entries
+                    .flatten()
+                    .map(|entry| format!(
+                        "{}:
+{}",
+                        entry.path().display(),
+                        fs::read_to_string(entry.path()).unwrap_or_default()
+                    ))
+                    .collect::<Vec<_>>()
+                    .join(
+                        "
+"
+                    ))
+                .unwrap_or_default()
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
     assert!(stopping.0.try_wait().unwrap().is_none());
     assert!(restarting.0.try_wait().unwrap().is_none());
     assert_eq!(

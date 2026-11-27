@@ -3,7 +3,7 @@ import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, 
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { userEvent as nativeUserEvent } from "vitest/browser";
 
-import { Textarea } from "../../../../components/ui/Textarea";
+import { Textarea } from "@alexgorbatchev/shadcn";
 import { isEventTargetEditingSurface } from "../../isEventTargetEditingSurface";
 import { DevtoolsToolbar } from "../DevtoolsToolbar";
 import { DevtoolsTopLayer } from "../DevtoolsTopLayer";

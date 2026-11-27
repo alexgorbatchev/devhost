@@ -1,15 +1,10 @@
+import type { ISourceLocation } from "../../shared/sourceLocation";
+
 export interface IRectSnapshot {
   x: number;
   y: number;
   width: number;
   height: number;
-}
-
-export interface IAnnotationSourceLocation {
-  columnNumber?: number;
-  componentName?: string;
-  fileName: string;
-  lineNumber: number;
 }
 
 export interface ISelectedElementDraft {
@@ -18,7 +13,7 @@ export interface ISelectedElementDraft {
   elementPath: string;
   markerNumber: number;
   selectedText?: string;
-  sourceLocation?: IAnnotationSourceLocation;
+  sourceLocation?: ISourceLocation;
 }
 
 export interface IAnnotationMarkerPayload {
@@ -35,5 +30,5 @@ export interface IAnnotationMarkerPayload {
   nearbyElements: string;
   nearbyText: string;
   selectedText?: string;
-  sourceLocation?: IAnnotationSourceLocation;
+  sourceLocation?: ISourceLocation;
 }

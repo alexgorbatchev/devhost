@@ -9,8 +9,14 @@ export async function speakLine(
   request: ISpokenLineRequest,
   outputPath: string,
 ): Promise<ISpokenLine> {
-  const response = await api.speak(request.voice.id, createSpeechRequest(request));
-  if (!response.alignment) throw new Error(`ElevenLabs returned no word timings for ${request.name}`);
+  const { voice } = request;
+  // The voice ID alone does not say which voice failed; narration.json names it beside the ID.
+  const speaker = `voice ${voice.name} (${voice.id})`;
+  const response = await api.speak(voice.id, createSpeechRequest(request)).catch((error: unknown): never => {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`ElevenLabs could not speak ${request.name} with ${speaker}: ${reason}`, { cause: error });
+  });
+  if (!response.alignment) throw new Error(`ElevenLabs returned no word timings for ${request.name} with ${speaker}`);
   await Bun.write(outputPath, Buffer.from(response.audioBase64, "base64"));
   return { duration: await readAudioDuration(outputPath), words: createPromoWords(response.alignment) };
 }

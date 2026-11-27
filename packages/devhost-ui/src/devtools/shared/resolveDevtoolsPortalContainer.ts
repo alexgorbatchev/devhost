@@ -1,6 +1,5 @@
 import { ANNOTATION_LAYER_SELECTOR, DEVTOOLS_ROOT_ID } from "./constants";
-
-type DevtoolsTree = Document | ShadowRoot;
+import type { DomTreeRoot } from "./types";
 
 /**
  * Uses the enclosing annotation layer when present; otherwise finds DevtoolsTopLayer in the anchor's tree.
@@ -10,7 +9,7 @@ export function resolveDevtoolsPortalContainer(anchorElement: HTMLElement): HTML
   const annotationLayer = anchorElement.closest<HTMLElement>(ANNOTATION_LAYER_SELECTOR);
   if (annotationLayer !== null) return annotationLayer;
   const rootNode: Node = anchorElement.getRootNode();
-  const tree: DevtoolsTree = rootNode instanceof ShadowRoot ? rootNode : anchorElement.ownerDocument;
+  const tree: DomTreeRoot = rootNode instanceof ShadowRoot ? rootNode : anchorElement.ownerDocument;
   const devtoolsRoot: HTMLElement | null = tree.getElementById(DEVTOOLS_ROOT_ID);
 
   if (devtoolsRoot === null) {

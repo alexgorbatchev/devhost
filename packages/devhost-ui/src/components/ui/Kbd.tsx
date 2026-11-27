@@ -18,14 +18,3 @@ export function Kbd({ className, tone = "muted", ...props }: IKbdProps) {
     />
   );
 }
-
-export function KbdGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <kbd
-      data-slot="kbd-group"
-      data-testid="KbdGroup"
-      className={cn("inline-flex shrink-0 flex-nowrap items-center gap-0.5 whitespace-nowrap", className)}
-      {...props}
-    />
-  );
-}

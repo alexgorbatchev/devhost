@@ -276,11 +276,12 @@ pub(super) async fn cursor(
             );
         }
     };
-    let manifest = handle.live.manifest();
-    let message = json!({"kind":"cursor","locator":cursor.locator,
-        "projectRoot":manifest.as_ref().map(|manifest| manifest.manifest_directory.display().to_string()).unwrap_or_default(),
-        "stackName":manifest.map(|manifest|manifest.name).unwrap_or_default(),
-        "timestamp":std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()});
+    let project_root = handle
+        .live
+        .manifest()
+        .map(|manifest| manifest.manifest_directory.display().to_string())
+        .unwrap_or_default();
+    let message = json!({"kind":"cursor","locator":cursor.locator,"projectRoot":project_root});
     let _ = handle.live.events.cursor.send(message.to_string());
     axum::Json(json!({"success":true})).into_response()
 }

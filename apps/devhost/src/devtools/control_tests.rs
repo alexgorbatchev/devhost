@@ -566,7 +566,11 @@ fn websocket_streams_deliver_retained_logs_health_cursor_resources_and_close_on_
         );
         let update = payload(&mut cursor).await;
         assert_eq!(update["locator"], "src/app.tsx:2");
-        assert_eq!(update["stackName"], "controls");
+        assert_eq!(
+            update["projectRoot"],
+            fixture.root.path().display().to_string()
+        );
+        assert!(update.get("stackName").is_none() && update.get("timestamp").is_none());
         assert_eq!(
             fixture
                 .json("react-highlight/cursor", json!({"locator":""}))

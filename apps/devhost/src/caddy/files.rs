@@ -217,7 +217,9 @@ fn assert_stack_directory_host_available(directory: &Path, host: &str) -> Result
         &registrations_dir,
         "read managed caddy registrations directory",
     )? {
-        let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+        let Some(bytes) = read_listed_registration(&path)? else {
+            continue;
+        };
         let raw: serde_json::Value = path_ctx(
             serde_json::from_slice(&bytes),
             "parse managed route registration",
@@ -310,6 +312,16 @@ pub(crate) fn json_files(directory: &Path, context: &str) -> Result<Vec<PathBuf>
     Ok(files)
 }
 
+/// Reads a route registration listed by `json_files`. A registration removed after the listing, by a stack
+/// stopping concurrently, is gone rather than an error, so the caller skips it.
+pub(crate) fn read_listed_registration(path: &Path) -> Result<Option<Vec<u8>>, String> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => path_ctx(Err(error), "read managed route registration", path),
+    }
+}
+
 fn write_stack_directory_site(
     directory: &Path,
     settings: &CaddySettings,
@@ -386,7 +398,9 @@ fn read_active_route_links(routes_dir: &Path, https_port: u16) -> Result<Vec<Rou
         &registrations_dir,
         "read managed caddy registrations directory",
     )? {
-        let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+        let Some(bytes) = read_listed_registration(&path)? else {
+            continue;
+        };
         let raw: serde_json::Value = path_ctx(
             serde_json::from_slice(&bytes),
             "parse managed route registration",
@@ -557,6 +571,31 @@ mod tests {
     use std::os::unix::fs::PermissionsExt;
 
     use super::*;
+
+    #[test]
+    fn a_registration_removed_after_listing_is_skipped_and_other_read_failures_are_reported() {
+        let fixture = tempfile::tempdir().unwrap();
+        let kept = fixture.path().join("kept.json");
+        let removed = fixture.path().join("removed.json");
+        fs::write(&kept, "{}").unwrap();
+        fs::write(&removed, "{}").unwrap();
+        let listed = json_files(fixture.path(), "list").unwrap();
+        assert_eq!(listed.len(), 2);
+        // A concurrent stop removes one registration between the listing and the read.
+        fs::remove_file(&removed).unwrap();
+        assert_eq!(
+            read_listed_registration(&kept).unwrap(),
+            Some(b"{}".to_vec())
+        );
+        assert_eq!(read_listed_registration(&removed).unwrap(), None);
+        let unreadable = fixture.path().join("unreadable.json");
+        fs::create_dir(&unreadable).unwrap();
+        assert!(
+            read_listed_registration(&unreadable)
+                .unwrap_err()
+                .contains("read managed route registration")
+        );
+    }
 
     #[test]
     fn site_refresh_preserves_in_flight_file_readers() {
