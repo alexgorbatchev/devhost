@@ -32,7 +32,7 @@ The Bun server binds to loopback on the port devhost assigns. It renders this Ma
 
 ## Regenerating
 
-1. Install the [Archify skill](https://github.com/tt-a1i/archify) version 3.2.0 and set `ARCHIFY_CLI` to that installation's `bin/archify.mjs`.
+1. Install the [Archify skill](https://github.com/tt-a1i/archify) version 3.3.1 and set `ARCHIFY_CLI` to that installation's `bin/archify.mjs`.
 2. Set `ARCHIFY_CHROME` to a supported Chrome/Chromium executable if browser discovery needs help. On isolated Linux validation hosts without a usable Chrome sandbox, Archify accepts `ARCHIFY_CHROME_NO_SANDBOX=1` for that command.
 3. From the repository root, run `just archify build` (also the default for `just archify`). It validates source evidence, renders the HTML, checks provenance, and runs real-browser checks. A failed or skipped gate fails the recipe.
 4. Review the changed diagram and commit its JSON specification and generated HTML together. Automated browser checks do not establish visual review. Run `just check` for repository validation.
