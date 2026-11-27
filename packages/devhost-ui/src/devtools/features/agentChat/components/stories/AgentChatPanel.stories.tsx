@@ -709,10 +709,10 @@ export const DiscoveredHarnessAndModel: Story = {
     // Another harness offers its own models and starts from its configured default.
     await expect(model).toHaveTextContent("Configured default");
     await userEvent.click(model);
-    const models = within(await canvas.findByRole("listbox"))
-      .getAllByRole("option")
-      .map((option) => option.textContent);
-    await expect(models).toEqual(["Configured default", "Discovered Claude model"]);
+    const options = within(await canvas.findByRole("listbox")).getAllByRole("option");
+    await expect(options).toHaveLength(2);
+    await expect(options[0]).toHaveAccessibleName("Configured default");
+    await expect(options[1]).toHaveAccessibleName("Discovered Claude model");
     await userEvent.click(canvas.getByRole("option", { name: "Discovered Claude model" }));
     await expect(model).toHaveTextContent("Discovered Claude model");
   },
@@ -884,8 +884,12 @@ export const HeaderShowsHarnessLogoSpinnerAndCompactState: Story = {
     await within(header!).findByText("codex · running");
     expect(within(moveHandle).queryByTestId("OpenAILogo")).toBeNull();
     expect(within(moveHandle).getByTestId("Icon").getAnimations()).toHaveLength(1);
-    // An error has no badge of its own, so the heading shows it.
-    deliverChatStatus("error");
+    // An error has no badge of its own, so the heading shows it, and the panel shows the server's reason.
+    deliverChatStatus("error", "Codex exited with status 1 before the turn finished.");
+    expect(await within(panel).findByText("Codex exited with status 1 before the turn finished.")).toHaveAttribute(
+      "role",
+      "alert",
+    );
     await waitFor(() =>
       expect(
         within(header!)
@@ -896,6 +900,7 @@ export const HeaderShowsHarnessLogoSpinnerAndCompactState: Story = {
     expect(within(header!).getByRole("status")).toHaveTextContent("codex · error");
     deliverChatStatus("idle");
     await within(header!).findByText("codex · idle");
+    expect(within(panel).queryByText("Codex exited with status 1 before the turn finished.")).toBeNull();
     expect(within(moveHandle).getByTestId("OpenAILogo")).toBeVisible();
     // Switching harness to Claude Code shows the Claude logo in the header.
     await userEvent.click(canvas.getByRole("button", { name: "Close Conversation" }));

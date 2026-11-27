@@ -194,6 +194,12 @@ export function AgentChatPanel({
             {chat.sendError}
           </p>
         ) : null}
+        {/* The header says only that the session failed; the server's reason says why. */}
+        {chat.session?.status === "error" && chat.session.error ? (
+          <p role="alert" className="p-2 text-destructive">
+            {chat.session.error}
+          </p>
+        ) : null}
         {chat.decision ? <ChatDecisionPrompt decision={chat.decision} onDecide={chat.decide} /> : null}
         {chat.joinedSession ? (
           <p role="status" className="p-2 text-muted-foreground">

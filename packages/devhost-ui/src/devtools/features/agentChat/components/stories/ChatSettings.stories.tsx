@@ -28,8 +28,16 @@ export const Default: Story = {
     await waitFor(() => expect(dialog).toBeVisible());
     const model = within(dialog).getByRole("combobox", { name: "Model" });
     await waitFor(() => expect(model).toHaveTextContent("Configured default"));
-    await chooseChatSetting(canvas, "Model", "Discovered Codex model");
+    // Each model shows its native catalog description under its name, without making it part of the name.
+    await userEvent.click(model);
+    const discovered = await canvas.findByRole("option", { name: "Discovered Codex model" });
+    expect(discovered).toHaveAccessibleDescription("From installed harness");
+    expect(within(discovered).getByText("From installed harness")).toBeVisible();
+    expect(canvas.getByRole("option", { name: "Configured default" })).not.toHaveAccessibleDescription();
+    await userEvent.click(discovered);
+    await waitFor(() => expect(canvas.queryByRole("listbox")).toBeNull());
     expect(model).toHaveTextContent("Discovered Codex model");
+    expect(model).not.toHaveTextContent("From installed harness");
     expect(model.getBoundingClientRect().height).toBeGreaterThanOrEqual(28);
     // The trigger spans the dialog's field column instead of shrinking to its label.
     expect(model.getBoundingClientRect().width).toBe(

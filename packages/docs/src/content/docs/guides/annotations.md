@@ -20,7 +20,7 @@ The film shows the earlier terminal-based annotation workflow. Browser chat, dra
 
 1. Install and sign in to the [Codex CLI](https://learn.chatgpt.com/docs/cli) or [Claude Code](https://code.claude.com/docs/en/cli-reference) on the machine running devhost. The agent runs with its own account, settings, permissions, and environment; you never enter an API key in the browser.
 2. Open **Chat** in the toolbar, then **Chat Settings** (the gear).
-3. Choose a **Harness** and a model from its list. **Configured default** uses the CLI's own default model.
+3. Choose a **Harness** and a model from its list. Each model shows the description its CLI gives it. **Configured default** uses the CLI's own default model.
 
 **Refresh Harnesses** looks for installed CLIs again. Finding a CLI does not prove it is signed in: if it is not, the first message fails with an authentication error in the conversation. Sign in through the CLI and send again.
 
@@ -30,7 +30,7 @@ The agent works in the checkout the page belongs to. After a [worktree switch](.
 
 Chat opens compact, showing a working spinner and then the latest reply. **Expand Chat** shows the whole conversation with streamed replies and tool activity, with consecutive tool calls in one collapsible group; **Compact Chat** goes back. The panel opens at the same edge as the toolbar's popups, on either side of the page, and collapsing it does not stop the agent.
 
-Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts. On phone-sized screens the panel stays docked. The panel header names the agent beside its logo, which turns into a spinner while the agent works or waits for you; the header spells out the status only after an error or while reconnecting. The **Chat** button shows the same spinner.
+Drag the panel by its header to put it anywhere; compact and expanded chat share the position. It stays on screen when the window shrinks. From the keyboard, focus **Move Chat Panel**, then use the arrow keys, and **Home** to return it. **Move Chat** also returns a dragged panel to its side. devhost remembers the position for each manifest, on every hostname of the stack and across restarts. On phone-sized screens the panel stays docked. The panel header names the agent beside its logo, which turns into a spinner while the agent works or waits for you; the header spells out the status only after an error or while reconnecting. After an error, the panel shows the reason the CLI or devhost gave, such as the agent process exiting. The **Chat** button shows the same spinner.
 
 | To                            | Use                                                                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
