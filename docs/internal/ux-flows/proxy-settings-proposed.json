@@ -381,7 +381,7 @@
       "col": 5,
       "type": "security",
       "label": "Waits for its next start",
-      "sublabel": "domainSuffix or [remote]",
+      "sublabel": "domainSuffix · Restart Now",
       "tag": "proxy-settings-08",
       "sources": [
         {
@@ -513,7 +513,7 @@
       "items": [
         "Removed: bindHost = \"127.0.0.1\" silently widened to every interface on macOS (now loopback from port 1024, a warning below it); 'Applied the shared Caddy settings from <path>.' followed by every URL again; 'shared Caddy settings rejected: <error chain>'; the title 'devhost config change not applied'; 'managed caddy does not need privileged-port setup on macOS.'; every service drawn down on a page whose port moved; the directory collision that names only a PID; a routing change refusing the whole save; relayed pages refused when Caddy is not on 443",
         "Merged: applied, rejected and 'change not applied' become one event; each stack's copy of the settings, each relay lease's captured address and the record of what Caddy runs become one record every surface and the relay read",
-        "New: the config file's path in caddy --help; the proxy line and its macOS warning; reach stated beside Save; checks, certification and restore; listeners-moving and pages that follow with Open; the change summary; waiting-suffix and waiting-relay lines and notice; the connector's unreachable line and start self-check; privileged-ports' lines and AGENT=1 refusal",
+        "New: the config file's path in caddy --help; the proxy line and its macOS warning; reach stated beside Save; checks, certification and restore; listeners-moving and pages that follow with Open; the change summary; waiting-suffix and waiting-relay lines and notice; the connector's unreachable line and start self-check; privileged-ports' lines and AGENT=1 refusal; Restart Now on a waiting stack's pages (owner decision)",
         "Changed: on macOS a loopback bindHost listens on loopback from port 1024; running stacks and relay previews follow a change a start applied; a held port is refused before the move; a rejection clears whenever config.toml matches what runs; a routing change waits only for the stacks it changes",
         "Kept: file location and defaults; every interface by default (owner rule); hot reload with no question and no service restart (O45); one reload under the route lock, never applied twice; refused changes keep the running settings; config editor off by default; strict TLS for configured hostnames (O63); only a person changes trust (REV-8)"
       ]
@@ -545,7 +545,8 @@
         "The move certified with the stack directory's hostname and restored when it fails; every configured route, stopped stacks' included, on the new port (O63)",
         "One record of what Caddy runs, with origin, time, listeners and text, followed by every stack and the relay connector",
         "The outcome line, the plan for a draft, the proxy line, privileged-ports' lines and AGENT=1 refusal",
-        "Routing settings decided per stack; a remote stack's public port; the connector following the record with an in-memory lease table and pooled connections"
+        "Routing settings decided per stack; a remote stack's public port; the connector following the record with an in-memory lease table and pooled connections",
+        "Restart Now: POST /__devhost__/new-run starts a waiting stack's next run in the shared supervisor, as devhost stack restart does, under O37's check (CC-53)"
       ]
     },
     {
@@ -558,7 +559,8 @@
         "CC-27 (with O63, O15): configured-hosts-only TLS stays; stopped stacks' 24 h routes move with the port",
         "CC-37: /__devhost__/config/validate returns what saving would do, the URLs it moves included; config/save takes an operationId",
         "CC-39 (with O61): machineName names devbox in the reach lines",
-        "CC-43: shared-managed-caddy-settings.md macOS bullet (O39), its move, rejection and routing sentences; remote-previews.md any Caddy port; service-references.md and environment-variables.md public URL from the request (O45); cli.md and managed-caddy.md privileged-ports, with the REV-8 refusal"
+        "CC-43: shared-managed-caddy-settings.md macOS bullet (O39), its move, rejection and routing sentences; remote-previews.md any Caddy port; service-references.md and environment-variables.md public URL from the request (O45); cli.md and managed-caddy.md privileged-ports, with the REV-8 refusal",
+        "CC-53: a waiting stack's pages offer Restart Now, which starts its next run and moves the page; control-api.md gains POST /__devhost__/new-run (owner decision q84a1)"
       ]
     },
     {
