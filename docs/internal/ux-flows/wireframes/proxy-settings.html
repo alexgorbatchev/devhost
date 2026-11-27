@@ -1223,6 +1223,15 @@ Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with d
             <div class="pg" style="min-height: 96px">
               <div class="apptxt">Acme Shop · Storefront …</div>
               <div class="corner">
+                <div class="banner">
+                  ◆ [remote] settings wait for a restart · Restart Now starts Acme Shop's next run with the new relay
+                  settings
+                  <span class="n">4</span>
+                  <div class="row" style="margin-top: 4px">
+                    <span class="btn">Restart Now</span><span class="btn">Copy Command</span
+                    ><span class="btn">Dismiss</span>
+                  </div>
+                </div>
                 <div class="tbar">
                   <span class="seg"><b>Acme Shop ▾</b></span
                   ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
@@ -1278,8 +1287,9 @@ Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with d
             service (<code>O45</code>). What changes is that a <code>domainSuffix</code> or <code>[remote]</code> change
             waits only for the stacks it changes and never holds back the rest of the save, that relay previews keep
             answering whatever Caddy's port and wherever it moves, and that the docs teach services to read their public
-            URL from the request. Keys: <b>Copy Command</b> and <b>Dismiss</b> are ordinary buttons in the notice's Tab
-            order (<code>KEY-4</code>).
+            URL from the request. Keys: <b>Restart Now</b>, <b>Copy Command</b> and <b>Dismiss</b> are ordinary buttons
+            in the notice's Tab order, in that order; while the new run starts, <b>Restart Now</b> stays the busy
+            control with focus (<code>KEY-4</code>, <code>KEY-11</code>).
           </p>
           <ol>
             <li>
@@ -1302,9 +1312,10 @@ Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with d
             </li>
             <li>
               <span class="n">4</span> A stack running in remote mode keeps its relay settings until its next start,
-              while the save's <code>[caddy]</code> part applies for every stack; the relay connector takes Caddy's
-              address from the record of what Caddy runs, so a move by a save, another project's start or a serve
-              session leaves every preview answering (<code>ACT-12</code>).
+              prints the same line and shows the waiting-relay notice with <b>Restart Now</b>, <b>Copy Command</b> and
+              <b>Dismiss</b> on its pages, relayed ones included, while the save's <code>[caddy]</code> part applies for
+              every stack; the relay connector takes Caddy's address from the record of what Caddy runs, so a move by a
+              save, another project's start or a serve session leaves every preview answering (<code>ACT-12</code>).
             </li>
             <li>
               <span class="n">5</span> When the connector cannot reach Caddy, the remote stack prints one line naming
@@ -1371,7 +1382,10 @@ Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with d
             <li>
               <code>listeners-moving</code>, and pages that follow their stack to the new address with <b>Open</b>.
             </li>
-            <li>The waiting-suffix and waiting-relay lines and notice, and the connector's unreachable-Caddy line.</li>
+            <li>
+              The waiting-suffix and waiting-relay lines and notice with <b>Restart Now</b> and <b>Copy Command</b>, and
+              the connector's unreachable-Caddy line.
+            </li>
             <li>
               privileged-ports' help line, its download and password notices, its refusal under <code>AGENT=1</code> and
               the re-run line.
