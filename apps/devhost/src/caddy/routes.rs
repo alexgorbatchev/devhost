@@ -557,7 +557,9 @@ pub fn cleanup_stale_registrations(caddy_dir: &Path) -> Result<(), String> {
         &registrations_dir,
         "read managed caddy registrations directory",
     )? {
-        let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+        let Some(bytes) = files::read_listed_registration(&path)? else {
+            continue;
+        };
         let record: RouteRegistration = path_ctx(
             serde_json::from_slice(&bytes),
             "parse managed route registration",
@@ -640,7 +642,9 @@ pub fn release_orphaned_owner_records(
             &registrations_dir,
             "read managed caddy registrations directory",
         )? {
-            let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+            let Some(bytes) = files::read_listed_registration(&path)? else {
+                continue;
+            };
             let record: RouteRegistration = path_ctx(
                 serde_json::from_slice(&bytes),
                 "parse managed route registration",
@@ -841,7 +845,9 @@ pub(crate) fn sync_global_state(caddy_dir: &Path, settings: &CaddySettings) -> R
         &registrations_dir,
         "read managed caddy registrations directory",
     )? {
-        let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+        let Some(bytes) = files::read_listed_registration(&path)? else {
+            continue;
+        };
         if let Ok(record) = serde_json::from_slice::<RouteRegistration>(&bytes) {
             hosts.insert(record.host);
         }
@@ -881,7 +887,9 @@ pub(crate) fn read_host_registrations(
         &registrations_dir,
         "read managed caddy registrations directory",
     )? {
-        let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+        let Some(bytes) = files::read_listed_registration(&path)? else {
+            continue;
+        };
         let Ok(mut record) = serde_json::from_slice::<RouteRegistration>(&bytes) else {
             continue;
         };
@@ -911,10 +919,8 @@ pub(crate) fn owner_urls(
         &caddy_dir.join("routes/.registrations"),
         "read managed route registrations",
     )? {
-        let bytes = match fs::read(&path) {
-            Ok(bytes) => bytes,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
-            Err(error) => return path_ctx(Err(error), "read managed route registration", &path),
+        let Some(bytes) = files::read_listed_registration(&path)? else {
+            continue;
         };
         let record: RouteRegistration = path_ctx(
             serde_json::from_slice(&bytes),
@@ -1188,7 +1194,9 @@ fn assert_host_available(
         &registrations_dir,
         "read managed caddy registrations directory",
     )? {
-        let bytes = path_ctx(fs::read(&path), "read managed route registration", &path)?;
+        let Some(bytes) = files::read_listed_registration(&path)? else {
+            continue;
+        };
         let record: RouteRegistration = path_ctx(
             serde_json::from_slice(&bytes),
             "parse managed route registration",
