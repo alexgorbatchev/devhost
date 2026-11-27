@@ -1186,10 +1186,12 @@ devhost stack restart</pre>
               <div class="apptxt">Acme Admin · Orders …</div>
               <div class="corner">
                 <div class="banner">
-                  ◆ domainSuffix waits for a restart · admin.acme.test → admin--devbox.devhost.acme.test
+                  ◆ domainSuffix waits for a restart · admin.acme.test → admin--devbox.devhost.acme.test · Restart Now
+                  moves this page to the new address; sign-in and saved data stay on the old one
                   <span class="n">3</span>
                   <div class="row" style="margin-top: 4px">
-                    <span class="btn">Copy Command</span><span class="btn">Dismiss</span>
+                    <span class="btn">Restart Now</span><span class="btn">Copy Command</span
+                    ><span class="btn">Dismiss</span>
                   </div>
                 </div>
                 <div class="tbar">
@@ -1291,9 +1293,12 @@ Acme Shop's relay previews cannot reach Caddy at 127.0.0.1:4443. Start it with d
               reported, never refused in silence (<code>HOLD-6</code>, <code>WORD-8</code>, <code>FAIL-4</code>).
             </li>
             <li>
-              <span class="n">3</span> Its pages show the wait as a condition notice with <b>Copy Command</b>; it blocks
-              nothing. <b>Restart Stack</b> keeps the hostnames the stack started with, and
-              <code>devhost stack restart</code> applies the suffix (<code>ACT-7</code>, <code>HOLD-6</code>).
+              <span class="n">3</span> Its pages show the wait as a condition notice with <b>Restart Now</b> and
+              <b>Copy Command</b>; it blocks nothing. <b>Restart Now</b> starts the stack's next run at once inside the
+              shared supervisor, as <code>devhost stack restart</code> does, and the page then shows the moved notice
+              with <b>Open</b>; it asks nothing because the notice says beforehand that the page moves (product owner's
+              decision). <b>Restart Stack</b> keeps the hostnames the stack started with (<code>ACT-7</code>,
+              <code>HOLD-6</code>, <code>O18</code>, <code>CC-53</code>).
             </li>
             <li>
               <span class="n">4</span> A stack running in remote mode keeps its relay settings until its next start,
