@@ -1431,11 +1431,11 @@
             </li>
             <li>
               <span class="n">6</span> When the agent's process dies, the cut-off reply ends with a plain cause and what
-              was kept, never as a finished reply; the header reads "Claude Code · exited" (<code>O64</code>),
-              <b>Resume</b> leads, <b>Copy Error</b> holds the CLI's last diagnostic lines, and the recipient line says
-              that <b>Send</b> resumes the conversation. On macOS an idle Claude Code conversation that a stack stop
-              ends reads "closed · Acme Shop stopped", never a failed process (<code>FAIL-3</code>, <code>FAIL-2</code>,
-              <code>MENU-5</code>, <code>UNDO-4</code>).
+              was kept, in the reason line the panel already shows after a session error, never as a finished reply; the
+              header reads "Claude Code · exited" (<code>O64</code>), <b>Resume</b> leads, <b>Copy Error</b> holds the
+              CLI's last diagnostic lines, and the recipient line says that <b>Send</b> resumes the conversation. On
+              macOS an idle Claude Code conversation that a stack stop ends reads "closed · Acme Shop stopped", never a
+              failed process (<code>FAIL-3</code>, <code>FAIL-2</code>, <code>MENU-5</code>, <code>UNDO-4</code>).
             </li>
           </ol>
           <p class="fixes">
