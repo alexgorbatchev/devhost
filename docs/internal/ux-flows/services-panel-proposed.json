@@ -1,0 +1,685 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Watch and restart services from the toolbar: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/services-panel-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Services panel: ask"
+    },
+    {
+      "id": "review",
+      "label": "Services panel: review"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": ["summary", "rows", "restart", "opRun", "receipt"],
+  "nodes": [
+    {
+      "id": "summary",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Services trigger",
+      "sublabel": "3 of 6 running, 1 failed",
+      "tag": "stack-scale-04",
+      "explanation": "The bar's Services trigger counts every service of the stack (matching devhost stack info / devhost status, O62), including ones left out, and leads with what needs attention: 'Services: 3 of 6 running, 1 failed: api, 2 not started, 1 changed' (BAR-1, ACT-6, WORD-5). Command-mode devhost serve -- <cmd> sessions count 1/1 for the command itself without synthetic port-<port> rows (serve-command-02). Dots show while they fit on one row; else a fixed-width summary shows '3/6 · 1 failed: api · 2 not started', naming up to three then '+N' (SURF-10). Dots and words come from the shared indicator and state-words module in both style entries, matching status pages, directory cards and forced colors (SURF-14, ACT-13, WORD-6). Starting services count as starting, never failed (ACT-4). Collapsed, toolbar-shell's badge reads this model ('1 failed · 1 changed') with api's one-line notice; routine restarts never raise it (SURF-8, ACT-7). Alt+Ctrl+B focuses the bar (KEY-3, KEY-4). Resolves stack-scale-04 and counts of services-panel-2-05, journey-new-project-02, serve-command-02; forced colors stay toolbar-shell's (keyboard-and-screen-reader-04, related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 135,
+          "end_line": 150,
+          "label": "Reuses: trigger with dots and changed badge"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 418,
+          "end_line": 424,
+          "label": "Replaces: collapsed dot: any error is down"
+        }
+      ],
+      "yOffset": 0
+    },
+    {
+      "id": "badgeKey",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Badge icon or Alt+Ctrl+R",
+      "sublabel": "stays beside a failure",
+      "tag": "services-panel-2-01",
+      "explanation": "Beside the summary, '1 changed' and its restart icon stay in place beside a failure, because changed and failed are independent (SEL-2, ACT-8); while the set restarts, the badge keeps its place with the icon unavailable as 'web is restarting' (MENU-3). The icon, Alt+Ctrl+R (restartServices, configurable; hinted ⌃⌥R on macOS from the binding's one definition, with aria-keyshortcuts), and a chat turn summary's Restart Changed ('api runs the old code until it restarts', O58) act on Restart Changed's set through one selector, on this machine or an authenticated remote browser (SEL-1, KEY-2, KEY-13, BAR-4, O36, O37). The key acts from any page outside text entry, also under the page's own modal dialog, whose notice stack then carries its progress and outcome (KEY-1, SURF-11); while Restart Stack runs or a repository switches, it restarts nothing and says why in a notice instead of being swallowed (MENU-3, HOLD-3). Resolves services-panel-2-01 (the badge and its icon vanished whenever any error showed or a restart ran).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 226,
+          "end_line": 237,
+          "label": "Replaces: badge icon hidden by any error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 209,
+          "end_line": 235,
+          "label": "Reuses: shortcut handler, skips text fields"
+        }
+      ],
+      "yOffset": -80
+    },
+    {
+      "id": "rows",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Open the Services panel",
+      "sublabel": "state · cause · route",
+      "tag": "services-panel-02",
+      "explanation": "Services opens an anchored popover (SURF-2) headed 'Acme Shop · 3 of 6 running · 1 failed · 2 not started', clear of notices and the 12 px right-edge minimap (--devhost-minimap-collapsed-width, SURF-1, SURF-9, serve-command-09). Rows group by repo then group/include with counts; unrouted rows use Background or omit single-group headings so Services never repeats (MENU-2, serve-command-09). Button borders use --dh-input-line (>=3:1 dark/light, ACT-13, serve-command-09). Rows show shape, name, state/cause/time, route text, port/external, changed tag (ACT-2, ACT-8, WORD-6); links open in the same tab (SURF-15); command-mode sessions attach URLs/ports directly to the command without synthetic port-<port> rows (serve-command-02). External rows show check/time with Check Again and never block worktree switches (ACT-9, O7); blocked repos offer Return to Configured Worktree, another worktree and Check Again (HOLD-4, WORD-11); unauthenticated remote browsers disable writes with 'Sign in with passkey or pair this browser to use devhost here' (HOLD-7, O36, O37). On overflow a filter focuses with attention pinned (SEL-10). Resolves services-panel-02, stack-scale-05, serve-command-09.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 247,
+          "end_line": 268,
+          "label": "Replaces: Applications & repeated Services"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/ToolbarPopover.tsx",
+          "line": 81,
+          "end_line": 89,
+          "label": "Replaces: popover missing minimap right inset"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/command.rs",
+          "line": 115,
+          "end_line": 136,
+          "label": "Replaces: synthetic external port-<port> rows"
+        }
+      ]
+    },
+    {
+      "id": "restart",
+      "lane": "ask",
+      "col": 2,
+      "type": "frontend",
+      "label": "Restart one service",
+      "sublabel": "busy button keeps focus",
+      "tag": "keyboard-and-screen-reader-01",
+      "explanation": "Restart on api's row runs on one press on this machine or an authenticated remote browser (REV-1, O36, O37). The pressed button keeps focus as the busy control, aria-busy and aria-disabled, never disabled, reading 'Restarting api…' (KEY-11, FB-9). The row shows each step with its elapsed time, updated at least once a second: queued behind another per-service operation or a hot reload ('queued behind Restart mail', with Cancel Restart), stopping, starting, 'health check 2 s of 30 s', running (FB-1, ACT-3, STATE-1, SEL-7); every other row keeps its own state (ACT-3). A second Restart of api while it restarts is unavailable with 'api is already restarting' (REV-12, HOLD-3, WORD-7); while the stack starts, shuts down or runs a stack-wide operation, every Restart and Start is unavailable with that operation and its progress, 'Starting Acme Shop · 2 of 6 started' (HOLD-3, CC-8). A leftover of a killed run on api's port fails the restart naming it (ACT-11). Nothing asks about agents: a restart ends no agent's work (REV-3). Resolves the focus half of keyboard-and-screen-reader-01; its crash view half is startup-and-recovery's.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 309,
+          "end_line": 319,
+          "label": "Replaces: Restart disabled while it restarts"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/restartServices.ts",
+          "line": 5,
+          "end_line": 14,
+          "label": "Reuses: POST restart-service with the names"
+        }
+      ],
+      "yOffset": 0
+    },
+    {
+      "id": "start",
+      "lane": "ask",
+      "col": 2,
+      "type": "frontend",
+      "label": "Start left-out services",
+      "sublabel": "Start 2 Services, queued",
+      "tag": "services-panel-2-05",
+      "explanation": "A not-started service sits dimmed in its group as 'not started · left out of this run' (or 'stopped by you'), counted in the stack's totals (O6, CC-7), with its hostname, Start and the visible line 'also starts worker'; Start's accessible name is 'Start admin' and its description 'Also starts worker' (SEL-1, SEL-7, WORD-2, ACT-2). With two or more, the footer offers Start 2 Services, its members in its tooltip and accessible description; while a filter hides some, it reads Start 1 Service with '1 more hidden by the filter, not included' (BAR-2, BAR-3). Each started row stays in place through queued, starting with its health check and running, and running services keep their state, never redrawn as down (ACT-3, ACT-5); Cancel Start, named 'Cancel Start of admin', takes a queued start out of the queue (SEL-7, WORD-2, CC-8). Both this machine and authenticated remote browsers can Start (O36, O37), and devhost start <names> starts omitted services into the running stack (O6). The outcome reads 'Started admin and worker · 5.2 s' (FB-3) and the terminal prints only the new URLs (FB-10). Resolves services-panel-2-05 and stack-scale-06.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 194,
+          "end_line": 207,
+          "label": "Replaces: Stopped services (n) button"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/StoppedServices.tsx",
+          "line": 16,
+          "end_line": 58,
+          "label": "Replaces: Stopped services view of bare names"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/startServices.ts",
+          "line": 6,
+          "end_line": 15,
+          "label": "Reuses: POST start-service with dependencies"
+        }
+      ],
+      "yOffset": 80
+    },
+    {
+      "id": "changedSet",
+      "lane": "ask",
+      "col": 2,
+      "type": "frontend",
+      "label": "Restart 2 Changed",
+      "sublabel": "else Restart docs",
+      "tag": "services-panel-2-02",
+      "explanation": "The footer's Restart Changed names its set: Restart 2 Changed, with 'api, web' in its tooltip and accessible description; with nothing changed it names its fallback, the page's own service, else the stack's primary service: Restart docs on the docs page (SEL-1, SEL-2, SEL-3, BAR-2, WORD-2, O4, CC-6). RestartStackButton wraps its footer buttons (flex-wrap) and hides the desktop shortcut pill on narrow viewports so Restart Changed never clips at 320 px (SURF-9, serve-command-09); manifest-free command-mode sessions omit Restart Changed because they have no watch rules (MENU-3, serve-command-02). The badge icon, a chat turn summary's Restart Changed (O58), and Alt+Ctrl+R restart the same set through one selector on this machine or an authenticated remote browser (SEL-1, O36, O37). Only managed services are ever marked changed (ACT-8, services-panel-2-06). It runs on one press (REV-1), queues behind per-service restarts or hot reloads (SEL-7, HOLD-3), and names any rejected manifest edit in its reach line (HOLD-6). Resolves services-panel-2-02 and the footer wrap of serve-command-09.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/selectRestartServiceNames.ts",
+          "line": 4,
+          "end_line": 9,
+          "label": "Replaces: fallback to the primary service"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 51,
+          "end_line": 75,
+          "label": "Replaces: unnamed button & clipped footer"
+        }
+      ],
+      "yOffset": -80
+    },
+    {
+      "id": "stackAsk",
+      "lane": "review",
+      "col": 2,
+      "type": "frontend",
+      "label": "Restart Stack question",
+      "sublabel": "in place, Cancel focused",
+      "tag": "services-panel-2-03",
+      "explanation": "Restart Stack sits apart from Restart Changed in another style, lists its 6 services in tooltip/description, and asks in place on first press (BAR-2, REV-2): 'Restart all 6 services with new automatic ports? Took 14 s last time.' with worktree label (SEL-4, WORD-11) and 'web, api, docs, worker, admin and mail' description (REV-4). Cancel takes the button's place with focus and Enter, so a double press cancels (KEY-9). Escape or clicking no control cancels back to Restart Stack with panel open (REV-4, KEY-8); another control cancels and acts; Tab past last or outside click closes both (KEY-7, SURF-2). Rejected edits show in the reach line (HOLD-6); busy stacks disable it naming the active operation (HOLD-3). Crash and recovery pages run it on one press with reach beside it (REV-1, CC-17). Distinct from devhost stack restart, devhost restart and devhost upgrade, which replace the supervisor process (O18); its terminal form is devhost service restart --all (MENU-6, CC-11). In command-mode serve sessions, working Restart Command replaces it (serve-command-02). Resolves services-panel-2-03, serve-command-02.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 66,
+          "end_line": 74,
+          "label": "Replaces: one-click Restart Stack, title only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 28,
+          "end_line": 38,
+          "label": "Replaces: result that keeps only an error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 208,
+          "end_line": 221,
+          "label": "Replaces: footer actions below the last row"
+        }
+      ],
+      "yOffset": 40
+    },
+    {
+      "id": "state",
+      "lane": "backend",
+      "col": 0,
+      "type": "backend",
+      "label": "Publish service state",
+      "sublabel": "state, cause, since",
+      "tag": "journey-new-project-02",
+      "explanation": "The status stream publishes each service's state, cause and since timestamp (ACT-2, CC-25), matching devhost stack info / devhost status (O62): not started, starting (health check target, elapsed, timeout, ACT-4), running, restarting, stopping, failed, exited (code/signal like 'SIGTERM (143)', time, sender, FAIL-3, WORD-8, CC-24), blocked (worktree reason, HOLD-4, WORD-11; external services never block switches, O7), and external reachable/not reachable with check, result and time (ACT-9); plus failed dependency, changed files, routes, port, answering link, group, manifest file and command run. Command-mode serve sessions publish sessionKind 'command' with the launched command and attached HTTP URLs/ports instead of synthetic external port-<port> rows (serve-command-02). Left-out services join the same list (CC-7), operations stream their record (ACT-1, CC-37), and remote access is gated by O36/O37. Surfaces draw this via the shared indicator live on every page (SURF-14, ACT-12). Resolves journey-new-project-02, serve-command-02, interrupted-operations-04, services-panel-02, services-panel-2-05.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/devtools/streams.rs",
+          "line": 55,
+          "end_line": 113,
+          "label": "Replaces: flat status/dirty/restarting flags"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 436,
+          "end_line": 531,
+          "label": "Replaces: snapshot states folded to boolean down"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 43,
+          "end_line": 53,
+          "label": "Reuses: one stream that updates every page"
+        }
+      ]
+    },
+    {
+      "id": "watcher",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Mark changed by content",
+      "sublabel": "clears when files match",
+      "tag": "journey-agent-fix-03",
+      "explanation": "The watcher records a hash of each watched file at every launch of a service and, after the 200 ms debounce, publishes changed with its files only while the content differs from that launch (ACT-8, CC-25). Reverting an edit clears the mark without a restart, a save with identical content never sets it, and a restart takes the new launch as the baseline, so an edit made while the old process stops stays marked only if the new process did not load it. When the page saw its own service's dev server apply an edit in place, the page adds its note 'applied in place by Vite's hot update' beside the mark, from reload-control's detection, and the published mark stays (ACT-8); the rest of journey-agent-fix-03 is reload-control's. No watcher starts for an external service, which is never marked changed; validation warns once with the file, line and key of its watch (ACT-8, ACT-9). Resolves journey-agent-fix-03's slice, stack-scale-08, the mark half of services-panel-2-01 and services-panel-2-06.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/watch.rs",
+          "line": 105,
+          "end_line": 138,
+          "label": "Replaces: any file event marks service dirty"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 332,
+          "end_line": 336,
+          "label": "Replaces: dirty mark cleared before stop"
+        }
+      ]
+    },
+    {
+      "id": "opRun",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Run service operation",
+      "sublabel": "202 record, queue, deadline",
+      "tag": "manifest-hot-reload-2-05",
+      "explanation": "restart-service and start-service take operationId, enforce O36/O37 remote auth (403 unauthenticated), and return 202 with the operation record, streaming steps >=1/s so retries read it instead of re-posting (ACT-1, REV-12, CC-37). Other services queue behind active per-service ops or hot reloads across tabs, terminal and devhost stack info / status (O62); POST /__devhost__/operations/<id>/cancel removes queued entries (SEL-7, WORD-2, CC-8). Names validate first: bad names return 422 {error, service}, clashes 409, never plain-text 500 (REV-11, MENU-6). Under O41, daemon status and stop share one 20 s deadline ([services.<name>.lifecycle].stopTimeout overrides): expiry sends SIGTERM then SIGKILL to the whole process group even if the leader exited (manifest-hot-reload-2-06), marks cut status 'did not finish', logs kills, refreshes status and releases the queue. Shutdown stops daemons and foreground services in parallel from t = 0 inside O30's 30 s stopTimeout, widening when an override > 20 s unless --timeout caps it (FAIL-3, HOLD-3, O30, O41, CC-35). Success waits for health (FB-5, ACT-11). Resolves manifest-hot-reload-2-05, manifest-hot-reload-2-06, agent-cli-journey-08.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 297,
+          "end_line": 345,
+          "label": "Reuses: name checks, then stop and start each"
+        },
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 1567,
+          "end_line": 1746,
+          "label": "Replaces: unbounded daemon & skipped group kill"
+        },
+        {
+          "path": "apps/devhost/src/devtools/server.rs",
+          "line": 475,
+          "end_line": 583,
+          "label": "Replaces: plain-text 500, no operationId or 202"
+        }
+      ]
+    },
+    {
+      "id": "stackOp",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "Restart Stack operation",
+      "sublabel": "checks first, stream open",
+      "tag": "services-panel-2-04",
+      "explanation": "restart-stack takes an operationId, enforces O36/O37 remote auth, and answers 202 with its record (ACT-1, CC-37). For manifest stacks, the services runtime runs every check it can before stopping any service (manifest, port and hostname claims, and a fixed-port probe naming its holder from manifest-hot-reload's preflight, manifest-hot-reload-05 and error-pages-06, related) and refuses with nothing stopped when one fails (REV-11); it then stops every managed service, assigns new automatic ports, starts them in dependency order and swaps routes while every page's status stream stays open, removing the routine all-down second at its source (HOLD-2, ACT-5, CC-26). Fixed ports, selected worktrees, external services, pages and chat stay on the accepted manifest (HOLD-6, WORD-11). For manifest-free command-mode devhost serve -- <cmd> sessions, Restart Command runs a manifest-free command restart and refreshes discovered HTTP routes instead of failing 'stack restart requires an accepted manifest' (serve-command-02). Process containment is now fixed on Rust main in containment.rs (process-containment-01, ACT-14). Resolves services-panel-2-04 and serve-command-02.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 373,
+          "end_line": 392,
+          "label": "Replaces: failing restart_stack in serve mode"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 814,
+          "end_line": 870,
+          "label": "Reuses: stop, start in order, swap routes"
+        },
+        {
+          "path": "apps/devhost/src/services/serve_command.rs",
+          "line": 59,
+          "end_line": 106,
+          "label": "Replaces: command-mode session lacking restart"
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Restarted api · 2.6 s",
+      "sublabel": "on its row, said once",
+      "tag": "keyboard-and-screen-reader-01",
+      "explanation": "The outcome replaces progress in place (FB-2). On the row: 'Restarted api · 2.6 s', announced once in the polite region while focus stays on Restart (FB-3, FB-9, KEY-11, WORD-4), staying while the panel is open (FB-6). Restart Stack replaces its question and focuses its sentence: 'Restarted Acme Shop · 6 of 6 running · new automatic ports for api and web · 14 s' (FB-3, REV-4). With the panel closed, from the badge icon, a chat turn summary's Restart Changed (O58), or Alt+Ctrl+R, progress is one activity line ('Restart Changed · api, web · 1 of 2 restarted · 3 s') and the outcome one notice ('Restarted api and web · 4.1 s'), staying for its reading time (1.5 s + 0.3 s/word, 4 s–15 s; 4 s here) once pointer and focus leave while visible, pausing on arrival while the window is unfocused (document.hasFocus()) until focus returns (FB-1, FB-8, FB-6, O14, O53). Outcomes log to the stack log and one terminal line (FB-7, FB-10); restarts have no Undo. Resolves keyboard-and-screen-reader-01, services-panel-2-02, services-panel-2-03; recovery announcements stay notices-and-feedback's (keyboard-and-screen-reader-02, related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 79,
+          "end_line": 82,
+          "label": "Replaces: result read from health counts"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 332,
+          "end_line": 332,
+          "label": "Replaces: log line only at restart start"
+        }
+      ]
+    },
+    {
+      "id": "partial",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "Partial Restart Stack",
+      "sublabel": "5 of 6 running, rollback",
+      "explanation": "On a stack of 6 where api exits with code 1 before its health check during Restart Stack, the outcome lists every target, 'Restart Stack: 5 of 6 running · api exited with code 1 before its health check', with api's Restart, Logs and Edit beside it, never a plain success or failure (FAIL-1, MENU-5). The rollback puts back the services as they ran before Restart Stack, service by service with their previous automatic ports: the 5 healthy services run again, api keeps failing with its recovery page, and the set is never stopped as one unit; while it restores, the panel says 'Restoring the services as they ran before Restart Stack', and its own outcome reads 'Restored the services as they ran before Restart Stack: 5 of 6 running · api still fails' (UNDO-1, ACT-3), never the accepted manifest, which Restart Stack runs before and after. This per-service rollback is what the error-pages-01 stopgap ships first, covering journey-crash-to-fix-07 and stack-directory-01 too (related, resolved by that stopgap); the crash view's report of a failed Restart Stack is startup-and-recovery's (error-pages-02, related).",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 871,
+          "end_line": 900,
+          "label": "Replaces: rollback that stops and blocks all"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 315,
+          "end_line": 331,
+          "label": "Replaces: restart as a repository recovery"
+        }
+      ]
+    },
+    {
+      "id": "failedRow",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Failure stays on the row",
+      "sublabel": "Restart · Logs · Edit",
+      "tag": "notices-and-feedback-01",
+      "explanation": "A failed restart marks the row failed or exited with one cause sentence and evidence: 'api exited with code 1 at 14:02 before its health check', frozen last output lines, failed probe or fixed port's holder, and what ran ('Ran bun run src/server.ts in api/ · devhost.toml line 14', FAIL-2, FAIL-3, WORD-7). Focus stays on Restart, described by the cause, announced once assertively (KEY-11, FB-9). MENU-5's Restart leads beside Logs, Edit and Dismiss; a repeat same failure updates in place ('api exited with code 1 · 2 times, last at 14:05') and Edit leads, opening Configuration at api's definition (FAIL-4, MENU-4, SURF-4). With the config editor off, the row shows manifest file and line with Copy only (editor integration removed under O51). Failures stay until Dismiss or success; health pushes, reconnects and closing never clear them (FB-6, FB-2). Unreadable responses show one sentence with Copy Error (FAIL-2). Killed services read 'terminated by SIGTERM (143) at 21:53:34, not sent by devhost' (FAIL-5, WORD-8); the page's own service uses the crash view (SURF-3). Resolves notices-and-feedback-01, interrupted-operations-04.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/postControlAction.ts",
+          "line": 9,
+          "end_line": 33,
+          "label": "Replaces: error text from the response body"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 62,
+          "end_line": 71,
+          "label": "Replaces: error cleared by the next push"
+        }
+      ]
+    },
+    {
+      "id": "lost",
+      "lane": "recovery",
+      "col": 0,
+      "type": "security",
+      "label": "Lost connection: unknown",
+      "sublabel": "last seen; writes off",
+      "tag": "notices-and-feedback-02",
+      "explanation": "From the moment the status stream closes, every row keeps its last known state drawn as unknown, hollow and neutral with 'last seen 16:24', and the trigger shows the connection's state, never '0/6' or a failed look (ACT-5, ACT-13). Every write in the panel, the badge icon and Alt+Ctrl+R are unavailable with the one reason the backend sent, said once in the panel's status line and given to each as its accessible description (HOLD-1, HOLD-2, MENU-3): after a stop, the stopped stack's one sentence, 'Acme Shop stopped at 16:24 by devhost stop. Start it with devhost start in ~/acme', never six failed services (ACT-10); otherwise 'Lost connection to devhost; retrying'. Queued operations stay queued in the services runtime. When the stream returns, states update in place; notices-and-feedback owns that notice, Retry Now and 'Connected again · 6 of 6 running', and this flow draws the rows and the trigger. Resolves notices-and-feedback-02 and the drawing slice of services-panel-2-04 and stack-scale-06; proxy-settings-03 stays with notices-and-feedback and proxy-settings (related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 73,
+          "end_line": 82,
+          "label": "Replaces: disconnect marks every service down"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts",
+          "line": 3,
+          "end_line": 28,
+          "label": "Replaces: state dropped on disconnect"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "summary-rows",
+      "from": "summary",
+      "to": "rows",
+      "label": "open Services",
+      "role": "main"
+    },
+    {
+      "id": "rows-restart",
+      "from": "rows",
+      "to": "restart",
+      "label": "Restart",
+      "role": "main"
+    },
+    {
+      "id": "restart-opRun",
+      "from": "restart",
+      "to": "opRun",
+      "label": "Restart api",
+      "role": "main",
+      "variant": "emphasis",
+      "toSide": "top"
+    },
+    {
+      "id": "opRun-receipt",
+      "from": "opRun",
+      "to": "receipt",
+      "label": "healthy",
+      "role": "main"
+    },
+    {
+      "id": "rows-start",
+      "from": "rows",
+      "to": "start",
+      "label": "Start",
+      "role": "branch"
+    },
+    {
+      "id": "start-opRun",
+      "from": "start",
+      "to": "opRun",
+      "label": "Start 2 Services",
+      "role": "branch",
+      "variant": "emphasis",
+      "toSide": "left",
+      "labelDy": -24
+    },
+    {
+      "id": "badgeKey-changedSet",
+      "from": "badgeKey",
+      "to": "changedSet",
+      "label": "same set",
+      "role": "branch"
+    },
+    {
+      "id": "changedSet-opRun",
+      "from": "changedSet",
+      "to": "opRun",
+      "label": "Restart api, web",
+      "role": "branch",
+      "variant": "emphasis",
+      "toSide": "right"
+    },
+    {
+      "id": "rows-stackAsk",
+      "from": "rows",
+      "to": "stackAsk",
+      "label": "Restart Stack",
+      "role": "branch"
+    },
+    {
+      "id": "stackAsk-stackOp",
+      "from": "stackAsk",
+      "to": "stackOp",
+      "label": "Restart all 6",
+      "role": "branch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "stackOp-receipt",
+      "from": "stackOp",
+      "to": "receipt",
+      "label": "6 of 6 running",
+      "role": "branch",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "opRun-failedRow",
+      "from": "opRun",
+      "to": "failedRow",
+      "label": "fails",
+      "role": "error",
+      "fromSide": "bottom"
+    },
+    {
+      "id": "stackOp-partial",
+      "from": "stackOp",
+      "to": "partial",
+      "label": "a start fails",
+      "role": "error"
+    },
+    {
+      "id": "watcher-state",
+      "from": "watcher",
+      "to": "state",
+      "label": "files differ",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "state-summary",
+      "from": "state",
+      "to": "summary",
+      "label": "pushed",
+      "role": "branch",
+      "variant": "dashed",
+      "toSide": "bottom",
+      "bias": 0.6
+    },
+    {
+      "id": "state-lost",
+      "from": "state",
+      "to": "lost",
+      "label": "stream closes",
+      "role": "error",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: the rollback that stopped and blocked a whole repository when one service could not start (replaced by UNDO-1's per-service rollback, which the error-pages-01 stopgap ships first); synthetic external port-<port> rows, Restart Changed and failing Restart Stack in command-mode serve sessions (serve-command-02); the Stopped services button and view; the hover title as Restart Stack's only warning; the all-down second after Restart Stack and each Start; plain-text 500s for a caller's mistake; a failure erased by the next health message; every Start disabled while one runs; the repeated Services heading, 320 px footer clipping, minimap overlap and 1.63:1 dark / 1.57:1 light button borders (serve-command-09); Open in Editor fallback (O51)",
+        "Merged: not-started and running services in one list with one count; the badge icon, Restart Changed, a chat turn summary's Restart Changed (O58) and Alt+Ctrl+R on one selector that reads one server-computed changed mark",
+        "New: one shared service state indicator and state-words module for the toolbar and status pages (SURF-14); first-class command-mode serve rows (1/1, attached URLs/ports) with working Restart Command (serve-command-02); wrapping narrow-viewport footer, minimap-inset popovers, non-repeating Background heading and >=3:1 --dh-input-line button borders (serve-command-09); a state word with cause and time on every row; route, port and an answering link; the operation record with queued rows and Cancel Restart or Cancel Start; per-row progress and outcomes; Start 2 Services; per-row Logs, Edit (or Copy file and line) and Dismiss; a repeated failure counted in one report; Check Again on an unreachable external row and a blocked repository; the in-place Restart Stack question; a filter, groups and pinned attention group at scale; last exit kept after a restart; O41's 20 s shared daemon deadline with override and whole-process-group SIGKILL (manifest-hot-reload-2-06) inside O30's parallel shutdown; O36/O37 remote passkey/pairing auth gating; documented start, stop, cancel and Check Again routes with a Rust route-completeness test",
+        "Changed: Restart Changed's fallback is the page's own service, named (O4, CC-6); the run's selection changes while it runs (O6, CC-7); starts queue (CC-8); Restart Stack asks first in the panel and stays distinct from devhost stack restart, devhost restart and devhost upgrade (O18, CC-17); changed means files differ from launch (CC-25); success notices pause on unfocused arrival via document.hasFocus() (O14, O53); a lost connection is unknown, never down (CC-26); external services never block worktree switches and need no warning (O7); watch on an external service warns once; a row's link opens in the same tab (SURF-15); every working copy is a worktree (WORD-11); CLI inspection uses devhost stack info / devhost status (O62); Restart Stack's rollback reports the services it put back, never the accepted manifest (UNDO-1)",
+        "Kept: a row's Restart acts on one service, keeps its automatic port and succeeds only when healthy; external services show status only; every name is checked before anything stops; one operation at a time per stack, now with a visible queue; Restart unavailable while that service restarts; one selector for Restart Changed, the icon and the key, never in the app's text fields; Start brings its dependencies; Restart Stack keeps fixed ports, selected worktrees, external services, pages and chat on the accepted manifest; a failed Restart Stack rolls back; a blocked repository never falls back silently; restarts and starts run on one press; the crash view and recovery pages hand off here; one health stream updates every page; status pages keep telling starting, could not start, exited and not responding apart, now from the published state and the shared indicator (ACT-2, SURF-14)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Trigger, badge, rows and responsive layout: stack-scale-04, services-panel-2-01, services-panel-02, stack-scale-05, serve-command-09 (P2, slice)",
+        "Restart, Start and Restart Changed: keyboard-and-screen-reader-01, services-panel-2-05, services-panel-2-02, services-panel-2-06",
+        "Restart Stack and command-mode serve sessions: services-panel-2-03, services-panel-2-04, serve-command-02 (P1, slice)",
+        "Published state and changed mark: journey-new-project-02, interrupted-operations-04, journey-agent-fix-03, stack-scale-08",
+        "Operations, queue, daemon deadline and process-group kill: manifest-hot-reload-2-05 (P1), manifest-hot-reload-2-06 (P3), agent-cli-journey-08, stack-scale-06",
+        "Outcomes and failures in place: services-panel-2-02, services-panel-2-03, keyboard-and-screen-reader-01, notices-and-feedback-01, interrupted-operations-04",
+        "Lost connection: notices-and-feedback-02, services-panel-2-04, stack-scale-06",
+        "Slices here, the rest elsewhere: serve-command-02 (serve-folder); serve-command-09 (toolbar-shell); services-panel-2-04 and journey-new-project-02 (notices-and-feedback); journey-agent-fix-03 (reload-control); notices-and-feedback-01 (notices-and-feedback, config-editor); keyboard-and-screen-reader-01 (startup-and-recovery); interrupted-operations-04 (stack-run-stop)",
+        "Related, not covered: error-pages-01 with journey-crash-to-fix-07 and stack-directory-01 (P0, resolved by its stopgap, which ships first); process-containment-01 (P0, fixed on Rust main 190a8bb5 in containment.rs; stack-run-stop owns remaining O30 shutdown)",
+        "Related, not covered: error-pages-02 and journey-crash-to-fix-01 (startup-and-recovery); journey-crash-to-fix-02 (config-editor); interrupted-operations-02 and agent-cli-journey-03 (stack-run-stop)",
+        "Related, not covered: manifest-hot-reload-05 with error-pages-06, and interrupted-operations-05 (manifest-hot-reload); keyboard-and-screen-reader-02 (notices-and-feedback); keyboard-and-screen-reader-04 and keyboard-and-screen-reader-05 (toolbar-shell); proxy-settings-03 (notices-and-feedback, proxy-settings); agent-cli-journey-07 (its own patch)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Published service state (streams.rs, stack/live.rs): state, cause, since, failed dependency, changed files, health check, routes, port, link, group, manifest file and what devhost ran, and an external service's check with its last result and time; left-out services in the same list (CC-25, CC-7)",
+        "Operation record (devtools/server.rs, stack/runtime.rs): operationId, 202 Accepted with the record, streamed at least once a second; a repeated ID returns the record and runs nothing; row Dismiss calls POST /__devhost__/operations/<id>/dismiss (owned by notices-and-feedback) (CC-37)",
+        "Queue and cancel (stack/runtime.rs): per-service starts and restarts queue in order behind a per-service operation or a reload; POST /__devhost__/operations/<id>/cancel; 409 with {error, service} for a clash (CC-8, CC-37)",
+        "Shared daemon lifecycle deadline and parallel shutdown (stack.rs): O41's 20 s deadline shared by daemon status and stop from status read start, [services.<name>.lifecycle].stopTimeout override, SIGTERM then SIGKILL to whole -pgid even if group leader exits early (manifest-hot-reload-2-06), cut status read never 'not running', fresh status read afterwards; parallel foreground + daemon stop from t = 0 inside O30's 30 s default stopTimeout with widening rule (CC-35)",
+        "Changed from content (watch.rs, manifest/validation.rs): hash at each launch compared after 200 ms debounce; no watcher and one warning for an external service (CC-25)",
+        "Streams stay open (streams.rs, stack/runtime.rs): kept open through Restart Stack's route swap and Start; stream sends its reason before closing (CC-26)",
+        "Routes, codes and one error body (devtools/server.rs): start-service documented, stop-service added, 422 or 409 with {error, service}, never plain-text 500; Rust route-list completeness test fails for undocumented mounted routes including operations/<id>/dismiss (CC-37)",
+        "Exit records (stack/live.rs, stack.rs): code, or signal with status, time, sender and frozen last lines, kept after a restart until the stack stops (CC-24)",
+        "Page's own service (document_injection.rs): names the page's service for Restart Changed's fallback (CC-6); devhost service start|stop|restart <service|group>... and restart --all, built by stack-run-stop (CC-11)",
+        "Check Again (stack/live.rs, health.rs, streams.rs): immediate read-only external check route gated by O36/O37 and added to CC-37; a blocked worktree's Check Again uses GET /__devhost__/worktrees (HOLD-4)",
+        "Command-mode serve sessions (serve_command.rs, stack/command.rs, stack/runtime.rs): sessionKind 'command' with command string and attached HTTP URLs/ports instead of synthetic external port-<port> rows, plus manifest-free Restart Command (serve-command-02)",
+        "Remote auth gating (devtools/server.rs, request_guard.rs): apply O36's shared-domain passkey + devhost pair classifier to ws/health and all service write, operations/<id>/dismiss (notices-and-feedback) and Check Again routes, answering 403 for unauthenticated remote clients (HOLD-7, HOLD-8, O36, O37)"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-6: Restart Changed's fallback is the page's own service, named in its label (O4)",
+        "CC-7: the run's selection changes while it runs; left-out services are counted and listed (O6)",
+        "CC-8: starts and restarts of other services queue, shown on every page with Cancel Restart or Cancel Start",
+        "CC-11, built by stack-run-stop: devhost service start|stop|restart <service|group>... and devhost service restart --all (Restart Stack) reach the running stack as the toolbar does",
+        "CC-17: Restart Stack asks first in the Services panel; one press in the crash view and on recovery pages, its reach beside the button; distinct from devhost stack restart, devhost restart and devhost upgrade (O18)",
+        "CC-24: an exit names its signal with its status, time and sender; devhost's own stops are steps of their operation",
+        "CC-25: the health stream publishes each service's state with its cause; changed means files differ from launch; watch on external warns once",
+        "CC-26: a lost connection is unknown, never down, with every write unavailable and its reason",
+        "CC-35: O41's 20 s shared daemon deadline, [services.<name>.lifecycle].stopTimeout, and O30's parallel shutdown with configurable 30 s default stopTimeout and widening rule; daemon guide status-command example",
+        "CC-37: operationId and 202 Accepted, start-service, stop-service, cancel, dismiss (notices-and-feedback), Check Again and command-mode restart routes, 403/409/422 with one JSON error body",
+        "CC-22, with stack-run-stop: one terminal outcome line per operation on a running stack; URLs on request via devhost stack info / devhost status (O62)",
+        "Design reference and serve docs: packages/design/references/devtools.html:758,770-775,1230-1241 updates button borders to --dh-input-line (>=3:1), .restart-actions to flex-wrap, and .panel minimap inset (serve-command-09); start/serve.md documents command-mode Restart Command and 1/1 panel layout (serve-command-02)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
+        "Drawn from the current diagram and the written proposal; sources cite only existing Rust and UI code a step reuses or replaces at 190a8bb5, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

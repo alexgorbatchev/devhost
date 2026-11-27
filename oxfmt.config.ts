@@ -9,6 +9,7 @@ export default createOxfmtConfig(() => ({
     "apps/devhost/target/**",
     "apps/devhost/vendor/**",
     "docs/internal/architecture/**/*.html",
+    "docs/internal/ux-flows/*.html",
     "packages/playground/**",
   ],
 }));

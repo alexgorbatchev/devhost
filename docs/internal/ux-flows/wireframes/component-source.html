@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Find a page element's source · proposed flow wireframe</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      /* Page-specific rules, scoped to this page's mockups: page elements devhost outlines, the source menu's
+   parts, and the page area beside docked chat. */
+      .mock .cs-el {
+        display: inline-block;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 2px 8px;
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .mock .cs-hl {
+        outline: 2px dashed var(--acc);
+        outline-offset: 2px;
+      }
+      .mock .cs-tag {
+        margin-left: 8px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0 4px;
+        background: var(--card);
+        font-size: 11px;
+        font-weight: 400;
+      }
+      .mock .cs-menu {
+        width: min(100%, 36rem);
+        align-self: flex-start;
+      }
+      .mock .cs-menu.cs-narrow {
+        width: min(100%, 15rem);
+      }
+      .mock .cs-co {
+        padding: 0 4px 3px;
+        font-size: 11px;
+      }
+      .mock .cs-path {
+        color: var(--mute);
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .mock .cs-own {
+        flex-basis: 100%;
+      }
+      .mock .cs-foot {
+        border-top: 1px solid var(--rule);
+        margin-top: 4px;
+        padding: 3px 4px 0;
+        font-size: 11px;
+        color: var(--mute);
+      }
+      .mock .cs-foot > span {
+        white-space: nowrap;
+      }
+      .mock .cs-split {
+        display: grid;
+        grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+      }
+      .mock .cs-split > .pg {
+        min-height: 0;
+        padding: 0;
+      }
+      .mock .cs-t td {
+        white-space: normal;
+      }
+      /* Key band measured at every width from 2560 to 760 px (2026-11-25): 55 px from 2560 to 2333, 79 px from 2332 to 1674, 102 px from 1673 to 1527, 126 px from 1526 to 1197, 149 px from 1196 to 1014, 166 px from 1013 to 915, 190 px from 914 to 901, 32 px from 900 to 760. */
+      :root {
+        --key-h: 3.5rem;
+      }
+      @media (max-width: 2332px) {
+        :root {
+          --key-h: 5rem;
+        }
+      }
+      @media (max-width: 1673px) {
+        :root {
+          --key-h: 6.4rem;
+        }
+      }
+      @media (max-width: 1526px) {
+        :root {
+          --key-h: 7.9rem;
+        }
+      }
+      @media (max-width: 1196px) {
+        :root {
+          --key-h: 9.4rem;
+        }
+      }
+      @media (max-width: 1013px) {
+        :root {
+          --key-h: 10.4rem;
+        }
+      }
+      @media (max-width: 914px) {
+        :root {
+          --key-h: 11.9rem;
+        }
+      }
+      @media (max-width: 900px) {
+        :root {
+          --key-h: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top">
+        <a href="index.html">← All flows</a><a href="../component-source-current.html">Today's flow diagram</a
+        ><a href="../component-source-proposed.html">Proposed flow diagram</a
+        ><a href="../proposals/component-source.md">Written proposal</a
+        ><span class="muted">Redesign ticket: tracked privately</span>
+      </nav>
+      <h1>Find a page element's source</h1>
+      <p>
+        <b>TLDR:</b> Alt + right-click always answers, on React 18 and React 19 alike, with a keyboard-reachable source
+        menu that names the worktree and copies each file, line and column with a confirmation, while devhost no longer
+        opens editors, keeps no editor settings and drops highlight from an editor's cursor.
+      </p>
+      <p class="muted small">
+        Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
+        are authoritative.
+      </p>
+    </header>
+    <div class="key">
+      <div>
+        <div class="legend">
+          <b style="color: var(--ink)">How to read:</b>
+          <span
+            ><i class="k" style="background: var(--toast); border-color: var(--toast)"></i>Toast: passing status message
+            in a corner, links only, no decisions</span
+          >
+          <span
+            ><i class="k" style="background: var(--raised); border-color: var(--edge); box-shadow: 0 2px 6px #0009"></i
+            >Popover or menu: opens from the outlined control its arrow points at</span
+          >
+          <span
+            ><i class="k" style="background: var(--panel); box-shadow: inset 3px 0 var(--line)"></i>Panel: docked beside
+            the table, stays open</span
+          >
+          <span><i class="k" style="background: var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+          <span><i class="k" style="background: var(--accbg)"></i>Selected rows</span>
+          <span><i class="k" style="background: var(--chgbg)"></i>Just changed</span>
+          <span><i class="k" style="background: var(--card); box-shadow: inset 3px 0 var(--acc)"></i>Row cursor</span>
+          <span
+            ><i class="k" style="background: var(--card); outline: 2px dashed var(--acc); outline-offset: -2px"></i
+            >Dashed outline: the page element devhost outlines</span
+          >
+          <span><span class="n">1</span>Callout, explained on the right</span><span class="lg-states"></span
+          ><span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section class="step" id="point">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › playground page</b><span>Alt held, the pointer over the heading</span>
+            </div>
+            <div class="pg" style="min-height: 150px">
+              <div class="apptxt">Acme Shop · playground · Home · Docs · Settings</div>
+              <div class="row">
+                <span class="cs-el cs-hl"
+                  >Devtools playground<span class="cs-tag">heading Devtools playground</span></span
+                ><span class="n">1</span>
+              </div>
+              <div class="row">
+                <span class="muted small">Right-click with Alt still held: the source menu opens at once, step 3</span
+                ><span class="n">2</span>
+              </div>
+              <div class="corner">
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › playground page</b
+              ><span>Select Elements latched on by its toggle; no pointer</span>
+            </div>
+            <div class="work small">
+              <div class="row">
+                <span class="cs-el cs-hl"
+                  >Devtools playground<span class="cs-tag">heading Devtools playground</span></span
+                >
+              </div>
+              <div class="row" style="margin-top: 8px">
+                <span class="n">3</span><span class="btn focusring">Select Elements</span
+                ><span class="muted">pressed · tooltip and <code>aria-keyshortcuts</code>: ⇧F10</span>
+              </div>
+              <div class="row" style="margin-top: 4px">
+                <kbd>⇧F10</kbd
+                ><span class="muted"
+                  >or the context-menu key: the source menu opens at the highlighted heading, step 3</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › playground page</b><span>what stays the page's or the browser's</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">Right-click without Alt</div>
+              <div>The page's own menu, as today; an open source menu closes</div>
+              <div class="vlab">Alt + right-click on devhost's bar, a notice or docked chat</div>
+              <div>The browser's own menu, as today</div>
+              <div class="vlab">Alt+Ctrl+R pressed, or Option+L typed, with the pointer over the page</div>
+              <div class="row"><span>No outline and no menu</span><span class="n">4</span></div>
+              <div class="vlab">
+                <code>[devtools.componentSource].enabled = false</code> in the manifest, or a leftover
+                <code>[devtools.editor].enabled = false</code>
+              </div>
+              <div class="row">
+                <span class="n">5</span
+                ><span
+                  >No outline and no menu: Alt + right-click reaches the browser's menu and Shift+F10 opens nothing;
+                  page context still gets each mark's source file; the leftover key also gets a warning, step 5</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>1. Point at an element</h2>
+          <p>
+            Alt + right-click still opens the source of the element under the pointer, and Select Elements and holding
+            Alt still pick elements as page-context specifies. What changes is that the element is outlined with its
+            role and name before the click, the gesture always answers, and the keyboard reaches the same menu. Keys:
+            Alt + right-click (Option on macOS); with Select Elements latched on, the arrow keys walk the highlight and
+            Shift+F10 or the context-menu key opens the source menu (<code>KEY-12</code>, <code>MENU-1</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Holding Alt outlines the element under the pointer with its role and name before
+              the click, drawn dashed here, by the one resolver that Select Elements, holding Alt and Alt + right-click
+              share, which page-context owns: the element shown is the element looked up (<code>SEL-9</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Alt + right-click on the app page, outside devhost's own surfaces, opens the
+              source menu at once, also when there is no source to show (step 3): devhost takes the browser's context
+              menu only for this gesture and always answers it (<code>MENU-3</code>, <code>KEY-2</code>).
+            </li>
+            <li>
+              <span class="n">3</span> With Select Elements latched on, Shift+F10 or the context-menu key opens the
+              source menu for the highlighted element. The toggle lists Shift+F10 in its tooltip and in
+              <code>aria-keyshortcuts</code>, both drawn from the binding definition its handler reads
+              (<code>KEY-12</code>, <code>KEY-13</code>, <code>BAR-4</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Alt pressed as part of a chord, or to type a character, never starts selection
+              (<code>KEY-2</code>).
+            </li>
+            <li>
+              <span class="n">5</span> The feature is on wherever devhost injects its devtools. Its one switch is
+              <code>[devtools.componentSource].enabled</code> in the manifest, on by default, which turns off Alt +
+              right-click and Shift+F10 in Select Elements and nothing else;
+              <code>[devtools].enabled = false</code> removes it with the toolbar. <code>[devtools.editor]</code> is
+              removed completely, but a leftover <code>enabled = false</code> still turns the menu off, with a warning
+              naming the new key (step 5), so no one's off switch turns on with an upgrade (<code>SEL-11</code>,
+              <code>FAIL-6</code>, <code>CC-41</code>, <code>O51</code>; Backend 3).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes page-context-06, source-and-minimap-01 · Backend: none; the element resolver is page-context's and the
+            binding definitions are toolbar-shell's (<code>SEL-9</code>, <code>KEY-13</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="lookup">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › playground page</b
+              ><span>React 19: the first Alt + right-click reads the source map</span>
+            </div>
+            <div class="pg" style="min-height: 140px">
+              <div class="row"><span class="cs-el open">Devtools playground</span></div>
+              <div class="popover menu cs-menu focusring" style="margin-top: 6px">
+                <i class="caret-up" style="left: 82.8px"></i>
+                <div class="from">Opened by Alt + right-click on the heading</div>
+                <div class="row"><b>Source of &lt;h1&gt;</b></div>
+                <div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+                <div class="sep"></div>
+                <div class="row">Finding the source of &lt;h1&gt;…<span class="n">1</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › where the lookup finds a source, in order</b
+              ><span>in the page, for the menu and for page context</span>
+            </div>
+            <div class="work small">
+              <table class="t cs-t">
+                <thead>
+                  <tr>
+                    <th style="width: 27%">The page's React</th>
+                    <th>What the lookup reads</th>
+                    <th style="width: 28%">Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>React DevTools extension installed</td>
+                    <td>its renderer interface first, as today</td>
+                    <td>its answer</td>
+                  </tr>
+                  <tr>
+                    <td>React 18 development build</td>
+                    <td><code>_debugSource</code> and <code>__source</code>, as today</td>
+                    <td>PlaygroundLayout.tsx:15:7</td>
+                  </tr>
+                  <tr>
+                    <td>React 19 development build</td>
+                    <td>
+                      the fiber's <code>_debugStack</code>: its first frame outside React, mapped through the source map
+                      <span class="n">2</span>
+                    </td>
+                    <td>PlaygroundLayout.tsx:15:7, else the "No source" menu, step 3</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="margin-top: 6px">
+                Source map of the script or module a frame names: a script element · a module loaded through
+                <code>import</code> · a chunk loaded later; found in a <code>SourceMap</code> response header or the
+                last <code>sourceMappingURL</code> comment <span class="n">3</span>
+              </div>
+              <div style="margin-top: 4px">
+                Paths resolved in the page's worktree, fix-nav ~/acme/.worktrees/fix-nav; a path from another worktree
+                of acme is rewritten to it <span class="n">4</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>page context on React 19, without browser extensions</span>
+            </div>
+            <div class="work small">
+              <div class="box">
+                <div class="row"><b>Page context</b></div>
+                <div class="row">
+                  <span>#1 h1 Devtools playground · PlaygroundLayout.tsx:15</span><span class="n">5</span>
+                </div>
+                <div>#2 div Promo banner · no source found</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>2. Find the element's source in the page's worktree</h2>
+          <p>
+            The lookup still runs in the page, still reads React's source metadata and the page's source maps, and still
+            resolves paths in the selected worktree, as today. What changes is that React 19 development builds work
+            without a browser extension, maps named by a <code>SourceMap</code> header are read, and page context's
+            marks use the same lookup. It stays one shared module under
+            <code>packages/devhost-ui/src/devtools/shared/</code>, which the source menu and page context's marks both
+            call, and adds no control route.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> While a source map is read for the first time, the open menu shows "Finding the
+              source of &lt;h1&gt;…" where its items go, never an empty menu, with focus on the menu itself; when the
+              items arrive, they fill in place and focus moves to the first of them (<code>STATE-1</code>,
+              <code>KEY-6</code>).
+            </li>
+            <li>
+              <span class="n">2</span> On React 19, the page reads the fiber's <code>_debugStack</code>, the stack React
+              records where the JSX was created, whose first frame outside React is the JSX call site; the React
+              DevTools extension's renderer interface still answers first when it is installed, and React 18's
+              <code>_debugSource</code> and <code>__source</code> come next, as today. The owner chain is walked the
+              same way, each owner's <code>_debugStack</code> included, and duplicates are dropped, so the menu lists
+              the element and the components that render it.
+            </li>
+            <li>
+              <span class="n">3</span> Each frame's position maps back through the source map of the script or module it
+              names, whether a script element, a module loaded through <code>import</code> or a chunk loaded later, read
+              from a <code>SourceMap</code> response header or from the last <code>sourceMappingURL</code> comment
+              whatever follows it.
+            </li>
+            <li>
+              <span class="n">4</span> Paths resolve in the page's worktree: the selected worktree of the repository the
+              page's service runs from, with a path from another worktree of that repository rewritten to it, as today
+              (<code>SEL-3</code>, <code>WORD-11</code>).
+            </li>
+            <li>
+              <span class="n">5</span> The same lookup gives page context's marks their source file, so on React 19 a
+              mark reaches the agent with its file, and page-context's row shows it, "#1 h1 Devtools playground ·
+              PlaygroundLayout.tsx:15", or "no source found" (<code>SEL-9</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes page-context-06, source-and-minimap-01 · Backend: none; the lookup runs in the page with no route of
+            its own
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="menu">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › playground page</b
+              ><span>1600×1000: the menu after Alt + right-click on the heading</span>
+            </div>
+            <div class="pg">
+              <div class="apptxt">Acme Shop · playground · Home · Docs · Settings</div>
+              <div class="row"><span class="cs-el open">Devtools playground</span></div>
+              <div class="popover menu cs-menu" role="menu" style="margin-top: 6px">
+                <i class="caret-up" style="left: 82.8px"></i>
+                <div class="from">Opened by Alt + right-click on the heading</div>
+                <div class="row"><b>Source of &lt;h1&gt;</b><span class="n">1</span></div>
+                <div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav<span class="n">2</span></div>
+                <div class="lbl">Element and components</div>
+                <div class="row focusring" role="menuitem">
+                  Copy Path · <b>&lt;h1&gt;</b><span class="sp"></span
+                  ><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span
+                  ><span class="n">3</span>
+                </div>
+                <div class="row" role="menuitem">
+                  Copy Path · <b>&lt;PlaygroundLayout&gt;</b><span class="chip">title</span><span class="sp"></span
+                  ><span class="cs-path">frontend/src/App.tsx:22:5</span>
+                </div>
+                <div class="cs-foot">
+                  <span><kbd>↑↓</kbd> Move</span> · <span><kbd>Enter</kbd> Copy</span> ·
+                  <span><kbd>Esc</kbd> Close</span><span class="n">4</span>
+                </div>
+              </div>
+              <div class="corner">
+                <div class="toastrow">
+                  <div class="toast">✓ Restarted api · 2.6 s</div>
+                  <span class="n">5</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › settings page</b
+              ><span>1280×800 with chat docked: the menu narrows to the page area</span>
+            </div>
+            <div class="pg" style="min-height: 0">
+              <div class="cs-split">
+                <div class="pg">
+                  <div class="row"><span class="cs-el open">Save Profile</span></div>
+                  <div class="popover menu cs-menu cs-narrow" role="menu" style="margin-top: 6px">
+                    <i class="caret-up" style="left: 53.4px"></i>
+                    <div class="from">Opened by Alt + right-click on Save Profile</div>
+                    <div class="row"><b>Source of &lt;button&gt;</b></div>
+                    <div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+                    <div class="sep"></div>
+                    <div class="row focusring" role="menuitem">
+                      Copy Path · <b>&lt;button&gt;</b><span class="n">6</span
+                      ><span class="cs-path cs-own" title="frontend/src/components/settings/ProfileForm.tsx:41:9"
+                        >fr…/ProfileForm.tsx:41:9</span
+                      >
+                    </div>
+                    <div class="cs-foot">
+                      <span><kbd>↑↓</kbd> Move</span> · <span><kbd>Enter</kbd> Copy</span> ·
+                      <span><kbd>Esc</kbd> Close</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="dock">
+                  <h3>Fix the profile form</h3>
+                  <div class="box">
+                    Claude Code asks: Edit ProfileForm.tsx?
+                    <div class="row" style="margin-top: 4px">
+                      <span class="btn">Deny</span><span class="btn">Allow Once</span><span class="btn">Stop Turn</span>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <span class="in" style="flex: 1; min-width: 0">Message</span><span class="btn pri">Send</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › the source menu in other states</b><span>its rows; it opens at the element as above</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">An element no React component renders</div>
+              <div class="box">
+                <div class="row"><b>No source for &lt;div&gt;</b><span class="n">7</span></div>
+                <div>No React component renders this element.</div>
+                <div class="row focusring" role="menuitem">Copy Element Path</div>
+              </div>
+              <div class="muted">
+                Other cause: "This page's React build records no source locations: React 18 needs the JSX development
+                transform, and React 19 a development build."
+              </div>
+              <div class="box">
+                <div class="row"><b>No source for &lt;h1&gt;</b></div>
+                <div>Found &lt;h1&gt; in index.js line 5294, but its source map could not be read (404).</div>
+                <div class="row" role="menuitem">Retry</div>
+                <div class="row" role="menuitem">Copy Element Path</div>
+              </div>
+              <div class="vlab">While Switch and Restart Stack runs from main to fix-nav</div>
+              <div class="box">
+                <div class="row"><b>Source of &lt;h1&gt;</b></div>
+                <div class="row">
+                  <span>Files in main ~/acme · Switch and Restart Stack is running · 2 of 6 started</span
+                  ><span class="n">8</span>
+                </div>
+                <div class="row" role="menuitem">
+                  Copy Path · <b>&lt;h1&gt;</b><span class="sp"></span
+                  ><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span>
+                </div>
+              </div>
+              <div class="vlab">The page's selected worktree was deleted</div>
+              <div class="box">
+                <div class="row"><b>Source of &lt;h1&gt;</b></div>
+                <div class="row">
+                  <span>The worktree ~/acme/.worktrees/fix-nav was deleted; its services still run from it</span
+                  ><span class="n">9</span>
+                </div>
+                <div class="row" role="menuitem">
+                  Copy Path · <b>&lt;h1&gt;</b><span class="sp"></span
+                  ><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span>
+                </div>
+              </div>
+              <div class="vlab">A source outside the stack's worktrees</div>
+              <div class="box">
+                <div class="row"><b>Source of &lt;button&gt;</b></div>
+                <div class="lbl">Element and components</div>
+                <div class="row" role="menuitem">
+                  Copy Path · <b>&lt;button&gt;</b><span class="sp"></span
+                  ><span class="cs-path">~/src/ui-kit/src/Button.tsx:12:3</span><span class="n">10</span>
+                </div>
+                <div class="row" role="menuitem">
+                  Copy Path · <b>&lt;Button&gt;</b><span class="sp"></span
+                  ><span class="cs-path">~/src/ui-kit/src/Button.tsx:9:1</span>
+                </div>
+              </div>
+              <div class="vlab">The status stream is lost, or the page was opened from another environment</div>
+              <div class="row">
+                <span>The same menu, unchanged: the lookup and <b>Copy Path</b> read only the page</span
+                ><span class="n">11</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › settings page</b><span>the page's own modal dialog is open</span>
+            </div>
+            <div class="scrim" style="min-height: 0">
+              <div class="dlg">
+                <div class="hd"><h3>Edit profile</h3></div>
+                <div class="body">
+                  <div class="row"><span class="cs-el open">Display name</span><span class="in">Ada</span></div>
+                  <div class="popover menu cs-menu" role="menu" style="margin-top: 9px">
+                    <i class="caret-up" style="left: 46.2px"></i>
+                    <div class="from">Opened by Alt + right-click on Display name, inside the dialog's top layer</div>
+                    <div class="row"><b>Source of &lt;label&gt;</b><span class="n">12</span></div>
+                    <div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+                    <div class="sep"></div>
+                    <div class="row focusring" role="menuitem">
+                      Copy Path · <b>&lt;label&gt;</b><span class="sp"></span
+                      ><span class="cs-path">frontend/src/components/settings/ProfileForm.tsx:18:7</span>
+                    </div>
+                  </div>
+                  <div class="banner" style="margin-top: 10px">
+                    Paused while this page's dialog is open · devhost's notice stack, moved into the dialog
+                  </div>
+                </div>
+                <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Profile</span></div>
+              </div>
+              <div class="corner">
+                <div class="tbar paused">
+                  <span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>3. Read the source menu</h2>
+          <p>
+            The menu still lists the element and the components that render it, each with its non-default props as
+            badges and its path, and still stays inside the window and closes with Escape, a click outside or a worktree
+            switch, as today. What changes is that it names the element and the worktree, offers <b>Copy Path</b> per
+            source instead of opening an editor, answers when it has no source, takes the keyboard, and keeps clear of
+            devhost's other surfaces; no row names or opens an editor (<code>O51</code>). It is a transient layer above
+            the page, at the pointer, or at the highlighted element after Shift+F10. Keys: focus starts on the first
+            item; ArrowUp and ArrowDown move, Home and End jump, a letter jumps to the next item that starts with it, so
+            c moves from one <b>Copy Path</b> item to the next, and Enter or Space copies; Escape, Tab or Shift+Tab
+            closes it and returns focus to the page element that had focus before the right-click, the element itself
+            when the click focused it, or, opened with Shift+F10, to the Select Elements toggle with the highlight kept;
+            a click outside closes it and leaves focus where that click put it; devhost never adds a
+            <code>tabindex</code> to a page element. Inside the open menu devhost keeps every key; once it closes, the
+            page's keys work without a click (<code>KEY-10</code>, <code>KEY-6</code>, <code>KEY-5</code>,
+            <code>KEY-8</code>, <code>KEY-12</code>). A rejected configuration or chat that cannot take a message blocks
+            nothing here (<code>HOLD-6</code>, <code>HOLD-5</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The first row is the target header, "Source of &lt;h1&gt;", naming the element
+              the menu shows; the menu is named by it (2.3 Accessibility, <code>KEY-10</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The line under it names the worktree the files are in by its worktree label
+              (<code>SEL-4</code>, <code>WORD-11</code>).
+            </li>
+            <li>
+              <span class="n">3</span> One <b>Copy Path</b> item per source, the element first and each component that
+              renders it after it: the name, a badge per non-default prop, as today, and the path relative to the
+              worktree with line and column, which is also in the item's accessible name. With two or more sources,
+              "Element and components" heads them as a labelled group; a menu of one source has no heading. Focus moves
+              into the menu on open, on its first item; Enter or a click copies it, step 4 (<code>KEY-6</code>,
+              <code>MENU-2</code>, <code>WORD-3</code>, <code>WORD-8</code>).
+            </li>
+            <li>
+              <span class="n">4</span> The foot shows the menu's keys from the binding definitions: "↑↓ Move · Enter
+              Copy · Esc Close" (<code>KEY-13</code>).
+            </li>
+            <li>
+              <span class="n">5</span> The menu opens inside the viewport, never clipped, here beside a success notice
+              drawn only to show the clearance, in the page area on the side of the pointer away from the dock, so it
+              covers neither the notice stack nor docked chat's header, composer or decision card. It takes pointer
+              input only where it draws, and the outline of the element it opened on stays anchored to that element
+              while it is open. Alt + right-click lands outside an open toolbar panel, which closes as any click away
+              closes it (<code>SURF-1</code>, <code>SURF-2</code>, <code>SURF-9</code>, <code>SURF-11</code>,
+              <code>SURF-12</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Where the page area beside docked chat is narrower than the menu, the menu
+              narrows to it, down to 240 CSS pixels, and wraps each path onto its own line; a path longer than the menu
+              is shortened in the middle, keeping the file name and line, with the full path in its tooltip and
+              accessible name. Chat's composer, Send and the pending decision card stay clear (<code>SURF-6</code>,
+              <code>WORD-8</code>).
+            </li>
+            <li>
+              <span class="n">7</span> When the page records no source for the element, the same menu opens, its first
+              row reading "No source for &lt;div&gt;", with one sentence naming the cause and <b>Copy Element Path</b>,
+              step 4. The causes: no React component renders the element; the page's React build records no source
+              locations; or the source map could not be read, which adds <b>Retry</b>, reading the map once more and
+              filling the menu in place. The browser's menu is never taken without this answer (<code>MENU-3</code>,
+              <code>FAIL-2</code>, <code>STATE-4</code>).
+            </li>
+            <li>
+              <span class="n">8</span> While the page's repository switches, the menu opens and works, and its worktree
+              line names the worktree the page still shows with the operation in progress, because reads stay available
+              during service operations; today the gesture silently falls through to the browser's menu. The page
+              reloads into the new worktree when the switch ends, which closes the menu (<code>HOLD-3</code>,
+              <code>SEL-4</code>).
+            </li>
+            <li>
+              <span class="n">9</span> With the page's selected worktree deleted, the menu opens all the same with that
+              state on its worktree line, and <b>Copy Path</b> works; today the gesture silently falls through to the
+              browser's menu. Returning to the configured worktree stays the Worktrees panel's, as worktree-switch
+              specifies (<code>HOLD-4</code>, <code>SEL-4</code>).
+            </li>
+            <li>
+              <span class="n">10</span> A source outside the stack's worktrees, such as a linked package elsewhere on
+              disk, shows its absolute path shortened with <code>~</code>, and <b>Copy Path</b> copies the absolute path
+              with its line and column (<code>SEL-4</code>).
+            </li>
+            <li>
+              <span class="n">11</span> The lookup and <b>Copy Path</b> run in the page and send nothing to devhost, so
+              they keep working while the status stream is lost and in a browser in another environment, signed in or
+              not; the lost-connection notice, notices-and-feedback's and not drawn here, says devhost is not reachable
+              (<code>HOLD-2</code>, <code>HOLD-7</code>, <code>HOLD-8</code>).
+            </li>
+            <li>
+              <span class="n">12</span> Alt + right-click on an element inside the page's own modal dialog opens the
+              menu inside the dialog's top layer, where the notice stack and the announcer already move, so its items
+              take the keyboard and the pointer and its notices are heard; devhost's bar keeps its paused state, with
+              its one reason line in the moved notice stack, unchanged (<code>SURF-11</code>, <code>FB-9</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes page-context-06, source-and-minimap-01 · Backend: none; the menu reads the page's lookup and the
+            worktree the page already knows
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="copy">
+        <div class="mock">
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › playground page</b><span>Enter on the first item</span></div>
+            <div class="pg">
+              <div class="row"><span class="cs-el open">Devtools playground</span></div>
+              <div class="popover menu cs-menu" role="menu" style="margin-top: 6px">
+                <i class="caret-up" style="left: 82.8px"></i>
+                <div class="from">Opened by Alt + right-click on the heading</div>
+                <div class="row"><b>Source of &lt;h1&gt;</b></div>
+                <div class="cs-co">Files in fix-nav ~/acme/.worktrees/fix-nav</div>
+                <div class="lbl">Element and components</div>
+                <div class="row focusring" role="menuitem">
+                  Copy Path · <b>&lt;h1&gt;</b><span class="sp"></span
+                  ><span class="cs-path">frontend/src/components/PlaygroundLayout.tsx:15:7</span
+                  ><span class="n">1</span>
+                </div>
+                <div class="row" role="menuitem">
+                  Copy Path · <b>&lt;PlaygroundLayout&gt;</b><span class="chip">title</span><span class="sp"></span
+                  ><span class="cs-path">frontend/src/App.tsx:22:5</span>
+                </div>
+                <div class="cs-foot">
+                  <span><kbd>↑↓</kbd> Move</span> · <span><kbd>Enter</kbd> Copy</span> ·
+                  <span><kbd>Esc</kbd> Close</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › playground page</b><span>then: the menu closed</span></div>
+            <div class="pg" style="min-height: 120px">
+              <div class="row"><span class="cs-el">Devtools playground</span></div>
+              <div class="corner">
+                <div class="toastrow">
+                  <div class="toast">✓ Copied path · frontend/src/components/PlaygroundLayout.tsx:15:7</div>
+                  <span class="n">2</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › other reports of copying, in the notice stack</b></div>
+            <div class="work small">
+              <div class="vlab">The browser refused the clipboard</div>
+              <div class="row">
+                <span class="n">3</span
+                ><span class="banner bad" style="margin: 0; flex: 1; min-width: 0"
+                  >✕ Could not copy the path: the browser did not allow clipboard access. Select the path and press ⌘C
+                  <code>frontend/src/components/PlaygroundLayout.tsx:15:7</code> <span class="btn">Dismiss</span></span
+                >
+              </div>
+              <div class="vlab">Copy Element Path, from the "No source" menu</div>
+              <div class="toastrow" style="padding: 0">
+                <div class="toast">✓ Copied element path · main &gt; section.hero &gt; h1</div>
+                <span class="n">4</span>
+              </div>
+              <div class="vlab">The browser refused the clipboard, with the toolbar collapsed</div>
+              <div class="row" style="justify-content: flex-end">
+                <span class="n">5</span
+                ><span class="tbar oneline"
+                  ><span class="seg">✕ <b>dh</b> · Could not copy the path ▴</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>4. Copy a path</h2>
+          <p>
+            Copying is the menu's one action. Today the one entry button copies the path and opens the editor at once
+            and says nothing; now each item copies, says so, and opens nothing, because devhost has no editor
+            integration (<code>O50</code>, <code>O51</code>). Copying is an action of this page, not an operation of the
+            stack: it writes no line in the stack's log and no operation record, which <code>FB-7</code> and
+            <code>ACT-1</code> keep for operations, and its notices and the announcer are notices-and-feedback's. It
+            reads the page and starts no service, so it never asks and stays available while another operation runs
+            (<code>REV-1</code>, <code>HOLD-3</code>). A copy changes nothing devhost could take back, so there is no
+            Undo. Keys: typing c moves to the next <b>Copy Path</b> item; Enter or Space copies (<code>KEY-10</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> "Copy Path · &lt;h1&gt;" copies that source's path, line and column; the item is
+              reached with the arrows or by typing c (<code>KEY-10</code>, <code>WORD-3</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The path, relative to the worktree with its line and column, goes to the
+              clipboard, the menu closes, and "Copied path · frontend/src/components/PlaygroundLayout.tsx:15:7" shows,
+              announced once; it closes by itself after its reading time, 4.2 s for these 9 words, counted only while
+              neither the pointer nor focus is in it and the page is visible, and one that arrives while the browser
+              window is not focused waits until the window next gains focus. Copying never navigates the page
+              (<code>FB-2</code>, <code>FB-3</code>, <code>FB-6</code>, <code>FB-9</code>, <code>WORD-4</code>,
+              <code>O14</code>, <code>O53</code>).
+            </li>
+            <li>
+              <span class="n">3</span> When the browser refuses the clipboard, a failure notice says so and names the
+              way forward, with the path as selected text in it, "⌘C" on macOS and "Ctrl+C" elsewhere, and stays until
+              dismissed (<code>FAIL-2</code>, <code>FB-6</code>, <code>KEY-13</code>).
+            </li>
+            <li>
+              <span class="n">4</span> <b>Copy Element Path</b> in the "No source" menu copies the element path page
+              context sends and reports it the same way, closing after its floor of 4 s (<code>MENU-3</code>,
+              <code>FB-2</code>, <code>O14</code>).
+            </li>
+            <li>
+              <span class="n">5</span> With the toolbar collapsed, a copy failure stays in the collapsed toolbar's
+              one-line form beside the badge until dismissed, while successes close by themselves (<code>SURF-8</code>,
+              <code>FB-8</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes source-and-minimap-02 · Backend: none; the clipboard write runs in the page, and the editor URL
+            builder is removed (Backend 1)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="no-editor">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>a manifest that still names an editor, at start and on each hot reload</span>
+            </div>
+            <pre class="term">[devtools.editor]          # devhost.toml, line 30
+enabled = false
+ide = "zed"
+
+<span class="n">1</span> devhost.toml:31:1  devtools.editor.enabled  is replaced by devtools.componentSource.enabled, which this value turns off for now; move it there
+  devhost.toml:32:1  devtools.editor.ide  is no longer used: devhost has no editor integration; remove it</pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>Terminal › an editor plugin still posting its cursor</b></div>
+            <pre class="term">POST https://shop.acme.test/__devhost__/react-highlight/cursor
+{"locator":"frontend/src/components/PlaygroundLayout.tsx:15:7"}
+<span class="n">2</span> 404 Not Found</pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › what is gone</b><span>no surface offers these</span></div>
+            <div class="work small">
+              <div class="vlab">Opening a file</div>
+              <div class="row">
+                <span>No Open item, no editor in the menu, no "Opened" or "Sent to" notice, no editor URL</span
+                ><span class="n">3</span>
+              </div>
+              <div class="vlab">Choosing an editor</div>
+              <div>
+                No <code>[devtools.editor]</code> table in the manifest, no editor in the devhost config file or the
+                environment, and none in the configuration editor's completions
+              </div>
+              <div class="vlab">Highlight from the editor</div>
+              <div class="row" style="flex-wrap: nowrap">
+                <span class="n">4</span
+                ><span style="min-width: 0"
+                  >No cursor route or stream, no outline from a cursor, no <code>devhost:react-highlight</code> event,
+                  no "Highlight source locations" guide</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>5. Leftover editor settings and cursor updates</h2>
+          <p>
+            Alt + right-click and <b>Copy Path</b> stay, as steps 1 to 4 show. What leaves is everything that existed
+            only to reach an editor: opening a file, the editor choice and highlight from the editor's cursor, as the
+            product owner decided (<code>O50</code>, <code>O51</code>). A manifest written for today keeps running, and
+            an editor plugin built on today's cursor route gets a plain <code>404</code>, so neither fails silently.
+            Nothing here writes, so there is nothing to confirm or undo.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A manifest that still has a <code>[devtools.editor]</code> table, with
+              <code>ide</code>, <code>enabled</code> or both, keeps loading and running and prints one warning per key
+              naming file, line, column, key and what replaced it, at start and on every hot reload that keeps it; any
+              value warns and none is refused. devhost applies nothing from the table except
+              <code>enabled = false</code>, which turns the source menu off as
+              <code>[devtools.componentSource].enabled = false</code> does, so no one's off switch turns on with an
+              upgrade (<code>FAIL-6</code>, <code>FAIL-2</code>, <code>MENU-4</code>, <code>WORD-7</code>,
+              <code>O51</code>).
+            </li>
+            <li>
+              <span class="n">2</span> <code>POST /__devhost__/react-highlight/cursor</code> and the
+              <code>/__devhost__/ws/react-highlight</code> stream no longer exist and answer <code>404</code> like any
+              unknown control route; no page draws an outline from a cursor (<code>O51</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Opening a file in an editor is removed everywhere: devhost starts no editor and
+              builds no editor URL, so a missing or unregistered editor can no longer fail without a word; every flow
+              that offered an editor shows the file and line with <b>Copy</b> instead (<code>O50</code>,
+              <code>O51</code>, <code>MENU-4</code>, <code>SURF-15</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Highlight from the editor leaves with its route, its outline overlay, its event
+              and its guide, which removes the missed elements, the stale start-time root after a switch and the
+              script-only source maps that highlight suffered from (<code>O51</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes source-and-minimap-03, source-and-minimap-08, source-and-minimap-09, source-and-minimap-10 · Backend:
+            remove the editor settings with a warning per leftover key, and remove both highlight routes (Backend 1, 2);
+            <code>[devtools.componentSource].enabled</code> as the source menu's switch (Backend 3; <code>CC-41</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="changes">
+        <div>
+          <h3>Removed</h3>
+          <ul>
+            <li>
+              Opening a file in an editor: the editor URLs for four editors, remote editor links and the entry button
+              that copied and opened without a word (<code>O50</code>, <code>O51</code>, <code>O60</code>)
+            </li>
+            <li>
+              The <code>[devtools.editor]</code> table, <code>ide</code> and <code>enabled</code>, and the editor in the
+              injected configuration; a leftover key warns instead
+            </li>
+            <li>
+              Highlight from the editor: the cursor route and stream, the outline overlay, its event and its guide; the
+              route answers <code>404</code>
+            </li>
+            <li>The dead click on React 19; swallowed clipboard errors; paths cut from the left</li>
+            <li>
+              The source menu switched off without a word while the repository switches or its worktree is deleted
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Merged</h3>
+          <ul>
+            <li>
+              Select Elements, holding Alt and Alt + right-click resolve elements with one resolver, page-context's
+            </li>
+            <li>Marks and the source menu read one source lookup, now including React 19</li>
+            <li>Page context's row and the menu show the same file, line and column for an element</li>
+          </ul>
+        </div>
+        <div>
+          <h3>New</h3>
+          <ul>
+            <li>
+              React 19 source from <code>_debugStack</code> without a browser extension; maps named by a
+              <code>SourceMap</code> header
+            </li>
+            <li>
+              The "No source" menu with its cause and <b>Copy Element Path</b>; <b>Copy Path</b> items with outcome and
+              failure notices
+            </li>
+            <li>The target header, the worktree line, type-ahead, the hint line, and Shift+F10 in Select Elements</li>
+            <li>
+              The menu inside the page's own modal dialog; <b>Retry</b> for an unreadable map; the warning for a
+              leftover editor setting
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Changed</h3>
+          <ul>
+            <li>An item copies its path and never opens an editor or navigates the page</li>
+            <li>
+              During a switch or with a deleted worktree, Alt + right-click opens the menu instead of the browser's menu
+            </li>
+            <li>The menu takes focus and returns it (<code>KEY-6</code>); a long path is shortened in the middle</li>
+            <li>A manifest <code>ide</code> outside the four editors is warned about, never refused</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>
+              The element and its component chain, with non-default props and mapped paths, without duplicates; the
+              React DevTools renderer interface answering first when installed
+            </li>
+            <li>
+              A path from another worktree rewritten to the selected worktree; the menu inside the window, closing with
+              Escape, a click outside or a switch
+            </li>
+            <li>
+              Alt + right-click in devhost's surfaces stays the browser's and a right-click without Alt the page's
+            </li>
+            <li>The lookup runs in the page with no control route; a manifest that names an editor keeps running</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend work</h3>
+          <ul>
+            <li>
+              Remove the editor settings: the <code>[devtools.editor]</code> table, the four accepted editors and the
+              injected editor go; a leftover key warns with file, line, column and key (Backend 1)
+            </li>
+            <li>
+              Remove highlight from the editor: both routes, their handlers and the cursor channel; both answer
+              <code>404</code> (Backend 2)
+            </li>
+            <li>
+              The source menu's switch, <code>[devtools.componentSource].enabled</code>, on by default; a leftover
+              <code>[devtools.editor].enabled = false</code> maps onto it with a warning (Backend 3)
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

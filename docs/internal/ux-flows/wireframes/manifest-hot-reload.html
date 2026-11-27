@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Edit the manifest and watch it apply · proposed flow wireframe</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      /* Service rows and the offending manifest line, scoped to this page's mockups */
+      .mock .rws > .row {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--rule);
+        padding: 3px 2px;
+      }
+      .mock .rws > .row > :first-child {
+        flex: none;
+        width: 11rem;
+      }
+      .mock .rws > .row > :nth-child(2) {
+        flex: 1;
+        min-width: 0;
+      }
+      .mock .nl {
+        display: block;
+        margin-top: 4px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: var(--field);
+        color: var(--ink);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 11.5px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top">
+        <a href="index.html">← All flows</a><a href="../manifest-hot-reload-current.html">Today's flow diagram</a
+        ><a href="../manifest-hot-reload-proposed.html">Proposed flow diagram</a
+        ><a href="../proposals/manifest-hot-reload.md">Written proposal</a
+        ><span class="muted">Redesign ticket: tracked privately</span>
+      </nav>
+      <h1>Edit the manifest and watch it apply</h1>
+      <p>
+        <b>TLDR:</b> Every save names what it restarts and why in one activity line and one outcome line, and an edit
+        devhost cannot apply names its file, line and fix wherever it shows, while the stack keeps running the accepted
+        manifest.
+      </p>
+      <p class="muted small">
+        Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
+        are authoritative.
+      </p>
+    </header>
+    <div class="key">
+      <div>
+        <div class="legend">
+          <b style="color: var(--ink)">How to read:</b>
+          <span
+            ><i class="k" style="background: var(--toast); border-color: var(--toast)"></i>Toast: passing status message
+            in a corner, links only, no decisions</span
+          >
+          <span
+            ><i class="k" style="background: var(--raised); border-color: var(--edge); box-shadow: 0 2px 6px #0009"></i
+            >Popover or menu: opens from the outlined control its arrow points at</span
+          >
+          <span
+            ><i class="k" style="background: var(--panel); box-shadow: inset 3px 0 var(--line)"></i>Panel: docked beside
+            the table, stays open</span
+          >
+          <span><i class="k" style="background: var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+          <span><i class="k" style="background: var(--accbg)"></i>Selected rows</span>
+          <span><i class="k" style="background: var(--chgbg)"></i>Just changed</span>
+          <span><i class="k" style="background: var(--card); box-shadow: inset 3px 0 var(--acc)"></i>Row cursor</span>
+          <span><span class="n">1</span>Callout, explained on the right</span><span class="lg-states"></span
+          ><span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section class="step" id="save">
+        <div class="mock">
+          <div class="win">
+            <div class="bar"><b>Editor › ~/acme/devhost.toml</b><span>saved at 14:02:00</span></div>
+            <pre class="term">29  [services.worker.env]
+30  LOG_LEVEL = "info"
+31  QUEUE = "emails" <span class="n">1</span>
+32
+33  [services.admin]</pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docs page</b><span>0.3 s after the save; nothing asks</span></div>
+            <div class="pg" style="min-height: 110px">
+              <div class="apptxt">Acme docs · Getting started …</div>
+              <div class="corner">
+                <div class="banner info" style="margin: 0; max-width: 36rem">
+                  ◐ Apply devhost.toml · 0 of 6 restarted · 0.3 s <span class="n">2</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">◐ ◐ ◐ ◐ ◐ ◐ ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › Configuration window footer</b><span>the same edit as a draft, before Save</span>
+            </div>
+            <div class="work small">
+              <div class="row">
+                <span class="muted" style="flex: 1; min-width: 0"
+                  >Restarts worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as
+                  worker)</span
+                ><span class="btn pri">Save</span><span class="n">3</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>an agent checks a candidate text before writing it</span>
+            </div>
+            <pre class="term">$ devhost reload --dry-run --stdin devhost.toml &lt; candidate.toml
+Dry run: Apply devhost.toml would restart worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as worker) · nothing applied <span class="n">4</span></pre>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>1. Save a manifest file from any editor</h2>
+          <p>
+            Saving <code>devhost.toml</code> or an include from a text editor, the Configuration window,
+            <code>git</code> or an agent still applies through hot reload 200 ms after the last write, without a
+            question, and every manifest setting still applies this way, never "restart to apply" (owner rule;
+            <code>REV-10</code>). What changes is that the save becomes one operation with one name on every surface,
+            its reach can be read before the file is written, and a save no reload reads within 5 s while the stack is
+            idle ends unseen with a remedy (<code>O42</code>). Keys: none of its own; the save is the editor's, and the
+            notices it raises are reached as step 5 says.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A save of the root manifest or an include, or a file that starts or stops
+              matching an <code>includes</code> pattern, starts the reload. The services runtime opens one operation
+              record for it; a save from outside devhost's UI is recorded with the origin "after devhost.toml changed on
+              disk", because the watcher cannot tell an editor's save from an agent's edit or a formatter. If no reload
+              reads a written save within 5 s while no operation holds the stack, it ends unseen: "devhost did not see
+              this save; the stack still runs the accepted manifest. Apply it with devhost reload in ~/acme"
+              (<code>REV-10</code>, <code>ACT-1</code>, <code>WORD-4</code>, <code>O42</code>).
+            </li>
+            <li>
+              <span class="n">2</span> No page shows a question, a modal or a <code>confirm()</code>: a hot reload is
+              reported, never reviewed. Its label is <b>Apply devhost.toml</b>, the file the save changed, on every
+              surface, and its outcome reads "Applied". Starting and restarting services ends nothing of an agent's, so
+              a save asks about no agent (<code>REV-10</code>, <code>REV-1</code>, <code>REV-3</code>,
+              <code>WORD-2</code>, <code>WORD-1</code>).
+            </li>
+            <li>
+              <span class="n">3</span> The Configuration window states the reach beside <b>Save</b>, which stays
+              available: config-editor's statement, read from the same plan the reload uses. Authenticated remote
+              browsers (passkey or <code>devhost pair</code>, <code>O36</code>, <code>O38</code>, <code>O54</code>) save
+              identically. The one question a save can meet is config-editor's, when the save turns the config editor
+              off while other files hold drafts (<code>REV-10</code>, <code>REV-3</code>).
+            </li>
+            <li>
+              <span class="n">4</span> <code>devhost reload --dry-run</code>, with <code>--stdin</code> for text not
+              written yet, prints the same plan from the same check and changes nothing. Defaults: the restart scope is
+              <code>O9</code>'s decided scope (the changed services, their dependents and, with worktrees on, every
+              service of the same repository), and the reload keeps the run's service selection, so a service left out
+              of the run stays not started (<code>O9</code>, <code>SEL-11</code>, <code>SEL-7</code>,
+              <code>FB-11</code>, <code>CC-23</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes config-editor-05 · Backend: one plan with reasons, shared by the reload, the Configuration window's
+            check and the dry run; the reload as an operation record that reports <code>O42</code>'s unseen saves, whose
+            timer config-editor builds (Backend 1, 2, 10, 11; <code>CC-23</code>, <code>CC-37</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="check">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>the stack's terminal; api changed from port = "auto" to port = 4000</span>
+            </div>
+            <pre class="term"><span class="muted">web    | GET /cart 200 12 ms</span>
+<b>14:03:10 devhost.toml:12:8 not applied: services.api.port: 127.0.0.1:4000 is already in use by python3 (PID 4242). Choose another port or stop that program. The stack still runs the accepted manifest.</b> <span class="n">1</span>
+<b>   12 | port = 4000</b>
+<b>      |        ^</b>
+<span class="muted">worker | job 4411 done</span></pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docs page</b><span>the same moment: nothing stopped</span></div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme docs · Getting started …</div>
+              <div class="corner">
+                <div class="banner" style="margin: 0; max-width: 36rem">
+                  ◆ Manifest file not applied: devhost.toml line 12, column 8, services.api.port: 127.0.0.1:4000 is
+                  already in use by python3 (PID 4242). Choose another port or stop that program. The stack still runs
+                  the accepted manifest. <span class="n">2</span>
+                  <span class="nl">12 port = 4000</span>
+                  <span class="row" style="margin-top: 4px"
+                    ><span class="btn">Edit</span><span class="btn">Copy Error</span
+                    ><span class="btn">Dismiss</span></span
+                  >
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>Terminal › ~/acme</b><span>two other cases, from separate runs</span></div>
+            <div class="work small">
+              <div class="vlab">The holder started listening only after the probe passed</div>
+              <pre
+                class="term"
+                style="padding: 2px 0"
+              ><b>14:04:02 api failed its health check: 127.0.0.1:4000 answered 404, served by python3 (PID 4242), not by api</b> <span class="n">3</span>
+<b>14:04:09 Restored the accepted manifest: 6 of 6 running · 7 s</b></pre>
+              <div class="vlab">Worktrees off; api had already exited before a save that changes worker</div>
+              <pre
+                class="term"
+                style="padding: 2px 0"
+              ><b>14:09:30 Applied devhost.toml: restarted worker (changed) · 5 of 6 running · api still exited</b> <span class="n">4</span></pre>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>2. Check everything before anything stops</h2>
+          <p>
+            devhost still re-reads the root manifest and every include, validates the merged result, and claims new
+            hostnames and fixed ports against other stacks before it stops a service, as today. What changes is that it
+            also probes each new or changed fixed port on its bind host, both loopback addresses included, and a refusal
+            names the check and what holds it. The plan names each service with its reason (changed, depends on a
+            changed service, same repository, added, removed) and non-restart effects such as toolbar feature changes or
+            returning to the configured worktree; declaring an external service never disables worktree switching
+            (<code>SEL-1</code>, <code>SEL-11</code>, <code>FB-3</code>, <code>O7</code>). Keys: none; the checks run on
+            the save.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A failed check refuses the reload with nothing stopped, every PID unchanged, as
+              devhost's own block: the file, line, column and key, the program that holds the port with its PID, the way
+              out, and that the stack still runs the accepted manifest (<code>REV-11</code>, <code>FAIL-2</code>,
+              <code>WORD-7</code>, <code>HOLD-6</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Every open page shows the same refusal as the rejection notice of step 5, with
+              <b>Edit</b> first (or file and line with <b>Copy</b> when the config editor is off, <code>O51</code>);
+              every service keeps running, because nothing stopped (<code>HOLD-6</code>, <code>ACT-7</code>,
+              <code>MENU-4</code>).
+            </li>
+            <li>
+              <span class="n">3</span> When the holder starts listening only after the probe passed, the failed health
+              check names it, never "Check the app's startup logs", and the reload rolls back (step 3)
+              (<code>FAIL-3</code>, <code>REV-11</code>).
+            </li>
+            <li>
+              <span class="n">4</span> A service that was failing before the save and is unchanged by it is never a
+              condition of the reload's success: it keeps failing with its recovery page, the rest applies, and the
+              outcome counts it. The <code>error-pages-01</code> stopgap ships this part first (<code>REV-11</code>,
+              <code>UNDO-1</code>, <code>FAIL-1</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes manifest-hot-reload-05, error-pages-06 · Backend: the port probe naming the holder, before anything
+            stops and on a failed health check; one structured error; per-service rollback (Backend 4, 5, 12)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="restart">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>the stack's terminal; the reload of the worker edit</span>
+            </div>
+            <pre
+              class="term"
+            ><b>14:02:01 Apply devhost.toml: restarting worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as worker)</b> <span class="n">1</span>
+<span class="muted">worker | listening for jobs on queue emails</span>
+<span class="muted">api    | server ready on port 55891</span></pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docs page</b><span>5 s into the reload</span></div>
+            <div class="pg" style="min-height: 110px">
+              <div class="apptxt">Acme docs · Getting started …</div>
+              <div class="corner">
+                <div class="banner info" style="margin: 0; max-width: 36rem">
+                  ◐ Apply devhost.toml · 2 of 6 restarted · 5 s <span class="n">2</span>
+                </div>
+                <div class="row" style="justify-content: flex-end">
+                  <span class="n">3</span
+                  ><span class="tbar"
+                    ><span class="seg"><b>Acme Shop ▾</b></span
+                    ><span class="seg">● ● ◐ ◐ ◐ ◐ ▾</span><span class="seg">main ~/acme ▾</span
+                    ><span class="seg">Config</span><span class="seg">Chat</span></span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › Services panel rows</b
+              ><span>the same moment; api and web have started again</span>
+            </div>
+            <div class="work small rws">
+              <div class="row">
+                <span>● api</span><span>running · restarted 2 s ago</span><span class="btn">Logs</span>
+              </div>
+              <div class="row">
+                <span>● web</span><span>running · restarted 1 s ago</span><span class="btn">Logs</span>
+              </div>
+              <div class="row">
+                <span>◐ worker</span
+                ><span>restarting · Apply devhost.toml · health check 2 s of 30 s <span class="n">4</span></span
+                ><span class="btn">Logs</span>
+              </div>
+              <div class="row">
+                <span></span
+                ><span class="muted"
+                  >Restart: worker is already restarting · Apply devhost.toml <span class="n">5</span></span
+                ><span class="btn off">Restart</span>
+              </div>
+              <div class="row">
+                <span>◐ docs, admin, search-index-rebuilder</span><span>restarting · Apply devhost.toml · queued</span
+                ><span></span>
+              </div>
+              <div class="row">
+                <span><span class="btn off">Restart Stack</span></span
+                ><span class="muted">Apply devhost.toml is running · 2 of 6 restarted <span class="n">6</span></span
+                ><span></span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › three other moments</b><span>Services panel, terminal and notice stack</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">Worktrees off, a reload restarting only worker: Restart pressed on api</div>
+              <div class="row">
+                <span>● api</span><span class="sp"></span><span>running · queued behind Apply devhost.toml</span
+                ><span class="btn">Cancel Restart</span><span class="n">7</span>
+              </div>
+              <div class="vlab">A second save 3 s into the reload, in the stack's terminal</div>
+              <pre
+                class="term"
+                style="padding: 2px 0"
+              ><b>14:02:04 Apply devhost.toml: restarting worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as worker)</b>
+<b>14:02:07 Replaced by a newer save of devhost.toml at 14:02:07; applying it</b> <span class="n">8</span></pre>
+              <div class="vlab">A restarted service failed: the rollback, in the notice stack</div>
+              <div class="row">
+                <span class="banner info" style="margin: 0"
+                  >◐ Restoring the accepted manifest · 1 of 2 started · 12 s (worktrees off)</span
+                ><span class="n">9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>3. Watch the reload restart its set</h2>
+          <p>
+            The reload still stops dependents first and starts services in dependency order, each after its health
+            check, keeps automatic ports and the run's selection, and rolls back on failure, as today. What changes is
+            that it names its set when it starts (using the settled label <b>Apply devhost.toml</b> across every
+            surface), shows its progress in one place on every page, and never draws a service it replaces as failed.
+            Keys: <b>Cancel Restart</b> is a Tab stop on the queued row, as services-panel draws it; no report here
+            takes focus (<code>FB-9</code>, <code>KEY-11</code>, <code>WORD-2</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> One devhost line names every service the reload restarts with its reason. No exit
+              line is printed for the services it stops: those stops are steps of the reload, never exits waiting for a
+              restart (<code>FB-10</code>, <code>FAIL-5</code>, <code>WORD-7</code>, <code>SEL-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> No devhost surface on the page started this save, so the notice stack shows one
+              activity line, updated at least once a second, on every open page of the stack; a Configuration window
+              that saved the file shows the same progress beside <b>Save</b> instead, never both (<code>FB-1</code>,
+              <code>WORD-4</code>, <code>STATE-1</code>).
+            </li>
+            <li>
+              <span class="n">3</span> The trigger's dots show 2 running and 4 restarting, and its accessible name reads
+              "2 of 6 running · 4 restarting", never "0/6": devhost stops the whole set, dependents first, then starts
+              it in dependency order, so services already started run again while the rest wait their turn. Every
+              service outside the set keeps its own state, and the status stream stays open, so nothing is drawn unknown
+              or down (<code>ACT-3</code>, <code>ACT-4</code>, <code>ACT-2</code>, <code>ACT-5</code>,
+              <code>HOLD-2</code>, <code>BAR-1</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Each touched row shows restarting with its step: stopping, queued for its turn,
+              starting with its health check, then running. A restarted service with a <code>process</code> health check
+              counts as started only once it has run for <code>O28</code>'s decided 1 s window; one that exits sooner
+              fails the reload with its exit code and last lines (step 5). Its changed mark clears against its new
+              launch (<code>FB-5</code>, <code>O28</code>, <code>ACT-8</code>).
+            </li>
+            <li>
+              <span class="n">5</span> <b>Restart</b> on a service the reload is restarting is unavailable with "worker
+              is already restarting · Apply devhost.toml" as visible text and as its accessible description
+              (<code>REV-12</code>, <code>HOLD-3</code>, <code>HOLD-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> A stack-wide write, such as <b>Restart Stack</b> or a switch, is unavailable with
+              "Apply devhost.toml is running · 2 of 6 restarted" as visible text and as its accessible description,
+              never a dead button (<code>HOLD-3</code>, <code>HOLD-1</code>, <code>MENU-3</code>).
+            </li>
+            <li>
+              <span class="n">7</span> With worktrees off, a reload that restarts only worker leaves api outside its
+              set: a <b>Restart</b>, <b>Start</b> or Restart Changed pressed meanwhile on api queues behind the reload
+              on every page, with <b>Cancel Restart</b> or <b>Cancel Start</b>, instead of doing nothing
+              (<code>HOLD-3</code>, <code>SEL-7</code>).
+            </li>
+            <li>
+              <span class="n">8</span> A newer save that validates supersedes the reload in progress: the stop or start
+              in progress finishes, the remaining services start from the newest manifest only, nothing of the replaced
+              edit is announced, its record ends replaced, and every page's activity line follows the newer reload. A
+              newer save that does not validate supersedes nothing: the reload finishes with its own outcome, then the
+              rejection follows (<code>REV-12</code>, <code>FB-10</code>).
+            </li>
+            <li>
+              <span class="n">9</span> On failure, the activity line and the touched rows turn to the rollback's own
+              words while devhost restores service by service: every service that ran before runs again, one that was
+              failing before keeps failing, and the set is never stopped as one unit (<code>UNDO-1</code>,
+              <code>ACT-3</code>, <code>FAIL-1</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes manifest-hot-reload-01, journey-crash-to-fix-06, interrupted-operations-05, config-editor-05 ·
+            Backend: the reload's operation record with each target's step; supersede instead of queue; stops published
+            as steps; <code>O28</code>'s 1 s window; per-service rollback (Backend 2, 3, 8, 10, 12; <code>CC-24</code>,
+            <code>CC-25</code>, <code>CC-37</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="outcome">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>the stack's terminal; the same lines go to its per-manifest log</span>
+            </div>
+            <pre
+              class="term"
+            ><b>14:02:17 Applied devhost.toml: restarted worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as worker) · 6 of 6 running · 16 s</b> <span class="n">1</span>
+<b>14:20:03 Applied devhost.toml: nothing restarted · 0.2 s</b>
+<span class="muted"># After adding [services.preview] with managed = false in ~/acme:</span>
+<b>14:40:12 Applied devhost.toml: nothing restarted · 0.3 s</b> <span class="n">2</span></pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop page, served by web</b
+              ><span>the reload restarted this page's service; the editor had focus</span>
+            </div>
+            <div class="pg" style="min-height: 120px">
+              <div class="apptxt">Acme Shop · Cart …</div>
+              <div class="corner">
+                <div class="toastrow" style="padding: 0">
+                  <div class="toast" style="max-width: 36rem">
+                    ✓ Applied devhost.toml: restarted web (this page's service; same repository as worker), worker
+                    (changed), and api, docs, admin and search-index-rebuilder (same repository as worker) · 6 of 6
+                    running · 16 s · after devhost.toml changed on disk
+                  </div>
+                  <span class="n">3</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docs page</b
+              ><span>worktrees off; a reload that restarted only worker has ended</span>
+            </div>
+            <div class="work small">
+              <div class="row">
+                <span class="tbar"
+                  ><span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span></span
+                ><span class="muted"
+                  >the activity line ended; no outcome notice; worker's row reads running <span class="n">4</span></span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop page</b
+              ><span
+                >worktrees off; api exited, the crash view is open, and a fix to api's command was saved in an
+                editor</span
+              >
+            </div>
+            <div class="scrim" style="min-height: 0">
+              <div class="dlg">
+                <div class="hd"><h3>✕ api exited with code 1 at 14:02</h3></div>
+                <div class="body">
+                  <div class="banner info" style="margin-top: 0">
+                    ◐ Apply devhost.toml · restarting api (changed) and worker (depends on api) · 3 s
+                    <span class="n">5</span>
+                  </div>
+                  <div class="row">
+                    <span class="btn pri off">Restart api</span><span class="btn">Edit</span
+                    ><span class="muted">api is already restarting · Apply devhost.toml</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shop page</b><span>api runs again: the crash view closed by itself</span>
+            </div>
+            <div class="pg" style="min-height: 100px">
+              <div class="apptxt">Acme Shop · Cart …</div>
+              <div class="corner">
+                <div class="toastrow" style="padding: 0">
+                  <div class="toast" style="max-width: 36rem">
+                    ✓ api is running again · Applied devhost.toml: restarted api (changed) and worker (depends on api) ·
+                    6 of 6 running · 3.1 s
+                  </div>
+                  <span class="n">6</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>4. Read the outcome</h2>
+          <p>
+            A reload still ends with the accepted manifest updated, routes changed in one Caddy reload, and retired
+            hostnames and ports released before the outcome prints, as today. What changes is that it ends with exactly
+            one outcome line that names what restarted and why, certified only once the reload that read the saved
+            version ended with every restarted service in the state the line reports, and that the page whose service
+            restarted says the same. When that service's dev server then reloads the page, reload-control's
+            <b>Reload blocked</b> holds the reload while <b>Hold Reloads</b> is on and names the restart that caused it,
+            and the outcome names work the reload put out of reach (<code>FB-5</code>, <code>FB-4</code>,
+            <code>UNDO-2</code>). Keys: the outcome notice takes no focus; it closes after <code>O14</code>'s calibrated
+            reading time and pauses on unfocused arrival under <code>O53</code> (<code>FB-9</code>, <code>O14</code>,
+            <code>O53</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Exactly one outcome line in the terminal and the per-manifest log, verb first:
+              each restart with its reason, the count of the stack and the time, or "nothing restarted". Only the URLs
+              the reload added, changed or removed follow it, after "New:" or "Removed:", never the whole list, which
+              <code>devhost stack info</code> (short alias <code>devhost status</code>, <code>O62</code>) prints on
+              request (<code>FB-3</code>, <code>FB-10</code>, <code>FB-7</code>, <code>WORD-4</code>,
+              <code>WORD-5</code>, <code>WORD-8</code>, <code>CC-22</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Under reversed <code>O7</code>, adding or removing an external service (<code
+                >managed = false</code
+              >) in a repository never disables worktree switching and emits no switch-block warning: an addition prints
+              only its normal outcome ("Applied devhost.toml: nothing restarted · 0.3 s"), worktree switching stays
+              enabled, and the external service stays untouched and marked external in Services (<code>SEL-11</code>,
+              <code>SEL-5</code>, <code>ACT-9</code>, <code>O7</code>).
+            </li>
+            <li>
+              <span class="n">3</span> On a page whose own service the reload restarted, the outcome replaces the
+              activity line as an outcome notice that names that service first and ends with its origin. It closes after
+              <code>O14</code>'s calibrated reading time (<code>1.5 s + 0.3 s/word</code>, clamped <code>4–15 s</code> —
+              <code>13.2 s</code> for this 39-word notice), paused while pointer or focus is in it or the page is
+              hidden; if it arrived while the browser window was unfocused (<code>document.hasFocus()</code> false, as
+              for an editor save), its countdown waits until the window next gains focus (<code>O53</code>), while focus
+              inside an embedded iframe never pauses it. Its accessible description says it is also in the log, and it
+              is announced once in the polite region (<code>FB-2</code>, <code>FB-6</code>, <code>FB-9</code>,
+              <code>SEL-3</code>, <code>REV-10</code>, <code>O14</code>, <code>O53</code>).
+            </li>
+            <li>
+              <span class="n">4</span> On any other page the activity line ends without a notice, the rows show the
+              result and the stack's log keeps the line (<code>FB-2</code>, <code>FB-7</code>).
+            </li>
+            <li>
+              <span class="n">5</span> While the crash view is open over the page, minimized or not, for a service the
+              reload restarts, the view shows the reload's progress in place of its recovery actions' progress; its
+              <b>Restart api</b> stays in place, unavailable with its reason while the reload restarts api, and
+              <b>Edit</b> stays available (<code>SURF-3</code>, <code>FB-1</code>, <code>REV-12</code>,
+              <code>HOLD-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> When the exited service runs again, the view closes by itself, the outcome notice
+              reports it in the notice stack, and focus returns to the element that had it before the view opened
+              (<code>SURF-3</code>, <code>FB-2</code>, <code>KEY-6</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes manifest-hot-reload-01, manifest-hot-reload-2-03, journey-crash-to-fix-06 · Backend: one outcome line
+            for every finished reload with only the URLs that changed; external services left non-blocking with no
+            warning; the reload's record on the health stream (Backend 1, 2, 7; <code>CC-22</code>, <code>O7</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="rejection">
+        <div class="mock">
+          <div class="win">
+            <div class="bar"><b>Terminal › ~/acme</b><span>the stack's terminal; port = "80a" saved for api</span></div>
+            <pre class="term"><span class="muted">web    | GET /cart 200 12 ms</span>
+<b>14:05:40 devhost.toml:12:8 not applied: services.api.port: expected a number. The stack still runs the accepted manifest.</b> <span class="n">1</span>
+<b>   12 | port = "80a"</b>
+<b>      |        ^</b>
+<span class="muted">worker | job 4412 done</span></pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docs page</b
+              ><span>the config editor on; focus moved back from the bar to Edit with Shift+Tab</span>
+            </div>
+            <div class="pg" style="min-height: 130px">
+              <div class="apptxt">Acme docs · Getting started …</div>
+              <div class="corner">
+                <div class="banner" style="margin: 0; max-width: 36rem">
+                  ◆ Manifest file not applied: devhost.toml line 12, column 8, services.api.port: expected a number. The
+                  stack still runs the accepted manifest. <span class="n">2</span>
+                  <span class="nl">12 port = "80a"</span>
+                  <span class="row" style="margin-top: 4px"
+                    ><span class="btn focusring">Edit</span><span class="btn">Copy Error</span
+                    ><span class="btn">Dismiss</span><span class="n">3</span></span
+                  >
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › the rejection notice in three other situations</b></div>
+            <div class="work small">
+              <div class="vlab">The config editor off (O51: file and line with Copy; no Open in Editor)</div>
+              <div class="banner" style="margin: 0">
+                ◆ Manifest file not applied: devhost.toml line 12, column 8, services.api.port: expected a number. The
+                stack still runs the accepted manifest.
+                <span class="nl">12 port = "80a"</span>
+                <span class="row" style="margin-top: 4px"
+                  ><code>devhost.toml:12:8</code><span class="btn">Copy</span><span class="btn">Copy Error</span
+                  ><span class="btn">Dismiss</span><span class="n">4</span></span
+                >
+              </div>
+              <div class="vlab">A restarted service crashed, and devhost rolled back</div>
+              <div class="banner" style="margin: 0">
+                ◆ Manifest file not applied: api exited with code 1 at 14:02 before its health check. Restored the
+                accepted manifest: 6 of 6 running. <span class="n">5</span>
+                <span class="nl">Error: Cannot find module './db' at src/server.ts:3:1</span>
+                <span class="row" style="margin-top: 4px"
+                  ><span class="muted">Ran bun run src/server.ts in api/ · devhost.toml line 14</span
+                  ><span class="sp"></span><span class="btn">Logs</span><span class="btn">Edit</span
+                  ><span class="btn">Copy Error</span><span class="btn">Dismiss</span></span
+                >
+              </div>
+              <div class="vlab">The same failing change saved again: the same notice, counted</div>
+              <div class="banner" style="margin: 0">
+                ◆ Manifest file not applied: api exited with code 1 before its health check. Restored the accepted
+                manifest: 6 of 6 running. 2 times, last at 14:05 <span class="n">6</span>
+                <span class="nl">Error: Cannot find module './db' at src/server.ts:3:1</span>
+                <span class="row" style="margin-top: 4px"
+                  ><span class="muted">Ran bun run src/server.ts in api/ · devhost.toml line 14</span
+                  ><span class="sp"></span><span class="btn">Logs</span><span class="btn">Edit</span
+                  ><span class="btn">Copy Error</span><span class="btn">Dismiss</span></span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>the stack's terminal, worktrees off; a restart that crashed, then the same change again</span>
+            </div>
+            <pre
+              class="term"
+            ><b>14:02:31 devhost.toml not applied: api exited with code 1 at 14:02 before its health check</b> <span class="n">7</span>
+<span class="muted">api    | Error: Cannot find module './db'</span>
+<span class="muted">api    |     at src/server.ts:3:1</span>
+<b>Ran bun run src/server.ts in api/ · devhost.toml:14</b>
+<b>14:02:52 Restored the accepted manifest: 6 of 6 running · 21 s</b>
+<b>14:05:12 devhost.toml not applied again: same error as 14:02 · restarted and rolled back api and worker · 2 times, last at 14:05</b></pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docs page</b><span>the toolbar collapsed, and after Dismiss</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">Collapsed</div>
+              <div class="row">
+                <span class="banner" style="margin: 0"
+                  >◆ devhost.toml line 12 not applied <span class="btn">Edit</span></span
+                ><span class="tbar oneline"
+                  ><span class="seg">◆ <b>dh</b> · devhost.toml not applied ▴</span></span
+                ><span class="n">8</span>
+              </div>
+              <div class="row">
+                <span class="banner" style="margin: 0"
+                  >◆ <code>devhost.toml:12:8</code> <span class="btn">Copy</span></span
+                ><span class="muted">the same one-line form with the config editor off</span>
+              </div>
+              <div class="vlab">
+                Dismissed: the marker, with the config editor on, then off <span class="n">9</span>
+              </div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">◆ Config · 1 not applied</span><span class="seg">Chat</span></span
+                >
+              </div>
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><b>◆ Acme Shop · 1 not applied ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Chat</span></span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › shipping page</b
+              ><span>the page's own modal dialog is open; the config editor off</span>
+            </div>
+            <div class="scrim" style="min-height: 0">
+              <div class="dlg">
+                <div class="hd"><h3>Edit shipping address</h3></div>
+                <div class="body">
+                  <span class="muted">The app's own dialog: street, city, postcode …</span>
+                  <div class="corner" style="margin-top: 10px">
+                    <div class="banner" style="margin: 0">
+                      ◆ Manifest file not applied: devhost.toml line 12, column 8, services.api.port: expected a number.
+                      The stack still runs the accepted manifest.
+                      <span class="nl">12 port = "80a"</span>
+                      <span class="row" style="margin-top: 4px"
+                        ><code>devhost.toml:12:8</code><span class="btn focusring">Copy</span
+                        ><span class="btn">Copy Error</span><span class="btn">Dismiss</span
+                        ><span class="n">10</span></span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div class="ft"><span class="btn">Cancel</span><span class="btn pri">Save Address</span></div>
+              </div>
+            </div>
+            <div class="corner" style="padding: 6px 10px">
+              <div class="tbar paused">
+                <span class="seg"><b>Acme Shop ▾</b></span
+                ><span class="seg">Paused while this page's dialog is open</span><span class="seg">● ● ● ● ● ● ▾</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>5. Read a rejection where it is</h2>
+          <p>
+            An edit devhost cannot apply still never stops anything: the stack keeps running the accepted manifest and
+            every action stays available, as today (<code>HOLD-6</code>). What changes is that the terminal prints the
+            rejection as devhost's own block with the file, line, column and offending line, and every page shows it as
+            one notice that leads to the fix. Keys: the notice stack comes before the bar in the dock's order, so after
+            Alt+Ctrl+B focuses the bar, Shift+Tab reaches the rejection notice, the first notice in drawn order; Tab
+            moves through <b>Logs</b> (on a crash's rejection), <b>Edit</b> (or <b>Copy</b> when the config editor is
+            off), <b>Copy Error</b> and <b>Dismiss</b> in visual order; Enter or Space activates the focused one; Escape
+            leaves the notice where it is (<code>KEY-3</code>, <code>KEY-4</code>, <code>KEY-8</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> One line led by the file relative to the root manifest, its line, column, key and
+              cause, then the offending line with a caret, then where things stand; never an unmarked line among the
+              services' output. An include reads "admin/devhost.toml:3:1", a cycle starts with its setting, a close key
+              is offered ("did you mean "serve"?"), and the raw parser text stays behind <b>Copy Error</b> and in agent
+              output's one <code>devhost: ERR:</code> line (<code>FAIL-2</code>, <code>WORD-7</code>,
+              <code>WORD-8</code>, <code>WORD-9</code>, <code>FB-10</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Every open page shows one condition notice, ranked with failures at the top of
+              the notice stack, with the offending line and its number under it. Its path is shown once, shortened, and
+              wraps inside the notice with the full path in its tooltip and accessible name, so nothing runs past the
+              window's edge at 1600x1000, 1280x800 or 900x900 in either theme or at 1280x800 under 200% zoom, and it
+              never sits under an open toolbar panel or docked chat (<code>ACT-7</code>, <code>FB-8</code>,
+              <code>WORD-1</code>, <code>SURF-9</code>, <code>SURF-1</code>).
+            </li>
+            <li>
+              <span class="n">3</span> It leads with <b>Edit</b> while the config editor is on, then <b>Copy Error</b>,
+              whose copied text starts with "devhost.toml:12:8" and holds the original parser text, then
+              <b>Dismiss</b> (<code>MENU-4</code>, <code>MENU-5</code>, <code>FAIL-2</code>).
+            </li>
+            <li>
+              <span class="n">4</span> With the config editor off, <b>Edit</b> gives way to
+              <code>devhost.toml:12:8</code> with <b>Copy</b> (copying the location) alongside <b>Copy Error</b> and
+              <b>Dismiss</b>, with no <b>Open in Editor</b> action anywhere (editor support withdrawn under
+              <code>O51</code>; <code>MENU-3</code>, <code>MENU-4</code>, <code>SURF-15</code>).
+            </li>
+            <li>
+              <span class="n">5</span> A restart that crashed is rolled back first; then the notice names the exit and
+              what the rollback restored, and keeps api's own last lines, frozen at its exit, for as long as it shows,
+              whatever other services print. The notice keeps the condition style of every rejection and leads with
+              <b>Logs</b>, which opens the pinned log panel filtered to api at its exit, then <b>Edit</b> on api's
+              definition (or <code>devhost.toml:14</code> with <b>Copy</b> when the editor is off), then
+              <b>Copy Error</b> (<code>FAIL-3</code>, <code>UNDO-1</code>, <code>FAIL-1</code>, <code>SURF-13</code>,
+              <code>MENU-5</code>, <code>FB-8</code>, <code>O51</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Saving the same failing change again updates the one report with its count and
+              latest time, keeping its lines and actions, never a second notice (<code>FAIL-4</code>).
+            </li>
+            <li>
+              <span class="n">7</span> The terminal reports a crash with the service's own lines and what devhost ran,
+              then the rollback's own line, "Restored the accepted manifest: 5 of 6 running · api still fails" when not
+              every service runs again; a repeat prints exactly one line naming what it restarted and rolled back, never
+              nothing (<code>FAIL-3</code>, <code>UNDO-1</code>, <code>FAIL-4</code>, <code>FB-10</code>).
+            </li>
+            <li>
+              <span class="n">8</span> Collapsed, the badge shows a rejected configuration in <code>ACT-7</code>'s
+              order, below a failed, exited or blocked service, with the notice's one-line form beside it,
+              toolbar-shell's drawing. The announcer reads the rejection once in the assertive region when it starts and
+              once in the polite region when it ends (<code>SURF-8</code>, <code>ACT-7</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">9</span> While the notice is visible, <b>Config</b> stays plain so the indicator never
+              repeats; Escape never dismisses the notice; <b>Dismiss</b> does, and leaves "1 not applied" on
+              <b>Config</b> while the config editor is on, else on the stack name, until a configuration is accepted;
+              activating the marker shows the notice again (<code>KEY-8</code>, <code>SURF-8</code>,
+              <code>UNDO-3</code>).
+            </li>
+            <li>
+              <span class="n">10</span> While the page's own modal dialog is open, the notice moves into it with the
+              notice stack, inside its Tab cycle, and <b>Edit</b> (or <b>Copy</b> and <b>Copy Error</b> when the editor
+              is off) works from there; the rest of the toolbar shows its paused state with its reason in one line
+              (<code>SURF-11</code>, <code>KEY-7</code>, <code>O51</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes manifest-hot-reload-02, stack-run-stop-09, manifest-hot-reload-03, journey-crash-to-fix-03,
+            manifest-hot-reload-07 · Backend: one structured error with file, line, column, key, excerpt and close key;
+            a crash's evidence kept with its rejection; one outcome line for every finished reload, a repeat with its
+            count (Backend 4, 6, 7; <code>CC-22</code>, <code>CC-23</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="fix">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docs page</b><span>Edit pressed in the rejection notice (config editor on)</span>
+            </div>
+            <div class="scrim" style="min-height: 0">
+              <div class="dlg">
+                <div class="hd">
+                  <h3>Configuration</h3>
+                  <span class="muted small">devhost.toml · main ~/acme</span>
+                </div>
+                <div class="body">
+                  <div class="banner" style="margin-top: 0">
+                    ◆ devhost.toml line 12, column 8, services.api.port: expected a number. The stack still runs the
+                    accepted manifest. <span class="n">1</span>
+                    <span class="row" style="margin-top: 4px"
+                      ><span class="sp"></span><span class="btn">Restore Running Version</span
+                      ><span class="n">2</span></span
+                    >
+                  </div>
+                  <pre class="term focusring">
+11   [services.api]
+12 ✕ port = "80a"
+13   cwd = "api"
+14   command = ["bun", "run", "src/server.ts"]</pre
+                  >
+                  <div class="row">
+                    <span class="muted"
+                      >Not applied if saved: line 12, column 8, services.api.port: expected a number</span
+                    ><span class="sp"></span><span class="btn pri">Save</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docs page</b
+              ><span>Copy pressed on devhost.toml:12:8 with the config editor off (O51)</span>
+            </div>
+            <div class="pg" style="min-height: 92px">
+              <div class="apptxt">Acme docs · Getting started …</div>
+              <div class="corner">
+                <div class="banner" style="margin: 0; max-width: 36rem">
+                  ◆ Manifest file not applied: devhost.toml line 12, column 8, services.api.port: expected a number. The
+                  stack still runs the accepted manifest.
+                  <span class="row" style="margin-top: 4px"
+                    ><code>devhost.toml:12:8</code><span class="btn focusring">Copy</span
+                    ><span class="btn">Copy Error</span><span class="btn">Dismiss</span></span
+                  >
+                </div>
+                <div class="toastrow" style="padding: 0">
+                  <div class="toast" style="max-width: 36rem">✓ Copied devhost.toml:12:8</div>
+                  <span class="n">3</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>the stack's terminal, worktrees off; after a fix, or after an undo</span>
+            </div>
+            <pre
+              class="term"
+            ><b>14:06:02 Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s</b> <span class="n">4</span>
+<span class="muted">or, when the save puts the accepted text back:</span>
+<b>14:06:02 Configuration restored: devhost.toml matches the accepted manifest · nothing restarted</b> <span class="n">5</span>
+<b>14:07:15 Configuration restored: config.toml matches the running shared Caddy settings · nothing changed</b></pre>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docs page</b><span>the accepted text saved back</span></div>
+            <div class="pg" style="min-height: 100px">
+              <div class="apptxt">Acme docs · Getting started …</div>
+              <div class="corner">
+                <div class="toastrow" style="padding: 0">
+                  <div class="toast" style="max-width: 36rem">
+                    ✓ Configuration restored: devhost.toml matches the accepted manifest · nothing restarted
+                  </div>
+                  <span class="n">6</span>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docs page</b
+              ><span>switched back to main from a worktree whose manifest was rejected, then deleted</span>
+            </div>
+            <div class="work small">
+              <div class="row">
+                <span class="tbar oneline"
+                  ><span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">● ● ● ● ● ● ▾</span><span class="seg">main ~/acme ▾</span
+                  ><span class="seg">Config</span><span class="seg">Chat</span></span
+                ><span class="muted">no rejection notice and no marker: the stack accepted main's manifest</span
+                ><span class="n">7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>6. Fix at the file and line, or undo, and save</h2>
+          <p>
+            The person still fixes the file and saves it, and the save is step 1 again, as today. What changes is that
+            every report leads to the file and line, and the save's outcome replaces the rejection instead of the notice
+            vanishing without a word. There is no Undo save: the way back is to what runs (<code>UNDO-6</code>). Keys:
+            <b>Edit</b> opens config-editor's Configuration window with focus in its text, at the line
+            (<code>KEY-6</code>, <code>SURF-4</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> <b>Edit</b> opens the Configuration window on the file at the line, the failing
+              line marked, with the rejection in its banner until a reload of that file is accepted, and after a crash,
+              the crashed service's last lines; config-editor owns the window and its <b>Edit</b> target
+              (<code>MENU-4</code>, <code>SURF-4</code>).
+            </li>
+            <li>
+              <span class="n">2</span> There is no Undo save: <b>Restore Running Version</b> writes back what runs and
+              applies like any save, and an accepted save is undone by undoing the text and saving again, which reports
+              its own reload (<code>UNDO-6</code>, <code>REV-10</code>).
+            </li>
+            <li>
+              <span class="n">3</span> With the config editor off, <b>Copy</b> copies <code>devhost.toml:12:8</code> and
+              confirms "Copied devhost.toml:12:8" (omitting "also in the log", <code>O14</code>) while the rejection
+              notice stays until a configuration is accepted or it is dismissed, with no editor launched or opened
+              (<code>O51</code>, <code>SURF-15</code>, <code>MENU-4</code>, <code>MENU-3</code>).
+            </li>
+            <li>
+              <span class="n">4</span> A fix's outcome replaces the rejection in the terminal, the log and on every page
+              (<code>FAIL-4</code>, <code>FB-3</code>, <code>ACT-7</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Saving the accepted text back, which restarts nothing, says within 1 s that the
+              configuration is restored; the devhost config file's own line goes to every stack's terminal
+              (<code>FAIL-4</code>, <code>UNDO-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> On every page the outcome replaces the rejection notice (closing after
+              <code>O14</code>'s <code>4.5 s</code> reading time for these 10 words, paused on unfocused arrival under
+              <code>O53</code>) and is announced once in the polite region (<code>FAIL-4</code>, <code>FB-9</code>,
+              <code>O14</code>, <code>O53</code>).
+            </li>
+            <li>
+              <span class="n">7</span> A rejection names its file relative to its worktree's root and clears when the
+              stack accepts a configuration from any worktree: a successful switch or Return to Configured Worktree
+              records an accepted manifest, so no page, in this or a new browser session, shows a rejection for a file
+              the stack no longer watches. A rejected edit never makes its worktree unavailable (<code>FAIL-4</code>,
+              <code>HOLD-4</code>, <code>ACT-7</code>, <code>HOLD-6</code>, <code>WORD-11</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes manifest-hot-reload-04, proxy-settings-04, worktree-switch-08 · Backend: one outcome line for every
+            finished reload, restored included; a successful switch records an accepted configuration (Backend 7, 9;
+            <code>CC-22</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="agent">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b><span>an agent's shell, another terminal than the foreground stack's</span>
+            </div>
+            <pre class="term">$ devhost reload
+Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s <span class="n">1</span>
+$ echo $?
+0
+$ devhost reload
+devhost.toml:12:8 not applied: services.api.port: expected a number. The stack still runs the accepted manifest.
+   12 | port = "80a"
+      |        ^
+$ echo $?
+1 <span class="n">2</span></pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>Terminal › ~/acme</b
+              ><span>the same rejection in agent output, plus waiting with stack info / status</span>
+            </div>
+            <pre class="term">$ AGENT=1 devhost reload
+devhost: ERR: /abs/path/devhost.toml:12:8 not applied: services.api.port: expected a number; the stack still runs the accepted manifest <span class="n">3</span>
+$ devhost stack info --wait   <span class="muted"># short alias: devhost status --wait</span>
+Acme Shop · main ~/acme · foreground · 6 of 6 running · as of 14:06:05
+Last operation: Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s</pre>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>7. Read the outcome as an agent or a script</h2>
+          <p>
+            Agents and scripts still edit the same manifest files and meet the same checks, and human and agent output
+            still differ on purpose (owner rule). What changes is that an agent that edits the manifest no longer has to
+            read a terminal it cannot see: <code>devhost reload</code> applies the manifest on disk through
+            <code>POST /__devhost__/reload</code>, waits for the same outcome and exits with it. stack-run-stop builds
+            these commands; this flow specifies what they report. Keys: none; these are terminal commands.
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> <code>devhost reload</code> runs the same reload a save starts, waits for its
+              outcome by the <code>operationId</code> it sent, prints step 4's outcome line and exits 0 when applied;
+              with nothing changed it reads "Applied devhost.toml: nothing restarted" (<code>FB-11</code>,
+              <code>ACT-1</code>, <code>CC-23</code>, <code>CC-37</code>).
+            </li>
+            <li>
+              <span class="n">2</span> A rejection prints step 5's lines and exits non-zero, and so does a restarted
+              service that exited, named with its last output line. A lost response is read from the record by its
+              <code>operationId</code>, and a request repeated with that ID runs nothing again (<code>FB-11</code>,
+              <code>REV-12</code>, <code>ACT-1</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Under <code>AGENT=1</code> every rejection is one <code>devhost: ERR:</code> line
+              holding every issue, with absolute paths. <code>devhost stack info --wait</code> (short alias
+              <code>devhost status --wait</code>, <code>O62</code>) waits for a running reload and reports the last
+              operation's outcome, manifest-reload rejection state and changed-file markers; every stack writes its
+              per-manifest log, a foreground stack included, so the outcome is readable from another shell
+              (<code>WORD-9</code>, <code>FB-11</code>, <code>FB-7</code>, <code>O62</code>, <code>CC-21</code>,
+              <code>CC-23</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes agent-cli-journey-02 · Backend: <code>devhost reload</code> (<code>POST /__devhost__/reload</code>)
+            and its dry run on the reload's record; <code>devhost stack info --wait</code> /
+            <code>devhost status --wait</code>; the per-manifest log for every stack (Backend 11; <code>CC-21</code>,
+            <code>CC-23</code>, <code>CC-37</code>, <code>O62</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="changes">
+        <div>
+          <h3>Removed</h3>
+          <ul>
+            <li>The bare <code>configuration reloaded:</code> line and every URL after every reload</li>
+            <li>
+              <code>configuration reload rejected</code> as an unmarked line whose only words are the raw parser text
+              and Rust error chain (now behind <b>Copy Error</b>), "Manifest change not applied" as the notice title, a
+              rejection notice without a copyable location while the config editor is off, and
+              <b>Open in Editor</b> (<code>O51</code>)
+            </li>
+            <li>Silence when a rejection repeats or a save restores the accepted manifest</li>
+            <li>"exited with code 0; devhost is waiting for a restart." for the services a reload stops</li>
+            <li>External-service worktree-switch blocks and switch-block warnings (<code>O7</code>)</li>
+            <li>
+              The whole-set rollback that stops every service when one already failing fails again;
+              <code>UNDO-1</code>'s per-service rollback replaces it after the <code>error-pages-01</code> stopgap
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Merged</h3>
+          <ul>
+            <li>
+              The terminal line, the log line, the activity line, the outcome notice and
+              <code>devhost reload</code> read one operation record (<code>ACT-1</code>, <code>WORD-4</code>)
+            </li>
+            <li>
+              The terminal, the notice, the window's banner and agent output read one structured error
+              (<code>MENU-4</code>)
+            </li>
+            <li>The reload, the Configuration window's check and the dry run share one plan</li>
+          </ul>
+        </div>
+        <div>
+          <h3>New</h3>
+          <ul>
+            <li>
+              The start line and one outcome line per reload, each restart with its reason; the activity line and
+              "restarting · Apply devhost.toml" rows
+            </li>
+            <li>
+              The structured error with file, line, column, key, excerpt and close key; file and line with
+              <b>Copy</b> (editor off, <code>O51</code>), <b>Copy Error</b> and <b>Logs</b> on the rejection notice
+            </li>
+            <li>
+              The port probe that names the holder; the repeat count; "Configuration restored"; "Replaced by a newer
+              save"; the report of <code>O42</code>'s unseen saves
+            </li>
+            <li>
+              <code>devhost reload</code> (<code>POST /__devhost__/reload</code>) and its dry run; <code>O28</code>'s 1
+              s for a <code>process</code>-health service; <code>O14</code>/<code>O53</code> outcome timing; the
+              dismissed rejection's marker
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Changed</h3>
+          <ul>
+            <li>A newer save supersedes the reload in progress instead of queuing behind it (<code>REV-12</code>)</li>
+            <li>
+              A restart during a reload queues behind it instead of being disabled without a reason (<code>SEL-7</code>,
+              <code>CC-8</code>)
+            </li>
+            <li>
+              A rejection clears when a configuration from any worktree is accepted (<code>FAIL-4</code>,
+              <code>WORD-11</code>)
+            </li>
+            <li>
+              Adding or removing an external service keeps worktree switching enabled with no warning (<code>O7</code>)
+            </li>
+            <li>
+              A <code>process</code>-health service counts as started after 1 s, so a command that exits at once rolls
+              the reload back (<code>O28</code>, <code>FB-5</code>)
+            </li>
+            <li>
+              The docs and the agent skill say applied and not applied and name <code>devhost reload</code> and
+              <code>devhost stack info</code> / <code>devhost status</code> (<code>O62</code>, <code>CC-22</code>,
+              <code>CC-23</code>)
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>
+              A save applies without a question from any editor, and every setting applies through hot reload (owner
+              rule)
+            </li>
+            <li>
+              The whole manifest is checked before anything stops, and an invalid edit leaves the accepted manifest
+              running
+            </li>
+            <li>
+              Dependents stop first and start in dependency order; a failed start restores the previous services and
+              routes, now service by service
+            </li>
+            <li>
+              Routes change in one Caddy reload, and retired hostnames and ports are released before the outcome prints
+            </li>
+            <li>
+              The run's selection, <code>O9</code>'s restart scope, automatic ports, chat sessions and connected pages
+              through a reload
+            </li>
+            <li>External services show status only; a shutdown during a reload owns the cleanup</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend work</h3>
+          <ul>
+            <li>
+              One plan with reasons for the reload, the window's check and the dry run (Backend 1; <code>CC-37</code>)
+            </li>
+            <li>
+              The reload as an operation record; supersede instead of queue (Backend 2, 3; <code>CC-25</code>,
+              <code>CC-37</code>)
+            </li>
+            <li>
+              One structured error; the port probe; a crash's evidence kept with its rejection (Backend 4, 5, 6;
+              <code>CC-23</code>)
+            </li>
+            <li>
+              One outcome line per finished reload; stops as steps; a switch records an accepted configuration (Backend
+              7, 8, 9; <code>CC-22</code>, <code>CC-24</code>)
+            </li>
+            <li>
+              <code>O28</code>'s 1 s window and the report of <code>O42</code>'s unseen saves;
+              <code>devhost reload</code> and <code>devhost stack info</code> / <code>devhost status</code>; per-service
+              rollback (Backend 10, 11, 12; <code>O62</code>, <code>CC-21</code>, <code>CC-23</code>)
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

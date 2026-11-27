@@ -1,0 +1,450 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Serve a folder or a running port today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/serve-folder-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Entry points" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "terminal", "label": "Terminal" },
+    { "id": "pages", "label": "Served pages" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "start", "label": "Start + route", "fromCol": 0, "toCol": 1 },
+    { "id": "read", "label": "Open + read", "fromCol": 2, "toCol": 4 },
+    { "id": "stop", "label": "Browse + stop", "fromCol": 5, "toCol": 5 }
+  ],
+  "mainPath": ["dirCmd", "session", "ready", "root", "markdown", "source", "listing", "stop"],
+  "nodes": [
+    {
+      "id": "dirCmd",
+      "lane": "entry",
+      "col": 0,
+      "type": "external",
+      "label": "devhost serve --dir",
+      "sublabel": "no flag: the shell's folder",
+      "explanation": "devhost serve --domain notes.localhost serves the current folder; --dir picks another one, relative to it. --domain is required and must be a bare hostname. The command reads no devhost.toml and offers only --domain, --dir and --port: nothing sets chat, the bind address or the port of the file server.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/cli/serve.go",
+          "line": 11,
+          "end_line": 15,
+          "label": "Flags: --domain, --dir, --port"
+        },
+        {
+          "path": "apps/devhost/internal/app/run.go",
+          "line": 30,
+          "end_line": 45,
+          "label": "Folder defaults to the shell's directory"
+        }
+      ]
+    },
+    {
+      "id": "portCmd",
+      "lane": "entry",
+      "col": 1,
+      "type": "security",
+      "label": "devhost serve --port",
+      "sublabel": "docs: waits for the port",
+      "tag": "manifest-hot-reload-2-04",
+      "explanation": "devhost serve --port 3000 --domain app.localhost routes a server already listening on 127.0.0.1:3000. The docs say devhost waits until the port accepts connections, then routes it. The session's only service has no command, so devhost treats it as a service it does not run, and only detached starts wait for those: the foreground session prints its URL at once whether or not anything listens, and never says it is waiting or that the port came up (manifest-hot-reload-2-04; serve-folder-01 is the serve evidence). The shell's folder still becomes the session's folder and the chat agent's working folder (serve-folder-04).",
+      "sources": [
+        {
+          "path": "packages/docs/src/content/docs/start/serve.md",
+          "line": 44,
+          "end_line": 50,
+          "label": "Docs: devhost waits for the port"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 517,
+          "end_line": 524,
+          "label": "Only detached starts wait for the port"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1623,
+          "end_line": 1625,
+          "label": "No command or folder: devhost runs nothing"
+        }
+      ]
+    },
+    {
+      "id": "manifestSvc",
+      "lane": "entry",
+      "col": 3,
+      "type": "external",
+      "label": "Manifest serve service",
+      "sublabel": "serve = \"docs\" in a stack",
+      "explanation": "A stack service with serve = \"<folder>\" runs the same file server under devhost start, so it shows the same listing and Markdown views (and the same problems), but with the stack's toolbar, its own chat setting and its worktrees. Its missing-file page adds an enabled Restart and a worktree picker (serve-folder-06).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1129,
+          "end_line": 1132,
+          "label": "A stack runs the same file server"
+        },
+        {
+          "path": "packages/docs/src/content/docs/start/serve.md",
+          "line": 25,
+          "end_line": 42,
+          "label": "Docs: serve in devhost.toml"
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "lane": "backend",
+      "col": 1,
+      "type": "security",
+      "label": "Start the serve session",
+      "sublabel": "Caddy, host claim; chat on",
+      "tag": "serve-folder-04",
+      "explanation": "StartServe starts a loopback file server for --dir, then runs the stack machinery with an invented stack named serve-<domain> and one service named serve. When Caddy is not running it starts it and installs its local CA, which can ask for a password. The devtools settings come from the defaults, so chat is always on: serve ignores devhost.toml and has no option to turn it off, and the agent's folder is the served folder, or for --port the shell's folder (serve-folder-04). Chat trusts a forgeable Origin header, so while the session runs anyone who can reach the machine can start an agent in that folder (network-exposure-01, owned by agent-chat). The stack directory, the only list of serve sessions, titles the session's card serve-<domain>; its one row reads serve with a gray External badge even for a folder devhost serves, and a --port card shows the shell's folder as its Directory while 127.0.0.1:<port> appears nowhere, not even to the filter (serve-folder-11).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/serve.go",
+          "line": 39,
+          "end_line": 58,
+          "label": "File server, serve-<domain>, default devtools"
+        },
+        {
+          "path": "apps/devhost/internal/services/shared_caddy.go",
+          "line": 32,
+          "end_line": 40,
+          "label": "Starts Caddy and installs its local CA"
+        },
+        {
+          "path": "apps/devhost/internal/manifest/validate.go",
+          "line": 105,
+          "end_line": 118,
+          "label": "Default devtools turn chat on"
+        }
+      ]
+    },
+    {
+      "id": "taken",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Hostname already taken",
+      "sublabel": "PID and 'from .'; exit 1",
+      "tag": "serve-folder-03",
+      "explanation": "A hostname held by another session or stack ends the command with exit 1: 'notes.localhost is already claimed by PID 49514 from .' A serve session has no manifest path, so the sentence ends in an empty path and its period. Nothing says the holder is a serve session, which folder it serves or how to stop it, and devhost stack list skips owners without a manifest, so no devhost command can find it (serve-folder-03).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 378,
+          "end_line": 391,
+          "label": "Each hostname is claimed before routing"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/routes.go",
+          "line": 1182,
+          "end_line": 1195,
+          "label": "Refusal names a PID and a manifest path"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/owners.go",
+          "line": 51,
+          "end_line": 57,
+          "label": "stack list skips manifest-free owners"
+        }
+      ]
+    },
+    {
+      "id": "ready",
+      "lane": "terminal",
+      "col": 2,
+      "type": "security",
+      "label": "URL printed as ready",
+      "sublabel": "'serve (primary): https://…'",
+      "tag": "serve-folder-02",
+      "explanation": "Besides any certificate warning, the session prints one line: 'serve-notes.localhost | serve (primary): https://notes.localhost'. It never names the folder or the target port, never says it is ready and never says Ctrl-C stops it. The invented stack name prefixes every line and wraps warnings mid-word, and 'serve (primary)' is manifest wording for a session that has no manifest (serve-folder-02). With --port the same line appears at once even when nothing listens on the port (manifest-hot-reload-2-04).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 719,
+          "end_line": 734,
+          "label": "One line per URL, marked '(primary)'"
+        },
+        {
+          "path": "apps/devhost/internal/app/run.go",
+          "line": 37,
+          "end_line": 37,
+          "label": "Every line prefixed serve-<domain>"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 544,
+          "end_line": 545,
+          "label": "URLs printed once services are started"
+        }
+      ]
+    },
+    {
+      "id": "root",
+      "lane": "pages",
+      "col": 2,
+      "type": "security",
+      "label": "Open the served URL",
+      "sublabel": "README replaces the listing",
+      "tag": "serve-folder-05",
+      "explanation": "A folder with index.html, index.md, README.md or readme.md shows that file instead of its listing, at the root and in every subfolder. The breadcrumb is a single, disabled 'devhost', the tab title is '/ · devhost', and nothing names the file shown; the folder's other files are reachable only through links the README happens to contain, or by typing URLs (serve-folder-05). With --port the routed app opens instead, with the devtools toolbar and its Chat button.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/files/handler.go",
+          "line": 207,
+          "end_line": 220,
+          "label": "Index files are served before the listing"
+        },
+        {
+          "path": "apps/devhost/internal/files/breadcrumb.go",
+          "line": 10,
+          "end_line": 21,
+          "label": "Breadcrumb root is the word devhost"
+        },
+        {
+          "path": "apps/devhost/internal/files/handler.go",
+          "line": 249,
+          "end_line": 255,
+          "label": "Markdown page title is the URL path"
+        }
+      ]
+    },
+    {
+      "id": "portDown",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "503: serve unavailable",
+      "sublabel": "Restart disabled; no logs",
+      "tag": "serve-folder-01",
+      "explanation": "With nothing listening on the --port target, the URL opens devhost's recovery page: 'serve is unavailable. The service is not responding. View its logs below and restart it when you are ready.', with 'Service: serve · 127.0.0.1:<port>', a Restart serve button disabled with no reason and an empty Recent logs. It blames a service named serve that devhost never ran and cannot restart (serve-folder-01, a duplicate of manifest-hot-reload-2-04, whose page slice startup-and-recovery owns). The page does reload into the app once a server answers on the port.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 127,
+          "end_line": 139,
+          "label": "An unready service gets the 503 page"
+        },
+        {
+          "path": "apps/devhost/internal/services/service_recovery.go",
+          "line": 34,
+          "end_line": 62,
+          "label": "Restart only for services devhost runs"
+        }
+      ]
+    },
+    {
+      "id": "markdown",
+      "lane": "pages",
+      "col": 3,
+      "type": "security",
+      "label": "Read a Markdown file",
+      "sublabel": "front matter table; GFM",
+      "tag": "serve-folder-09",
+      "explanation": "A .md file (any case) renders as GitHub Flavored Markdown without raw HTML, with its YAML front matter as a table above it; other files are served as they are, with byte ranges. Front matter that does not parse shows as a grey YAML code block that looks like an ordinary code sample, with no message, parser error or line, and GitHub alert blocks such as '> [!WARNING]' render as plain quotes that start with the literal marker (serve-folder-09).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/files/handler.go",
+          "line": 194,
+          "end_line": 205,
+          "label": "Markdown renders; other files go raw"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/FilePage.tsx",
+          "line": 20,
+          "end_line": 22,
+          "label": "GFM and front matter plugins only"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/renderFrontMatter.ts",
+          "line": 17,
+          "end_line": 32,
+          "label": "A parse error becomes a code block"
+        }
+      ]
+    },
+    {
+      "id": "source",
+      "lane": "pages",
+      "col": 4,
+      "type": "security",
+      "label": "Show source",
+      "sublabel": "remembered for the host",
+      "tag": "serve-folder-08",
+      "explanation": "Show source switches the page to its raw text and stores one preference for the whole hostname. Every later Markdown page on that hostname, in later sessions too, opens as raw text, and only the button, now reading Show rendered, hints at it. Source view is a plain preformatted block, so the README's links are inert, and with the listing hidden the root then reaches no other file; the breadcrumbs still work (serve-folder-08).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useMarkdownSource.ts",
+          "line": 8,
+          "end_line": 27,
+          "label": "One stored preference for the host"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/FilePage.tsx",
+          "line": 37,
+          "end_line": 58,
+          "label": "Toggle button; source as plain text"
+        }
+      ]
+    },
+    {
+      "id": "listing",
+      "lane": "pages",
+      "col": 5,
+      "type": "security",
+      "label": "Read a folder listing",
+      "sublabel": "bare names in byte order",
+      "tag": "serve-folder-07",
+      "explanation": "A folder without an index file lists its visible entries as bare names sorted by byte: capitals first, folders mixed among files and marked only by a trailing slash, file10 before file2. Rows carry no icon, size or modified time, each shows an external-link arrow although links open in the same tab, and the heading always reads 'Directory listing', so the served folder is never named; tall rows fit about 17 entries at 1600×1000 (serve-folder-07). A name that starts with a word and a colon, such as 'Re: meeting.md' or 'TODO:list.md', gets a link the browser reads as a 're:' or 'todo:' URL, so clicking its row does nothing and says nothing; the file opens only by typing its URL (serve-folder-10). An empty folder says so clearly.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/files/handler.go",
+          "line": 221,
+          "end_line": 246,
+          "label": "Names sorted by byte; no size or date"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/FilePage.tsx",
+          "line": 61,
+          "end_line": 84,
+          "label": "'Directory listing' and a row arrow"
+        }
+      ]
+    },
+    {
+      "id": "typo404",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Missing file: 404 page",
+      "sublabel": "service recovery, no listing",
+      "tag": "serve-folder-06",
+      "explanation": "A mistyped or stale file name gets a bare text 404 from the file server, which the document proxy replaces with the service recovery page: 'Page not found. This path does not exist in the current checkout. Check the URL.', the internal file-server address, a disabled Restart serve and an empty Recent logs. The breadcrumbs and listing are gone and nothing links back to the folder. A manifest serve service adds an enabled Restart and a worktree picker (serve-folder-06; the replacement rule itself is owned by startup-and-recovery).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/files/handler.go",
+          "line": 61,
+          "end_line": 65,
+          "label": "A missing path gets a bare text 404"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 62,
+          "end_line": 76,
+          "label": "Every document 404 is replaced"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 153,
+          "end_line": 164,
+          "label": "'does not exist in the current checkout'"
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "terminal",
+      "col": 5,
+      "type": "security",
+      "label": "Ctrl-C stops the session",
+      "sublabel": "'shutting down the stack'",
+      "tag": "serve-folder-02",
+      "explanation": "Ctrl-C prints 'Received SIGINT (Ctrl-C) (signal 2); shutting down the stack.' and 'Stack stopped.' for a stack devhost stack list never shows. It releases the hostname and its route and stops the file server, and Caddy keeps running. For --port it does not say that the routed server keeps running, as the docs promise (serve-folder-02). Only this terminal can stop the session: devhost stop needs a manifest.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 220,
+          "end_line": 226,
+          "label": "SIGINT: 'shutting down the stack'"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 286,
+          "end_line": 320,
+          "label": "Releases host and route; 'Stack stopped.'"
+        },
+        {
+          "path": "apps/devhost/internal/app/run.go",
+          "line": 48,
+          "end_line": 60,
+          "label": "devhost stop needs a manifest path"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "dir-session", "from": "dirCmd", "to": "session", "label": "start", "role": "main" },
+    { "id": "port-session", "from": "portCmd", "to": "session", "label": "route a port", "role": "branch" },
+    { "id": "session-ready", "from": "session", "to": "ready", "label": "routed", "role": "main" },
+    { "id": "session-taken", "from": "session", "to": "taken", "label": "host taken", "role": "error" },
+    { "id": "ready-root", "from": "ready", "to": "root", "label": "open the URL", "role": "main" },
+    { "id": "root-portdown", "from": "root", "to": "portDown", "label": "--port: nothing listens", "role": "error" },
+    { "id": "root-markdown", "from": "root", "to": "markdown", "label": "README link", "role": "main" },
+    { "id": "manifest-markdown", "from": "manifestSvc", "to": "markdown", "label": "same pages", "role": "branch" },
+    { "id": "markdown-source", "from": "markdown", "to": "source", "label": "Show source", "role": "main" },
+    { "id": "markdown-typo", "from": "markdown", "to": "typo404", "label": "mistyped name", "role": "error" },
+    { "id": "source-listing", "from": "source", "to": "listing", "label": "breadcrumb up", "role": "main" },
+    { "id": "listing-stop", "from": "listing", "to": "stop", "label": "Ctrl-C", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "One command gives a folder or a running port an HTTPS hostname with no manifest; Caddy starts on demand and keeps running after Ctrl-C",
+        "Files are read on every request, so a reload shows edits and new files",
+        "Reads stay confined to the served folder: hidden files, ../ escapes and symlinks that leave it answer 404",
+        "Markdown renders as GitHub Flavored Markdown with a front matter table; breadcrumbs reach parent folders; an empty folder says so",
+        "A hostname held by another session is refused before anything is routed",
+        "Ctrl-C removes the route and stops the file server; a server routed with --port keeps running, and its 503 page reloads into the app once the port answers"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "serve-folder-04 Every serve session turns chat on with no way off; --port makes the shell's folder the agent's folder",
+        "network-exposure-01 Chat trusts a forgeable Origin, so anyone on the network can start an agent in a running session (owned by agent-chat)",
+        "manifest-hot-reload-2-04 serve --port is documented to wait for the port but prints its URL at once, listening or not",
+        "serve-folder-01 With nothing on the port, the 503 page blames 'serve' and offers a disabled Restart (duplicate of manifest-hot-reload-2-04)",
+        "serve-folder-02 The terminal never names the folder or port, never says ready or how to stop, and calls the session a stack",
+        "serve-folder-03 A taken hostname is refused with only a PID and 'from .'; no command finds or stops the holder",
+        "serve-folder-05 A README.md or index.md replaces the listing, so the folder's other files are unreachable and unnamed",
+        "serve-folder-06 A mistyped file name lands on a service recovery page with restarts and worktree switches",
+        "serve-folder-07 The listing is bare names in byte order: folders not first, file10 before file2, no size, date or type",
+        "serve-folder-08 Show source on one file turns every Markdown page on the host to raw text, in later sessions too",
+        "serve-folder-09 Broken front matter shows as a plain code block with no error; GitHub alerts show their raw marker",
+        "serve-folder-10 A listed name that starts with a word and a colon, such as 'Re: meeting.md', links to a 're:' URL, so its row cannot be opened",
+        "serve-folder-11 The stack directory titles a serve session serve-<domain> and never says what it serves; a --port card shows the launch folder, never the port"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: --dir and --port sessions in a terminal, a port with nothing listening, a taken hostname, the listing, Markdown views, Show source, a mistyped file name, Ctrl-C, and a manifest serve service. This diagram was traced from source only; the stack directory's card for a serve session (serve-folder-11) was verified from code only, since no serve session was started for it."
+      ]
+    }
+  ]
+}

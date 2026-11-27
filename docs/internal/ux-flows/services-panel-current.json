@@ -1,0 +1,596 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Watch and restart services from the toolbar today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/services-panel-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": { "label": "Entry point" },
+        "frontend": { "label": "UI step" },
+        "backend": { "label": "Backend job" },
+        "security": { "label": "Step with an evidenced pain point" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Toolbar (entry points)" },
+    { "id": "panel", "label": "Services panel" },
+    { "id": "backend", "label": "Backend job" },
+    { "id": "after", "label": "Toolbar after the job" },
+    { "id": "recovery", "label": "Failures and retry", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "watch", "label": "Watch + open", "fromCol": 0, "toCol": 1 },
+    { "id": "act", "label": "Restart + start", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "outcome", "label": "Outcome + retry", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["summary", "rows", "restartRow", "restartJob", "result"],
+  "nodes": [
+    {
+      "id": "summary",
+      "lane": "entry",
+      "col": 0,
+      "type": "security",
+      "label": "Services trigger",
+      "sublabel": "dots, count, badge",
+      "tag": "stack-scale-04",
+      "explanation": "The toolbar's Services trigger draws one 8 px dot per started service, the up/total count and a '1 changed' badge; its accessible name reads 'Services: 5 of 6 up, 1 changed'. A dot has four looks: up (green), changed (amber), restarting (spinner) and down (red), and red also stands for every state the toolbar cannot tell apart. With 40 services the dots alone take 496 px and stretch the toolbar to 80% of a 1280 px window, push the readouts onto a second row at 900 px, and name their service only in a hover title on each 8 px dot (stack-scale-04). A partial start reads like a complete stack: 'devhost start storefront' shows 3/3 in green while three services were never started (services-panel-2-05). In forced colors every dot disappears and only '5/6' remains (keyboard-and-screen-reader-04, owned by toolbar-shell). Collapsed, the toolbar keeps one dot whose 'down' also covers any restart error.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 135,
+          "end_line": 150,
+          "label": "Trigger: dots, up/total, changed badge"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 32,
+          "end_line": 46,
+          "label": "Four dot states and their names"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 418,
+          "end_line": 424,
+          "label": "Collapsed dot: any error reads as down"
+        }
+      ]
+    },
+    {
+      "id": "badge",
+      "lane": "entry",
+      "col": 4,
+      "type": "security",
+      "label": "Badge or Alt+Ctrl+R",
+      "sublabel": "changed, else primary",
+      "tag": "services-panel-2-01",
+      "explanation": "Beside the count, the '1 changed' badge has a restart icon, and Alt+Ctrl+R works from any page; both post the same restart request as a row. The badge and its icon disappear whenever any error shows, such as an unrelated failed restart, while the panel still marks the service changed and the trigger's name still says '1 changed'; they also vanish while a restart runs (services-panel-2-01). With nothing changed, the panel's Restart Changed stays enabled under the same label and it and the shortcut restart the stack's primary service, not the page's own; the shortcut is swallowed without a sign while another restart runs, and neither says what it restarted (services-panel-2-02). An external service may declare watch paths: its edits count in '1 changed', but the badge icon restarts managed services only and stays disabled, while Restart Changed and the shortcut send its name too, and the route refuses the whole request with HTTP 500, managed services included, so nothing can clear its mark (services-panel-2-06).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 226,
+          "end_line": 237,
+          "label": "Badge icon: hidden while any error shows"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 209,
+          "end_line": 235,
+          "label": "Shortcut: changed or primary, error only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/selectRestartServiceNames.ts",
+          "line": 4,
+          "end_line": 9,
+          "label": "Changed services, else the primary"
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "lane": "backend",
+      "col": 0,
+      "type": "security",
+      "label": "Publish service health",
+      "sublabel": "4 states; no reason sent",
+      "tag": "journey-new-project-02",
+      "explanation": "Every change pushes one health message to each open page: per service its name, managed, status, URL, dirty, restarting and an unexpected exit code; services the run never started go in a separate list. The server knows more than it sends: a service still starting, one that could not start (with its reason) and one blocked after a rollback all go out as status false, with no reason and no time, and one pending in a reload goes out as restarting. The page replaces its whole state on each message and draws four states, so a stack that is still starting looks like a crash: red 0/2 on the startup page before anything failed (journey-new-project-02). A daemon service has no tracked process, so it never reports restarting while its stop command runs (manifest-hot-reload-2-05).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1581,
+          "end_line": 1612,
+          "label": "Sent: status, dirty, restarting, exit"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 83,
+          "end_line": 99,
+          "label": "Pending, blocked, failed, starting: down"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 43,
+          "end_line": 71,
+          "label": "Page replaces its state on each push"
+        }
+      ]
+    },
+    {
+      "id": "watcher",
+      "lane": "backend",
+      "col": 1,
+      "type": "security",
+      "label": "Mark changed on save",
+      "sublabel": "cleared only by restart",
+      "tag": "journey-agent-fix-03",
+      "explanation": "Any file event under a service's watch paths marks it changed after a 200 ms debounce and pushes health. Nothing compares the files with what the running process loaded: an edit already applied by hot module replacement, or reverted with git checkout, keeps the service marked '1 changed' and targeted by Restart Changed until it restarts (journey-agent-fix-03, stack-scale-08). A restart clears the mark before it stops the service, so a file saved while the old process is stopping stays marked on the new process that already loaded it (the changed-mark half of services-panel-2-01). Only a restart, a reload or a worktree switch clears the mark.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/watch.go",
+          "line": 262,
+          "end_line": 290,
+          "label": "Any event marks changed after 200 ms"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 191,
+          "end_line": 193,
+          "label": "Restart clears the mark before stopping"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 278,
+          "end_line": 284,
+          "label": "Reloads clear it as they stop services"
+        }
+      ]
+    },
+    {
+      "id": "rows",
+      "lane": "panel",
+      "col": 1,
+      "type": "security",
+      "label": "Read the service rows",
+      "sublabel": "dot + name; link may 404",
+      "tag": "services-panel-02",
+      "explanation": "Services opens a popover, at most min(60vh, 520px) tall, with a header per repository and two groups, Applications (rows with a URL) and Services, sorted A to Z. A row is a status dot, the name, an 'external' or 'changed' badge and a Restart icon; it shows no host, path, port, state word, exit code or uptime. An application's name links to its route with the star removed, so api at /api/* opens /api/, which the app does not serve, and lands on devhost's 404 page (services-panel-02). A service killed from outside is a bare red name that looks like one that failed on its port, and after a restart nothing records the exit (interrupted-operations-04). With 40 services the panel is one flat run of bare names with no filter or grouping, failed rows keep their alphabetical place, and the actions sit below the last row (stack-scale-05).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 247,
+          "end_line": 268,
+          "label": "Applications and Services, A to Z"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 281,
+          "end_line": 308,
+          "label": "Row: dot, name or link, badges"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1679,
+          "end_line": 1689,
+          "label": "Route /api/* becomes the link /api/"
+        }
+      ]
+    },
+    {
+      "id": "restartRow",
+      "lane": "panel",
+      "col": 2,
+      "yOffset": -80,
+      "type": "security",
+      "label": "Restart one service",
+      "sublabel": "focus lost; nothing said",
+      "tag": "keyboard-and-screen-reader-01",
+      "explanation": "A managed row's Restart posts /__devhost__/restart-service with that name. The next health push marks the service restarting, which spins the icon and disables the button. Pressed with Enter, the disabled button drops focus to the page's body within a second, and every later change (restarting, down, up, the count) lands outside any live region, so nothing is announced (keyboard-and-screen-reader-01). The button stays enabled while another service restarts; a second request then waits behind the first without any sign (manifest-hot-reload-2-05). External services have no Restart, and every row of a repository whose rollback failed is disabled.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 309,
+          "end_line": 319,
+          "label": "Row Restart: disabled while it restarts"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/restartServices.ts",
+          "line": 5,
+          "end_line": 14,
+          "label": "POST restart-service with the names"
+        }
+      ]
+    },
+    {
+      "id": "stackButton",
+      "lane": "panel",
+      "col": 2,
+      "yOffset": 0,
+      "type": "security",
+      "label": "Press Restart Stack",
+      "sublabel": "one click; all down 14 s",
+      "tag": "services-panel-2-03",
+      "explanation": "Below the rows, Restart Stack sits directly right of Restart Changed with the same size and style; one click runs it, and the only warning is a hover title ('Restarts all managed services and reassigns automatic ports.'). In a six-service stack every service was down for 13 to 14 s: 0/6 with six spinners and 'Restarting stack…', no step or wait reason although the terminal names the health check it waits for, and 502s or the 'Starting admin' page for the app's requests meanwhile. Success shows nothing; only a failure leaves a 'Stack restart failed' notice (services-panel-2-03). The crash view uses the same button.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 51,
+          "end_line": 75,
+          "label": "Two same-style buttons; title as warning"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 28,
+          "end_line": 38,
+          "label": "Keeps only an error; success is silent"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 208,
+          "end_line": 221,
+          "label": "Footer actions below the last row"
+        }
+      ]
+    },
+    {
+      "id": "startStopped",
+      "lane": "panel",
+      "col": 2,
+      "yOffset": 80,
+      "type": "security",
+      "label": "Start a stopped service",
+      "sublabel": "one by one; row vanishes",
+      "tag": "services-panel-2-05",
+      "explanation": "Services a partial start left out appear only as 'Stopped services (n)' below the rows. Its view lists bare names, with no host, group or dependencies, one Start each and the note that dependencies start too; nothing starts several at once. Start posts /__devhost__/start-service, a route the Control API reference leaves out, so scripts never find it (agent-cli-journey-08). The name leaves the list as soon as the new selection is published, while the service is still starting; every other Start stays disabled with no reason, and success is never stated (services-panel-2-05). Each Start is a full configuration change, so the toolbar also draws every service red for about a second and the open list is replaced by the red Services list (stack-scale-06).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 194,
+          "end_line": 207,
+          "label": "Stopped services (n) below the rows"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/StoppedServices.tsx",
+          "line": 16,
+          "end_line": 58,
+          "label": "Bare names; one Start; all lock"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/startServices.ts",
+          "line": 6,
+          "end_line": 15,
+          "label": "POST start-service"
+        }
+      ]
+    },
+    {
+      "id": "restartJob",
+      "lane": "backend",
+      "col": 3,
+      "type": "security",
+      "label": "Stop, then start each",
+      "sublabel": "one lock; no stop deadline",
+      "tag": "manifest-hot-reload-2-05",
+      "explanation": "The control server checks the names (unknown, not started and unmanaged services are refused, all as HTTP 500) and restarts them one by one under the stack's single operation lock, which hot reloads, config saves, worktree switches and shutdown also take. For each it logs 'restarting service: <name>', clears the changed mark, stops the service, starts it and waits for its health check; the terminal never prints a completion line. A daemon's status and stop commands run with no deadline: a 45 s stop held every other restart for 47 s while the daemon showed as a plain red row with Restart enabled, and a stop that never returns wedges the stack (manifest-hot-reload-2-05). In a repository whose rollback failed, any restart becomes a recovery of that whole repository.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 153,
+          "end_line": 216,
+          "label": "One lock; checks; stop then start each"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 1002,
+          "end_line": 1014,
+          "label": "Daemon status and stop: no deadline"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 655,
+          "end_line": 689,
+          "label": "Any failure answers 500 with its text"
+        }
+      ]
+    },
+    {
+      "id": "applyJob",
+      "lane": "backend",
+      "col": 2,
+      "type": "security",
+      "label": "Apply configuration",
+      "sublabel": "stop all, start, routes",
+      "tag": "process-containment-01",
+      "explanation": "Restart Stack and Start both rebuild the stack's configuration under the same operation lock. Restart Stack marks every managed service pending (drawn restarting), stops them all, starts them in dependency order with fresh automatic ports and then swaps the Caddy routes; Start adds the chosen services to the run and starts only those and their dependencies. Success is announced only in the terminal ('stack restarted with new automatic ports' or 'started services: …'). The first service that fails to start aborts the change and triggers the rollback. Stopping signals each service's tracked process tree, and a stale PID in it can reach an unrelated process (process-containment-01, owned by stack-run-stop).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 44,
+          "end_line": 83,
+          "label": "Start and Restart Stack apply config"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 144,
+          "end_line": 151,
+          "label": "Restart Stack: every managed service"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 203,
+          "end_line": 233,
+          "label": "Stop all, start in order, swap routes"
+        }
+      ]
+    },
+    {
+      "id": "lost",
+      "lane": "after",
+      "col": 2,
+      "type": "security",
+      "label": "Stream lost: all red",
+      "sublabel": "Restart buttons stay on",
+      "tag": "services-panel-2-04",
+      "explanation": "When the health stream drops, the page sets every service to status false and keeps nothing else: no changed, restarting or exit code, no stopped list, no repositories, and any error is cleared. The toolbar draws that as an outage: 0/6 with six red dots, red rows, and the worktree and CPU readouts gone. Every successful Restart Stack ends with about a second of it while the routes are swapped (services-panel-2-04), and so does each single Start (stack-scale-06). After devhost stop or when Caddy dies it stays: 6/6 in green through the 7 s shutdown, then six crashed services with every Restart still enabled, and it recovers without a word (notices-and-feedback-02). Those Restarts then fail with the proxy's 404 page source as their error.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 73,
+          "end_line": 82,
+          "label": "Disconnect: every service set down"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/markServicesAsUnavailable.ts",
+          "line": 3,
+          "end_line": 28,
+          "label": "Drops changed, restarting, exit code"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 345,
+          "end_line": 355,
+          "label": "status false is drawn as down"
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "lane": "after",
+      "col": 4,
+      "type": "security",
+      "label": "Back to all up",
+      "sublabel": "nothing says done",
+      "tag": "services-panel-2-02",
+      "explanation": "When the health stream reports the service healthy, its dot and row turn green and the count returns to n/n. That is the only confirmation: no message names what restarted or says that it finished, the terminal prints only 'restarting service: <name>', and a restart started from the badge or shortcut with the panel closed shows one dot spinning for 2 to 4 s (services-panel-2-02). Restart Stack's success is equally silent (services-panel-2-03). A screen reader hears restart errors but never these recoveries (keyboard-and-screen-reader-02, owned by notices-and-feedback).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 79,
+          "end_line": 82,
+          "label": "Count and changed recomputed per push"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 191,
+          "end_line": 191,
+          "label": "Logs the start of a restart only"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 264,
+          "end_line": 268,
+          "label": "Stack restart reported to the terminal"
+        }
+      ]
+    },
+    {
+      "id": "stackDown",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Rollback stops all",
+      "sublabel": "0/n red; Restart locked",
+      "tag": "error-pages-01",
+      "explanation": "When one service cannot start during Restart Stack, the rollback restarts the previous services as one unit, fails at the same service, then stops and blocks every service of the repository: toolbar 0/6, the repository marked stopped, every hostname 502, and nothing says the stack is down. Every row's Restart is disabled, and Restart Changed and the Worktrees Retry turn into a recovery of the whole repository that fails at the same service again (error-pages-01). Pressed in the crash view, the view closes 10 to 12 s later and takes its 'Stack restart failed' message with it (journey-crash-to-fix-07; error-pages-02, owned by startup-and-recovery). Saving a manifest change while one service is crashed runs the same rollback (stack-directory-01; that trigger is manifest-hot-reload's journey).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 339,
+          "end_line": 350,
+          "label": "Rollback fails: stop and block all"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 179,
+          "end_line": 183,
+          "label": "Rows locked while repository has error"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 180,
+          "end_line": 190,
+          "label": "Restart becomes repository recovery"
+        }
+      ]
+    },
+    {
+      "id": "restartFailed",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Restart failed notice",
+      "sublabel": "erased by the next push",
+      "tag": "notices-and-feedback-01",
+      "explanation": "A failed restart shows 'Failed to restart <name>: ' plus the route's plain-text error as a red notice in the panel. A row's or the shortcut's failure is kept with the toolbar's status, so the next health push erases it, after 0.2 s in one run, and when the page's own service failed the crash view replaces it (notices-and-feedback-01). With the stack stopped, the same notice prints the whole HTML source of the proxy's 404 page. A fixed port held by another program fails only after the 30 s health timeout and blames the health check, never the port (error-pages-06, manifest-hot-reload-05, owned by manifest-hot-reload). Retrying means pressing Restart again; Restart Changed and Restart Stack keep their own error in the footer.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/postControlAction.ts",
+          "line": 9,
+          "end_line": 33,
+          "label": "Error: label plus the response body"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/hooks/useServiceHealth.ts",
+          "line": 62,
+          "end_line": 71,
+          "label": "Next health push clears the error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 114,
+          "end_line": 131,
+          "label": "Shown as a notice in the panel"
+        }
+      ]
+    },
+    {
+      "id": "crash",
+      "lane": "recovery",
+      "col": 4,
+      "type": "external",
+      "label": "Crash view opens",
+      "sublabel": "same restart buttons",
+      "explanation": "When a service this page depends on exits, devhost covers the page with the full-screen 'Service exited' view, owned by startup-and-recovery. Its Restart <name> posts the same /__devhost__/restart-service as a row, and its Restart Stack is the panel's own button, so both hand off to the restart behavior drawn here.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 181,
+          "end_line": 193,
+          "label": "Opens for exits that break this page"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 33,
+          "end_line": 42,
+          "label": "Restart posts the same restart-service"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 108,
+          "end_line": 111,
+          "label": "The same Restart Stack button"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "summary-rows", "from": "summary", "to": "rows", "label": "open Services", "role": "main" },
+    { "id": "rows-restartRow", "from": "rows", "to": "restartRow", "label": "Restart", "role": "main" },
+    { "id": "restartRow-restartJob", "from": "restartRow", "to": "restartJob", "label": "POST", "role": "main" },
+    { "id": "restartJob-result", "from": "restartJob", "to": "result", "label": "health: up", "role": "main" },
+    { "id": "rows-stackButton", "from": "rows", "to": "stackButton", "label": "footer", "role": "branch" },
+    { "id": "rows-startStopped", "from": "rows", "to": "startStopped", "label": "Stopped", "role": "branch" },
+    { "id": "badge-restartJob", "from": "badge", "to": "restartJob", "label": "same POST", "role": "branch" },
+    { "id": "stackButton-applyJob", "from": "stackButton", "to": "applyJob", "label": "all", "role": "branch" },
+    { "id": "startStopped-applyJob", "from": "startStopped", "to": "applyJob", "label": "add", "role": "branch" },
+    {
+      "id": "applyJob-lost",
+      "from": "applyJob",
+      "to": "lost",
+      "label": "routes swap",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "lost-result",
+      "from": "lost",
+      "to": "result",
+      "label": "reconnects",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    { "id": "applyJob-stackDown", "from": "applyJob", "to": "stackDown", "label": "a start fails", "role": "error" },
+    {
+      "id": "restartJob-restartFailed",
+      "from": "restartJob",
+      "to": "restartFailed",
+      "label": "fails",
+      "role": "error"
+    },
+    {
+      "id": "restartFailed-crash",
+      "from": "restartFailed",
+      "to": "crash",
+      "label": "own page",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "watcher-health",
+      "from": "watcher",
+      "to": "health",
+      "label": "saved",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "health-summary",
+      "from": "health",
+      "to": "summary",
+      "label": "pushed",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "One health stream pushes every change to every open page; dots, rows and the badge update without a refresh",
+        "Restart is per service; external services show status only; a row's Restart is disabled while that service restarts",
+        "Restart Changed and Alt+Ctrl+R share one target selection, and the shortcut ignores keys typed into the app's own fields",
+        "Stopped services lists what a partial start left out, and Start brings dependencies along without touching running services",
+        "The recovery page already tells starting, could not start, exited with code and not responding apart from the same runtime state"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "error-pages-01 Restart Stack with one service that cannot start stops every healthy service and leaves the stack down",
+        "journey-crash-to-fix-07 The same from the crash view: 0/6, every Restart disabled, no message on the page",
+        "stack-directory-01 A manifest save with one crashed service runs the same rollback; the save itself is manifest-hot-reload's journey",
+        "manifest-hot-reload-2-05 A daemon's slow stop silently holds every other restart; a stop that never returns wedges the stack",
+        "journey-new-project-02 A stack that is still starting is drawn as a red outage",
+        "services-panel-2-04 Every successful Restart Stack ends with a second of every service drawn down",
+        "notices-and-feedback-02 After devhost stop or a dead Caddy the toolbar shows six crashed services with live Restart buttons",
+        "stack-scale-06 Each Start flashes the whole stack red and swaps the Stopped services list away for a second",
+        "services-panel-2-01 The changed badge and its restart icon vanish whenever any error shows or a restart runs",
+        "services-panel-2-02 Restart Changed and Alt+Ctrl+R restart the primary when nothing changed and never say what they restarted",
+        "journey-agent-fix-03 A service stays marked changed after hot reload applied the edit (services-panel slice)",
+        "stack-scale-08 A reverted edit keeps the service marked changed until a restart",
+        "services-panel-2-03 Restart Stack takes every service down for about 14 s from one click, with no warning, progress or result",
+        "services-panel-2-05 A partly started stack reads as fully up, and stopped services start one at a time from bare names",
+        "services-panel-02 Rows show only a name, and the api link opens a 404 page",
+        "stack-scale-05 With 40 services the panel is one flat list of bare names with no search or grouping",
+        "stack-scale-04 With 40 services the toolbar becomes a strip of 40 identical dots",
+        "interrupted-operations-04 A service killed from outside is a bare red row, and a restart erases the trace (services-panel slice)",
+        "keyboard-and-screen-reader-01 A keyboard restart throws focus onto the page and announces nothing (services-panel slice)",
+        "notices-and-feedback-01 A row's restart error vanishes at the next status push (services-panel slice)",
+        "services-panel-2-06 An external service with watch paths stays marked changed, and Restart Changed and Alt+Ctrl+R then fail with HTTP 500 for every changed service",
+        "agent-cli-journey-08 The Control API reference leaves out start-service, the route Start sends, so scripts never find it",
+        "process-containment-01 Stopping a service can signal unrelated processes that reused its old child PIDs (owned by stack-run-stop)",
+        "error-pages-02 Restart Stack failing from the crash view reports nothing anywhere (owned by startup-and-recovery)",
+        "manifest-hot-reload-05 and error-pages-06 A fixed port held elsewhere fails after 30 s and blames the health check (owned by manifest-hot-reload)",
+        "keyboard-and-screen-reader-04 Forced colors hide every health dot (owned by toolbar-shell)",
+        "keyboard-and-screen-reader-02 Screen readers hear restart errors but never recoveries (owned by notices-and-feedback)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: row restarts, Restart Changed, the badge and Alt+Ctrl+R, Restart Stack success and failure, Start from Stopped services, a 40-service stack, keyboard restarts, devhost stop and a slow daemon stop. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

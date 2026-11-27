@@ -1,0 +1,515 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Edit the manifest and watch it apply: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/manifest-hot-reload-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Editor or agent: save"
+    },
+    {
+      "id": "review",
+      "label": "Terminal + pages: progress"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 4
+    }
+  ],
+  "mainPath": ["save", "watch", "check", "reload", "applied"],
+  "nodes": [
+    {
+      "id": "save",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Save devhost.toml",
+      "sublabel": "or an include, any editor",
+      "explanation": "A save of the root manifest or an include, from any editor, the Configuration window (including authenticated remote browsers under O36/O38/O54), git or a coding agent, or a file that starts or stops matching an includes pattern, starts a hot reload 200 ms after the last write, as today, and never asks first: a hot reload is reported, never reviewed (REV-10, REV-1). Every manifest setting applies this way, never 'restart to apply' (owner rule). The reload is one operation record of kind reload, labelled Apply devhost.toml on every surface, its origin 'after devhost.toml changed on disk' (ACT-1, WORD-2, WORD-4). Defaults: O9's restart scope, the changed services, their dependents and their repository groups (O9, SEL-11), and the run's service selection holds (SEL-7). If no reload reads a written save within O42's 5 s while no operation holds the stack, it ends unseen and points to devhost reload; a superseded save ends replaced (O42). The Configuration window states the reach beside Save, and devhost reload --dry-run prints the same plan, changing nothing (FB-11). A save asks about no agent (REV-3). Keys: none of its own; the save is the editor's.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/watch.rs",
+          "line": 210,
+          "end_line": 272,
+          "label": "Reuses: watched manifest dirs and patterns"
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "lane": "ask",
+      "col": 1,
+      "type": "external",
+      "label": "devhost reload",
+      "sublabel": "waits; exit 0 if applied",
+      "tag": "agent-cli-journey-02",
+      "explanation": "An agent or a script that edited the manifest runs devhost reload: it calls POST /__devhost__/reload to apply the manifest on disk to the running stack, the same reload a save starts, waits for its outcome by the operationId it sent, prints the outcome line or the rejection, and exits 0 when applied and non-zero when not applied or when a restarted service exited, naming it with its last output line (FB-11, CC-23, CC-37, ACT-1). --dry-run, or --dry-run --stdin devhost.toml for text not written yet, prints the plan from the same check and changes nothing. devhost stack info --wait (short alias devhost status --wait, O62) waits for a running reload and reports the last operation's outcome, manifest-reload rejection state and changed-file markers; under AGENT=1 a rejection is one devhost: ERR: line holding every issue (WORD-9). Every stack, a foreground one included, writes its per-manifest log, so the outcome is readable from another shell (FB-7, CC-21), and the agent skill stops reading configuration reloaded as success. stack-run-stop builds these commands; this flow specifies what they report. Resolves agent-cli-journey-02.",
+      "sources": [
+        {
+          "path": "skills/devhost/SKILL.md",
+          "line": 191,
+          "end_line": 191,
+          "label": "Replaces: 'configuration reloaded' as success"
+        },
+        {
+          "path": "skills/devhost/references/setup.md",
+          "line": 86,
+          "end_line": 86,
+          "label": "Replaces: wait for 'configuration reloaded'"
+        }
+      ]
+    },
+    {
+      "id": "watch",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Debounce; newest wins",
+      "sublabel": "a newer save replaces it",
+      "tag": "interrupted-operations-05",
+      "explanation": "Saves within 200 ms apply once, and the stack keeps listening during a reload. A newer save that validates supersedes the reload in progress: devhost lets the stop or start in progress finish, starts the remaining services from the newest manifest only, never starts a service it removed or prints the replaced edit's URLs, and prints one line, 'Replaced by a newer save of devhost.toml at 14:02:07; applying it', before the newer reload's own lines; the replaced record ends replaced, and every page's activity line follows the newer reload (REV-12, FB-10, ACT-1). A newer save that does not validate supersedes nothing: the running reload ends with its own outcome, then the rejection. A save made in the Configuration window meanwhile waits and is reported with its own reload, or as 'Replaced by your next save' beside Save (REV-12). notify (FSEvents on macOS, inotify on Linux) misses saves through symlinks; O42's 5 s idle-only unseen-save timer bounds them until config-editor's symlink-following watcher lands (manifest-hot-reload-08, related). Resolves interrupted-operations-05; a daemon's slow stop holding a reload is services-panel's deadline (manifest-hot-reload-2-05, related).",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/watch.rs",
+          "line": 274,
+          "end_line": 310,
+          "label": "Reuses: 200 ms debounce, one pending event"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 152,
+          "end_line": 175,
+          "label": "Replaces: blocking poll loop during reload"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "lane": "backend",
+      "col": 2,
+      "type": "backend",
+      "label": "Check + plan, read only",
+      "sublabel": "probe ports; each reason",
+      "tag": "manifest-hot-reload-05",
+      "explanation": "devhost re-reads the root manifest and every include, validates the merged result and claims new hostnames and fixed ports against other stacks, as today, and now also probes each new or changed fixed port on its bind host, both loopback addresses included, naming the listening program via containment's port lookup. A failed check stops nothing and names what holds it: 'devhost.toml:12:8 not applied: services.api.port: 127.0.0.1:4000 is already in use by python3 (PID 4242). Choose another port or stop that program.' (REV-11, FAIL-2, HOLD-6). One plan function, shared with the Configuration window's check and devhost reload --dry-run, names each restart with its reason: changed, depends on api, same repository as worker, added, removed (SEL-1, SEL-11, FB-3, O9), plus toolbar changes or a return to the configured worktree; declaring an external service (managed = false) never disables worktree switching and adds no switch-block warning (O7). A service that failed before the save and that it leaves unchanged is never a condition of success (REV-11, UNDO-1). Resolves manifest-hot-reload-05 with error-pages-06, and the plan of manifest-hot-reload-01.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 595,
+          "end_line": 650,
+          "label": "Reuses: re-read and validate every file"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 1232,
+          "end_line": 1275,
+          "label": "Replaces: restart set with no reasons"
+        },
+        {
+          "path": "apps/devhost/src/caddy/routes.rs",
+          "line": 158,
+          "end_line": 229,
+          "label": "Replaces: port claim reads claim files only"
+        }
+      ]
+    },
+    {
+      "id": "reload",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Restart the set",
+      "sublabel": "one write; rolls back",
+      "tag": "config-editor-05",
+      "explanation": "The write: the reload stops its restart set, dependents first, and starts it in dependency order, each after its health check, as today; routes change in one Caddy reload, and retired hostnames and ports are released only once the manifest is accepted (ACT-3). Its stops are steps of the reload, published as restarting with the step stopping, never exits: no 'exited with code 0; devhost is waiting for a restart.' line (FAIL-5, WORD-7, CC-24). A restarted service with a process health check counts as started only after it has run O28's decided 1 s window; one that exits sooner fails the reload with its exit code and last lines (FB-5, O28). Every page's status stream stays open through the route swap, so nothing is drawn unknown (ACT-5, HOLD-2), and a restarted service's changed mark clears against its new launch (ACT-8). Ctrl-C or devhost stop during a reload cancels it, starts no restoration, and its record ends cancelled (FAIL-5). Resolves the false success of config-editor-05's reload and the exit lines of journey-crash-to-fix-06.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 851,
+          "end_line": 870,
+          "label": "Reuses: mark starting, stop, then start"
+        },
+        {
+          "path": "apps/devhost/src/services/health.rs",
+          "line": 82,
+          "end_line": 84,
+          "label": "Replaces: process health: one exit check"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 85,
+          "end_line": 95,
+          "label": "Replaces: the reload's stops print as exits"
+        }
+      ]
+    },
+    {
+      "id": "progress",
+      "lane": "review",
+      "col": 3,
+      "type": "frontend",
+      "label": "Start line + activity",
+      "sublabel": "2 of 6 restarted · 5 s",
+      "tag": "manifest-hot-reload-01",
+      "explanation": "The terminal prints one line as the reload starts: 'Apply devhost.toml: restarting worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as worker)' (FB-10, WORD-7). Every open page shows one activity line in the notice stack, 'Apply devhost.toml · 2 of 6 restarted · 5 s', updated at least once a second; a Configuration window that saved the file shows it beside Save instead, never both (FB-1, WORD-4, STATE-1). The set stops, then starts in dependency order: touched rows read 'restarting · Apply devhost.toml' with their step, and the trigger counts '2 of 6 running · 4 restarting', never 0/6 or down (ACT-3, ACT-4, ACT-2). A Restart, Start or Restart Changed of a service outside the set queues, 'queued behind Apply devhost.toml' with Cancel Restart; a Restart inside it reads 'worker is already restarting' (REV-12); Restart Stack and a switch are unavailable with 'Apply devhost.toml is running · 2 of 6 restarted' as visible text and accessible description (HOLD-3, HOLD-1, SEL-7, MENU-3). An open crash view shows the same progress (SURF-3). Resolves manifest-hot-reload-01 and the disabled restarts of interrupted-operations-05.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 319,
+          "end_line": 328,
+          "label": "Reuses: reload marks touched rows starting"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceStatusPanel.tsx",
+          "line": 87,
+          "end_line": 90,
+          "label": "Replaces: any restarting row blocks restarts"
+        }
+      ]
+    },
+    {
+      "id": "applied",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Applied devhost.toml",
+      "sublabel": "each restart and why",
+      "tag": "manifest-hot-reload-2-03",
+      "explanation": "One outcome line in the terminal and the stack's log, verb first, certified only once every restarted service is in the state it reports (FB-3, FB-5, FB-10, WORD-4): 'Applied devhost.toml: restarted worker (changed), and api, web, docs, admin and search-index-rebuilder (same repository as worker) · 6 of 6 running · 16 s', or 'Applied devhost.toml: nothing restarted · 0.2 s'; only changed URLs follow it (CC-22). On the page whose service restarted, it is an outcome notice naming that service first, closes after O14's calibrated reading time (13.2 s for this 39-word notice), waits for window focus when it arrives unfocused (O53), and is announced once (FB-2, FB-6, FB-9, O14, O53); a fix saved under the crash view closes the view with 'api is running again' (SURF-3, KEY-6). It names work it put out of reach (FB-4). Under O7, adding or removing an external service (managed = false) keeps worktree switching enabled with no warning and leaves the service untouched (SEL-11, ACT-9, O7). No Undo save: the way back is to what runs (UNDO-6), and a failed restart rolls back (UNDO-1). Resolves journey-crash-to-fix-06 and the reload slices of manifest-hot-reload-2-03 and config-editor-05.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 630,
+          "end_line": 649,
+          "label": "Replaces: message lists every manifest file"
+        },
+        {
+          "path": "apps/devhost/src/services/stack.rs",
+          "line": 2052,
+          "end_line": 2074,
+          "label": "Replaces: every service URL printed again"
+        }
+      ]
+    },
+    {
+      "id": "notApplied",
+      "lane": "outcome",
+      "col": 2,
+      "type": "security",
+      "label": "Not applied: file:line",
+      "sublabel": "key + offending line",
+      "tag": "stack-run-stop-09",
+      "explanation": "A rejection prints as devhost's own block, never an unmarked line among the services' output: 'devhost.toml:12:8 not applied: services.api.port: expected a number. The stack still runs the accepted manifest.', then the offending line with its number and a caret (FAIL-2, WORD-7, WORD-8, HOLD-6, FB-10). The file is relative to the root manifest's folder, an include named as admin/devhost.toml:3:1; a schema problem keeps its setting's file and line through the include merge; a cycle starts with its setting ('services.api.dependsOn creates a cycle: api -> web -> api'); a close key is offered ('did you mean \"serve\"?'). The raw parser text and Rust error chain stay behind Copy Error, and agent output prints one devhost: ERR: line holding every issue (MENU-4, WORD-9). The same structured error feeds the notice, the Configuration window's banner and devhost reload. Nothing stopped, so the accepted manifest runs on. Resolves stack-run-stop-09's reload slice, with manifest-hot-reload-03.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 159,
+          "end_line": 166,
+          "label": "Replaces: rejection logged as a plain line"
+        },
+        {
+          "path": "apps/devhost/src/manifest/diagnostics.rs",
+          "line": 5,
+          "end_line": 51,
+          "label": "Replaces: abs path and parser text, no col"
+        },
+        {
+          "path": "apps/devhost/src/manifest/validation.rs",
+          "line": 1107,
+          "end_line": 1111,
+          "label": "Replaces: unknown key with no file or line"
+        }
+      ]
+    },
+    {
+      "id": "notice",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Not-applied notice",
+      "sublabel": "Edit or Copy location",
+      "tag": "manifest-hot-reload-02",
+      "explanation": "Every open page shows one condition notice, ranked with failures (ACT-7, FB-8): 'Manifest file not applied: devhost.toml line 12, column 8, services.api.port: expected a number. The stack still runs the accepted manifest.', the offending line under it, then Edit, Copy Error and Dismiss with the config editor on, or devhost.toml:12:8 with Copy, Copy Error and Dismiss with the config editor off (no Open in Editor under O51; MENU-4, MENU-3, MENU-5, WORD-1). Paths show once, shortened, and wrap inside the notice at every acceptance viewport; it never sits under an open panel (SURF-9, SURF-1). Config stays plain while the notice shows; Escape never dismisses it; Dismiss leaves '1 not applied' on Config, or on the stack name with the editor off (KEY-8, SURF-8, UNDO-3). Collapsed, the badge takes its look (toolbar-shell-01, related). It is announced when it starts and when it ends (FB-9), moves into the page's modal dialog (SURF-11, KEY-7), and Shift+Tab from the bar after Alt+Ctrl+B reaches it first (KEY-3). It clears when a configuration from any worktree is accepted, a switch included (FAIL-4, HOLD-4, WORD-11). Resolves manifest-hot-reload-02 and worktree-switch-08.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/configEditor/components/ConfigRejectionNotice.tsx",
+          "line": 18,
+          "end_line": 42,
+          "label": "Replaces: raw error; Edit only with editor on"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 276,
+          "end_line": 290,
+          "label": "Replaces: collapsed dot shows only health"
+        }
+      ]
+    },
+    {
+      "id": "rollback",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Roll back per service",
+      "sublabel": "Restored: 6 of 6 running",
+      "tag": "journey-crash-to-fix-03",
+      "explanation": "When a restarted service exits or its routes fail, devhost restores the accepted manifest service by service: every service that ran before runs again, one that was failing before keeps failing with its recovery page, and the set is never stopped as one unit (UNDO-1, FAIL-1, ACT-3). While it restores, the activity line and rows read 'Restoring the accepted manifest · 1 of 2 started · 12 s' (worktrees off). The terminal then prints 'devhost.toml not applied: api exited with code 1 at 14:02 before its health check', api's last output lines frozen at its exit, 'Ran bun run src/server.ts in api/ · devhost.toml:14', then 'Restored the accepted manifest: 6 of 6 running · 21 s', or '5 of 6 running · api still fails' (FAIL-3, WORD-8). The notice is a condition, like every rejection, and keeps api's lines however much other services print; Logs leads its actions and opens the log panel filtered to api at its exit, then Edit and Copy Error (SURF-13, MENU-5, FB-8). Resolves journey-crash-to-fix-03. The per-service rollback ships first as the error-pages-01 stopgap, with journey-crash-to-fix-07 and stack-directory-01 (related).",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 871,
+          "end_line": 880,
+          "label": "Replaces: rollback stops the whole new set"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 893,
+          "end_line": 899,
+          "label": "Replaces: failed restore stops and blocks all"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/live.rs",
+          "line": 384,
+          "end_line": 399,
+          "label": "Replaces: pages keep the newest 512 lines"
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Fix or undo, save",
+      "sublabel": "undo or repeat reported",
+      "tag": "manifest-hot-reload-04",
+      "explanation": "Edit opens the Configuration window on the file at the line, the failing lines marked and the rejection in its banner (MENU-4, SURF-4; the window and its Edit target are config-editor's, config-editor-09, related); with the editor off, Copy copies devhost.toml:12:8 and devhost launches no external editor (O51, SURF-15). The save runs the reload again, and its outcome replaces the rejection instead of the notice vanishing (FAIL-4, ACT-7): a fix prints 'Applied devhost.toml: restarted api (changed) and worker (depends on api) · 6 of 6 running · 3.1 s' (worktrees off); an undo to the accepted text prints 'Configuration restored: devhost.toml matches the accepted manifest · nothing restarted', and config.toml's restore prints its own line; with worktrees off, the same failing change again prints one line, 'devhost.toml not applied again: same error as 14:02 · restarted and rolled back api and worker · 2 times, last at 14:05', and the notice counts it. There is no Undo save: Restore Running Version writes back what runs (UNDO-6). Resolves manifest-hot-reload-04, manifest-hot-reload-07 and proxy-settings-04's clearing line.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 728,
+          "end_line": 734,
+          "label": "Replaces: an undo returns before any report"
+        },
+        {
+          "path": "apps/devhost/src/services/stack/runtime.rs",
+          "line": 158,
+          "end_line": 175,
+          "label": "Replaces: a repeat is logged only once"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "save-watch",
+      "from": "save",
+      "to": "watch",
+      "label": "file event",
+      "role": "main",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "watch-check",
+      "from": "watch",
+      "to": "check",
+      "label": "after 200 ms",
+      "role": "main"
+    },
+    {
+      "id": "check-reload",
+      "from": "check",
+      "to": "reload",
+      "label": "restart 6",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "reload-applied",
+      "from": "reload",
+      "to": "applied",
+      "label": "all healthy",
+      "role": "main"
+    },
+    {
+      "id": "reload-progress",
+      "from": "reload",
+      "to": "progress",
+      "label": "while it runs",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "agent-check",
+      "from": "agent",
+      "to": "check",
+      "label": "apply on disk",
+      "role": "branch"
+    },
+    {
+      "id": "check-notApplied",
+      "from": "check",
+      "to": "notApplied",
+      "label": "check fails",
+      "role": "error"
+    },
+    {
+      "id": "notApplied-notice",
+      "from": "notApplied",
+      "to": "notice",
+      "label": "every page",
+      "role": "error"
+    },
+    {
+      "id": "reload-rollback",
+      "from": "reload",
+      "to": "rollback",
+      "label": "a start fails",
+      "role": "error"
+    },
+    {
+      "id": "rollback-notice",
+      "from": "rollback",
+      "to": "notice",
+      "label": "not applied",
+      "role": "error"
+    },
+    {
+      "id": "notice-fix",
+      "from": "notice",
+      "to": "fix",
+      "label": "Edit or Copy",
+      "role": "branch"
+    },
+    {
+      "id": "fix-save",
+      "from": "fix",
+      "to": "save",
+      "label": "save again",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: the bare configuration reloaded line and every URL after each reload; configuration reload rejected as an unmarked line whose only words are the raw parser text and Rust error chain (now behind Copy Error); silence after an undo or a repeated rejection; exit lines for the services a reload stops; the queued second reload that applied and announced the replaced edit; Manifest change not applied as the notice title; Open in Editor (O51); external-service worktree-switch blocks and warnings (O7); a rejection that outlives a switch away from its worktree; the whole-set rollback, replaced by UNDO-1's per-service rollback after the error-pages-01 stopgap",
+        "Merged: the terminal line, the stack's log, the activity line, the outcome notice, the Configuration window and devhost reload read one operation record and build one sentence; the terminal rejection, the notice, the window's banner and agent output come from one structured error; the reload, config/validate and --dry-run share one plan function",
+        "New: the start line and one outcome line per reload with each restart's reason; the activity line and rows reading restarting · Apply devhost.toml; the outcome notice on the page whose service restarted with O14 calibrated timing and O53 unfocused-arrival pause; file, line, column, key, excerpt and close key; file and line with Copy (editor off, O51), Copy Error and Logs on the notice; the port probe naming the holder; not applied again with its count; Configuration restored; Replaced by a newer save; the report of O42's unseen saves; O28's 1 s window; devhost reload (POST /__devhost__/reload) and its dry run; the dismissed rejection's marker",
+        "Changed: a newer save supersedes the reload in progress (REV-12); a restart of a service outside the reload's set queues behind it (SEL-7, CC-8); a rejection clears when a configuration from any worktree is accepted (FAIL-4, WORD-11); adding or removing an external service keeps worktree switching enabled with no warning (O7); a process-health service counts as started after 1 s, so a command that exits at once rolls the reload back (O28, FB-5); output.md, hot-reload.md and the agent skill say applied and not applied and name devhost reload and devhost stack info / devhost status (O62, CC-22, CC-23); ConfigRejectionNotice stories and Rust reload/health tests assert the structured error and 1 s window",
+        "Kept: the whole manifest checked before anything stops, the accepted manifest running while an edit is not applied; saves within 200 ms applied once; a hostname or port another stack holds refused first; dependency order with health checks; rollback on a failed start or route change; routes in one Caddy reload, released only once accepted; in-place settings and automatic ports; a rejection on every page until a configuration is accepted; new includes watched; the run's selection; O9's restart scope; [worktrees] enabled off switching back to the main worktree; chat and the status stream through a reload; shutdown owning the cleanup; external services status only; no question before a save"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Debounce and supersede: interrupted-operations-05",
+        "Check and plan: manifest-hot-reload-05 with error-pages-06; the plan of manifest-hot-reload-01",
+        "Restart, progress and outcome: manifest-hot-reload-01 with journey-crash-to-fix-06; config-editor-05 (reload slice; the rest: config-editor); manifest-hot-reload-2-03 (reload slice: external services stay non-blocking with no warning under O7; the rest: worktree-switch)",
+        "Not applied and the notice: stack-run-stop-09 with manifest-hot-reload-03 (reload slice; the rest: stack-run-stop); manifest-hot-reload-02; worktree-switch-08",
+        "Rollback: journey-crash-to-fix-03",
+        "Fix, undo and repeat: manifest-hot-reload-04; manifest-hot-reload-07 (P3); proxy-settings-04 (clearing line; the rest: proxy-settings, stack-run-stop)",
+        "Agents and scripts: agent-cli-journey-02",
+        "Related, not covered: error-pages-01 with journey-crash-to-fix-07 and stack-directory-01 (P0, resolved by its stopgap, which ships first); manifest-hot-reload-2-01 (P1, fixed and retired on Rust main via DaemonOutput::retain)",
+        "Related, not covered: manifest-hot-reload-2-05 (services-panel); config-editor-09 and manifest-hot-reload-08 (config-editor; Rust notify FSEvents hits macOS too until fixed); keyboard-and-screen-reader-02 (notices-and-feedback); toolbar-shell-01 (toolbar-shell)",
+        "Related, not covered: journey-new-project-01 (stack-run-stop); proxy-settings-06 (proxy-settings); stack-directory-05 (stack-directory)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "One plan with reasons (changed, dependsOn, sameRepository, added, removed) and non-restart changes (no external-service switch block under O7), shared by the reload, config/validate and devhost reload --dry-run (CC-37)",
+        "The reload as an operation record of kind reload: file, origin, targets with reasons, each step streamed at least once a second, outcome applied, notApplied, restored, replaced, unseen or cancelled, and a rollback with its own steps (CC-37, CC-25)",
+        "Supersede instead of queue: the stack keeps listening during a reload, and a newer valid save replaces it after the step in progress",
+        "One structured error {file, line, column, key, message, excerpt, suggestion}, the file relative to the root manifest and kept through the include merge, on the health stream with its source path (CC-37, CC-23)",
+        "Probe new or changed fixed ports before anything stops and name the holder via containment's port lookup; a failed health check on a fixed port names its owner",
+        "A crash's exit code, time, frozen last lines and what devhost ran, kept with its rejection",
+        "One outcome line for every finished reload (applied, a new or repeated rejection with its count, restored), the devhost config file included; only changed URLs after a reload (CC-22)",
+        "A reload's stops published as restarting with the step stopping, never logged as exits (CC-24)",
+        "A successful switch or Return to Configured Worktree records an accepted manifest, which clears a rejection (WORD-11)",
+        "O28's decided 1 s window before a process-health service counts as started, and the report of O42's unseen saves, whose timer config-editor's Backend 12 builds",
+        "devhost reload [--dry-run] [--stdin] (POST /__devhost__/reload), devhost stack info --wait / devhost status --wait (O62) and a per-manifest log for every stack, built by stack-run-stop (CC-21, CC-23, CC-37)",
+        "Per-service rollback with a published restoring step, after the error-pages-01 stopgap"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-22 + stacks/hot-reload.md: output.md and hot-reload.md use Applied devhost.toml, not applied, not applied again and Configuration restored; one outcome line per operation; URLs on request via devhost stack info / devhost status (O62)",
+        "CC-23: devhost reload, extended devhost stack info / devhost status [--json] [--wait] (O62), and devhost logs in cli.md; one devhost: ERR: line; SKILL.md and setup.md name devhost reload and devhost stack info / status",
+        "CC-21: every stack, a foreground one included, writes its per-manifest log",
+        "CC-37: POST /__devhost__/reload, operationId and 202 Accepted with the record; config/validate returns the plan; one JSON error body",
+        "CC-7 + CC-32: hot-reload.md notes live selection changes; CONTEXT.md adds Configuration, Reloads and Worktree (WORD-11)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f and the shared UX pattern reference revision 7",
+        "Drawn from the current diagram and the written proposal; sources cite only existing Rust and UI code a step reuses or replaces at that revision, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

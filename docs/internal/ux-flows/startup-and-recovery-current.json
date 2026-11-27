@@ -1,0 +1,655 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Startup pages, crash recovery and app error pages today",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/startup-and-recovery-current.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "edb5c0fc01cabae490e92ac23d4c785ec896c4ed"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step"
+        },
+        "backend": {
+          "label": "Backend job"
+        },
+        "security": {
+          "label": "Step with an evidenced pain point"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "tab",
+      "label": "Browser tab (the app)"
+    },
+    {
+      "id": "page",
+      "label": "Status page (503)"
+    },
+    {
+      "id": "backend",
+      "label": "Backend job"
+    },
+    {
+      "id": "crash",
+      "label": "Crash view (toolbar)"
+    },
+    {
+      "id": "apperr",
+      "label": "App error page (404/5xx)"
+    },
+    {
+      "id": "recovery",
+      "label": "Failures and retry",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "wait",
+      "label": "Open + wait",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "restart",
+      "label": "Fail + restart",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "crashphase",
+      "label": "Crash view + stack",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": ["open", "proxy", "starting", "failed", "restart", "app"],
+  "nodes": [
+    {
+      "id": "open",
+      "lane": "tab",
+      "col": 0,
+      "type": "external",
+      "label": "Open a service URL",
+      "sublabel": "a page load in a tab",
+      "explanation": "A person opens a service's hostname, alias or path route in a tab. Caddy sends page loads (Sec-Fetch-Dest: document) and devhost's own recovery requests (X-Devhost-Recovery) to the service's document proxy; every other request goes straight to the app's port. devhost never opens a browser.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/caddy/routes.go",
+          "line": 640,
+          "end_line": 657,
+          "label": "Host route: recovery, page loads, then the app"
+        },
+        {
+          "path": "apps/devhost/internal/caddy/proxy_origin.go",
+          "line": 42,
+          "end_line": 54,
+          "label": "Only Sec-Fetch-Dest: document is matched"
+        }
+      ]
+    },
+    {
+      "id": "variant",
+      "lane": "page",
+      "col": 0,
+      "type": "security",
+      "label": "External or daemon page",
+      "sublabel": "Restart off; logs empty",
+      "tag": "manifest-hot-reload-2-04",
+      "explanation": "An external service (managed = false) gets the managed-service page unchanged: '<service> is unavailable / The service is not responding. View its logs below and restart it when you are ready.', a Restart <service> button disabled with no reason and a Recent logs box that is always empty, although the docs say external services show their status only and are recovered outside devhost; the Services panel gets this right (manifest-hot-reload-2-04; serve-folder-01 is the same page for devhost serve --port while nothing listens). A daemon that stopped on its own gets 'not responding' too: devhost runs its status command only around a start or a stop, so the page cannot say it stopped, and its logs hold only the start and stop commands' lines (manifest-hot-reload-2-02).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/service_recovery.go",
+          "line": 37,
+          "end_line": 37,
+          "label": "Restart only for managed services"
+        },
+        {
+          "path": "apps/devhost/internal/services/service_recovery.go",
+          "line": 58,
+          "end_line": 61,
+          "label": "Health check only; the managed wording"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx",
+          "line": 33,
+          "end_line": 40,
+          "label": "Restart button always drawn"
+        }
+      ]
+    },
+    {
+      "id": "starting",
+      "lane": "page",
+      "col": 1,
+      "type": "security",
+      "label": "Starting <service>",
+      "sublabel": "503; last run's output",
+      "tag": "startup-recovery-02",
+      "explanation": "While the service starts, a page load gets 503 'Starting <service>': 'Waiting for the service to pass its health check. This page will reload when it is ready.' Restart is off. Recent logs are the service's lines from the shared log, so right after a restart they show the previous run's output, and the new run's lines are appended with no divider; the page never shows the health target, the time spent or the timeout that the terminal prints at the same moment (startup-recovery-02). The page polls its status every second; once the service is ready and a probe of the URL gets a non-error answer, the tab reloads itself into the app.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/service_recovery.go",
+          "line": 48,
+          "end_line": 51,
+          "label": "Starting <service>; Restart off"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx",
+          "line": 74,
+          "end_line": 84,
+          "label": "Recent logs: one joined block"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useRecovery.ts",
+          "line": 46,
+          "end_line": 48,
+          "label": "Ready and probe 204: reload the tab"
+        }
+      ]
+    },
+    {
+      "id": "failed",
+      "lane": "page",
+      "col": 2,
+      "type": "security",
+      "label": "Failure page: Restart",
+      "sublabel": "crash view covers it",
+      "tag": "startup-recovery-01",
+      "explanation": "When the start fails, the same tab changes in place to '<service> could not start' (or '<service> exited', '<service> is unavailable') with the cause, 'Service: <name> · <address>', Restart <service>, the checkout picker when worktrees are on, and Recent logs. With the toolbar injected, the toolbar also opens its full-screen 'Service exited' view over this page, because it counts the page's own service: the view drops the stack, the address, the cause sentence and the picker, and once the service's lines leave the log it says only 'No retained logs for this service.' (startup-recovery-01). The page reads '503' before its heading, shows its logs as one unlabeled block with raw ANSI codes, and Restart drops keyboard focus to the page body (keyboard-and-screen-reader-03).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/service_recovery.go",
+          "line": 52,
+          "end_line": 57,
+          "label": "could not start / exited titles"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/RecoveryPage.tsx",
+          "line": 27,
+          "end_line": 49,
+          "label": "Service, address, Restart, error alert"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 385,
+          "end_line": 387,
+          "label": "Crash view drawn on any page, status pages too"
+        }
+      ]
+    },
+    {
+      "id": "proxy",
+      "lane": "backend",
+      "col": 1,
+      "type": "security",
+      "label": "Document proxy decides",
+      "sublabel": "API calls: empty 502",
+      "tag": "agent-cli-journey-04",
+      "explanation": "Each service has a document proxy. For a page load it asks the stack for the service's state: blocked, starting, failed, exited or not responding returns devhost's 503 page; ready forwards the request to the app and replaces an app 404 or 5xx with devhost's page. API calls, fetches and curl never reach it: before routes exist they get Caddy's 750 KB 404 page even with Accept: application/json, then an empty 502 while the service starts, reloads or has crashed, so starting, crashed and reloading look the same; the JSON status the pages read is behind an undocumented header (agent-cli-journey-04).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 127,
+          "end_line": 140,
+          "label": "503 status page while not ready"
+        },
+        {
+          "path": "apps/devhost/internal/services/service_recovery.go",
+          "line": 44,
+          "end_line": 62,
+          "label": "Blocked, starting, failed, exited, ready"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 62,
+          "end_line": 76,
+          "label": "Replace an app 404 or 5xx page load"
+        }
+      ]
+    },
+    {
+      "id": "logs",
+      "lane": "backend",
+      "col": 2,
+      "type": "security",
+      "label": "Shared 512-line log",
+      "sublabel": "noisy services evict it",
+      "tag": "startup-recovery-03",
+      "explanation": "devhost keeps one 512-line log for the whole stack; the status page's Recent logs and the crash view's log box both read a service's lines from it. A noisy service pushes a crashed service's lines out within minutes, leaving 'could not start' over an empty Recent logs and 'No retained logs for this service.' in the crash view while the terminal still has the stack trace, and neither says lines were dropped (startup-recovery-03). An open crash view also loses lines that arrive together, because each new line replaces the pending list instead of extending it, so the line that says why the service exited can be missing (services-panel-01 and stack-scale-02, duplicates of startup-recovery-03).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 475,
+          "end_line": 499,
+          "label": "One 512-entry buffer for every service"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/server.go",
+          "line": 463,
+          "end_line": 473,
+          "label": "Page logs: the service's retained lines"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/minimap/hooks/useServiceLogs.ts",
+          "line": 34,
+          "end_line": 39,
+          "label": "A burst line replaces the pending list"
+        }
+      ]
+    },
+    {
+      "id": "restart",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Restart one service",
+      "sublabel": "stop, same command, wait",
+      "explanation": "Restart <service>, on the status page or in the crash view, asks the stack to restart that one service: devhost stops it and starts it again with the same command, folder and automatic port from the accepted manifest, and answers once the new process passes its health check. The button is disabled while the restart runs.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 153,
+          "end_line": 216,
+          "label": "Stop, then start the same service"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/recovery_page.go",
+          "line": 92,
+          "end_line": 106,
+          "label": "Page restart: POST; error text as 503"
+        },
+        {
+          "path": "apps/devhost/internal/services/stack.go",
+          "line": 182,
+          "end_line": 182,
+          "label": "Page Restart calls restart(name)"
+        }
+      ]
+    },
+    {
+      "id": "stackjob",
+      "lane": "backend",
+      "col": 5,
+      "type": "security",
+      "label": "Restart Stack job",
+      "sublabel": "one failure stops all",
+      "tag": "error-pages-01",
+      "explanation": "Restart Stack stops every managed service, assigns new automatic ports and starts everything again from the last accepted manifest. When one service cannot start, the restart fails, and its restore starts the same service first, fails again and blocks every service it touched: the healthy services stay stopped, every hostname of the stack answers 502, and nothing in the toolbar brings them back (error-pages-01; journey-crash-to-fix-07 is the same outage reached from the crash view). The docs describe a restore of the previous stack.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 72,
+          "end_line": 83,
+          "label": "Reapply the accepted manifest, new ports"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 330,
+          "end_line": 350,
+          "label": "Failed restore blocks every service"
+        }
+      ]
+    },
+    {
+      "id": "crashview",
+      "lane": "crash",
+      "col": 4,
+      "type": "security",
+      "label": "Service exited view",
+      "sublabel": "modal; reruns only",
+      "tag": "journey-crash-to-fix-01",
+      "explanation": "When the page's own service, or one it depends on, exits with the app open, the toolbar opens a full-screen modal: 'Service exited / devhost is running. Review the service logs and restart when ready.', '<service> (exit code N)', Restart <service>, a log box, and Restart Stack in the corner. It has no close control and cancels Escape; both buttons rerun the same accepted command, and nothing names the manifest, the command or the folder it ran in, so an error such as 'Module not found \"src/server.ts\"' cannot be traced (journey-crash-to-fix-01, journey-crash-to-fix-04). The log box opens at the oldest retained line, so the exit cause can sit screens below (stack-scale-03). Its accessible name is only 'Service exited', so a screen reader never hears the cause, and its closing is not announced (keyboard-and-screen-reader-01).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 27,
+          "end_line": 31,
+          "label": "Opened as a modal on mount"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 44,
+          "end_line": 57,
+          "label": "Escape cancelled; fixed title and line"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 83,
+          "end_line": 104,
+          "label": "Log box starts at the oldest line"
+        }
+      ]
+    },
+    {
+      "id": "apperror",
+      "lane": "apperr",
+      "col": 1,
+      "type": "security",
+      "label": "App 404 or 5xx replaced",
+      "sublabel": "cause buried in logs",
+      "tag": "error-pages-03",
+      "explanation": "When the app answers a page load with 404 or 5xx, devhost replaces the app's document with its own page and keeps the status. A framework build error's 500 page hides the framework's own overlay (file, line, code frame) and leads with Restart <service>, which cannot fix code; the cause sits at the bottom of Recent logs, and the advice 'restart after addressing the error' is wrong when the dev server recovers by itself (error-pages-03). An app's own 404 becomes 'Page not found', blaming the checkout, offering Restart for a healthy service and showing neither the requested path nor the app's response (error-pages-04). devhost's own file server's 404 is replaced the same way, losing the folder listing (serve-folder-06). A page load the app drops without answering gets a 502 '<service> could not load' page whose message is Go's raw proxy error after 'The service could not return a document: ' (EOF, connection reset by peer), never saying the service is up or that the page retries (error-pages-07).",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 62,
+          "end_line": 76,
+          "label": "Any 404 or 5xx page load is replaced"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 153,
+          "end_line": 164,
+          "label": "404: checkout wording; 5xx: restart advice"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 105,
+          "end_line": 111,
+          "label": "Dropped request: raw Go error as 502"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": "apperr",
+      "col": 2,
+      "type": "security",
+      "label": "Re-request URL each 1 s",
+      "sublabel": "no back-off; floods logs",
+      "tag": "error-pages-05",
+      "explanation": "The 404 and 5xx pages read their status and then request the same URL every second, with no back-off, no pause in a hidden tab and no end. Each request is a real page load for the dev server, so a failed build is rebuilt and logged again about once a second: the terminal fills with one service's error, the page's own Recent logs repeat it, and other services' lines are pushed out of the shared log (error-pages-05). When a request gets a non-error answer, for example once the code is fixed, the tab reloads into the app.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useRecovery.ts",
+          "line": 30,
+          "end_line": 56,
+          "label": "Status, then probe, every 1000 ms"
+        },
+        {
+          "path": "apps/devhost/internal/devtools/document_injection.go",
+          "line": 77,
+          "end_line": 86,
+          "label": "Only a non-error answer passes the probe"
+        }
+      ]
+    },
+    {
+      "id": "restartfail",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Restart fails again",
+      "sublabel": "port held: health blamed",
+      "tag": "error-pages-06",
+      "explanation": "A restart that fails leaves the page or the view in place with the error, ready to retry. The command is unchanged, so a broken command fails the same way, and the new attempt's lines run together with the last one's. On the status page the failure is announced twice, as an alert and again in the status line (keyboard-and-screen-reader-03). When another program holds a fixed port, the restart waits 30 s for the health check and blames it, never the port or its holder (error-pages-06; manifest-hot-reload-05 is the same missing port check on hot reload). Only an automatic port gets the error that points to Restart Stack.",
+      "sources": [
+        {
+          "path": "apps/devhost/internal/services/retry.go",
+          "line": 25,
+          "end_line": 27,
+          "label": "Automatic port only: use Restart Stack"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useRecovery.ts",
+          "line": 69,
+          "end_line": 85,
+          "label": "Error alert while the status line updates"
+        },
+        {
+          "path": "apps/devhost/internal/services/runtime.go",
+          "line": 205,
+          "end_line": 209,
+          "label": "Start failure logged and returned"
+        }
+      ]
+    },
+    {
+      "id": "stackdown",
+      "lane": "recovery",
+      "col": 5,
+      "type": "security",
+      "label": "Stack down, view gone",
+      "sublabel": "no error shown; 0 of N",
+      "tag": "error-pages-02",
+      "explanation": "After a failed Restart Stack the crash view closes: it leaves out services whose checkout carries an error, and the failed restore stored its error on every checkout. Its 'Stack restart failed' message lived inside the view, so no toast, notice or panel says anything while the whole stack is down; the only trace is 'attention required' on the Worktrees trigger, and the Services panel shows a 13-line block that repeats one sentence (error-pages-02).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 181,
+          "end_line": 193,
+          "label": "View skips services of a failed checkout"
+        },
+        {
+          "path": "apps/devhost/internal/services/reload.go",
+          "line": 366,
+          "end_line": 377,
+          "label": "Blocked reason stored on the checkout"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/components/RestartStackButton.tsx",
+          "line": 28,
+          "end_line": 38,
+          "label": "Error kept in the view's own button"
+        }
+      ]
+    },
+    {
+      "id": "exits",
+      "lane": "tab",
+      "col": 4,
+      "type": "external",
+      "label": "Service exits, app open",
+      "sublabel": "its own or a dependsOn",
+      "explanation": "The page's own service, or a service it lists in dependsOn, directly or through another service, exits while the app is open. Any other service that exits only turns red in the Services panel, so a Storybook crash does not cover the app.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/selectPageExitedServices.ts",
+          "line": 8,
+          "end_line": 19,
+          "label": "The page's service and its dependencies"
+        }
+      ]
+    },
+    {
+      "id": "app",
+      "lane": "tab",
+      "col": 3,
+      "type": "frontend",
+      "label": "The app loads again",
+      "sublabel": "same URL, same tab",
+      "explanation": "The tab shows the app again at the same URL: a status page reloads itself once the service is ready and a probe gets a non-error answer, and the crash view closes once the service is healthy (on devhost's own status pages it reloads them).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useRecovery.ts",
+          "line": 46,
+          "end_line": 48,
+          "label": "Reload once the probe answers 204"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/serviceStatusPanel/components/ServiceCrashOverlay.tsx",
+          "line": 33,
+          "end_line": 42,
+          "label": "View restart; reload on status pages"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "open-proxy",
+      "from": "open",
+      "to": "proxy",
+      "label": "page load",
+      "role": "main",
+      "toSide": "left"
+    },
+    {
+      "id": "proxy-starting",
+      "from": "proxy",
+      "to": "starting",
+      "label": "starting: 503",
+      "role": "main"
+    },
+    {
+      "id": "starting-failed",
+      "from": "starting",
+      "to": "failed",
+      "label": "health check fails",
+      "role": "main"
+    },
+    {
+      "id": "failed-restart",
+      "from": "failed",
+      "to": "restart",
+      "label": "Restart <service>",
+      "role": "main",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "restart-app",
+      "from": "restart",
+      "to": "app",
+      "label": "healthy: tab reloads",
+      "role": "main"
+    },
+    {
+      "id": "open-variant",
+      "from": "open",
+      "to": "variant",
+      "label": "external or daemon",
+      "role": "branch"
+    },
+    {
+      "id": "logs-failed",
+      "from": "logs",
+      "to": "failed",
+      "label": "Recent logs",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "proxy-apperror",
+      "from": "proxy",
+      "to": "apperror",
+      "label": "app 404 or 5xx",
+      "role": "branch"
+    },
+    {
+      "id": "apperror-probe",
+      "from": "apperror",
+      "to": "probe",
+      "label": "every second",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "probe-logs",
+      "from": "probe",
+      "to": "logs",
+      "label": "rebuild logged",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "exits-crashview",
+      "from": "exits",
+      "to": "crashview",
+      "label": "opens over the app",
+      "role": "branch"
+    },
+    {
+      "id": "crashview-restart",
+      "from": "crashview",
+      "to": "restart",
+      "label": "Restart",
+      "role": "branch",
+      "fromSide": "left",
+      "toSide": "bottom"
+    },
+    {
+      "id": "crashview-stackjob",
+      "from": "crashview",
+      "to": "stackjob",
+      "label": "Restart Stack",
+      "role": "branch",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "restart-restartfail",
+      "from": "restart",
+      "to": "restartfail",
+      "label": "fails again",
+      "role": "error"
+    },
+    {
+      "id": "stackjob-stackdown",
+      "from": "stackjob",
+      "to": "stackdown",
+      "label": "one fails: all stop",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What already works",
+      "items": [
+        "A failed service leaves the rest of the stack running, and its hostname, every alias and path route, shows what went wrong",
+        "Status pages need nothing from the app and still show the error, service details and logs without JavaScript",
+        "The tab reloads itself at the same URL once the service is healthy; devhost never opens a browser",
+        "Restart <service> keeps the automatic port, succeeds only once the new process is healthy, and can be retried",
+        "Replaced 404 and 5xx pages keep the app's status code and are never cached; API calls, assets and WebSockets get the app's own response",
+        "An exit elsewhere in the stack (a Storybook crash) never covers the app; only the page's service and its dependencies open the crash view"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets on this journey",
+      "items": [
+        "error-pages-01 Restart Stack with one service that cannot start stops every healthy service and leaves the stack down (journey-crash-to-fix-07, duplicate)",
+        "error-pages-02 A failed Restart Stack closes the crash view; no error appears anywhere while the stack is down",
+        "error-pages-03 A build error's 500 page hides the framework's overlay and leads with Restart, which cannot fix code",
+        "startup-recovery-03 A crashed service's lines leave the shared 512-line log, and the open crash view drops burst lines (services-panel-01 and stack-scale-02, duplicates)",
+        "startup-recovery-01 The toolbar's crash view opens over the failure page and hides its cause, address and checkout picker",
+        "startup-recovery-02 Startup and failure pages mix earlier runs' output and show no health-check progress",
+        "journey-crash-to-fix-01 The crash view is a dead end: modal, Escape blocked, both buttons rerun the broken command",
+        "journey-crash-to-fix-04 Nothing shows the command, folder or manifest line behind an error",
+        "stack-scale-03 The crash view's log box opens at the oldest line, screens above the exit cause",
+        "keyboard-and-screen-reader-01 The crash view's accessible name never carries the cause, and its closing is not announced",
+        "keyboard-and-screen-reader-03 Status pages read '503' first, announce a failed restart twice and present logs as one raw block",
+        "error-pages-04 An app's own 404 blames the checkout and offers Restart for a healthy service",
+        "error-pages-05 404 and 5xx pages request the URL every second with no end, flooding the logs",
+        "serve-folder-06 A 404 from devhost's own file server is replaced by the service recovery page",
+        "manifest-hot-reload-2-04 An external service's page offers empty logs and a disabled Restart (serve-folder-01, duplicate)",
+        "manifest-hot-reload-2-02 A daemon that stopped on its own is only 'not responding', with its start and stop lines as logs",
+        "agent-cli-journey-04 API calls get 750 KB of 404 HTML, then empty 502s, while a service starts, reloads or has crashed",
+        "error-pages-06 A fixed port held by another program fails a restart after 30 s and blames the health check (manifest-hot-reload-05)",
+        "error-pages-07 A page load the app drops gets a 502 page with Go's raw proxy error, never saying the service is up or that it retries"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Traced from alexgorbatchev/devhost at edb5c0fc01cabae490e92ac23d4c785ec896c4ed; the review exercised build 0.0.12 live: startup pages during restarts, failure pages and their Restart, the crash view over the app and over devhost's own failure page, Restart Stack from the crash view, app 404 and 5xx pages, external and daemon services, and HTTP clients during a start. This diagram was traced from source only."
+      ]
+    }
+  ]
+}

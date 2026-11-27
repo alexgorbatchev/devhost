@@ -1,0 +1,465 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "See the agents working in this worktree: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/running-agents-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Toolbar and list: ask"
+    },
+    {
+      "id": "review",
+      "label": "Docked chat: review"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "activity",
+      "label": "Watch Live Activity tab"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": ["trigger", "list", "card", "cleared"],
+  "nodes": [
+    {
+      "id": "trigger",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Running agents trigger",
+      "sublabel": "2 · 1 waiting, or 0",
+      "tag": "reload-and-agents-05",
+      "explanation": "The bot icon and the count of agents in this worktree stay on the bar in every state, so nothing moves when the first agent starts or the last one stops (STATE-2, CC-33). It spins while an agent works; while one waits it takes a waiting shape with '1 waiting', distinct in shape, text and name, also in forced colors: 'Running agents: 2 agents · 1 waiting for you', described 'this worktree' (SURF-8, ACT-7, ACT-13, WORD-6, WORD-11). With none it shows '0', 'No agents in this worktree'; with chat off it stays without a count and the list says why, with Edit, or Copy while the config editor is off (MENU-3, MENU-4, SEL-11). A wait prefixes the app tab's title, '(1) waiting · Acme Shop' (O16). A terminal agent that waits raises 'Claude Code is waiting for you in its terminal · main ~/acme · since 14:10' with Dismiss alone (FB-8, REV-9); the collapsed badge keeps the wait (SURF-8). An unauthenticated browser elsewhere sees toolbar-shell's sign-in state, with no trigger (HOLD-7, O36). Keys: Alt+Ctrl+B, then an arrow stop (KEY-3, KEY-4). Resolves the control that vanished at zero in reload-and-agents-05; chat-approvals-03 related.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx",
+          "line": 22,
+          "end_line": 37,
+          "label": "Replaces: trigger that renders nothing at zero"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 342,
+          "end_line": 342,
+          "label": "Reuses: control placed in the toolbar"
+        }
+      ]
+    },
+    {
+      "id": "list",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "label": "Agents in this worktree",
+      "sublabel": "names · states · Answer",
+      "tag": "reload-and-agents-05",
+      "explanation": "An anchored toolbar panel opens above docked chat, never over the notice stack, in either corner (SURF-1, SURF-2, SURF-7, CC-1; the layer is toolbar-shell's). Its status line reads 'main ~/acme · 2 agents · 1 waiting for you · checked 14:10:12' (SEL-4, ACT-12). Rows name agents for people: 'Claude Code · Fix the nav header · This worktree (live)' over 'waiting for you since 14:10 · worktree root' with Answer, else Open Conversation; 'Codex in a terminal · PID 83275' over 'working · packages/ui · active 1 min ago', with no action; a terminal agent that waits says to answer it in its terminal (SEL-8, WORD-1, WORD-6, WORD-11, REV-9). Waiting rows come first; the stack's other worktrees follow after a separator, so a switch hides none (SEL-5, CC-38). Watch Live Activity sits under the rows; a filter appears when they overflow (SURF-10, SEL-10). Keys: Enter opens it on the first row action; Tab past the last closes it; Escape closes it (KEY-6, KEY-7, KEY-8, KEY-10). Resolves reload-and-agents-05's rows.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/components/RunningAgentsPanel.tsx",
+          "line": 39,
+          "end_line": 52,
+          "label": "Replaces: rows of raw IDs, '.' and this chat"
+        },
+        {
+          "path": "apps/devhost/src/devtools/agents.rs",
+          "line": 94,
+          "end_line": 119,
+          "label": "Replaces: row data with raw IDs, '.' for root"
+        }
+      ]
+    },
+    {
+      "id": "card",
+      "lane": "review",
+      "col": 3,
+      "type": "frontend",
+      "label": "Decision card in chat",
+      "sublabel": "one activation, focused",
+      "explanation": "Answer on a waiting chat agent's row opens docked chat on that conversation with focus on its decision card's question, in one activation, also for a conversation of another worktree of the stack (REV-9, SEL-8, CC-38); Open Conversation opens it with focus in its composer, or on its transcript for another worktree's conversation (KEY-6). The list closes and sends nothing: the card, its keys and the answer are agent-chat's; Allow Once or Deny there reaches the agent through agent-chat's respond, one write it reports on the card, and devhost never answers or pre-approves (owner rule). With chat docked on another conversation, the hand-off switches to this one and keeps the other's draft (UNDO-2, agent-chat's). Today a waiting agent's row has no action and the trigger looks busy or idle, so learning that an agent waits takes 6 steps; now 3: the trigger's waiting look, the row, Answer. Removes the dead end of reload-and-agents-05's rows; chat-approvals-03 stays agent-chat's (related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/ChatApprovalRequest.tsx",
+          "line": 17,
+          "end_line": 84,
+          "label": "Reuses: chat's decision card"
+        }
+      ]
+    },
+    {
+      "id": "cleared",
+      "lane": "outcome",
+      "col": 5,
+      "type": "frontend",
+      "label": "Wait clears in place",
+      "sublabel": "working · said once",
+      "explanation": "When the agent's state leaves waiting, the row reads 'working' again, the trigger drops its waiting shape and '1 waiting', the collapsed badge follows, and a terminal agent's condition notice clears by itself, announced once in the polite region (ACT-7, FB-9, SURF-8); an agent chat started clears from its conversation's state. The outcome stays where the work started, in the list and on the trigger, with nothing to dismiss. There is no Undo: the list and the page only report, no rollback (UNDO-1) applies, and the answer, agent-chat's write, cannot be taken back."
+    },
+    {
+      "id": "record",
+      "lane": "backend",
+      "col": 1,
+      "type": "backend",
+      "label": "Read agents record",
+      "sublabel": "every 10 s · complete?",
+      "tag": "reload-and-agents-09",
+      "explanation": "While chat is on and the page is visible, the toolbar reads GET /__devhost__/agents every 10 s; one machine-wide scan serves every page for 5 s with a 10 s limit, as today. The record answers each agent's product name, PID, state and since when, worktree label and folder, and for an agent chat started its conversation's title, mode and state; the stack's other worktrees follow; no transcript path or native session ID (Backend 1, 3). It says whether the scan was complete and which CLIs it could not list, without a path (Backend 2), and where Watch Live Activity opens for this browser: loopback for this machine, the stack directory's hostname for a browser signed in with the passkey or paired, else 403 (activity.url, O36, O55; Backend 4). worktree-switch's and agent-chat's questions and stack-run-stop's multi-stack commands name agents from it (REV-3, REV-6, REV-7, FB-4). Resolves reload-and-agents-09 and carries the names of reload-and-agents-05 and the address of reload-and-agents-13.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/devtools/agents.rs",
+          "line": 155,
+          "end_line": 184,
+          "label": "Reuses: agents route; failed scans keep others"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/readRunningAgents.ts",
+          "line": 5,
+          "end_line": 14,
+          "label": "Replaces: schema that drops the scan error"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/hooks/useRunningAgents.ts",
+          "line": 7,
+          "end_line": 29,
+          "label": "Reuses: poll every 10 s while visible"
+        }
+      ]
+    },
+    {
+      "id": "incomplete",
+      "lane": "recovery",
+      "col": 1,
+      "type": "security",
+      "label": "Some agents not listed",
+      "sublabel": "Check Again · Logs",
+      "tag": "reload-and-agents-09",
+      "explanation": "When devhost cannot list one CLI's agents, the record keeps what the others found; the trigger carries an incomplete mark, 'Running agents: at least 1 agent · Codex agents could not be listed', and the status line reads 'Codex agents could not be listed: devhost cannot read Codex's session folder. Details are in the stack's log.' with Check Again, the lead action, and Logs (MENU-3, MENU-5, HOLD-1, FAIL-2, SURF-13); 'No agents in this worktree' never shows then (STATE-3). Check Again asks for one fresh scan (fresh=1), keeps focus, busy, 'Checking…', and the line clears by itself, announced once (KEY-11, FB-9). When every CLI fails, the list keeps its last rows drawn as unknown with 'last seen 14:02' (STATE-4). devhost logs one line when a CLI starts failing and one when it recovers (FAIL-4). agent-chat's second-agent question asks too, naming what devhost could not check (REV-3, CC-14). Resolves reload-and-agents-09.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/runningAgents/hooks/useRunningAgents.ts",
+          "line": 17,
+          "end_line": 19,
+          "label": "Replaces: a failed read kept silently"
+        },
+        {
+          "path": "apps/devhost/src/devtools/agents.rs",
+          "line": 177,
+          "end_line": 182,
+          "label": "Replaces: error no page reads, logged per call"
+        }
+      ]
+    },
+    {
+      "id": "page",
+      "lane": "activity",
+      "col": 2,
+      "type": "frontend",
+      "label": "Watch Live Activity",
+      "sublabel": "own tab · never an app host",
+      "explanation": "Watch Live Activity opens in its own tab, the one link devhost opens outside the same tab, at the address the agents record gives this browser (SURF-15, O55): the stack directory's hostname, one path per stack routed to that stack's control server, on the stack's machine and in a browser in another environment that signed in with the devhost passkey or paired (O36, HOLD-8); 127.0.0.1 still answers a direct loopback request, unlinked. Every app hostname gets 403, and both addresses send no-store and no-referrer, because transcripts can hold secrets. Its heading names what it watches, 'Agent activity · Acme Shop · main ~/acme', with one state beside it: Live, Lost connection with Retry Now, Stopped or Could not start; its title reads 'Watch Live Activity · Acme Shop', prefixed '(1) waiting · ' while an agent waits (ACT-7, O16, SEL-4, WORD-1, HOLD-2). Its lead line says 'this worktree' where today's says 'this checkout' (WORD-11). With no entry yet it reads 'No activity yet. Agents in this worktree appear here when they start. History is not shown.' (STATE-2). It uses the document's standard keys (KEY-1).",
+      "sources": [
+        {
+          "path": "apps/devhost/src/devtools/agent_activity.rs",
+          "line": 25,
+          "end_line": 63,
+          "label": "Reuses: direct loopback requests on 127.0.0.1"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/AgentActivityPage.tsx",
+          "line": 15,
+          "end_line": 35,
+          "label": "Replaces: header, Live badge, empty state"
+        }
+      ]
+    },
+    {
+      "id": "stream",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "Stream entries + state",
+      "sublabel": "input · kind · state",
+      "tag": "reload-and-agents-06",
+      "explanation": "Each open page gets its own watcher from the end of every transcript, as today, with no history. Each event message gains its kind (prompt, reply, tool call, result, denied, turn end, stopped), its input (a shell tool's command, a file tool's path, an edit's path with the lines it adds and removes, cut at 4 KiB like the text) and, for an agent chat started, its conversation's title and mode, sent only on this stream, which no app hostname serves (Backend 5). A state message carries each agent's state and since when from the agents record, so a wait the transcripts never record shows (ACT-6, ACT-7). Before closing, the server sends ended, with the stack, the reason (a replacement names devhost stack restart, devhost restart or devhost upgrade), the time and the start command, before 1001, or failed with its cause before 1011, and the socket helper passes each close's code and reason (Backend 6, ACT-10, O18). Resolves the commands and waits missing in reload-and-agents-06 and the cause of reload-and-agents-10.",
+      "sources": [
+        {
+          "path": "apps/devhost/src/devtools/agent_activity.rs",
+          "line": 149,
+          "end_line": 235,
+          "label": "Reuses: per-page watcher from the end"
+        },
+        {
+          "path": "apps/devhost/src/devtools/agent_activity.rs",
+          "line": 64,
+          "end_line": 106,
+          "label": "Replaces: events without input or kind"
+        },
+        {
+          "path": "apps/devhost/src/devtools/agent_activity.rs",
+          "line": 218,
+          "end_line": 224,
+          "label": "Replaces: 1001 with no reason when it stops"
+        }
+      ]
+    },
+    {
+      "id": "entries",
+      "lane": "activity",
+      "col": 4,
+      "type": "frontend",
+      "label": "Entries by agent",
+      "sublabel": "Tool call · Edit · file",
+      "tag": "reload-and-agents-06",
+      "explanation": "Entries group under each agent's heading, named as in the list with the PID added and the mode left out, 'Claude Code · Fix the nav header · PID 14625' or 'Codex in a terminal · PID 83275', so two agents of one CLI never interleave unnamed; each heading carries its state, such as 'waiting for you since 14:10 · answer in the page's chat' (SURF-8, ACT-7, WORD-6, REV-9). Newest first, at most 500: '14:10:47 · Tool call · Edit · src/header.tsx · +3 −1', 'Tool call · Bash · bun test', 'Result' with the output, 'Denied' for a refused call, never labelled user, 'Reply' rendered as Markdown with raw HTML shown as text, and 'Prompt', with 'Stopped' a WORD-10 label; text past 4 KiB ends with 'cut at 4 KiB' (WORD-1, WORD-4, WORD-10, FAIL-2). A turn the person stopped reads 'Stopped by you after 29 s', never as a failure (FAIL-5). A wait that starts or ends is announced once; entries sit outside every live region (FB-9). The page shows the wait and cannot answer it. Resolves reload-and-agents-06.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/statusPages/components/AgentActivityPage.tsx",
+          "line": 37,
+          "end_line": 54,
+          "label": "Replaces: raw harness, type, tool and role"
+        },
+        {
+          "path": "packages/devhost-ui/src/statusPages/hooks/useAgentActivity.ts",
+          "line": 24,
+          "end_line": 41,
+          "label": "Reuses: newest first, at most 500"
+        }
+      ]
+    },
+    {
+      "id": "remote",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Another environment",
+      "sublabel": "passkey or paired · else sign in",
+      "tag": "reload-and-agents-13",
+      "explanation": "O36's check, which agent-chat owns, counts a request as this machine's only when its connection and every forwarded hop are loopback, it did not come through devhost's relay connector, its Host is a stack or loopback name and no browser marks it cross-site, so a remote preview visitor never counts as this machine. A browser that signed in with the devhost passkey or paired uses the list as this machine does, and the record's activity.url sends Watch Live Activity to the stack directory's hostname, which the relay forwards (O55, HOLD-8). A browser that has done neither gets toolbar-shell's unauthenticated state, 'Sign in with passkey or pair this browser to use devhost here', with no running agents trigger; the agents route and the activity path answer 403 with that sentence (HOLD-7, O36). The toolbar renders only the URL the record gives, so no page opened from another machine carries a 127.0.0.1 address or sends its URL and chat target to the viewer's own loopback port. Resolves reload-and-agents-13; relay-previews-03 stays agent-chat's (related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/components/App.tsx",
+          "line": 149,
+          "end_line": 152,
+          "label": "Replaces: link built for every client"
+        },
+        {
+          "path": "apps/devhost/src/devtools/server.rs",
+          "line": 344,
+          "end_line": 361,
+          "label": "Replaces: relay visitors read as local"
+        },
+        {
+          "path": "apps/devhost/src/remote/proxy.rs",
+          "line": 21,
+          "end_line": 71,
+          "label": "Replaces: relay forwards stack hosts only"
+        }
+      ]
+    },
+    {
+      "id": "stopped",
+      "lane": "recovery",
+      "col": 4,
+      "type": "security",
+      "label": "Page says Stopped",
+      "sublabel": "reason, start command",
+      "tag": "reload-and-agents-10",
+      "explanation": "When devhost stop stops the stack with the page open, it reads 'Stopped' and 'Stopped from the terminal at 14:32. Start it with devhost start in ~/acme, then open Watch Live Activity from the running agents list on its pages.', keeps its entries under 'From the run that ended at 14:32' and stops reconnecting (ACT-10, HOLD-2, STATE-3); the idle timeout, Ctrl-C and chat turned off read ACT-10's sentence the same way (1000 after chat off). When devhost stack restart, restart or upgrade replaces the stack, the page on the stack directory's hostname reconnects and says so once (ACT-10, O18); the unlinked page on 127.0.0.1 cannot learn the new port, so it shows the run ended with a link to the directory page, ACT-10's one exception. A watcher that cannot start reads 'Watch Live Activity could not start: …' with Retry Now (FAIL-2, STATE-4); a connection dropped without a message reads 'Lost connection to devhost; retrying' with Retry Now (HOLD-2, ACT-5). Resolves reload-and-agents-10.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/openReconnectingWebSocket.ts",
+          "line": 61,
+          "end_line": 85,
+          "label": "Replaces: reconnects after 1001 without end"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "record-list",
+      "from": "record",
+      "to": "list",
+      "label": "every 10 s",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "trigger-list",
+      "from": "trigger",
+      "to": "list",
+      "label": "open",
+      "role": "main"
+    },
+    {
+      "id": "list-card",
+      "from": "list",
+      "to": "card",
+      "label": "Answer",
+      "role": "main"
+    },
+    {
+      "id": "card-cleared",
+      "from": "card",
+      "to": "cleared",
+      "label": "Allow Once",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "list-page",
+      "from": "list",
+      "to": "page",
+      "label": "new tab",
+      "role": "branch"
+    },
+    {
+      "id": "page-stream",
+      "from": "page",
+      "to": "stream",
+      "label": "WebSocket",
+      "role": "branch"
+    },
+    {
+      "id": "stream-entries",
+      "from": "stream",
+      "to": "entries",
+      "label": "each entry",
+      "role": "branch"
+    },
+    {
+      "id": "record-incomplete",
+      "from": "record",
+      "to": "incomplete",
+      "label": "a CLI fails",
+      "role": "error"
+    },
+    {
+      "id": "page-remote",
+      "from": "page",
+      "to": "remote",
+      "label": "elsewhere",
+      "role": "error"
+    },
+    {
+      "id": "entries-stopped",
+      "from": "entries",
+      "to": "stopped",
+      "label": "stack stops",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: the control vanishing with no agents, with chat off or when a scan misses every agent, and the bar's sideways jump; raw CLI IDs, '.' and generated session names as an agent's name; 'this chat' as the only link to chat; 'Waiting for approval' and 'Running, state unknown'; Watch Live Activity's raw tokens, tool output labelled user, unrendered Markdown and Reconnecting forever after a stop; the scan failure logged on every request; a 127.0.0.1 link built for every browser",
+        "Merged: the trigger, the list, Watch Live Activity's headings and the questions of worktree-switch, agent-chat and stack-run-stop read one agents record with one state per agent",
+        "New: Answer and Open Conversation; conversation titles and modes; PID and 'in a terminal'; the stack's other worktrees; the waiting look and the '(1) waiting · ' tab title for a terminal agent's wait; the incomplete mark with Check Again and Logs; 'No agents in this worktree' and the chat-off sentence; the status line; a filter on overflow; a terminal agent's waiting notice; the Watch Live Activity address per browser and the page on the stack directory's hostname; on Watch Live Activity, per-agent headings with state, each tool call's command or file, entry labels, rendered replies and the stopped, replaced, could-not-start and lost-connection states",
+        "Changed: the control stays at zero and with chat off (CC-33); its accessible name counts in words; tool inputs reach the activity stream, never an app's origin; a stream closed with 1001 after an ended message ends the page; the record lists the stack's other worktrees and answers without a page URL; a failed scan is shown; a browser elsewhere opens Watch Live Activity linked on the stack directory's hostname, on this machine too, instead of 127.0.0.1",
+        "Kept: agents devhost did not start are listed, subdirectories counted and subagents folded; waiting first; one shared scan per 5 s with a 10 s limit, read only while chat is on and the page is visible; no transcript path or native session ID on the app's origin; a failing CLI never hides the others' agents; Watch Live Activity on 127.0.0.1 for direct loopback requests (unlinked), 403 on app hostnames, no-store, no-referrer, its own tab, no history, 4 KiB cut, 500 entries and a watcher that stops with the tab; the list and the page never answer an agent; the agents routes answer 404 while chat is off and agents keep running; Restart Stack, switches and hot reloads keep the page live; a failed read keeps the last list, now with its age"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Trigger, rows and the hand-off to chat: reload-and-agents-05 (rows and the empty control; the list's layer above docked chat is toolbar-shell's)",
+        "Agents record and incomplete scans: reload-and-agents-09",
+        "Watch Live Activity entries, waits and states: reload-and-agents-06",
+        "Watch Live Activity after a stop: reload-and-agents-10",
+        "A page opened from another machine: reload-and-agents-13",
+        "Related, not covered: chat-approvals-03, chat-approvals-08, chat-checkout-switch-01 and relay-previews-03 (agent-chat); chat-checkout-switch-02 (worktree-switch)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "Agents record: product name, PID, state and since when, worktree label, folder, session name, and an agent chat started's conversation with title, mode and state; no transcript path or native session ID",
+        "Scan completeness: complete, the CLIs it could not list with a cause each, checkedAt; fresh=1 for Check Again; one log line when a CLI starts failing and one when it recovers",
+        "Every worktree of the stack, the page's first; a loopback read without a page URL for stack-run-stop's commands",
+        "activity.url per client from O36's three states; the activity page and socket on the stack directory's hostname, one path per stack, which the relay forwards (O55)",
+        "Activity entries with kind, input and conversation on the activity stream only, and state messages from the agents record",
+        "ended before 1001 (a replacement names its command) and failed before 1011, from the stopped-stack record; the socket helper passes each close's code and reason",
+        "Recommended: each terminal agent that waits for the person, published on the status stream for the notice stack, the trigger, the badge and the tab title"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-33: the running agents control stays with 'No agents in this worktree', and while chat is off says running agents are shown while chat is on",
+        "CC-1, landed by toolbar-shell: an open toolbar panel paints above docked chat, and nothing covers the notice stack",
+        "CC-18 and CC-38, landed by agent-chat: conversations stay answerable while chat is off and across the stack's worktrees",
+        "CC-46: the running agents and Watch Live Activity text of guides/devtools.md (O55), the Security model of control-api.md (O55), remote-previews.md, chat-api.md's agents route and activity messages, and the 1001 and 1000 rule in apps/devhost/AGENTS.md, beside CC-33 and CC-38"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Reconciled against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
+        "Drawn from the current diagram and the written proposal; sources cite only verified code at that revision (Rust under apps/devhost/src/, UI under packages/devhost-ui/src/) that a step reuses or replaces, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,971 @@
+/* Shared wireframe design language. Every page in this folder links this file;
+   page-specific rules stay in the page's own <style>. Monospace text is wider than
+   proportional text: after changing the font or the legend, re-measure the sticky
+   key band and update --key-h. The palette is dark; every color is a token below, so pages and
+   legend swatches use var() and never repeat a value. */
+:root {
+  color-scheme: dark;
+  --font: "Maple Mono Normal NF", "Maple Mono Normal", "Maple Mono NF", "Maple Mono", ui-monospace, monospace;
+  --ink: #e6edf3;
+  --mute: #9198a1;
+  --faint: #656c76;
+  --line: #3d444d;
+  --rule: #262c36;
+  --bg: #0d1117;
+  --card: #161b22;
+  --bar: #21262d;
+  --panel: #1c222b;
+  --raised: #1f2630;
+  --edge: #6e7681;
+  --field: #0d1117;
+  --scrim: #01040999;
+  --acc: #4493f8;
+  --accbg: #172b49;
+  --selbar: #12213a;
+  --onfill: #0d1117;
+  --warn: #d29922;
+  --warnbg: #2d2410;
+  --warnline: #6c5216;
+  --bad: #f85149;
+  --badbg: #33161a;
+  --ok: #3fb950;
+  --okbg: #13301d;
+  --chgbg: #472810;
+  --note: #e11d48;
+  --toast: #d1d9e0;
+  --toastink: #0d1117;
+  --toastlink: #0550ae;
+}
+* {
+  box-sizing: border-box;
+}
+code,
+pre,
+samp,
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+body {
+  margin: 0;
+  font: 14px/1.45 var(--font);
+  color: var(--ink);
+  background: var(--bg);
+}
+a {
+  color: var(--acc);
+}
+header.page {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+header.page h1 {
+  margin: 6px 0 6px;
+  font-size: 22px;
+}
+header.page p {
+  margin: 4px 0;
+  max-width: 72rem;
+}
+nav.top {
+  font-size: 13px;
+}
+nav.top a {
+  margin-right: 14px;
+}
+main {
+  padding: 8px 24px 40px;
+}
+.step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(15rem, 40%, 48rem);
+  gap: 22px;
+  margin: 26px 0;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .step {
+    grid-template-columns: 1fr;
+  }
+}
+.cap h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.cap p {
+  margin: 0 0 8px;
+}
+.cap ol {
+  margin: 0 0 8px;
+  padding-left: 0;
+  list-style: none;
+}
+.cap li {
+  margin: 3px 0;
+}
+.fixes {
+  font-size: 12px;
+  color: var(--mute);
+}
+.win {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: 0 1px 3px #0006;
+}
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bar);
+  font-size: 12px;
+  color: var(--mute);
+}
+.bar b {
+  color: var(--ink);
+}
+.app {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  min-height: 230px;
+}
+.app.dock3 {
+  grid-template-columns: 140px minmax(0, 1fr) 270px;
+}
+.app.full {
+  grid-template-columns: minmax(0, 1fr);
+}
+.side {
+  border-right: 1px solid var(--line);
+  padding: 8px;
+  font-size: 12px;
+  color: var(--mute);
+}
+.side div {
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.side .on {
+  background: var(--accbg);
+  color: var(--ink);
+}
+.work {
+  padding: 8px 10px;
+  min-width: 0;
+}
+.dock {
+  border-left: 1px solid var(--line);
+  padding: 10px;
+  background: var(--panel);
+  font-size: 12px;
+  min-width: 0;
+}
+.dock h3,
+.dlg h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.tb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+table.t {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.t th {
+  text-align: left;
+  color: var(--mute);
+  font-weight: 500;
+  border-bottom: 1px solid var(--line);
+  padding: 3px 6px;
+}
+.t td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.t tr.sel td {
+  background: var(--accbg);
+}
+.t tr.flash td {
+  background: var(--chgbg);
+}
+.t tr.dim td {
+  color: var(--faint);
+}
+.t tr.focus td:first-child {
+  box-shadow: inset 3px 0 var(--acc);
+}
+.t td.chg {
+  background: var(--chgbg);
+}
+.selbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border-top: 1px solid var(--line);
+  background: var(--selbar);
+  font-size: 12px;
+}
+/* Buttons and fields keep a boundary of at least 3:1 against every surface they sit on (WF-6): --edge
+   measures 3.4:1 on --bar and --raised and 4.1:1 on --bg. Primary, destructive, edited and invalid
+   variants set their own border below. */
+.btn {
+  display: inline-block;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  padding: 1px 9px;
+  background: var(--bar);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.btn.pri {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--onfill);
+}
+.btn.danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: var(--onfill);
+}
+.btn.off {
+  opacity: 0.45;
+}
+.chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 11px;
+  background: var(--rule);
+  white-space: nowrap;
+}
+.chip.warn {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+.chip.bad {
+  background: var(--badbg);
+  color: var(--bad);
+}
+.chip.ok {
+  background: var(--okbg);
+  color: var(--ok);
+}
+.chip.acc {
+  background: var(--accbg);
+  color: var(--acc);
+}
+.in {
+  display: inline-block;
+  min-width: 9rem;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  padding: 1px 6px;
+  background: var(--field);
+  font-size: 12px;
+}
+.in.mixed {
+  color: var(--mute);
+  font-style: italic;
+}
+.in.changed {
+  border-color: var(--acc);
+  box-shadow: inset 3px 0 var(--acc);
+}
+.in.err {
+  border-color: var(--bad);
+  background: var(--badbg);
+}
+/* Keyboard focus on a control. An edited field keeps its edited bar and shows the ring too. */
+.focusring {
+  box-shadow: 0 0 0 2px var(--acc);
+  border-radius: 4px;
+}
+.in.changed.focusring {
+  box-shadow:
+    inset 3px 0 var(--acc),
+    0 0 0 2px var(--acc);
+}
+.fld {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0;
+  font-size: 12px;
+}
+.fld > span:first-child {
+  color: var(--mute);
+}
+.scrim {
+  background: var(--scrim);
+  padding: 16px;
+  min-height: 230px;
+}
+.dlg {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px #0009;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.dlg .hd {
+  padding: 10px 12px 0;
+}
+.dlg .body {
+  padding: 8px 12px 10px;
+  font-size: 12px;
+}
+.dlg .ft,
+.dock .ft {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+}
+.dock .ft {
+  padding: 8px 0 0;
+  margin-top: 8px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0 2px;
+  font-size: 12px;
+}
+.tabs span {
+  padding: 2px 8px;
+  border-radius: 4px 4px 0 0;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  color: var(--mute);
+}
+.tabs span.on {
+  color: var(--ink);
+  background: var(--card);
+  font-weight: 600;
+}
+.toastrow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 10px 10px;
+}
+.toast {
+  background: var(--toast);
+  color: var(--toastink);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: 0 4px 14px #0009;
+}
+.toast a {
+  color: var(--toastlink);
+  margin-left: 8px;
+}
+.banner {
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  background: var(--warnbg);
+  color: var(--warn);
+  margin: 6px 0;
+}
+.banner.bad {
+  background: var(--badbg);
+  color: var(--bad);
+}
+.banner.ok {
+  background: var(--okbg);
+  color: var(--ok);
+}
+.banner.info {
+  background: var(--accbg);
+  color: var(--acc);
+}
+del {
+  background: var(--badbg);
+  color: var(--bad);
+}
+ins {
+  background: var(--okbg);
+  color: var(--ok);
+  text-decoration: none;
+}
+kbd {
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 4px;
+  font: 11px var(--font);
+  background: var(--bar);
+  color: var(--ink);
+}
+.n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--note);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+.muted {
+  color: var(--mute);
+}
+.small {
+  font-size: 12px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.sp {
+  flex: 1;
+}
+.box {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 6px 0;
+  background: var(--card);
+}
+/* Column counts that divide the box count, so no box is left alone on a row: six or five boxes in
+   three columns, four in two, then two columns and one as the window narrows. */
+.changes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 30px;
+}
+.changes:has(> div:nth-child(4):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .changes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .changes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.changes div {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.changes h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.changes ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.popover {
+  position: relative;
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #0009;
+  padding: 8px;
+  font-size: 12px;
+}
+.popover .from {
+  font-size: 11px;
+  color: var(--mute);
+  margin-bottom: 4px;
+}
+.caret-dn,
+.caret-up,
+.caret-lf,
+.caret-rt {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--raised);
+  transform: rotate(45deg);
+}
+.caret-dn {
+  bottom: -7px;
+  border-right: 1px solid var(--edge);
+  border-bottom: 1px solid var(--edge);
+}
+.caret-up {
+  top: -7px;
+  border-left: 1px solid var(--edge);
+  border-top: 1px solid var(--edge);
+}
+/* Side carets for a popover beside its trigger, such as a submenu beside its parent row; set `top` inline. */
+.caret-lf {
+  left: -7px;
+  border-left: 1px solid var(--edge);
+  border-bottom: 1px solid var(--edge);
+}
+.caret-rt {
+  right: -7px;
+  border-top: 1px solid var(--edge);
+  border-right: 1px solid var(--edge);
+}
+.open {
+  outline: 2px solid var(--acc);
+  outline-offset: 1px;
+}
+.menu .row {
+  padding: 1px 4px;
+}
+.menu .lbl {
+  border-top: 1px solid var(--rule);
+  margin-top: 3px;
+  padding: 3px 4px 0;
+  font-size: 11px;
+  color: var(--mute);
+}
+.menu .sep {
+  border-top: 1px solid var(--rule);
+  margin: 4px 0 3px;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 8px;
+}
+.legend .k {
+  display: inline-block;
+  width: 24px;
+  height: 14px;
+  border-radius: 3px;
+  vertical-align: -2px;
+  margin-right: 5px;
+  border: 1px solid var(--line);
+}
+.key {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  container-type: scroll-state;
+}
+.key > div {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  padding: 6px 24px 7px;
+}
+header.page:has(+ .key) {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+.key .legend {
+  margin: 0;
+}
+.key .toc {
+  margin: 4px 0 0;
+}
+@container scroll-state(stuck: top) {
+  .key > div {
+    box-shadow: 0 4px 12px #0009;
+  }
+}
+/* The key band's height, measured with Maple Mono at every width from 2560 to 760 px (2026-11-25): 55 px from 2560 to 2176, 79 px from 2175 to 1674, 102 px from 1673 to 1275, 126 px from 1274 to 1043, 149 px from 1042 to 1014, 166 px from 1013 to 901, 32 px from 900 to 760. A page whose band wraps differently sets its own values; re-measure after changing the legend,
+   the contents nav or the font. */
+html {
+  scroll-padding-top: calc(var(--key-h, 3.5rem) + 10px);
+}
+@media (max-width: 2175px) {
+  :root {
+    --key-h: 5rem;
+  }
+}
+@media (max-width: 1673px) {
+  :root {
+    --key-h: 6.4rem;
+  }
+}
+@media (max-width: 1274px) {
+  :root {
+    --key-h: 7.9rem;
+  }
+}
+@media (max-width: 1042px) {
+  :root {
+    --key-h: 9.4rem;
+  }
+}
+@media (max-width: 1013px) {
+  :root {
+    --key-h: 10.4rem;
+  }
+}
+@media (max-width: 900px) {
+  :root {
+    --key-h: 2rem;
+  }
+  .key .legend,
+  .key .toc {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .key .legend > *,
+  .key .toc > * {
+    flex: none;
+  }
+}
+/* devhost's own surfaces, drawn the same way on the pattern page and every flow page.
+   .mock stacks a step's windows in its mockup column. .pg is an app page: .apptxt stands
+   for the app's own content, and .corner holds devhost's dock in the page's corner
+   (notices, popovers and the toolbar bar). .tbar is the toolbar bar, one .seg per item;
+   .term is a terminal transcript in a <pre>. */
+.mock {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.pg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 230px;
+  padding: 8px 10px;
+  background: var(--bg);
+}
+.pg .apptxt {
+  color: var(--faint);
+  font-size: 12px;
+}
+.corner {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.tbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: var(--raised);
+  padding: 3px 5px;
+  font-size: 11px;
+}
+.tbar .seg {
+  padding: 0 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.term {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--card);
+}
+.mock .popover {
+  max-width: 100%;
+}
+
+/* Opt-in variants of devhost's surfaces, for pages that draw them (requested by the toolbar-shell and
+   notices-and-feedback pages): the dock in its other placements, a paused bar (the look of .btn.off),
+   a bar inside a .row that keeps one line while the row wraps around it, and a variant's small label. */
+.mock .corner.at-top {
+  margin-top: 0;
+}
+.mock .corner.at-left {
+  align-items: flex-start;
+}
+.mock .tbar.paused {
+  opacity: 0.45;
+}
+.mock .row > .tbar.oneline {
+  flex: none;
+}
+.mock .vlab {
+  color: var(--mute);
+  font-size: 11px;
+  margin: 8px 0 3px;
+}
+.mock .vlab:first-child {
+  margin-top: 0;
+}
+
+/* The legend's state glyphs and notice kinds (WF-2, WF-3). Their words live here once, so every
+   page's legend says the same thing: a page puts <span class="lg-states"></span> and
+   <span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+   at the end of its .legend, then re-measures its key band. */
+.legend .lg-states::before {
+  content: "States: ● running ○ not started ◐ starting or stopping ■ stopped ✕ exited ▲ failed ⊘ blocked ◇ external ◆ condition ? unknown ⏸ paused";
+}
+.legend .lg-kinds {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+}
+.legend .lg-kinds::before {
+  content: "Notices:";
+}
+.legend .lg-kinds i {
+  font-style: normal;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.legend .lg-kinds .cond {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+.legend .lg-kinds .cond::before {
+  content: "◆ condition";
+}
+.legend .lg-kinds .fail {
+  background: var(--badbg);
+  color: var(--bad);
+}
+.legend .lg-kinds .fail::before {
+  content: "▲ ✕ failure";
+}
+.legend .lg-kinds .ok {
+  background: var(--okbg);
+  color: var(--ok);
+}
+.legend .lg-kinds .ok::before {
+  content: "✓ success";
+}
+.legend .lg-kinds .info {
+  background: var(--accbg);
+  color: var(--acc);
+}
+.legend .lg-kinds .info::before {
+  content: "◐ activity";
+}
+.legend .lg-kinds::after {
+  content: "? lost connection · ⓘ neutral";
+}
+
+/* Shared parts of devhost's surfaces (WF-6), drawn the same on every page that shows them. */
+
+/* Captions wrap long words instead of widening their column; code and terminal text keep
+   literal characters (no ligatures such as => or !=). */
+.cap {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.term,
+code {
+  font-variant-ligatures: none;
+}
+
+/* A notice in the dock's corner keeps a readable width. */
+.mock .corner > .banner {
+  max-width: 36rem;
+  margin: 0;
+}
+
+/* Bar items: pressed (a launcher whose panel is open; aria-pressed) and unavailable (stays in
+   place, dimmed, with its reason beside it or in its description, BAR-5). */
+.tbar .seg.on {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.tbar .seg.off {
+  opacity: 0.45;
+}
+
+/* A tooltip: a small card beside its control, drawn as a popover with its caret and a .from line
+   naming the control. */
+.mock .popover.tip {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+/* A library's own devtools panel inside the app page: at the page's bottom edge, or as a
+   full-height column at its right edge (.lib.col). */
+.mock .lib {
+  border-top: 1px solid var(--line);
+  background: var(--card);
+  margin: 0 -10px -8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--mute);
+}
+.mock .lib b {
+  color: var(--ink);
+}
+.mock .lib.col {
+  border-top: 0;
+  border-left: 1px solid var(--line);
+  margin: -8px -10px -8px 0;
+  padding: 6px 8px;
+}
+
+/* The 320 CSS px phone frame (O8, WF-4). */
+.mock .phone {
+  width: 320px;
+  max-width: 100%;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mock .phone .banner,
+.mock .phone .toastrow,
+.mock .phone .toast,
+.mock .phone .chat {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.mock .phone .tbar {
+  width: 100%;
+  justify-content: space-between;
+}
+
+/* Docked chat: the panel, its header row, a sent message with its meta line, the status line, a
+   decision card and a turn receipt. Pages set its width where the drawing needs another. */
+.mock .chat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: none;
+  width: min(100%, 27rem);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: inset 3px 0 var(--line);
+  text-align: left;
+}
+.mock .chat.wide {
+  width: 100%;
+}
+.mock .chat .hd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.mock .chat .hd b {
+  margin-right: auto;
+}
+.mock .me {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  background: var(--card);
+}
+.mock .meta {
+  color: var(--mute);
+  font-size: 11px;
+}
+.mock .stl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--mute);
+  border-top: 1px solid var(--rule);
+  padding-top: 4px;
+}
+.mock .card {
+  border: 1px solid var(--warnline);
+  border-radius: 6px;
+  padding: 5px 6px;
+  background: var(--card);
+}
+.mock .card .q {
+  font-weight: 600;
+}
+.mock .rcpt {
+  border-top: 1px solid var(--rule);
+  padding-top: 4px;
+}
+
+/* The Configuration window's code view and problem list (config-editor; proxy-settings draws the
+   devhost config file in it). */
+.mock .ce-code {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--field);
+  font-size: 11.5px;
+  line-height: 1.55;
+  padding: 3px 0;
+  margin: 6px 0;
+}
+.mock .ce-ln {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mock .ce-ln > :first-child {
+  color: var(--mute);
+  text-align: right;
+  padding-right: 8px;
+  border-right: 1px solid var(--rule);
+  margin-right: 6px;
+}
+.mock .ce-ln.bad {
+  background: var(--badbg);
+}
+.mock .ce-ln.bad > :first-child {
+  color: var(--bad);
+}
+.mock .ce-ln.dif > :first-child {
+  color: var(--warn);
+}
+.mock .ce-probs {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  font-size: 12px;
+}
+.mock .ce-probs > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--rule);
+}

@@ -1,0 +1,516 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Point at the page and attach screenshots: proposed",
+    "locale": "en",
+    "output": "docs/internal/ux-flows/page-context-proposed.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:alexgorbatchev/devhost.git",
+      "link_mode": "local-only",
+      "revision": "190a8bb53e8cd903d2db0a92cb0886f29671607f"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entry point"
+        },
+        "frontend": {
+          "label": "UI step where the work started"
+        },
+        "backend": {
+          "label": "Backend operation"
+        },
+        "security": {
+          "label": "Recovery step, handled in place"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "ask",
+      "label": "Page and docked chat: ask"
+    },
+    {
+      "id": "review",
+      "label": "Page and docked chat: review"
+    },
+    {
+      "id": "backend",
+      "label": "Backend operation"
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome in place"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery in place",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ask_phase",
+      "label": "Ask",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "write_phase",
+      "label": "Review + write",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "outcome_phase",
+      "label": "Outcome + undo",
+      "fromCol": 4,
+      "toCol": 4
+    }
+  ],
+  "mainPath": ["entry", "pick", "rows", "send", "sent"],
+  "nodes": [
+    {
+      "id": "entry",
+      "lane": "ask",
+      "col": 0,
+      "type": "external",
+      "label": "Select Elements or Alt",
+      "sublabel": "tools row in docked chat",
+      "tag": "keyboard-and-screen-reader-07",
+      "explanation": "Select Elements leads the page-context tools at the top of docked chat, beside Arrow, Line, Box, Undo and Redo, so they follow the dock's corner, not the app's header (SURF-7, SURF-5, MENU-1). The toggle latches selection on, and Enter on it latches it from the keyboard (KEY-12). Holding Alt alone (Option on macOS) starts it on the first pointer move or press, or after 400 ms (KEY-2, O34); any other keydown first cancels it, so Alt chords and Option characters never start it (keyboard-and-screen-reader-07). The selection records what started it: one Alt started ends on Alt's release, a typing key or a window blur; one the toggle latched stays on through an Alt press, an Option character, Alt+Ctrl+R and a window switch, until Escape, its toggle, another tool, closing chat or a send that takes a screenshot (KEY-12, KEY-8; page-context-11). Annotations off removes the tools and Alt-hold (SEL-11); a remote browser not signed in finds them unavailable with one reason (HOLD-7, O36). Picks reach the page wherever devhost draws nothing; the empty strip above the toolbar is toolbar-shell's (SURF-11; page-context-03, related).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageAnnotationToolbar.tsx",
+          "line": 32,
+          "end_line": 32,
+          "label": "Replaces: tools fixed at the page's top centre"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/hooks/usePageSelection.ts",
+          "line": 225,
+          "end_line": 258,
+          "label": "Replaces: Alt keys checked by key name only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/hooks/usePageSelection.ts",
+          "line": 260,
+          "end_line": 274,
+          "label": "Replaces: window blur ends any selection"
+        }
+      ]
+    },
+    {
+      "id": "pick",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "yOffset": -48,
+      "label": "Pick an element",
+      "sublabel": "outlined, then #3 on it",
+      "tag": "page-context-10",
+      "explanation": "One resolver serves Select Elements, Alt-hold and Alt + right-click: it outlines the element under the pointer with its role and name before the click, and a click adds a mark with the draft's next number, '#3', drawn on the element, plus its row; each pick is announced once, 'Mark 3 added: button Add to cart' (SEL-9, FB-9). From the keyboard, with Select Elements latched, the highlight starts on the element focused before, else the main landmark; the arrows walk to the parent, the first child and the siblings, Enter picks and Shift+F10 opens the source menu, each move announced while focus stays on the toggle (KEY-12, KEY-1; page-context-10). Escape leaves the mode and does nothing else, in the composer too: it never stops the turn, which Stop Turn and Alt+Ctrl+. do (KEY-8, KEY-9; keyboard-and-screen-reader-06). The hint comes from the bindings' one definition, 'Select Elements · click an element to add it', then the Esc key cap and 'Finish' (KEY-13, WORD-3; page-context-08). A pointer pick returns focus to the composer; a keyboard-latched mode keeps it on the toggle (KEY-6, KEY-12).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/hooks/usePageSelection.ts",
+          "line": 176,
+          "end_line": 213,
+          "label": "Replaces: click adds marker #(count + 1)"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx",
+          "line": 106,
+          "end_line": 118,
+          "label": "Replaces: Escape listener racing the composer's"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/components/AnnotationSelectionHint.tsx",
+          "line": 37,
+          "end_line": 39,
+          "label": "Replaces: 'Annotate', words beside the Esc cap"
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": "ask",
+      "col": 1,
+      "type": "frontend",
+      "yOffset": 48,
+      "label": "Draw Arrow, Line or Box",
+      "sublabel": "drag or two clicks · #4",
+      "tag": "page-context-02",
+      "explanation": "A drawing tool stays armed until Escape or another tool, so three boxes take three drags; its hint reads 'Box · drag, or click two corners', then Esc 'Finish' (KEY-13; page-context-04, page-context-08). Two clicks set the start and the end as a drag does, with a preview between them; from the keyboard, Enter on a highlighted element sets each end, and Box boxes it on one Enter (KEY-12; page-context-10). Each drawing takes the next number from the marks' counter and shows it on the page, '#4', its row reading '#4 Box around button Add to cart' (SEL-9; page-context-04). Every mark and drawing is anchored to its element as an offset and re-measured on scroll, resize, layout change and DOM mutation, a hot update's re-render included, within one frame; when its element leaves the page, so does the mark, and its row reads '#4 is no longer on this page' with Select Again and Remove, never framing another element (SURF-12; page-context-02). Marks paint beneath the bar, the notice stack and docked chat (SURF-1). Moving a drawing by its stroke is an action Undo reverses.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/components/AnnotationCanvas.tsx",
+          "line": 185,
+          "end_line": 187,
+          "label": "Replaces: points in fixed document coordinates"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/components/AnnotationCanvas.tsx",
+          "line": 108,
+          "end_line": 125,
+          "label": "Replaces: shapes drawn only by press and drag"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx",
+          "line": 239,
+          "end_line": 242,
+          "label": "Replaces: 'Drag To Draw A arrow' hint"
+        }
+      ]
+    },
+    {
+      "id": "share",
+      "lane": "ask",
+      "col": 3,
+      "type": "external",
+      "label": "Share this tab",
+      "sublabel": "Cancel leaves nothing",
+      "tag": "page-context-09",
+      "explanation": "Share Tab opens the browser's picker and accepts only a browser tab; a window or screen ends with 'Pick this browser tab: a window or a whole screen cannot show the page's marks.' (FAIL-2). Closing the picker or choosing its Cancel leaves nothing: no line, no alert, and Share Tab is ready again (FAIL-5, WORD-7; page-context-09). A capture the system refuses says where to allow it, 'Your browser may not record the screen. Allow it in System Settings › Privacy & Security › Screen Recording, then choose Share Tab again.', with the browser's own text behind Copy Error, kept until Dismiss or a share that succeeds (FAIL-2, FB-6; page-context-09). The share's outcomes read verb first: 'Shared this tab · each message takes a screenshot while the camera is on', and 'Stopped sharing this tab · from the browser's sharing control', never a failure (WORD-4, FAIL-5, FB-4); with chat closed the stop is one neutral notice in the stack, closing after its reading time, counted from the next window focus when they arrive unfocused (FB-8, O14, O53). A phone browser that cannot capture a tab shows Share Tab unavailable with its reason (O8, MENU-3).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/TabShareActions.tsx",
+          "line": 11,
+          "end_line": 38,
+          "label": "Reuses: Share Tab, camera toggle, Stop Sharing"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/requestTabShare.ts",
+          "line": 7,
+          "end_line": 19,
+          "label": "Reuses: picker that accepts only a browser tab"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/hooks/useTabShare.ts",
+          "line": 54,
+          "end_line": 55,
+          "label": "Replaces: raw browser text for every refusal"
+        }
+      ]
+    },
+    {
+      "id": "undo",
+      "lane": "review",
+      "col": 1,
+      "type": "frontend",
+      "label": "Undo the last change",
+      "sublabel": "Undo · Redo · Mod+Z",
+      "tag": "page-context-04",
+      "explanation": "One undo history per draft records every page-context action: add, move or remove a mark, draw, move or remove a drawing, and Clear Page Context. Undo reverses the last one, whatever it was, back to the start of the draft, and Redo reapplies it; undoing a removal brings the item back with its number. Each names what it will reverse in its tooltip and accessible description, 'Undo Move #4 Box', its key hint ⌘Z or Ctrl+Z drawn from the binding's one definition (UNDO-7, KEY-13, BAR-4). Mod+Z and Mod+Shift+Z act while Select Elements or a drawing tool is active, or while focus is in devhost outside a text field; in the app's own fields and in the composer they stay those fields' undo (KEY-12). Send ends the draft's history. It replaces Undo Drawing, which removed the newest shape whatever the last action was, never reversed a move, and left Clear Page Context with no way back (page-context-04). This undo writes nothing.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx",
+          "line": 249,
+          "end_line": 250,
+          "label": "Replaces: Undo Drawing drops the newest shape"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageContextList.tsx",
+          "line": 66,
+          "end_line": 69,
+          "label": "Replaces: Clear Page Context with no undo"
+        }
+      ]
+    },
+    {
+      "id": "rows",
+      "lane": "review",
+      "col": 2,
+      "type": "frontend",
+      "label": "Review page context",
+      "sublabel": "rows say what each sends",
+      "tag": "page-context-01",
+      "explanation": "Under the composer, page context lists every item in number order, one row each, saying what it sends: '#2 button Add to cart · ProductCard.tsx:42', or '· no source found' until component-source resolves React 19 (page-context-06, related); '#4 Box around button Add to cart'; once per message 'Page · /checkout?step=2 · web · fix-nav', its URL, service and worktree label (SEL-3, SEL-4, WORD-11); with a tab shared, 'Screenshot of this tab, taken when you send'. Each row expands to the exact fields that leave the machine; hovering a row outlines its item (SEL-9, REV-6; page-context-07, page-context-04). Removing a mark shifts no other number (SEL-9; page-context-01). A '#3' in the message that no pick carries is flagged before Send, '#3 is not in page context', with Select Again; Send asks only when the message cites a gone mark: 'Send with #3 missing? It is not in page context.', or agent-chat's '…Its element is no longer on this page.', Select Again focused, Send Anyway beside it, Escape leaving 'Not sent' (REV-6, REV-4, WORD-7; journey-agent-fix-04). Empty: 'No elements picked' (STATE-2). One store feeds the rows and the send (SEL-1).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageContextList.tsx",
+          "line": 33,
+          "end_line": 53,
+          "label": "Replaces: rows '#n label' and 'n. kind' only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/annotationComposer/hooks/usePageSelection.ts",
+          "line": 67,
+          "end_line": 74,
+          "label": "Replaces: removal renumbers the other marks"
+        }
+      ]
+    },
+    {
+      "id": "crop",
+      "lane": "review",
+      "col": 3,
+      "type": "frontend",
+      "label": "Crop the screenshot",
+      "sublabel": "modal; Esc keeps draft",
+      "explanation": "With the tab shared and the camera on, Send takes one screenshot: devhost hides its toolbar, chat and tooltips, keeps the marks and drawings, and waits up to 10 s for a frame that shows them gone, else fails the send with the draft kept. The busy Send keeps focus and says each step: 'Taking screenshot…', 'Crop the screenshot to continue', 'Sending…' (FB-1, KEY-11, STATE-1); meanwhile the tools, rows and Undo are unavailable with 'Sending: page context changes wait until the message is sent' (MENU-3, HOLD-1). The crop preview opens over the page with the frame: drag an area, or set Left, Top, Width and Height, where Enter applies a value and never shares and no key reaches the page (KEY-9, KEY-5). Share Selected Area or Share Whole Tab continues; Escape or Cancel cancels the send with 'Not sent · your draft and page context stay' (KEY-8, FAIL-5). It is SURF-3's one other modal dialog, opened by the person, and focus returns to Send when it closes (KEY-6). The rows above already showed what goes with the image (page-context-07).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/captureAnnotatedTab.ts",
+          "line": 33,
+          "end_line": 70,
+          "label": "Reuses: hide devhost surfaces, wait for a frame"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/components/ScreenshotShareDialog.tsx",
+          "line": 38,
+          "end_line": 79,
+          "label": "Reuses: crop preview, fields and buttons"
+        }
+      ]
+    },
+    {
+      "id": "send",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "send with page context",
+      "sublabel": "one write · pageContext",
+      "explanation": "Send writes once on the chat socket, to the conversation the composer shows, also right after New Conversation (SEL-8). The composer names the agent and the edit mode; with page context it starts at 'This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav', agent-chat's control (O1, REV-6, WORD-11). send carries pageContext as a structured field beside its mode, never JSON appended to the text; the server renders it into the agent's input as a labelled 'Page context' section and journals it as a page-context record (UNDO-8, CC-40, CC-47). The agent receives once the page's title, URL, service, worktree label, viewport, scroll offsets and pixel ratio, and the screenshot's size, crop and scale; per mark its element path, role and name, nearby text, bounds, styles once and its source or that none was found; per drawing its anchor, never an ID (SEL-3, SURF-12; page-context-07, page-context-02). The 8 MiB limit and PNG or JPEG images stay. When chat cannot take a message or the connection is lost, Send says why and picks stay (HOLD-5, HOLD-2); a fix then asks on agent-chat's decision card, with the CLI's own standing approval when offered (REV-9, O12).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/preparePageChatSend.ts",
+          "line": 22,
+          "end_line": 41,
+          "label": "Replaces: JSON appended to the message text"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/createAgentChatClient.ts",
+          "line": 333,
+          "end_line": 362,
+          "label": "Reuses: send command with text and images"
+        },
+        {
+          "path": "apps/devhost/src/devtools/chat/transport.rs",
+          "line": 386,
+          "end_line": 405,
+          "label": "Reuses: send checks, prompt, 8 MiB limit"
+        }
+      ]
+    },
+    {
+      "id": "sent",
+      "lane": "outcome",
+      "col": 4,
+      "type": "frontend",
+      "label": "Sent with page context",
+      "sublabel": "rows · mode · Show Raw",
+      "tag": "page-context-07",
+      "explanation": "The message appears at once as the person's with 'Not sent yet' until the acknowledgement, then its mode line, 'Mode: This worktree (live) · fix-nav' (WORD-10, UNDO-8). Under it, 'Page context: 2 marks, 1 drawing, 1 screenshot' expands to the same rows as before Send, each with the fields it carried, and Show Raw shows the exact data the agent received; the person's text shows without JSON (UNDO-8, FB-2; page-context-07). The record comes from the session's journal, so every page and a reload show it (CC-40). Sending clears only the items that went out, and their undo history ends with them (UNDO-7). No notice reports a send: the message is the receipt, and agent-chat's delivery states apply; a lost acknowledgement reads Delivery unconfirmed and is never resent (FB-5, REV-12). There is no Undo for a sent message: this flow's undo is the page-context history before Send (UNDO-7) and the draft kept through reloads (UNDO-2).",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/ChatUserText.tsx",
+          "line": 41,
+          "end_line": 59,
+          "label": "Replaces: collapsed raw JSON in a 240 px box"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx",
+          "line": 178,
+          "end_line": 183,
+          "label": "Reuses: sent marks and drawings cleared"
+        }
+      ]
+    },
+    {
+      "id": "restore",
+      "lane": "recovery",
+      "col": 2,
+      "type": "security",
+      "label": "Reload restores marks",
+      "sublabel": "2 of 3 back · #3 listed",
+      "tag": "journey-agent-fix-04",
+      "explanation": "A reload devhost or the person causes (the browser's, Reload Now, a switch, Restart Stack, an agent edit) brings back the unsent text from browser storage, as today, and the images and page context from the control server's draft record for this stack, page origin and conversation: each pick's element path and offsets, each drawing's shape and anchor, never a screenshot (UNDO-2, CC-19). Marks whose elements still resolve return with their numbers; the rest stay listed, '#3 is no longer on this page', with Select Again and Remove, and the page says once 'Restored #1 and #2 after the reload · #3 is no longer on this page' (UNDO-2, SEL-9, FB-4, WORD-4; journey-agent-fix-04, page-context-05). A tab share ends with the page, 'Stopped sharing this tab · the page reloaded'. A switch's question names it first: 'Page context: 3 marks · a mark whose element is gone after the reload is listed as lost; the tab share ends' (SEL-5, REV-3). At a turn's end a held reload runs once unless focus is in the composer (O57). Until the draft record ships, the #n flag already warns before Send.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/components/PageChat.tsx",
+          "line": 92,
+          "end_line": 101,
+          "label": "Replaces: marks and shapes in memory only"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/shared/createDevtoolsSettingsStore.ts",
+          "line": 13,
+          "end_line": 32,
+          "label": "Reuses: unsent text kept across reloads"
+        }
+      ]
+    },
+    {
+      "id": "kept",
+      "lane": "recovery",
+      "col": 3,
+      "type": "security",
+      "label": "Not sent; draft kept",
+      "sublabel": "cancel, refusal, capture",
+      "explanation": "A cancelled crop, a capture that cannot confirm devhost's surfaces are hidden, or a send the server refuses (over 8 MiB, an image that is not PNG or JPEG) sends nothing and keeps the draft, the marks and the drawings, as today and as the docs promise. The reason shows where Send is, in words, with the original text behind Copy Error (FAIL-2, UNDO-4); a cancel reads neutrally, 'Not sent · your draft and page context stay', never as a failure (FAIL-5, WORD-7). A lost connection makes Send unavailable with its reason while picking, drawing, the rows and Undo stay, because none of them writes (HOLD-2). Nothing is replayed: the person sends again when ready.",
+      "sources": [
+        {
+          "path": "packages/devhost-ui/src/devtools/features/visualAnnotations/hooks/useScreenshotSelection.ts",
+          "line": 17,
+          "end_line": 21,
+          "label": "Reuses: a cancel keeps the draft and context"
+        },
+        {
+          "path": "packages/devhost-ui/src/devtools/features/agentChat/hooks/useAgentChat.ts",
+          "line": 131,
+          "end_line": 135,
+          "label": "Reuses: a failed send clears nothing"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "entry-pick",
+      "from": "entry",
+      "to": "pick",
+      "label": "Select Elements",
+      "role": "main"
+    },
+    {
+      "id": "entry-draw",
+      "from": "entry",
+      "to": "draw",
+      "label": "Arrow, Line, Box",
+      "role": "branch"
+    },
+    {
+      "id": "pick-rows",
+      "from": "pick",
+      "to": "rows",
+      "label": "mark #3",
+      "role": "main"
+    },
+    {
+      "id": "draw-rows",
+      "from": "draw",
+      "to": "rows",
+      "label": "#4 Box",
+      "role": "branch"
+    },
+    {
+      "id": "undo-rows",
+      "from": "undo",
+      "to": "rows",
+      "label": "Undo · Mod+Z",
+      "role": "return"
+    },
+    {
+      "id": "rows-send",
+      "from": "rows",
+      "to": "send",
+      "label": "Send · 2 marks, 1 box",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "rows-crop",
+      "from": "rows",
+      "to": "crop",
+      "label": "Send, tab shared",
+      "role": "branch"
+    },
+    {
+      "id": "share-crop",
+      "from": "share",
+      "to": "crop",
+      "label": "frame at Send",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "crop-send",
+      "from": "crop",
+      "to": "send",
+      "label": "Share Selected Area",
+      "role": "branch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "send-sent",
+      "from": "send",
+      "to": "sent",
+      "label": "acknowledged",
+      "role": "main"
+    },
+    {
+      "id": "send-kept",
+      "from": "send",
+      "to": "kept",
+      "label": "refused",
+      "role": "error"
+    },
+    {
+      "id": "restore-rows",
+      "from": "restore",
+      "to": "rows",
+      "label": "after a reload",
+      "role": "return",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What changes versus today",
+      "items": [
+        "Removed: renumbering when a mark is removed; the drawings' separate numbering by list position; the tool switching itself off after one shape; Undo Drawing, which removed the newest shape and never a move; Escape in the composer stopping the agent's turn; Alt chords and Option characters starting Select Elements, and an Alt release or a window switch ending a selection the toggle latched; 'Annotate' and the words beside the Esc key cap; the raw rejection after a closed picker; the floating tools at the top centre of the page; page context appended to the text as JSON; drawing IDs and the second styles format in what the agent receives; a reload silently dropping every mark and drawing",
+        "Merged: marks and drawings share one counter and one list; Select Elements, Alt-hold and Alt + right-click share one resolver; the review before Send and the sent record show the same rows",
+        "New: keyboard picking and drawing, and drawing with two clicks; anchored marks that say when their element is gone; rows that say what each item sends, with the page's service, worktree and 'no source found'; the #n flag and the gone-mark question with Select Again; Undo and Redo of any page-context action with Mod+Z; progress on the busy Send; the share's neutral outcomes and a worded system denial; the draft record that restores page context after a reload; viewport, scroll and scale in what the agent receives; Show Raw on the sent record; the 320 CSS px phone layout of the tools and rows (O8)",
+        "Changed: Escape leaves a page-context mode and never stops a turn (KEY-8, CC-29, CC-31); Alt alone starts selection after a pointer move or press or 400 ms, and only a selection Alt started ends on its release, a typing key or a window switch (KEY-2, KEY-12, O34); a drawing tool stays armed; the tools move into docked chat (SURF-7); marks survive a reload while their elements exist (CC-19); page context is sent as a structured field and journaled as a record (CC-40); the hint words (KEY-13, WORD-3); worktree, never checkout, for the page's working copy (WORD-11)",
+        "Kept: three ways in, Alt working in the composer but never in the page's own fields; picks and drawings over the page's own popovers and modal dialogs; Escape leaving a mode from anywhere; a selection Alt started ending on its release; only a browser tab accepted; devhost hidden in the screenshot or the send fails with the draft kept; the crop preview with its fields, Cancel and Escape keeping the draft; one image per message, never video; the draft stored before page context is prepared; sending clears only what was sent; the server's mode instructions, 8 MiB and PNG or JPEG limits; the sent data kept with the message; Delivery unconfirmed, never resent"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Tickets this journey resolves",
+      "items": [
+        "Ways in and picking: keyboard-and-screen-reader-07, page-context-11, page-context-10, keyboard-and-screen-reader-06, page-context-08",
+        "Drawing: page-context-02, page-context-10, page-context-04, page-context-08",
+        "Rows, the #n flag and Undo: page-context-01, page-context-07, page-context-04, journey-agent-fix-04",
+        "Tab share and crop: page-context-09",
+        "Sent record and payload: page-context-07, page-context-02",
+        "Reload: journey-agent-fix-04 with its duplicate page-context-05",
+        "Related, not covered: page-context-03 (toolbar-shell, whose dock takes pointer input only where it draws); page-context-06 (component-source, which resolves each row's source file on React 19)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Backend work",
+      "items": [
+        "The chat draft record: /__devhost__/chat/draft (GET, PUT, DELETE) keeps a conversation's unsent images and page context per stack, page origin and conversation, never a screenshot, capped at 8 MiB, read under O36's check and the Host rule, removed on an acknowledged send or a stopped stack; agent-chat builds the route (CC-19)",
+        "send gains optional pageContext beside agent-chat's mode in apps/devhost/src/devtools/chat/transport.rs; the server renders it as a labelled 'Page context' section, counts it against 8 MiB and journals a page-context record frame (CC-40, CC-47)",
+        "The injected configuration names the page's service (apps/devhost/src/devtools/configuration.rs, project_context.rs), and the chat target reports the page's worktree label (SEL-3, SEL-4)"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Contract changes",
+      "items": [
+        "CC-19: selections and drawings survive a reload while their element is on the page; the draft route and its Host rule",
+        "CC-29: Escape does nothing else; Alt pressed in a shortcut or to type does not start selection; keyboard picking and two-click drawing; Undo or Mod+Z reverses the last change",
+        "CC-31: Stop Turn, or Alt+Ctrl+., stops the agent's turn, never Escape",
+        "CC-40: the record frame of kind page-context, replayed in snapshot",
+        "CC-1: docked chat and its tools paint below an open toolbar panel and never cover the notice stack",
+        "CC-47: send's pageContext field; guides/annotations.md's shared numbers, payload, the tools' place in chat and how each way into Select Elements ends; the annotations setting's description; computedStyles kept for plugins"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Designed against alexgorbatchev/devhost at 190a8bb53e8cd903d2db0a92cb0886f29671607f (Rust main) and the shared UX pattern reference revision 7",
+        "Drawn from the current diagram and the written proposal; sources cite only existing code a step reuses or replaces at that revision, and steps with no code yet have none"
+      ]
+    }
+  ]
+}

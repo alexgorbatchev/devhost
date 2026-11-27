@@ -1,0 +1,1743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Point at the page and attach screenshots · proposed flow wireframe</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      /* Page-specific rules, scoped to this page's mockups: the app page beside the dock, docked chat's page-context
+   tools row and list, and the marks devhost draws on the app page. Docked chat itself is wireframe.css's. */
+      .mock .pc-split {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .mock .pc-app {
+        flex: 1 1 15rem;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 12px;
+        padding: 4px 6px;
+      }
+      .mock .pc-split > .corner {
+        flex: 0 1 28rem;
+        min-width: 0;
+      }
+      .mock .pc-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        border-bottom: 1px solid var(--rule);
+        padding-bottom: 4px;
+      }
+      .mock .pc-on {
+        background: var(--accbg);
+        border-color: var(--acc);
+      }
+      .mock .pc-vsep {
+        align-self: stretch;
+        border-left: 1px solid var(--line);
+        margin: 0 2px;
+      }
+      .mock .pc-tx {
+        display: block;
+        width: 100%;
+        min-height: 2.6em;
+      }
+      .mock .pc-list {
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        padding: 3px 6px;
+        background: var(--card);
+      }
+      .mock .pc-list.bounded {
+        max-height: 6.6em;
+        overflow: hidden;
+      }
+      .mock .pc-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 6px;
+        align-items: start;
+        padding: 2px 0;
+        border-top: 1px solid var(--rule);
+      }
+      .mock .pc-row > :nth-child(2) {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+      .mock .pc-fields {
+        grid-column: 1/-1;
+        color: var(--mute);
+        font-size: 11px;
+        padding-left: 1.2em;
+      }
+      .mock .pc-gone {
+        color: var(--warn);
+      }
+      .mock .pc-el {
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 2px 8px;
+        color: var(--mute);
+      }
+      .mock .pc-el.mk {
+        outline: 2px solid var(--acc);
+        outline-offset: 1px;
+        color: var(--ink);
+      }
+      .mock .pc-el.hl {
+        outline: 2px dashed var(--acc);
+        outline-offset: 1px;
+        color: var(--ink);
+      }
+      .mock .pc-el.bx {
+        outline: 2px solid var(--acc);
+        outline-offset: 6px;
+        color: var(--ink);
+        margin: 6px;
+      }
+      .mock .pc-badge {
+        display: inline-block;
+        background: var(--acc);
+        color: var(--onfill);
+        border-radius: 4px;
+        padding: 0 4px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-right: 6px;
+      }
+      .mock .pc-tag {
+        margin-left: 8px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0 4px;
+        background: var(--card);
+        color: var(--ink);
+        font-size: 11px;
+      }
+      .mock .pc-hint {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 2px 6px;
+        background: var(--card);
+        font-size: 11px;
+      }
+      .mock .pc-gap {
+        align-self: stretch;
+        text-align: right;
+        color: var(--mute);
+        font-size: 11px;
+        border: 1px dashed var(--rule);
+        border-radius: 4px;
+        padding: 3px 6px;
+      }
+      .mock .pc-frame {
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 8px;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        align-items: flex-start;
+      }
+      .mock .pc-area {
+        outline: 2px dotted var(--acc);
+        outline-offset: 3px;
+        padding: 4px 8px;
+      }
+      /* The decision card (wireframe.css) stacks its rows here */
+      .mock .card {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      /* The phone frame (wireframe.css) for O8, with room for the tools row's buttons */
+      .mock .phone {
+        padding: 8px 16px;
+      }
+      .mock .phone .btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        box-sizing: border-box;
+      }
+      /* Key band measured at every width from 2560 to 760 px (2026-11-25): 55 px from 2560 to 2540, 79 px from 2539 to 1763, 102 px from 1762 to 1544, 126 px from 1543 to 1197, 149 px from 1196 to 1014, 190 px from 1013 to 901, 32 px from 900 to 760. */
+      :root {
+        --key-h: 3.5rem;
+      }
+      @media (max-width: 2539px) {
+        :root {
+          --key-h: 5rem;
+        }
+      }
+      @media (max-width: 1762px) {
+        :root {
+          --key-h: 6.4rem;
+        }
+      }
+      @media (max-width: 1543px) {
+        :root {
+          --key-h: 7.9rem;
+        }
+      }
+      @media (max-width: 1196px) {
+        :root {
+          --key-h: 9.4rem;
+        }
+      }
+      @media (max-width: 1013px) {
+        :root {
+          --key-h: 11.9rem;
+        }
+      }
+      @media (max-width: 900px) {
+        :root {
+          --key-h: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <nav class="top">
+        <a href="index.html">← All flows</a><a href="../page-context-current.html">Today's flow diagram</a
+        ><a href="../page-context-proposed.html">Proposed flow diagram</a
+        ><a href="../proposals/page-context.md">Written proposal</a
+        ><span class="muted">Redesign ticket: tracked privately</span>
+      </nav>
+      <h1>Point at the page and attach screenshots</h1>
+      <p>
+        <b>TLDR:</b> Marks and drawings share one counter whose numbers never shift, stay on their elements through
+        re-renders and reloads, and are listed under the composer as rows that say exactly what leaves the machine,
+        while the tools sit in docked chat, work from the keyboard and on a phone, undo any change, and Escape never
+        stops the agent.
+      </p>
+      <p class="muted small">
+        Low-fidelity wireframe. Layout, names and numbers are illustrative; the redesign ticket's acceptance criteria
+        are authoritative.
+      </p>
+    </header>
+    <div class="key">
+      <div>
+        <div class="legend">
+          <b style="color: var(--ink)">How to read:</b>
+          <span
+            ><i class="k" style="background: var(--toast); border-color: var(--toast)"></i>Toast: passing status message
+            in a corner, links only, no decisions</span
+          >
+          <span
+            ><i class="k" style="background: var(--raised); border-color: var(--edge); box-shadow: 0 2px 6px #0009"></i
+            >Popover or menu: opens from the outlined control its arrow points at</span
+          >
+          <span
+            ><i class="k" style="background: var(--panel); box-shadow: inset 3px 0 var(--line)"></i>Panel: docked beside
+            the table, stays open</span
+          >
+          <span><i class="k" style="background: var(--scrim)"></i>Dimmed backdrop: dialog that blocks the page</span>
+          <span><i class="k" style="background: var(--accbg)"></i>Selected rows</span>
+          <span><i class="k" style="background: var(--chgbg)"></i>Just changed</span>
+          <span><i class="k" style="background: var(--card); box-shadow: inset 3px 0 var(--acc)"></i>Row cursor</span>
+          <span
+            ><i class="k" style="background: transparent; border: 2px solid var(--acc)"></i>Mark or drawing, with its
+            #n</span
+          >
+          <span
+            ><i class="k" style="background: transparent; border: 2px dashed var(--acc)"></i>Highlight before a
+            pick</span
+          >
+          <span><i class="k" style="background: transparent; border: 2px dotted var(--acc)"></i>Crop area</span>
+          <span><i class="k" style="background: var(--warn); border-color: var(--warn)"></i>Gone mark or #n</span>
+          <span><span class="n">1</span>Callout, explained on the right</span><span class="lg-states"></span
+          ><span class="lg-kinds"><i class="cond"></i><i class="fail"></i><i class="ok"></i><i class="info"></i></span>
+        </div>
+      </div>
+    </div>
+    <main>
+      <section class="step" id="point">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b
+              ><span>1600×1000: Select Elements latched with its toggle, the pointer over Add to cart</span>
+            </div>
+            <div class="pg">
+              <div class="pc-split">
+                <div class="pc-app">
+                  <div class="apptxt">Acme Shop · checkout</div>
+                  <div class="pc-el mk"><span class="pc-badge">#1</span>Checkout</div>
+                  <div class="pc-el mk"><span class="pc-badge">#2</span>Shipping rates</div>
+                  <div class="pc-el">Email · Your email address</div>
+                  <div class="row">
+                    <span class="pc-el hl">Add to cart<span class="pc-tag">button Add to cart</span></span
+                    ><span class="n">2</span>
+                  </div>
+                  <div class="row">
+                    <span class="pc-hint">Select Elements · click an element to add it <kbd>Esc</kbd> Finish</span
+                    ><span class="n">3</span>
+                  </div>
+                </div>
+                <div class="corner">
+                  <div class="dock chat">
+                    <div class="hd">
+                      <b>Fix the checkout button</b><span class="muted">Claude Code · working</span
+                      ><span class="btn">☰</span><span class="btn">⤢</span><span class="btn">✕</span>
+                    </div>
+                    <div class="pc-tools">
+                      <span class="btn pc-on">Select Elements</span><span class="btn">Arrow</span
+                      ><span class="btn">Line</span><span class="btn">Box</span><span class="pc-vsep"></span
+                      ><span class="btn">Undo</span><span class="btn">Redo</span><span class="n">1</span>
+                    </div>
+                    <div class="stl">
+                      Claude Code is working · 12 s<span class="sp"></span><span class="btn">Stop Turn</span
+                      ><span class="n">8</span>
+                    </div>
+                    <span class="in pc-tx focusring">The add to cart button looks off next to #2</span>
+                    <div class="pc-list">
+                      <div class="row">
+                        <b>Page context</b><span class="sp"></span><span class="btn">Clear Page Context</span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#1 heading Checkout · CheckoutPage.tsx:12</span><span><span class="btn">✕</span></span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#2 link Shipping rates · ShippingLink.tsx:8</span><span><span class="btn">✕</span></span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <span class="chip acc">Claude Code · Haiku 4.5</span
+                      ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                      ><span class="sp"></span><span class="btn">Attach Image</span><span class="btn">Share Tab</span
+                      ><span class="btn pri">Send</span>
+                    </div>
+                  </div>
+                  <div class="pc-gap">
+                    the page shows through here: a click picks its element <span class="n">5</span>
+                  </div>
+                  <div class="tbar">
+                    <span class="seg"><b>Acme Shop</b></span
+                    ><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                    ><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b
+              ><span>Select Elements latched with Enter on its toggle; no pointer</span>
+            </div>
+            <div class="work small">
+              <div class="pc-split">
+                <div class="pc-app">
+                  <div class="pc-el">Email · Your email address</div>
+                  <div class="pc-el hl">Add to cart<span class="pc-tag">button Add to cart</span></div>
+                  <div class="meta">Announced: "button Add to cart · in form Checkout · 2 of 5"</div>
+                </div>
+                <div class="corner">
+                  <div class="dock chat">
+                    <div class="pc-tools">
+                      <span class="btn pc-on focusring">Select Elements</span><span class="btn">Arrow</span
+                      ><span class="btn">Line</span><span class="btn">Box</span><span class="pc-vsep"></span
+                      ><span class="btn">Undo</span><span class="btn">Redo</span>
+                    </div>
+                    <div class="row">
+                      <span class="pc-hint"
+                        ><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Move · <kbd>Enter</kbd> Pick ·
+                        <kbd>Esc</kbd> Finish</span
+                      ><span class="n">4</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b><span>holding Alt, and how each selection ends</span>
+            </div>
+            <div class="work small">
+              <div class="vlab">Alt+Ctrl+R, Alt+Shift+D or Option+L pressed with the pointer over the page</div>
+              <div class="row">
+                <span>No outline and no selection cursor; a click reaches the page and adds no mark</span
+                ><span class="n">6</span>
+              </div>
+              <div class="vlab">Alt alone held and the pointer moved or pressed, or held still for 400 ms</div>
+              <div>Select Elements starts; releasing Alt, a key that types or switching to another window ends it</div>
+              <div class="vlab">
+                Latched with its toggle, then Alt pressed and released, Option+- typed in the composer, Alt+Ctrl+R
+                pressed, or another window and back
+              </div>
+              <div class="row">
+                <span
+                  >Still on: the hint, the selection cursor and the pressed toggle stay, and the next click adds
+                  #3</span
+                ><span class="n">7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>1. Point at elements</h2>
+          <p>
+            <b>Chat</b>, holding Alt and Alt + right-click (component-source's source menu) still lead to the page's
+            elements, a click still adds a mark the message carries, and picks still work over the page's own popovers
+            and modal dialogs without closing them, with docked chat and its tools moved into the dialog's top layer
+            (<code>SURF-11</code>). What changes: the tools sit in docked chat, the element is named before the click,
+            the keyboard can pick, Alt chords never start a selection, a toggled selection lasts until the person ends
+            it, and Escape never stops the agent. With <code>[devtools.annotations].enabled = false</code> chat shows no
+            page-context tools, holding Alt starts nothing, and the setting's description says "Element selection,
+            drawings and page context for chat; turning it off removes them, chat stays" (<code>SEL-11</code>). Keys:
+            Enter on <b>Select Elements</b> latches it; in the mode the arrows walk, Enter picks, Shift+F10 or the
+            context-menu key opens the source menu and Escape finishes; after a pointer pick or drawing focus is back in
+            the composer where it was, a keyboard-latched selection keeps it on its toggle until Escape, and no pick
+            ever focuses the page element (<code>KEY-12</code>, <code>KEY-8</code>, <code>KEY-6</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> <b>Select Elements</b> sits first in a row of page-context tools at the top of
+              docked chat, beside <b>Arrow</b>, <b>Line</b>, <b>Box</b>, <b>Undo</b> and <b>Redo</b>, drawn pressed
+              while it is on. The row follows the dock's corner and docked chat's placement, so no tool floats over the
+              app's header at the top centre of the page. Default: Select Elements off (<code>SURF-7</code>,
+              <code>SURF-5</code>, <code>MENU-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> One resolver serves Select Elements, holding Alt and Alt + right-click: it
+              outlines the element under the pointer, drawn dashed here, with its role and name before the click. A
+              click adds a mark with the draft's next number, drawn on the element with its number (solid outline, like
+              #1 and #2), and a row in page context; clicking a marked element again does nothing. Each pick is
+              announced once, politely: "Mark 3 added: button Add to cart". The first mark opens docked chat when it is
+              closed, with focus in the composer, as agent-chat specifies (<code>SEL-9</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">3</span> The hint names the mode by its tool label and its next step, then one Esc key cap
+              followed only by its outcome, all from the bindings' one definition: "Select Elements · click an element
+              to add it", Esc "Finish". It is sentence case, never says "Annotate" and never spells Esc out beside its
+              cap (<code>KEY-13</code>, <code>WORD-3</code>, <code>WORD-1</code>).
+            </li>
+            <li>
+              <span class="n">4</span> From the keyboard: with Select Elements latched, the highlight starts on the
+              element that had focus before devhost took it, else the page's main landmark, else the body's first
+              visible element; ArrowUp moves it to the parent, ArrowDown to the first child, ArrowLeft and ArrowRight to
+              the siblings; Enter picks, the same mark a click makes; Shift+F10 or the context-menu key opens the
+              highlighted element's source menu, which component-source owns. Focus stays on the toggle, whose
+              accessible description names the highlighted element; the hint sits under the toggle, and each move is
+              announced politely (<code>KEY-12</code>, <code>KEY-1</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Picks reach the page wherever devhost draws nothing, and marks and highlights
+              paint beneath the bar, the notice stack and docked chat, never over them. The empty strip above the bar
+              that swallows clicks while a notice shows is toolbar-shell's to remove (<code>page-context-03</code>,
+              related) (<code>SURF-11</code>, <code>SURF-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Holding Alt alone starts a selection only on the first pointer move (a real
+              change of position), on a pointer press, or once it has been held still for 400 ms (<code>O34</code>); any
+              other keydown first, Shift, a dead key and input-method composition included, cancels it without drawing
+              anything, so Alt+Ctrl+R, Alt+Shift+D, a page's own Alt shortcut and characters typed with Option never
+              start it. A pointer press while Alt alone is held picks and never reaches the page, so Option+click never
+              follows or downloads a link. Arrows pressed while Alt is held do nothing and never go Back or Forward, and
+              Alt still belongs to the page's own fields while the person types there (<code>KEY-2</code>,
+              <code>KEY-12</code>).
+            </li>
+            <li>
+              <span class="n">7</span> How a selection ends: one that holding Alt started selects only while Alt is
+              held, so it ends when Alt is released, when the window loses focus or when a key that types is pressed, so
+              a hesitant Option chord's outline never outlives its character (<code>O34</code>); one the toggle latched
+              stays on until Escape, the toggle, another tool, closing chat or a send that takes a screenshot ends it,
+              so the next click still adds a mark and never follows the page's link (<code>KEY-2</code>,
+              <code>KEY-12</code>, <code>KEY-8</code>).
+            </li>
+            <li>
+              <span class="n">8</span> Escape leaves the mode and does nothing else, in the composer, on the toggle and
+              on the page alike: the running turn goes on, and only <b>Stop Turn</b> or Alt+Ctrl+. stop it. With no mode
+              active, Escape in the composer returns focus to the page element chat took it from. One devhost key
+              handler checks the active mode first, so the result never depends on which listener registered last
+              (<code>KEY-8</code>, <code>KEY-9</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes keyboard-and-screen-reader-06, keyboard-and-screen-reader-07, page-context-08, page-context-10,
+            page-context-11 · Backend: none; the bindings' one definition behind the hints and the dock that takes input
+            only where it draws are toolbar-shell's (<code>KEY-13</code>, <code>SURF-11</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="draw">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b
+              ><span>1600×1000: Box armed; #1 and #2 marked, Box #3 drawn around Add to cart</span>
+            </div>
+            <div class="pg">
+              <div class="pc-split">
+                <div class="pc-app">
+                  <div class="pc-el mk"><span class="pc-badge">#1</span>Checkout</div>
+                  <div class="pc-el mk"><span class="pc-badge">#2</span>Shipping rates</div>
+                  <div class="pc-el">Email · <span style="color: var(--bad)">Email required</span></div>
+                  <div class="row">
+                    <span class="pc-el bx"><span class="pc-badge">#3</span>Add to cart</span><span class="n">4</span>
+                  </div>
+                  <div class="row">
+                    <span class="pc-hint">Box · drag, or click two corners <kbd>Esc</kbd> Finish</span
+                    ><span class="n">1</span>
+                  </div>
+                </div>
+                <div class="corner">
+                  <div class="dock chat">
+                    <div class="pc-tools">
+                      <span class="btn">Select Elements</span><span class="btn">Arrow</span><span class="btn">Line</span
+                      ><span class="btn pc-on">Box</span><span class="pc-vsep"></span><span class="btn">Undo</span
+                      ><span class="btn">Redo</span>
+                    </div>
+                    <span class="in pc-tx">Make #3 use the same corner radius as #2</span>
+                    <div class="pc-list">
+                      <div class="row">
+                        <b>Page context</b><span class="sp"></span><span class="btn">Clear Page Context</span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#1 heading Checkout · CheckoutPage.tsx:12</span><span><span class="btn">✕</span></span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#2 link Shipping rates · ShippingLink.tsx:8</span><span><span class="btn">✕</span></span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <span class="chip acc">Claude Code · Haiku 4.5</span
+                      ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                      ><span class="sp"></span><span class="btn">Attach Image</span><span class="btn">Share Tab</span
+                      ><span class="btn pri">Send</span>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <span class="n">7</span
+                    ><span class="tbar"
+                      ><span class="seg"><b>Acme Shop</b></span
+                      ><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                      ><span class="seg">Chat</span></span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › checkout page</b><span>two other ways to draw</span></div>
+            <div class="work small">
+              <div class="vlab">Box armed, the first corner clicked; the preview follows the pointer</div>
+              <div class="row">
+                <span class="pc-hint">Box · drag, or click two corners <kbd>Esc</kbd> Cancel</span
+                ><span class="n">2</span>
+              </div>
+              <div class="vlab">
+                Arrow armed from the keyboard: Enter on button Add to cart, then Enter on link Free returns
+              </div>
+              <div class="row">
+                <span class="pc-el">Add to cart</span><span>⟶ <span class="pc-badge">#4</span>⟶</span
+                ><span class="pc-el">Free returns</span><span class="n">3</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b
+              ><span>one character typed into Email: the error went away and Add to cart moved up 38 px</span>
+            </div>
+            <div class="work small">
+              <div class="pc-app">
+                <div class="pc-el">Email · y</div>
+                <div class="row">
+                  <span class="pc-el bx"><span class="pc-badge">#3</span>Add to cart</span
+                  ><span class="muted">still around the button, re-measured within one frame</span
+                  ><span class="n">5</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b
+              ><span>the agent's hot update removed the Shipping rates link</span>
+            </div>
+            <div class="work small">
+              <div class="dock chat wide">
+                <div class="pc-list">
+                  <div class="row"><b>Page context</b></div>
+                  <div class="pc-row">
+                    <span>#1 heading Checkout · CheckoutPage.tsx:12</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span class="pc-gone">#2 is no longer on this page</span
+                    ><span
+                      ><span class="btn">Select Again</span><span class="btn">Remove</span
+                      ><span class="n">6</span></span
+                    >
+                  </div>
+                  <div class="pc-row">
+                    <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#4 Arrow from button Add to cart to link Free returns</span
+                    ><span><span class="btn">✕</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>2. Draw Arrow, Line or Box</h2>
+          <p>
+            <b>Arrow</b>, <b>Line</b> and <b>Box</b> still draw with a drag over the page, a finished drawing still
+            moves by its stroke, and drawings still go with the message beside the marks. What changes: a tool stays
+            armed, two clicks or the keyboard draw too, drawings share the marks' numbers, and every mark and drawing
+            stays on the element it marks. Keys: in a drawing tool the arrows walk the highlight, Enter sets each end,
+            Escape cancels the drawing in progress and then leaves the tool (<code>KEY-12</code>, <code>KEY-8</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A drawing tool stays armed until Escape or another tool, so three boxes take
+              three drags, and its hint says how: "Box · drag, or click two corners", Esc "Finish"; with Arrow armed it
+              reads "Arrow · drag, or click the start and then the end" (<code>KEY-13</code>, <code>WORD-3</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Two clicks set the start and the end as a drag does, with a preview following the
+              pointer between them; Escape between them cancels the drawing in progress, the hint reading Esc "Cancel"
+              (<code>KEY-12</code>).
+            </li>
+            <li>
+              <span class="n">3</span> From the keyboard the arrows walk the highlight as in Select Elements: with Arrow
+              or Line, Enter sets the start at the highlighted element and a second Enter the end; Box boxes the
+              highlighted element on one Enter (<code>KEY-12</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Each drawing takes the next number from the marks' counter and shows it on the
+              page, "#3", and its row reads "#3 Box around button Add to cart"; numbers never shift or come back
+              (<code>SEL-9</code>).
+            </li>
+            <li>
+              <span class="n">5</span> Every mark and drawing is anchored to the element it marks as an offset to it: a
+              box to the smallest element that contains it, an arrow to the element under its head, a line to the
+              elements under its ends. They are re-measured on scroll, resize, layout change and DOM mutation, a hot
+              update's re-render included, within one frame, so the box stays on the button that moved and stays on it
+              when the window narrows to 1280 (<code>SURF-12</code>).
+            </li>
+            <li>
+              <span class="n">6</span> When its element leaves the page, the mark leaves the page too, never floating
+              over another element, and its row reads "#2 is no longer on this page" with <b>Select Again</b>, which
+              picks again under the same number, and <b>Remove</b> (<code>SURF-12</code>, <code>SEL-9</code>).
+            </li>
+            <li>
+              <span class="n">7</span> Marks and drawings paint beneath devhost's surfaces: no mark covers the bar, the
+              notice stack, a panel or docked chat, and native hit testing at a notice button returns that button while
+              a mark lies under it (<code>SURF-1</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes page-context-02, page-context-04, page-context-08, page-context-10 · Backend: none here; the anchors
+            reach the agent with the page details of step 7
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="review">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b
+              ><span>1280×800: #1 removed after the message was written; a tab shared</span>
+            </div>
+            <div class="work small">
+              <div class="dock chat wide">
+                <div class="pc-tools">
+                  <span class="btn">Select Elements</span><span class="btn">Arrow</span><span class="btn">Line</span
+                  ><span class="btn">Box</span><span class="pc-vsep"></span><span class="btn">Undo</span
+                  ><span class="btn">Redo</span>
+                </div>
+                <span class="in pc-tx">Make #3 use the same corner radius as #2, and leave #1 alone.</span>
+                <div class="row">
+                  <span class="pc-gone">#1 is not in page context</span><span class="btn">Select Again</span
+                  ><span class="n">1</span>
+                </div>
+                <div class="pc-list">
+                  <div class="row">
+                    <b>Page context</b><span class="sp"></span><span class="btn">Clear Page Context</span
+                    ><span class="n">5</span>
+                  </div>
+                  <div class="pc-row">
+                    <span>▸ #2 link Shipping rates · no source found <span class="n">2</span></span
+                    ><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>▾ #3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                    <span class="pc-fields"
+                      >kind Box · anchored to main › form#checkout › button.add · offsets 6 px on each side · page 806,
+                      634, 172 × 52 CSS px <span class="n">3</span></span
+                    >
+                  </div>
+                  <div class="pc-row">
+                    <span
+                      >▸ Page · /checkout?step=2 · web · fix-nav ~/acme/.worktrees/fix-nav
+                      <span class="n">4</span></span
+                    ><span></span>
+                  </div>
+                  <div class="pc-row"><span>▸ Screenshot of this tab, taken when you send</span><span></span></div>
+                </div>
+                <div class="row">
+                  <span class="chip acc">Claude Code · Haiku 4.5</span
+                  ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="sp"></span><span class="btn pc-on">◎ Include Tab Snapshot</span
+                  ><span class="btn">Stop Sharing</span><span class="btn pri">Send</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>Select Elements on, nothing picked yet</span>
+            </div>
+            <div class="work small">
+              <div class="pc-list">
+                <div class="row"><b>Page context</b></div>
+                <div class="pc-row">
+                  <span>No elements picked · Click an element, or use the arrow keys and Enter</span
+                  ><span><span class="n">6</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b
+              ><span>640×400 CSS px: 1280×800 at 200% zoom, five items and a pending request</span>
+            </div>
+            <div class="pg" style="min-height: 0; padding: 8px 16px">
+              <div class="dock chat wide">
+                <div class="hd">
+                  <b>Fix the checkout button</b><span class="muted">Claude Code · waiting for you</span
+                  ><span class="btn">☰</span><span class="btn">✕</span>
+                </div>
+                <div class="pc-tools">
+                  <span class="btn">Select Elements</span><span class="btn">Arrow</span><span class="btn">Line</span
+                  ><span class="btn">Box</span><span class="btn">Undo</span><span class="btn">Redo</span>
+                </div>
+                <div class="card">
+                  <div class="q">Edit src/ProductCard.tsx?</div>
+                  <div class="muted">▸ Details</div>
+                  <div class="row">
+                    <span class="btn">Deny</span><span class="btn">Allow Once</span
+                    ><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span>
+                  </div>
+                </div>
+                <span class="in pc-tx">Also match #5</span>
+                <div class="pc-list bounded">
+                  <div class="row">
+                    <b>Page context</b><span class="sp"></span><span class="muted">only these rows scroll</span
+                    ><span class="n">7</span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#2 link Shipping rates · no source found</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#4 Arrow from button Add to cart to link Free returns</span
+                    ><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#5 image Product photo · ProductCard.tsx:30</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>Page · /checkout?step=2 · web · fix-nav ~/acme/.worktrees/fix-nav</span><span></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <span class="chip acc">Claude Code · Haiku 4.5</span
+                  ><span class="chip">This worktree (live) · fix-nav ▾</span><span class="sp"></span
+                  ><span class="btn pri">Send</span>
+                </div>
+              </div>
+              <div class="tbar" style="align-self: flex-end">
+                <span class="seg"><b>Acme Shop</b></span
+                ><span class="seg">5/6 ▾</span><span class="seg">◆ Chat</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b
+              ><span>after a reload: the agent's edit reloaded the page, and #2's link is gone</span>
+            </div>
+            <div class="work small">
+              <span class="in pc-tx">Make #3 use the same corner radius as #2, and leave #1 alone.</span>
+              <div class="pc-list" style="margin-top: 5px">
+                <div class="row"><b>Page context</b></div>
+                <div class="stl">Stopped sharing this tab · the page reloaded</div>
+                <div class="pc-row">
+                  <span>#1 heading Checkout · CheckoutPage.tsx:12</span><span><span class="btn">✕</span></span>
+                </div>
+                <div class="pc-row">
+                  <span class="pc-gone">#2 is no longer on this page</span
+                  ><span><span class="btn">Select Again</span><span class="btn">Remove</span></span>
+                </div>
+                <div class="pc-row">
+                  <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                </div>
+              </div>
+              <div class="row" style="margin-top: 4px">
+                <span class="meta"
+                  >Announced once: "Restored #1 and #3 after the reload · #2 is no longer on this page"</span
+                ><span class="n">8</span>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › Worktrees panel</b
+              ><span>the switch's question, which worktree-switch draws, with page context named</span>
+            </div>
+            <div class="work small">
+              <div class="box" style="margin: 0">
+                Switch Acme Shop to main ~/acme and leave this work in fix-nav?
+                <ul style="margin: 4px 0; padding-left: 18px">
+                  <li>
+                    Page context: 3 marks · a mark whose element is gone after the reload is listed as lost; the tab
+                    share ends <span class="n">9</span>
+                  </li>
+                </ul>
+                <div class="row" style="margin-top: 4px">
+                  <span class="sp"></span><span class="btn">Switch Anyway</span
+                  ><span class="btn focusring">Cancel</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b
+              ><span
+                >Hold Reloads on; the agent's turn changed ProductCard.tsx and ended while focus was in the
+                composer</span
+              >
+            </div>
+            <div class="work small">
+              <div class="rcpt" style="margin-bottom: 6px">
+                <div class="row">
+                  <span>Claude Code changed 1 file · The page reload this change needs waits for you</span
+                  ><span class="sp"></span><span class="btn pri">Reload Now</span><span class="n">10</span>
+                </div>
+              </div>
+              <span class="in pc-tx focusring">Now make #4 thicker</span>
+              <div class="pc-list">
+                <div class="row"><b>Page context</b></div>
+                <div class="pc-row">
+                  <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                </div>
+                <div class="pc-row">
+                  <span>#4 Arrow from button Add to cart to link Free returns</span
+                  ><span><span class="btn">✕</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › phone</b
+              ><span>320 CSS px, signed in with the shared passkey: Select Elements latched, two marks tapped</span>
+            </div>
+            <div class="work small">
+              <div class="phone">
+                <div class="dock chat">
+                  <div class="hd">
+                    <b>Fix the checkout button</b><span class="btn">☰</span><span class="btn">✕</span>
+                  </div>
+                  <div class="pc-tools">
+                    <span class="btn pc-on">Select Elements</span><span class="btn">Arrow</span
+                    ><span class="btn">Line</span><span class="btn">Box</span><span class="btn">Undo</span
+                    ><span class="btn">Redo</span>
+                  </div>
+                  <span class="in pc-tx">Make #2 match #1</span>
+                  <div class="pc-list">
+                    <div class="row"><b>Page context</b><span class="n">11</span></div>
+                    <div class="pc-row">
+                      <span>#1 heading Checkout · CheckoutPage.tsx:12</span><span><span class="btn">✕</span></span>
+                    </div>
+                    <div class="pc-row">
+                      <span>#2 button Add to cart · ProductCard.tsx:42</span><span><span class="btn">✕</span></span>
+                    </div>
+                    <div class="pc-row"><span>Page · /checkout?step=2 · web · fix-nav</span><span></span></div>
+                  </div>
+                  <div class="row">
+                    <span class="btn off">Share Tab</span
+                    ><span class="muted">This browser cannot share a tab; attach an image instead</span>
+                  </div>
+                  <div class="row">
+                    <span class="chip acc">Claude Code · Haiku 4.5</span
+                    ><span class="chip">This worktree (live) · fix-nav ▾</span>
+                  </div>
+                  <div class="row">
+                    <span class="btn">Attach Image</span><span class="btn pri" style="margin-left: auto">Send</span>
+                  </div>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop ▾</b></span
+                  ><span class="seg">6/6 ▾</span><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>3. Review what the message carries</h2>
+          <p>
+            Page context still sits with the composer, every mark and drawing still has a row with <b>Remove</b>, and
+            <b>Clear Page Context</b> still empties it. What changes: each row says what it sends, the page's own
+            details are a row of their own, a <code>#n</code> the message cites that matches no pick is flagged, and the
+            rows come back after a reload. All of it is read only. Keys: each row's disclosure and its <b>Remove</b> are
+            Tab stops in number order, and Enter or Space on the disclosure expands the row (<code>KEY-10</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A <code>#n</code> in the message that no longer refers to a pick (removed, lost
+              after a reload, or never made) is flagged under the composer before Send, "#1 is not in page context",
+              with <b>Select Again</b>; Send stays available (<code>SEL-9</code>, <code>REV-6</code>).
+            </li>
+            <li>
+              <span class="n">2</span> A mark names its source file, "· ProductCard.tsx:42", or "· no source found" when
+              devhost resolved none; on React 19 development builds component-source fills it
+              (<code>page-context-06</code>, related) (<code>SEL-9</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Each row expands to the exact fields that leave the machine for it: for a mark
+              its element path, role and name, nearby text, bounds in page CSS pixels and source; for a drawing its
+              kind, the element it is anchored to, its offsets and its page coordinates. Hovering or focusing a row
+              outlines its element or drawing on the page, and hovering a mark highlights its row (<code>SEL-9</code>).
+            </li>
+            <li>
+              <span class="n">4</span> The page, once per message: its URL, its service and its worktree label
+              (<code>WORD-11</code>). A URL whose query or fragment is long is shortened in the middle, with the full
+              URL in its tooltip and accessible name (<code>SEL-3</code>, <code>SEL-4</code>, <code>WORD-8</code>).
+            </li>
+            <li>
+              <span class="n">5</span> One row per item, in number order, from the one page-context store the send
+              reads, so the list and what is sent cannot differ (<code>SEL-1</code>). Each row's <b>Remove</b> is named
+              "Remove #2"; removing #1 left #2 and #3 as they were, and the next pick takes #4, never a removed number;
+              <b>Clear Page Context</b> removes every item and is undoable (step 4) (<code>SEL-9</code>,
+              <code>WORD-2</code>).
+            </li>
+            <li>
+              <span class="n">6</span> With Select Elements or a drawing tool on and nothing picked, the list reads "No
+              elements picked" with its next step; with no mode on and nothing picked the list is absent, as today, and
+              the tools row stays (<code>STATE-2</code>).
+            </li>
+            <li>
+              <span class="n">7</span> The list is part of docked chat, inside the composer's area. At 1600×1000,
+              1280×800 and 900×900 in the light and the dark theme, and at 1280×800 under 200% zoom, its rows scroll
+              inside a bounded area while the tools row, the composer, a pending decision card, <b>Send</b> and the mode
+              control stay in view, every tool at least 24 by 24 CSS pixels; the 320 CSS pixel phone layout keeps the
+              same order (callout 11) (<code>SURF-6</code>, <code>SURF-9</code>, <code>O8</code>).
+            </li>
+            <li>
+              <span class="n">8</span> After a reload devhost or the person causes (the browser's reload,
+              <b>Reload Now</b>, a worktree switch, Restart Stack on a recovery page, an agent edit that reloads the
+              page), the text comes back from browser storage, as today, and page context from the control server's
+              draft record for this stack, page origin and conversation, never a screenshot. Marks whose elements still
+              resolve return with their numbers; the rest stay listed with <b>Select Again</b> and <b>Remove</b>,
+              announced once; a tab share always ends with the page and the list says so (<code>UNDO-2</code>,
+              <code>SEL-9</code>, <code>FB-4</code>, <code>WORD-4</code>, <code>FB-9</code>).
+            </li>
+            <li>
+              <span class="n">9</span> Before a worktree switch runs, its question names page context, read from this
+              list's summary: "Page context: 3 marks · a mark whose element is gone after the reload is listed as lost;
+              the tab share ends"; whether and how the switch asks is worktree-switch's. After the switch the draft
+              record follows the conversation the composer shows (<code>SEL-5</code>, <code>REV-3</code>,
+              <code>SEL-8</code>).
+            </li>
+            <li>
+              <span class="n">10</span> When a turn that changed files ends while Hold Reloads holds the page's reload,
+              devhost applies it once as its own reload, unless focus is in a text field, the composer included: then
+              nothing reloads and agent-chat's turn receipt leads with <b>Reload Now</b> and "The page reload this
+              change needs waits for you". A reload that runs brings the marks back as callout 8 shows
+              (<code>O57</code>, <code>UNDO-2</code>, <code>FB-12</code>).
+            </li>
+            <li>
+              <span class="n">11</span> On a phone, signed in with the shared passkey or paired, docked chat takes the
+              window's width less 16 px on each side; the tools row wraps above the composer and only the rows scroll. A
+              tap with Select Elements latched adds a mark, the element outlined while the finger is down; Box, Arrow
+              and Line draw with two taps. Where the browser cannot capture a tab, <b>Share Tab</b> stays in place,
+              unavailable with its reason, and <b>Attach Image</b> takes a screenshot instead (<code>O8</code>,
+              <code>O36</code>, <code>MENU-3</code>, <code>HOLD-1</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes page-context-07, page-context-01, page-context-04, journey-agent-fix-04, page-context-05 · Backend:
+            the chat draft record, which agent-chat builds (Backend 1; <code>CC-19</code>); the page's service and
+            worktree label (Backend 3)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="undo">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b><span>Line #4 drawn, then Box #3 moved; Undo focused</span>
+            </div>
+            <div class="pg">
+              <div class="pc-split">
+                <div class="pc-app">
+                  <div class="pc-el mk"><span class="pc-badge">#1</span>Checkout</div>
+                  <div class="row">
+                    <span class="pc-el">Shipping rates</span><span>— <span class="pc-badge">#4</span>—</span
+                    ><span class="pc-el">Free returns</span>
+                  </div>
+                  <div class="row">
+                    <span class="pc-el">Add to cart</span
+                    ><span class="pc-el bx"><span class="pc-badge">#3</span>$24.00</span
+                    ><span class="muted">moved here from Add to cart</span>
+                  </div>
+                </div>
+                <div class="corner">
+                  <div class="dock chat">
+                    <div class="pc-tools">
+                      <span class="btn">Select Elements</span><span class="btn">Arrow</span
+                      ><span class="btn pc-on">Line</span><span class="btn">Box</span><span class="pc-vsep"></span
+                      ><span class="btn open focusring">Undo</span><span class="n">1</span><span class="btn">Redo</span>
+                    </div>
+                    <div class="popover tip" style="align-self: flex-end; margin-right: 55.2px">
+                      <span class="caret-up" style="right: 24px"></span>
+                      <div class="from">Tooltip of Undo</div>
+                      Undo Move #3 Box <kbd>⌘Z</kbd>
+                    </div>
+                    <div class="pc-list">
+                      <div class="row">
+                        <b>Page context</b><span class="sp"></span><span class="btn">Clear Page Context</span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#1 heading Checkout · CheckoutPage.tsx:12</span><span><span class="btn">✕</span></span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#3 Box around text $24.00</span><span><span class="btn">✕</span></span>
+                      </div>
+                      <div class="pc-row">
+                        <span>#4 Line from link Shipping rates to link Free returns</span
+                        ><span><span class="btn">✕</span></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tbar">
+                    <span class="seg"><b>Acme Shop</b></span
+                    ><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                    ><span class="seg">Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docked chat</b><span>pressing Undo and Redo in turn</span></div>
+            <div class="work small">
+              <div class="vlab">Undo</div>
+              <div>#3 Box is back around Add to cart; #4 Line stays</div>
+              <div class="vlab">Undo again, then Redo</div>
+              <div class="row"><span>#4 Line removed, then back with its number</span><span class="n">2</span></div>
+              <div class="vlab">Clear Page Context, then Undo</div>
+              <div class="row"><span>#1, #3 and #4 back, each with its number</span><span class="n">3</span></div>
+              <div class="vlab">Mod+Z pressed in the composer, or in the app's own Email field</div>
+              <div class="row">
+                <span>That field's own text undo; page context is untouched</span><span class="n">4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>4. Undo the last page-context change</h2>
+          <p>
+            A row's <b>Remove</b> and <b>Clear Page Context</b> still work as today. What changes: <b>Undo Drawing</b>,
+            which removed the newest shape and never undid a move, gives way to one undo history per draft that reverses
+            any page-context change, a cleared list included. This is a local undo, no write: there is no Undo of a sent
+            message, and this flow's way back is this history and the page context kept through reloads (step 3)
+            (<code>UNDO-7</code>, <code>UNDO-2</code>). Keys: Mod+Z undoes and Mod+Shift+Z redoes (<code>KEY-12</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> <b>Undo</b> reverses the last page-context action, whatever it was (add, move or
+              remove a mark, draw, move or remove a drawing, <b>Clear Page Context</b>), back to the start of the draft,
+              and <b>Redo</b> reapplies it. Each names what it will reverse in its tooltip and accessible description,
+              "Undo Move #3 Box"; the tooltip shows ⌘Z on macOS and Ctrl+Z elsewhere, exposed as
+              <code>aria-keyshortcuts</code>, from the binding's one definition (<code>UNDO-7</code>,
+              <code>KEY-13</code>, <code>BAR-4</code>).
+            </li>
+            <li>
+              <span class="n">2</span> After drawing Line #4 and then moving Box #3, <b>Undo</b> returns the box and
+              leaves the line, a second <b>Undo</b> removes the line, and <b>Redo</b> puts it back; the armed tool stays
+              armed throughout (<code>UNDO-7</code>).
+            </li>
+            <li>
+              <span class="n">3</span> Undoing a removal restores the item with its number, so
+              <b>Clear Page Context</b> followed by <b>Undo</b> brings every item back as it was (<code>UNDO-7</code>,
+              <code>SEL-9</code>).
+            </li>
+            <li>
+              <span class="n">4</span> Mod+Z and Mod+Shift+Z act on page context while Select Elements or a drawing tool
+              is active, or while focus is in devhost outside a text field; in the app's own fields and in the composer
+              they stay that field's own undo. Send ends the draft's history (<code>KEY-12</code>, <code>UNDO-7</code>).
+            </li>
+          </ol>
+          <p class="fixes">Fixes page-context-04 · Backend: none; the history belongs to the draft on the page</p>
+        </div>
+      </section>
+
+      <section class="step" id="send">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b
+              ><span>Send pressed while the message cites #1, which was removed</span>
+            </div>
+            <div class="work small">
+              <div class="dock chat wide">
+                <div class="pc-tools">
+                  <span class="btn">Select Elements</span><span class="btn">Arrow</span><span class="btn">Line</span
+                  ><span class="btn">Box</span><span class="pc-vsep"></span><span class="btn">Undo</span
+                  ><span class="btn">Redo</span>
+                </div>
+                <div class="box" style="margin: 0">
+                  Send with #1 missing? It is not in page context. <span class="n">1</span>
+                  <div class="row" style="margin-top: 4px">
+                    <span class="sp"></span><span class="btn">Send Anyway</span
+                    ><span class="btn focusring">Select Again</span>
+                  </div>
+                </div>
+                <span class="in pc-tx">Make #3 use the same corner radius as #2, and leave #1 alone.</span>
+                <div class="pc-list">
+                  <div class="row"><b>Page context</b></div>
+                  <div class="pc-row">
+                    <span>#2 link Shipping rates · no source found</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>Page · /checkout?step=2 · web · fix-nav ~/acme/.worktrees/fix-nav</span><span></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <span class="chip acc">Claude Code · Haiku 4.5</span
+                  ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="n">2</span><span class="sp"></span><span class="btn">Attach Image</span
+                  ><span class="btn">Share Tab</span><span class="btn pri">Send</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › checkout page</b
+              ><span>1280×800, compact chat: the agent asks to edit a file after the message</span>
+            </div>
+            <div class="pg" style="min-height: 0">
+              <div class="corner">
+                <div class="dock chat" style="width: min(100%, 33rem)">
+                  <div class="hd">
+                    <b>Fix the checkout button</b><span class="muted">Claude Code · waiting for you</span
+                    ><span class="btn">☰</span><span class="btn">⤢</span><span class="btn">✕</span>
+                  </div>
+                  <div class="pc-tools">
+                    <span class="btn">Select Elements</span><span class="btn">Arrow</span><span class="btn">Line</span
+                    ><span class="btn">Box</span><span class="pc-vsep"></span><span class="btn">Undo</span
+                    ><span class="btn">Redo</span>
+                  </div>
+                  <div class="card">
+                    <div class="row"><span class="q">Edit src/ProductCard.tsx?</span><span class="n">3</span></div>
+                    <div class="muted">▸ Details</div>
+                    <div class="row">
+                      <span class="btn">Deny</span><span class="btn">Allow Once</span
+                      ><span class="btn">Allow for This Session</span><span class="btn">Stop Turn</span>
+                    </div>
+                  </div>
+                  <span class="in pc-tx"><span class="muted">Write a message</span></span>
+                  <div class="row">
+                    <span class="chip acc">Claude Code · Haiku 4.5</span
+                    ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                    ><span class="sp"></span><span class="btn pri">Send</span>
+                  </div>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">◆ Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docked chat</b><span>three situations around Send</span></div>
+            <div class="work small">
+              <div class="vlab">Chat turned off in the manifest</div>
+              <div class="row">
+                <span class="btn pri off">Send</span
+                ><span class="muted"
+                  >Chat is off in devhost.toml ([devtools.chat] enabled = false); running conversations stay reachable
+                  until they end</span
+                ><span class="n">4</span>
+              </div>
+              <div class="vlab">The lost connection</div>
+              <div class="row">
+                <span class="btn pri off">Send</span><span class="muted">Lost connection to devhost; retrying</span
+                ><span class="sp"></span><span class="btn">Select Elements</span><span class="btn">Box</span
+                ><span class="btn">Undo</span><span class="n">5</span>
+              </div>
+              <div class="vlab">Right after New Conversation, two marks picked</div>
+              <div class="row">
+                <span class="muted">Send starts a new conversation with Claude Code · Haiku 4.5</span
+                ><span class="n">6</span>
+              </div>
+              <div class="vlab">From another environment, before signing in</div>
+              <div class="row">
+                <span class="tbar"
+                  ><span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg muted" style="white-space: normal"
+                    >Sign in with passkey or pair this browser to use devhost here</span
+                  ><span class="seg"><span class="btn pri">Sign In with Passkey</span></span></span
+                ><span class="n">7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>5. Write and Send</h2>
+          <p>
+            Enter or <b>Send</b> still sends, the message still goes into the page's own worktree, and a failed,
+            cancelled or oversized send still keeps the draft, the marks and the drawings, as today. What changes: Send
+            asks only when the message cites a mark that is gone, page context goes to the conversation the composer
+            shows, and the mode starts at <b>This worktree (live)</b>. A send whose acknowledgement never arrives reads
+            <b>Delivery unconfirmed</b> and is never resent; its page context stays in the draft record until a send is
+            acknowledged (owner rule; <code>REV-12</code>). Keys: in the question, focus and Enter start on
+            <b>Select Again</b>, and Escape cancels it with the draft kept and focus back on
+            <b>Send</b> (<code>REV-4</code>, <code>KEY-8</code>, <code>KEY-9</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> Send asks nothing, except when the message cites a mark that no longer exists:
+              then the composer asks in place, verb first: "Send with #1 missing? It is not in page context." for a
+              number the person removed or never picked, as drawn, or agent-chat's "Send with #1 missing? Its element is
+              no longer on this page." for a mark whose element left the page. <b>Select Again</b> is focused and enters
+              Select Elements to pick #1 again under the same number, the one way a cited number is bound again;
+              <b>Send Anyway</b> sits beside it; Escape cancels the question and leaves the neutral line "Not sent";
+              with no gone mark cited, Send never asks (<code>REV-6</code>, <code>REV-4</code>, <code>SEL-9</code>,
+              <code>UNDO-4</code>, <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">2</span> The composer names the recipient, the agent and model, and the edit mode with the
+              worktree it edits; with page context the mode starts at <b>This worktree (live)</b>, "This worktree (live)
+              · fix-nav ~/acme/.worktrees/fix-nav", which edits the active worktree in place and commits nothing, and
+              the person can choose <b>Make tickets</b> instead. agent-chat owns that control and the conversation
+              choice (<code>O1</code>, <code>SEL-8</code>, <code>REV-6</code>, <code>WORD-10</code>,
+              <code>WORD-11</code>).
+            </li>
+            <li>
+              <span class="n">3</span> A picked element's fix then asks through the agent's own decision card, pinned
+              between the conversation and the composer with <b>Deny</b>, <b>Allow Once</b>, the agent CLI's own
+              standing approval when it offers one (<b>Allow for This Session</b>) and <b>Stop Turn</b>, the tools row
+              and the composer in view at 1280×800 and at 320 CSS pixels, no answer focused or preselected; agent-chat
+              owns the card, and devhost never answers it (<code>REV-9</code>, <code>O12</code>, <code>SURF-6</code>,
+              <code>O8</code>).
+            </li>
+            <li>
+              <span class="n">4</span> When chat cannot take a message (chat off, no agent CLI installed, the
+              conversation disconnected), <b>Send</b> is unavailable with agent-chat's reason and its way out, and the
+              picks, drawings and draft stay (<code>HOLD-5</code>, <code>MENU-3</code>).
+            </li>
+            <li>
+              <span class="n">5</span> With the lost connection, <b>Send</b> is unavailable with its reason, while
+              picking, drawing, the list and <b>Undo</b> stay available, because none of them writes; the draft record
+              is written once the connection returns (<code>HOLD-2</code>, <code>HOLD-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Page context goes to the conversation the composer shows, also right after
+              <b>New Conversation</b>, never to the previous one (<code>SEL-8</code>).
+            </li>
+            <li>
+              <span class="n">7</span> A browser in another environment that has not signed in sees the app working and
+              the toolbar's one state, "Sign in with passkey or pair this browser to use devhost here": chat and its
+              page-context tools are unavailable, holding Alt starts nothing, so the page's own clicks reach the page,
+              and the draft record refuses it. Signed in with the shared passkey or paired, it uses every step here as
+              this machine does (<code>HOLD-7</code>, <code>HOLD-8</code>, <code>O36</code>, <code>WORD-7</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes journey-agent-fix-04, page-context-05, page-context-01 · Backend: <code>send</code>'s optional
+            <code>pageContext</code> beside agent-chat's <code>mode</code> (Backend 2; <code>CC-40</code>, the field
+            itself still without a <code>CC-n</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="step" id="screenshot">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>Share Tab pressed and this tab picked</span>
+            </div>
+            <div class="work small">
+              <div class="dock chat wide">
+                <div class="pc-list">
+                  <div class="row"><b>Page context</b></div>
+                  <div class="stl">
+                    Shared this tab · each message takes a screenshot while the camera is on <span class="n">1</span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#3 Box around button Add to cart</span><span><span class="btn">✕</span></span>
+                  </div>
+                  <div class="pc-row"><span>Screenshot of this tab, taken when you send</span><span></span></div>
+                </div>
+                <div class="row">
+                  <span class="chip acc">Claude Code · Haiku 4.5</span
+                  ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="sp"></span><span class="btn pc-on">◎ Include Tab Snapshot</span
+                  ><span class="btn">Stop Sharing</span><span class="btn pri">Send</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docked chat</b><span>when the share does not start</span></div>
+            <div class="work small">
+              <div class="vlab">The picker closed, or its Cancel chosen</div>
+              <div class="row">
+                <span class="btn">Share Tab</span><span class="muted">no line, no alert, no announcement</span
+                ><span class="n">2</span>
+              </div>
+              <div class="vlab">A window or the whole screen picked, in the list's status line</div>
+              <div class="pc-list">
+                <div class="stl">
+                  Pick this browser tab: a window or a whole screen cannot show the page's marks.
+                  <span class="n">3</span>
+                </div>
+              </div>
+              <div class="vlab">The system refused to record the screen, in the list's status line</div>
+              <div class="pc-list">
+                <div class="stl" style="color: var(--bad)">
+                  ✕ Your browser may not record the screen. Allow it in System Settings › Privacy &amp; Security ›
+                  Screen Recording, then choose Share Tab again.<span class="sp"></span
+                  ><span class="btn">Copy Error</span><span class="btn">Dismiss</span><span class="n">4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>Send pressed with the tab shared and the camera on</span>
+            </div>
+            <div class="work small">
+              <div class="dock chat wide">
+                <div class="pc-tools">
+                  <span class="btn off">Select Elements</span><span class="btn off">Arrow</span
+                  ><span class="btn off">Line</span><span class="btn off">Box</span><span class="pc-vsep"></span
+                  ><span class="btn off">Undo</span><span class="btn off">Redo</span>
+                </div>
+                <div class="pc-list">
+                  <div class="row"><b>Page context</b></div>
+                  <div class="stl">
+                    Sending: page context changes wait until the message is sent <span class="n">6</span>
+                  </div>
+                  <div class="pc-row">
+                    <span>#3 Box around button Add to cart</span><span><span class="btn off">✕</span></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <span class="chip acc">Claude Code · Haiku 4.5</span
+                  ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="sp"></span><span class="btn pri focusring">Taking screenshot…</span
+                  ><span class="n">5</span>
+                </div>
+                <div class="row">
+                  <span class="muted">then</span><span class="btn pri">Crop the screenshot to continue</span
+                  ><span class="muted">then</span><span class="btn pri">Sending…</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › checkout page</b><span>the crop preview over the page</span></div>
+            <div class="scrim" style="min-height: 0">
+              <div class="dlg">
+                <div class="hd"><h3>Share screenshot</h3></div>
+                <div class="body">
+                  <div class="pc-frame">
+                    <span class="muted"
+                      >The frame captured from this tab: devhost's toolbar and chat hidden, marks and drawings
+                      kept</span
+                    >
+                    <span class="pc-el mk"><span class="pc-badge">#1</span>Checkout</span>
+                    <span class="pc-area"
+                      ><span class="pc-el bx"><span class="pc-badge">#3</span>Add to cart</span></span
+                    ><span class="n">7</span>
+                  </div>
+                  <div class="row" style="margin-top: 6px">
+                    <span>Left</span><span class="in" style="min-width: 4rem">0</span><span>Top</span
+                    ><span class="in" style="min-width: 4rem">300</span><span>Width</span
+                    ><span class="in focusring" style="min-width: 4rem">1280</span><span>Height</span
+                    ><span class="in" style="min-width: 4rem">720</span><span class="n">8</span>
+                  </div>
+                </div>
+                <div class="ft">
+                  <span class="btn">Cancel</span><span class="btn">Share Whole Tab</span
+                  ><span class="btn pri">Share Selected Area</span><span class="n">9</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › docked chat</b><span>how the send and the share end</span></div>
+            <div class="work small">
+              <div class="vlab">Escape or Cancel in the crop preview</div>
+              <div class="row">
+                <span class="muted">Not sent · your draft and page context stay</span><span class="n">10</span>
+              </div>
+              <div class="vlab">The browser's own sharing control ended the share, with chat open</div>
+              <div class="stl">Stopped sharing this tab · from the browser's sharing control</div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar"><b>devhost › Acme Shop › checkout page</b><span>the same, with chat closed</span></div>
+            <div class="pg" style="min-height: 0">
+              <div class="corner">
+                <div class="toastrow" style="padding: 0; align-items: center">
+                  <span class="n">11</span>
+                  <div class="toast">ⓘ Stopped sharing this tab · from the browser's sharing control</div>
+                </div>
+                <div class="tbar">
+                  <span class="seg"><b>Acme Shop</b></span
+                  ><span class="seg">● ● ● ● ○ ○ ▾</span><span class="seg">fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="seg">Chat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>6. Attach a screenshot</h2>
+          <p>
+            <b>Share Tab</b> still opens the browser's picker and accepts only a browser tab; each message still carries
+            one image and never video; devhost still hides its toolbar, chat and tooltips in the screenshot while
+            keeping marks and drawings, waits up to 10 s for a frame that shows them gone, and otherwise fails the send
+            with the draft and page context kept, as today. What changes: the busy <b>Send</b> says each step, a closed
+            picker leaves nothing, a system refusal says what to do, and a share's end reads as an outcome, never a
+            failure. Keys: in a crop field the arrows adjust its value, Enter applies it and never shares, and Escape
+            cancels the send (<code>KEY-9</code>, <code>KEY-8</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> A share that starts reads, in the list's status line, "Shared this tab · each
+              message takes a screenshot while the camera is on", verb first in the past tense; the camera,
+              <b>Include Tab Snapshot</b>, starts on, as today, and the list gains "Screenshot of this tab, taken when
+              you send" (<code>WORD-4</code>, <code>FB-2</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Closing the picker or choosing its Cancel leaves nothing: no line, no alert, no
+              announcement, and <b>Share Tab</b> is ready again (<code>FAIL-5</code>, <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">3</span> A window or a whole screen is still refused with a sentence saying why
+              (<code>FAIL-2</code>).
+            </li>
+            <li>
+              <span class="n">4</span> A capture the system refuses reads, in the list's status line, the sentence with
+              the setting that allows it, the browser's own text behind <b>Copy Error</b>, and <b>Dismiss</b>; it stays
+              through later sends until <b>Dismiss</b> or a share that succeeds, because a failure stays until it is
+              handled (<code>FAIL-2</code>, <code>WORD-7</code>, <code>FB-6</code>).
+            </li>
+            <li>
+              <span class="n">5</span> With a tab shared and the camera on, Send takes one screenshot, and the busy
+              <b>Send</b> keeps focus and says each step: "Taking screenshot…", then "Crop the screenshot to continue"
+              while the preview is open, then "Sending…" (<code>FB-1</code>, <code>KEY-11</code>, <code>STATE-1</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Meanwhile the page-context tools, rows and <b>Undo</b> are unavailable with one
+              reason, shown in the list's status line and given to each as its accessible description: "Sending: page
+              context changes wait until the message is sent"; <b>Select Elements</b> stays focusable
+              (<code>MENU-3</code>, <code>HOLD-1</code>, <code>KEY-11</code>).
+            </li>
+            <li>
+              <span class="n">7</span> The crop preview opens over the page with the captured frame, marks and drawings
+              included; dragging selects an area, drawn dotted here.
+            </li>
+            <li>
+              <span class="n">8</span> Left, Top, Width and Height set the area: Enter in a field applies its value and
+              never shares, and keys typed into the fields never reach the page (<code>KEY-9</code>, <code>KEY-5</code>,
+              <code>KEY-1</code>).
+            </li>
+            <li>
+              <span class="n">9</span> <b>Share Selected Area</b>, <b>Share Whole Tab</b> and <b>Cancel</b> end it, and
+              focus returns to <b>Send</b> when it closes (<code>KEY-6</code>). It stays a modal dialog over the page
+              because it shows a frozen frame the person crops before the send continues.
+            </li>
+            <li>
+              <span class="n">10</span> Escape or <b>Cancel</b> cancels the send, keeps the draft and page context, and
+              leaves the neutral line "Not sent · your draft and page context stay" (<code>KEY-8</code>,
+              <code>FAIL-5</code>, <code>WORD-7</code>).
+            </li>
+            <li>
+              <span class="n">11</span> When <b>Stop Sharing</b>, the browser's own sharing control or a reload ends the
+              share, the list's status line reads "Stopped sharing this tab · from the browser's sharing control" or
+              "Stopped sharing this tab · the page reloaded", never a failure. With chat closed the same sentence is one
+              neutral notice (○) in the one notice stack, below any failure, closing after its reading time (1.5 s plus
+              0.3 s per word, at least 4 s, at most 15 s) counted while the pointer and focus are outside it; one that
+              arrives while the browser window is not focused starts counting when the window next gains focus. No
+              second report appears when chat opens (<code>WORD-4</code>, <code>FAIL-5</code>, <code>FB-4</code>,
+              <code>FB-8</code>, <code>FB-6</code>, <code>O14</code>, <code>O53</code>).
+            </li>
+          </ol>
+          <p class="fixes">Fixes page-context-09 · Backend: none; the capture and the crop stay in the browser</p>
+        </div>
+      </section>
+
+      <section class="step" id="sent-record">
+        <div class="mock">
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>the message sent and acknowledged</span>
+            </div>
+            <div class="work small">
+              <div class="dock chat wide">
+                <div class="hd">
+                  <b>Fix the checkout button</b><span class="muted">Claude Code · working</span
+                  ><span class="btn">☰</span><span class="btn">⤢</span><span class="btn">✕</span>
+                </div>
+                <div class="me">
+                  Make #3 use the same corner radius as #2.
+                  <div class="meta">Mode: This worktree (live) · fix-nav <span class="n">1</span></div>
+                  <div class="meta">▸ Added by devhost</div>
+                  <div class="meta">▾ Page context: 1 mark, 1 drawing, 1 screenshot <span class="n">2</span></div>
+                  <div class="pc-row"><span>#2 link Shipping rates · no source found</span><span></span></div>
+                  <div class="pc-row"><span>#3 Box around button Add to cart</span><span></span></div>
+                  <div class="pc-row">
+                    <span>Page · /checkout?step=2 · web · fix-nav ~/acme/.worktrees/fix-nav</span><span></span>
+                  </div>
+                  <div class="pc-row">
+                    <span>Screenshot of this tab</span
+                    ><span><span class="btn">Show Raw</span><span class="n">3</span></span>
+                  </div>
+                </div>
+                <span class="in pc-tx"><span class="muted">Write a message</span></span>
+                <div class="row">
+                  <span class="chip acc">Claude Code · Haiku 4.5</span
+                  ><span class="chip">This worktree (live) · fix-nav ~/acme/.worktrees/fix-nav ▾</span
+                  ><span class="sp"></span><span class="btn pc-on">◎ Include Tab Snapshot</span
+                  ><span class="btn">Stop Sharing</span><span class="btn pri">Send</span><span class="n">6</span>
+                </div>
+              </div>
+              <div class="vlab">The same message before the acknowledgement</div>
+              <div class="me" style="max-width: 28rem">
+                Make #3 use the same corner radius as #2.
+                <div class="meta">Not sent yet</div>
+              </div>
+            </div>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>Show Raw pressed: what the agent received</span>
+            </div>
+            <pre class="term">page       title "Checkout · Acme Shop", url /checkout?step=2, service web,
+           worktree fix-nav ~/acme/.worktrees/fix-nav, viewport 1280 × 800,
+           scroll 0, 412, device pixel ratio 2
+screenshot 2560 × 1600, crop 0, 600, 2560 × 1440, scale 2 to CSS px
+#2 mark    path main › form#checkout › a.rates, link "Shipping rates",
+           nearby "Free returns · Shipping rates", bounds 812, 588, 120 × 20,
+           computed styles (once), source: none found
+#3 box     anchor main › form#checkout › button.add, offsets 6 on each side,
+           page 806, 634, 172 × 52                                        <span class="n">4</span></pre>
+          </div>
+          <div class="win">
+            <div class="bar">
+              <b>devhost › Acme Shop › docked chat</b><span>after a reload, from the session's journal</span>
+            </div>
+            <div class="work small">
+              <div class="me" style="max-width: 28rem">
+                Make #3 use the same corner radius as #2.
+                <div class="meta">Mode: This worktree (live) · fix-nav</div>
+                <div class="meta">▸ Added by devhost</div>
+                <div class="row">
+                  <span class="meta">▸ Page context: 1 mark, 1 drawing, 1 screenshot</span><span class="n">5</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h2>7. Read the sent record</h2>
+          <p>
+            The sent message still keeps the exact page data that went out, and the server still adds the mode's
+            instructions, refuses a message over 8 MiB or an image that is not PNG or JPEG, and gives Codex the text and
+            the image as one input, as today. What changes: that data reads in the same rows as before Send, with the
+            raw data one press away, and it is kept as devhost's own record instead of JSON appended to the person's
+            text. There is no Undo of a sent message; this flow's way back is the undo history (step 4) and the work
+            kept through reloads (step 3) (<code>UNDO-7</code>, <code>UNDO-2</code>). Keys: the record's disclosure and
+            <b>Show Raw</b> are Tab stops in reading order (<code>KEY-10</code>).
+          </p>
+          <ol>
+            <li>
+              <span class="n">1</span> The message appears at once as the person's, with "Not sent yet" until the
+              acknowledgement, then its mode line, "Mode: This worktree (live) · fix-nav", with the instructions devhost
+              added under a collapsed "Added by devhost", as agent-chat specifies (<code>WORD-10</code>,
+              <code>UNDO-8</code>, <code>STATE-1</code>).
+            </li>
+            <li>
+              <span class="n">2</span> Under it, "Page context: 1 mark, 1 drawing, 1 screenshot" starts collapsed and
+              expands to the same rows as before Send, each with the fields it carried; the person's own text shows
+              without any "Page context:" JSON (<code>UNDO-8</code>, <code>FB-2</code>, <code>WORD-5</code>).
+            </li>
+            <li>
+              <span class="n">3</span> <b>Show Raw</b> shows the exact data the agent received (<code>UNDO-8</code>).
+            </li>
+            <li>
+              <span class="n">4</span> What the agent receives, once per message: the page's title and URL, its service
+              and worktree label, the viewport's size, the scroll offsets and the device pixel ratio; with a screenshot
+              its size, crop and scale to CSS pixels, so a mark or a drawing can be placed on it; per mark its number,
+              element path, role and name, nearby text, bounds in page CSS pixels with horizontal scroll included,
+              computed styles once, and its source or that none was found; per drawing its number, kind, anchor element
+              path, offsets and page coordinates, with no drawing IDs (<code>SEL-3</code>, <code>SEL-9</code>,
+              <code>SURF-12</code>).
+            </li>
+            <li>
+              <span class="n">5</span> devhost writes that page context as a record of its own into the session's
+              journal, apart from the person's text, so every page and every reload shows it; the server renders it into
+              the agent's input as a labelled "Page context" section after the person's text. It travels as
+              <code>send</code>'s optional <code>pageContext</code> field beside agent-chat's <code>mode</code>;
+              <code>CC-40</code> covers the record frame, and the field itself still needs its <code>CC-n</code> from
+              the reference (<code>UNDO-8</code>, <code>CC-40</code>).
+            </li>
+            <li>
+              <span class="n">6</span> Sending cleared only the items that went out, and their undo history ended with
+              them, so the composer starts empty while the tab share goes on; no outcome notice reports a send: the
+              message is the receipt, and agent-chat's delivery states apply (<code>UNDO-7</code>, <code>FB-2</code>,
+              <code>FB-5</code>).
+            </li>
+          </ol>
+          <p class="fixes">
+            Fixes page-context-07, page-context-02 · Backend: page context as a field of <code>send</code> and its
+            <code>page-context</code> record frame (Backend 2; <code>CC-40</code>)
+          </p>
+        </div>
+      </section>
+
+      <section class="changes">
+        <div>
+          <h3>Removed</h3>
+          <ul>
+            <li>Renumbering marks when one is removed, and the drawings' own numbering by list position</li>
+            <li><b>Undo Drawing</b>, and a drawing tool that switches itself off after one shape</li>
+            <li>
+              Escape in the composer stopping the agent's turn; Alt chords and Option characters starting Select
+              Elements, and Alt's release ending a toggled one
+            </li>
+            <li>The floating tools at the top centre of the page; the "Annotate" hint and the "Esc To" words</li>
+            <li>
+              The browser's raw rejection after a closed picker; page context appended to the message as one line of
+              JSON
+            </li>
+            <li>A reload silently dropping every mark and drawing</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Merged</h3>
+          <ul>
+            <li>Marks and drawings share one counter and one list</li>
+            <li>Select Elements, holding Alt and Alt + right-click share one resolver</li>
+            <li>The review before Send and the sent record show the same rows</li>
+          </ul>
+        </div>
+        <div>
+          <h3>New</h3>
+          <ul>
+            <li>Keyboard picking and drawing, and drawing with two clicks or taps</li>
+            <li>Marks anchored to their elements that say when the element is gone, with Select Again and Remove</li>
+            <li>Rows that say what each item sends, the page's URL, service and worktree, and "no source found"</li>
+            <li>The tools row and the list in the 320 CSS pixel phone layout (<code>O8</code>)</li>
+            <li>The <code>#n</code> flag and the gone-mark question</li>
+            <li>Undo and Redo of any page-context change, with Mod+Z</li>
+            <li>Progress on the busy Send, the share's neutral outcomes, a worded refusal and Show Raw</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Changed</h3>
+          <ul>
+            <li>
+              Escape leaves a page-context mode and never stops a turn (<code>KEY-8</code>, <code>CC-29</code>,
+              <code>CC-31</code>)
+            </li>
+            <li>
+              Alt starts a selection only alone, after a pointer move or press or 400 ms, and a key that types ends it;
+              a toggled selection lasts until the person ends it (<code>KEY-2</code>, <code>KEY-12</code>,
+              <code>O34</code>)
+            </li>
+            <li>
+              "Worktree" names the page's working copy in the rows, the mode and what the agent receives
+              (<code>WORD-11</code>)
+            </li>
+            <li>The tools move into docked chat (<code>SURF-7</code>), and a drawing tool stays armed</li>
+            <li>Selections and drawings survive a reload while their elements exist (<code>CC-19</code>)</li>
+            <li>Page context is sent as a structured field and kept as devhost's record (<code>CC-40</code>)</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>
+              Three ways in: Chat, the tools and holding Alt, also from the composer but never in the page's fields; the
+              first mark opens chat
+            </li>
+            <li>
+              Picks and drawings over the page's popovers and modal dialogs without closing them; Escape leaves the mode
+              from anywhere, and a selection Alt started ends on its release or a window switch
+            </li>
+            <li>
+              Only a browser tab can be shared; devhost hides its own surfaces in the screenshot, waits up to 10 s, and
+              otherwise fails with the draft kept
+            </li>
+            <li>
+              One image per message, never video; the crop preview's two share buttons, four fields and Cancel, which
+              keeps the draft
+            </li>
+            <li>
+              Sending clears only what was sent; a failed, cancelled or oversized send keeps everything; the server's
+              limits and the mode's instructions stay
+            </li>
+            <li>
+              Delivery unconfirmed is never resent; a reload still restores chat's open state, side and unsent text
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend work</h3>
+          <ul>
+            <li>Page context in the chat draft record, which agent-chat builds (Backend 1; <code>CC-19</code>)</li>
+            <li>
+              <code>send</code>'s optional structured <code>pageContext</code> and the <code>page-context</code> record
+              frame (Backend 2; <code>CC-40</code>)
+            </li>
+            <li>The page's service and worktree label in the injected configuration and the chat target (Backend 3)</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
