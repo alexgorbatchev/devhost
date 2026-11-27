@@ -111,12 +111,7 @@ function isWorktreeOwner(value: unknown): value is IWorktreeOwner {
 }
 
 function isDirectory(value: unknown): value is IWorktreeDirectory {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof Reflect.get(value, "name") === "string" &&
-    typeof Reflect.get(value, "cwd") === "string"
-  );
+  return typeof value === "object" && value !== null && typeof Reflect.get(value, "cwd") === "string";
 }
 
 function optional(value: object, key: string, kind: string): boolean {

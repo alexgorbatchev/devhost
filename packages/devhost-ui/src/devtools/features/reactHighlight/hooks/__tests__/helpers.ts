@@ -78,15 +78,9 @@ export function sendCursor(
   locator: string | null,
   projectRoot: string = "/message-project",
 ): void {
-  const payload: IReactHighlightCursorMessage = {
-    kind: "cursor",
-    locator,
-    projectRoot,
-    stackName: "cursor-lifecycle",
-    timestamp: 1,
-  };
+  const payload: IReactHighlightCursorMessage = { locator, projectRoot };
 
-  connection.send(payload);
+  connection.send({ kind: "cursor", ...payload });
 }
 
 export function sendInvalidMessages(connection: IMockWebSocketConnection): void {

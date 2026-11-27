@@ -3,13 +3,13 @@ import {
   type IRegisteredCustomProperty,
 } from "./createShadowRootPropertyFallbackCssText";
 import devtoolsCssText from "./devtoolsCssText";
+import type { DomTreeRoot } from "./types";
 
 const devtoolsStylesheetAttributeName: string = "data-devhost-devtools-styles";
 
-type DevtoolsStyleRoot = Document | ShadowRoot;
-type DevtoolsStyleContainer = DevtoolsStyleRoot | HTMLElement;
+type DevtoolsStyleContainer = DomTreeRoot | HTMLElement;
 
-export function installDevtoolsStyles(root: DevtoolsStyleRoot): HTMLStyleElement {
+export function installDevtoolsStyles(root: DomTreeRoot): HTMLStyleElement {
   const stylesheetRoot: DevtoolsStyleContainer = root instanceof Document ? root.head : root;
   const existingStylesheet: HTMLStyleElement | null = stylesheetRoot.querySelector(
     `style[${devtoolsStylesheetAttributeName}]`,

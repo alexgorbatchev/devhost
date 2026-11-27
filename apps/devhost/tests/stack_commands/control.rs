@@ -406,9 +406,8 @@ fn control_mutations_streams_resources_and_origin_guards_match() {
             let value: Value = serde_json::from_str(&text).unwrap();
             assert_eq!(value["kind"], "cursor");
             assert_eq!(value["locator"], locator);
-            assert_eq!(value["stackName"], "control-contract");
             assert_eq!(value["projectRoot"], project.to_str().unwrap());
-            assert!(value["timestamp"].as_u64().unwrap() > 0);
+            assert!(value.get("stackName").is_none() && value.get("timestamp").is_none());
         }
         sockets.push(cursor);
         unsafe { libc::kill(process.as_mut().unwrap().0.id() as i32, libc::SIGTERM); }

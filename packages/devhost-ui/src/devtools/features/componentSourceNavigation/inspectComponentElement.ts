@@ -16,15 +16,9 @@ export interface IComponentInspection {
   source: ISourceLocation;
 }
 
-interface IRawComponentInspection {
-  displayName: string;
-  props: Record<string, string>;
-  source: ISourceLocation;
-}
-
 export async function inspectComponentElement(element: HTMLElement): Promise<IComponentInspection[]> {
   const seenFibers: Set<IReactFiberNode> = new Set<IReactFiberNode>();
-  const rawInspections: IRawComponentInspection[] = [];
+  const rawInspections: IComponentInspection[] = [];
   const firstFiber: IReactFiberNode | null = getFiberFromElement(element);
   const fallbackSource: ISourceLocation | undefined = await getElementSourceLocation(element);
 

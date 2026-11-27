@@ -1,11 +1,12 @@
 import { collectElementSnapshot, identifyElement } from "./collectElementSnapshot";
 import type { IAnnotationSelectionCandidate } from "./annotationSelectionPluginTypes";
-import type { IAnnotationSourceLocation, IRectSnapshot } from "./types";
+import type { IRectSnapshot } from "./types";
+import type { ISourceLocation } from "../../shared/sourceLocation";
 
 interface ICreateDomAnnotationSelectionCandidateForElementOptions {
   element: HTMLElement;
   selectedText?: string;
-  sourceLocation?: IAnnotationSourceLocation;
+  sourceLocation?: ISourceLocation;
 }
 
 const elementIdentities: WeakMap<HTMLElement, string> = new WeakMap<HTMLElement, string>();

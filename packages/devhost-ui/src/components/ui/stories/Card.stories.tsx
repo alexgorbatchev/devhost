@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect } from "storybook/test";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../Card";
+import { Card, CardHeader, CardTitle } from "../Card";
 import {
   readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
@@ -18,7 +18,7 @@ const meta: Meta<typeof Card> = {
           <CardHeader>
             <CardTitle>Service status</CardTitle>
           </CardHeader>
-          <CardContent>api is healthy</CardContent>
+          <p>api is healthy</p>
         </Card>
       </StorybookThemeProvider>,
     );

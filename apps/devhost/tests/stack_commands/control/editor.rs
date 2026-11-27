@@ -108,8 +108,7 @@ fn editor_config_and_cursor_broadcast_preserve_the_browser_handler_boundary() {
                 assert_eq!(event["kind"], "cursor");
                 assert_eq!(event["locator"], payload["locator"]);
                 assert_eq!(event["projectRoot"], project.to_str().unwrap());
-                assert_eq!(event["stackName"], name);
-                assert!(event["timestamp"].as_u64().unwrap() > 0);
+                assert!(event.get("stackName").is_none() && event.get("timestamp").is_none());
             }
         }
         assert_eq!(

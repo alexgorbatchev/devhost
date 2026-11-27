@@ -1,4 +1,3 @@
-export { AnnotationMarkerList } from "./components/AnnotationMarkerList";
 export { AnnotationSelectionOverlay } from "./components/AnnotationSelectionOverlay";
 export {
   listAnnotationSelectionPlugins,
@@ -8,7 +7,6 @@ export {
   unregisterAnnotationSelectionPlugin,
 } from "./annotationSelectionPluginRegistry";
 export { createDomAnnotationSelectionCandidateForElement } from "./createDomAnnotationSelectionCandidateForElement";
-export type { IAnnotationMarkerListItem } from "./components/AnnotationMarkerList";
 export type { ISelectedAnnotationTarget } from "./annotationComposerModels";
 export type {
   AnnotationSelectionIntent,

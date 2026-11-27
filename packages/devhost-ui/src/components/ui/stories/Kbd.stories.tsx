@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect } from "storybook/test";
 
-import { Kbd, KbdGroup } from "../Kbd";
+import { Kbd } from "../Kbd";
 import {
   readDevtoolsStoryShadowCanvas,
   renderInDevtoolsStoryShadowRoot,
@@ -16,10 +16,10 @@ const meta: Meta<typeof Kbd> = {
   render: (_args, context) => {
     return renderInDevtoolsStoryShadowRoot(
       <StorybookThemeProvider globals={context.globals}>
-        <KbdGroup>
+        <span>
           <Kbd>Cmd</Kbd>
           <Kbd>Enter</Kbd>
-        </KbdGroup>
+        </span>
       </StorybookThemeProvider>,
     );
   },

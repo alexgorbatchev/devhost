@@ -13,11 +13,8 @@ import { pristineFetch } from "../../shared/pristineFetch";
 import { promoteDevtoolsTopLayer } from "../../shared/promoteDevtoolsTopLayer";
 
 export interface IReactHighlightCursorMessage {
-  kind: "cursor";
   locator: string | null;
   projectRoot: string;
-  stackName: string;
-  timestamp: number;
 }
 
 export interface IOverlayElement {
@@ -58,16 +55,8 @@ export function isReactHighlightCursorMessage(value: unknown): value is IReactHi
   const kind: unknown = Reflect.get(value, "kind");
   const locator: unknown = Reflect.get(value, "locator");
   const projectRoot: unknown = Reflect.get(value, "projectRoot");
-  const stackName: unknown = Reflect.get(value, "stackName");
-  const timestamp: unknown = Reflect.get(value, "timestamp");
 
-  return (
-    kind === "cursor" &&
-    (typeof locator === "string" || locator === null) &&
-    typeof projectRoot === "string" &&
-    typeof stackName === "string" &&
-    typeof timestamp === "number"
-  );
+  return kind === "cursor" && (typeof locator === "string" || locator === null) && typeof projectRoot === "string";
 }
 
 export function findReactHighlightElements(locator: string, projectRootPath: string): HTMLElement[] {

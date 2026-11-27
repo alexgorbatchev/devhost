@@ -30,7 +30,6 @@ export interface IProducerErrorMessage {
 }
 export type ProducerMessage = Request | IDisconnectMessage | IProducerErrorMessage;
 export interface IMonitorHello {
-  type: "DEVHOST_REDUX_HELLO";
   sessionId: string;
 }
 export interface IMonitorStart {

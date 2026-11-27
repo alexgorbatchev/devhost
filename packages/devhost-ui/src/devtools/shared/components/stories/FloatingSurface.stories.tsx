@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, waitFor } from "storybook/test";
 
-import { Card, CardContent } from "../../../../components/ui/Card";
+import { Card } from "../../../../components/ui/Card";
 import { FloatingSurface } from "../FloatingSurface";
 import { readDevtoolsStoryShadowCanvas, renderInDevtoolsStoryShadowRoot, StorybookThemeProvider } from "./helpers";
 
@@ -21,7 +21,7 @@ const meta: Meta<typeof FloatingSurface> = {
       <StorybookThemeProvider globals={context.globals}>
         <FloatingSurface {...args}>
           <Card>
-            <CardContent>Surface content</CardContent>
+            <p>Surface content</p>
           </Card>
         </FloatingSurface>
       </StorybookThemeProvider>,

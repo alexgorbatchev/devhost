@@ -31,7 +31,7 @@ test:
 
 # Check package-local validations (TypeScript and unit tests)
 check: && test
-    bash ../../test-support/runTests.sh bun tsc --noEmit -p tsconfig.json
+    bash ../../test-support/runTests.sh bun node_modules/@typescript/native/bin/tsc --noEmit -p tsconfig.json
 
 # Regenerate tokens.css from src/constants.ts
 write-tokens:
