@@ -209,7 +209,12 @@ fn managed_directory_service_serves_live_files_and_releases_routes() {
     idle.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
     running.cancel.store(true, Ordering::SeqCst);
     assert_eq!(running.thread.take().unwrap().join().unwrap().unwrap(), 0);
-    assert!(TcpListener::bind(("127.0.0.1", service_port)).is_ok());
+    // The directory server's listener closes as its task ends, which can trail the stack thread on a loaded host.
+    assert!(wait_until(Duration::from_secs(5), || TcpListener::bind((
+        "127.0.0.1",
+        service_port
+    ))
+    .is_ok()));
     assert!(read_live_stack_owners(&caddy.caddy_dir).unwrap().is_empty());
     let mut byte = [0];
     assert!(matches!(idle.read(&mut byte), Ok(0) | Err(_)));
