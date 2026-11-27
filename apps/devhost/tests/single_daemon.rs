@@ -175,6 +175,8 @@ stackDirectoryHost = {:?}
         fs::write(
             dir.join("server.py"),
             r#"import http.server, os, sys
+# Startup and readiness lines make a service that never listens diagnosable from the stack log.
+print(f"server.py starting with {sys.executable}", file=sys.stderr, flush=True)
 port = int(os.environ["PORT"])
 tag = os.environ.get("RESOLVED_TAG", "")
 raw = os.environ.get("CUSTOM_TAG", "")
@@ -190,7 +192,9 @@ class H(http.server.BaseHTTPRequestHandler):
         self.end_headers()
     def log_message(self, *args):
         pass
-http.server.ThreadingHTTPServer(("127.0.0.1", port), H).serve_forever()
+server = http.server.ThreadingHTTPServer(("127.0.0.1", port), H)
+print(f"server.py listening on 127.0.0.1:{port}", file=sys.stderr, flush=True)
+server.serve_forever()
 "#,
         )
         .unwrap();
