@@ -637,7 +637,7 @@ dependencies = [
 
 [[package]]
 name = "devhost"
-version = "0.0.22"
+version = "0.0.23"
 dependencies = [
  "agent-watcher",
  "anstyle-parse",
