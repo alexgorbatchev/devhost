@@ -88,7 +88,16 @@ export async function runTabCaptureAcceptance(
         assert(tooltipBounds);
         await page.getByRole("button", { name: "Send Message", exact: true }).click();
         const preview = page.getByRole("dialog", { name: "Share Screenshot", exact: true });
-        await preview.waitFor();
+        try {
+          await preview.waitFor();
+        } catch (error) {
+          // A failed capture reports its reason in the chat panel instead of opening the preview.
+          const alerts = await page.getByRole("alert").allTextContents();
+          throw new Error(
+            `The screenshot preview did not open. Alerts: ${JSON.stringify(alerts)}. Page errors: ${JSON.stringify(errors)}.`,
+            { cause: error },
+          );
+        }
         assert.equal(
           fixture.readCommands().length,
           0,

@@ -18,9 +18,16 @@ use devhost::{
     config::CaddySettings,
 };
 
+#[path = "support/ports.rs"]
+mod fixture_ports;
+
+/// A port for a server a subprocess binds later, such as Caddy. The shared helper keeps it outside the kernel's
+/// ephemeral range, so an outbound connection cannot take it between this release and that bind.
 fn reserve_port() -> u16 {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    listener.local_addr().unwrap().port()
+    fixture_ports::reserve_listener()
+        .local_addr()
+        .unwrap()
+        .port()
 }
 
 struct Backend {

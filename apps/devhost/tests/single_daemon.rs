@@ -3,7 +3,7 @@ use std::{
     ffi::OsString,
     fs,
     io::{Read, Write},
-    net::{TcpListener, TcpStream},
+    net::TcpStream,
     os::unix::{ffi::OsStringExt, net::UnixListener, process::CommandExt},
     panic::{AssertUnwindSafe, catch_unwind},
     path::{Path, PathBuf},
@@ -50,16 +50,16 @@ fn wait_child_with_timeout(child: &mut Child, timeout: Duration) -> ExitStatus {
     panic!("child process did not exit within {timeout:?}");
 }
 
+#[path = "support/ports.rs"]
+mod fixture_ports;
+
+/// A port for a server a subprocess binds later, such as Caddy. The shared helper keeps it outside the kernel's
+/// ephemeral range, so an outbound connection cannot take it between this release and that bind.
 fn free_port() -> u16 {
-    static ALLOCATED: std::sync::OnceLock<Mutex<BTreeSet<u16>>> = std::sync::OnceLock::new();
-    let mut allocated = ALLOCATED.get_or_init(Mutex::default).lock().unwrap();
-    loop {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let port = listener.local_addr().unwrap().port();
-        if allocated.insert(port) {
-            return port;
-        }
-    }
+    fixture_ports::reserve_listener()
+        .local_addr()
+        .unwrap()
+        .port()
 }
 
 fn wait_until(timeout: Duration, mut check: impl FnMut() -> bool) -> bool {

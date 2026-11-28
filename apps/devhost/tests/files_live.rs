@@ -6,6 +6,19 @@ use axum::{
 };
 use devhost::{files::FileHandler, services::serve::FileServer};
 
+#[path = "support/ports.rs"]
+mod fixture_ports;
+
+/// An address for a server these tests stop and start again on the same port. A port the kernel picked for `:0` is
+/// in its ephemeral range, where an outbound connection can take it while the server is down.
+fn restartable_address() -> String {
+    let port = fixture_ports::reserve_listener()
+        .local_addr()
+        .unwrap()
+        .port();
+    format!("127.0.0.1:{port}")
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn served_root_remains_pinned_after_directory_replacement() {
     let fixture = tempfile::tempdir().unwrap();
@@ -260,7 +273,7 @@ fn file_server_shutdown_closes_idle_clients_and_releases_port() {
         time::{Duration, Instant},
     };
     let root = tempfile::tempdir().unwrap();
-    let mut server = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
+    let mut server = FileServer::start(root.path(), &restartable_address()).unwrap();
     let port = server.port();
     let mut idle = TcpStream::connect(("127.0.0.1", port)).unwrap();
     idle.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
@@ -297,7 +310,7 @@ fn file_server_restarts_after_closing_an_http_connection() {
 
     let root = tempfile::tempdir().unwrap();
     fs::write(root.path().join("note.txt"), "served content").unwrap();
-    let mut server = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
+    let mut server = FileServer::start(root.path(), &restartable_address()).unwrap();
     let address = format!("127.0.0.1:{}", server.port());
     assert!(FileServer::start(root.path(), &address).is_err());
     let mut client = TcpStream::connect(&address).unwrap();
@@ -342,7 +355,7 @@ fn file_server_restarts_when_inherited_listener_is_released() {
     }
 
     let root = tempfile::tempdir().unwrap();
-    let mut server = FileServer::start(root.path(), "127.0.0.1:0").unwrap();
+    let mut server = FileServer::start(root.path(), &restartable_address()).unwrap();
     let address = format!("127.0.0.1:{}", server.port());
     let (release, held) = UnixStream::pair().unwrap();
     let held_fd = held.as_raw_fd();

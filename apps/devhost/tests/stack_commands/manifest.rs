@@ -99,7 +99,7 @@ fn included_service_cwd_does_not_rewrite_literal_environment_values() {
     )
     .unwrap();
     fs::write(project.join("sub/service.toml"), "[services.worker]\ncwd='src'\ncommand=['python3','observe.py']\nhealth.process=true\n[services.worker.env]\ncwd='cache'\nserve='literal-root'\n").unwrap();
-    fs::write(work.join("observe.py"), "import json,os,pathlib,time\npathlib.Path('observed.json').write_text(json.dumps({'directory':os.getcwd(),'cwd':os.environ['cwd'],'serve':os.environ['serve']}))\ntime.sleep(300)\n").unwrap();
+    fs::write(work.join("observe.py"), "import json,os,pathlib,time\npathlib.Path('observed.json.tmp').write_text(json.dumps({'directory':os.getcwd(),'cwd':os.environ['cwd'],'serve':os.environ['serve']}))\npathlib.Path('observed.json.tmp').replace('observed.json')\ntime.sleep(300)\n").unwrap();
     let log = File::create(project.join("lifecycle.log")).unwrap();
     let mut process = Process(
         runtime
@@ -225,9 +225,9 @@ health.process=true
 serve='../../work with spaces'
 host='nested-docs.localhost'
 "#).unwrap();
-    fs::write(project.join("parts/deep/worker.py"), "import os,pathlib,time\npathlib.Path('worker-cwd').write_text(os.getcwd())\ntime.sleep(300)\n").unwrap();
+    fs::write(project.join("parts/deep/worker.py"), "import os,pathlib,time\npathlib.Path('worker-cwd.tmp').write_text(os.getcwd())\npathlib.Path('worker-cwd.tmp').replace('worker-cwd')\ntime.sleep(300)\n").unwrap();
     fs::write(work.join("nested.txt"), "nested include file root").unwrap();
-    fs::write(work.join("observe.py"), "import http.server,json,os,pathlib,socketserver,sys\npathlib.Path('observed.json').write_text(json.dumps({'cwd':os.getcwd(),'args':sys.argv[1:],'port':os.environ['PORT'],'references':os.environ['REFERENCES'],'value':os.environ['VALUE'],'empty':os.environ['EMPTY'],'literal':os.environ['LITERAL']}))\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1',int(os.environ['PORT'])),http.server.SimpleHTTPRequestHandler).serve_forever()\n").unwrap();
+    fs::write(work.join("observe.py"), "import http.server,json,os,pathlib,socketserver,sys\npathlib.Path('observed.json.tmp').write_text(json.dumps({'cwd':os.getcwd(),'args':sys.argv[1:],'port':os.environ['PORT'],'references':os.environ['REFERENCES'],'value':os.environ['VALUE'],'empty':os.environ['EMPTY'],'literal':os.environ['LITERAL']}))\npathlib.Path('observed.json.tmp').replace('observed.json')\nsocketserver.TCPServer.allow_reuse_address = True\nsocketserver.TCPServer(('127.0.0.1',int(os.environ['PORT'])),http.server.SimpleHTTPRequestHandler).serve_forever()\n").unwrap();
     // Keep interpolation inputs on the supervisor command, never in global test state.
     let source = fs::read_to_string(project.join("parts/deep/two.toml")).unwrap();
     let log = File::create(project.join("lifecycle.log")).unwrap();
