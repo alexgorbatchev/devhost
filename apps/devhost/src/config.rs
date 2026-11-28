@@ -73,6 +73,7 @@ impl Default for CaddySettings {
     }
 }
 
+#[derive(PartialEq)]
 pub struct MachineConfig {
     pub domain_suffix: String,
     pub caddy: CaddySettings,

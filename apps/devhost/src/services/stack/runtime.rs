@@ -72,7 +72,12 @@ impl Runtime<'_> {
                 })
                 .transpose()?
         };
-        if let Some(watch) = &mut config_watch {
+        // Startup applied `shared`. Reload only when the file changed before this watch began: applying unchanged
+        // settings would take the shared Caddy lock for nothing, and a stop cannot reach the services while this
+        // thread waits for it behind a Caddy restart.
+        if let (Some(watch), Some(path)) = (&mut config_watch, &config_path)
+            && config::read_from(path).ok().as_ref() != Some(&shared)
+        {
             watch.check();
         }
         let log_path = self.options.caddy_dir.join("logs").join(format!(
