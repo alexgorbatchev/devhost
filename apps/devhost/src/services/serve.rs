@@ -127,7 +127,7 @@ fn bind_file_listener(address: &str) -> io::Result<TcpListener> {
     let mut last_error =
         io::Error::new(io::ErrorKind::InvalidInput, "no socket addresses resolved");
     for address in address.to_socket_addrs()? {
-        let bind = || {
+        let bind = || -> io::Result<TcpListener> {
             let socket = Socket::new(
                 Domain::for_address(address),
                 Type::STREAM,
@@ -141,12 +141,33 @@ fn bind_file_listener(address: &str) -> io::Result<TcpListener> {
             socket.set_nonblocking(true)?;
             Ok(socket.into())
         };
-        match bind() {
-            Ok(listener) => return Ok(listener),
-            Err(error) => last_error = error,
+        // On macOS, connections this server closed keep the port in use until each client closes its end, even with
+        // SO_REUSEADDR. Wait for them only while nothing listens there; a live listener fails the start at once.
+        let deadline = std::time::Instant::now() + CLOSING_CONNECTION_WAIT;
+        loop {
+            match bind() {
+                Ok(listener) => return Ok(listener),
+                Err(error)
+                    if error.kind() == io::ErrorKind::AddrInUse
+                        && std::time::Instant::now() < deadline
+                        && !is_listening(address) =>
+                {
+                    thread::sleep(std::time::Duration::from_millis(25));
+                }
+                Err(error) => {
+                    last_error = error;
+                    break;
+                }
+            }
         }
     }
     Err(last_error)
+}
+
+const CLOSING_CONNECTION_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+
+fn is_listening(address: std::net::SocketAddr) -> bool {
+    std::net::TcpStream::connect_timeout(&address, std::time::Duration::from_millis(200)).is_ok()
 }
 
 pub fn start_serve(

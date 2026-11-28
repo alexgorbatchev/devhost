@@ -296,8 +296,11 @@ fn file_server_shutdown_closes_idle_clients_and_releases_port() {
     assert!(FileServer::start(root.path(), &format!("127.0.0.1:{port}")).is_err());
     replacement.stop();
     assert!(FileServer::start(&root.path().join("missing"), "127.0.0.1:0").is_err());
+    // A port held by a live listener fails at once, without waiting for closing connections to release it.
     let occupied = TcpListener::bind("127.0.0.1:0").unwrap();
+    let attempted = Instant::now();
     assert!(FileServer::start(root.path(), &occupied.local_addr().unwrap().to_string()).is_err());
+    assert!(attempted.elapsed() < Duration::from_secs(1));
 }
 
 #[test]
