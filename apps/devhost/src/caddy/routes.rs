@@ -739,7 +739,12 @@ pub fn replace_routes_for_stack(
                 access_log_name: route.access_log_name.clone(),
             };
             let text = serde_json::to_string_pretty(&record).expect("serialize route registration");
-            path_ctx(fs::write(&path, text), "write route registration", &path)?;
+            // Scans read registrations without the routes lock, so the file is replaced whole, never truncated.
+            path_ctx(
+                files::replace_file(&path, text.as_bytes(), 0o644),
+                "write route registration",
+                &path,
+            )?;
         }
         for route in previous {
             let path = registration_path(caddy_dir, &route.service_name, &route.host, &route.path);
@@ -1285,7 +1290,7 @@ fn restore_registrations(snapshots: &[RegistrationSnapshot]) -> Result<(), Strin
     for snap in snapshots {
         let result = match &snap.contents {
             Some(bytes) => path_ctx(
-                fs::write(&snap.path, bytes),
+                files::replace_file(&snap.path, bytes, 0o644),
                 "restore route registration",
                 &snap.path,
             ),
@@ -1359,13 +1364,38 @@ fn encode_hex(bytes: &[u8]) -> String {
     out
 }
 
+/// Creates `path` with `content`, failing with `AlreadyExists` when it is present. Other stacks scan the claim
+/// directories at any time, so the claim appears only once complete: the content goes to a scratch file whose name
+/// the scans skip, and a hard link publishes it, which fails instead of replacing an existing claim.
 fn write_exclusive(path: &Path, content: &[u8]) -> io::Result<()> {
     use std::io::Write;
-    let mut file = fs::OpenOptions::new()
+    write_exclusive_with(path, |file| file.write_all(content))
+}
+
+fn write_exclusive_with(
+    path: &Path,
+    write: impl FnOnce(&mut fs::File) -> io::Result<()>,
+) -> io::Result<()> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SCRATCH_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    let file_name = path.file_name().ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidInput, "claim path has no file name")
+    })?;
+    let scratch = path.with_file_name(format!(
+        ".{}.{}.{}.tmp",
+        file_name.to_string_lossy(),
+        std::process::id(),
+        SCRATCH_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+    ));
+    let written = fs::OpenOptions::new()
         .write(true)
         .create_new(true)
-        .open(path)?;
-    file.write_all(content)
+        .open(&scratch)
+        .and_then(|mut file| write(&mut file))
+        .and_then(|()| fs::hard_link(&scratch, path));
+    // The outcome is the claim's: a scratch file left behind holds no claim, and every scan skips it.
+    let _ = fs::remove_file(&scratch);
+    written
 }
 
 pub(crate) fn remove_if_exists(path: &Path) -> Result<(), String> {
@@ -1412,6 +1442,36 @@ pub(crate) fn utc_timestamp() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn claims_appear_to_scans_only_when_complete() {
+        use std::io::Write;
+        let fixture = tempfile::tempdir().unwrap();
+        let caddy_dir = fixture.path().join("caddy");
+        files::prepare_directories(&caddy_dir).unwrap();
+        let claims_dir = caddy_dir.join("port-claims");
+        let claim = fixed_port_claim_path(&caddy_dir, "127.0.0.1", 3124);
+
+        // Another stack's scan lists the directory between writes; the claim must not be there half written.
+        write_exclusive_with(&claim, |file| {
+            file.write_all(b"fir")?;
+            let listed = files::json_files(&claims_dir, "scan claims").unwrap();
+            assert!(listed.is_empty(), "scan listed a partial claim: {listed:?}");
+            file.write_all(b"st")
+        })
+        .unwrap();
+        assert_eq!(fs::read(&claim).unwrap(), b"first");
+        assert_eq!(
+            write_exclusive(&claim, b"second").unwrap_err().kind(),
+            io::ErrorKind::AlreadyExists
+        );
+        assert_eq!(fs::read(&claim).unwrap(), b"first");
+        let names: Vec<_> = fs::read_dir(&claims_dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert_eq!(names, [claim.file_name().unwrap()], "scratch files remain");
+    }
 
     #[test]
     fn host_and_port_claims_detect_conflicts_and_reclaim_stale_records() {

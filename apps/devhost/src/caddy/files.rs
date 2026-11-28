@@ -125,14 +125,14 @@ pub(crate) fn sync_not_found_site(
     let page_path = not_found_dir.join("index.html");
     let page = statuspage::not_found_page(links, "/devhost-route-not-found.css")?;
     path_ctx(
-        write_site_file(&page_path, page.as_bytes(), 0o644),
+        replace_file(&page_path, page.as_bytes(), 0o644),
         "write managed caddy not-found page",
         &page_path,
     )?;
 
     let css_path = not_found_dir.join("devhost-route-not-found.css");
     path_ctx(
-        write_site_file(&css_path, statuspage::PAGE_CSS.as_bytes(), 0o644),
+        replace_file(&css_path, statuspage::PAGE_CSS.as_bytes(), 0o644),
         "write managed caddy not-found stylesheet",
         &css_path,
     )?;
@@ -483,17 +483,16 @@ pub(crate) fn create_managed_url(protocol: &str, host: &str, port: u16, path: &s
 }
 
 fn write_private(path: &Path, content: &[u8]) -> Result<(), String> {
-    path_ctx(write_site_file(path, content, 0o600), "write", path)
+    path_ctx(replace_file(path, content, 0o600), "write", path)
 }
 
-fn write_site_file(path: &Path, content: &[u8], mode: u32) -> io::Result<()> {
+/// Replaces `path` whole through a temporary file and a rename, so a reader sees the old or the new content, never a
+/// partial file.
+pub(crate) fn replace_file(path: &Path, content: &[u8], mode: u32) -> io::Result<()> {
     use io::Write;
 
     let directory = path.parent().ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "site file has no parent directory",
-        )
+        io::Error::new(io::ErrorKind::InvalidInput, "file has no parent directory")
     })?;
     // Caddy may still be reading the old inode with its original Content-Length.
     let mut file = tempfile::NamedTempFile::new_in(directory)?;
@@ -652,12 +651,10 @@ mod tests {
         fs::create_dir(&path).unwrap();
         let marker = path.join("owned");
         fs::write(&marker, b"keep").unwrap();
-        assert!(write_site_file(&path, b"replacement", 0o644).is_err());
+        assert!(replace_file(&path, b"replacement", 0o644).is_err());
         assert_eq!(fs::read(marker).unwrap(), b"keep");
         assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 1);
-        assert!(
-            write_site_file(&fixture.path().join("missing/index.html"), b"page", 0o644).is_err()
-        );
+        assert!(replace_file(&fixture.path().join("missing/index.html"), b"page", 0o644).is_err());
         assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 1);
     }
 }
